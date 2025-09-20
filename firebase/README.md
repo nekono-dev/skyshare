@@ -4,7 +4,7 @@
 
 Install firebase develp tool
 ```sh
-sudo npm install -g firebase-tools
+npm install -g firebase-tools
 ```
 
 Setup repository
