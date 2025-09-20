@@ -30,7 +30,7 @@ npm run build
 ## ...or run as daemon. it works functions autoload if typescript changed.
 npm run build:watch
 ## serve local
-firebase serve -o 192.168.3.200 -p 5000
+firebase serve -o 192.168.3.151 -p 5000
 ```
 
 Deploy staging and prod.

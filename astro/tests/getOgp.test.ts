@@ -3,7 +3,7 @@ import { getOgpMeta } from "../src/lib/getOgp"
 import type { ogpMetaData, errorResponse } from "../src/lib/api/types"
 
 const version = `v${process.env.PUBLIC_VERSION}`
-const siteurl = "http://192.168.3.200:4321"
+const siteurl = "http://192.168.3.151:4321"
 
 // 本テストは正しい情報取得のため、 `npm run prod` で APIサーバを起動して行うこと。
 // 本番環境(cloudflare hosted)では、そもそもstatus codeが2XX系ではない場合、専用ページ(html)が返却されるため、
@@ -13,7 +13,7 @@ describe("getOgp Test", () => {
     test("True Website test", async () => {
         const result: ogpMetaData | errorResponse = await getOgpMeta({
             siteurl: siteurl,
-            externalUrl: "https://skyshare.uk",
+            externalUrl: "https://skyshare.nekono.dev/",
             languageCode: "ja",
         })
         expect(result).toEqual(<ogpMetaData>{
@@ -21,7 +21,7 @@ describe("getOgp Test", () => {
             title: "Skyshare - Share Bluesky to X",
             description:
                 "Skyshare is a web application helps bluesky users post to both bluesky or x.com.",
-            image: `https://skyshare.uk/materials/ogp_main.png?updated=${version}`,
+            image: `https://skyshare.nekono.dev/materials/ogp_main.png?updated=${version}`,
         })
     }, 10000) // long timeouf)
     // YoutubeはCORSが設定されている例
@@ -75,7 +75,7 @@ describe("getOgp Test", () => {
         const result: ogpMetaData | errorResponse = await getOgpMeta({
             siteurl: siteurl,
             externalUrl:
-                "https://twitter.com/nekono_dev/status/1774369918726947311",
+                "https://x.com/nekono_dev/status/1774369918726947311",
             languageCode: "ja",
         })
         expect(result).toEqual(<ogpMetaData>{
@@ -96,6 +96,7 @@ describe("getOgp Test", () => {
         expect(result).toEqual(<errorResponse>{
             type: "error",
             error: "Bad Gateway@getOgpMeta",
+            status: 500,
             message:
                 "Failed to get correct response from gateway. Announce server administrator.",
         })
@@ -109,6 +110,7 @@ describe("getOgp Test", () => {
         expect(result).toEqual(<errorResponse>{
             type: "error",
             error: "Bad Gateway@getOgpMeta",
+            status: 500,
             message:
                 "Failed to get correct response from gateway. Announce server administrator.",
         })
@@ -122,6 +124,7 @@ describe("getOgp Test", () => {
         expect(result).toEqual(<errorResponse>{
             type: "error",
             error: "Bad Gateway@getOgpMeta",
+            status: 500,
             message:
                 "Failed to get correct response from gateway. Announce server administrator.",
         })
@@ -135,6 +138,7 @@ describe("getOgp Test", () => {
         expect(result).toEqual(<errorResponse>{
             type: "error",
             error: "Bad Gateway@getOgpMeta",
+            status: 500,
             message:
                 "Failed to get correct response from gateway. Announce server administrator.",
         })
@@ -151,7 +155,7 @@ describe("getOgp Test", () => {
         expect(result).toEqual(<ogpMetaData>{
             type: "meta",
             title: "Via Chicago",
-            description: "ウィルコ · 曲 · 2005",
+            description: "ウィルコ · Kicking Television, Live in Chicago · 曲 · 2005",
             image: "https://i.scdn.co/image/ab67616d0000b273ca812e1712f8b09c30351378",
         })
     }, 100000) // long timeouf)
