@@ -48,9 +48,9 @@ jobs:
           npm install && npm run build
         working-directory: ./astro
         env:
-          PUBLIC_CREATEPAGES_ENDPOINT: ${{ secrets.PUBLIC_CREATEPAGES_ENDPOINT }}
-          PUBLIC_DELETEPAGE_ENDPOINT: ${{ secrets.PUBLIC_DELETEPAGE_ENDPOINT }}
-          PUBLIC_GETPAGES_ENDPOINT: ${{ secrets.PUBLIC_GETPAGES_ENDPOINT }}
+          PUBLIC_CREATEPAGES_ENDPOINT: ${{ vars.PUBLIC_CREATEPAGES_ENDPOINT }}
+          PUBLIC_DELETEPAGE_ENDPOINT: ${{ vars.PUBLIC_DELETEPAGE_ENDPOINT }}
+          PUBLIC_GETPAGES_ENDPOINT: ${{ vars.PUBLIC_GETPAGES_ENDPOINT }}
           PUBLIC_IS_NOT_PRODUCTION: ${{ vars.PUBLIC_IS_NOT_PRODUCTION }}
 
       - name: Publish to Cloudflare Pages
