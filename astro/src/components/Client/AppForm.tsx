@@ -56,7 +56,7 @@ const Component = ({
         <>
             {session.accessJwt !== "" ? (
                 <>
-                    <AnnouceLabel />
+                    {/* <AnnouceLabel /> */}
                     {Forms({ mode })}
                     <div
                         className={["flex", "justify-center", "my-1"].join(" ")}
