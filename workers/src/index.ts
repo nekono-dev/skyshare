@@ -15,7 +15,7 @@ export default {
 		let corsHeaders = {}
 		if (env.ENV === "prod") {
 			corsHeaders = {
-				"Access-Control-Allow-Origin": "https://skyshare.uk",
+				"Access-Control-Allow-Origin": "https://skyshare.nekono.dev",
 				"Access-Control-Allow-Methods": "GET,OPTIONS",
 				"Access-Control-Allow-Headers": 'Content-Type',
 			};

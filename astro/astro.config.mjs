@@ -8,7 +8,7 @@ import partytown from '@astrojs/partytown';
 /** @type {import('tailwindcss').Config} */
 export default defineConfig({
   base: "/",
-  site: "https://skyshare.uk/",
+  site: "https://skyshare.nekono.dev/",
   server: {
     port: 4321,
     host: true
