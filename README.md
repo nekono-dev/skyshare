@@ -1,11 +1,11 @@
 ![](./astro/public/materials/longlogo.svg)
 
-[Skyshare](https://skyshare.uk/) is web application that BlueSky user saves their time of boring SNS X.com(Twitter).
+[Skyshare](https://skyshare.nekono.dev/) is web application that BlueSky user saves their time of boring SNS X.com(Twitter).
 
 ## How works
 
 Skyshare post your post to Bluesky with AT Protocol.  
-for twitter, because of X taxes, Skyshare present Post Link: [Like that](https://twitter.com/intent/tweet?text=This&nbsp;is&nbsp;tweet&nbsp;sample.&url=https://skyshare.uk/posts/nlla.bsky.social_3kk7qzpffl22n/), can only with media by OGP image.
+for twitter, because of X taxes, Skyshare present Post Link: [Like that](https://twitter.com/intent/tweet?text=This&nbsp;is&nbsp;tweet&nbsp;sample.&url=https://skyshare.nekono.dev/posts/nlla.bsky.social_3kk7qzpffl22n/), can only with media by OGP image.
 
 ## AT Protocol
 

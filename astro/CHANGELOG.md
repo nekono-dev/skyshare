@@ -1,5 +1,14 @@
 # Skyshare 更新履歴
 
+## 1.5.6
+
+### Patch Changes
+
+- ドメイン名変更にともなうメンテナンス・無効なリンクの修正
+  - skyshare.uk は skyshare.nekono.dev にURLが順次変更になります。
+    - ukドメインの値段が150円ほど上がったので...
+  - Skythrowの画像がリンク切れになってしまっていたので修正しました。大変失礼いたしました。
+
 ## 1.5.5
 
 ### Patch Changes
