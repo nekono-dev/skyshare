@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "baseUrl": "./",
+        "paths": {
+            "@/*": ["src/*"]
+        },
+        "allowJs": true,
+        "module": "NodeNext",
+        "esModuleInterop": true,
+        "moduleResolution": "nodenext",
+        "target": "es2022",
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "outDir": "dist",
+        "sourceMap": true,
+        "strict": true,
+        "rootDir": "src"
+    },
+
+    "exclude": ["node_modules"],
+    "compileOnSave": true,
+    "include": ["src"]
+}

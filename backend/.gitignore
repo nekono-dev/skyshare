@@ -1,0 +1,64 @@
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+firebase-debug.log*
+firebase-debug.*.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage / instrumentation
+coverage
+.nyc_output
+lib-cov
+
+# Dependency directories
+node_modules/
+bower_components
+
+# Yarn
+.yarn/
+!.yarn/releases
+
+# Build artifacts
+build/Release
+*.tgz
+.lock-wscript
+
+# dotenv / env
+.env
+.env.production
+.env.firebase 
+.env.test.*
+!.env.test.template
+
+# Firebase
+.firebase/
+.firebaserc
+
+# Tooling / caches / misc
+.npm
+.eslintcache
+.node_repl_history
+.dataconnect
+
+# IDE
+.vscode/*
+!.vscode/launch.json
+!.vscode/*.code-snippets
+.idea/
+.idea/workspace.xml
+.idea/usage.statistics.xml
+.idea/shelf
+
+# Misc
+.DS_Store
+dist/
