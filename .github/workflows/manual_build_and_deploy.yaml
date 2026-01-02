@@ -49,7 +49,6 @@ jobs:
         working-directory: ./astro
         env:
           PUBLIC_BACKEND_ENDPOINT: ${{ vars.PUBLIC_BACKEND_ENDPOINT }}
-          PUBLIC_IS_NOT_PRODUCTION: ${{ vars.PUBLIC_IS_NOT_PRODUCTION }}
 
       - name: Publish to Cloudflare Pages
         id: publish

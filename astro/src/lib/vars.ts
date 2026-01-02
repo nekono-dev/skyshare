@@ -5,7 +5,3 @@ const stringToBoolean = (value: string | null | undefined): boolean => {
     }
     return value.toLowerCase() === "true"
 }
-export const isNotProduction = stringToBoolean(
-    import.meta.env.PUBLIC_IS_NOT_PRODUCTION as string,
-)
-export const corsAllowOrigin = isNotProduction ? "*" : import.meta.env.SITE
