@@ -18,7 +18,6 @@ const getPage = async (
         const parsedParam = RequestParamSchema.parse(requestBody);
         const dbKeyname = decodeURIComponent(parsedParam.dbKey);
         const dbIndex = parsedParam.dbIndex;
-
         const dbPlace = dbIndex;
         let redisClient = new RedisClient();
 
@@ -54,11 +53,15 @@ const getPage = async (
                 error: 'BadRequest',
             };
         }
+        let handle: string = dataBodyEncorded.handle || '';
+        if (dbPlace === 'legacy') {
+            handle = dbKeyname.split('@')[0];
+        }
         const ogpUrl = dataBodyEncorded.ogp;
 
         const responseData: Response200 = {
             ogp: ogpUrl,
-            context: dataBodyEncorded.context,
+            handle: handle,
             imgs: dataBodyEncorded.imgs,
         };
         logger.debug(`getPage responseData: ${JSON.stringify(responseData)}`);

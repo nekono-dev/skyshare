@@ -7,7 +7,7 @@ const RequestParamSchema = z.object({
 
 const Response200Schema = z.object({
     ogp: z.string(),
-    context: z.string().optional(),
+    handle: z.string(),
     imgs: z.array(
         z.object({
             thumb: z.string(),

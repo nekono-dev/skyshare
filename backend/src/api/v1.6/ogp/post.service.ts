@@ -34,6 +34,7 @@ const postOgp = async (
         const dbKeyname = `${did}@${postId}`;
         let images;
         let ogpUrl;
+        let handle: string = '';
 
         {
             // Blueskyの投稿内容を取得する処理
@@ -46,6 +47,7 @@ const postOgp = async (
             };
             try {
                 const post = await getThreadPost(agent, parsedBody.uri);
+                handle = post.author.handle.toString();
                 images = extractImagesFromPost(post);
             } catch (e: unknown) {
                 if (e instanceof Error) {
@@ -85,6 +87,7 @@ const postOgp = async (
             // RedisにOGP情報を登録する処理
             await redisClient.addPage(dbKeyname, {
                 ogp: ogpUrl,
+                handle: handle,
                 context: context === 'app.bsky.feed.post' ? undefined : context,
                 imgs: images.map((img) => ({
                     thumb: img.thumb,

@@ -7,6 +7,7 @@ const DEFAULT_TTL = 60 * 60 * 24 * 365; // 365日
 // upstashに登録する情報
 const ZodPageDb = z.object({
     ogp: z.string(),
+    handle: z.string().optional(),
     context: z.string().optional(),
     imgs: z.array(
         z.object({

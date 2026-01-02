@@ -15,16 +15,17 @@ if (typeof slug === "undefined"
     })
 }
 const pageId = `${dbIndex}/${slug}`
-const [author, rkey] = slug.split("@")
-console.log(`author: ${author}, rkey: ${rkey} pageId: ${pageId}`)
+const [_, rkey] = slug.split("@")
 const getPageResult = await getPage({ pageId: pageId })
-
 if ("error" in getPageResult) {
     return new Response(null, {
         status: 404,
         statusText: "Not found",
     })
 }
+const author = getPageResult.handle as string
+console.log(`author: ${author}, rkey: ${rkey} pageId: ${pageId}`)
+
 const title = `${author} Post - ${servicename}`
 const imgs = getPageResult.imgs
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
