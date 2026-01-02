@@ -23,7 +23,7 @@ export const api = async ({
     uri: string
     accessJwt: string
 }): Promise<pageCreationOutput | etype> => {
-    return fetch(endpoint_url + "/ogp", {
+    return fetch(endpoint_url + "/page", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

@@ -25,7 +25,7 @@ export const api = async ({
     did: string
     accessJwt: string
 }): Promise<pageDeletionOutput | etype> => {
-    return fetch(endpoint_url + "/ogp", {
+    return fetch(endpoint_url + "/page", {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
