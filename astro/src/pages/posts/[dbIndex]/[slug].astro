@@ -5,15 +5,18 @@ import getPage from "@/lib/pagedbAPI/getPage"
 import { servicename } from "@/env/vars"
 import { baseurl } from "@/env/envs"
 
-const { slug } = Astro.params
-if (typeof slug === "undefined") {
+const { dbIndex, slug } = Astro.params
+if (typeof slug === "undefined" 
+    || typeof dbIndex === "undefined" 
+    || !Number.isInteger(Number(dbIndex))) {
     return new Response(null, {
         status: 503,
         statusText: "Server Error",
     })
 }
-const pageId = `legacy/${slug}`
-const [author, _, rkey] = slug.split(/(_|@)/)
+const pageId = `${dbIndex}/${slug}`
+const [author, rkey] = slug.split("@")
+console.log(`author: ${author}, rkey: ${rkey} pageId: ${pageId}`)
 const getPageResult = await getPage({ pageId: pageId })
 
 if ("error" in getPageResult) {

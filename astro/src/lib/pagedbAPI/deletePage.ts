@@ -1,7 +1,7 @@
 import { z } from "zod"
-import etype from "./models/error.json"
+import etype from "./models/error"
 
-const endpoint_url = import.meta.env.PUBLIC_DELETEPAGE_ENDPOINT as string
+const endpoint_url = import.meta.env.PUBLIC_BACKEND_ENDPOINT as string
 
 const ZodPageDeletionOutput = z.object({
     result: z.string(),
@@ -17,21 +17,21 @@ export type pageDeletionOutput = z.infer<typeof ZodPageDeletionOutput>
  * @param {string} props.accessJwt アクセストークン
  */
 export const api = async ({
-    id,
+    pageId,
     did,
     accessJwt,
 }: {
-    id: string
+    pageId: string
     did: string
     accessJwt: string
-}): Promise<pageDeletionOutput | typeof etype> => {
-    return fetch(endpoint_url, {
-        method: "POST",
+}): Promise<pageDeletionOutput | etype> => {
+    return fetch(endpoint_url + "/ogp", {
+        method: "DELETE",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            id: id,
+            pageId: pageId,
             did: did,
             accessJwt: accessJwt,
         }),

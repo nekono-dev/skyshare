@@ -1,10 +1,10 @@
 import { z } from "zod"
-import etype from "./models/error.json"
-const endpoint_url = import.meta.env.PUBLIC_GETPAGES_ENDPOINT as string
-const object = "page"
+import etype from "./models/error"
+const endpoint_url = import.meta.env.PUBLIC_BACKEND_ENDPOINT as string
 
 export const ZodPageFetchOutput = z.object({
     ogp: z.string(),
+    context: z.string().optional(),
     imgs: z.array(
         z.object({
             thumb: z.string(),
@@ -15,11 +15,11 @@ export const ZodPageFetchOutput = z.object({
 export type pageFetchOutput = z.infer<typeof ZodPageFetchOutput>
 
 export const api = async ({
-    id,
+    pageId,
 }: {
-    id: string
-}): Promise<pageFetchOutput | typeof etype> => {
-    const url = new URL(object + "/" + encodeURIComponent(id), endpoint_url)
+    pageId: string
+}): Promise<pageFetchOutput | etype> => {
+    const url = new URL(`${endpoint_url}/page/${pageId}`)
     return fetch(url, {
         method: "GET",
         headers: {

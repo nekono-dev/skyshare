@@ -5,11 +5,11 @@ import { type Session_info } from "../common/contexts"
 import { type msgInfo } from "../common/types"
 
 const Component = ({
-    id,
+    pageId,
     session,
     setMsgInfo,
 }: {
-    id: string
+    pageId: string
     session: Session_info
     setMsgInfo: Dispatch<SetStateAction<msgInfo>>
 }) => {
@@ -26,7 +26,7 @@ const Component = ({
                 throw e
             }
             const resDeletePage = await deletePage({
-                id: id,
+                pageId,
                 did: session.did,
                 accessJwt: session.accessJwt,
             })
