@@ -104,7 +104,7 @@ const deleteOgp = async (
                     error: 'BadRequest',
                 };
             }
-            logger.info(
+            logger.debug(
                 `Identity verified: thread-author=${authorDid} from-db=${didFromDb}`
             );
         }
