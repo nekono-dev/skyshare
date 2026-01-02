@@ -18,7 +18,6 @@ setup .env:
 
 ```sh
 PUBLIC_BACKEND_ENDPOINT="backend_endpoint" # set firebase fucntion endpoint
-PUBLIC_IS_NOT_PRODUCTION="True_or_False" # if not deploy to prod, set flag true. if prod, need not to set or set false
 ```
 
 ## Debug
