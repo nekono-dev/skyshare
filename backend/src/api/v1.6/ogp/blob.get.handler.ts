@@ -1,23 +1,25 @@
 import type { RouteHandler } from '@hono/zod-openapi';
-import postOgp from './post.service.js';
-import route from './post.route.js';
+import getOgp from './blob.get.service.js';
+import route from './blob.get.route.js';
 import { logger } from '../../../common/logger.js';
 
 const handler: RouteHandler<typeof route> = async (c) => {
-    const body = c.req.valid('json');
-    logger.debug("Page Post Handler called");
+    const query = c.req.valid('query');
+    logger.debug('OGP Get Handler called');
 
-    const result = await postOgp(body);
+    const result = await getOgp(query);
+
     if (!result.success) {
         switch (result.error) {
-            case 'BadRequest':
-                return c.json({ error: 'BadRequest' }, 400);
             case 'InternalServerError':
             default:
                 return c.json({ error: 'Internal Server Error' }, 500);
         }
     }
-    return c.json(result.data, 200);
+    const { blob, contentType } = result.data;
+    return new Response(blob, {
+        headers: { 'Content-Type': contentType || 'application/octet-stream' },
+    });
 };
 
 export default handler;

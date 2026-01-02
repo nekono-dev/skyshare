@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import postOgp from '@/api/v1.6/ogp/post.service';
-import deleteOgp from '@/api/v1.6/ogp/delete.service';
+import postOgp from '@/api/v1.6/page/post.service';
+import deleteOgp from '@/api/v1.6/page/delete.service';
 import getPage from '@/api/v1.6/page/get.service';
 
 import { AtpAgent } from '@atproto/api';

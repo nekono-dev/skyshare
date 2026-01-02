@@ -15,7 +15,7 @@ apiRouter.route('/page', pageRouter);
 
 client.route('/api/v1', apiRouter);
 
-if (launchEnv === undefined){
+if (launchEnv === undefined) {
     logger.error('LAUNCH_ENV is not defined');
     throw new Error('LAUNCH_ENV is not defined');
 }
@@ -25,9 +25,10 @@ if (launchEnv === 'local') {
         {
             fetch: client.fetch,
             port: 3000,
+            hostname: '0.0.0.0',
         },
         (info) => {
-            console.log(`Server is running on http://localhost:${info.port}`);
+            console.log(`Server is running on http://0.0.0.0:${info.port}`);
         }
     );
 }

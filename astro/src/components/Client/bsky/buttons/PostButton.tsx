@@ -428,19 +428,13 @@ export const Component = ({
                 }${ogpUrl.toString()}`
                 // 生成URLからogpを取得
                 const getOgpMetaResult = await getOgpMeta({
-                    siteurl,
                     externalUrl: ogpUrl.toString(),
                     languageCode: language,
                 })
-                if (getOgpMetaResult.type === "error") {
-                    const e: Error = new Error(getOgpMetaResult.message)
-                    e.name = getOgpMetaResult.error
-                    throw e
-                }
+
                 callbackPostOptions.previewTitle = getOgpMetaResult.title
                 if (getOgpMetaResult.image !== "") {
                     callbackPostOptions.previewData = await getOgpBlob({
-                        siteurl,
                         externalUrl: getOgpMetaResult.image,
                         languageCode: language,
                     })

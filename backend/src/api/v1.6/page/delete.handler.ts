@@ -5,11 +5,9 @@ import { logger } from '../../../common/logger.js';
 
 const handler: RouteHandler<typeof route> = async (c) => {
     const body = c.req.valid('json');
-    logger.debug("OGP Delete Handler called");
+    logger.debug("Page Delete Handler called");
 
     const result = await deleteOgp(body);
-    logger.debug(`OGP Post Handler result: ${JSON.stringify(result)}`);
-    
     if (!result.success) {
         switch (result.error) {
             case 'BadRequest':
