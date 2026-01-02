@@ -11,7 +11,7 @@ namespace embed {
                 size: number
             }
             alt: string
-            aspectRaito?: {
+            aspectRatio?: {
                 width: number
                 height: number
             }

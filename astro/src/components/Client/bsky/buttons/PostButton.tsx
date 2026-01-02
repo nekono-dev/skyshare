@@ -338,7 +338,7 @@ export const Component = ({
                                         return {
                                             image: value.blob,
                                             alt: mediaData.images[index].alt,
-                                            aspectRaito: imageSizes[index]
+                                            aspectRatio: imageSizes[index]
                                                 ? {
                                                       width: imageSizes[index]!.width,
                                                       height: imageSizes[index]!.height,

@@ -1,3 +1,5 @@
+# backendディレクトリにすべての機能を移譲したため、outdatedになりました。次バージョンアップで削除予定です。
+
 # Firestore Functions
 
 ## Setup Developper tools

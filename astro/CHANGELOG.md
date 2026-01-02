@@ -16,9 +16,10 @@
   - ただし、容量の肥大化状況によっては1ユーザの投稿リミットを設ける等の対応は検討しています。一日一人100件超えとかしなければ大丈夫だとおもいます。
 - バックエンドの改修に紐づき、一部の機能をオミットしました。
   - 生成したOGPページ一覧の表示機能を削除しました。データベースにRedisを用いており、`scan`コマンドはデータベース上のデータ量に比例してリクエスト回数が増加し、課金額が上がるためです。
-- <a href="https://bsky.app/profile/nekono.dev/post/3mb62zbwp4224">横長画像の投稿がBluesky公式クライアントでは余白が表示されてしまう問題</a>への対処ができませんでした...
+- [横長画像の投稿がBluesky公式クライアントでは余白が表示されてしまう問題](https://bsky.app/profile/nekono.dev/post/3mb62zbwp4224)への対処ができませんでした...
   - 現在、公式クライアントでは従来の`com.atproto.repo.createRecord`ではなく`com.atproto.repo.applyWrites`というAPIを用いているようです。
   - `app.bsky.embed.images#view`の`aspectRatio`が`createRecord`では付与されず、これが原因のようでした。
+    - `typo`していた様子です。[tomo-x](https://bsky.app/profile/tomo-x.win)さんありがとう！こいつは直しておきました。多分動くかな、動いたらいいな。
 ```
 "embed": {
     "$type": "app.bsky.embed.images#view",
