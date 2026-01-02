@@ -35,9 +35,8 @@ build/Release
 
 # dotenv / env
 .env
-.env.production
-.env.firebase 
-.env.test.*
+.env.production 
+.env.test*
 !.env.test.template
 
 # Firebase

@@ -21,18 +21,18 @@ Skyshare v1.5 以前は、複数のバックエンドが点在していること
 
 ## 環境変数ファイルの作成
 
-ローカルで起動する場合は`.env.local`、firebase で実行する場合は`.env.firebase`が参照される。
-`.env.firebase`は以下や次章を参考に作成・設定する。
+ローカルで起動する場合は`.env.dev`、firebase で実行する場合は`.env`が参照される。
+`.env`は以下や次章を参考に作成・設定する。
 
-| 環境変数                    | 内容                                                                                |
-| --------------------------- | ----------------------------------------------------------------------------------- |
-| LAUNCH_ENV                  | `local` `firebase`に対応                                                            |
-| DB_ENDPOINT_WITH_CREDENTIAL | PageDB を管理する Redis の URL を指定する                                           |
-| OBJ_STORAGE_REGION          | OGP を管理するオブジェクトストレージのリージョン                                    |
-| OBJ_STORAGE_BUCKET          | OGP を管理するオブジェクトストレージのバケット名                                    |
-| OBJ_STORAGE_ENDPOINT        | OGP を管理するオブジェクトストレージの API エンドポイント                           |
-| OBJ_STORAGE_CREDENTIAL      | オブジェクトストレージの認証情報 `<アクセスキー>:<アクセストークン>` として設定する |
-| OBJ_STORAGE_VIEW_URL        | オブジェクトストレージの公開 URL                                                    |
+| 環境変数               | 内容                                                                                |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| LAUNCH_ENV             | `local` `firebase`に対応                                                            |
+| DB_ENDPOINT_0          | PageDB を管理する Redis の URL                                                      |
+| OBJ_STORAGE_REGION     | OGP を管理するオブジェクトストレージのリージョン                                    |
+| OBJ_STORAGE_BUCKET     | OGP を管理するオブジェクトストレージのバケット名                                    |
+| OBJ_STORAGE_ENDPOINT   | OGP を管理するオブジェクトストレージの API エンドポイント                           |
+| OBJ_STORAGE_CREDENTIAL | オブジェクトストレージの認証情報 `<アクセスキー>:<アクセストークン>` として設定する |
+| OBJ_STORAGE_VIEW_URL   | オブジェクトストレージの公開 URL                                                    |
 
 ## データベースの設定方法
 
@@ -42,6 +42,7 @@ Redis サーバを起動する。
 
 ```sh
 docker run --name redis -p 6379:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
+docker run --name redis-legacy -p 6479:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
 docker logs redis
 ```
 
@@ -77,6 +78,8 @@ DB_ENDPOINT_WITH_CREDENTIAL="rediss://default:<Credential>@XXXXXXX.upstash.io:<P
 
 ## ストレージの設定方法
 
+注意: オブジェクトストレージはオブジェクトごとに TTL を指定できないため、手動で設定すること
+
 ### Launch on local (minio)
 
 バージョン: `RELEASE.2025-10-15T17-29-55Z`にて以下が動作することを確認  
@@ -84,15 +87,7 @@ https://qiita.com/torifukukaiou/items/70e55a438bdaea0b09ea
 
 ```bash
 ## ビルドしたminioを起動
-docker run -d \
-  --name minio-server \
-  -p 9000:9000 \
-  -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=minioadmin \
-  -v /tmp/minio-data:/data \
-  myminio:latest
-
+docker run -d --rm --name minio-server -p 9000:9000 -p 9001:9001 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin -v /tmp/minio-data:/data myminio:latest
 docker logs minio-server
 ```
 
@@ -115,8 +110,7 @@ WARN: Detected default credentials 'minioadmin:minioadmin', we recommend that yo
 
 ```bash
 docker exec -it minio-server /bin/sh
-wget https://dl.min.io/aistor/mc/release/linux-amd64/mc
-chmod +x ./mc && mv ./mc /usr/bin
+wget https://dl.min.io/aistor/mc/release/linux-amd64/mc && chmod +x ./mc && mv ./mc /usr/bin
 
 mc alias set default http://localhost:9000 minioadmin minioadmin
 mc mb default/skyshare;
@@ -167,7 +161,7 @@ OBJ_STORAGE_CREDENTIAL="minioadmin:minioadmin" ## アクセスキー:アクセ�
 
 ### Launch on local
 
-以下で実行できる。環境変数は`.env.local`が参照される。
+以下で実行できる。環境変数は`.env.dev`が参照される。
 
 ```bash
 npm install
@@ -192,7 +186,7 @@ firebase login
 firebase init functions
 ```
 
-以下で実行できる。環境変数は`.env.firebase`が参照される。
+以下で実行できる。環境変数は`.env`が参照される。
 
 ```bash
 npm install
@@ -202,7 +196,7 @@ npm run serve:firebase
 ### デバッグ
 
 ローカルで実行するが、トランスパイルを行わない。
-環境変数は`.env.local`が参照される。
+環境変数は`.env.dev`が参照される。
 
 ```bash
 npm install
@@ -213,24 +207,27 @@ npm run dev
 
 ### 環境変数ファイルの作成
 
-ローカルで起動する場合は`.env.local`および`.env.test.local`、firebase で実行する場合は`.env.firebase`および`.env.test.firebase`が参照される。
-`.env.test.**`は`.env.test.template`および以下を参考に作成する
+ローカルで起動する場合は`.env.dev`および`.env.test.dev`、firebase で実行する場合は`.env`および`.env.test`が参照される。
+`.env.test`は`.env.test.template`および以下を参考に作成する
 
-| 環境変数            | 内容                                                          |
-| ------------------- | ------------------------------------------------------------- |
-| AT_SERVICE_ID       | テストを実行するためのユーザアカウント名                      |
-| AT_SERVICE_PASSWORD | テストを実行するためのアプリパスワード                        |
-| BACKEND_ENDPOINT    | `npm run serve:**`により公開される API サーバのエンドポイント |
+| 環境変数                | 内容                                                          |
+| ----------------------- | ------------------------------------------------------------- |
+| AT_SERVICE_ID           | テストを実行するためのユーザアカウント名                      |
+| AT_SERVICE_PASSWORD     | テストを実行するためのアプリパスワード                        |
+| BACKEND_ENDPOINT        | `npm run serve:**`により公開される API サーバのエンドポイント |
+| `LEGACY_OBJ_STORAGE_**` | `legacyDbOperation.test.ts`の実行に必要                       |
 
 ### テスト実行
 
 ローカル実行する場合は以下
+
 ```bash
 npm run serve:local
 npm run test:local
 ```
 
-firebase実行する場合は以下
+firebase 実行する場合は以下
+
 ```bash
 npm run serve:firebase
 npm run test:firebase
@@ -239,6 +236,7 @@ npm run test:firebase
 ## デプロイ
 
 `.env`に本番構築用のパラメータをコピーし、以下のコマンドを実行する。
+
 ```bash
 npm run deploy:firebase
 ```

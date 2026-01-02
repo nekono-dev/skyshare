@@ -1,11 +1,11 @@
 import { createRoute } from '@hono/zod-openapi';
-import { RequestBodySchema, Response200Schema } from './post.schema.js';
-import { ResponseErrorSchema } from '../error.schema.js';
+import { RequestBodySchema, Response200Schema } from './delete.schema.js';
+import { ResponseErrorSchema } from '../../error.schema.js';
 
 const route = createRoute({
     path: '/',
-    method: 'post',
-    description: 'Blueskyのポスト画像からOGPを生成する。',
+    method: 'delete',
+    description: '作成したOGP画像を削除する。',
     tags: ['ogp'],
     //   security: [{ Bearer: [] }],
     request: {
@@ -15,9 +15,9 @@ const route = createRoute({
                 'application/json': {
                     schema: RequestBodySchema.openapi({
                         example: {
-                            uri: 'at://did:plc:quimkpbfh6mdasxs426v6ogy/app.bsky.feed.post/hashcode',
+                            pageId: 'v1.6/hashcode',
+                            did: 'did:plc:quimkpbfh6mdasxs426v6ogy',
                             accessJwt: 'XXXXXXXXXXXXXXXXX',
-                            handle: 'example.bsky.social',
                         },
                     }),
                 },
@@ -26,11 +26,11 @@ const route = createRoute({
     },
     responses: {
         200: {
-            description: 'Page created successfully',
+            description: 'Page deleted successfully',
             content: {
                 'application/json': {
                     schema: Response200Schema.openapi({
-                        example: { uri: 'example.bsky.social/hashcode' },
+                        example: { result: 'ok' },
                     }),
                 },
             },

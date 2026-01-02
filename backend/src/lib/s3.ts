@@ -5,7 +5,11 @@ import {
     objStorageRegion,
     objStorageViewURL,
 } from '../common/environments.js';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {
+    S3Client,
+    PutObjectCommand,
+    DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 
 type UploadParams = {
     key: string;
@@ -14,34 +18,64 @@ type UploadParams = {
     forcePathStyle?: boolean;
 };
 
-export const uploadToS3 = async (params: UploadParams): Promise<string> => {
-    const { key, body, contentType, forcePathStyle = true } = params;
+class S3ClientWrapper {
+    private bucket: string;
+    private viewUrl: string;
+    private client: S3Client;
 
-    const bucket = objStorageBucket;
-    const region = objStorageRegion;
-    const endpoint = objStorageEndpoint;
-    const accessKeyId = objStorageCredential.split(':')[0];
-    const secretAccessKey = objStorageCredential.split(':')[1];
+    constructor(
+        opt: {
+            bucket: string;
+            viewUrl: string;
+            endpoint: string;
+            region: string;
+            credential: string;
+        } = {
+            bucket: objStorageBucket,
+            viewUrl: objStorageViewURL,
+            endpoint: objStorageEndpoint,
+            region: objStorageRegion,
+            credential: objStorageCredential,
+        }
+    ) {
+        this.bucket = opt.bucket;
+        this.viewUrl = opt.viewUrl;
 
-    const client = new S3Client({
-        region,
-        endpoint,
-        credentials: {
-            accessKeyId,
-            secretAccessKey,
-        },
-        forcePathStyle,
-    });
+        const region = opt.region;
+        const endpoint = opt.endpoint;
+        const accessKeyId = opt.credential.split(':')[0];
+        const secretAccessKey = opt.credential.split(':')[1];
 
-    const cmd = new PutObjectCommand({
-        Bucket: bucket,
-        Key: key,
-        Body: body,
-        ContentType: contentType,
-    });
+        this.client = new S3Client({
+            region,
+            endpoint,
+            credentials: { accessKeyId, secretAccessKey },
+            forcePathStyle: true,
+        } as any);
+    }
 
-    await client.send(cmd);
-    return new URL(`${objStorageViewURL}/${key}`).toString();
-};
+    public async uploadToS3(params: UploadParams): Promise<string> {
+        const { key, body, contentType } = params;
 
-export default uploadToS3;
+        const cmd = new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+            Body: body,
+            ContentType: contentType,
+        });
+
+        await this.client.send(cmd);
+        return new URL(`${this.viewUrl}/${key}`).toString();
+    }
+
+    public async deleteFromS3(key: string): Promise<void> {
+        const cmd = new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: key,
+        });
+
+        await this.client.send(cmd);
+    }
+}
+
+export { S3ClientWrapper };

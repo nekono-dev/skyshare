@@ -1,9 +1,9 @@
 {
     "compilerOptions": {
-        "baseUrl": "./",
-        "paths": {
-            "@/*": ["src/*"]
-        },
+        // "baseUrl": "./",
+        // "paths": {
+        //     "@/*": ["src/*"]
+        // },
         "allowJs": true,
         "module": "NodeNext",
         "esModuleInterop": true,
@@ -16,7 +16,8 @@
         "outDir": "dist",
         "sourceMap": true,
         "strict": true,
-        "rootDir": "src"
+        "rootDir": "src",
+        "strictNullChecks": true
     },
 
     "exclude": ["node_modules"],

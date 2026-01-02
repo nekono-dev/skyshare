@@ -1,7 +1,7 @@
 import type { RouteHandler } from '@hono/zod-openapi';
 import postOgp from './post.service.js';
 import route from './post.route.js';
-import { logger } from '../../common/logger.js';
+import { logger } from '../../../common/logger.js';
 
 const handler: RouteHandler<typeof route> = async (c) => {
     const body = c.req.valid('json');

@@ -3,8 +3,8 @@ import { launchEnv } from './environments.js';
 
 class Logger {
     private env: string;
-    constructor(env: string) {
-        this.env = env;
+    constructor(env: string | undefined) {
+        this.env = env || 'local';
     }
 
     // 共通ログ処理を一元化

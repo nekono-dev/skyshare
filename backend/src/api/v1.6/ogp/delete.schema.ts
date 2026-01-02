@@ -1,13 +1,13 @@
 import { z } from '@hono/zod-openapi';
 
 const RequestBodySchema = z.object({
-    uri: z.string(),
+    pageId: z.string(),
+    did: z.string().optional(),
     accessJwt: z.string(),
-    handle: z.string(),
 });
 
 const Response200Schema = z.object({
-    uri: z.string(),
+    result: z.string(),
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;

@@ -1,8 +1,12 @@
-const launchEnv = process.env.LAUNCH_ENV || 'local';
+import dotenv from 'dotenv';
+if (process.env.LAUNCH_ENV === undefined) {
+    dotenv.config();
+}
+
+const launchEnv = process.env.LAUNCH_ENV;
 const atpService = process.env.ATP_SERVICE_URL || 'https://bsky.social';
 
-const dbEndpointWithCredential =
-    process.env.DB_ENDPOINT_WITH_CREDENTIAL || 'redis://localhost:6379';
+const dbEndpoints = [process.env.DB_ENDPOINT_0 || 'redis://localhost:6379'];
 
 const objStorageRegion = process.env.OBJ_STORAGE_REGION || 'minio';
 const objStorageBucket = process.env.OBJ_STORAGE_BUCKET || 'skyshare';
@@ -15,13 +19,19 @@ const objStorageViewURL = (
     process.env.OBJ_STORAGE_VIEW_URL || 'http://127.0.0.1:9000'
 ).replace(/(.+)\/$/, '$1');
 
+const legacyDbEndpoint = process.env.LEGACY_DB_ENDPOINT;
+
+const serviceUrl = "https://skyshare.nekono.dev";
+
 export {
     launchEnv,
     atpService,
-    dbEndpointWithCredential,
+    dbEndpoints,
     objStorageBucket,
     objStorageRegion,
     objStorageEndpoint,
     objStorageCredential,
     objStorageViewURL,
+    legacyDbEndpoint,
+    serviceUrl
 };

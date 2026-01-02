@@ -1,16 +1,16 @@
 import type { RequestBody, Response200 } from './post.schema.js';
 import { RequestBodySchema } from './post.schema.js';
 
-import { atpService } from '../../common/environments.js';
-import { logger } from '../../common/logger.js';
-import type { ServiceResult } from '../../common/serviceResult.js';
+import { atpService } from '../../../common/environments.js';
+import { logger } from '../../../common/logger.js';
+import type { ServiceResult } from '../../../common/serviceResult.js';
 
 import { Buffer } from 'buffer';
-import { compositeImages } from '../../lib/ogp.js';
+import { compositeImages } from '../../../lib/ogp.js';
 import { AtpAgent } from '@atproto/api';
-import { getThreadPost, extractImagesFromPost } from '../../lib/bsky.js';
-import uploadToS3 from '../../lib/s3.js';
-import { addPage } from '../../lib/redis.js';
+import { getThreadPost, extractImagesFromPost } from '../../../lib/bsky.js';
+import { S3ClientWrapper } from '../../../lib/s3.js';
+import { RedisClient } from '../../../lib/redis.js';
 
 /* *
  * OGP画像を生成してS3にアップロードするメソッド
@@ -27,9 +27,11 @@ const postOgp = async (
             service: atpService,
         });
         const did = parsedBody.uri.split('/')[2];
+        const context = parsedBody.uri.split('/')[3];
         const postId = parsedBody.uri.split('/')[4];
-        const ogpKeyname = `${parsedBody.handle}/${postId}.jpg`;
-        const dbKeyname = `${parsedBody.handle}@${postId}`;
+
+        const ogpKeyname = `${did}/${postId}.jpg`;
+        const dbKeyname = `${did}@${postId}`;
         let images;
         let ogpUrl;
 
@@ -38,14 +40,10 @@ const postOgp = async (
             agent.sessionManager.session = {
                 accessJwt: parsedBody.accessJwt,
                 refreshJwt: '',
-                handle: parsedBody.handle,
+                handle: '',
                 did: did,
                 active: true,
             };
-            logger.debug(
-                `Agent setup: ${parsedBody.handle} did: ${did} postId: ${postId}`
-            );
-
             try {
                 const post = await getThreadPost(agent, parsedBody.uri);
                 images = extractImagesFromPost(post);
@@ -73,7 +71,8 @@ const postOgp = async (
             const ogpBuffer = await compositeImages(imgsBuffer);
             logger.debug(`Ogp generated: ${ogpBuffer.length} bytes`);
 
-            ogpUrl = await uploadToS3({
+            const s3Client = new S3ClientWrapper();
+            ogpUrl = await s3Client.uploadToS3({
                 key: ogpKeyname,
                 body: ogpBuffer,
                 contentType: 'image/jpeg',
@@ -81,10 +80,12 @@ const postOgp = async (
             logger.debug(`Ogp uploaded: ${ogpKeyname}`);
         }
 
+        const redisClient = new RedisClient();
         {
             // RedisにOGP情報を登録する処理
-            await addPage(dbKeyname, {
+            await redisClient.addPage(dbKeyname, {
                 ogp: ogpUrl,
+                context: context === 'app.bsky.feed.post' ? undefined : context,
                 imgs: images.map((img) => ({
                     thumb: img.thumb,
                     alt: img.alt,
@@ -96,7 +97,8 @@ const postOgp = async (
         return {
             success: true,
             data: {
-                uri: ogpKeyname,
+                uri: dbKeyname,
+                dbIndex: redisClient.redisIndex,
             },
         };
     } catch (e: unknown) {
