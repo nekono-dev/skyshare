@@ -16,28 +16,9 @@
   - ただし、容量の肥大化状況によっては1ユーザの投稿リミットを設ける等の対応は検討しています。一日一人100件超えとかしなければ大丈夫だとおもいます。
 - バックエンドの改修に紐づき、一部の機能をオミットしました。
   - 生成したOGPページ一覧の表示機能を削除しました。データベースにRedisを用いており、`scan`コマンドはデータベース上のデータ量に比例してリクエスト回数が増加し、課金額が上がるためです。
-- [横長画像の投稿がBluesky公式クライアントでは余白が表示されてしまう問題](https://bsky.app/profile/nekono.dev/post/3mb62zbwp4224)への対処ができませんでした...
-  - 現在、公式クライアントでは従来の`com.atproto.repo.createRecord`ではなく`com.atproto.repo.applyWrites`というAPIを用いているようです。
-  - `app.bsky.embed.images#view`の`aspectRatio`が`createRecord`では付与されず、これが原因のようでした。
-    - `typo`していた様子です。[tomo-x](https://bsky.app/profile/tomo-x.win)さんありがとう！こいつは直しておきました。多分動くかな、動いたらいいな。
-```
-"embed": {
-    "$type": "app.bsky.embed.images#view",
-    "images": [
-        {
-            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:quimkpbfh6mdasxs426v6ogy/bafkreib6rcvuywlkzemoq7d73evwfx32dd3rerwyzmdozxpibzz74xt3em@jpeg",
-            "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:quimkpbfh6mdasxs426v6ogy/bafkreib6rcvuywlkzemoq7d73evwfx32dd3rerwyzmdozxpibzz74xt3em@jpeg",
-            "alt": "",
-            "aspectRatio": {
-                "height": 1137,
-                "width": 2000
-            }
-        }
-    ]
-},
-```
-- 上記への対応として、`com.atproto.repo.createRecord`に`aspectRatio`を付与しましたが、解消できませんでした。
-  - Skyshareは現在BlueskyAPIへの追従が非常に困難な状態になっており、フロントエンドについても抜本的改修が必要だと考えています。
+- [横長画像の投稿がBluesky公式クライアントでは余白が表示されてしまう問題](https://bsky.app/profile/nekono.dev/post/3mb62zbwp4224)に対処しました。
+  - `app.bsky.embed.images`の`aspectRatio`が`typo`していた様子です。[tomo-x](https://bsky.app/profile/tomo-x.win)さんありがとう！こいつは直しておきました。
+- Skyshareは現在コードの視認性が悪くなっており、今回開発したバックエンドだけでなく、フロントエンド(ならびに、そもそものシステム)についても抜本的改修が必要だと考えています。
 
 ## 1.5.6
 
