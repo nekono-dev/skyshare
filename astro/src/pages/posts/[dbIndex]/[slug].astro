@@ -1,0 +1,78 @@
+---
+export const prerender = false
+import Pagelayout from "@/layouts/Postlayout.astro"
+import getPage from "@/lib/pagedbAPI/getPage"
+import { servicename } from "@/env/vars"
+import { baseurl } from "@/env/envs"
+
+const { dbIndex, slug } = Astro.params
+if (typeof slug === "undefined" 
+    || typeof dbIndex === "undefined" 
+    || !Number.isInteger(Number(dbIndex))) {
+    return new Response(null, {
+        status: 503,
+        statusText: "Server Error",
+    })
+}
+const pageId = `${dbIndex}/${slug}`
+const [_, rkey] = slug.split("@")
+const getPageResult = await getPage({ pageId: pageId })
+if ("error" in getPageResult) {
+    return new Response(null, {
+        status: 404,
+        statusText: "Not found",
+    })
+}
+const author = getPageResult.handle as string
+console.log(`author: ${author}, rkey: ${rkey} pageId: ${pageId}`)
+
+const title = `${author} Post - ${servicename}`
+const imgs = getPageResult.imgs
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+import Loadingcircle from "@/components/loadingcircle.astro"
+---
+
+<Pagelayout
+    cardPath={getPageResult.ogp}
+    pageTitle={title}
+    robots={robots}
+    hideLoader={true}
+>
+    <div class="items-center text-center">
+        <h3>
+            <a href={new URL(`${author}`, "https://bsky.app/profile/")}>
+                @{author}
+            </a>さんのポスト from
+            <a
+                href={new URL(
+                    `${author}/post/${rkey}`,
+                    "https://bsky.app/profile/",
+                )}
+            >
+                here
+            </a>
+        </h3>
+        {
+            imgs.map(value => {
+                return (
+                    <img
+                        src={value.thumb}
+                        alt={value.alt}
+                        class="mx-auto mb-2"
+                    />
+                )
+            })
+        }
+    </div>
+    <div class="m-auto w-fit my-4 items-center text-center">
+        <div id="pload">
+            <Loadingcircle size="l" />
+        </div>
+        <space id="page" pageid={pageId}></space>
+    </div>
+    <div slot="outofcontainer" class="text-center my-2">
+        <a href={baseurl} class="text-center p-2 rounded-lg bg-white opacity-80"
+            >トップへ戻る</a
+        >
+    </div>
+</Pagelayout>

@@ -12,8 +12,9 @@ if (typeof slug === "undefined") {
         statusText: "Server Error",
     })
 }
+const pageId = `legacy/${slug}`
 const [author, _, rkey] = slug.split(/(_|@)/)
-const getPageResult = await getPage({ id: slug })
+const getPageResult = await getPage({ pageId: pageId })
 
 if ("error" in getPageResult) {
     return new Response(null, {
@@ -63,7 +64,7 @@ import Loadingcircle from "@/components/loadingcircle.astro"
         <div id="pload">
             <Loadingcircle size="l" />
         </div>
-        <space id="page" pageid={slug}></space>
+        <space id="page" pageid={pageId}></space>
     </div>
     <div slot="outofcontainer" class="text-center my-2">
         <a href={baseurl} class="text-center p-2 rounded-lg bg-white opacity-80"

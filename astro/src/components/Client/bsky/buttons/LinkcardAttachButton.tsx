@@ -15,13 +15,11 @@ const handleGetOGP = async ({
     postText,
     setProcessing,
     setMsgInfo,
-    siteurl,
     setMediaData,
 }: {
     postText: string
     setProcessing: Dispatch<SetStateAction<boolean>>
     setMsgInfo: Dispatch<SetStateAction<msgInfo>>
-    siteurl: string
     setMediaData: Dispatch<SetStateAction<MediaData>>
 }) => {
     const linkUrl = getLinkFromPostText({ postText })
@@ -34,22 +32,15 @@ const handleGetOGP = async ({
     try {
         let blob: Blob | undefined = undefined
         const ogpMeta = await getOgpMeta({
-            siteurl,
             externalUrl: linkUrl,
             languageCode: "ja",
         })
-        if (ogpMeta.type === "error") {
-            const e: Error = new Error(ogpMeta.message)
-            e.name = ogpMeta.error
-            throw e
-        }
         // titleが存在しない場合は、暫定的にTitleをURLにする
         if (ogpMeta.title === "") {
             ogpMeta.title = linkUrl
         }
         if (ogpMeta.image !== "") {
             blob = await getOgpBlob({
-                siteurl,
                 externalUrl: ogpMeta.image,
                 languageCode: "ja",
             })
@@ -105,14 +96,12 @@ export const Component = ({
     isProcessing,
     setProcessing,
     setMsgInfo,
-    siteurl,
 }: {
     postText: string
     setMediaData: Dispatch<SetStateAction<MediaData>>
     isProcessing: boolean
     setProcessing: Dispatch<SetStateAction<boolean>>
     setMsgInfo: Dispatch<SetStateAction<msgInfo>>
-    siteurl: string
 }) => {
     const linkMaxLength = 50
     const [linkUrl, setLinkUrl] = useState<string | null>(null)
@@ -127,7 +116,6 @@ export const Component = ({
                     postText,
                     setProcessing,
                     setMsgInfo,
-                    siteurl,
                     setMediaData,
                 })
             }

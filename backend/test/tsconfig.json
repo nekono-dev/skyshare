@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "baseUrl": "../",
+        "paths": {
+            "@test/*": ["test/*"],
+            "@/*": ["src/*"]
+        }
+    },
+    "target": "es2022",
+    "module": "es2022",
+    "include": ["./**/*.ts"],
+    "exclude": []
+}

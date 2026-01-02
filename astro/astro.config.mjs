@@ -18,6 +18,5 @@ export default defineConfig({
     tailwind(),
     partytown()
   ],
-  output: "hybrid",
   adapter: cloudflare(),
 });

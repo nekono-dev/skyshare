@@ -1,10 +1,11 @@
 import { readAnnounceClosed, setAnnounceClosed } from "@/utils/useLocalStorage"
 import { useState } from "react"
 import { button_base } from "./tailwindVariants"
-import { skythrowurl } from "@/env/envs"
+import Marquee from "react-fast-marquee";
+import { changeurl } from "@/env/envs";
 
 export const Component = () => {
-    const refreshDate = new Date("2024-05-14").getTime()
+    const refreshDate = new Date("2026-01-02").getTime()
     const [closed, setClosed] = useState(
         readAnnounceClosed(refreshDate).getTime() > refreshDate,
     )
@@ -28,10 +29,9 @@ export const Component = () => {
                             ].join(" ")}
                         >
                             <div className="flex-1">
-                                お知らせ:{" "}
-                                <a href={skythrowurl}>
-                                    Bluesky投稿専用クライアント「SkyThrow」の紹介
-                                </a>
+                                <Marquee delay={3}>
+                                <span className="bg-white rounded-lg py-0.5 px-2 mr-2">お知らせ</span>
+                                2026年もよろしくおねがいします。v1.6.0アップデートしました。詳しくは<a href={changeurl}>CHANGELOG</a>でﾖﾛ。blueskyにいっぱい人が来て嬉しくてつい...</Marquee>
                             </div>
                             <button
                                 className={button_base({

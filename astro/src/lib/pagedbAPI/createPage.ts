@@ -1,10 +1,11 @@
 import { z } from "zod"
-import etype from "./models/error.json"
+import etype from "./models/error"
 
-const endpoint_url = import.meta.env.PUBLIC_CREATEPAGES_ENDPOINT as string
+const endpoint_url = import.meta.env.PUBLIC_BACKEND_ENDPOINT as string
 
 const ZodPageCreationOutput = z.object({
     uri: z.string(),
+    dbIndex: z.number(),
 })
 export type pageCreationOutput = z.infer<typeof ZodPageCreationOutput>
 
@@ -21,8 +22,8 @@ export const api = async ({
 }: {
     uri: string
     accessJwt: string
-}): Promise<pageCreationOutput | typeof etype> => {
-    return fetch(endpoint_url, {
+}): Promise<pageCreationOutput | etype> => {
+    return fetch(endpoint_url + "/page", {
         method: "POST",
         headers: {
             "Content-Type": "application/json",

@@ -14,9 +14,9 @@ const Component = ({
     const [label, setLabel] = useState<string>("")
     const swichLabel = () => {
         switch (mode) {
-            case "bsky":
-                setLabel("OGPページ一覧")
-                break
+            // case "bsky":
+            //     setLabel("OGPページ一覧")
+            //     break
             case "pagedb":
                 setLabel("投稿画面へ戻る")
                 break
@@ -27,9 +27,9 @@ const Component = ({
     }
     const handleClick = () => {
         switch (mode) {
-            case "bsky":
-                setMode("pagedb")
-                break
+            // case "bsky":
+            //     setMode("pagedb")
+            //     break
             case "pagedb":
                 setMode("bsky")
                 break

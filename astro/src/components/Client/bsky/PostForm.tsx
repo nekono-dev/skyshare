@@ -23,6 +23,7 @@ import AddImageButton from "./buttons/AddImageButton"
 import MediaPreview from "./MediaPreview"
 import DraftSaveButton from "./buttons/DraftSaveButton"
 import DraftDialog from "./unique/DraftDialog"
+import AnnounceLabel from "@/components/Client/common/AnnounceLabel"
 
 // atproto
 import { label } from "@/utils/atproto_api/labels"
@@ -89,8 +90,6 @@ const Component = ({
     setMediaData: Dispatch<SetStateAction<MediaData>>
     setPopupPreviewOptions: Dispatch<SetStateAction<popupPreviewOptions>>
 }) => {
-    // 配置されたページのURL
-    const siteurl = location.origin
     // Post内容を格納する変数とディスパッチャー
     const [postText, setPostText] = useState<string>(initialPostText)
     // Postの実行状態を管理する変数とディスパッチャー
@@ -131,7 +130,6 @@ const Component = ({
                 postText,
                 setProcessing,
                 setMsgInfo,
-                siteurl,
                 setMediaData,
             })
         }
@@ -188,6 +186,7 @@ const Component = ({
 
     return (
         <Tweetbox>
+            <AnnounceLabel />
             <div className="flex">
                 <button
                     onClick={handlerCancel}
@@ -247,7 +246,6 @@ const Component = ({
                 />
             </TextInputBox>
             <LinkcardAttachButton
-                siteurl={siteurl}
                 postText={postText}
                 setMediaData={setMediaData}
                 isProcessing={isProcessing}
