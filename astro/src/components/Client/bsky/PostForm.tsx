@@ -23,6 +23,7 @@ import AddImageButton from "./buttons/AddImageButton"
 import MediaPreview from "./MediaPreview"
 import DraftSaveButton from "./buttons/DraftSaveButton"
 import DraftDialog from "./unique/DraftDialog"
+import AnnounceLabel from "@/components/Client/common/AnnounceLabel"
 
 // atproto
 import { label } from "@/utils/atproto_api/labels"
@@ -185,6 +186,7 @@ const Component = ({
 
     return (
         <Tweetbox>
+            <AnnounceLabel />
             <div className="flex">
                 <button
                     onClick={handlerCancel}

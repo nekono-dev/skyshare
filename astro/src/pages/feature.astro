@@ -38,10 +38,7 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
                 OGPカードおよび画像が設定されたWebページを生成します。
             </div>
             <div>
-                <a href={example_url}>
-                    例としてはこのようなページが生成されます。
-                </a>
-                ツイートしようとすると、以下のような画像(1200x630px)がツイートに添付されます。
+                以下のような画像(1200x630px)をBlueskyの投稿より生成し、リンクカードを付与したWebページを生成します。
             </div><div>
                 初回のみ読み込み時間はありますが、ツイート前・後問わず必ず挿入されます。
             </div>
@@ -63,11 +60,6 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
             </div>
             <img class="w-4 inline-block" src={link_img.src} />
 
-            <a
-                target="_blank"
-                href={`https://twitter.com/intent/tweet?text=投稿リンクのサンプルです。${example_url.toString()}`}
-                >投稿リンクの例（投稿用の本文付きで𝕏が開きます）</a
-            >
         </div>
     </div>
 
@@ -87,11 +79,8 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
         <h2>ソースコードについて</h2>
         <div>
             <div>
-                Blueskyを操作するAPIであるAT
-                Protocolは開発段階であるため前例が少なく、
-                まだまだハードルが高い内容となっています。
-                開発者がもっと低い敷居で参加できたらという想いから、
-                当サイトはOSSの体をとっています。
+                ATProtoの発表からかなり立ちましたが、いまだ開発途上だと考えています。
+                当サイトは技術習得やプログラミング学習の思いを胸に、OSSの体をとっています。
             </div>
             <div>
                 <a href={githuburl}
@@ -101,7 +90,7 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
             </div>
 
             <div>
-                ATProtocolの習熟や、その他サービスの開発に役立てていただければ幸いです。
+                ATProtoの習熟やサービスの開発に役立てていただければ幸いです。
             </div>
         </div>
     </div>
