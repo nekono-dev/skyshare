@@ -113,7 +113,7 @@ const Component = ({ portalonly = false }: { portalonly?: boolean }) => {
                     ReactDOM.createPortal(
                         <>
                             <PageControllerForm
-                                id={pageElem.getAttribute("pageid")!}
+                                pageId={pageElem.getAttribute("pageid")!}
                                 session={session}
                                 setMsgInfo={setMsgInfo}
                             />

@@ -76,6 +76,22 @@ export const Component = ({
     /** Apple製品利用者の可能性がある場合True */
     const isAssumedAsAppleProdUser = userAgent.includes("mac os x")
 
+    // 画像の幅・高さを取得するユーティリティ
+    const getImageSize = (blob: Blob): Promise<{ width: number; height: number }> =>
+        new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(blob)
+            const img = new Image()
+            img.onload = () => {
+                resolve({ width: img.naturalWidth, height: img.naturalHeight })
+                URL.revokeObjectURL(url)
+            }
+            img.onerror = (e) => {
+                URL.revokeObjectURL(url)
+                reject(e)
+            }
+            img.src = url
+        })
+
     const handlePost = async () => {
         const isValidPost = (): boolean => {
             let result: boolean = postText.length >= 1
@@ -272,6 +288,17 @@ export const Component = ({
                 ).then(values => {
                     return values
                 })
+
+                // 元の Blob から画像サイズを取得しておく
+                const imageSizeTasks = mediaData.images.map((v) =>
+                    typeof v.blob !== "undefined" && v.blob !== null
+                        ? getImageSize(v.blob)
+                        : Promise.resolve(undefined),
+                )
+                const imageSizes: Array<{ width: number; height: number } | undefined> = await Promise.all(
+                    imageSizeTasks,
+                )
+
                 const uploadBlobTasks: Array<Promise<uploadBlobResult>> = []
                 resultCompress.forEach(value => {
                     uploadBlobTasks.push(
@@ -311,6 +338,12 @@ export const Component = ({
                                         return {
                                             image: value.blob,
                                             alt: mediaData.images[index].alt,
+                                            aspectRaito: imageSizes[index]
+                                                ? {
+                                                      width: imageSizes[index]!.width,
+                                                      height: imageSizes[index]!.height,
+                                                  }
+                                                : undefined,
                                         }
                                     },
                                 ),
@@ -386,27 +419,22 @@ export const Component = ({
                     msg: "生成したOGPの取得中...",
                     isError: false,
                 })
-                const [id, rkey] = createPageResult.uri.split("/")
-                const ogpUrl = new URL(`${pagesPrefix}/${id}@${rkey}/`, siteurl)
+                const [id, rkey] = createPageResult.uri.split(/[@/]/)
+                const dbIndex = createPageResult.dbIndex.toString()
+                const ogpUrl = new URL(`${pagesPrefix}/${dbIndex}/${id}@${rkey}/`, siteurl)
                 // 本文に生成URLを付与
                 callbackPostOptions.externalPostText += `${
                     postText !== "" ? "\n" : ""
                 }${ogpUrl.toString()}`
                 // 生成URLからogpを取得
                 const getOgpMetaResult = await getOgpMeta({
-                    siteurl,
                     externalUrl: ogpUrl.toString(),
                     languageCode: language,
                 })
-                if (getOgpMetaResult.type === "error") {
-                    const e: Error = new Error(getOgpMetaResult.message)
-                    e.name = getOgpMetaResult.error
-                    throw e
-                }
+
                 callbackPostOptions.previewTitle = getOgpMetaResult.title
                 if (getOgpMetaResult.image !== "") {
                     callbackPostOptions.previewData = await getOgpBlob({
-                        siteurl,
                         externalUrl: getOgpMetaResult.image,
                         languageCode: language,
                     })

@@ -6,11 +6,11 @@ import PageDeleteButton from "./PageDeleteButton"
 import ProcButton from "../common/ProcButton"
 
 const Component = ({
-    id,
+    pageId,
     session,
     setMsgInfo,
 }: {
-    id: string
+    pageId: string
     session: Session_info
     setMsgInfo: Dispatch<SetStateAction<msgInfo>>
 }) => {
@@ -22,7 +22,7 @@ const Component = ({
             {session.accessJwt !== "" ? (
                 <>
                     <PageDeleteButton
-                        id={id}
+                        pageId={pageId}
                         session={session}
                         setMsgInfo={setMsgInfo}
                     />

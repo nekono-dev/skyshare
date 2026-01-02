@@ -1,5 +1,43 @@
 # Skyshare 更新履歴
 
+## 1.6.0
+
+### Minor Changes
+
+- バックエンドの仕組みを抜本的に改修しました。
+  - FaaSを一本化しました。Cloudflare Workerの実行内容もFirebase Functionsに統合しました。
+  - APIをOpenAPIHonoを用いてリファクタしました。超見やすいです。
+  - Upstash Redis Clientを一般的なRedisクライアント（`redis/ioredis`）に置き換えました。
+  - Firebase Storageを一般的なオブジェクトストレージクライアント（`aws-sdk/client-s3`）に置き換えました。
+  - ローカルでの実行手順を強化しました。
+  - 追従してフロントエンドの一部を修正しました。
+- オブジェクトストレージをGoogleCloudStorageからCloudflareR2に置き換えました。また、データベースを複数利用可能にしました。
+  - サービス課金額が大きく減少するであろうことを見込んでOGPの有効期限を90 → 365日に延長することにしました。やったね。
+  - ただし、容量の肥大化状況によっては1ユーザの投稿リミットを設ける等の対応は検討しています。一日一人100件超えとかしなければ大丈夫だとおもいます。
+- バックエンドの改修に紐づき、一部の機能をオミットしました。
+  - 生成したOGPページ一覧の表示機能を削除しました。データベースにRedisを用いており、`scan`コマンドはデータベース上のデータ量に比例してリクエスト回数が増加し、課金額が上がるためです。
+- <a href="https://bsky.app/profile/nekono.dev/post/3mb62zbwp4224">横長画像の投稿がBluesky公式クライアントでは余白が表示されてしまう問題</a>への対処ができませんでした...
+  - 現在、公式クライアントでは従来の`com.atproto.repo.createRecord`ではなく`com.atproto.repo.applyWrites`というAPIを用いているようです。
+  - `app.bsky.embed.images#view`の`aspectRatio`が`createRecord`では付与されず、これが原因のようでした。
+```
+"embed": {
+    "$type": "app.bsky.embed.images#view",
+    "images": [
+        {
+            "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:quimkpbfh6mdasxs426v6ogy/bafkreib6rcvuywlkzemoq7d73evwfx32dd3rerwyzmdozxpibzz74xt3em@jpeg",
+            "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:quimkpbfh6mdasxs426v6ogy/bafkreib6rcvuywlkzemoq7d73evwfx32dd3rerwyzmdozxpibzz74xt3em@jpeg",
+            "alt": "",
+            "aspectRatio": {
+                "height": 1137,
+                "width": 2000
+            }
+        }
+    ]
+},
+```
+- 上記への対応として、`com.atproto.repo.createRecord`に`aspectRatio`を付与しましたが、解消できませんでした。
+  - Skyshareは現在BlueskyAPIへの追従が非常に困難な状態になっており、フロントエンドについても抜本的改修が必要だと考えています。
+
 ## 1.5.6
 
 ### Patch Changes
@@ -8,6 +46,7 @@
   - skyshare.uk は skyshare.nekono.dev にURLが順次変更になります。
     - ukドメインの値段が150円ほど上がったので...
   - Skythrowの画像がリンク切れになってしまっていたので修正しました。大変失礼いたしました。
+  - ユーザ名変更の影響でgithubレポジトリのリンクが切れていたため修正しました。
 
 ## 1.5.5
 
@@ -297,23 +336,23 @@
 - 今回のアップデートにて、投稿フォームのプレビュー画面にOGP画像を表示させるため、データの扱いを大幅に改修しました。これまで`Array<Files>: imageFiles`と定義していた変数は`MediaData`としてより広い役割を持つようになりました。`MediaData`型は`LinkCard`と`Images`、メディアが存在しない場合の`null`のユニオン型で、以下のように定義されています。
 
 ```ts
-export type MediaData = LinkCard | Images | null;
+export type MediaData = LinkCard | Images | null
 type LinkCard = {
-  type: "external";
+  type: "external"
   images: Array<{
-    blob: Blob | null;
-  }>;
+    blob: Blob | null
+  }>
   meta: ogpMetaData & {
-    url: string;
-  };
-};
+    url: string
+  }
+}
 type Images = {
-  type: "images";
+  type: "images"
   images: Array<{
-    alt: string;
-    blob: Blob;
-  }>;
-};
+    alt: string
+    blob: Blob
+  }>
+}
 ```
 
 - これまで`Array<File>`型で定義していた変数は`Images.images.blob`に、`Blob`型として配置されています。これはプレビューの作成や実際の`createRecord`の際に`File`型である必要がないためです。

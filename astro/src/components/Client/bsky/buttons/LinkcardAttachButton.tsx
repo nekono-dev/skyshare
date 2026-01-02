@@ -34,22 +34,15 @@ const handleGetOGP = async ({
     try {
         let blob: Blob | undefined = undefined
         const ogpMeta = await getOgpMeta({
-            siteurl,
             externalUrl: linkUrl,
             languageCode: "ja",
         })
-        if (ogpMeta.type === "error") {
-            const e: Error = new Error(ogpMeta.message)
-            e.name = ogpMeta.error
-            throw e
-        }
         // titleが存在しない場合は、暫定的にTitleをURLにする
         if (ogpMeta.title === "") {
             ogpMeta.title = linkUrl
         }
         if (ogpMeta.image !== "") {
             blob = await getOgpBlob({
-                siteurl,
                 externalUrl: ogpMeta.image,
                 languageCode: "ja",
             })

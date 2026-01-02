@@ -1,4 +1,4 @@
-export const domain = /skyshare\.uk$/
+export const domain = /skyshare\.nekono\.dev$/
 export type envName = "dev" | "prod"
 export const envParam = {
     dev: "ogp",

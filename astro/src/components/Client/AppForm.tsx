@@ -3,13 +3,12 @@ import { type Session_info } from "./common/contexts"
 import { type msgInfo, type modes } from "./common/types"
 import LoginForm from "./bsky/LoginForm"
 import PostForm from "./bsky/PostForm"
-import PageViewForm from "./pagedb/PageViewForm"
+// import PageViewForm from "./pagedb/PageViewForm"
 import ModeSelectButton from "./common/ModeSelectButton"
 import LogoutButton from "./bsky/buttons/LogoutButton"
 import PopupPreviewForm from "./intents/PopupPreviewForm"
 import { MediaData } from "./common/types"
 import { popupPreviewOptions } from "./intents/types"
-import AnnouceLabel from "./common/AnnounceLabel"
 
 const Component = ({
     session,
@@ -40,8 +39,8 @@ const Component = ({
                         setPopupPreviewOptions={setPopupPreviewOptions}
                     />
                 )
-            case "pagedb":
-                return <PageViewForm setMsgInfo={setMsgInfo} />
+            // case "pagedb":
+            //     return <PageViewForm setMsgInfo={setMsgInfo} />
             case "xcom":
                 return (
                     <PopupPreviewForm
@@ -61,11 +60,13 @@ const Component = ({
                     <div
                         className={["flex", "justify-center", "my-1"].join(" ")}
                     >
-                        <ModeSelectButton
-                            mode={mode}
-                            setMode={setMode}
-                            isProcessing={isProcessing}
-                        />
+                        {mode !== "bsky" && (
+                            <ModeSelectButton
+                                mode={mode}
+                                setMode={setMode}
+                                isProcessing={isProcessing}
+                            />
+                        )}
                         <LogoutButton
                             setMsgInfo={setMsgInfo}
                             reload={false}
