@@ -15,13 +15,11 @@ const handleGetOGP = async ({
     postText,
     setProcessing,
     setMsgInfo,
-    siteurl,
     setMediaData,
 }: {
     postText: string
     setProcessing: Dispatch<SetStateAction<boolean>>
     setMsgInfo: Dispatch<SetStateAction<msgInfo>>
-    siteurl: string
     setMediaData: Dispatch<SetStateAction<MediaData>>
 }) => {
     const linkUrl = getLinkFromPostText({ postText })
@@ -98,14 +96,12 @@ export const Component = ({
     isProcessing,
     setProcessing,
     setMsgInfo,
-    siteurl,
 }: {
     postText: string
     setMediaData: Dispatch<SetStateAction<MediaData>>
     isProcessing: boolean
     setProcessing: Dispatch<SetStateAction<boolean>>
     setMsgInfo: Dispatch<SetStateAction<msgInfo>>
-    siteurl: string
 }) => {
     const linkMaxLength = 50
     const [linkUrl, setLinkUrl] = useState<string | null>(null)
@@ -120,7 +116,6 @@ export const Component = ({
                     postText,
                     setProcessing,
                     setMsgInfo,
-                    siteurl,
                     setMediaData,
                 })
             }

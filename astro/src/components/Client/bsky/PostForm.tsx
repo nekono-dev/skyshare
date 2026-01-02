@@ -89,8 +89,6 @@ const Component = ({
     setMediaData: Dispatch<SetStateAction<MediaData>>
     setPopupPreviewOptions: Dispatch<SetStateAction<popupPreviewOptions>>
 }) => {
-    // 配置されたページのURL
-    const siteurl = location.origin
     // Post内容を格納する変数とディスパッチャー
     const [postText, setPostText] = useState<string>(initialPostText)
     // Postの実行状態を管理する変数とディスパッチャー
@@ -131,7 +129,6 @@ const Component = ({
                 postText,
                 setProcessing,
                 setMsgInfo,
-                siteurl,
                 setMediaData,
             })
         }
@@ -247,7 +244,6 @@ const Component = ({
                 />
             </TextInputBox>
             <LinkcardAttachButton
-                siteurl={siteurl}
                 postText={postText}
                 setMediaData={setMediaData}
                 isProcessing={isProcessing}
