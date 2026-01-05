@@ -8,7 +8,7 @@
         "serve:firebase": "npm run build && npm run run:firebase",
         "serve:dev": "npm run build && dotenv -e .env.dev -- node dist/index.js",
         "test:dev": "dotenv -e .env.test.dev -e .env.dev -- vitest run",
-        "test:firebase": "dotenv -e .env.test.firebase -e .env.firebase -- vitest run",
+        "test:firebase": "dotenv -e .env.test -e .env -- vitest run",
         "deploy:firebase": "firebase deploy --only functions"
     },
     "engines": {

@@ -78,12 +78,6 @@ describe('Legacy DB Operation test', async () => {
     await redisClient.addPage(`${handle}@${postIdHash}`, regacyData);
 
     describe('API test', async () => {
-        const deleteOgpRequest = {
-            pageId: `${dbIndex}/${handle}@${postIdHash}`,
-            accessJwt: accessJwt,
-            did: did,
-        };
-
         it('🟢[Positive] GET ogp resource', async () => {
             const url =
                 endpoint +
@@ -102,10 +96,17 @@ describe('Legacy DB Operation test', async () => {
                     `${legacyStorageViewurl}/${postOgpUrl}`
                 ).toString(),
                 imgs: postImages,
+                handle: handle,
             });
         });
         it('🟢[Positive] DELETE page resource', async () => {
-            const response = await fetch(endpoint + '/api/v1/ogp', {
+            const deleteOgpRequest = {
+                pageId: `${dbIndex}/${handle}@${postIdHash}`,
+                accessJwt: accessJwt,
+                did: did,
+            };
+            
+            const response = await fetch(endpoint + '/api/v1/page', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

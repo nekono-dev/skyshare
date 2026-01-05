@@ -1,5 +1,13 @@
 # Skyshare 更新履歴
 
+## 1.6.1
+
+### Patch Changes
+
+- PageDB（OGP管理しているRedis）の増設を行いました。
+  - 増設操作の設定を柔軟に対応できるように改修を実施しました。詳しくはGitリポジトリ`backend/README.md`における`データ配分ルールの設定`を参照してください。
+  - typoを修正しました。
+  
 ## 1.6.0
 
 ### Minor Changes

@@ -21,7 +21,7 @@ const isRequestURLInvalid = ({ url }: { url: string }): boolean => {
               loopback_validation.test(decodedUrl) ||
               ipv4_validation.test(decodedUrl) ||
               ipv6_validation.test(decodedUrl)
-            : false;
+            : protocol_validation.test(decodedUrl);
 
     return isInvalidUrl;
 };

@@ -18,6 +18,11 @@ describe('OGP Generation test', async () => {
     logger.info(`Launch Env: ${launchEnv}`);
 
     const agent = new AtpAgent({ service: atpService });
+
+    const handle = 'nekono-dev.bsky.social';
+    const postId =
+        'at://did:plc:quimkpbfh6mdasxs426v6ogy/app.bsky.feed.post/3mbd4tgm7qx24';
+
     const accessJwt = await agent
         .login({
             identifier: process.env.AT_SERVICE_ID!,
@@ -25,8 +30,6 @@ describe('OGP Generation test', async () => {
         })
         .then((loginResult) => loginResult.data.accessJwt);
 
-    const postId =
-        'at://did:plc:quimkpbfh6mdasxs426v6ogy/app.bsky.feed.post/3mbd4tgm7qx24';
     const postImages = await getThreadPost(agent, postId).then((post) => {
         return extractImagesFromPost(post).map((img) => {
             return {
@@ -41,27 +44,29 @@ describe('OGP Generation test', async () => {
     const postOgpRequest = {
         accessJwt: accessJwt,
         uri: postId,
-        handle: 'nekono-dev.bsky.social',
+        handle: handle,
     };
 
-    let dbIndex = 0; // postOgpResult
-
     describe('Function test', async () => {
+        let dbIndex = 0; // postOgpResult
+
         it('🟢[Positive] exec postOgp', async () => {
             const res = await postOgp(postOgpRequest);
             // dbIndex値はランダムに選出されるため、テストでは考慮しない
             if (res.success) {
                 dbIndex = res.data.dbIndex;
+                logger.debug(`postOgp selected dbIndex: ${dbIndex}`);
             }
             expect(res).toEqual({
                 success: true,
                 data: {
-                    uri: `${postIdDid}/${postIdHash}.jpg`,
+                    uri: `${postIdDid}@${postIdHash}`,
                     dbIndex: dbIndex,
                 },
             });
         });
         it('🟢[Positive] exec getPage', async () => {
+            logger.debug(`getPage using dbIndex: ${dbIndex}`);
             const res = await getPage({
                 dbKey: `${postIdDid}@${postIdHash}`,
                 dbIndex: dbIndex.toString(),
@@ -69,6 +74,7 @@ describe('OGP Generation test', async () => {
             expect(res).toEqual({
                 success: true,
                 data: {
+                    handle: 'nekono-dev.bsky.social',
                     ogp: new URL(
                         `${storageViewUrl}/${postIdDid}/${postIdHash}.jpg`
                     ).toString(),
@@ -77,22 +83,32 @@ describe('OGP Generation test', async () => {
             });
         });
 
-        const deleteOgpRequest = {
-            pageId: `${dbIndex}/${postIdDid}@${postIdHash}`,
-            accessJwt: accessJwt,
-        };
-
         it('🔴[Negative] exec deleteOgp wrong did', async () => {
-            const res = await deleteOgp({
+            const wrongDeleteOgpRequest = {
                 pageId: `${dbIndex}/did:plc:wrongdidvalue@${postIdHash}`,
                 accessJwt: accessJwt,
-            });
+            };
+            logger.debug(
+                `deleteOgp using wrongDeleteOgpRequest: ${JSON.stringify(
+                    wrongDeleteOgpRequest
+                )}`
+            );
+            const res = await deleteOgp(wrongDeleteOgpRequest);
             expect(res).toEqual({
                 success: false,
                 error: 'BadRequest',
             });
         });
         it('🟢[Positive] exec deleteOgp', async () => {
+            const deleteOgpRequest = {
+                pageId: `${dbIndex}/${postIdDid}@${postIdHash}`,
+                accessJwt: accessJwt,
+            };
+            logger.debug(
+                `deleteOgp using deleteOgpRequest: ${JSON.stringify(
+                    deleteOgpRequest
+                )}`
+            );
             const res = await deleteOgp(deleteOgpRequest);
             expect(res).toEqual({
                 success: true,
@@ -100,9 +116,12 @@ describe('OGP Generation test', async () => {
             });
         });
     });
+
     describe('API test', async () => {
+        let dbIndex = 0; // postOgpResult
+
         it('🟢[Positive] POST ogp resource', async () => {
-            const response = await fetch(endpoint + '/api/v1/ogp', {
+            const response = await fetch(endpoint + '/api/v1/page', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -112,18 +131,13 @@ describe('OGP Generation test', async () => {
             const body = await response.json();
             // update dbIndex and pageId for next test
             dbIndex = body.dbIndex;
-            expect(body.uri).toEqual(`${postIdDid}/${postIdHash}.jpg`);
+            expect(body.uri).toEqual(`${postIdDid}@${postIdHash}`);
         });
-
-        const deleteOgpRequest = {
-            pageId: `${dbIndex}/${postIdDid}@${postIdHash}`,
-            accessJwt: accessJwt,
-        };
 
         it('🟢[Positive] GET ogp resource', async () => {
             const url =
                 endpoint +
-                `/api/v1/page/${dbIndex.toString()}/${encodeURIComponent(
+                `/api/v1/page/${dbIndex}/${encodeURIComponent(
                     postIdDid + '@' + postIdHash
                 )}`;
             logger.debug(`GET ogp resource with params: ${url}`);
@@ -138,11 +152,16 @@ describe('OGP Generation test', async () => {
                 ogp: new URL(
                     `${storageViewUrl}/${postIdDid}/${postIdHash}.jpg`
                 ).toString(),
+                handle: handle,
                 imgs: postImages,
             });
         });
         it('🟢[Positive] DELETE page resource', async () => {
-            const response = await fetch(endpoint + '/api/v1/ogp', {
+            const deleteOgpRequest = {
+                pageId: `${dbIndex}/${postIdDid}@${postIdHash}`,
+                accessJwt: accessJwt,
+            };
+            const response = await fetch(endpoint + '/api/v1/page', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

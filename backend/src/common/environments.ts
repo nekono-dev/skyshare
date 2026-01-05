@@ -1,4 +1,9 @@
 import dotenv from 'dotenv';
+import { z } from 'zod';
+import {
+    type DbEndpointRule,
+    DbEndpointRuleSchema,
+} from './dbEndpoint.schema.js';
 if (process.env.LAUNCH_ENV === undefined) {
     dotenv.config();
 }
@@ -6,7 +11,14 @@ if (process.env.LAUNCH_ENV === undefined) {
 const launchEnv = process.env.LAUNCH_ENV;
 const atpService = process.env.ATP_SERVICE_URL || 'https://bsky.social';
 
-const dbEndpoints = [process.env.DB_ENDPOINT_0 || 'redis://localhost:6379'];
+const dbEndpoints: string[] = z
+    .array(z.string().min(1))
+    .min(1)
+    .parse(JSON.parse(process.env.DB_ENDPOINTS || '[]'));
+
+const dbEndpointRule: DbEndpointRule = DbEndpointRuleSchema.parse(
+    JSON.parse(process.env.DB_ENDPOINT_RULE || '{}')
+);
 
 const objStorageRegion = process.env.OBJ_STORAGE_REGION || 'minio';
 const objStorageBucket = process.env.OBJ_STORAGE_BUCKET || 'skyshare';
@@ -21,7 +33,7 @@ const objStorageViewURL = (
 
 const legacyDbEndpoint = process.env.LEGACY_DB_ENDPOINT;
 
-const serviceUrl = "https://skyshare.nekono.dev";
+const serviceUrl = 'https://skyshare.nekono.dev';
 
 export {
     launchEnv,
@@ -33,5 +45,6 @@ export {
     objStorageCredential,
     objStorageViewURL,
     legacyDbEndpoint,
-    serviceUrl
+    serviceUrl,
+    dbEndpointRule,
 };

@@ -19,6 +19,13 @@ Skyshare v1.5 以前は、複数のバックエンドが点在していること
 | Redis                  | [redis/ioredis](https://github.com/redis/ioredis)         | OGP データベースを管理 |
 | オブジェクトストレージ | [aws-sdk/client-s3](https://github.com/aws/aws-sdk-js-v3) | OGP 画像の保持         |
 
+## 用語
+
+| 名称   | 説明                  |
+| ------ | --------------------- |
+| PageDB | RedisDB のこと        |
+| legacy | v1.6 以前を示す識別子 |
+
 ## 環境変数ファイルの作成
 
 ローカルで起動する場合は`.env.dev`、firebase で実行する場合は`.env`が参照される。
@@ -27,12 +34,19 @@ Skyshare v1.5 以前は、複数のバックエンドが点在していること
 | 環境変数               | 内容                                                                                |
 | ---------------------- | ----------------------------------------------------------------------------------- |
 | LAUNCH_ENV             | `local` `firebase`に対応                                                            |
-| DB_ENDPOINT_0          | PageDB を管理する Redis の URL                                                      |
+| DB_ENDPOINTS           | PageDB を管理する Redis の URL を Array で記載する。                                |
+| DB_ENDPOINT_RULE       | PageDB の Redis における制御内容を記載。複雑なため後述                              |
 | OBJ_STORAGE_REGION     | OGP を管理するオブジェクトストレージのリージョン                                    |
 | OBJ_STORAGE_BUCKET     | OGP を管理するオブジェクトストレージのバケット名                                    |
 | OBJ_STORAGE_ENDPOINT   | OGP を管理するオブジェクトストレージの API エンドポイント                           |
 | OBJ_STORAGE_CREDENTIAL | オブジェクトストレージの認証情報 `<アクセスキー>:<アクセストークン>` として設定する |
 | OBJ_STORAGE_VIEW_URL   | オブジェクトストレージの公開 URL                                                    |
+
+DB_ENDPOINTS の設定例
+
+```json
+DB_ENDPOINTS=["redis://localhost:6379","redis://localhost:6479","redis://localhost:6579"]
+```
 
 ## データベースの設定方法
 
@@ -41,9 +55,11 @@ Skyshare v1.5 以前は、複数のバックエンドが点在していること
 Redis サーバを起動する。
 
 ```sh
-docker run --name redis -p 6379:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
-docker run --name redis-legacy -p 6479:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
-docker logs redis
+docker run --name redis-legacy -p 16379:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
+docker run --name redis-db1 -p 6379:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
+docker run --name redis-db2 -p 6479:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
+docker run --name redis-db3 -p 6579:6379 -d --rm -v /tmp/redis:/data redis:8.4.0
+docker logs redis-db1
 ```
 
 ```log
@@ -75,6 +91,57 @@ Redis データベースを作成し、`Endpoint: TCP`から `rediss://default:<
 ```bash
 DB_ENDPOINT_WITH_CREDENTIAL="rediss://default:<Credential>@XXXXXXX.upstash.io:<Port>"
 ```
+
+### データ配分ルールの設定
+
+複数のテータベースを設定する都合上、あとから DB を追加する等の操作によりページへのデータ登録を偏らせたいケースを考慮し、データ配分ルールが指定できる。
+
+設定ユースケースと例:
+
+-   ユースケース
+    -   2026/01/01 に、これまで index0 の DB 一本で運用してきたが、操作が増加したため DB を増設した。
+        -   index0 へのデータ挿入は追加 DB の使用状況を考慮し、3 ヶ月後まで一時停止する。
+        -   index1,index2 の DB を追加し、それぞれ 1:2 の割合でデータを挿入したい。
+        -   3 ヶ月後、データがある程度溜まってきたら、index0 を有効化し、データの追加割合を 1:1:1 にする。
+        -   index0 は 12 ヶ月後に無効化したい。
+-   上記ユースケースの設定例:
+
+```json
+balancing : [
+    {
+        index: 0,
+        weight: 1
+        registerBlock: {
+            dateBefore: "2026/04/01" // dateBefore以前データを追加しない
+            dateAfter: "2027/01/01" // dataAfter以降データを追加しない
+        }
+    },
+    {
+        index: 1,
+        // weight: 1 // weight: 1は省略可能
+    },
+    {
+        index: 2,
+        weight: 2
+        migration: {
+            dateAfter: "2026/04/01"
+            weight: 1 // dateBefore、またはdateAfter以降のweight設定
+        }
+    },
+]
+```
+
+| パラメータ名                           | 説明                                                                      | 型     |
+| -------------------------------------- | ------------------------------------------------------------------------- | ------ |
+| `balancing[].index`                    | PageDB のデータベース番号                                                 | Number |
+| `balancing[].weight`                   | 各 PageDB に新規レコードが登録される際の、対象 DB の登録割合              | Number |
+| `balancing[].registerBlock`            | PageDB にデータを登録しない条件を設定する                                 | Object |
+| `balancing[].registerBlock.dateBefore` | dateBefore 以前に対象の DB にデータを登録しない                           | Date   |
+| `balancing[].registerBlock.dateAfter`  | dateAfter 以降に対象の DB にデータを登録しない                            | Date   |
+| `balancing[].migration`                | PageDB のマイグレーション操作を目的とした、新規レコード登録割合の変更条件 | Number |
+| `balancing[].migration.dateBefore`     | dateBefore 以前の対象 DB のレコード登録割合                               | Date   |
+| `balancing[].migration.dateAfter`      | dateAfter 以前の対象 DB のレコード登録割合                                | Date   |
+| `balancing[].migration.weight`         | `balancing[].migration`で変更される weight の値                           | Number |
 
 ## ストレージの設定方法
 
@@ -208,7 +275,7 @@ npm run dev
 ### 環境変数ファイルの作成
 
 ローカルで起動する場合は`.env.dev`および`.env.test.dev`、firebase で実行する場合は`.env`および`.env.test`が参照される。
-各envファイルは`.env.test.template`および以下を参考に作成する
+各 env ファイルは`.env.test.template`および以下を参考に作成する
 
 | 環境変数                | 内容                                                          |
 | ----------------------- | ------------------------------------------------------------- |
