@@ -33,6 +33,16 @@ const route = createRoute({
                 },
             },
         },
+        400: {
+            description: 'Bad Request',
+            content: {
+                'application/json': {
+                    schema: ResponseErrorSchema.openapi({
+                        example: { error: 'Bad Request' },
+                    }),
+                },
+            },
+        },
         500: {
             description: 'Internal server error',
             content: {

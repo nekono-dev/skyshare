@@ -23,9 +23,9 @@ const getMeta = async (
             lang: parsedParam.lang,
             url: decodeURIComponent(parsedParam.url),
         };
-
+        logger.debug(`Fetching OGP Meta for URL: ${validateParam.url}`);
         if (isRequestURLInvalid({ url: validateParam.url })) {
-            logger.error('BadRequest: Invalid URL');
+            logger.debug(`Invalid URL detected: ${validateParam.url}`);
             return {
                 success: false,
                 error: 'BadRequest',
@@ -36,6 +36,7 @@ const getMeta = async (
         const decodeAsText = async (arrayBuffer: Blob, encoding: string) =>
             new TextDecoder(encoding).decode(await arrayBuffer.arrayBuffer());
 
+        logger.debug(`Fetching html from URL: ${validateParam.url}`);
         const htmlBlob: Blob = await fetch(validateParam.url, {
             method: 'GET',
             headers: {
@@ -44,21 +45,16 @@ const getMeta = async (
                 'Cache-Control': 'no-cache',
                 'User-Agent': userAgent,
             },
-        })
-            .then((res) => res.blob())
-            .catch((res: Error) => {
-                const e: Error = new Error(res.message);
-                e.name = res.name;
-                throw e;
-            });
+        }).then((res) => res.blob());
+        logger.debug('HTML fetched successfully');
 
         const encoding: string = await findEncoding(htmlBlob);
         const html: string = unescapeHtml(
             await decodeAsText(htmlBlob, encoding)
         );
-        const meta = extractHead({ html })
+        const meta = extractHead({ html });
         logger.debug(`Fetched OGP Meta: ${JSON.stringify(meta)}`);
-        
+
         return {
             success: true,
             data: meta,

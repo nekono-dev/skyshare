@@ -15,7 +15,7 @@ const getBlob = async (
         };
 
         if (isRequestURLInvalid({ url: validateParam.url })) {
-            logger.error('BadRequest: Invalid URL');
+            logger.debug('BadRequest: Invalid URL');
             return {
                 success: false,
                 error: 'BadRequest',

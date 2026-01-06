@@ -13,7 +13,6 @@ const apiRouter = new OpenAPIHono();
 apiRouter.route('/ogp', ogpRouter);
 apiRouter.route('/page', pageRouter);
 
-client.route('/api/v1', apiRouter);
 
 if (launchEnv === undefined) {
     logger.error('LAUNCH_ENV is not defined');
@@ -21,10 +20,12 @@ if (launchEnv === undefined) {
 }
 if (launchEnv === 'local') {
     logger.info('Starting server in local mode...');
+
+    client.route('/skyshare-v1/asia-northeast1/firebaseAPI/api/v1', apiRouter);
     serve(
         {
             fetch: client.fetch,
-            port: 3000,
+            port: 5001,
             hostname: '0.0.0.0',
         },
         (info) => {
@@ -32,6 +33,8 @@ if (launchEnv === 'local') {
         }
     );
 }
+
+client.route('/api/v1', apiRouter);
 
 export const firebaseAPI = onRequest(
     {

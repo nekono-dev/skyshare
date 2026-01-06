@@ -131,6 +131,13 @@ balancing : [
 ]
 ```
 
+設定を`backend/balancing.json`に作成すると、`make serve-XXX`および`make deploy-XXX`の実行時に自動で`.env`中の`DB_ENDPOINT_RULE`の置き換えを行う。
+`balancing.json`の読み込み・env 書き換えのみ実行する場合は以下
+
+```bash
+make env-gen ENV_DEV=（適応先の.envファイル）
+```
+
 | パラメータ名                           | 説明                                                                      | 型     |
 | -------------------------------------- | ------------------------------------------------------------------------- | ------ |
 | `balancing[].index`                    | PageDB のデータベース番号                                                 | Number |
@@ -232,7 +239,8 @@ OBJ_STORAGE_CREDENTIAL="minioadmin:minioadmin" ## アクセスキー:アクセ�
 
 ```bash
 npm install
-npm run serve:dev
+make serve-dev
+# npm run serve:dev
 ```
 
 ```log
@@ -253,11 +261,12 @@ firebase login
 firebase init functions
 ```
 
-以下で実行できる。環境変数は`.env`が参照される。
+以下でエミュレータを実行できる。環境変数は`.env`が参照される。
 
 ```bash
 npm install
-npm run serve:firebase
+make serve-firebase
+# npm run serve:firebase
 ```
 
 ### デバッグ
@@ -305,5 +314,5 @@ npm run test:firebase
 `.env`に本番構築用のパラメータをコピーし、以下のコマンドを実行する。
 
 ```bash
-npm run deploy:firebase
+make deploy-firebase
 ```
