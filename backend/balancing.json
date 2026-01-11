@@ -8,6 +8,14 @@
             }
         },
         { "index": 1, "weight": 1 },
-        { "index": 2, "weight": 1 }
+        { "index": 2, "weight": 1 },
+        {
+            "index": 3,
+            "weight": 3,
+            "migration": {
+                "dateAfter": "2026/02/01",
+                "weight": 1
+            }
+        }
     ]
 }

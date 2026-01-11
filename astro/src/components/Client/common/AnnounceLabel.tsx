@@ -2,10 +2,9 @@ import { readAnnounceClosed, setAnnounceClosed } from "@/utils/useLocalStorage"
 import { useState } from "react"
 import { button_base } from "./tailwindVariants"
 import Marquee from "react-fast-marquee"
-import { changeurl } from "@/env/envs"
 
 export const Component = () => {
-    const refreshDate = new Date("2026-01-02").getTime()
+    const refreshDate = new Date("2026-01-11").getTime()
     const [closed, setClosed] = useState(
         readAnnounceClosed(refreshDate).getTime() > refreshDate,
     )

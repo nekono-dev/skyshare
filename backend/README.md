@@ -107,28 +107,30 @@ DB_ENDPOINT_WITH_CREDENTIAL="rediss://default:<Credential>@XXXXXXX.upstash.io:<P
 - 上記ユースケースの設定例:
 
 ```json
-balancing : [
-    {
-        index: 0,
-        weight: 1
-        registerBlock: {
-            dateBefore: "2026/04/01" // dateBefore以前データを追加しない
-            dateAfter: "2027/01/01" // dataAfter以降データを追加しない
-        }
-    },
-    {
-        index: 1,
-        // weight: 1 // weight: 1は省略可能
-    },
-    {
-        index: 2,
-        weight: 2
-        migration: {
-            dateAfter: "2026/04/01"
-            weight: 1 // dateBefore、またはdateAfter以降のweight設定
-        }
-    },
-]
+{
+    "balancing" : [
+        {
+            "index": 0,
+            "weight": 1,
+            "registerBlock": {
+                "dateBefore": "2026/04/01", // dateBefore以前データを追加しない
+                "dateAfter": "2027/01/01" // dataAfter以降データを追加しない
+            }
+        },
+        {
+            "index": 1,
+            // weight: 1 // weight: 1は省略可能
+        },
+        {
+            "index": 2,
+            "weight": 2,
+            "migration": {
+                "dateAfter": "2026/04/01",
+                "weight": 1 // dateBefore、またはdateAfter以降のweight設定
+            }
+        },
+    ]
+}
 ```
 
 設定を`backend/balancing.json`に作成すると、`make serve-XXX`および`make deploy-XXX`の実行時に自動で`.env`中の`DB_ENDPOINT_RULE`の置き換えを行う。
