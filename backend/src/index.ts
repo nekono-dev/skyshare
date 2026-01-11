@@ -13,7 +13,6 @@ const apiRouter = new OpenAPIHono();
 apiRouter.route('/ogp', ogpRouter);
 apiRouter.route('/page', pageRouter);
 
-
 if (launchEnv === undefined) {
     logger.error('LAUNCH_ENV is not defined');
     throw new Error('LAUNCH_ENV is not defined');
@@ -29,8 +28,13 @@ if (launchEnv === 'local') {
             hostname: '0.0.0.0',
         },
         (info) => {
-            console.log(`Server is running on http://0.0.0.0:${info.port}`);
-        }
+            console.log(
+                `Server is running on http://${info.address}:${info.port}`,
+            );
+            console.log(
+                `PUBLIC_BACKEND_ENDPOINT=http://<Server IP address>:${info.port}/skyshare-v1/asia-northeast1/firebaseAPI/api/v1`,
+            );
+        },
     );
 }
 
@@ -40,5 +44,5 @@ export const firebaseAPI = onRequest(
     {
         region: 'asia-northeast1',
     },
-    getRequestListener(client.fetch)
+    getRequestListener(client.fetch),
 );

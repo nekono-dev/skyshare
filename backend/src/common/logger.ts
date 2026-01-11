@@ -9,8 +9,8 @@ class Logger {
 
     // 共通ログ処理を一元化
     private logInternal = async (
-        level: 'error' | 'info' | 'debug',
-        message: string
+        level: 'error' | 'info' | 'debug' | 'warn',
+        message: string,
     ): Promise<void> => {
         const payload = {
             level,
@@ -22,6 +22,7 @@ class Logger {
             try {
                 const methods: Record<string, (...args: unknown[]) => void> = {
                     error: fbLogger.error,
+                    warn: fbLogger.warn,
                     info: fbLogger.info,
                     debug: fbLogger.debug,
                 };
@@ -39,6 +40,8 @@ class Logger {
                 console.error(payload);
             } else if (level === 'info') {
                 console.info(payload);
+            } else if (level === 'warn') {
+                console.info(payload);
             } else {
                 console.debug(payload);
             }
@@ -49,6 +52,9 @@ class Logger {
     // error をメソッドとして定義（内部共通処理を利用）
     error = async (message: string): Promise<void> => {
         await this.logInternal('error', message);
+    };
+    warn = async (message: string): Promise<void> => {
+        await this.logInternal('warn', message);
     };
 
     // info と debug を追加

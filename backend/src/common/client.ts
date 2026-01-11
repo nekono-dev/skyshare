@@ -13,8 +13,8 @@ const createOpenApiHono = () =>
                 if (result.error.name === 'ZodError') {
                     logger.error(
                         `Validation error: ${JSON.stringify(
-                            result.error.issues
-                        )}`
+                            result.error.issues,
+                        )}`,
                     );
                     throw new HTTPException(400, {
                         res: new Response(
@@ -22,7 +22,7 @@ const createOpenApiHono = () =>
                             {
                                 status: 400,
                                 headers: { 'Content-Type': 'application/json' },
-                            }
+                            },
                         ),
                     });
                 }
@@ -32,7 +32,7 @@ const createOpenApiHono = () =>
                         {
                             status: 500,
                             headers: { 'Content-Type': 'application/json' },
-                        }
+                        },
                     ),
                 });
             }
@@ -53,7 +53,7 @@ client.use(
     cors({
         origin: origin,
         allowHeaders: ['Content-Type', 'Authorization'],
-    })
+    }),
 );
 // APIドキュメントを出力
 if (launchEnv === 'local') {

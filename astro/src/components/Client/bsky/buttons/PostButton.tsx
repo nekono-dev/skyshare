@@ -77,7 +77,9 @@ export const Component = ({
     const isAssumedAsAppleProdUser = userAgent.includes("mac os x")
 
     // 画像の幅・高さを取得するユーティリティ
-    const getImageSize = (blob: Blob): Promise<{ width: number; height: number }> =>
+    const getImageSize = (
+        blob: Blob,
+    ): Promise<{ width: number; height: number }> =>
         new Promise((resolve, reject) => {
             const url = URL.createObjectURL(blob)
             const img = new Image()
@@ -85,7 +87,7 @@ export const Component = ({
                 resolve({ width: img.naturalWidth, height: img.naturalHeight })
                 URL.revokeObjectURL(url)
             }
-            img.onerror = (e) => {
+            img.onerror = e => {
                 URL.revokeObjectURL(url)
                 reject(e)
             }
@@ -290,14 +292,14 @@ export const Component = ({
                 })
 
                 // 元の Blob から画像サイズを取得しておく
-                const imageSizeTasks = mediaData.images.map((v) =>
+                const imageSizeTasks = mediaData.images.map(v =>
                     typeof v.blob !== "undefined" && v.blob !== null
                         ? getImageSize(v.blob)
                         : Promise.resolve(undefined),
                 )
-                const imageSizes: Array<{ width: number; height: number } | undefined> = await Promise.all(
-                    imageSizeTasks,
-                )
+                const imageSizes: Array<
+                    { width: number; height: number } | undefined
+                > = await Promise.all(imageSizeTasks)
 
                 const uploadBlobTasks: Array<Promise<uploadBlobResult>> = []
                 resultCompress.forEach(value => {
@@ -340,8 +342,10 @@ export const Component = ({
                                             alt: mediaData.images[index].alt,
                                             aspectRatio: imageSizes[index]
                                                 ? {
-                                                      width: imageSizes[index]!.width,
-                                                      height: imageSizes[index]!.height,
+                                                      width: imageSizes[index]!
+                                                          .width,
+                                                      height: imageSizes[index]!
+                                                          .height,
                                                   }
                                                 : undefined,
                                         }
@@ -421,7 +425,10 @@ export const Component = ({
                 })
                 const [id, rkey] = createPageResult.uri.split(/[@/]/)
                 const dbIndex = createPageResult.dbIndex.toString()
-                const ogpUrl = new URL(`${pagesPrefix}/${dbIndex}/${id}@${rkey}/`, siteurl)
+                const ogpUrl = new URL(
+                    `${pagesPrefix}/${dbIndex}/${id}@${rkey}/`,
+                    siteurl,
+                )
                 // 本文に生成URLを付与
                 callbackPostOptions.externalPostText += `${
                     postText !== "" ? "\n" : ""

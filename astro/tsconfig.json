@@ -1,21 +1,14 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "include": [
-    "src/**/*",
-  ],
-  "exclude": [
-    "src/node_modules",
-    "dist/"
-  ],
-  "compilerOptions": {
-    "baseUrl": "./",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "jsx": "react-jsx",
-    "jsxImportSource": "react",
-    "verbatimModuleSyntax": false,
-  }
+    "extends": "astro/tsconfigs/strict",
+    "include": ["src/**/*"],
+    "exclude": ["src/node_modules", "dist/"],
+    "compilerOptions": {
+        "baseUrl": "./",
+        "paths": {
+            "@/*": ["src/*"]
+        },
+        "jsx": "react-jsx",
+        "jsxImportSource": "react",
+        "verbatimModuleSyntax": false
+    }
 }

@@ -18,7 +18,7 @@ import { getThreadPost } from '../../../lib/bsky.js';
  * @returns 削除した OGP のキー名を返す
  */
 const deleteOgp = async (
-    requestBody: RequestBody
+    requestBody: RequestBody,
 ): Promise<ServiceResult<Response200>> => {
     try {
         const parsedBody = RequestBodySchema.parse(requestBody);
@@ -97,7 +97,7 @@ const deleteOgp = async (
             const authorDid = post.author.did;
             if (didFromDb !== authorDid) {
                 logger.error(
-                    `Identity verification failed: thread-author=${authorDid} from-db=${didFromDb}`
+                    `Identity verification failed: thread-author=${authorDid} from-db=${didFromDb}`,
                 );
                 return {
                     success: false,
@@ -105,7 +105,7 @@ const deleteOgp = async (
                 };
             }
             logger.debug(
-                `Identity verified: thread-author=${authorDid} from-db=${didFromDb}`
+                `Identity verified: thread-author=${authorDid} from-db=${didFromDb}`,
             );
         }
 

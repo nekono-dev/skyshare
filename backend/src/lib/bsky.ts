@@ -34,7 +34,7 @@ const getThreadPost = async (agent: AtpAgent, uri: string) => {
  * 画像埋め込みでない場合は Error を投げる。
  */
 const extractImagesFromPost = (
-    post: AppBskyFeedDefs.PostView
+    post: AppBskyFeedDefs.PostView,
 ): AppBskyEmbedImages.ViewImage[] => {
     // post は getThreadPost で検証済みであることを前提とする
 

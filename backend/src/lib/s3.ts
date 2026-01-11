@@ -36,7 +36,7 @@ class S3ClientWrapper {
             endpoint: objStorageEndpoint,
             region: objStorageRegion,
             credential: objStorageCredential,
-        }
+        },
     ) {
         this.bucket = opt.bucket;
         this.viewUrl = opt.viewUrl;

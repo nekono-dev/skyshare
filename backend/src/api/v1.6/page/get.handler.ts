@@ -12,9 +12,11 @@ const handler: RouteHandler<typeof route> = async (c) => {
         switch (result.error) {
             case 'BadRequest':
                 return c.json({ error: 'BadRequest' }, 400);
+            case 'RateLimitExceeded':
+                return c.json({ error: 'RateLimitExceeded' }, 503);
             case 'InternalServerError':
             default:
-                return c.json({ error: 'Internal Server Error' }, 500);
+                return c.json({ error: 'InternalServerError' }, 500);
         }
     }
     return c.json(result.data, 200);

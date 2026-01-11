@@ -81,8 +81,8 @@ describe('Legacy DB Operation test', async () => {
         it('🟢[Positive] GET ogp resource', async () => {
             const url =
                 endpoint +
-                `/api/v1/page/${dbIndex}/${encodeURIComponent(
-                    handle + '@' + postIdHash
+                `/page/${dbIndex}/${encodeURIComponent(
+                    handle + '@' + postIdHash,
                 )}`;
             logger.debug(`GET ogp resource with params: ${url}`);
             const response = await fetch(url, {
@@ -93,7 +93,7 @@ describe('Legacy DB Operation test', async () => {
             });
             expect(await response.json()).toEqual({
                 ogp: new URL(
-                    `${legacyStorageViewurl}/${postOgpUrl}`
+                    `${legacyStorageViewurl}/${postOgpUrl}`,
                 ).toString(),
                 imgs: postImages,
                 handle: handle,
@@ -105,8 +105,8 @@ describe('Legacy DB Operation test', async () => {
                 accessJwt: accessJwt,
                 did: did,
             };
-            
-            const response = await fetch(endpoint + '/api/v1/page', {
+
+            const response = await fetch(endpoint + '/page', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

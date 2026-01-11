@@ -12,7 +12,7 @@ import { RedisClient } from '../../../lib/redis.js';
 import { S3ClientWrapper } from '../../../lib/s3.js';
 
 const getPage = async (
-    requestBody: RequestParam
+    requestBody: RequestParam,
 ): Promise<ServiceResult<Response200>> => {
     try {
         const parsedParam = RequestParamSchema.parse(requestBody);
@@ -73,6 +73,12 @@ const getPage = async (
     } catch (e: unknown) {
         if (e instanceof Error) {
             logger.error(e.message);
+            if (e instanceof RedisClient.UpstashRateLimitError) {
+                return {
+                    success: false,
+                    error: 'RateLimitExceeded',
+                };
+            }
         }
         return {
             success: false,

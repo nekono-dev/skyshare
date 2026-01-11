@@ -1,0 +1,48 @@
+---
+export const prerender = false
+interface Props {
+    error: number
+}
+const { error } = Astro.props
+
+import Pagelayout from "@/layouts/Pagelayout.astro"
+import { servicename } from "@/env/vars"
+import version from "@/env/version"
+
+let errorName: string
+let errorDescription: string
+switch (error) {
+    case 404:
+        errorName = "404 Not Found"
+        errorDescription =
+            "The requested resource could not be found. It may have been removed or is temporarily unavailable."
+        break
+    case 503:
+        errorName = "503 Rate Limit Exceeded"
+        errorDescription =
+            "We've reached the backend API usage limit. Sorry, but this URL won't be accessible again until the start of next month."
+        break
+    case 500:
+    default:
+        errorName = "500 Internal Server Error"
+        errorDescription =
+            "An unexpected server-side error occurred. Please try again after a short while. If it keeps happening, let the administrator know."
+        break
+}
+
+const title = `${errorName} - ${servicename}`
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Pagelayout
+    cardPath=`/materials/ogp_main.png?updated=${version}`
+    pageTitle={title}
+    robots={robots}
+    hidePostButton={false}
+>
+    <h1>{errorName}.</h1>
+    <div>{errorDescription}</div>
+    <div class="mt-2">
+        <slot name="optional" />
+    </div>
+</Pagelayout>

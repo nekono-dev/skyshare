@@ -17,7 +17,7 @@ const dbEndpoints: string[] = z
     .parse(JSON.parse(process.env.DB_ENDPOINTS || '[]'));
 
 const dbEndpointRule: DbEndpointRule = DbEndpointRuleSchema.parse(
-    JSON.parse(process.env.DB_ENDPOINT_RULE || '{}')
+    JSON.parse(process.env.DB_ENDPOINT_RULE || '{}'),
 );
 
 const objStorageRegion = process.env.OBJ_STORAGE_REGION || 'minio';

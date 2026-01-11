@@ -5,7 +5,7 @@ import { logger } from '../../../common/logger.js';
 
 const handler: RouteHandler<typeof route> = async (c) => {
     const body = c.req.valid('json');
-    logger.debug("Page Delete Handler called");
+    logger.debug('Page Delete Handler called');
 
     const result = await deleteOgp(body);
     if (!result.success) {
@@ -14,7 +14,7 @@ const handler: RouteHandler<typeof route> = async (c) => {
                 return c.json({ error: 'BadRequest' }, 400);
             case 'InternalServerError':
             default:
-                return c.json({ error: 'Internal Server Error' }, 500);
+                return c.json({ error: 'InternalServerError' }, 500);
         }
     }
     return c.json(result.data, 200);

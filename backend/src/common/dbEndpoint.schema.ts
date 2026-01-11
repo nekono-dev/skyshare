@@ -19,7 +19,7 @@ const DbEndpointRuleSchema = z.object({
                         dateAfter: z.coerce.date().optional(),
                     })
                     .optional(),
-            })
+            }),
         )
         .optional(),
 });

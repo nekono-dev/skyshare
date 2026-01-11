@@ -15,7 +15,7 @@ const ZodPageDb = z.object({
         z.object({
             thumb: z.string(),
             alt: z.string(),
-        })
+        }),
     ),
 });
 
@@ -35,7 +35,7 @@ class RedisClient {
             endpoint: undefined,
             ttl: undefined,
             dbIndex: undefined,
-        }
+        },
     ) {
         this.ttl = opt.ttl || DEFAULT_TTL;
         const now = new Date();
@@ -53,7 +53,9 @@ class RedisClient {
         if (opt.dbIndex !== undefined) {
             this.redisIndex = opt.dbIndex;
             this.endpoint = dbEndpoints[this.redisIndex];
-            logger.debug(`Using specified dbIndex=${this.redisIndex} for Redis endpoint`);
+            logger.debug(
+                `Using specified dbIndex=${this.redisIndex} for Redis endpoint`,
+            );
             return;
         }
 
@@ -124,19 +126,25 @@ class RedisClient {
 
                 if (invalidIndices.length > 0) {
                     logger.error(
-                        `dbEndpointRule contains invalid index(es) not present in DB_ENDPOINTS: ${invalidIndices.join(', ')} (endpoints length=${dbEndpoints.length})`
+                        `dbEndpointRule contains invalid index(es) not present in DB_ENDPOINTS: ${invalidIndices.join(
+                            ', ',
+                        )} (endpoints length=${dbEndpoints.length})`,
                     );
                 }
 
                 if (blockedIndices.length > 0) {
                     logger.debug(
-                        `dbEndpointRule blocked index(es) by registerBlock: ${blockedIndices.join(', ')}`
+                        `dbEndpointRule blocked index(es) by registerBlock: ${blockedIndices.join(
+                            ', ',
+                        )}`,
                     );
                 }
 
                 if (zeroWeightIndices.length > 0) {
                     logger.debug(
-                        `dbEndpointRule index(es) with zero weight (excluded): ${zeroWeightIndices.join(', ')}`
+                        `dbEndpointRule index(es) with zero weight (excluded): ${zeroWeightIndices.join(
+                            ', ',
+                        )}`,
                     );
                 }
 
@@ -150,7 +158,7 @@ class RedisClient {
                             this.redisIndex = c.index;
                             this.endpoint = dbEndpoints[this.redisIndex];
                             logger.debug(
-                                `dbEndpointRule selected index=${this.redisIndex}`
+                                `dbEndpointRule selected index=${this.redisIndex}`,
                             );
                             return;
                         }
@@ -160,14 +168,16 @@ class RedisClient {
                     this.redisIndex = last.index;
                     this.endpoint = dbEndpoints[this.redisIndex];
                     logger.debug(
-                        `dbEndpointRule selected index=${this.redisIndex} (fallback to last candidate)`
+                        `dbEndpointRule selected index=${this.redisIndex} (fallback to last candidate)`,
                     );
                     return;
                 }
 
                 // ここに到達するのは balancing があったが候補が無かった場合
                 logger.error(
-                    `dbEndpointRule produced no available candidates. balancing entries=${balancing.length}, included=${includedIndices.join(', ') || '<none>'}`
+                    `dbEndpointRule produced no available candidates. balancing entries=${
+                        balancing.length
+                    }, included=${includedIndices.join(', ') || '<none>'}`,
                 );
             } else {
                 logger.debug('dbEndpointRule: no balancing defined');
@@ -180,11 +190,40 @@ class RedisClient {
         // フォールバック: ランダムに選出
         this.redisIndex = (Math.random() * dbEndpoints.length) | 0;
         this.endpoint = dbEndpoints[this.redisIndex];
-        logger.debug(`Falling back to random endpoint selection: index=${this.redisIndex}`);
+        logger.debug(
+            `Falling back to random endpoint selection: index=${this.redisIndex}`,
+        );
     }
 
     private createClient() {
         return new Redis.default(this.endpoint);
+    }
+
+    // Upstash rate-limit を表す専用エラー
+    // 呼び出し元はこのエラーをキャッチして 429 として扱える
+    static UpstashRateLimitError = class UpstashRateLimitError extends Error {
+        constructor(message?: string) {
+            super(message);
+            this.name = 'UpstashRateLimitError';
+        }
+    };
+
+    private isUpstashRateLimitError(e: unknown): boolean {
+        if (!e) return false;
+        // ioredis のエラーや Upstash のレスポンスを幅広く検出する
+        if (e instanceof Error) {
+            const m = e.message || '';
+            // Upstash のエラーメッセージのうち、指定された 2 種類のみを検出
+            // - ERR max daily request limit exceeded
+            // - ERR max requests limit exceeded
+            if (
+                /ERR max daily request limit exceeded|ERR max requests limit exceeded/i.test(
+                    m,
+                )
+            )
+                return true;
+        }
+        return false;
     }
 
     async addPage(key: string, raw: PageDb): Promise<void> {
@@ -192,6 +231,18 @@ class RedisClient {
         try {
             const body = Buffer.from(JSON.stringify(raw)).toString('base64');
             await client.set(key, body, 'EX', this.ttl);
+        } catch (e: unknown) {
+            if (this.isUpstashRateLimitError(e)) {
+                logger.warn(
+                    `Upstash rate limit hit on set for index=${
+                        this.redisIndex
+                    }: ${String(e instanceof Error ? e.message : e)}`,
+                );
+                throw new RedisClient.UpstashRateLimitError(
+                    String(e instanceof Error ? e.message : e),
+                );
+            }
+            throw e;
         } finally {
             try {
                 await client.quit();
@@ -219,6 +270,18 @@ class RedisClient {
             } catch (e) {
                 return undefined;
             }
+        } catch (e: unknown) {
+            if (this.isUpstashRateLimitError(e)) {
+                logger.warn(
+                    `Upstash rate limit hit on get for index=${
+                        this.redisIndex
+                    }: ${String(e instanceof Error ? e.message : e)}`,
+                );
+                throw new RedisClient.UpstashRateLimitError(
+                    String(e instanceof Error ? e.message : e),
+                );
+            }
+            throw e;
         } finally {
             try {
                 await client.quit();
@@ -236,6 +299,18 @@ class RedisClient {
         const client = this.createClient();
         try {
             await client.del(key);
+        } catch (e: unknown) {
+            if (this.isUpstashRateLimitError(e)) {
+                logger.warn(
+                    `Upstash rate limit hit on del for index=${
+                        this.redisIndex
+                    }: ${String(e instanceof Error ? e.message : e)}`,
+                );
+                throw new RedisClient.UpstashRateLimitError(
+                    String(e instanceof Error ? e.message : e),
+                );
+            }
+            throw e;
         } finally {
             try {
                 await client.quit();
@@ -250,4 +325,6 @@ class RedisClient {
     }
 }
 
-export { RedisClient };
+const UpstashRateLimitError = RedisClient.UpstashRateLimitError;
+
+export { RedisClient, UpstashRateLimitError };

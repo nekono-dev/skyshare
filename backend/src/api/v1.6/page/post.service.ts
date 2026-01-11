@@ -18,7 +18,7 @@ import { RedisClient } from '../../../lib/redis.js';
  * @returns OGP画像のURIを含むレスポンス
  */
 const postOgp = async (
-    requestBody: RequestBody
+    requestBody: RequestBody,
 ): Promise<ServiceResult<Response200>> => {
     try {
         const parsedBody = RequestBodySchema.parse(requestBody);
@@ -68,7 +68,7 @@ const postOgp = async (
                     }
                     const ab = await res.arrayBuffer();
                     return Buffer.from(ab);
-                })
+                }),
             );
             const ogpBuffer = await compositeImages(imgsBuffer);
             logger.debug(`Ogp generated: ${ogpBuffer.length} bytes`);

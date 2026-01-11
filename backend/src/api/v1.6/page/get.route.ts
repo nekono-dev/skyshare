@@ -13,7 +13,7 @@ const route = createRoute({
         params: RequestParamSchema.openapi({
             example: {
                 dbKey: '0/did:pls:XXXXXXX@YYYYYYYY.jpg',
-                dbIndex: "0",
+                dbIndex: '0',
             },
         }),
     },
@@ -57,6 +57,16 @@ const route = createRoute({
                 'application/json': {
                     schema: ResponseErrorSchema.openapi({
                         example: { error: 'Internal Server Error' },
+                    }),
+                },
+            },
+        },
+        503: {
+            description: 'Rate limit exceeded',
+            content: {
+                'application/json': {
+                    schema: ResponseErrorSchema.openapi({
+                        example: { error: 'Rate limit exceeded' },
                     }),
                 },
             },

@@ -71,36 +71,48 @@ describe('getOgp Test', () => {
     }, 50000);
 
     //twitter.com/nekono_dev/status/1774369918726947311
-    (isLocal ? it.skip : it)('Bad request localhost test', async () => {
-        const result = await getMeta({
-            url: 'http://localhost/',
-            lang: 'ja',
-        });
-        expect(result).toEqual({
-            success: false,
-            error: 'BadRequest',
-        });
-    }, 50000);
-    (isLocal ? it.skip : it)('Bad request no dns ipv4 website test', async () => {
-        const result = await getMeta({
-            url: 'http://192.0.2.1/',
-            lang: 'ja',
-        });
-        expect(result).toEqual({
-            success: false,
-            error: 'BadRequest',
-        });
-    }, 50000);
-    (isLocal ? it.skip : it)('Bad request no dns ipv6 website test', async () => {
-        const result = await getMeta({
-            url: 'http://[fe00::1]/',
-            lang: 'ja',
-        });
-        expect(result).toEqual({
-            success: false,
-            error: 'BadRequest',
-        });
-    }, 50000);
+    (isLocal ? it.skip : it)(
+        'Bad request localhost test',
+        async () => {
+            const result = await getMeta({
+                url: 'http://localhost/',
+                lang: 'ja',
+            });
+            expect(result).toEqual({
+                success: false,
+                error: 'BadRequest',
+            });
+        },
+        50000,
+    );
+    (isLocal ? it.skip : it)(
+        'Bad request no dns ipv4 website test',
+        async () => {
+            const result = await getMeta({
+                url: 'http://192.0.2.1/',
+                lang: 'ja',
+            });
+            expect(result).toEqual({
+                success: false,
+                error: 'BadRequest',
+            });
+        },
+        50000,
+    );
+    (isLocal ? it.skip : it)(
+        'Bad request no dns ipv6 website test',
+        async () => {
+            const result = await getMeta({
+                url: 'http://[fe00::1]/',
+                lang: 'ja',
+            });
+            expect(result).toEqual({
+                success: false,
+                error: 'BadRequest',
+            });
+        },
+        50000,
+    );
     it('Bad request invalid protocol test', async () => {
         const result = await getMeta({
             url: 'file://./index.html',

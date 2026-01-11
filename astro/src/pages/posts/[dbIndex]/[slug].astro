@@ -5,26 +5,33 @@ import getPage from "@/lib/pagedbAPI/getPage"
 import { servicename } from "@/env/vars"
 import { baseurl } from "@/env/envs"
 
+const baseurlNormalized = baseurl.replace(/\/$/, "")
 const { dbIndex, slug } = Astro.params
-if (typeof slug === "undefined" 
-    || typeof dbIndex === "undefined" 
-    || !Number.isInteger(Number(dbIndex))) {
-    return new Response(null, {
-        status: 503,
-        statusText: "Server Error",
-    })
+if (typeof slug === "undefined" || typeof dbIndex === "undefined") {
+    return Astro.redirect(baseurlNormalized + "/500")
 }
+if (!Number.isInteger(Number(dbIndex)) && dbIndex !== "legacy") {
+    console.debug(`Invalid dbIndex or slug: dbIndex=${dbIndex}, slug=${slug}`)
+    return Astro.redirect(baseurlNormalized + "/500")
+}
+
 const pageId = `${dbIndex}/${slug}`
-const [_, rkey] = slug.split("@")
+const [did, rkey] = slug.split("@")
 const getPageResult = await getPage({ pageId: pageId })
+
+const url = new URL(`https://bsky.app/profile/${did}/post/${rkey}`)
+
 if ("error" in getPageResult) {
-    return new Response(null, {
-        status: 404,
-        statusText: "Not found",
-    })
+    if (getPageResult.error === "RateLimitExceeded") {
+        return Astro.redirect(
+            baseurlNormalized + "/503?url=" + encodeURIComponent(url),
+        )
+    } else {
+        return Astro.redirect(baseurlNormalized + "/404")
+    }
 }
-const author = getPageResult.handle as string
-console.log(`author: ${author}, rkey: ${rkey} pageId: ${pageId}`)
+const author = getPageResult.handle
+console.debug(`author: ${author}, rkey: ${rkey} pageId: ${pageId}`)
 
 const title = `${author} Post - ${servicename}`
 const imgs = getPageResult.imgs
@@ -42,15 +49,8 @@ import Loadingcircle from "@/components/loadingcircle.astro"
         <h3>
             <a href={new URL(`${author}`, "https://bsky.app/profile/")}>
                 @{author}
-            </a>さんのポスト from
-            <a
-                href={new URL(
-                    `${author}/post/${rkey}`,
-                    "https://bsky.app/profile/",
-                )}
-            >
-                here
-            </a>
+            </a>'s post:
+            <a href={url}> Source post here(Bluesky) </a>
         </h3>
         {
             imgs.map(value => {

@@ -1,0 +1,8 @@
+---
+import Errorlayout from "@/layouts/Errorlayout.astro"
+import Label503 from "@/components/Label503"
+---
+
+<Errorlayout error={503}>
+    <Label503 client:load slot="optional" />
+</Errorlayout>

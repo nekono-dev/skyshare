@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "dotenv -e .env.dev -- tsx watch src/index.ts",
         "build": "tsc",
+        "fix:format": "prettier --write .",
         "run:firebase": "firebase emulators:start --only functions",
         "serve:firebase": "npm run build && npm run run:firebase",
         "serve:dev": "npm run build && dotenv -e .env.dev -- node dist/index.js",
@@ -17,11 +18,11 @@
     "main": "dist/index.js",
     "dependencies": {
         "@atproto/api": "^0.18.9",
+        "@aws-sdk/client-s3": "^3.966.0",
         "@hono/node-server": "^1.19.6",
         "@hono/swagger-ui": "^0.5.3",
         "@hono/zod-openapi": "^1.2.0",
         "cheerio": "^1.1.2",
-        "client-s3": "github:aws-sdk/client-s3",
         "dotenv": "^17.2.3",
         "firebase-functions": "~6.0.1",
         "hono": "^4.11.3",
@@ -36,6 +37,7 @@
         "firebase-functions-test": "^3.1.0",
         "multiformats": "^13.4.2",
         "path": "^0.12.7",
+        "prettier": "^3.7.4",
         "tsx": "^4.7.1",
         "typescript": "^5.8.3"
     }

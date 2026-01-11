@@ -1,8 +1,8 @@
 import { readAnnounceClosed, setAnnounceClosed } from "@/utils/useLocalStorage"
 import { useState } from "react"
 import { button_base } from "./tailwindVariants"
-import Marquee from "react-fast-marquee";
-import { changeurl } from "@/env/envs";
+import Marquee from "react-fast-marquee"
+import { changeurl } from "@/env/envs"
 
 export const Component = () => {
     const refreshDate = new Date("2026-01-02").getTime()
@@ -30,8 +30,11 @@ export const Component = () => {
                         >
                             <div className="flex-1">
                                 <Marquee delay={3}>
-                                <span className="bg-white rounded-lg py-0.5 px-2 mr-2">お知らせ</span>
-                                2026年もよろしくおねがいします。v1.6.0アップデートしました。詳しくは<a href={changeurl}>CHANGELOG</a>でﾖﾛ。blueskyにいっぱい人が来て嬉しくてつい...</Marquee>
+                                    <span className="bg-white rounded-lg py-0.5 px-2 mr-2">
+                                        お知らせ
+                                    </span>
+                                    1/2~1/6にSkyshare上で作成されたリンクについて、DBのレートリミット超過により2/1まで表示できなくなる可能性があります。ご迷惑をおかけして申し訳ありません。
+                                </Marquee>
                             </div>
                             <button
                                 className={button_base({

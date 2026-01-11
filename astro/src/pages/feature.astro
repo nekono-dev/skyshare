@@ -1,13 +1,8 @@
 ---
 import { servicename, githuburl, zennurl } from "@/env/vars"
-import { baseurl, qaurl, abouturl, pagesPrefix } from "@/env/envs"
+import { qaurl, abouturl } from "@/env/envs"
 import version from "@/env/version"
 import Pagelayout from "@/layouts/Pagelayout.astro"
-const siteurl = Astro.url.origin
-const example_url = new URL(
-    baseurl + pagesPrefix + "/nlla.bsky.social_3kk7qzpffl22n/",
-    siteurl,
-)
 import { Picture } from "astro:assets"
 import ogp_example from "@/images/ogp.bsky.jpg"
 import link_img from "@/images/link.svg"
@@ -59,7 +54,6 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
                 >をONにしてください。
             </div>
             <img class="w-4 inline-block" src={link_img.src} />
-
         </div>
     </div>
 

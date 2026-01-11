@@ -15,7 +15,7 @@ import {
 } from '../../../lib/url.js';
 
 const getMeta = async (
-    requestParam: RequestParam
+    requestParam: RequestParam,
 ): Promise<ServiceResult<Response200>> => {
     try {
         const parsedParam = RequestParamSchema.parse(requestParam);
@@ -50,7 +50,7 @@ const getMeta = async (
 
         const encoding: string = await findEncoding(htmlBlob);
         const html: string = unescapeHtml(
-            await decodeAsText(htmlBlob, encoding)
+            await decodeAsText(htmlBlob, encoding),
         );
         const meta = extractHead({ html });
         logger.debug(`Fetched OGP Meta: ${JSON.stringify(meta)}`);

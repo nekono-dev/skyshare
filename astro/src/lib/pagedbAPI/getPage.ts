@@ -27,20 +27,24 @@ export const api = async ({
         },
     })
         .then(async response => {
-            const responseParsed = ZodPageFetchOutput.safeParse(
-                await response.json(),
-            )
-
-            if (!responseParsed.success) {
-                const e: Error = new Error(
-                    "Unexpected Response Type@getPages::api",
-                )
-                e.name = "Unexpected Response Type@getPages::api"
-                throw e
+            const result = ZodPageFetchOutput.safeParse(await response.json())
+            if (!result.success) {
+                const errorResult = z
+                    .object({ error: z.string() })
+                    .safeParse(await response.json())
+                if (errorResult.success) {
+                    return {
+                        error: errorResult.data.error,
+                        message: "Failed to fetch page data",
+                    }
+                }
+                return {
+                    error: "UnknownError",
+                    message: "An unknown error occurred",
+                }
+            } else {
+                return result.data
             }
-
-            const apiResult: pageFetchOutput = responseParsed.data
-            return apiResult
         })
         .catch((e: Error) => {
             return {

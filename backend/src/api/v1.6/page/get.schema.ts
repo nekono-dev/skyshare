@@ -12,7 +12,7 @@ const Response200Schema = z.object({
         z.object({
             thumb: z.string(),
             alt: z.string(),
-        })
+        }),
     ),
 });
 

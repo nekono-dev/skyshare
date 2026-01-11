@@ -1,11 +1,15 @@
-import { type RequestParam, RequestParamSchema, Response200 } from './blob.get.schema.js';
+import {
+    type RequestParam,
+    RequestParamSchema,
+    Response200,
+} from './blob.get.schema.js';
 
 import { logger } from '../../../common/logger.js';
 import type { ServiceResult } from '../../../common/serviceResult.js';
 import { isRequestURLInvalid, getUserAgent } from '../../../lib/url.js';
 
 const getBlob = async (
-    requestParam: RequestParam
+    requestParam: RequestParam,
 ): Promise<ServiceResult<Response200>> => {
     try {
         const parsedParam = RequestParamSchema.parse(requestParam);

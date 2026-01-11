@@ -5,7 +5,7 @@ import { logger } from '../../../common/logger.js';
 
 const handler: RouteHandler<typeof route> = async (c) => {
     const query = c.req.valid('query');
-    logger.debug("OGP meta Get Handler called");
+    logger.debug('OGP meta Get Handler called');
 
     const result = await getOgp(query);
 

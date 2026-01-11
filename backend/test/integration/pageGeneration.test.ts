@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import postOgp from '@/api/v1.6/page/post.service';
 import deleteOgp from '@/api/v1.6/page/delete.service';
 import getPage from '@/api/v1.6/page/get.service';
@@ -7,6 +7,7 @@ import { AtpAgent } from '@atproto/api';
 import { atpService } from '@/common/environments';
 import { logger } from '@/common/logger';
 import { extractImagesFromPost, getThreadPost } from '@/lib/bsky';
+import { UpstashRateLimitError, RedisClient } from '@/lib/redis';
 
 describe('OGP Generation test', async () => {
     const endpoint = process.env.BACKEND_ENDPOINT || 'http://localhost:3000';
@@ -76,7 +77,7 @@ describe('OGP Generation test', async () => {
                 data: {
                     handle: 'nekono-dev.bsky.social',
                     ogp: new URL(
-                        `${storageViewUrl}/${postIdDid}/${postIdHash}.jpg`
+                        `${storageViewUrl}/${postIdDid}/${postIdHash}.jpg`,
                     ).toString(),
                     imgs: postImages,
                 },
@@ -90,14 +91,31 @@ describe('OGP Generation test', async () => {
             };
             logger.debug(
                 `deleteOgp using wrongDeleteOgpRequest: ${JSON.stringify(
-                    wrongDeleteOgpRequest
-                )}`
+                    wrongDeleteOgpRequest,
+                )}`,
             );
             const res = await deleteOgp(wrongDeleteOgpRequest);
             expect(res).toEqual({
                 success: false,
                 error: 'BadRequest',
             });
+        });
+        it('🔴[Negative] getPage returns RateLimitError when redis rate-limited', async () => {
+            const spy = vi
+                .spyOn(RedisClient.prototype, 'getPage')
+                .mockRejectedValue(
+                    new UpstashRateLimitError(
+                        'ERR max daily request limit exceeded',
+                    ),
+                );
+
+            const res = await getPage({
+                dbKey: `${postIdDid}@${postIdHash}`,
+                dbIndex: '0',
+            });
+            expect(res).toEqual({ success: false, error: 'RateLimitExceeded' });
+
+            spy.mockRestore();
         });
         it('🟢[Positive] exec deleteOgp', async () => {
             const deleteOgpRequest = {
@@ -106,8 +124,8 @@ describe('OGP Generation test', async () => {
             };
             logger.debug(
                 `deleteOgp using deleteOgpRequest: ${JSON.stringify(
-                    deleteOgpRequest
-                )}`
+                    deleteOgpRequest,
+                )}`,
             );
             const res = await deleteOgp(deleteOgpRequest);
             expect(res).toEqual({
@@ -121,7 +139,7 @@ describe('OGP Generation test', async () => {
         let dbIndex = 0; // postOgpResult
 
         it('🟢[Positive] POST ogp resource', async () => {
-            const response = await fetch(endpoint + '/api/v1/page', {
+            const response = await fetch(endpoint + '/page', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -137,8 +155,8 @@ describe('OGP Generation test', async () => {
         it('🟢[Positive] GET ogp resource', async () => {
             const url =
                 endpoint +
-                `/api/v1/page/${dbIndex}/${encodeURIComponent(
-                    postIdDid + '@' + postIdHash
+                `/page/${dbIndex}/${encodeURIComponent(
+                    postIdDid + '@' + postIdHash,
                 )}`;
             logger.debug(`GET ogp resource with params: ${url}`);
             const response = await fetch(url, {
@@ -150,7 +168,7 @@ describe('OGP Generation test', async () => {
 
             expect(await response.json()).toEqual({
                 ogp: new URL(
-                    `${storageViewUrl}/${postIdDid}/${postIdHash}.jpg`
+                    `${storageViewUrl}/${postIdDid}/${postIdHash}.jpg`,
                 ).toString(),
                 handle: handle,
                 imgs: postImages,
@@ -161,7 +179,7 @@ describe('OGP Generation test', async () => {
                 pageId: `${dbIndex}/${postIdDid}@${postIdHash}`,
                 accessJwt: accessJwt,
             };
-            const response = await fetch(endpoint + '/api/v1/page', {
+            const response = await fetch(endpoint + '/page', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
