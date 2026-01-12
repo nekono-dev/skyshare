@@ -4,16 +4,16 @@
             "index": 0,
             "weight": 1,
             "registerBlock": {
-                "dateAfter": "2026-02-01"
+                "dateBefore": "2026-02-01T00:00:00.000Z"
             }
         },
         { "index": 1, "weight": 1 },
         { "index": 2, "weight": 1 },
         {
             "index": 3,
-            "weight": 3,
+            "weight": 4,
             "migration": {
-                "dateAfter": "2026/02/01",
+                "dateAfter": "2026-02-01T00:00:00.000Z",
                 "weight": 1
             }
         }

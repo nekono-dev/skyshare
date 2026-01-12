@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import { z } from 'zod';
 import { dbEndpointRule } from '../common/environments.js';
 import { logger } from '../common/logger.js';
+import type { DbEndpointRule } from '../common/dbEndpoint.schema.js';
 
 const DEFAULT_TTL = 60 * 60 * 24 * 365; // 365日
 
@@ -31,10 +32,15 @@ class RedisClient {
             endpoint?: string;
             ttl?: number;
             dbIndex?: number;
+            dbEndpoints?: string[];
+            // allow external injection of dbEndpointRule for testing/override
+            dbEndpointRule?: DbEndpointRule;
         } = {
             endpoint: undefined,
             ttl: undefined,
             dbIndex: undefined,
+            dbEndpoints: dbEndpoints,
+            dbEndpointRule: dbEndpointRule,
         },
     ) {
         this.ttl = opt.ttl || DEFAULT_TTL;
@@ -45,7 +51,7 @@ class RedisClient {
             this.endpoint = opt.endpoint;
             // dbIndex は明示されていれば保持
             if (opt.dbIndex !== undefined) this.redisIndex = opt.dbIndex;
-            logger.debug(`Using specified Redis endpoint: ${this.endpoint}`);
+            logger.debug(`Using specified Redis endpoint`);
             return;
         }
 
@@ -61,7 +67,9 @@ class RedisClient {
 
         // dbEndpointRule が設定されている場合は配分ルールに従って選出
         try {
-            const balancing = dbEndpointRule?.balancing;
+            // Allow externally provided rule via constructor option; fallback to imported value
+            const rule = opt.dbEndpointRule;
+            const balancing = rule?.balancing;
             if (Array.isArray(balancing) && balancing.length > 0) {
                 // ログ用の収集
                 const invalidIndices: number[] = [];
@@ -231,6 +239,7 @@ class RedisClient {
         try {
             const body = Buffer.from(JSON.stringify(raw)).toString('base64');
             await client.set(key, body, 'EX', this.ttl);
+            logger.debug(`addPage succeeded key=${key} dbIndex=${this.redisIndex}`);
         } catch (e: unknown) {
             if (this.isUpstashRateLimitError(e)) {
                 logger.warn(
@@ -262,7 +271,7 @@ class RedisClient {
         try {
             const res = await client.get(key);
             if (!res) return undefined;
-
+            logger.debug(`getPage key=${key} dbIndex=${this.redisIndex}`);
             try {
                 const json = Buffer.from(res, 'base64').toString('utf8');
                 const parsed = ZodPageDb.parse(JSON.parse(json));
@@ -299,6 +308,7 @@ class RedisClient {
         const client = this.createClient();
         try {
             await client.del(key);
+            logger.debug(`deletePage succeeded key=${key} dbIndex=${this.redisIndex}`);
         } catch (e: unknown) {
             if (this.isUpstashRateLimitError(e)) {
                 logger.warn(
