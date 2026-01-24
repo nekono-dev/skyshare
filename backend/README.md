@@ -48,6 +48,15 @@ DB_ENDPOINTS の設定例
 DB_ENDPOINTS=["redis://localhost:6379","redis://localhost:6479","redis://localhost:6579"]
 ```
 
+## 環境設定
+
+```sh
+npm install
+npm install -g firebase-tools
+firebase login
+## ブラウザが起動、authを実施
+```
+
 ## データベースの設定方法
 
 ### Launch on local (redis)

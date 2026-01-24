@@ -11,10 +11,9 @@
         { "index": 2, "weight": 1 },
         {
             "index": 3,
-            "weight": 4,
-            "migration": {
-                "dateAfter": "2026-02-01T00:00:00.000Z",
-                "weight": 1
+            "weight": 1,
+            "registerBlock": {
+                "dateBefore": "2026-02-01T00:00:00.000Z"
             }
         }
     ]
