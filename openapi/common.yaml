@@ -1,0 +1,20 @@
+error:
+  type: object
+  properties:
+    error:
+      type: string
+      example: Invalid credentials
+
+content-type:
+  description: The MIME type of the body of the request or response
+  schema:
+    type: string
+    enum:
+      - application/json
+    example: application/json
+
+cookie:
+  description: cookie
+  schema:
+    type: string
+    example: sid=abc123; Path=/; HttpOnly

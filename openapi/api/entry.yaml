@@ -1,0 +1,48 @@
+post:
+  summary: Create a new entry
+  operationId: entry
+  parameters:
+    - name: cookie
+      in: header
+      required: true
+      schema:
+        $ref: ../common.yaml#/cookie
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          type: object
+          required:
+            - text
+          properties:
+            text:
+              type: string
+              example: Post content
+
+  responses:
+    "200":
+      description: Success post
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              bsky:
+                type: object
+                properties:
+                  uri:
+                    type: string
+                    example: did:example.com/abcd1234
+              skyshare:
+                type: object
+                properties:
+                  uri:
+                    type: string
+                    example: did:example.com/abcd1234
+    "400":
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: ../common.yaml#/error

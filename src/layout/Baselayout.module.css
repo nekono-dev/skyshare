@@ -1,0 +1,32 @@
+/* Card component styles */
+.card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  box-sizing: border-box;
+  aspect-ratio: 1 / 1;
+  width: 50%;
+  min-width: 480px;
+  max-width: 720px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  background-color: #ffffff;
+  color: inherit;
+  overflow: hidden;
+}
+
+/* 内部コンポーネントの共通設定 */
+.card * {
+  box-sizing: border-box;
+}
+
+/* 小さいスクリーンでの適応 */
+@media (max-width: 420px) {
+  .card {
+    width: 100%;
+
+    padding: 10px;
+  }
+}

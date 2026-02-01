@@ -1,0 +1,8 @@
+node_modules/**
+.vscode/**
+.gitignore
+.github/**
+astro/**
+frontend/src/api/**
+frontend/public/**
+atproto/**

@@ -1,0 +1,37 @@
+summary: Resume Session ATProto service
+operationId: resumeSession
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          refreshJwt:
+            type: string
+            example: XXXXXXX....
+          service:
+            type: string
+            example: http://bsky.social
+        required:
+          - refreshJwt
+          - service
+responses:
+  "200":
+    description: Success resumeSession
+    headers:
+      set-cookie:
+        schema:
+          $ref: ../../common.yaml#/cookie
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error

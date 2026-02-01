@@ -1,17 +1,43 @@
 {
   "name": "skyshare",
   "type": "module",
-  "version": "1.7.0",
+  "version": "2.0.0",
   "scripts": {
-    "lexgen:server": "./hack/gen-server.sh ./dev/server",
-    "lexgen:client": "./hack/gen-client.sh ./dev/client",
-    "lexgen": "npm run lexgen:server && npm run lexgen:client",
-    "format": "prettier --write",
-    "format:lexicon": "prettier --write ./lexicons/lex/skyshare/*.json"
+    "lexgen": "./hack/gen-client.sh ./src/client/atproto",
+    "apigen:client": "orval",
+    "apigen:type": "node ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
+    "apigen": "npm run apigen:client && npm run apigen:type",
+    "codegen": "npm run lexgen && npm run apigen",
+    "dev": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro dev",
+    "build": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro build",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.6.5",
+    "@astrojs/react": "^4.4.2",
+    "@atproto/xrpc": "^0.7.7",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "astro": "^5.17.1",
+    "multiformats": "^13.4.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "overrides": {
+    "undici": "7.20.0",
+    "miniflare": "4.20260131.0",
+    "wrangler": "4.62.0"
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.9.8",
-    "prettier": "^3.8.1"
+    "@types/node": "^25.2.0",
+    "orval": "^8.2.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-sh": "^0.18.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "yaml": "^2.3.1"
   },
   "author": "nekono.dev"
 }

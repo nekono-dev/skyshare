@@ -1,0 +1,41 @@
+---
+interface Props {
+    pageTitle: string
+    cardPath: string
+    robots: string[]
+}
+const { cardPath, pageTitle, robots } = Astro.props
+import { serviceName, serviceDescription } from "@/vars"
+
+const url = Astro.url
+const cardUrl = new URL(cardPath, Astro.url)
+---
+
+<title>{pageTitle}</title>
+<link rel="apple-touch-icon" sizes="512x512" href="/materials/icon-512.png" />
+<link rel="apple-touch-icon-precomposed" href="/materials/icon-512.png" />
+<link rel="manifest" href="/materials/manifest.webmanifest" />
+<meta property="og:url" content={url} />
+<meta property="og:type" content="website" />
+<meta property="og:title" content={pageTitle} />
+<meta property="og:description" content={serviceDescription} />
+<meta property="og:site_name" content={serviceName} />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@" />
+<meta name="twitter:title" content={pageTitle} />
+<meta name="twitter:description" content={serviceDescription} />
+<meta name="twitter:image" content={cardUrl} />
+<meta property="og:image" content={cardUrl} />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="generator" content={Astro.generator} />
+<meta name="robots" content={robots.join(",")} />
+<script is:inline type="text/partytown" src="https://www.googletagmanager.com/gtag/js?id=G-JDS7QWVYQB"></script>
+<script is:inline type="text/partytown">
+    window.dataLayer = window.dataLayer || []
+    function gtag() {
+        dataLayer.push(arguments)
+    }
+    gtag("js", new Date())
+    gtag("config", "G-JDS7QWVYQB")
+</script>

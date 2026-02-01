@@ -1,0 +1,26 @@
+---
+interface Props {
+    pageTitle: string
+    cardPath: string
+    robots: string[]
+}
+import Metadatas from "@/components/Metadatas.astro"
+const { cardPath, pageTitle, robots } = Astro.props
+const favicon = "favicon.svg"
+import "@/styles/tokens.css"
+import styles from "./Baselayout.module.css"
+---
+
+<html lang="ja">
+    <head>
+        <link rel="icon" href={favicon} />
+        <Metadatas cardPath={cardPath} pageTitle={pageTitle} robots={robots} />
+    </head>
+    <body style="min-height: 100dvh" id="root">
+        <slot name="header" />
+        <div class={styles.card}>
+            <slot />
+        </div>
+        <slot name="footer" />
+    </body>
+</html>

@@ -1,6 +1,6 @@
 {
   "lexicon": 1,
-  "id": "lex.skyshare.entry",
+  "id": "dev.nekono.skyshare.entry",
   "defs": {
     "main": {
       "type": "record",
@@ -17,7 +17,7 @@
           },
           "manifest": {
             "type": "ref",
-            "ref": "lex.skyshare.manifest",
+            "ref": "dev.nekono.skyshare.defs#manifest",
             "description": "Reference to the manifest definition."
           },
           "createdAt": {

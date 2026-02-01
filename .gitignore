@@ -15,3 +15,10 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
+
+# Gen clients
+src/client/**/
+
+# Astro build
+.astro
+/dist

@@ -1,0 +1,14 @@
+---
+// Simple login page using @atproto/api (AtpAgent)
+export const prerender = true
+import LoginForm from "@/components/LoginForm"
+
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName, serviceVersion } from "@/vars"
+const robots = ["index", "follow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={serviceName} robots={robots}>
+    <h1>{serviceName} v{serviceVersion}</h1>
+    <LoginForm client:load />
+</Baselayout>

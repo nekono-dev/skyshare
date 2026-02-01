@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: skyshare lexicon wrapper
+  version: 2.0.0
+  description: ATProto ClientをAstro SSGで利用するためのAPIラッパー
+
+paths: # APIドキュメントのエンドポイント
+  /api/entry:
+    $ref: ./api/entry.yaml
+  /api/session:
+    $ref: ./api/session/index.yaml
