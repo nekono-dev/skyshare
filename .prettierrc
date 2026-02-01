@@ -1,0 +1,20 @@
+{
+    "overrides": [
+        {
+            "files": "*.md",
+            "options": {
+                "tabWidth": 2
+            }
+        },
+        {
+            "files": "*.json",
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ],
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": false,
+    "arrowParens": "avoid"
+}

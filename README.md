@@ -9,7 +9,7 @@ for twitter, because of X taxes, Skyshare present Post Link, can only with media
 
 ## AT Protocol
 
-Because of bluesky official typescript client seems not available works on React, Skyshare uses REST API directry by fetch API like that...  
+Because of bluesky official typescript client seems not available works on React, Skyshare uses REST API directry by fetch API like that...
 
 ```ts:src/utils/atproto_api/createSession.ts
 import endpoint_url, { com_atproto } from "./base"

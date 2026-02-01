@@ -1,0 +1,17 @@
+{
+  "name": "skyshare",
+  "type": "module",
+  "version": "1.7.0",
+  "scripts": {
+    "lexgen:server": "./hack/gen-server.sh ./dev/server",
+    "lexgen:client": "./hack/gen-client.sh ./dev/client",
+    "lexgen": "npm run lexgen:server && npm run lexgen:client",
+    "format": "prettier --write",
+    "format:lexicon": "prettier --write ./lexicons/lex/skyshare/*.json"
+  },
+  "devDependencies": {
+    "@atproto/lex-cli": "^0.9.8",
+    "prettier": "^3.8.1"
+  },
+  "author": "nekono.dev"
+}

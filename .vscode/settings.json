@@ -1,21 +1,4 @@
 {
-    /* 既存の設定項目 */
-
-    // ...
-    "eslint.validate": [
-        "astro"
-    ],
-    "eslint.codeActionsOnSave.rules": null,
-    "eslint.probe": [
-        "javascript",
-        "javascriptreact",
-        "typescript",
-        "typescriptreact",
-        "html",
-        "vue",
-        "markdown",
-        "astro"
-    ],
-    "eslint.run": "onType",
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
 }
