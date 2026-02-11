@@ -5,7 +5,7 @@
   "scripts": {
     "lexgen": "./hack/gen-client.sh ./src/client/atproto",
     "apigen:client": "orval",
-    "apigen:type": "node ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
+    "apigen:type": "tsx ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
     "apigen": "npm run apigen:client && npm run apigen:type",
     "codegen": "npm run lexgen && npm run apigen",
     "dev": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro dev",
@@ -35,6 +35,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-sh": "^0.18.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "yaml": "^2.3.1"

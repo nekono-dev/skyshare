@@ -52,12 +52,14 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
 
         // app.bsky.feed.postコレクションに最低限のレコードをPUTするサンプル
         const record = {
+            $type: "app.bsky.feed.post",
             text: text || "sample post",
             createdAt: new Date().toISOString(),
         }
 
         const validation = validateAppBskyFeedPost(record)
         if (!validation?.success) {
+            console.error(validation)
             return errorResponseFromStatus(400)
         }
         const response = await agent.app.bsky.feed.post.create(
