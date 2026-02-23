@@ -1,0 +1,6 @@
+.launcherDelta {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  box-shadow: var(--shadow-primary);
+}

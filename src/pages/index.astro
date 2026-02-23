@@ -4,7 +4,7 @@ export const prerender = false
 import { ComAtprotoServerRefreshSession } from "@/client/atproto"
 
 import { parseSessionFromRequest, makeSessionSetCookie } from "@/lib/cookies.js"
-import PostForm from "@/components/PostForm"
+import PostLauncher from "@/components/PostLauncher"
 import { AtpBaseClient } from "@/client/atproto"
 
 let session: ComAtprotoServerRefreshSession.OutputSchema
@@ -36,5 +36,5 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
-    <PostForm client:load />
+    <PostLauncher client:load />
 </Baselayout>

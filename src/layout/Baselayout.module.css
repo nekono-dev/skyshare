@@ -6,15 +6,22 @@
   justify-content: space-between;
   box-sizing: border-box;
   aspect-ratio: 1 / 1;
-  width: 50%;
+  width: 80%;
   min-width: 480px;
   max-width: 720px;
-  padding: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 3px;
-  background-color: #ffffff;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-card-bg);
   color: inherit;
   overflow: hidden;
+}
+
+:global(body) {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: inherit;
 }
 
 /* 内部コンポーネントの共通設定 */

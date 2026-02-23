@@ -1,0 +1,87 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.dialog {
+  width: 380px;
+  max-width: calc(100% - 32px);
+  background: var(--color-card-bg);
+  border-radius: var(--radius-lg);
+  padding: calc(var(--space-4));
+  border: 1px solid var(--color-border);
+  box-shadow: none;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+.popupHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+.popupHeader h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+.closeBtn {
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+}
+
+.radioRow {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.radioBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: calc(var(--space-2)) calc(var(--space-3));
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  font-size: var(--font-size-md);
+}
+.radioBtn input {
+  accent-color: var(--color-accent);
+}
+
+.checkboxList {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.checkboxItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: calc(var(--space-3));
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+}
+.checkboxItem input {
+  width: 18px;
+  height: 18px;
+}
+.checkboxItem input:disabled + span {
+  opacity: 0.5;
+}
+
+.popupFooter {
+  margin-top: var(--space-3);
+  display: flex;
+  justify-content: center;
+}
+/* saveBtn now uses shared ui.module.css (base-button + blue-button) */

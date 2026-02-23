@@ -1,0 +1,80 @@
+@import "./tokens.css";
+
+:root {
+  /* White button specific colors */
+  --color-white-button-bg: var(--color-card-bg);
+  --color-white-button-hover: var(--surface-muted);
+  --color-white-button-border: var(--border-color-muted);
+  --color-white-button-color: var(--color-bluesky);
+
+  /* Blue button specific colors  */
+  --color-blue-button-bg: var(--color-primary);
+  --color-blue-button-hover: var(--color-primary-hover);
+  --color-blue-button-border: var(--border-color-muted);
+  --color-blue-button-color: var(--color-primary-foreground);
+
+  /* Size tokens */
+  --size-button-md: 40px;
+  --size-button-lg: 60px;
+
+  --btn-padding-x: calc(var(--space-3));
+  --btn-padding-y: calc(var(--space-2));
+}
+
+/* ボタンを定義する場合は必ず適応すること */
+:local(.baseButton) {
+  background: transparent;
+  border: var(--border-button);
+  color: inherit;
+  cursor: pointer;
+}
+
+/* テキストを主体とするボタンに適応すること */
+:local(.textButton) {
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  border-radius: var(--radius-button-md);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+/* 白系統ボタンに適応すること */
+:local(.whiteButton) {
+  background: var(--color-white-button-bg);
+  color: var(--color-white-button-color);
+  border-color: var(--color-white-button-border);
+}
+:local(.whiteButton):hover {
+  background: var(--color-white-button-hover);
+}
+
+/* 青系統ボタンに適応すること */
+:local(.blueButton) {
+  background: var(--color-blue-button-bg);
+  color: var(--color-blue-button-color);
+  border-color: var(--color-blue-button-border);
+}
+:local(.blueButton):hover {
+  background: var(--color-blue-button-hover);
+}
+
+/* アイコンを主体とするボタンに適応すること */
+:local(.nontextButton) {
+  padding: 0;
+  border-radius: var(--radius-button-max);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 固定サイズボタン（アイコンボタンなど）で中サイズの物に利用する */
+:local(.mdButton) {
+  width: var(--size-button-md);
+  height: var(--size-button-md);
+}
+
+/* 固定サイズボタン（アイコンボタンなど）で大サイズの物に利用する */
+:local(.lgButton) {
+  width: var(--size-button-lg);
+  height: var(--size-button-lg);
+}

@@ -1,6 +1,6 @@
 post:
   summary: Create a new entry
-  operationId: entry
+  operationId: createEntry
   parameters:
     - name: cookie
       in: header
