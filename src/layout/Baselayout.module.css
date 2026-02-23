@@ -1,27 +1,38 @@
 /* Card component styles */
-.card {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
-  box-sizing: border-box;
-  aspect-ratio: 1 / 1;
-  width: 80%;
-  min-width: 480px;
-  max-width: 720px;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background-color: var(--color-card-bg);
-  color: inherit;
-  overflow: hidden;
-}
 
 :global(body) {
   font-family: var(--font-family-sans);
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
   color: inherit;
+}
+
+:global(html) {
+  height: 100%;
+}
+
+:local(.root) {
+  padding: var(--space-4);
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+:local(.content) {
+  flex: 1 1 auto;
+  display: block;
+}
+
+/* リンク色をトークンから指定（グローバル） */
+:global(a) {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+:global(a:hover),
+:global(a:focus) {
+  color: var(--color-primary-hover);
+  text-decoration: underline;
 }
 
 /* 内部コンポーネントの共通設定 */

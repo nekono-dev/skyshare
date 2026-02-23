@@ -3,9 +3,10 @@ interface Props {
     pageTitle: string
     cardPath: string
     robots: string[]
+    avatarUrl?: string | null
 }
 import Metadatas from "@/components/Metadatas.astro"
-const { cardPath, pageTitle, robots } = Astro.props
+const { cardPath, pageTitle, robots, avatarUrl } = Astro.props
 const favicon = "favicon.svg"
 import "@/styles/tokens.css"
 import styles from "./Baselayout.module.css"
@@ -14,13 +15,13 @@ import styles from "./Baselayout.module.css"
 <html lang="ja">
     <head>
         <link rel="icon" href={favicon} />
-        <Metadatas cardPath={cardPath} pageTitle={pageTitle} robots={robots} />
+        <Metadatas cardPath={cardPath} pageTitle={pageTitle} robots={robots} avatarUrl={avatarUrl} />
     </head>
-    <body style="min-height: 100dvh" id="root">
+    <body id="root" class={styles.root}>
         <slot name="header" />
-        <div class={styles.card}>
+        <main class={styles.content}>
             <slot />
-        </div>
+        </main>
         <slot name="footer" />
     </body>
 </html>

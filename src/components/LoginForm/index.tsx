@@ -2,11 +2,12 @@ import React, { useState } from "react"
 import { createSession } from "@/client/openapi/client"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
 import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
 
 export const Component = () => {
   const [handle, setHandle] = useState("")
   const [password, setPassword] = useState("")
-  const [service, setService] = useState("https://bsky.social")
+  // const [service, setService] = useState("https://bsky.social")
   const [message, setMessage] = useState("")
   const [color, setColor] = useState("")
 
@@ -19,7 +20,8 @@ export const Component = () => {
       const body: CreateSessionBody = {
         identifier: handle.trim(),
         password,
-        service: service.trim() || "https://bsky.social",
+        service: "https://bsky.social",
+        // service: service.trim() || "https://bsky.social",
       }
       const res = await createSession(body)
 
@@ -43,51 +45,48 @@ export const Component = () => {
   }
 
   return (
-    <form id="login-form" onSubmit={onSubmit}>
-      <div>
-        ハンドル (handle or email)
-        <input
-          className={styles.input}
-          id="handle"
-          name="handle"
-          placeholder="alice.example.com or alice@mail.com"
-          required
-          value={handle}
-          onChange={e => setHandle(e.target.value)}
-        />
+    <form id="login-form" className={ui.baseCard} onSubmit={onSubmit}>
+      <div className={styles.content}>
+        <div>
+          <label>ハンドル (@以降のhandle)</label>
+          <input
+            className={styles.input}
+            id="handle"
+            name="handle"
+            placeholder="example.bsky.social"
+            required
+            value={handle}
+            onChange={e => setHandle(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label>
+            アプリパスワード（
+            <a href="https://bsky.app/settings/app-passwords">作成ページ</a>）
+          </label>
+          <input
+            className={styles.input}
+            id="password"
+            name="password"
+            type="password"
+            required
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+          />
+        </div>
+
+        <button
+          type="submit"
+          className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
+        >
+          ログイン
+        </button>
+
+        <p id="message" aria-live="polite" style={{ marginTop: "1rem", color }}>
+          {message}
+        </p>
       </div>
-
-      <div>
-        パスワード
-        <input
-          className={styles.input}
-          id="password"
-          name="password"
-          type="password"
-          required
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-        />
-      </div>
-
-      <div>
-        サービス URL
-        <input
-          className={styles.input}
-          id="service"
-          name="service"
-          value={service}
-          onChange={e => setService(e.target.value)}
-        />
-      </div>
-
-      <button type="submit" className={styles.button}>
-        ログイン
-      </button>
-
-      <p id="message" aria-live="polite" style={{ marginTop: "1rem", color }}>
-        {message}
-      </p>
     </form>
   )
 }

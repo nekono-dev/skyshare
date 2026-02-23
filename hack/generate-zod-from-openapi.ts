@@ -232,10 +232,28 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         }
         if (t === "array")
             return `z.array(${renderSchema(s.items || {}, baseFile, forEndpoint)})`
-        if (t === "string") return "z.string()"
+        if (t === "string") {
+            if (s.format === "binary") return "z.instanceof(Blob)"
+            return "z.string()"
+        }
         if (t === "integer" || t === "number") return "z.number()"
         if (t === "boolean") return "z.boolean()"
         return "z.any()"
+    }
+
+    function pickContentSchema(content: any, preferredTypes: string[]) {
+        if (!content || typeof content !== "object") return undefined
+        for (const mediaType of preferredTypes) {
+            const media = content[mediaType]
+            if (media && typeof media === "object" && media.schema)
+                return media.schema
+        }
+        // Fallback to any declared media type that includes a schema.
+        for (const media of Object.values(content as Record<string, any>)) {
+            if (media && typeof media === "object" && media.schema)
+                return media.schema
+        }
+        return undefined
     }
 
     // Pre-scan paths to register external refs
@@ -288,9 +306,13 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             if (!op || typeof op !== "object") continue
             if (op.requestBody) {
                 const content = op.requestBody.content || {}
-                const json = content["application/json"] || content["*/*"]
-                if (json && json.schema)
-                    renderSchema(json.schema, specSourceFile)
+                const reqSchema = pickContentSchema(content, [
+                    "application/json",
+                    "multipart/form-data",
+                    "application/x-www-form-urlencoded",
+                    "*/*",
+                ])
+                if (reqSchema) renderSchema(reqSchema, specSourceFile)
             }
             if (Array.isArray(op.parameters) && op.parameters.length > 0) {
                 for (const p of op.parameters) {
@@ -428,13 +450,14 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             // request body
             if (op.requestBody) {
                 const content = op.requestBody.content || {}
-                const json = content["application/json"] || content["*/*"]
-                if (json && json.schema) {
-                    const reqLine = renderSchema(
-                        json.schema,
-                        baseForRender,
-                        true,
-                    )
+                const reqSchema = pickContentSchema(content, [
+                    "application/json",
+                    "multipart/form-data",
+                    "application/x-www-form-urlencoded",
+                    "*/*",
+                ])
+                if (reqSchema) {
+                    const reqLine = renderSchema(reqSchema, baseForRender, true)
                     const constName = `RequestBodySchema`
                     endpointLines.push(
                         `export const ${constName} = ${reqLine};`,

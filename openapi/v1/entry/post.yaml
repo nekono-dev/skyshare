@@ -1,0 +1,61 @@
+summary: Create a new entry (supports multipart/form-data with optional file)
+operationId: createEntry
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../common.yaml#/cookie
+requestBody:
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        type: object
+        required:
+          - text
+        properties:
+          image:
+            type: string
+            format: binary
+          text:
+            type: string
+            example: Post content
+          langs:
+            type: array
+            items:
+              type: string
+              example: ja
+responses:
+  "200":
+    description: Success post
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            bsky:
+              type: object
+              properties:
+                url:
+                  type: string
+                  example: did:example.com/abcd1234
+              required:
+                - url
+            skyshare:
+              type: object
+              properties:
+                uri:
+                  type: string
+                  example: did:example.com/abcd1234
+              required:
+                - uri
+          required:
+            - bsky
+            - skyshare
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error

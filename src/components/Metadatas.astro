@@ -3,8 +3,9 @@ interface Props {
     pageTitle: string
     cardPath: string
     robots: string[]
+    avatarUrl?: string | null
 }
-const { cardPath, pageTitle, robots } = Astro.props
+const { cardPath, pageTitle, robots, avatarUrl } = Astro.props
 import { serviceName, serviceDescription } from "@/vars"
 
 const url = Astro.url
@@ -26,6 +27,7 @@ const cardUrl = new URL(cardPath, Astro.url)
 <meta name="twitter:description" content={serviceDescription} />
 <meta name="twitter:image" content={cardUrl} />
 <meta property="og:image" content={cardUrl} />
+{avatarUrl ? <link rel="preload" as="image" href={avatarUrl} /> : null}
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="generator" content={Astro.generator} />

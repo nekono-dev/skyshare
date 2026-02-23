@@ -1,0 +1,38 @@
+summary: Extract OGP information from URL
+operationId: extractUrl
+parameters:
+  - name: url
+    in: query
+    required: true
+    schema:
+      type: string
+      format: uri
+      required:
+        - uri
+responses:
+  "200":
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+              example: ""
+            description:
+              type: string
+              example: ""
+            image:
+              type: string
+              example: ""
+          required:
+            - title
+            - description
+            - images
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error

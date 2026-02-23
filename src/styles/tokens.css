@@ -39,21 +39,29 @@
   );
   --color-bluesky-disabled: hsl(var(--color-bluesky-h), 20%, 90%);
 
+  --color-gray: rgb(239, 242, 246);
+  --color-gray-hover: rgb(220, 226, 234);
+  --color-gray-disabled: rgb(245, 247, 250);
+  --color-gray-color: rgba(0, 0, 0, 0.847);
+
+  --color-black: #000000;
+  --color-white: #ffffff;
+
   /* Semantic aliases */
   --color-primary: var(--color-bluesky);
-  --color-primary-foreground: #ffffff;
+  --color-primary-foreground: var(--color-white);
   --color-primary-hover: var(--color-bluesky-hover);
   --color-primary-disabled: var(--color-bluesky-disabled);
 
   /* Utility */
   --border-button: 1px solid transparent;
+  --border-card: 1px solid var(--color-border);
   --border-color-muted: transparent;
-
-  --size-avatar: 48px;
 
   /* Semantic tokens */
   --color-card-bg: #ffffff;
   --color-muted: #6b7280;
+  --color-card-muted-bg: var(--color-gray);
   --color-border: rgba(0, 0, 0, 0.06);
   --surface-muted: rgb(204, 225, 255);
 

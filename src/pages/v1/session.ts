@@ -2,7 +2,7 @@ import type { APIRoute } from "astro"
 import { AtpBaseClient } from "@/client/atproto"
 
 import { makeSessionSetCookie } from "@/lib/cookies.js"
-import * as PostSchema from "@/client/openapi/schemas/api/session/post"
+import * as PostSchema from "@/client/openapi/schemas/v1/session/post"
 
 import { errorResponseFromStatus } from "@/lib/api.js"
 import { XRPCError } from "@atproto/xrpc"

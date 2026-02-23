@@ -10,6 +10,7 @@ npx lex gen-api --yes \
   ./lexicons/app/bsky/feed/defs.json \
   ./lexicons/app/bsky/embed/* \
   ./lexicons/app/bsky/actor/defs.json \
+  ./lexicons/app/bsky/actor/getProfile.json \
   ./lexicons/app/bsky/notification/defs.json \
   ./lexicons/app/bsky/feed/threadgate.json \
   ./lexicons/app/bsky/feed/postgate.json \

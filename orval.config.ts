@@ -9,6 +9,12 @@ export default defineConfig({
             client: "fetch",
             mode: "single",
             clean: true,
+            override: {
+                mutator: {
+                    path: "./src/lib/fetcher.ts",
+                    name: "customFetcher",
+                },
+            },
         },
     },
 })

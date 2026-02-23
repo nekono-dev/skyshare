@@ -5,7 +5,9 @@ info:
   description: ATProto ClientをAstro SSGで利用するためのAPIラッパー
 
 paths: # APIドキュメントのエンドポイント
-  /api/entry:
-    $ref: ./api/entry.yaml
-  /api/session:
-    $ref: ./api/session/index.yaml
+  /v1/entry:
+    $ref: ./v1/entry/index.yaml
+  /v1/session:
+    $ref: ./v1/session/index.yaml
+  /v1/extract:
+    $ref: ./v1/extract/index.yaml

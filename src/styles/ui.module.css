@@ -11,7 +11,13 @@
   --color-blue-button-bg: var(--color-primary);
   --color-blue-button-hover: var(--color-primary-hover);
   --color-blue-button-border: var(--border-color-muted);
-  --color-blue-button-color: var(--color-primary-foreground);
+  --color-blue-button-color: var(--color-white);
+
+  /* Gray button specific colors */
+  --color-gray-button-bg: var(--color-gray);
+  --color-gray-button-hover: var(--color-gray-hover);
+  --color-gray-button-border: var(--border-color-muted);
+  --color-gray-button-color: var(--color-gray-color);
 
   /* Size tokens */
   --size-button-md: 40px;
@@ -23,9 +29,7 @@
 
 /* ボタンを定義する場合は必ず適応すること */
 :local(.baseButton) {
-  background: transparent;
   border: var(--border-button);
-  color: inherit;
   cursor: pointer;
 }
 
@@ -58,6 +62,16 @@
   background: var(--color-blue-button-hover);
 }
 
+/* グレー系統ボタンに適応すること */
+:local(.grayButton) {
+  background: var(--color-gray-button-bg);
+  color: var(--color-gray-button-color);
+  border-color: var(--color-gray-button-border);
+}
+:local(.grayButton):hover {
+  background: var(--color-gray-button-hover);
+}
+
 /* アイコンを主体とするボタンに適応すること */
 :local(.nontextButton) {
   padding: 0;
@@ -77,4 +91,18 @@
 :local(.lgButton) {
   width: var(--size-button-lg);
   height: var(--size-button-lg);
+}
+
+/* Base card / container used as outer frame for forms and panels */
+:local(.baseCard) {
+  display: block;
+  padding: var(--space-2);
+  background: var(--color-card-bg);
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+:local(.baseCard) * {
+  box-sizing: border-box;
 }

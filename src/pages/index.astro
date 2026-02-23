@@ -9,6 +9,7 @@ import { AtpBaseClient } from "@/client/atproto"
 
 let session: ComAtprotoServerRefreshSession.OutputSchema
 let service: string
+let avatarUrl: string | null = null
 ;({ session, service } = parseSessionFromRequest(Astro.request))
 if (session) {
     try {
@@ -18,6 +19,20 @@ if (session) {
                 headers: { authorization: `Bearer ${session.refreshJwt}` },
             })
             .then(res => res.data)
+        try {
+            const prof = await agent.app.bsky.actor
+                .getProfile(
+                    { actor: data.did },
+                    {
+                        headers: { authorization: `Bearer ${session.accessJwt}` },
+                    },
+                )
+                .then(res => res.data)
+            avatarUrl = prof.avatar ?? null
+        } catch (e) {
+            console.warn("Failed to fetch profile avatar:", e)
+            avatarUrl = null
+        }
         // セッションを更新できたらリスポンスのクッキーに付与して送信する
         const cookie = makeSessionSetCookie({ session: data, service })
         Astro.response.headers.set("Set-Cookie", cookie)
@@ -35,6 +50,11 @@ import Baselayout from "@/layout/Baselayout.astro"
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
-<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
-    <PostLauncher client:load />
+<Baselayout
+    cardPath={`/materials/ogp_main.png`}
+    pageTitle="Skyshare"
+    robots={robots}
+    avatarUrl={typeof avatarUrl !== "undefined" ? avatarUrl : null}
+>
+    <PostLauncher client:load avatarUrl={typeof avatarUrl !== "undefined" ? avatarUrl : null} />
 </Baselayout>

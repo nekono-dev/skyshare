@@ -5,7 +5,7 @@ import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import pic from "@/images/pen.svg"
 
-const PostLauncher: React.FC = () => {
+const PostLauncher: React.FC<{ avatarUrl?: string | null }> = ({ avatarUrl }) => {
   const [open, setOpen] = useState(false)
 
   return (
@@ -20,7 +20,7 @@ const PostLauncher: React.FC = () => {
       </button>
 
       <Overlay open={open} onClose={() => setOpen(false)}>
-        <PostForm />
+        <PostForm onClose={() => setOpen(false)} avatarUrl={avatarUrl} />
       </Overlay>
     </>
   )
