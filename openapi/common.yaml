@@ -18,3 +18,20 @@ cookie:
   schema:
     type: string
     example: sid=abc123; Path=/; HttpOnly
+
+ogObj:
+  type: object
+  properties:
+    title:
+      type: string
+      example: ""
+    description:
+      type: string
+      example: ""
+    image:
+      type: string
+      example: ""
+  required:
+    - title
+    - description
+    - images

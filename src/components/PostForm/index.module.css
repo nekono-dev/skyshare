@@ -92,15 +92,10 @@
 
 .toolbar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  margin-top: var(--space-3);
   border-top: 1px solid var(--border-color-muted);
   padding-top: var(--space-3);
-}
-.leftIcons {
-  display: flex;
-  gap: var(--space-3);
 }
 
 .rightInfo {

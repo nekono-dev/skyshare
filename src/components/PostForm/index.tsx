@@ -1,14 +1,33 @@
-import React, { useState, useRef } from "react"
+import React, { useEffect, useState } from "react"
 import { createEntry } from "@/client/openapi/client"
+import type { ExtractUrl200 } from "@/client/openapi/model"
+import ImagePicker, { type ImageEntry } from "@/components/ImagePicker"
 import LanguageSelect from "@/components/LanguageSelect"
+import Loading from "@/components/Loading"
+import OgpFetchButton from "@/components/OgpFetchButton"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
-
-import pic from "@/images/image.svg"
 
 type Props = {
   onClose?: () => void
   avatarUrl?: string | null
+}
+
+const revokeImageEntry = (entry: ImageEntry | null) => {
+  if (!entry) return
+
+  try {
+    entry.originalPreviews?.forEach(p => {
+      try {
+        URL.revokeObjectURL(p)
+      } catch (e) {}
+    })
+    try {
+      URL.revokeObjectURL(entry.thumbnailPreview)
+    } catch (e) {}
+  } catch (error) {
+    console.warn("Failed to revoke object URL", error)
+  }
 }
 
 export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
@@ -16,37 +35,83 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   const [languageCode, setLanguageCode] = useState("ja")
   const [status, setStatus] = useState<string | null>(null)
   const [statusColor, setStatusColor] = useState<string | undefined>(undefined)
-  const [files, setFiles] = useState<Array<{ file: File; preview: string }>>([])
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
+  const [ogpResult, setOgpResult] = useState<ExtractUrl200 | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const maxLen = 300
 
+  useEffect(() => {
+    return () => {
+      revokeImageEntry(imageEntry)
+    }
+  }, [imageEntry])
+
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
     setStatus("送信中…")
     setStatusColor(undefined)
 
     try {
+      const imageSizes = imageEntry?.meta ?? []
+      const hasCompleteImageSizes =
+        imageEntry !== null &&
+        imageSizes.length === imageEntry.originalBlobs.length &&
+        imageSizes.every(
+          v =>
+            typeof v.width === "number" &&
+            v.width > 0 &&
+            typeof v.height === "number" &&
+            v.height > 0,
+        )
+
       const res = await createEntry({
         text,
         langs: [languageCode],
+        ogObj: ogpResult || undefined,
+        ...(imageEntry
+          ? {
+              visual: imageEntry.thumbnailBlob,
+              images: imageEntry.originalBlobs,
+              ...(hasCompleteImageSizes
+                ? {
+                    imagesMeta: JSON.stringify(
+                      imageSizes.map(v => ({
+                        width: v.width,
+                        height: v.height,
+                      })),
+                    ),
+                  }
+                : {}),
+            }
+          : {}),
       })
       if (res.status !== 200) {
         setStatusColor("#b00")
-        // @ts-ignore
-        setStatus(res.data.error || "投稿に失敗しました。")
+        const errorMessage =
+          "error" in res.data && typeof res.data.error === "string"
+            ? res.data.error
+            : "投稿に失敗しました。"
+        setStatus(errorMessage)
         return
       }
 
       setStatusColor("green")
-      // @ts-ignore
       const url = res.data.bsky.url
       setStatus(`投稿に成功しました。URL: ${url}`)
       setText("")
+      // revoke created previews
+      revokeImageEntry(imageEntry)
+      setImageEntry(null)
     } catch (err) {
       console.error(err)
       setStatusColor("#b00")
       setStatus("サーバへ接続できませんでした。")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -56,10 +121,12 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
       role="dialog"
       aria-label="投稿フォーム"
     >
+      {isSubmitting && <Loading overlay message="投稿中..." />}
       <div className={styles.header}>
         <button
           className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
           aria-label="キャンセル"
+          disabled={isSubmitting}
           onClick={() => {
             if (onClose) onClose()
           }}
@@ -69,6 +136,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         <div className={styles.headerRight}>
           <button
             className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+            disabled={isSubmitting}
           >
             下書き
           </button>
@@ -76,6 +144,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             form="entry-form"
             className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
             type="submit"
+            disabled={isSubmitting}
           >
             投稿
           </button>
@@ -111,52 +180,30 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
               value={text}
               onChange={e => setText(e.target.value)}
               maxLength={maxLen}
+              disabled={isSubmitting}
             />
           </div>
         </div>
+        <OgpFetchButton text={text} onChange={setOgpResult} />
+        <ImagePicker
+          value={imageEntry}
+          onChange={setImageEntry}
+          disabled={isSubmitting}
+        />
 
         <div className={styles.toolbar}>
-          <div className={styles.leftIcons}>
-            <button
-              className={`${ui.baseButton} ${ui.whiteButton} ${ui.nontextButton} ${ui.mdButton}`}
-              type="button"
-              aria-label="画像追加"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <img src={pic.src} width={18} height={18} />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              style={{ display: "none" }}
-              onChange={e => {
-                const list = e.target.files
-                if (!list) return
-                const added = Array.from(list).map(f => ({
-                  file: f,
-                  preview: URL.createObjectURL(f),
-                }))
-                setFiles(prev => [...prev, ...added])
-                // reset input so same file can be selected again if needed
-                e.currentTarget.value = ""
-              }}
-            />
-          </div>
-
           <div className={styles.rightInfo}>
             <LanguageSelect
               value={languageCode}
               onChange={setLanguageCode}
               className={styles.langSelect}
+              disabled={isSubmitting}
             />
             <span className={styles.charCount}>
               {text.length}/{maxLen}
             </span>
           </div>
         </div>
-
         <div
           id="status"
           aria-live="polite"
@@ -165,32 +212,6 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         >
           {status}
         </div>
-        {files.length > 0 && (
-          <div className={styles.previewArea}>
-            {files.map((fObj, i) => (
-              <div key={i} className={styles.previewItem}>
-                <img
-                  src={fObj.preview}
-                  alt={fObj.file.name}
-                  className={styles.previewImg}
-                />
-                <button
-                  type="button"
-                  className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-                  onClick={() => {
-                    // revoke URL and remove
-                    try {
-                      URL.revokeObjectURL(fObj.preview)
-                    } catch (e) {}
-                    setFiles(prev => prev.filter((_, idx) => idx !== i))
-                  }}
-                >
-                  削除
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </form>
     </div>
   )

@@ -1,15 +1,50 @@
 import type { APIRoute } from "astro"
 
-import { ComAtprotoServerRefreshSession, AtpBaseClient } from "@/client/atproto"
+import { ComAtprotoServerRefreshSession } from "@/client/atproto"
 import { RichText, AtpAgent } from "@atproto/api"
-import { validateRecord as validateAppBskyFeedPost } from "@/client/atproto/types/app/bsky/feed/post.js"
 import { parseSessionFromRequest } from "@/lib/cookies.js"
 import { convertHeaderToObj, errorResponseFromStatus } from "@/lib/api.js"
 
 import * as PostSchema from "@/client/openapi/schemas/v1/entry/post"
-import getFormDataFile from "@/lib/formdata.js"
-import { extractLinkUrisFromFacets } from "@/lib/richtext"
-import { extractUrl } from "@/client/openapi/client"
+
+type ImageMeta = {
+    width: number
+    height: number
+}
+
+const parseImageMeta = (value: string | null): ImageMeta[] | null => {
+    if (!value) {
+        return []
+    }
+
+    try {
+        const parsed = JSON.parse(value)
+        if (!Array.isArray(parsed)) {
+            return null
+        }
+
+        const imageMeta = parsed.map(item => {
+            const width = Number(item?.width)
+            const height = Number(item?.height)
+            if (
+                !Number.isFinite(width) ||
+                !Number.isInteger(width) ||
+                width <= 0 ||
+                !Number.isFinite(height) ||
+                !Number.isInteger(height) ||
+                height <= 0
+            ) {
+                throw new Error("invalid image meta")
+            }
+
+            return { width, height }
+        })
+
+        return imageMeta
+    } catch {
+        return null
+    }
+}
 
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
     try {
@@ -38,17 +73,10 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             did: session.did,
             active: true,
         })
-        // session = await agent.com.atproto.server
-        //     .refreshSession(undefined, {
-        //         headers: {
-        //             authorization: `Bearer ${session.refreshJwt}`,
-        //         },
-        //     })
-        //     .then(res => res.data)
 
         const contentType = request.headers.get("content-type") || ""
         let rawBody: any = {}
-
+        let imageMeta: ImageMeta[] = []
         if (contentType.includes("multipart/form-data")) {
             const formData = await request.formData()
 
@@ -60,18 +88,38 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                 rawBody.langs = langs.map((v: any) => String(v))
             }
 
-            const image = await getFormDataFile(formData, "image")
-            if (image) {
-                const uploadRes = await agent.com.atproto.repo.uploadBlob(
-                    image.buffer,
-                    {
-                        encoding: image.mime,
-                        headers: {
-                            authorization: `Bearer ${session.accessJwt}`,
-                        },
-                    },
-                )
-                rawBody.image = uploadRes.data
+            const ogObjRaw = formData.get("ogObj")
+            if (ogObjRaw) {
+                try {
+                    rawBody.ogObj = JSON.parse(String(ogObjRaw))
+                } catch {
+                    console.warn("createEntry: ogObj is not valid JSON")
+                    return errorResponseFromStatus(400)
+                }
+            }
+
+            const imagesRaw = formData.getAll("images")
+            const imageFiles = imagesRaw.filter(
+                v => typeof (v as any)?.arrayBuffer === "function",
+            ) as Blob[]
+            if (imageFiles.length > 0) {
+                rawBody.images = imageFiles
+            }
+
+            const imagesMetaRaw = formData.get("imagesMeta")
+            if (imagesMetaRaw !== null) {
+                rawBody.imagesMeta = String(imagesMetaRaw)
+                const parsedMeta = parseImageMeta(String(imagesMetaRaw))
+                if (parsedMeta === null) {
+                    console.warn("createEntry: imagesMeta is not valid JSON")
+                    return errorResponseFromStatus(400)
+                }
+                imageMeta = parsedMeta
+            }
+
+            const visual = formData.get("visual")
+            if (visual && typeof (visual as any)?.arrayBuffer === "function") {
+                rawBody.visual = visual as Blob
             }
         } else {
             return errorResponseFromStatus(400)
@@ -84,6 +132,53 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             )
             return errorResponseFromStatus(400)
         }
+
+        const widths = imageMeta.map(v => v.width)
+        const heights = imageMeta.map(v => v.height)
+        if (
+            body.data.images?.length &&
+            (widths.length !== body.data.images.length ||
+                heights.length !== body.data.images.length)
+        ) {
+            console.warn("createEntry: image size metadata count mismatch", {
+                images: body.data.images.length,
+                widths: widths.length,
+                heights: heights.length,
+            })
+            return errorResponseFromStatus(400)
+        }
+
+        const uploadedImages = body.data.images
+            ? await Promise.all(
+                  body.data.images.map(async image => {
+                      const mime = image.type || "application/octet-stream"
+                      const buffer = new Uint8Array(await image.arrayBuffer())
+                      const uploadRes = await agent.uploadBlob(buffer, {
+                          encoding: mime,
+                      })
+                      return uploadRes.data.blob
+                  }),
+              )
+            : []
+
+        const embed =
+            uploadedImages.length > 0
+                ? {
+                      $type: "app.bsky.embed.images" as const,
+                      images: uploadedImages.map((blob, idx) => ({
+                          image: blob,
+                          alt: "",
+                          aspectRatio:
+                              widths[idx] && heights[idx]
+                                  ? {
+                                        width: widths[idx],
+                                        height: heights[idx],
+                                    }
+                                  : undefined,
+                      })),
+                  }
+                : undefined
+
         const rt = new RichText({ text: body.data.text })
         await rt.detectFacets(agent)
 
@@ -92,17 +187,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             text: rt.text,
             facets: rt.facets,
             langs: body.data.langs,
-            // embed: body.data.image
-            //     ? {
-            //           $type: "app.bsky.embed.images",
-            //           images: [
-            //               {
-            //                   image: body.data.image,
-            //                   alt: "Uploaded image",
-            //               },
-            //           ],
-            //       }
-            //     : undefined,
+            embed,
         })
         // // app.bsky.feed.postコレクションに最低限のレコードをPUTするサンプル
         // const record = {

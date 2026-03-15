@@ -15,21 +15,7 @@ responses:
     content:
       application/json:
         schema:
-          type: object
-          properties:
-            title:
-              type: string
-              example: ""
-            description:
-              type: string
-              example: ""
-            image:
-              type: string
-              example: ""
-          required:
-            - title
-            - description
-            - images
+          $ref: ../../common.yaml#/ogObj
   "400":
     description: Bad Request
     content:

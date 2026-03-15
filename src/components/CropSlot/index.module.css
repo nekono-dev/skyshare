@@ -1,0 +1,25 @@
+.slotOuter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-inline: auto;
+}
+
+.slotLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.cropWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 40 / 21;
+  background: #777;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.sliderArea {
+  display: block;
+}

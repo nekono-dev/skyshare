@@ -15,12 +15,22 @@ requestBody:
         required:
           - text
         properties:
-          image:
+          images:
+            type: array
+            items:
+              type: string
+              format: binary
+          imagesMeta:
+            description: 'JSON string of metadata array paired with images[] by index. Example: [{"width":1200,"height":630}]'
+            type: string
+          visual:
             type: string
             format: binary
           text:
             type: string
             example: Post content
+          ogObj:
+            $ref: ../../common.yaml#/ogObj
           langs:
             type: array
             items:

@@ -194,6 +194,11 @@ export const BLUESKY_POST_LANGUAGES: LanguageOption[] = [
   { label: "isiZulu", code: "zu" },
 ]
 
+const UNIQUE_BLUESKY_POST_LANGUAGES: LanguageOption[] =
+  BLUESKY_POST_LANGUAGES.filter((option, index, list) => {
+    return list.findIndex(item => item.code === option.code) === index
+  })
+
 type Props = {
   value: string
   onChange: (code: string) => void
@@ -230,7 +235,7 @@ export const Component: React.FC<Props> = ({
       disabled={disabled}
       aria-label={ariaLabel}
     >
-      {BLUESKY_POST_LANGUAGES.map(option => {
+      {UNIQUE_BLUESKY_POST_LANGUAGES.map(option => {
         const labelText = option.label
         return (
           <option key={option.code} value={option.code}>

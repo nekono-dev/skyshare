@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro"
-import { AtpBaseClient } from "@/client/atproto"
+import { AtpAgent } from "@atproto/api"
 
 import { makeSessionSetCookie } from "@/lib/cookies.js"
 import * as PostSchema from "@/client/openapi/schemas/v1/session/post"
@@ -21,22 +21,13 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         const password = body.data.password
         const service = body.data.service || "https://bsky.social"
 
-        const agent = new AtpBaseClient(service)
-        const data = await agent.com.atproto.server
-            .createSession({
-                identifier,
-                password,
-            })
-            .then(res => res.data)
+        const agent = new AtpAgent({ service })
+        const response = await agent.login({
+            identifier,
+            password,
+        })
+        const session = response.data
 
-        const session = {
-            accessJwt: data.accessJwt,
-            refreshJwt: data.refreshJwt,
-            handle: data.handle,
-            did: data.did,
-            active: data.active ?? true,
-            status: data.status,
-        }
         // Store both session and service so server-side APIs can resume correctly
         const cookiePayload = { session, service }
         const cookie = makeSessionSetCookie(cookiePayload)

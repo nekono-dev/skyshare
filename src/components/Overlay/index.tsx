@@ -1,4 +1,5 @@
 import React from "react"
+import { createPortal } from "react-dom"
 import styles from "./index.module.css"
 
 type Props = {
@@ -16,16 +17,22 @@ const Overlay: React.FC<Props> = ({
 }) => {
   if (!open) return null
 
-  return (
+  const overlay = (
     <div className={styles.backdrop} onClick={onClose} role="presentation">
       <div
-        className={contentClassName ? contentClassName : styles.content}
+        className={[styles.content, contentClassName].filter(Boolean).join(" ")}
         onClick={e => e.stopPropagation()}
       >
         {children}
       </div>
     </div>
   )
+
+  if (typeof document === "undefined") {
+    return overlay
+  }
+
+  return createPortal(overlay, document.body)
 }
 
 export default Overlay

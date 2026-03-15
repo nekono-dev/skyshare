@@ -1,9 +1,11 @@
+import { extractorApi } from "@/vars"
+
 export const customFetcher = async <T>(
     url: string,
     options: RequestInit,
 ): Promise<T> => {
     if (url.startsWith("/v1/extract")) {
-        url = process.env.OGP_EXTRACTOR_API + url
+        url = extractorApi + url
     }
     const res = await fetch(url, options)
     // 安全にレスポンスを処理する: ボディが空や非JSONでも落ちないようにする
@@ -13,7 +15,6 @@ export const customFetcher = async <T>(
         try {
             parsed = JSON.parse(text)
         } catch (e) {
-            // JSON でなければ生のテキストを返す
             parsed = text
         }
     }

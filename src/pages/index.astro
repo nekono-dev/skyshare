@@ -30,6 +30,9 @@ if (session) {
                 .then(res => res.data)
             avatarUrl = prof.avatar ?? null
         } catch (e) {
+            if (e instanceof Error) {
+                console.warn("Failed to fetch profile avatar:", e.message)
+            }
             console.warn("Failed to fetch profile avatar:", e)
             avatarUrl = null
         }
