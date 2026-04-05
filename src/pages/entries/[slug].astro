@@ -1,0 +1,291 @@
+---
+export const prerender = false
+
+import { AppBskyEmbedImages, AppBskyFeedPost, AtpAgent } from "@atproto/api"
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName } from "@/vars"
+import styles from "./[slug].module.css"
+import { publicAtpService } from "@/env"
+import { bskyPostUrlgen, bskyCdnUrlgen, parseAtUri } from "@/lib/url"
+
+type SourceLocator = {
+    actor: string
+    rkey: string
+}
+
+type EntryLike = {
+    source?: {
+        uri?: string
+    }
+    manifest?: {
+        source?: {
+            uri?: string
+        }
+        visual?: {
+            ref?: unknown
+            mimeType?: string
+        }
+        heading?: string
+        caption?: string
+    }
+    createdAt?: string
+}
+
+type SourceImage = {
+    url: string
+    alt: string
+}
+
+const ENTRY_COLLECTION = "dev.nekono.skyshare.entry"
+const robots = ["index", "follow", "noarchive", "noimageindex"]
+
+const parseEntryLocator = (slugValue: string): SourceLocator | undefined => {
+    const decoded = decodeURIComponent(slugValue)
+
+    if (decoded.startsWith("http://") || decoded.startsWith("https://")) {
+        const url = new URL(decoded)
+        // Allow linking by this app URL style: /entries/{did@rkey}
+        const parts = url.pathname.split("/").filter(Boolean)
+        if (parts.length >= 2 && parts[0] === "entries") {
+            const compact = parts[1].match(/^([^@]+)@([^@/]+)$/)
+            if (compact) {
+                return { actor: compact[1], rkey: compact[2] }
+            }
+        }
+        return
+    }
+
+    if (decoded.startsWith("at://")) {
+        const match = decoded.match(/^at:\/\/([^/]+)\/dev\.nekono\.skyshare\.entry\/([^/?#]+)$/)
+        if (!match) return
+        return { actor: match[1], rkey: match[2] }
+    }
+
+    const compact = decoded.match(/^([^@]+)@([^@/]+)$/)
+    if (compact) {
+        return { actor: compact[1], rkey: compact[2] }
+    }
+    return
+}
+
+const toCidString = (ref: unknown): string | undefined => {
+    if (typeof ref === "string") return ref
+    if (ref && typeof ref === "object") {
+        const maybeLink = (ref as Record<string, unknown>)["$link"]
+        if (typeof maybeLink === "string") return maybeLink
+        if (typeof (ref as { toString?: () => string }).toString === "function") {
+            const value = (ref as { toString: () => string }).toString()
+            if (typeof value === "string" && value.length > 0 && value !== "[object Object]") {
+                return value
+            }
+        }
+    }
+    return
+}
+
+const blobToCdnUrl = (
+    repoDid: string,
+    blob?: {
+        ref?: unknown
+        mimeType?: string
+    },
+): string | undefined => {
+    if (!blob) return
+    const ref = toCidString(blob.ref)
+    if (!ref) return
+    return bskyCdnUrlgen(repoDid, ref)
+}
+
+const extractSourceImages = (postRecord: AppBskyFeedPost.Main, sourceRepoDid: string): SourceImage[] => {
+    const embedded = postRecord.embed
+
+    const fromImagesRecord = (imagesRecord: AppBskyEmbedImages.Main): SourceImage[] => {
+        if (!imagesRecord || !Array.isArray(imagesRecord.images)) return []
+        return imagesRecord.images
+            .map(img => {
+                const url = blobToCdnUrl(sourceRepoDid, img.image)
+                if (!url) return
+                return {
+                    url,
+                    alt: typeof img?.alt === "string" ? img.alt : "",
+                }
+            })
+            .filter((img): img is SourceImage => img !== undefined)
+    }
+
+    if (embedded?.$type === "app.bsky.embed.images") {
+        return fromImagesRecord(embedded as AppBskyEmbedImages.Main)
+    }
+
+    return []
+}
+
+const slug = Astro.params.slug
+
+let statusCode = 200
+let pageTitle = `${serviceName} Entry`
+let cardPath = ""
+let sourceWebUrl = ""
+let sourceText = ""
+let sourceImages: SourceImage[] = []
+let createdAtText = ""
+let manifestHeading = ""
+let manifestCaption = ""
+let notFoundReason = "entry not found"
+
+if (typeof slug === "undefined") {
+    statusCode = 404
+    notFoundReason = "Entry is not found"
+} else {
+    const locator = parseEntryLocator(slug)
+
+    if (!locator) {
+        statusCode = 404
+        notFoundReason = "Entry is not found"
+    } else {
+        const agent = new AtpAgent({ service: publicAtpService })
+        console.debug(`service: ${publicAtpService}, locator: ${JSON.stringify(locator)}`)
+        try {
+            const did = locator.actor.startsWith("did:")
+                ? locator.actor
+                : await agent.resolveHandle({ handle: locator.actor }).then(res => res.data.did)
+
+            const recordRes = await agent.com.atproto.repo.getRecord({
+                repo: did,
+                collection: ENTRY_COLLECTION,
+                rkey: locator.rkey,
+            })
+
+            const parsedEntryUri = parseAtUri(recordRes.data.uri)
+            const entryRepoDid = parsedEntryUri?.repo ?? did
+            const entry = recordRes.data.value as EntryLike
+
+            const sourceUriFromEntry =
+                typeof entry.source?.uri === "string"
+                    ? entry.source.uri
+                    : typeof entry.manifest?.source?.uri === "string"
+                      ? entry.manifest.source.uri
+                      : ""
+
+            if (!sourceUriFromEntry) {
+                statusCode = 404
+                notFoundReason = "Invalid skyshare entry"
+                return
+            }
+            const parsedSourceUri = parseAtUri(sourceUriFromEntry)
+
+            // 今後、他のサービスの投稿も取り込むようになったときのために、ソースURIの形式によってWeb表示用URLを切り替える。
+            // 現状はbskyの投稿しか想定していない。
+            switch (parsedSourceUri?.collection) {
+                case "app.bsky.feed.post":
+                    sourceWebUrl = bskyPostUrlgen(locator.actor, parsedSourceUri.rkey)
+                    break
+                default:
+                    statusCode = 500
+                    notFoundReason = "Invalid skyshare entry"
+                    return
+            }
+
+            createdAtText =
+                typeof entry.createdAt === "string"
+                    ? new Date(entry.createdAt).toLocaleString("ja-JP", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                      })
+                    : ""
+
+            manifestHeading = typeof entry.manifest?.heading === "string" ? entry.manifest.heading : ""
+            manifestCaption = typeof entry.manifest?.caption === "string" ? entry.manifest.caption : ""
+
+            const manifestVisualUrl = blobToCdnUrl(entryRepoDid, entry.manifest?.visual)
+            if (manifestVisualUrl) {
+                cardPath = manifestVisualUrl
+            }
+
+            if (manifestHeading) {
+                pageTitle = `${manifestHeading} | ${serviceName}`
+            }
+
+            const postRes = await agent.getPost({
+                repo: parsedSourceUri.repo,
+                rkey: parsedSourceUri.rkey,
+            })
+            const sourcePostRecord = postRes.value
+
+            sourceText = sourcePostRecord.text
+            sourceImages = extractSourceImages(sourcePostRecord, parsedSourceUri.repo)
+
+            if (!manifestCaption && sourceText) {
+                manifestCaption = sourceText.slice(0, 280)
+            }
+        } catch (error) {
+            statusCode = 500
+            console.warn("entries/[slug] SSR failed", {
+                reason: error instanceof Error ? error.message : String(error),
+                slug,
+            })
+        }
+    }
+}
+
+Astro.response.status = statusCode
+---
+
+<Baselayout
+    cardPath={cardPath}
+    pageTitle={pageTitle}
+    pageHeading={manifestHeading}
+    pageCaption={manifestCaption}
+    robots={robots}
+>
+    {
+        statusCode === 200 ? (
+            <article class={styles.container}>
+                <header>
+                    <h1 class={styles.heading}>{manifestHeading}</h1>
+                </header>
+
+                {manifestCaption ? <p class={styles.bodyText}>{manifestCaption}</p> : null}
+
+                <dl class={styles.metaList}>
+                    <div>
+                        <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
+                            Blueskyの投稿を見る
+                        </a>
+                    </div>
+                    <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
+                </dl>
+
+                {sourceImages.length > 0 ? (
+                    <section class={styles.imageGrid} aria-label="source images">
+                        {sourceImages.map(image => (
+                            <figure class={styles.imageCard}>
+                                <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
+                                {image.alt ? <figcaption>{image.alt}</figcaption> : null}
+                            </figure>
+                        ))}
+                    </section>
+                ) : (
+                    <p class={styles.emptyMessage}>画像はありません。</p>
+                )}
+            </article>
+        ) : (
+            <section class={styles.errorPane}>
+                <h1>
+                    {statusCode === 404
+                        ? "Entry Not Found"
+                        : statusCode === 503
+                          ? "Service Temporarily Unavailable"
+                          : "Internal Server Error"}
+                </h1>
+                <p>
+                    {statusCode === 404
+                        ? notFoundReason
+                        : statusCode === 503
+                          ? "データ取得が混み合っています。しばらくして再度お試しください。"
+                          : "ページの生成中にエラーが発生しました。"}
+                </p>
+            </section>
+        )
+    }
+</Baselayout>

@@ -4,9 +4,11 @@ interface Props {
     cardPath: string
     robots: string[]
     avatarUrl?: string | null
+    pageHeading?: string
+    pageCaption?: string
 }
 import Metadatas from "@/components/Metadatas.astro"
-const { cardPath, pageTitle, robots, avatarUrl } = Astro.props
+const { cardPath, pageTitle, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
 const favicon = "favicon.svg"
 import "@/styles/tokens.css"
 import styles from "./Baselayout.module.css"
@@ -15,7 +17,14 @@ import styles from "./Baselayout.module.css"
 <html lang="ja">
     <head>
         <link rel="icon" href={favicon} />
-        <Metadatas cardPath={cardPath} pageTitle={pageTitle} robots={robots} avatarUrl={avatarUrl} />
+        <Metadatas
+            cardPath={cardPath}
+            pageTitle={pageTitle}
+            robots={robots}
+            avatarUrl={avatarUrl}
+            pageHeading={pageHeading}
+            pageCaption={pageCaption}
+        />
     </head>
     <body id="root" class={styles.root}>
         <slot name="header" />

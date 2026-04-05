@@ -4,8 +4,10 @@ interface Props {
     cardPath: string
     robots: string[]
     avatarUrl?: string | null
+    pageHeading?: string
+    pageCaption?: string
 }
-const { cardPath, pageTitle, robots, avatarUrl } = Astro.props
+const { cardPath, pageTitle, robots, avatarUrl, pageCaption, pageHeading } = Astro.props
 import { serviceName, serviceDescription } from "@/vars"
 
 const url = Astro.url
@@ -18,13 +20,13 @@ const cardUrl = new URL(cardPath, Astro.url)
 <link rel="manifest" href="/materials/manifest.webmanifest" />
 <meta property="og:url" content={url} />
 <meta property="og:type" content="website" />
-<meta property="og:title" content={pageTitle} />
-<meta property="og:description" content={serviceDescription} />
+<meta property="og:title" content={pageHeading ?? pageTitle} />
+<meta property="og:description" content={pageCaption ?? serviceDescription} />
 <meta property="og:site_name" content={serviceName} />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@" />
-<meta name="twitter:title" content={pageTitle} />
-<meta name="twitter:description" content={serviceDescription} />
+<meta name="twitter:title" content={pageHeading ?? pageTitle} />
+<meta name="twitter:description" content={pageCaption ?? serviceDescription} />
 <meta name="twitter:image" content={cardUrl} />
 <meta property="og:image" content={cardUrl} />
 {avatarUrl ? <link rel="preload" as="image" href={avatarUrl} /> : null}

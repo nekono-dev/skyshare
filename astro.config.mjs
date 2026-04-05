@@ -2,12 +2,12 @@
 import { defineConfig } from "astro/config"
 import cloudflare from "@astrojs/cloudflare"
 
-import react from "@astrojs/react";
+import react from "@astrojs/react"
 
 export default defineConfig({
   output: "server",
   adapter: cloudflare(),
-
+  site: "https://preview.skyshare.nekono.dev",
   server: {
     port: 4321,
     host: true,

@@ -63,21 +63,17 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
   }, [slots])
 
   useEffect(() => {
-    if (value !== null || slots.length === 0) {
-      return
-    }
-
-    revokeSlotUrls(slots)
-    setSlots([])
-    setShowCropDialog(false)
-    setIsPreparingPreview(false)
-  }, [value, slots])
-
-  useEffect(() => {
     return () => {
       revokeSlotUrls(slotsRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (value === null && slotsRef.current.length > 0) {
+      revokeSlotUrls(slotsRef.current)
+      setSlots([])
+    }
+  }, [value])
 
   const createEntryFromSlots = async (nextSlots: ImageSlot[]) => {
     if (nextSlots.length === 0) {
@@ -207,6 +203,7 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
     } finally {
       setIsPreparingPreview(false)
     }
+    console.log(`nextSlots: ${JSON.stringify(nextSlots)}`)
   }
 
   const handleOpenCrop = () => {
@@ -307,7 +304,7 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
             />
           </article>
 
-          <div className={styles.previewList}>
+          {/* <div className={styles.previewList}>
             {previewEntry.originalPreviews.map((preview, index) => (
               <article
                 key={`${previewEntry.sourceFileNames[index]}-${index}`}
@@ -325,7 +322,7 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
                 />
               </article>
             ))}
-          </div>
+          </div> */}
         </div>
       )}
 

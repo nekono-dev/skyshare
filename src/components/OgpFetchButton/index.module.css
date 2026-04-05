@@ -28,7 +28,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  max-width: 360px;
+  max-width: 100%;
 }
 
 .previewImg {

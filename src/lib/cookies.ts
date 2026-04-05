@@ -147,7 +147,7 @@ export function makeSessionSetCookie(
 ) {
     const cookieVal = encodeBase64Utf8(JSON.stringify(payload))
     const parts: string[] = []
-    const secure = process.env.NODE_ENV === "production"
+    const secure = process.env.PUBLIC_NODE_ENV === "production"
 
     parts.push(`atp_session=${cookieVal}`)
     parts.push(`Path=${opts?.path ?? "/"}`)

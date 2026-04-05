@@ -1,11 +1,18 @@
 import type { APIRoute } from "astro"
 
-import { ComAtprotoServerRefreshSession } from "@/client/atproto"
-import { RichText, AtpAgent } from "@atproto/api"
+import { DevNekonoSkyshareEntry } from "@/client/atproto"
+import {
+    RichText,
+    AtpAgent,
+    ComAtprotoServerRefreshSession,
+} from "@atproto/api"
 import { parseSessionFromRequest } from "@/lib/cookies.js"
 import { convertHeaderToObj, errorResponseFromStatus } from "@/lib/api.js"
+import { extractLinkUrisFromFacets } from "@/lib/richtext"
 
 import * as PostSchema from "@/client/openapi/schemas/v1/entry/post"
+import { bskyPostUrlgen, skyshareEntryUrlgen } from "@/lib/url"
+import { parseAtUri } from "@/lib/url"
 
 type ImageMeta = {
     width: number
@@ -44,6 +51,21 @@ const parseImageMeta = (value: string | null): ImageMeta[] | null => {
     } catch {
         return null
     }
+}
+
+// const errorResponse = (status: number, error: string): Response =>
+//     new Response(JSON.stringify({ error }), {
+//         status,
+//         headers: { "Content-Type": "application/json" },
+//     })
+
+const uploadBlob = async (agent: AtpAgent, blob: Blob) => {
+    const mime = blob.type || "application/octet-stream"
+    const buffer = new Uint8Array(await blob.arrayBuffer())
+    const uploadRes = await agent.uploadBlob(buffer, {
+        encoding: mime,
+    })
+    return uploadRes.data.blob
 }
 
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
@@ -88,12 +110,12 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                 rawBody.langs = langs.map((v: any) => String(v))
             }
 
-            const ogObjRaw = formData.get("ogObj")
-            if (ogObjRaw) {
+            const ogMetaRaw = formData.get("ogMeta")
+            if (ogMetaRaw) {
                 try {
-                    rawBody.ogObj = JSON.parse(String(ogObjRaw))
+                    rawBody.ogMeta = JSON.parse(String(ogMetaRaw))
                 } catch {
-                    console.warn("createEntry: ogObj is not valid JSON")
+                    console.warn("createEntry: ogMeta is not valid JSON")
                     return errorResponseFromStatus(400)
                 }
             }
@@ -117,9 +139,12 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                 imageMeta = parsedMeta
             }
 
-            const visual = formData.get("visual")
-            if (visual && typeof (visual as any)?.arrayBuffer === "function") {
-                rawBody.visual = visual as Blob
+            const ogImage = formData.get("ogImage")
+            if (
+                ogImage &&
+                typeof (ogImage as any)?.arrayBuffer === "function"
+            ) {
+                rawBody.ogImage = ogImage as Blob
             }
         } else {
             return errorResponseFromStatus(400)
@@ -133,10 +158,42 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             return errorResponseFromStatus(400)
         }
 
+        const hasImages = (body.data.images?.length ?? 0) > 0
+        const hasOgpMeta = Boolean(body.data.ogMeta)
+        const hasOgpImage = Boolean(body.data.ogImage)
+
+        if (hasImages && hasOgpMeta) {
+            console.error(
+                "createEntry: request has both images and ogMeta, which is not allowed",
+            )
+            return errorResponseFromStatus(400)
+        }
+
+        if (!hasImages && imageMeta.length > 0) {
+            console.error("createEntry: imagesMeta provided without images")
+            return errorResponseFromStatus(400)
+        }
+
+        if (hasImages && !hasOgpImage) {
+            console.error("createEntry: image post requires ogImage")
+            return errorResponseFromStatus(400)
+        }
+
+        if (hasOgpMeta && !hasOgpImage) {
+            console.error("createEntry: ogp post requires ogImage")
+            return errorResponseFromStatus(400)
+        }
+
+        if (!hasImages && hasOgpImage && !hasOgpMeta) {
+            console.error("createEntry: ogp post requires ogMeta")
+            return errorResponseFromStatus(400)
+        }
+
         const widths = imageMeta.map(v => v.width)
         const heights = imageMeta.map(v => v.height)
         if (
-            body.data.images?.length &&
+            hasImages &&
+            body.data.images &&
             (widths.length !== body.data.images.length ||
                 heights.length !== body.data.images.length)
         ) {
@@ -148,163 +205,150 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             return errorResponseFromStatus(400)
         }
 
-        const uploadedImages = body.data.images
-            ? await Promise.all(
-                  body.data.images.map(async image => {
-                      const mime = image.type || "application/octet-stream"
-                      const buffer = new Uint8Array(await image.arrayBuffer())
-                      const uploadRes = await agent.uploadBlob(buffer, {
-                          encoding: mime,
-                      })
-                      return uploadRes.data.blob
-                  }),
-              )
-            : []
-
-        const embed =
-            uploadedImages.length > 0
-                ? {
-                      $type: "app.bsky.embed.images" as const,
-                      images: uploadedImages.map((blob, idx) => ({
-                          image: blob,
-                          alt: "",
-                          aspectRatio:
-                              widths[idx] && heights[idx]
-                                  ? {
-                                        width: widths[idx],
-                                        height: heights[idx],
-                                    }
-                                  : undefined,
-                      })),
-                  }
-                : undefined
+        const uploadedImages =
+            hasImages && body.data.images
+                ? await Promise.all(
+                      body.data.images.map(async image => {
+                          return uploadBlob(agent, image)
+                      }),
+                  )
+                : []
 
         const rt = new RichText({ text: body.data.text })
         await rt.detectFacets(agent)
 
-        const response = await agent.post({
-            $type: "app.bsky.feed.post",
-            text: rt.text,
-            facets: rt.facets,
-            langs: body.data.langs,
-            embed,
-        })
-        // // app.bsky.feed.postコレクションに最低限のレコードをPUTするサンプル
-        // const record = {
-        //     $type: "app.bsky.feed.post",
-        //     text: body.data.text || "sample post",
-        //     createdAt: new Date().toISOString(),
-        //     langs: body.data.langs,
-        //     embed: body.data.image
-        //         ? {
-        //               $type: "app.bsky.embed.images",
-        //               images: [
-        //                   {
-        //                       image: body.data.image,
-        //                       alt: "Uploaded image",
-        //                   },
-        //               ],
-        //           }
-        //         : undefined,
-        // }
+        let embed: any = undefined
+        if (uploadedImages.length > 0) {
+            embed = {
+                $type: "app.bsky.embed.images" as const,
+                images: uploadedImages.map((blob, idx) => ({
+                    image: blob,
+                    alt: "",
+                    aspectRatio:
+                        widths[idx] && heights[idx]
+                            ? {
+                                  width: widths[idx],
+                                  height: heights[idx],
+                              }
+                            : undefined,
+                })),
+            }
+        } else if (hasOgpMeta && body.data.ogMeta) {
+            const linkUris = extractLinkUrisFromFacets(rt.facets)
+            const externalUri = linkUris[0]
+            if (!externalUri) {
+                console.error(
+                    "createEntry: ogp post requires a link in the text",
+                )
+                return errorResponseFromStatus(400)
+            }
 
-        // const validation = validateAppBskyFeedPost(record)
-        // if (!validation?.success) {
-        //     console.error(validation)
-        //     return errorResponseFromStatus(400)
-        // }
-        // const response = await agent.app.bsky.feed.post.create(
-        //     {
-        //         repo: session.did,
-        //     },
-        //     validation.value,
-        //     {
-        //         authorization: `Bearer ${session.accessJwt}`,
-        //     },
-        // )
+            let thumb: any = undefined
+            if (body.data.ogImage) {
+                try {
+                    thumb = await uploadBlob(agent, body.data.ogImage)
+                } catch (err) {
+                    console.error("createEntry: failed to upload og image", err)
+                    return errorResponseFromStatus(500)
+                }
+            }
+
+            embed = {
+                $type: "app.bsky.embed.external" as const,
+                external: {
+                    uri: externalUri,
+                    title: body.data.ogMeta.title,
+                    description: body.data.ogMeta.description,
+                    thumb,
+                },
+            }
+        }
+
+        let response: { uri: string; cid: string }
+        try {
+            response = await agent.post({
+                $type: "app.bsky.feed.post",
+                text: rt.text,
+                facets: rt.facets,
+                langs: body.data.langs,
+                embed,
+            })
+        } catch (err) {
+            console.error("createEntry: app.bsky.feed.post failed", err)
+            return errorResponseFromStatus(500)
+        }
+
         const rkey = response.uri.split("/").slice(-1)[0]
-        const appViewUrl =
-            service === "https://bsky.social" ? "https://bsky.app" : service
+        const bskyUrl = bskyPostUrlgen(session.handle, rkey)
 
-        const bskyUrl = `${appViewUrl}/profile/${session.handle}/post/${rkey}`
+        const userName = await agent
+            .getProfile({ actor: session.did })
+            .then(res => res.data.displayName || session.handle)
+        let skyshareUri = ""
+        if (hasImages && body.data.ogImage) {
+            try {
+                const visual = await uploadBlob(agent, body.data.ogImage)
+                const createdAt = new Date().toISOString()
+                const headingText = body.data.text.trim()
+                const record = {
+                    $type: "dev.nekono.skyshare.entry",
+                    source: {
+                        uri: response.uri,
+                        cid: response.cid,
+                    },
+                    manifest: {
+                        $type: "dev.nekono.skyshare.defs#manifest",
+                        visual,
+                        heading: `${userName} 's Post`,
+                        caption:
+                            headingText.length > 0 ? headingText : undefined,
+                    },
+                    createdAt,
+                }
+
+                const validation = DevNekonoSkyshareEntry.validateRecord(record)
+                if (!validation?.success) {
+                    console.error(
+                        "createEntry: dev.nekono.skyshare.entry validation failed",
+                        validation,
+                    )
+                    return errorResponseFromStatus(500)
+                }
+
+                const createRecordRes =
+                    await agent.com.atproto.repo.createRecord({
+                        repo: session.did,
+                        collection: "dev.nekono.skyshare.entry",
+                        record: validation.value,
+                    })
+                const parsedSkyshareUri = parseAtUri(createRecordRes.data.uri)
+                if (parsedSkyshareUri) {
+                    skyshareUri = skyshareEntryUrlgen(
+                        parsedSkyshareUri.repo,
+                        parsedSkyshareUri.rkey,
+                    )
+                }
+            } catch (err) {
+                console.error(
+                    "createEntry: dev.nekono.skyshare.entry create failed",
+                    err,
+                )
+                return errorResponseFromStatus(500)
+            }
+        }
 
         return new Response(
             JSON.stringify({
                 bsky: { url: bskyUrl },
-                skyshare: { uri: "" },
+                skyshare: { uri: skyshareUri },
             }),
             {
                 status: 200,
                 headers: { "Content-Type": "application/json" },
             },
         )
-
-        // const repo = session.did
-
-        // // Build blob ref for manifest visual. Require it because the lexicon demands it.
-        // let visual: any = undefined
-        // if (manifestIn?.visual) {
-        //     visual = manifestIn.visual
-        // } else if (visualCid) {
-        //     visual = { cid: visualCid }
-        // }
-
-        // if (!visual) {
-        //     return new Response(
-        //         JSON.stringify({
-        //             error: "manifest.visual (blob ref) required by dev.nekono.skyshare",
-        //         }),
-        //         {
-        //             status: 400,
-        //             headers: { "Content-Type": "application/json" },
-        //         },
-        //     )
-        // }
-
-        // const record = {
-        //     $type: "def.skyshare.entry",
-        //     source: {
-        //         $type: "app.bsky.feed.post",
-        //         text: text || title || "",
-        //         createdAt: new Date().toISOString(),
-        //     },
-        //     manifest: {
-        //         $type: "def.skyshare.manifest",
-        //         visual,
-        //         heading: title || undefined,
-        //         caption: text || undefined,
-        //     },
-        //     createdAt: new Date().toISOString(),
-        // }
-
-        // // Validate against generated lexicon types
-        // const validation = Api.DefSkyshareEntry.validateRecord(record as any)
-        // if (!validation?.success) {
-        //     return new Response(
-        //         JSON.stringify({
-        //             error: "record validation failed",
-        //             detail: validation,
-        //         }),
-        //         {
-        //             status: 400,
-        //             headers: { "Content-Type": "application/json" },
-        //         },
-        //     )
-        // }
-
-        // const res = await agent.com.atproto.repo.createRecord({
-        //     repo,
-        //     collection: "def.skyshare.entry",
-        //     record,
-        // })
     } catch (err: any) {
-        console.error("create entry error", err)
-        return new Response(
-            JSON.stringify({ error: (err && err.message) || String(err) }),
-            {
-                status: 500,
-                headers: { "Content-Type": "application/json" },
-            },
-        )
+        console.error("createEntry: create entry error", err)
+        return errorResponseFromStatus(500)
     }
 }

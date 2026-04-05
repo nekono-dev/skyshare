@@ -1,16 +1,28 @@
 import React, { useEffect, useState } from "react"
 import { createEntry } from "@/client/openapi/client"
-import type { ExtractUrl200 } from "@/client/openapi/model"
 import ImagePicker, { type ImageEntry } from "@/components/ImagePicker"
 import LanguageSelect from "@/components/LanguageSelect"
 import Loading from "@/components/Loading"
-import OgpFetchButton from "@/components/OgpFetchButton"
+import OgpFetchButton, { type OgpResult } from "@/components/OgpFetchButton"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
 type Props = {
   onClose?: () => void
   avatarUrl?: string | null
+}
+
+const resolveEntryErrorMessage = (errorCode: string) => {
+  switch (errorCode) {
+    case "APP_BSKY_POST_FAILED":
+      return "Blueskyへの投稿に失敗しました。"
+    case "SKYSHARE_ENTRY_CREATE_FAILED":
+      return "Blueskyへの投稿は成功しましたが、SkyShareレコード作成に失敗しました。"
+    case "ENTRY_CREATE_UNEXPECTED_ERROR":
+      return "投稿処理中に予期せぬエラーが発生しました。"
+    default:
+      return errorCode
+  }
 }
 
 const revokeImageEntry = (entry: ImageEntry | null) => {
@@ -36,7 +48,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   const [status, setStatus] = useState<string | null>(null)
   const [statusColor, setStatusColor] = useState<string | undefined>(undefined)
   const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
-  const [ogpResult, setOgpResult] = useState<ExtractUrl200 | null>(null)
+  const [ogpResult, setOgpResult] = useState<OgpResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const maxLen = 300
@@ -56,6 +68,18 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
     setStatusColor(undefined)
 
     try {
+      const payload: {
+        text: string
+        langs: string[]
+        ogMeta?: { title: string; description: string }
+        ogImage?: Blob
+        images?: Blob[]
+        imagesMeta?: string
+      } = {
+        text,
+        langs: [languageCode],
+      }
+
       const imageSizes = imageEntry?.meta ?? []
       const hasCompleteImageSizes =
         imageEntry !== null &&
@@ -68,44 +92,40 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             v.height > 0,
         )
 
-      const res = await createEntry({
-        text,
-        langs: [languageCode],
-        ogObj: ogpResult || undefined,
-        ...(imageEntry
-          ? {
-              visual: imageEntry.thumbnailBlob,
-              images: imageEntry.originalBlobs,
-              ...(hasCompleteImageSizes
-                ? {
-                    imagesMeta: JSON.stringify(
-                      imageSizes.map(v => ({
-                        width: v.width,
-                        height: v.height,
-                      })),
-                    ),
-                  }
-                : {}),
-            }
-          : {}),
-      })
+      if (imageEntry) {
+        payload.ogImage = imageEntry.thumbnailBlob
+        payload.images = imageEntry.originalBlobs
+        if (hasCompleteImageSizes) {
+          payload.imagesMeta = JSON.stringify(
+            imageSizes.map(v => ({
+              width: v.width,
+              height: v.height,
+            })),
+          )
+        }
+      } else if (ogpResult) {
+        payload.ogMeta = ogpResult.meta
+        payload.ogImage = ogpResult.imageBlob
+      }
+
+      const res = await createEntry(payload)
       if (res.status !== 200) {
         setStatusColor("#b00")
-        const errorMessage =
+        const errorCode =
           "error" in res.data && typeof res.data.error === "string"
             ? res.data.error
             : "投稿に失敗しました。"
-        setStatus(errorMessage)
+        setStatus(resolveEntryErrorMessage(errorCode))
         return
       }
 
       setStatusColor("green")
-      const url = res.data.bsky.url
-      setStatus(`投稿に成功しました。URL: ${url}`)
+      setStatus(`投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}`)
       setText("")
       // revoke created previews
       revokeImageEntry(imageEntry)
       setImageEntry(null)
+      setOgpResult(null)
     } catch (err) {
       console.error(err)
       setStatusColor("#b00")
@@ -184,10 +204,28 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             />
           </div>
         </div>
-        <OgpFetchButton text={text} onChange={setOgpResult} />
+        <OgpFetchButton
+          text={text}
+          value={ogpResult}
+          onChange={nextOgp => {
+            if (nextOgp) {
+              setImageEntry(prevImageEntry => {
+                revokeImageEntry(prevImageEntry)
+                return null
+              })
+            }
+            setOgpResult(nextOgp)
+          }}
+          disabled={isSubmitting}
+        />
         <ImagePicker
           value={imageEntry}
-          onChange={setImageEntry}
+          onChange={entry => {
+            if (entry && ogpResult) {
+              setOgpResult(null)
+            }
+            setImageEntry(entry)
+          }}
           disabled={isSubmitting}
         />
 

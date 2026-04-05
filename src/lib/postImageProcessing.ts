@@ -215,7 +215,7 @@ export const compressToJpegUnder1MB = async (
     let canvas = sourceCanvas
 
     while (true) {
-        let quality = 0.92
+        let quality = 0.98
         let blob = await canvasToJpegBlob(canvas, quality)
 
         while (blob.size > MAX_BYTES && quality > 0.05) {
@@ -257,6 +257,46 @@ export const createResizedCanvas = (image: HTMLImageElement) => {
 
     context.drawImage(image, 0, 0, width, height)
     return canvas
+}
+
+export const createOgpThumbnailFromBlob = async (
+    inputBlob: Blob,
+): Promise<Blob> => {
+    const objectUrl = URL.createObjectURL(inputBlob)
+    try {
+        const image = await loadImage(objectUrl)
+        const crop = computeCropAroundCenter(
+            image.naturalWidth,
+            image.naturalHeight,
+            TARGET_WIDTH,
+            TARGET_HEIGHT,
+        )
+
+        const canvas = document.createElement("canvas")
+        canvas.width = TARGET_WIDTH
+        canvas.height = TARGET_HEIGHT
+        const context = canvas.getContext("2d")
+
+        if (!context) {
+            throw new Error("キャンバスの初期化に失敗しました。")
+        }
+
+        context.drawImage(
+            image,
+            crop.x,
+            crop.y,
+            crop.width,
+            crop.height,
+            0,
+            0,
+            TARGET_WIDTH,
+            TARGET_HEIGHT,
+        )
+
+        return await compressToJpegUnder1MB(canvas)
+    } finally {
+        URL.revokeObjectURL(objectUrl)
+    }
 }
 
 export const createProcessedImages = async (

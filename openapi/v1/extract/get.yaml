@@ -15,7 +15,7 @@ responses:
     content:
       application/json:
         schema:
-          $ref: ../../common.yaml#/ogObj
+          $ref: ../../common.yaml#/ogMeta
   "400":
     description: Bad Request
     content:

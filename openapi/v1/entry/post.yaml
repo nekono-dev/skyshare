@@ -23,14 +23,14 @@ requestBody:
           imagesMeta:
             description: 'JSON string of metadata array paired with images[] by index. Example: [{"width":1200,"height":630}]'
             type: string
-          visual:
+          ogImage:
             type: string
             format: binary
           text:
             type: string
             example: Post content
-          ogObj:
-            $ref: ../../common.yaml#/ogObj
+          ogMeta:
+            $ref: ../../common.yaml#/ogMeta
           langs:
             type: array
             items:

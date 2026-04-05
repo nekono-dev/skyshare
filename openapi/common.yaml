@@ -19,7 +19,7 @@ cookie:
     type: string
     example: sid=abc123; Path=/; HttpOnly
 
-ogObj:
+ogMeta:
   type: object
   properties:
     title:
@@ -30,8 +30,8 @@ ogObj:
       example: ""
     image:
       type: string
-      example: ""
+      format: uri
+      example: "https://example.com/og.png"
   required:
     - title
     - description
-    - images

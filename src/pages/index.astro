@@ -1,11 +1,10 @@
 ---
 // Entry submission page
 export const prerender = false
-import { ComAtprotoServerRefreshSession } from "@/client/atproto"
+import { ComAtprotoServerRefreshSession, AtpAgent } from "@atproto/api"
 
 import { parseSessionFromRequest, makeSessionSetCookie } from "@/lib/cookies.js"
 import PostLauncher from "@/components/PostLauncher"
-import { AtpBaseClient } from "@/client/atproto"
 
 let session: ComAtprotoServerRefreshSession.OutputSchema
 let service: string
@@ -13,21 +12,18 @@ let avatarUrl: string | null = null
 ;({ session, service } = parseSessionFromRequest(Astro.request))
 if (session) {
     try {
-        const agent = new AtpBaseClient(service)
-        const data = await agent.com.atproto.server
-            .refreshSession(undefined, {
-                headers: { authorization: `Bearer ${session.refreshJwt}` },
+        const agent = new AtpAgent({ service })
+        const data = await agent
+            .resumeSession({
+                refreshJwt: session.refreshJwt,
+                accessJwt: session.accessJwt,
+                handle: session.handle,
+                did: session.did,
+                active: true,
             })
             .then(res => res.data)
         try {
-            const prof = await agent.app.bsky.actor
-                .getProfile(
-                    { actor: data.did },
-                    {
-                        headers: { authorization: `Bearer ${session.accessJwt}` },
-                    },
-                )
-                .then(res => res.data)
+            const prof = await agent.getProfile({ actor: data.did }).then(res => res.data)
             avatarUrl = prof.avatar ?? null
         } catch (e) {
             if (e instanceof Error) {

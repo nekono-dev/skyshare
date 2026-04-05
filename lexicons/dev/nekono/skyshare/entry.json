@@ -12,8 +12,8 @@
         "properties": {
           "source": {
             "type": "ref",
-            "ref": "app.bsky.feed.post",
-            "description": "The original AT record this entry is derived from."
+            "ref": "com.atproto.repo.strongRef",
+            "description": "Reference to the original AT record this entry is derived from."
           },
           "manifest": {
             "type": "ref",
