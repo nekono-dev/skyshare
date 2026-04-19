@@ -1,5 +1,12 @@
 ---
-// Entry submission page
+/**
+ * 投稿ホームページ。
+ *
+ * 責務と処理概要:
+ * - Cookie からセッションを復元し、投稿フォーム起動 UI を表示する。
+ * - セッション無効時はログインページへリダイレクトする。
+ * - セッション更新成功時は最新 Cookie を再発行する。
+ */
 export const prerender = false
 import { ComAtprotoServerRefreshSession, AtpAgent } from "@atproto/api"
 
@@ -10,6 +17,8 @@ let session: ComAtprotoServerRefreshSession.OutputSchema
 let service: string
 let avatarUrl: string | null = null
 ;({ session, service } = parseSessionFromRequest(Astro.request))
+
+// 認証状態を先に確定し、以降の描画ロジックを単純化する。
 if (session) {
     try {
         const agent = new AtpAgent({ service })

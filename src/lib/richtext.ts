@@ -1,17 +1,42 @@
 /**
- * rtのfacets/featuresからリンクURIを抽出するユーティリティ
+ * RichText の facets / features からリンク URI を抽出するユーティリティ。
  *
- * 対応入力例:
+ * 責務と処理概要:
+ * - facets 配列・features 配列・それらを内包するオブジェクト入力を横断的に処理する。
+ * - `app.bsky.richtext.facet#link` 型 feature の `uri` を重複排除して返す。
+ *
+ * 想定する入力形状(最小要件):
  * - Array<Facet>  -> [{ index: {...}, features: [{ $type, uri, ... }, ...] }, ...]
  * - Array<Feature> -> [{ $type, uri, ... }, ...]
  * - RichTextオブジェクトのように `.facets` または `.features` を持つオブジェクト
  *
- * 戻り値: 重複を除いたURI文字列配列
+ * Input:
+ * - `input`: facets/features を含む任意値（unknown）
+ *
+ * Output:
+ * - 重複を除いた URI 文字列配列
+ *
+ * 例:
+ * - 入力: `{ facets: [{ features: [{ $type: "app.bsky.richtext.facet#link", uri: "https://example.com" }] }] }`
+ * - 出力: `["https://example.com"]`
  */
 function extractLinkUrisFromFacets(input?: unknown): string[] {
     const uris = new Set<string>()
     if (!input) return []
 
+    /**
+     * facets/features 配列を走査し、link 型 feature の uri を収集する。
+     *
+     * Input:
+     * - `arr`: facet または feature を含む配列
+     *
+     * Output:
+     * - 返り値なし（外側 `uris` へ副作用的に追加）
+     *
+     * 例:
+     * - 入力: `[{ features: [{ $type: "app.bsky.richtext.facet#link", uri: "https://a" }] }]`
+     * - 出力: `uris` に `https://a` が追加される
+     */
     const processArray = (arr: any[]) => {
         for (const item of arr) {
             if (!item) continue
@@ -42,7 +67,7 @@ function extractLinkUrisFromFacets(input?: unknown): string[] {
                 continue
             }
 
-            // ネストした配列などがあれば再帰で処理
+            // ネスト配列を再帰展開し、取りこぼしを防ぐ。
             if (Array.isArray(item)) {
                 processArray(item)
             }

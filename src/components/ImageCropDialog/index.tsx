@@ -6,6 +6,15 @@ import { createProcessedImages, getSlotDefs } from "@/lib/postImageProcessing"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
+/**
+ * 複数画像クロップをまとめて確定するダイアログコンポーネント。
+ *
+ * 責務と処理概要:
+ * - 画像枚数に応じたスロット定義で `CropSlot` を並べる。
+ * - 全スロットのクロップ完了を確認してから画像処理を実行する。
+ * - 処理中は閉じ操作を抑止し、オーバーレイで進行状態を示す。
+ */
+
 type Props = {
   imageUrls: string[]
   initialCropStates?: (SlotCropState | null)[]
@@ -17,6 +26,22 @@ type Props = {
   onCancel: () => void
 }
 
+/**
+ * 画像クロップダイアログを描画する。
+ *
+ * Input:
+ * - `imageUrls`: クロップ対象画像 URL 配列
+ * - `initialCropStates`: 初期クロップ状態配列
+ * - `onConfirm`: 画像処理完了時コールバック
+ * - `onCancel`: キャンセル時コールバック
+ *
+ * Output:
+ * - オーバーレイ上のクロップ調整 UI
+ *
+ * 例:
+ * - 入力: 2枚の画像 URL
+ * - 出力: 2 スロットのクロップダイアログ
+ */
 export const Component: React.FC<Props> = ({
   imageUrls,
   initialCropStates = [],
@@ -51,6 +76,16 @@ export const Component: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrls.length])
 
+  /**
+   * 指定インデックスのクロップ状態を更新する。
+   *
+   * Input:
+   * - `idx`: 対象スロット index
+   * - `state`: 新しいクロップ状態
+   *
+   * Output:
+   * - 返り値なし（`cropStates` を更新）
+   */
   const handleSlotChange = (idx: number, state: SlotCropState) => {
     setCropStates(prev => {
       const next = prev.slice()
@@ -63,6 +98,15 @@ export const Component: React.FC<Props> = ({
     cropStates.length === slotDefs.length &&
     cropStates.every(s => s.cropPixels !== null)
 
+  /**
+   * 全スロットの切り抜き状態を使って画像処理を実行し、親へ結果を返す。
+   *
+   * 失敗時の方針:
+   * - 例外はログ出力し、処理中状態だけ解除してユーザーが再試行できるようにする。
+   *
+   * Output:
+   * - 返り値なし（`onConfirm` を呼び出し）
+   */
   const handleConfirm = async () => {
     if (!canConfirm || isProcessing) return
     setIsProcessing(true)

@@ -1,6 +1,14 @@
 import React from "react"
 import styles from "./index.module.css"
 
+/**
+ * 投稿言語選択コンポーネントで利用する言語定義と選択 UI。
+ *
+ * 責務と処理概要:
+ * - Bluesky 投稿言語コード一覧を定数として提供する。
+ * - 重複コードを除外した選択肢を `<select>` で描画する。
+ */
+
 export type LanguageOption = {
   label: string
   code: string
@@ -194,6 +202,12 @@ export const BLUESKY_POST_LANGUAGES: LanguageOption[] = [
   { label: "isiZulu", code: "zu" },
 ]
 
+/**
+ * 言語コード重複を除いた表示用一覧。
+ *
+ * 処理の趣旨:
+ * - 元データには同一コードが複数含まれるため、最初に出現した要素だけを残して UI の重複表示を防ぐ。
+ */
 const UNIQUE_BLUESKY_POST_LANGUAGES: LanguageOption[] =
   BLUESKY_POST_LANGUAGES.filter((option, index, list) => {
     return list.findIndex(item => item.code === option.code) === index
@@ -209,6 +223,22 @@ type Props = {
   ariaLabel?: string
 }
 
+/**
+ * 投稿言語選択用 `<select>` を描画する。
+ *
+ * Input:
+ * - `value`: 現在選択中の言語コード
+ * - `onChange`: 選択変更時に呼ぶコールバック
+ * - `disabled`: 入力可否
+ * - `className`/`id`/`name`/`ariaLabel`: 表示・属性制御
+ *
+ * Output:
+ * - 言語候補を持つ `<select>` 要素
+ *
+ * 例:
+ * - 入力: `{ value: "ja", onChange: fn }`
+ * - 出力: 日本語が選択された言語セレクト
+ */
 export const Component: React.FC<Props> = ({
   value,
   onChange,

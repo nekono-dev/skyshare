@@ -10,6 +10,12 @@ export default defineConfig({
             mode: "single",
             clean: true,
             override: {
+                formData: {
+                    mutator: {
+                        path: "./src/lib/openapi-form-data.ts",
+                        name: "customFormData",
+                    },
+                },
                 mutator: {
                     path: "./src/lib/fetcher.ts",
                     name: "customFetcher",

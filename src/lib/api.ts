@@ -1,4 +1,27 @@
-// headersオブジェクトを通常のオブジェクトに変換するユーティリティ関数
+/**
+ * API レスポンス補助ユーティリティ群。
+ *
+ * 責務と処理概要:
+ * - `Headers` を通常のオブジェクトへ変換し、ログ出力やJSON化を扱いやすくする。
+ * - HTTP ステータスからフロント向けの標準エラーレスポンスを生成する。
+ */
+
+/**
+ * `Headers` をプレーンオブジェクトへ変換する。
+ *
+ * 処理の趣旨:
+ * - `Headers` はそのまま JSON 化しづらいため、key/value の通常オブジェクトへ展開する。
+ *
+ * Input:
+ * - `headers`: Fetch API の `Headers` インスタンス
+ *
+ * Output:
+ * - ヘッダー名をキー、値を値に持つオブジェクト
+ *
+ * 例:
+ * - 入力: `Headers { content-type: "application/json" }`
+ * - 出力: `{ "content-type": "application/json" }`
+ */
 export const convertHeaderToObj = (headers: Headers) => {
     const headersObj: Record<string, string> = {}
 
@@ -8,6 +31,23 @@ export const convertHeaderToObj = (headers: Headers) => {
     return headersObj
 }
 
+/**
+ * HTTP ステータスに対応する JSON エラーレスポンスを生成する。
+ *
+ * 処理の趣旨:
+ * - API 層で共通のエラー形式 `{ error: string }` を維持する。
+ * - `switch` で主要なクライアント/認証/レート制限エラーを明示し、未定義は 500 相当へ寄せる。
+ *
+ * Input:
+ * - `status`: 返却する HTTP ステータス
+ *
+ * Output:
+ * - `content-type: application/json` を持つ `Response`
+ *
+ * 例:
+ * - 入力: `401`
+ * - 出力: `{"error":"Unauthorized"}` を含む `Response`
+ */
 export const errorResponseFromStatus = (status: number): Response => {
     console.log(`API Error Response: ${status}`)
     const message = { error: "Unknown Error" }

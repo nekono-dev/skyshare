@@ -21,8 +21,7 @@ requestBody:
               type: string
               format: binary
           imagesMeta:
-            description: 'JSON string of metadata array paired with images[] by index. Example: [{"width":1200,"height":630}]'
-            type: string
+            $ref: ../../common.yaml#/imagesMeta
           ogImage:
             type: string
             format: binary

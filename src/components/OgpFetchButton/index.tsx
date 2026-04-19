@@ -7,6 +7,15 @@ import { createOgpThumbnailFromBlob } from "@/lib/postImageProcessing"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
+/**
+ * 投稿文から URL を検出して OGP 情報を取得するコンポーネント。
+ *
+ * 責務と処理概要:
+ * - テキストから URL を抽出し、OGP 取得 API を呼び出す。
+ * - 取得画像を OGP サムネイル仕様へ変換して `onChange` で返す。
+ * - 失敗時は状態メッセージを表示し、親の OGP 状態をクリアする。
+ */
+
 type OgpMeta = {
   title: string
   description: string
@@ -25,12 +34,37 @@ type Props = {
   disabled?: boolean
 }
 
+/**
+ * OGP 応答が画像 URL を含む型か判定する型ガード。
+ *
+ * Input:
+ * - `value`: extractUrl API の 200 応答
+ *
+ * Output:
+ * - `image: string` を持つ場合 `true`
+ *
+ * 例:
+ * - 入力: `{ title: "x", description: "y", image: "https://..." }`
+ * - 出力: `true`
+ */
 const isOgpWithImage = (
   value: ExtractUrl200,
 ): value is ExtractUrl200 & { image: string } => {
   return typeof (value as { image?: unknown }).image === "string"
 }
 
+/**
+ * OGP 取得 UI を描画する。
+ *
+ * Input:
+ * - `text`: 投稿本文
+ * - `value`: 現在の OGP 結果
+ * - `onChange`: OGP 結果更新通知
+ * - `disabled`: 操作可否
+ *
+ * Output:
+ * - URL 検出時の取得ボタン、ステータス、画像プレビュー
+ */
 export const Component: React.FC<Props> = ({
   text,
   value,
@@ -42,6 +76,12 @@ export const Component: React.FC<Props> = ({
   const [isOgpLoading, setIsOgpLoading] = useState(false)
   const [lastFetchedUrl, setLastFetchedUrl] = useState<string | null>(null)
 
+  /**
+   * 本文から OGP 対象 URL を抽出する。
+   *
+   * 処理の趣旨:
+   * - まず `RichText` の facet 検出を優先し、失敗時は正規表現フォールバックで URL を拾う。
+   */
   const detectedUrl = useMemo(() => {
     if (!text.trim()) return null
 
@@ -91,6 +131,15 @@ export const Component: React.FC<Props> = ({
     }
   }, [previewUrl])
 
+  /**
+   * 検出 URL から OGP 情報を取得して親へ反映する。
+   *
+   * 失敗時の方針:
+   * - ステップごとに失敗メッセージを更新し、`onChange(null)` で不整合な OGP 状態を残さない。
+   *
+   * Output:
+   * - 返り値なし（state 更新と `onChange` 通知）
+   */
   const handleFetchOgp = async () => {
     if (!detectedUrl || isOgpLoading || disabled) return
 

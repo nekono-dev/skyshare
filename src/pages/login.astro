@@ -1,5 +1,11 @@
 ---
-// Simple login page using @atproto/api (AtpAgent)
+/**
+ * ログインページ。
+ *
+ * 責務と処理概要:
+ * - `LoginForm` を表示し、セッション作成導線を提供する。
+ * - 静的配信可能なため prerender を有効化する。
+ */
 export const prerender = true
 import LoginForm from "@/components/LoginForm"
 

@@ -7,6 +7,36 @@ import * as PostSchema from "@/client/openapi/schemas/v1/session/post"
 import { errorResponseFromStatus } from "@/lib/api.js"
 import { XRPCError } from "@atproto/xrpc"
 
+/**
+ * Skyshare v1 session 作成 API。
+ *
+ * 概要:
+ * - 認証情報を受け取り atproto へ login を実行する。
+ * - 取得した session と service を Cookie へ保存し、以後の API で再開可能にする。
+ * - 入力不正は 400、認証/レート制限は 401/429、それ以外は 500 を返す。
+ */
+
+/**
+ * ログインを実行し、セッションCookieを返す API エンドポイント。
+ *
+ * 想定する入力形状(最小要件):
+ * - JSON ボディに `identifier` と `password` を含む
+ * - `service` は任意。未指定時は `https://bsky.social`
+ *
+ * 処理の趣旨:
+ * - OpenAPI スキーマで入力検証後、AtpAgent.login の成功結果を Cookie 化して返却する。
+ *
+ * Input:
+ * - `request`: Astro APIRoute が受け取る HTTP Request
+ *
+ * Output:
+ * - 成功時: 200 + `set-cookie` ヘッダ
+ * - 失敗時: ステータスに応じたエラーレスポンス
+ *
+ * 例:
+ * - 入力: `{ identifier: "alice", password: "***" }`
+ * - 出力: `status: 200` と `set-cookie`
+ */
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
     try {
         const body = PostSchema.RequestBodySchema.safeParse(
@@ -28,7 +58,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         })
         const session = response.data
 
-        // Store both session and service so server-side APIs can resume correctly
+        // サーバー側 API が正しくセッション再開できるよう、session と service を同時に保存する。
         const cookiePayload = { session, service }
         const cookie = makeSessionSetCookie(cookiePayload)
         const responeseHeader: PostSchema.ResponseHeaders200Type = {
@@ -41,6 +71,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
     } catch (err: unknown) {
         console.error("login.ts: ", err)
         if (err instanceof XRPCError) {
+            // atproto 側の既知エラーをHTTPステータスへ正規化して返す。
             switch (err.error) {
                 case "AuthenticationRequired":
                     console.warn("login.ts: AuthenticationRequired")

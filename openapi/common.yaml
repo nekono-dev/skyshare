@@ -35,3 +35,18 @@ ogMeta:
   required:
     - title
     - description
+
+imagesMeta:
+  type: array
+  items:
+    type: object
+    required:
+      - width
+      - height
+    properties:
+      width:
+        type: integer
+        minimum: 1
+      height:
+        type: integer
+        minimum: 1

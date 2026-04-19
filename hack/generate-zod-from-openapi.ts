@@ -241,17 +241,161 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         return "z.any()"
     }
 
-    function pickContentSchema(content: any, preferredTypes: string[]) {
+    function resolveRefSchema($ref: string, baseFile?: string): any {
+        if ($ref.startsWith("#/")) {
+            const doc = baseFile
+                ? loadAndParse(baseFile)
+                : loadedFiles[path.resolve(rootFilePath)]
+            const parts = $ref.replace(/^#\//, "").split("/")
+            let cur: any = doc
+            for (const p of parts) {
+                if (cur === undefined) break
+                cur = cur[p]
+            }
+            return cur
+        }
+
+        const [filePart, fragPart] = $ref.split("#")
+        const baseDir = baseFile
+            ? path.dirname(baseFile)
+            : path.dirname(rootFilePath)
+        const refFile = path.resolve(baseDir, filePart)
+        const doc = loadAndParse(refFile)
+        if (!fragPart || !fragPart.startsWith("/")) return undefined
+        const parts = fragPart.replace(/^\//, "").split("/")
+        let cur: any = doc
+        for (const p of parts) {
+            if (cur === undefined) break
+            cur = cur[p]
+        }
+        return cur
+    }
+
+    function derefSchema(s: any, baseFile?: string, depth = 0): any {
+        if (!s || depth > 8) return s
+        if (s.$ref && typeof s.$ref === "string") {
+            const resolved = resolveRefSchema(s.$ref, baseFile)
+            return derefSchema(resolved, baseFile, depth + 1)
+        }
+        return s
+    }
+
+    function detectSchemaKind(
+        s: any,
+        baseFile?: string,
+    ):
+        | "binary"
+        | "binary-array"
+        | "array"
+        | "object"
+        | "string"
+        | "number"
+        | "boolean"
+        | "other" {
+        const schema = derefSchema(s, baseFile)
+        if (!schema) return "other"
+
+        if (schema.type === "string" && schema.format === "binary") {
+            return "binary"
+        }
+        if (schema.type === "array") {
+            const item = derefSchema(schema.items || {}, baseFile)
+            if (item?.type === "string" && item?.format === "binary") {
+                return "binary-array"
+            }
+            return "array"
+        }
+        if (schema.type === "object" || schema.properties) return "object"
+        if (schema.type === "string" || schema.enum) return "string"
+        if (schema.type === "integer" || schema.type === "number") {
+            return "number"
+        }
+        if (schema.type === "boolean") return "boolean"
+        return "other"
+    }
+
+    function renderMultipartFieldSchema(
+        s: any,
+        required: boolean,
+        baseFile?: string,
+    ): string {
+        const kind = detectSchemaKind(s, baseFile)
+        const expr = renderSchema(s, baseFile, true)
+
+        let fieldExpr = ""
+        if (kind === "binary") {
+            fieldExpr = `zfd.file()`
+        } else if (kind === "binary-array") {
+            fieldExpr = `zfd.repeatableOfType(zfd.file())`
+        } else if (kind === "string") {
+            fieldExpr =
+                expr === "z.string()" ? `zfd.text()` : `zfd.text(${expr})`
+        } else if (kind === "number") {
+            fieldExpr =
+                expr === "z.number()" ? `zfd.numeric()` : `zfd.numeric(${expr})`
+        } else if (kind === "array") {
+            const arraySchema = derefSchema(s, baseFile)
+            const itemSchema = arraySchema?.items || {}
+            const itemKind = detectSchemaKind(itemSchema, baseFile)
+            const itemExpr = renderSchema(itemSchema, baseFile, true)
+            if (itemKind === "string") {
+                fieldExpr =
+                    itemExpr === "z.string()"
+                        ? `zfd.repeatableOfType(zfd.text())`
+                        : `zfd.repeatableOfType(zfd.text(${itemExpr}))`
+            } else if (itemKind === "number") {
+                fieldExpr =
+                    itemExpr === "z.number()"
+                        ? `zfd.repeatableOfType(zfd.numeric())`
+                        : `zfd.repeatableOfType(zfd.numeric(${itemExpr}))`
+            } else {
+                fieldExpr = `zfd.json(${expr})`
+            }
+        } else {
+            // multipart で object/array/その他の複雑型は JSON 文字列として受け取り、zod で復号後に検証する。
+            fieldExpr = `zfd.json(${expr})`
+        }
+
+        return required ? fieldExpr : `${fieldExpr}.optional()`
+    }
+
+    function renderMultipartRequestBodySchema(
+        s: any,
+        baseFile?: string,
+    ): string {
+        const schema = derefSchema(s, baseFile)
+        if (!schema || !(schema.type === "object" || schema.properties)) {
+            return renderSchema(s, baseFile, true)
+        }
+
+        const props = schema.properties || {}
+        const req = new Set(schema.required || [])
+        const parts: string[] = []
+        for (const [k, v] of Object.entries(props)) {
+            const fieldExpr = renderMultipartFieldSchema(
+                v,
+                req.has(k),
+                baseFile,
+            )
+            parts.push(`${JSON.stringify(k)}: ${fieldExpr}`)
+        }
+
+        return `zfd.formData({ ${parts.join(", ")} })`
+    }
+
+    function pickContentSchemaWithType(content: any, preferredTypes: string[]) {
         if (!content || typeof content !== "object") return undefined
         for (const mediaType of preferredTypes) {
             const media = content[mediaType]
             if (media && typeof media === "object" && media.schema)
-                return media.schema
+                return { schema: media.schema, mediaType }
         }
         // Fallback to any declared media type that includes a schema.
-        for (const media of Object.values(content as Record<string, any>)) {
+        for (const [mediaType, media] of Object.entries(
+            content as Record<string, any>,
+        )) {
             if (media && typeof media === "object" && media.schema)
-                return media.schema
+                return { schema: media.schema, mediaType }
         }
         return undefined
     }
@@ -306,13 +450,13 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             if (!op || typeof op !== "object") continue
             if (op.requestBody) {
                 const content = op.requestBody.content || {}
-                const reqSchema = pickContentSchema(content, [
+                const reqSchema = pickContentSchemaWithType(content, [
                     "application/json",
                     "multipart/form-data",
                     "application/x-www-form-urlencoded",
                     "*/*",
                 ])
-                if (reqSchema) renderSchema(reqSchema, specSourceFile)
+                if (reqSchema) renderSchema(reqSchema.schema, specSourceFile)
             }
             if (Array.isArray(op.parameters) && op.parameters.length > 0) {
                 for (const p of op.parameters) {
@@ -346,7 +490,7 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
     const emitted = new Set<string>()
     const compLines: string[] = []
     compLines.push(...header)
-    compLines.push("import { z } from 'zod';", "")
+    compLines.push("import { z } from 'zod/v4';", "")
     while (true) {
         const names = Object.keys(schemas).filter(n => !emitted.has(n))
         if (names.length === 0) break
@@ -427,7 +571,22 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
 
             const endpointLines: string[] = []
             endpointLines.push(...header)
-            endpointLines.push("import { z } from 'zod';")
+            endpointLines.push("import { z } from 'zod/v4';")
+
+            const requestContent = op.requestBody?.content || {}
+            const pickedRequestBody = op.requestBody
+                ? pickContentSchemaWithType(requestContent, [
+                      "application/json",
+                      "multipart/form-data",
+                      "application/x-www-form-urlencoded",
+                      "*/*",
+                  ])
+                : undefined
+            const hasMultipartRequestBody =
+                pickedRequestBody?.mediaType === "multipart/form-data"
+            if (hasMultipartRequestBody) {
+                endpointLines.push("import { zfd } from 'zod-form-data';")
+            }
 
             // determine output file path based on URL path: create a directory for the path
             // and emit a file per HTTP method (e.g. api/entry/post.ts)
@@ -449,15 +608,17 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
 
             // request body
             if (op.requestBody) {
-                const content = op.requestBody.content || {}
-                const reqSchema = pickContentSchema(content, [
-                    "application/json",
-                    "multipart/form-data",
-                    "application/x-www-form-urlencoded",
-                    "*/*",
-                ])
-                if (reqSchema) {
-                    const reqLine = renderSchema(reqSchema, baseForRender, true)
+                if (pickedRequestBody) {
+                    const reqLine = hasMultipartRequestBody
+                        ? renderMultipartRequestBodySchema(
+                              pickedRequestBody.schema,
+                              baseForRender,
+                          )
+                        : renderSchema(
+                              pickedRequestBody.schema,
+                              baseForRender,
+                              true,
+                          )
                     const constName = `RequestBodySchema`
                     endpointLines.push(
                         `export const ${constName} = ${reqLine};`,

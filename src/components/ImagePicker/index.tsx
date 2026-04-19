@@ -13,6 +13,15 @@ import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import pic from "@/images/image.svg"
 
+/**
+ * 投稿画像の選択・プレビュー・クロップ調整を統合するコンポーネント。
+ *
+ * 責務と処理概要:
+ * - ファイル入力から最大4枚の画像を受け取り、スロット情報を管理する。
+ * - 初期クロップを算出してプレビュー生成し、親へ `ImageEntry` を通知する。
+ * - クロップダイアログで再調整した結果を反映する。
+ */
+
 export type SlotCropState = {
   crop: { x: number; y: number }
   zoom: number
@@ -43,6 +52,21 @@ type Props = {
   disabled?: boolean
 }
 
+/**
+ * 画像ピッカー UI を描画する。
+ *
+ * Input:
+ * - `value`: 現在の画像エントリ
+ * - `onChange`: 画像エントリ更新通知
+ * - `disabled`: 操作可否
+ *
+ * Output:
+ * - 画像追加・クロップ・撤去とプレビュー表示を含む JSX
+ *
+ * 例:
+ * - 入力: `{ value: null, disabled: false }`
+ * - 出力: 画像追加ボタンと空のプレビュー領域
+ */
 export const Component = ({ value, onChange, disabled = false }: Props) => {
   const [slots, setSlots] = useState<ImageSlot[]>([])
   const [showCropDialog, setShowCropDialog] = useState(false)
@@ -50,6 +74,15 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
   const slotsRef = useRef<ImageSlot[]>([])
   const inputId = useId()
 
+  /**
+   * 指定スロット群の object URL を解放する。
+   *
+   * Input:
+   * - `targetSlots`: 解放対象スロット配列
+   *
+   * Output:
+   * - 返り値なし（URL 解放を副作用として実行）
+   */
   const revokeSlotUrls = (targetSlots: ImageSlot[]) => {
     targetSlots.forEach(slot => {
       try {
@@ -75,6 +108,19 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
     }
   }, [value])
 
+  /**
+   * 現在スロット群から投稿用 `ImageEntry` を生成して親へ通知する。
+   *
+   * Input:
+   * - `nextSlots`: 反映後スロット配列
+   *
+   * Output:
+   * - 返り値なし（`onChange` で `ImageEntry | null` を通知）
+   *
+   * 例:
+   * - 入力: 2件のスロット
+   * - 出力: 2件の `originalBlobs` と1件の `thumbnailBlob` を持つ `ImageEntry`
+   */
   const createEntryFromSlots = async (nextSlots: ImageSlot[]) => {
     if (nextSlots.length === 0) {
       onChange(null)
@@ -100,6 +146,19 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
     })
   }
 
+  /**
+   * 現在のレイアウト定義に合わせて各スロットの初期クロップを再計算する。
+   *
+   * 処理の趣旨:
+   * - 画像枚数変化でスロット比率が変わるため、既存中心点をなるべく維持して切り抜き領域を再配置する。
+   *
+   * Input:
+   * - `sourceSlots`: 再計算対象スロット
+   * - `defs`: 現在枚数に対応するスロット定義
+   *
+   * Output:
+   * - 再計算済みスロット配列
+   */
   const normalizeSlotsForLayout = (
     sourceSlots: ImageSlot[],
     defs: ReturnType<typeof getSlotDefs>,
@@ -137,6 +196,19 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
       }
     })
 
+  /**
+   * ファイル選択イベントを処理し、スロットとプレビューを更新する。
+   *
+   * 処理の趣旨:
+   * - 追加可能枚数（最大4）を超える入力を切り詰める。
+   * - 画像サイズ取得に失敗してもフォールバックでスロットは維持し、全体処理を止めない。
+   *
+   * Input:
+   * - `event`: `<input type="file">` の change イベント
+   *
+   * Output:
+   * - 返り値なし（state 更新と `onChange` 通知を実行）
+   */
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget
     const newFiles = input.files ? Array.from(input.files) : []
@@ -152,7 +224,7 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
       file: f,
     }))
 
-    // compute slot defs for new total count
+    // 追加後の総枚数に対するスロット定義を算出する。
     const newCount = slots.length + urls.length
     const defs = getSlotDefs(newCount)
 
@@ -178,7 +250,7 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
           file,
         })
       } catch (err) {
-        // fallback: still add slot
+        // サイズ取得失敗時もスロットだけは残して後続調整を可能にする。
         addedSlots.push({
           objectUrl: url,
           fileName: name,
@@ -206,17 +278,34 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
     console.log(`nextSlots: ${JSON.stringify(nextSlots)}`)
   }
 
+  /**
+   * クロップダイアログを開く。
+   *
+   * 失敗時の方針:
+   * - スロット未登録時は何もせず return する。
+   */
   const handleOpenCrop = () => {
     if (slots.length === 0) return
     setShowCropDialog(true)
   }
 
+  /**
+   * クロップ確定結果を state と `ImageEntry` に反映する。
+   *
+   * Input:
+   * - `originalBlobs`: 個別画像 Blob 配列
+   * - `thumbnailBlob`: サムネイル Blob
+   * - `newStates`: 各スロットの新しいクロップ状態
+   *
+   * Output:
+   * - 返り値なし（`slots`/`onChange`/ダイアログ状態を更新）
+   */
   const handleCropConfirm = (
     originalBlobs: Blob[],
     thumbnailBlob: Blob,
     newStates: SlotCropState[],
   ) => {
-    // update slots cropState from newStates
+    // 確定したクロップ状態を各スロットへ反映する。
     setSlots(prev =>
       prev.map((s, i) => ({ ...s, cropState: newStates[i] ?? s.cropState })),
     )
@@ -237,6 +326,12 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
     setShowCropDialog(false)
   }
 
+  /**
+   * すべての画像スロットを削除し、プレビュー状態を初期化する。
+   *
+   * Output:
+   * - 返り値なし（URL 解放と state 初期化を実行）
+   */
   const handleRemoveAll = () => {
     revokeSlotUrls(slots)
     setSlots([])
@@ -303,26 +398,6 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
               className={styles.previewImg}
             />
           </article>
-
-          {/* <div className={styles.previewList}>
-            {previewEntry.originalPreviews.map((preview, index) => (
-              <article
-                key={`${previewEntry.sourceFileNames[index]}-${index}`}
-                className={styles.previewItem}
-              >
-                <p className={styles.previewTitle}>
-                  {previewEntry.sourceFileNames[index] ?? `画像 ${index + 1}`}
-                </p>
-                <img
-                  src={preview}
-                  alt={
-                    previewEntry.sourceFileNames[index] ?? `画像 ${index + 1}`
-                  }
-                  className={styles.previewImg}
-                />
-              </article>
-            ))}
-          </div> */}
         </div>
       )}
 

@@ -1,4 +1,13 @@
 ---
+/**
+ * 全ページ共通の基本レイアウト。
+ *
+ * 責務と処理概要:
+ * - HTML スケルトン（head/body/main）を提供する。
+ * - OGP/SEO メタ情報は `Metadatas` へ委譲する。
+ * - header/footer は named slot、本文は default slot で受け取る。
+ */
+
 interface Props {
     pageTitle: string
     cardPath: string

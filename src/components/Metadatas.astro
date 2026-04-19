@@ -1,4 +1,12 @@
 ---
+/**
+ * ページ共通のメタタグを出力する Astro コンポーネント。
+ *
+ * 責務と処理概要:
+ * - OGP / Twitter Card / robots / viewport などの基本メタを一元管理する。
+ * - `cardPath` と `Astro.url` から共有カード画像の絶対 URL を組み立てる。
+ */
+
 interface Props {
     pageTitle: string
     cardPath: string
