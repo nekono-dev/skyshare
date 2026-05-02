@@ -30,7 +30,7 @@ export const SELF_LABEL_OPTIONS: SelfLabelOption[] = [
   { label: "ヌード(nudity)", value: SelfLabelValues.nudity },
   { label: "成人向け(porn)", value: SelfLabelValues.porn },
   { label: "ネタバレ(spoiler)", value: SelfLabelValues.spoiler },
-  { label: "警告(分類なし)", value: SelfLabelValues["!warn"] },
+  { label: "警告(warn)", value: SelfLabelValues["!warn"] },
 ]
 
 type Props = {

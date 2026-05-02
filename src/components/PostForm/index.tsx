@@ -7,6 +7,7 @@
  * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
  */
 import React, { useEffect, useState } from "react"
+import twitterText from "twitter-text"
 import { createEntry } from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
@@ -225,7 +226,70 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   const [ogpResult, setOgpResult] = useState<OgpResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const maxLen = 300
+  const bskyMaxCount = 300
+  const xWarnCount = 140
+
+  /**
+   * X.com 向けの投稿文字数を返す。
+   *
+   * 処理の趣旨:
+   * - 旧実装 TextInputBox と同様に twitter-text の重み付きカウントを 2 で割って切り上げる。
+   * - 解析失敗時は入力文字列長へフォールバックする。
+   *
+   * Input:
+   * - `rawText`: 投稿入力文字列
+   *
+   * Output:
+   * - X.com 換算の投稿文字数
+   *
+   * 例:
+   * - 入力: "hello"
+   * - 出力: 5
+   */
+  const countTextOnX = (rawText: string): number => {
+    try {
+      return Math.ceil(twitterText.parseTweet(rawText).weightedLength / 2)
+    } catch {
+      return rawText.length
+    }
+  }
+
+  /**
+   * Bluesky 向けの投稿文字数を返す。
+   *
+   * 処理の趣旨:
+   * - 絵文字などの結合文字を過大評価しないよう grapheme 単位でカウントする。
+   * - Intl.Segmenter 非対応環境では文字列長へフォールバックする。
+   *
+   * Input:
+   * - `rawText`: 投稿入力文字列
+   *
+   * Output:
+   * - Bluesky 換算の投稿文字数
+   *
+   * 例:
+   * - 入力: "☕️"
+   * - 出力: 1
+   */
+  const countTextOnBsky = (rawText: string): number => {
+    try {
+      const segmenterJa = new Intl.Segmenter("ja-JP", {
+        granularity: "grapheme",
+      })
+      return Array.from(segmenterJa.segment(rawText)).length
+    } catch {
+      return rawText.length
+    }
+  }
+
+  const textCountOnX = countTextOnX(text)
+  const textCountOnBsky = countTextOnBsky(text)
+  const charCountAlertClass =
+    textCountOnBsky > bskyMaxCount
+      ? styles.charCountError
+      : textCountOnX > xWarnCount && textCountOnBsky <= bskyMaxCount
+        ? styles.charCountWarn
+        : ""
 
   useEffect(() => {
     return () => {
@@ -388,9 +452,22 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
               placeholder="最近どう？"
               value={text}
               onChange={e => setText(e.target.value)}
-              maxLength={maxLen}
               disabled={isSubmitting}
             />
+            <div className={styles.charCountRow}>
+              <div
+                className={[styles.charCount, charCountAlertClass]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <span className={styles.charCountX}>
+                  {textCountOnX}/{xWarnCount}:X
+                </span>
+                <span className={styles.charCountBsky}>
+                  {textCountOnBsky}/{bskyMaxCount}:Bluesky
+                </span>
+              </div>
+            </div>
           </div>
         </div>
         <div className={styles.toolbar}>
@@ -434,11 +511,6 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             }}
             disabled={isSubmitting}
           />
-          <div className={styles.rightInfo}>
-            <span className={styles.charCount}>
-              {text.length}/{maxLen}
-            </span>
-          </div>
         </div>
         <div
           id="status"
