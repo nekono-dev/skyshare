@@ -35,6 +35,14 @@ requestBody:
             items:
               type: string
               example: ja
+          selfLabels:
+            type: string
+            enum:
+              - sexual
+              - nudity
+              - porn
+              - spoiler
+              - "!warn"
 responses:
   "200":
     description: Success post

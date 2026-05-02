@@ -24,7 +24,7 @@
   --size-button-lg: 60px;
 
   --btn-padding-x: calc(var(--space-3));
-  --btn-padding-y: calc(var(--space-2));
+  --btn-padding-y: calc(var(--space-1));
 }
 
 /* ボタンを定義する場合は必ず適応すること */
@@ -105,4 +105,51 @@
 
 :local(.baseCard) * {
   box-sizing: border-box;
+}
+
+/* セレクトUIの外枠。擬似要素でドロップダウン矢印を表示する */
+:local(.selectWrapper) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+}
+
+:local(.selectWrapper)::after {
+  content: "▼";
+  position: absolute;
+  right: var(--space-2);
+  top: 0;
+  bottom: 0;
+  margin-top: auto;
+  margin-bottom: auto;
+  height: fit-content;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+/* セレクトUI本体。必要に応じて幅クラスを別CSSで合成する */
+:local(.baseSelect) {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card-bg);
+  color: var(--color-muted);
+  padding: var(--space-1) var(--space-5) var(--space-1) var(--space-2);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+:local(.baseSelect):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+:local(.baseSelect):disabled {
+  background: var(--color-gray-disabled);
+  cursor: not-allowed;
 }

@@ -1,0 +1,28 @@
+.section {
+  margin-top: var(--space-3);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.previewItem {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: var(--color-card-bg);
+}
+
+.previewTitle {
+  margin: 0 0 var(--space-2) 0;
+  color: var(--color-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+}
+
+.previewImg {
+  width: 100%;
+  max-width: 560px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+  display: block;
+}

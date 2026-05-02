@@ -14,11 +14,11 @@ import ui from "@/styles/ui.module.css"
 import pic from "@/images/image.svg"
 
 /**
- * 投稿画像の選択・プレビュー・クロップ調整を統合するコンポーネント。
+ * 投稿画像の選択とクロップ調整を担うコンポーネント。
  *
  * 責務と処理概要:
  * - ファイル入力から最大4枚の画像を受け取り、スロット情報を管理する。
- * - 初期クロップを算出してプレビュー生成し、親へ `ImageEntry` を通知する。
+ * - 初期クロップを算出して投稿用画像を生成し、親へ `ImageEntry` を通知する。
  * - クロップダイアログで再調整した結果を反映する。
  */
 
@@ -61,11 +61,11 @@ type Props = {
  * - `disabled`: 操作可否
  *
  * Output:
- * - 画像追加・クロップ・撤去とプレビュー表示を含む JSX
+ * - 画像追加・クロップ・撤去の操作 UI
  *
  * 例:
  * - 入力: `{ value: null, disabled: false }`
- * - 出力: 画像追加ボタンと空のプレビュー領域
+ * - 出力: 画像追加ボタンとクロップ操作ボタン
  */
 export const Component = ({ value, onChange, disabled = false }: Props) => {
   const [slots, setSlots] = useState<ImageSlot[]>([])
@@ -339,8 +339,6 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
     onChange(null)
   }
 
-  const previewEntry = value
-
   return (
     <section className={styles.section}>
       {isPreparingPreview && <Loading message="画像プレビューを生成中..." />}
@@ -385,21 +383,6 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
           </button>
         )}
       </div>
-
-      {previewEntry && (
-        <div className={styles.previewArea}>
-          <article className={styles.previewItem}>
-            <p className={styles.previewTitle}>
-              サムネイル（visual: 1200x630）
-            </p>
-            <img
-              src={previewEntry.thumbnailPreview}
-              alt="1200x630 サムネイル"
-              className={styles.previewImg}
-            />
-          </article>
-        </div>
-      )}
 
       {showCropDialog && (
         <ImageCropDialog

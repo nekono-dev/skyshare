@@ -9,10 +9,19 @@
 import React, { useEffect, useState } from "react"
 import { createEntry } from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
+import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
 import ImagePicker, { type ImageEntry } from "@/components/ImagePicker"
+import ImagePreview from "@/components/ImagePreview"
 import LanguageSelect from "@/components/LanguageSelect"
 import Loading from "@/components/Loading"
 import OgpFetchButton, { type OgpResult } from "@/components/OgpFetchButton"
+import SelfLabelsSelect from "@/components/SelfLabelsSelect"
+import {
+  readOpenXPopupSetting,
+  writeOpenXPopupSetting,
+} from "@/lib/shareSettings"
+import { canShareWithWebApi, shareWithWebApi } from "@/lib/webShare"
+import { buildXIntentText, openXIntentPopup } from "@/lib/xIntent"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -203,6 +212,12 @@ const resolveImageMetadata = async (
 export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
+  const [openXPopup, setOpenXPopup] = useState(() =>
+    readOpenXPopupSetting(false),
+  )
+  const [selfLabel, setSelfLabel] = useState<
+    CreateEntryBodySelfLabels | undefined
+  >(undefined)
   const [status, setStatus] = useState<string | null>(null)
   const [statusColor, setStatusColor] = useState<string | undefined>(undefined)
   const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
@@ -242,6 +257,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
       const payload: CreateEntryBody = {
         text,
         langs: [languageCode],
+        selfLabels: selfLabel,
       }
 
       if (imageEntry) {
@@ -265,7 +281,40 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
       }
 
       setStatusColor("green")
-      setStatus(`投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}`)
+      const shareText = buildXIntentText(text, res.data.skyshare.uri)
+
+      // 「Xをポップアップで開く」が有効なら常に intent を使い、無効時のみ WebShareAPI を試行する。
+      if (openXPopup) {
+        const popupOpened = openXIntentPopup(shareText)
+        setStatus(
+          popupOpened
+            ? `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（x.com 投稿画面を開きました）`
+            : `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（x.com 投稿画面を開けませんでした）`,
+        )
+      } else if (canShareWithWebApi({ text: shareText })) {
+        const shareResult = await shareWithWebApi({ text: shareText })
+        if (shareResult.ok) {
+          setStatus(
+            `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}`,
+          )
+        } else if (shareResult.reason === "aborted") {
+          setStatus(
+            `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（共有はキャンセルされました）`,
+          )
+        } else {
+          setStatus(
+            `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（WebShareAPI での共有に失敗しました）`,
+          )
+        }
+      } else {
+        const popupOpened = openXIntentPopup(shareText)
+        setStatus(
+          popupOpened
+            ? `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（WebShareAPI 非対応のため x.com 投稿画面を開きました）`
+            : `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（WebShareAPI 非対応かつ x.com 投稿画面を開けませんでした）`,
+        )
+      }
+
       setText("")
       // 生成済みプレビューURLを解放してリークを防ぐ。
       revokeImageEntry(imageEntry)
@@ -299,6 +348,13 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
           キャンセル
         </button>
         <div className={styles.headerRight}>
+          <div className={styles.labelSelect}>
+            <SelfLabelsSelect
+              value={selfLabel}
+              onChange={setSelfLabel}
+              disabled={isSubmitting}
+            />
+          </div>
           <button
             className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
             disabled={isSubmitting}
@@ -349,32 +405,31 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             />
           </div>
         </div>
-        <OgpFetchButton
-          text={text}
-          value={ogpResult}
-          onChange={nextOgp => {
-            if (nextOgp) {
-              setImageEntry(prevImageEntry => {
-                revokeImageEntry(prevImageEntry)
-                return null
-              })
-            }
-            setOgpResult(nextOgp)
-          }}
-          disabled={isSubmitting}
-        />
-        <ImagePicker
-          value={imageEntry}
-          onChange={entry => {
-            if (entry && ogpResult) {
-              setOgpResult(null)
-            }
-            setImageEntry(entry)
-          }}
-          disabled={isSubmitting}
-        />
-
         <div className={styles.toolbar}>
+          <OgpFetchButton
+            text={text}
+            value={ogpResult}
+            onChange={nextOgp => {
+              if (nextOgp) {
+                setImageEntry(prevImageEntry => {
+                  revokeImageEntry(prevImageEntry)
+                  return null
+                })
+              }
+              setOgpResult(nextOgp)
+            }}
+            disabled={isSubmitting}
+          />
+          <ImagePicker
+            value={imageEntry}
+            onChange={entry => {
+              if (entry && ogpResult) {
+                setOgpResult(null)
+              }
+              setImageEntry(entry)
+            }}
+            disabled={isSubmitting}
+          />
           <div className={styles.rightInfo}>
             <LanguageSelect
               value={languageCode}
@@ -395,6 +450,21 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         >
           {status}
         </div>
+        <label className={styles.popupToggle}>
+          <input
+            className={styles.popupToggleInput}
+            type="checkbox"
+            checked={openXPopup}
+            disabled={isSubmitting}
+            onChange={e => {
+              const nextValue = e.target.checked
+              setOpenXPopup(nextValue)
+              writeOpenXPopupSetting(nextValue)
+            }}
+          />
+          Xをポップアップで開く
+        </label>
+        <ImagePreview value={imageEntry} />
       </form>
     </div>
   )

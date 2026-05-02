@@ -1,5 +1,6 @@
 import React from "react"
 import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
 
 /**
  * 投稿言語選択コンポーネントで利用する言語定義と選択 UI。
@@ -252,28 +253,30 @@ export const Component: React.FC<Props> = ({
   // （以前は動的にIntlで取得していましたが、互換性のため静的ラベルに変更）
 
   const selectClassName = className
-    ? `${styles.select} ${className}`
-    : styles.select
+    ? `${ui.baseSelect} ${styles.select} ${className}`
+    : `${ui.baseSelect} ${styles.select}`
 
   return (
-    <select
-      id={id}
-      name={name}
-      className={selectClassName}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      disabled={disabled}
-      aria-label={ariaLabel}
-    >
-      {UNIQUE_BLUESKY_POST_LANGUAGES.map(option => {
-        const labelText = option.label
-        return (
-          <option key={option.code} value={option.code}>
-            {labelText}
-          </option>
-        )
-      })}
-    </select>
+    <span className={ui.selectWrapper}>
+      <select
+        id={id}
+        name={name}
+        className={selectClassName}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={disabled}
+        aria-label={ariaLabel}
+      >
+        {UNIQUE_BLUESKY_POST_LANGUAGES.map(option => {
+          const labelText = option.label
+          return (
+            <option key={option.code} value={option.code}>
+              {labelText}
+            </option>
+          )
+        })}
+      </select>
+    </span>
   )
 }
 

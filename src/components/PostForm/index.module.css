@@ -92,10 +92,14 @@
 
 .toolbar {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   border-top: 1px solid var(--border-color-muted);
-  padding-top: var(--space-3);
+  padding-top: var(--space-1);
+}
+
+.labelSelect {
+  flex: 0 0 auto;
 }
 
 .rightInfo {
@@ -103,6 +107,21 @@
   gap: var(--space-3);
   align-items: center;
 }
+
+.popupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.popupToggleInput {
+  width: 1rem;
+  height: 1rem;
+}
+
 .langSelect {
   max-width: 12rem;
 }
