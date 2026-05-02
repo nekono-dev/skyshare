@@ -129,7 +129,7 @@ export const Component: React.FC<Props> = ({
       contentClassName={`${styles.overlayContent} ${styles[`overlayContent${count}`]}`}
     >
       {isProcessing && <Loading overlay message="画像を処理中..." />}
-      <div className={styles.container}>
+      <div className={`${ui.baseCard} ${styles.container}`}>
         <h3 className={styles.title}>画像を調整</h3>
         <p className={styles.caption}>
           1200 x 630 の範囲で配置と拡大率を調整します。

@@ -16,6 +16,7 @@ import LanguageSelect from "@/components/LanguageSelect"
 import Loading from "@/components/Loading"
 import OgpFetchButton, { type OgpResult } from "@/components/OgpFetchButton"
 import SelfLabelsSelect from "@/components/SelfLabelsSelect"
+import ToggleSwitch from "@/components/ToggleSwitch"
 import {
   readOpenXPopupSetting,
   writeOpenXPopupSetting,
@@ -342,13 +343,6 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
           キャンセル
         </button>
         <div className={styles.headerRight}>
-          <div className={styles.labelSelect}>
-            <SelfLabelsSelect
-              value={selfLabel}
-              onChange={setSelfLabel}
-              disabled={isSubmitting}
-            />
-          </div>
           <button
             className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
             disabled={isSubmitting}
@@ -400,6 +394,22 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
           </div>
         </div>
         <div className={styles.toolbar}>
+          <div className={styles.labelSelect}>
+            <SelfLabelsSelect
+              value={selfLabel}
+              onChange={setSelfLabel}
+              disabled={isSubmitting}
+            />
+          </div>
+          <LanguageSelect
+            value={languageCode}
+            onChange={setLanguageCode}
+            className={styles.langSelect}
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className={styles.toolbar}>
           <OgpFetchButton
             text={text}
             value={ogpResult}
@@ -425,12 +435,6 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             disabled={isSubmitting}
           />
           <div className={styles.rightInfo}>
-            <LanguageSelect
-              value={languageCode}
-              onChange={setLanguageCode}
-              className={styles.langSelect}
-              disabled={isSubmitting}
-            />
             <span className={styles.charCount}>
               {text.length}/{maxLen}
             </span>
@@ -444,20 +448,15 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         >
           {status}
         </div>
-        <label className={styles.popupToggle}>
-          <input
-            className={styles.popupToggleInput}
-            type="checkbox"
-            checked={openXPopup}
-            disabled={isSubmitting}
-            onChange={e => {
-              const nextValue = e.target.checked
-              setOpenXPopup(nextValue)
-              writeOpenXPopupSetting(nextValue)
-            }}
-          />
-          Xをポップアップで開く
-        </label>
+        <ToggleSwitch
+          checked={openXPopup}
+          disabled={isSubmitting}
+          label="Xをポップアップで開く"
+          onCheckedChange={next => {
+            setOpenXPopup(next)
+            writeOpenXPopupSetting(next)
+          }}
+        />
         <ImagePreview value={imageEntry} />
       </form>
     </div>
