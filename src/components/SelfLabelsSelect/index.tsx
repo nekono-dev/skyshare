@@ -28,7 +28,7 @@ type SelfLabelOption = {
 export const SELF_LABEL_OPTIONS: SelfLabelOption[] = [
   { label: "きわどい(sexual)", value: SelfLabelValues.sexual },
   { label: "ヌード(nudity)", value: SelfLabelValues.nudity },
-  { label: "成人向け-ポルノ等(porn)", value: SelfLabelValues.porn },
+  { label: "成人向け(porn)", value: SelfLabelValues.porn },
   { label: "ネタバレ(spoiler)", value: SelfLabelValues.spoiler },
   { label: "警告(分類なし)", value: SelfLabelValues["!warn"] },
 ]

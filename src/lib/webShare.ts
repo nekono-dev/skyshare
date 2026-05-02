@@ -26,19 +26,13 @@ type ShareExecutionResult = {
  * - 入力: `{ text: "hello" }`
  * - 出力: `true`（対応ブラウザの場合）
  */
-export const canShareWithWebApi = (shareData: ShareData) => {
+export const canShareWithWebApi = () => {
     if (typeof navigator === "undefined") {
         return false
     }
-
-    if (typeof navigator.share !== "function") {
+    if (navigator.share === undefined || navigator.canShare === undefined) {
         return false
     }
-
-    if (typeof navigator.canShare === "function") {
-        return navigator.canShare(shareData)
-    }
-
     return true
 }
 

@@ -288,30 +288,24 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         const popupOpened = openXIntentPopup(shareText)
         setStatus(
           popupOpened
-            ? `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（x.com 投稿画面を開きました）`
-            : `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（x.com 投稿画面を開けませんでした）`,
+            ? `投稿に成功しました。`
+            : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
-      } else if (canShareWithWebApi({ text: shareText })) {
+      } else if (canShareWithWebApi()) {
         const shareResult = await shareWithWebApi({ text: shareText })
         if (shareResult.ok) {
-          setStatus(
-            `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}`,
-          )
+          setStatus(`投稿に成功しました。`)
         } else if (shareResult.reason === "aborted") {
-          setStatus(
-            `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（共有はキャンセルされました）`,
-          )
+          setStatus(`投稿に成功しました。共有はキャンセルされました。`)
         } else {
-          setStatus(
-            `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（WebShareAPI での共有に失敗しました）`,
-          )
+          setStatus(`投稿に成功しました。WebShareAPI での共有に失敗しました。`)
         }
       } else {
         const popupOpened = openXIntentPopup(shareText)
         setStatus(
           popupOpened
-            ? `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（WebShareAPI 非対応のため x.com 投稿画面を開きました）`
-            : `投稿に成功しました。SkyShare URL: ${res.data.skyshare.uri}（WebShareAPI 非対応かつ x.com 投稿画面を開けませんでした）`,
+            ? `投稿に成功しました。WebShareAPI 非対応のため x.com 投稿画面を開きました。`
+            : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
       }
 

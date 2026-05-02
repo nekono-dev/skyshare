@@ -95,12 +95,7 @@ export const resolvePdsServiceForDid = async (
     if (!did.startsWith("did:plc:")) return
 
     const url = new URL(`/${encodeURIComponent(did)}`, plcDirectoryBaseUrl)
-    const response = await fetch(url, {
-        redirect: "error",
-        headers: {
-            accept: "application/did+ld+json,application/json",
-        },
-    })
+    const response = await fetch(url)
 
     if (!response.ok) return
 

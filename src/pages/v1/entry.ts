@@ -486,6 +486,17 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             }
         }
 
+        // フェーズ 7.1: OGP画像（クロップ済みサムネイル）のアップロード
+        let uploadedOgImage: any = undefined
+        if (body.data.ogImage) {
+            try {
+                uploadedOgImage = await uploadBlob(agent, body.data.ogImage)
+            } catch (err) {
+                console.error("createEntry: ogImage upload failed", err)
+                return errorResponseFromStatus(500)
+            }
+        }
+
         // フェーズ 8: テキスト facet 検出
         const rt = new RichText({ text: body.data.text })
         await rt.detectFacets(agent)
@@ -496,13 +507,12 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             if (uploadedImages.length > 0) {
                 // 画像投稿パターン
                 embed = createImageEmbed(uploadedImages, body.data.imagesMeta)
-            } else if (body.data.ogMeta && body.data.ogImage) {
+            } else if (body.data.ogMeta && uploadedOgImage) {
                 // OGP 投稿パターン
-                const thumbBlob = await uploadBlob(agent, body.data.ogImage)
                 embed = createExternalEmbed(
                     rt.facets ?? undefined,
                     body.data.ogMeta,
-                    thumbBlob,
+                    uploadedOgImage,
                 )
             }
         } catch (err) {
@@ -541,7 +551,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                     agent,
                     response.uri,
                     response.cid,
-                    uploadedImages[uploadedImages.length - 1], // 最後のアップロード blob を visual として使用
+                    uploadedOgImage, // ogImage（クロップ済みサムネイル）を visual として使用
                     body.data.text,
                     userName,
                     session,
