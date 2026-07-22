@@ -2,7 +2,14 @@ import { defineConfig } from "orval"
 
 export default defineConfig({
     api: {
-        input: "./openapi/index.yaml", // or openapi.json
+        input: {
+            parserOptions: {
+                externalRefs: {
+                    allow: ["*"],
+                },
+            },
+            target: "./openapi/index.yaml",
+        },
         output: {
             target: "./src/client/openapi/client.ts",
             schemas: "./src/client/openapi/model",

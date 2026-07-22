@@ -102,7 +102,9 @@ const parseEntryLocator = (slugValue: string): SourceLocator | undefined => {
         if (parts.length >= 2 && parts[0] === "entries") {
             const compact = parts[1].match(/^([^@]+)@([^@/]+)$/)
             if (compact) {
-                if (!isDidIdentifier(compact[1])) return
+                if (!isDidIdentifier(compact[1])) {
+                    return
+                }
                 return { actor: compact[1], rkey: compact[2] }
             }
         }

@@ -741,7 +741,10 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             const outDirForFile = path.dirname(outFile)
             if (!fs.existsSync(outDirForFile))
                 fs.mkdirSync(outDirForFile, { recursive: true })
-            fs.writeFileSync(outFile, endpointLines.join("\n") + "\n", "utf8")
+            // Write atomically: write to a temp file then rename to avoid partial files
+            const tmpOut = outFile + ".tmp"
+            fs.writeFileSync(tmpOut, endpointLines.join("\n") + "\n", "utf8")
+            fs.renameSync(tmpOut, outFile)
             console.log("Wrote", outFile)
         }
     }
@@ -749,7 +752,10 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
     const componentsPath = path.join(outDir, "components.ts")
     if (!fs.existsSync(path.dirname(componentsPath)))
         fs.mkdirSync(path.dirname(componentsPath), { recursive: true })
-    fs.writeFileSync(componentsPath, compLines.join("\n") + "\n", "utf8")
+    // Write components atomically as well
+    const tmpComp = componentsPath + ".tmp"
+    fs.writeFileSync(tmpComp, compLines.join("\n") + "\n", "utf8")
+    fs.renameSync(tmpComp, componentsPath)
     console.log("Wrote", componentsPath)
 }
 
