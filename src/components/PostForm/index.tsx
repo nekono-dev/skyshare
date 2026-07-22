@@ -19,9 +19,15 @@ import OgpFetchButton, { type OgpResult } from "@/components/OgpFetchButton"
 import SelfLabelsSelect from "@/components/SelfLabelsSelect"
 import ToggleSwitch from "@/components/ToggleSwitch"
 import {
+  readCrosspostToTaittsuuSetting,
   readOpenXPopupSetting,
+  writeCrosspostToTaittsuuSetting,
   writeOpenXPopupSetting,
 } from "@/lib/shareSettings"
+import {
+  buildTaittsuuIntentText,
+  openTaittsuuIntentPopup,
+} from "@/lib/taittsuuIntent"
 import { canShareWithWebApi, shareWithWebApi } from "@/lib/webShare"
 import { buildXIntentText, openXIntentPopup } from "@/lib/xIntent"
 import styles from "./index.module.css"
@@ -30,6 +36,11 @@ import ui from "@/styles/ui.module.css"
 type Props = {
   onClose?: () => void
   avatarUrl?: string | null
+}
+
+type PendingIntentShare = {
+  xIntentText: string
+  taittsuuIntentText: string
 }
 
 type ImageSizeCandidate = {
@@ -214,6 +225,9 @@ const resolveImageMetadata = async (
 export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
+  const [crosspostToTaittsuu, setCrosspostToTaittsuu] = useState(() =>
+    readCrosspostToTaittsuuSetting(false),
+  )
   const [openXPopup, setOpenXPopup] = useState(() =>
     readOpenXPopupSetting(false),
   )
@@ -222,6 +236,8 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   >(undefined)
   const [status, setStatus] = useState<string | null>(null)
   const [statusColor, setStatusColor] = useState<string | undefined>(undefined)
+  const [pendingIntentShare, setPendingIntentShare] =
+    useState<PendingIntentShare | null>(null)
   const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
   const [ogpResult, setOgpResult] = useState<OgpResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -347,15 +363,43 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
 
       setStatusColor("green")
       const shareText = buildXIntentText(text, res.data.skyshare.uri)
+      const taittsuuIntentText = buildTaittsuuIntentText(
+        text,
+        res.data.skyshare.uri,
+      )
+      let shouldKeepInputForRetry = false
 
-      // 「Xをポップアップで開く」が有効なら常に intent を使い、無効時のみ WebShareAPI を試行する。
-      if (openXPopup) {
+      setPendingIntentShare(null)
+
+      // タイッツー有効時はタイッツー intent のみを実行し、X 共有は行わない。
+      if (crosspostToTaittsuu) {
+        const popupOpened = openTaittsuuIntentPopup(taittsuuIntentText)
+        setStatus(
+          popupOpened
+            ? `投稿に成功しました。`
+            : `投稿に成功しました。タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
+        )
+        if (!popupOpened) {
+          shouldKeepInputForRetry = true
+          setPendingIntentShare({
+            xIntentText: shareText,
+            taittsuuIntentText,
+          })
+        }
+      } else if (openXPopup) {
         const popupOpened = openXIntentPopup(shareText)
         setStatus(
           popupOpened
             ? `投稿に成功しました。`
             : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
+        if (!popupOpened) {
+          shouldKeepInputForRetry = true
+          setPendingIntentShare({
+            xIntentText: shareText,
+            taittsuuIntentText,
+          })
+        }
       } else if (canShareWithWebApi()) {
         const shareResult = await shareWithWebApi({ text: shareText })
         if (shareResult.ok) {
@@ -372,13 +416,22 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             ? `投稿に成功しました。WebShareAPI 非対応のため x.com 投稿画面を開きました。`
             : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
+        if (!popupOpened) {
+          shouldKeepInputForRetry = true
+          setPendingIntentShare({
+            xIntentText: shareText,
+            taittsuuIntentText,
+          })
+        }
       }
 
-      setText("")
-      // 生成済みプレビューURLを解放してリークを防ぐ。
-      revokeImageEntry(imageEntry)
-      setImageEntry(null)
-      setOgpResult(null)
+      if (!shouldKeepInputForRetry) {
+        setText("")
+        // 生成済みプレビューURLを解放してリークを防ぐ。
+        revokeImageEntry(imageEntry)
+        setImageEntry(null)
+        setOgpResult(null)
+      }
     } catch (err) {
       console.error(err)
       setStatusColor("#b00")
@@ -421,6 +474,46 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
           >
             投稿
           </button>
+          {pendingIntentShare && (
+            <>
+              <button
+                type="button"
+                className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+                disabled={isSubmitting}
+                onClick={() => {
+                  const popupOpened = openXIntentPopup(
+                    pendingIntentShare.xIntentText,
+                  )
+                  setStatus(
+                    popupOpened
+                      ? "x.com 投稿画面を開きました。"
+                      : "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                  )
+                  setStatusColor(popupOpened ? "green" : "#b00")
+                }}
+              >
+                X投稿
+              </button>
+              <button
+                type="button"
+                className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+                disabled={isSubmitting}
+                onClick={() => {
+                  const popupOpened = openTaittsuuIntentPopup(
+                    pendingIntentShare.taittsuuIntentText,
+                  )
+                  setStatus(
+                    popupOpened
+                      ? "タイッツー投稿画面を開きました。"
+                      : "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                  )
+                  setStatusColor(popupOpened ? "green" : "#b00")
+                }}
+              >
+                タイッツー投稿
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -522,11 +615,29 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         </div>
         <ToggleSwitch
           checked={openXPopup}
-          disabled={isSubmitting}
-          label="Xをポップアップで開く"
+          disabled={isSubmitting || crosspostToTaittsuu}
+          label="共有メニューを使わない"
           onCheckedChange={next => {
             setOpenXPopup(next)
             writeOpenXPopupSetting(next)
+            if (!next) {
+              setCrosspostToTaittsuu(false)
+              writeCrosspostToTaittsuuSetting(false)
+            }
+          }}
+        />
+        <ToggleSwitch
+          checked={crosspostToTaittsuu}
+          disabled={isSubmitting}
+          label="タイッツーにクロスポスト"
+          onCheckedChange={next => {
+            setCrosspostToTaittsuu(next)
+            writeCrosspostToTaittsuuSetting(next)
+
+            if (next) {
+              setOpenXPopup(true)
+              writeOpenXPopupSetting(true)
+            }
           }}
         />
         <ImagePreview value={imageEntry} />

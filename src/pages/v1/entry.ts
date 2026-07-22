@@ -292,6 +292,7 @@ const createBskyPost = async (
         langs,
         embed,
         labels,
+        via: "Skyshare",
     })
 }
 
