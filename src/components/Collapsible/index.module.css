@@ -1,0 +1,62 @@
+/**
+ * Collapsible のスタイル定義。
+ *
+ * 設計方針:
+ * - 共通トークンを使って、PostForm 内の詳細設定を軽量に開閉できる見た目を提供する。
+ * - 開閉トリガーは横幅いっぱいのボタンとし、モバイルでも押しやすいタップ領域を確保する。
+ */
+
+.container {
+  width: 100%;
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--color-card-bg);
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  cursor: pointer;
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.label {
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.indicator {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-right: 2px solid var(--color-muted);
+  border-bottom: 2px solid var(--color-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.indicatorOpen {
+  transform: rotate(-135deg);
+}
+
+.content {
+  padding: 0 var(--space-2) var(--space-2);
+  border-top: 1px solid var(--border-color-muted);
+}
