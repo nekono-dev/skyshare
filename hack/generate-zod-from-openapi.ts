@@ -238,6 +238,43 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         baseFile?: string,
         forEndpoint = false,
     ): string {
+        function applyStringConstraints(expr: string, schema: any): string {
+            let out = expr
+            if (typeof schema.minLength === "number") {
+                out += `.min(${schema.minLength})`
+            }
+            if (typeof schema.maxLength === "number") {
+                out += `.max(${schema.maxLength})`
+            }
+            if (typeof schema.pattern === "string") {
+                out += `.regex(new RegExp(${JSON.stringify(schema.pattern)}))`
+            }
+            return out
+        }
+
+        function applyAnyOfObjectConstraints(
+            expr: string,
+            schema: any,
+        ): string {
+            if (!Array.isArray(schema.anyOf) || schema.anyOf.length === 0) {
+                return expr
+            }
+            const branchExprs = schema.anyOf.map((branch: any) => {
+                const mergedBranch = {
+                    ...branch,
+                    type: branch.type || schema.type || "object",
+                    properties: branch.properties || schema.properties || {},
+                    additionalProperties:
+                        branch.additionalProperties !== undefined
+                            ? branch.additionalProperties
+                            : schema.additionalProperties,
+                }
+                return renderSchema(mergedBranch, baseFile, forEndpoint)
+            })
+
+            return `${expr}.superRefine((value, ctx) => { const matched = [${branchExprs.join(", ")}].some(schema => schema.safeParse(value).success); if (!matched) { ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Input does not satisfy anyOf constraints." }); } })`
+        }
+
         if (!s) return "z.any()"
         if (s.$ref) {
             const id = refToIdent(s.$ref, baseFile)
@@ -249,8 +286,6 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         }
         if (s.oneOf)
             return `z.union([${s.oneOf.map((x: any) => renderSchema(x, baseFile, forEndpoint)).join(", ")}])`
-        if (s.anyOf)
-            return `z.union([${s.anyOf.map((x: any) => renderSchema(x, baseFile, forEndpoint)).join(", ")}])`
         if (s.allOf)
             return `z.intersection(${renderSchema(s.allOf[0], baseFile, forEndpoint)}, ${renderSchema(s.allOf[1], baseFile, forEndpoint)})`
         if (s.enum) {
@@ -272,16 +307,18 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             const obj =
                 `z.object({ ${parts.join(", ")} })` +
                 (s.additionalProperties ? "" : ".strict()")
-            return obj
+            return applyAnyOfObjectConstraints(obj, s)
         }
         if (t === "array")
             return `z.array(${renderSchema(s.items || {}, baseFile, forEndpoint)})`
         if (t === "string") {
             if (s.format === "binary") return "z.instanceof(Blob)"
-            return "z.string()"
+            return applyStringConstraints("z.string()", s)
         }
         if (t === "integer" || t === "number") return "z.number()"
         if (t === "boolean") return "z.boolean()"
+        if (s.anyOf)
+            return `z.union([${s.anyOf.map((x: any) => renderSchema(x, baseFile, forEndpoint)).join(", ")}])`
         return "z.any()"
     }
 
@@ -423,8 +460,25 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             )
             parts.push(`${JSON.stringify(k)}: ${fieldExpr}`)
         }
+        const baseExpr = `zfd.formData({ ${parts.join(", ")} })`
+        if (!Array.isArray(schema.anyOf) || schema.anyOf.length === 0) {
+            return baseExpr
+        }
 
-        return `zfd.formData({ ${parts.join(", ")} })`
+        const branchExprs = schema.anyOf.map((branch: any) => {
+            const mergedBranch = {
+                ...branch,
+                type: branch.type || schema.type || "object",
+                properties: branch.properties || schema.properties || {},
+                additionalProperties:
+                    branch.additionalProperties !== undefined
+                        ? branch.additionalProperties
+                        : schema.additionalProperties,
+            }
+            return renderSchema(mergedBranch, baseFile, true)
+        })
+
+        return `${baseExpr}.superRefine((value, ctx) => { const matched = [${branchExprs.join(", ")}].some(schema => schema.safeParse(value).success); if (!matched) { ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Input does not satisfy anyOf constraints." }); } })`
     }
 
     function pickContentSchemaWithType(content: any, preferredTypes: string[]) {

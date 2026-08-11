@@ -12,8 +12,14 @@ requestBody:
     multipart/form-data:
       schema:
         type: object
-        required:
-          - text
+        anyOf:
+          - required:
+              - text
+          - required:
+              - images
+              - imagesMeta
+          - required:
+              - ogMeta
         properties:
           images:
             type: array
@@ -28,6 +34,7 @@ requestBody:
           text:
             type: string
             example: Post content
+            minLength: 1
           ogMeta:
             $ref: ../../common.yaml#/ogMeta
           langs:
