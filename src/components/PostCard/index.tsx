@@ -69,13 +69,7 @@ const Component = ({ item }: PostCardProps) => {
           Bluesky で開く
         </a>
       </header>
-
-      {item.text ? (
-        <p className={styles.text}>{item.text}</p>
-      ) : (
-        <p className={styles.emptyText}>本文はありません。</p>
-      )}
-
+      {item.text ?? <p className={styles.text}>{item.text}</p>}
       {item.images.length > 0 ? (
         <section className={styles.imageGrid} aria-label="post images">
           {item.images.map(image => (
@@ -91,7 +85,6 @@ const Component = ({ item }: PostCardProps) => {
           ))}
         </section>
       ) : null}
-
       {item.skyshareEntry ? (
         <section className={styles.skyshareEntry} aria-label="skyshare entry">
           <div className={styles.skyshareEntryHeader}>

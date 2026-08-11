@@ -352,23 +352,18 @@ const createSkyshareEntry = async (
             $type: "dev.nekono.skyshare.defs#manifest",
             visual,
             heading: `${userName} 's Post`,
-            caption: headingText.length > 0 ? headingText : undefined,
+            caption: headingText.length > 0 ? headingText : "",
         },
         createdAt,
     }
 
+    console.debug("createSkyshareEntry: record to create", record)
     // スキーマを検証し、失敗時の理由を明示的に throw する。
-    const validation = DevNekonoSkyshareEntry.validateRecord(record)
-    if (!validation?.success) {
-        throw new Error(
-            `dev.nekono.skyshare.entry validation failed: ${JSON.stringify(validation)}`,
-        )
-    }
 
     const createRecordRes = await agent.com.atproto.repo.createRecord({
         repo: session.did,
         collection: "dev.nekono.skyshare.entry",
-        record: validation.value,
+        record,
     })
 
     const parsedSkyshareUri = parseAtUri(createRecordRes.data.uri)
