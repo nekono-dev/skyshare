@@ -26,9 +26,10 @@ import pic from "@/images/pen.svg"
  * - 入力: `{ avatarUrl: "https://..." }`
  * - 出力: クリックで PostForm が開く UI
  */
-const PostLauncher: React.FC<{ avatarUrl?: string | null }> = ({
-  avatarUrl,
-}) => {
+const PostLauncher: React.FC<{
+  avatarUrl?: string | null
+  onPosted?: () => void
+}> = ({ avatarUrl, onPosted }) => {
   const [open, setOpen] = useState(false)
 
   return (
@@ -43,7 +44,14 @@ const PostLauncher: React.FC<{ avatarUrl?: string | null }> = ({
       </button>
 
       <Overlay open={open} onClose={() => setOpen(false)}>
-        <PostForm onClose={() => setOpen(false)} avatarUrl={avatarUrl} />
+        <PostForm
+          onClose={() => setOpen(false)}
+          onPosted={() => {
+            setOpen(false)
+            onPosted?.()
+          }}
+          avatarUrl={avatarUrl}
+        />
       </Overlay>
     </>
   )

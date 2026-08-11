@@ -7,62 +7,15 @@
  * - セッション無効時はログインページへリダイレクトする。
  * - セッション更新成功時は最新 Cookie を再発行する。
  */
-export const prerender = false
-import { ComAtprotoServerRefreshSession, AtpAgent } from "@atproto/api"
-
-import { parseSessionFromRequest, makeSessionSetCookie } from "@/lib/cookies.js"
-import PostLauncher from "@/components/PostLauncher"
-
-let session: ComAtprotoServerRefreshSession.OutputSchema
-let service: string
-let avatarUrl: string | null = null
-;({ session, service } = parseSessionFromRequest(Astro.request))
-
-// 認証状態を先に確定し、以降の描画ロジックを単純化する。
-if (session) {
-    try {
-        const agent = new AtpAgent({ service })
-        const data = await agent
-            .resumeSession({
-                refreshJwt: session.refreshJwt,
-                accessJwt: session.accessJwt,
-                handle: session.handle,
-                did: session.did,
-                active: true,
-            })
-            .then(res => res.data)
-        try {
-            const prof = await agent.getProfile({ actor: data.did }).then(res => res.data)
-            avatarUrl = prof.avatar ?? null
-        } catch (e) {
-            if (e instanceof Error) {
-                console.warn("Failed to fetch profile avatar:", e.message)
-            }
-            console.warn("Failed to fetch profile avatar:", e)
-            avatarUrl = null
-        }
-        // セッションを更新できたらリスポンスのクッキーに付与して送信する
-        const cookie = makeSessionSetCookie({ session: data, service })
-        Astro.response.headers.set("Set-Cookie", cookie)
-        console.log("Session resumed successfully")
-    } catch (err) {
-        console.error("Failed to resume session:", err)
-        return Astro.redirect("/login")
-    }
-} else {
-    // セッションが無い場合は投稿ページへリダイレクト
-    return Astro.redirect("/login")
-}
-
+export const prerender = true
 import Baselayout from "@/layout/Baselayout.astro"
+import PostTimeline from "@/components/PostTimeline"
+import styles from "./index.module.css"
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
-<Baselayout
-    cardPath={`/materials/ogp_main.png`}
-    pageTitle="Skyshare"
-    robots={robots}
-    avatarUrl={typeof avatarUrl !== "undefined" ? avatarUrl : null}
->
-    <PostLauncher client:load avatarUrl={typeof avatarUrl !== "undefined" ? avatarUrl : null} />
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
+    <div class={styles.page}>
+        <PostTimeline client:load />
+    </div>
 </Baselayout>

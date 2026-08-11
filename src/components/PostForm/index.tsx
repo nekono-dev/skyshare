@@ -38,6 +38,7 @@ import ui from "@/styles/ui.module.css"
 
 type Props = {
   onClose?: () => void
+  onPosted?: () => void
   avatarUrl?: string | null
 }
 
@@ -251,7 +252,11 @@ const resolveShareOptionsDefaultOpen = ({
  * - 入力: `{ avatarUrl: "https://..." }`
  * - 出力: テキスト・画像・OGP を扱える投稿フォーム
  */
-export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
+export const Component: React.FC<Props> = ({
+  onClose,
+  onPosted,
+  avatarUrl,
+}) => {
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
   const [crosspostToTaittsuu, setCrosspostToTaittsuu] = useState(() =>
@@ -425,6 +430,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
       }
 
       setStatusColor("green")
+      onPosted?.()
       const shareText = buildXIntentText(text, res.data.skyshare.uri)
       const taittsuuIntentText = buildTaittsuuIntentText(
         text,

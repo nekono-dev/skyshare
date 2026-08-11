@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro"
+import { XRPCError } from "@atproto/xrpc"
 
 import { DevNekonoSkyshareEntry } from "@/client/atproto"
 import {
@@ -9,6 +10,11 @@ import {
 import { parseSessionFromRequest } from "@/lib/cookies.js"
 import { convertHeaderToObj, errorResponseFromStatus } from "@/lib/api.js"
 import { extractLinkUrisFromFacets } from "@/lib/richtext"
+import { ENTRY_COLLECTION } from "@/lib/entry"
+import {
+    groupTimelineEntriesBySourceUri,
+    normalizeTimelinePost,
+} from "@/lib/posts"
 
 import * as PostSchema from "@/client/openapi/schemas/v1/entry/post"
 import * as Components from "@/client/openapi/schemas/components"
@@ -374,6 +380,111 @@ const createSkyshareEntry = async (
 }
 
 /**
+ * XRPC エラーを HTTP ステータスへ変換する。
+ *
+ * Input:
+ * - `error`: unknown エラー
+ *
+ * Output:
+ * - 401/429/500 のいずれか
+ */
+const resolveXrpcStatus = (error: unknown): number => {
+    if (!(error instanceof XRPCError)) {
+        return 500
+    }
+
+    switch (error.error) {
+        case "AuthenticationRequired":
+        case "InvalidToken":
+        case "ExpiredToken":
+            return 401
+        case "RateLimitExceeded":
+            return 429
+        default:
+            return 500
+    }
+}
+
+/**
+ * limit クエリを検証する。
+ *
+ * Input:
+ * - `value`: query string value
+ *
+ * Output:
+ * - 1〜100 の整数なら number、未指定なら undefined、不正値なら null
+ */
+const parseLimit = (value: string | null) => {
+    if (value === null || value.trim().length === 0) {
+        return undefined
+    }
+
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+        return null
+    }
+
+    return parsed
+}
+
+/**
+ * multipart/form-data の入力を API 仕様に沿って正規化する。
+ *
+ * 処理の趣旨:
+ * - `text` は空文字列が送られうるため、未指定と同義として扱えるよう除去する。
+ * - OpenAPI の anyOf（text または images+imagesMeta または ogMeta）判定において、
+ *   空文字が意図せず必須文字列判定を壊さないようにする。
+ *
+ * Input:
+ * - `formData`: request.formData() で取得した生データ
+ *
+ * Output:
+ * - 正規化後の FormData（同一インスタンスを破壊的更新）
+ *
+ * 例:
+ * - 入力: text="" + images/imagesMeta が存在
+ * - 出力: text キーを除去し、画像投稿として後続バリデーションへ渡す
+ */
+const normalizeEntryFormData = (formData: FormData) => {
+    const rawText = formData.get("text")
+    if (typeof rawText === "string" && rawText.trim().length === 0) {
+        formData.delete("text")
+    }
+    return formData
+}
+
+/**
+ * dev.nekono.skyshare.entry を全件取得する。
+ *
+ * Input:
+ * - `agent`: 認証済み AtpAgent
+ * - `repo`: 取得対象 repo DID
+ *
+ * Output:
+ * - listRecords の records 配列
+ */
+const collectSkyshareEntries = async (agent: AtpAgent, repo: string) => {
+    const entries: any[] = []
+    let cursor: string | undefined
+
+    do {
+        const res = await agent.com.atproto.repo
+            .listRecords({
+                repo,
+                collection: ENTRY_COLLECTION,
+                cursor,
+                limit: 100,
+            })
+            .then(res => res.data)
+
+        entries.push(...(res.records ?? []))
+        cursor = res.cursor
+    } while (cursor)
+
+    return entries
+}
+
+/**
  * POST /v1/entry — Skyshare のエントリ投稿を作成する API エンドポイント。
  *
  * 処理フロー:
@@ -447,6 +558,8 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             return errorResponseFromStatus(400)
         }
 
+        normalizeEntryFormData(formData)
+
         // フェーズ 4: OpenAPI スキーマバリデーション
         const body = PostSchema.RequestBodySchema.safeParse(formData)
         if (!body.success) {
@@ -499,7 +612,8 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         }
 
         // フェーズ 8: テキスト facet 検出
-        const rt = new RichText({ text: body.data.text })
+        const postText = body.data.text ?? ""
+        const rt = new RichText({ text: postText })
         await rt.detectFacets(agent)
 
         // フェーズ 9: Embed 作成（画像投稿 or OGP 投稿）
@@ -553,7 +667,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                     response.uri,
                     response.cid,
                     uploadedOgImage, // ogImage（クロップ済みサムネイル）を visual として使用
-                    body.data.text,
+                    postText,
                     userName,
                     session,
                 )
@@ -580,5 +694,80 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
     } catch (err: any) {
         console.error("createEntry: create entry error", err)
         return errorResponseFromStatus(500)
+    }
+}
+
+/**
+ * GET /v1/entry — 自分の Bluesky 投稿一覧を取得する。
+ *
+ * Input:
+ * - Cookie に `atp_session`
+ * - Query に `limit` / `cursor`（任意）
+ *
+ * Output:
+ * - `posts`: 投稿一覧。該当する投稿には `skyshareEntry` を付与する。
+ * - `cursor`: 次ページ用 cursor（存在する場合のみ）
+ */
+export const GET: APIRoute = async ({ request }: { request: Request }) => {
+    try {
+        const url = new URL(request.url)
+        const rawLimit = parseLimit(url.searchParams.get("limit"))
+        if (rawLimit === null) {
+            return errorResponseFromStatus(400)
+        }
+
+        const limit = rawLimit ?? 20
+        const cursor = url.searchParams.get("cursor") ?? undefined
+
+        const { session, service } = parseSessionFromRequest(request)
+        if (!session || !service) {
+            return errorResponseFromStatus(401)
+        }
+
+        const agent = new AtpAgent({ service })
+        await agent.resumeSession({
+            refreshJwt: session.refreshJwt,
+            accessJwt: session.accessJwt,
+            handle: session.handle,
+            did: session.did,
+            active: true,
+        })
+
+        const [feedRes, rawEntries] = await Promise.all([
+            agent
+                .getAuthorFeed({
+                    actor: session.did,
+                    limit,
+                    cursor,
+                })
+                .then(res => res.data),
+            collectSkyshareEntries(agent, session.did),
+        ])
+
+        const entriesBySourceUri = groupTimelineEntriesBySourceUri(rawEntries)
+        const posts = (feedRes.feed ?? [])
+            .map(feedItem => {
+                const sourceUri = feedItem?.post?.uri
+                const attachedEntry =
+                    typeof sourceUri === "string"
+                        ? entriesBySourceUri.get(sourceUri)
+                        : undefined
+                return normalizeTimelinePost(feedItem, attachedEntry)
+            })
+            .filter(post => post !== undefined)
+
+        return new Response(
+            JSON.stringify({
+                cursor: feedRes.cursor,
+                posts,
+            }),
+            {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            },
+        )
+    } catch (error) {
+        console.error("entry.ts GET failed", error)
+        return errorResponseFromStatus(resolveXrpcStatus(error))
     }
 }
