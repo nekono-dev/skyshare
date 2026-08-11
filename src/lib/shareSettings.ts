@@ -8,6 +8,7 @@
 
 const OPEN_X_POPUP_KEY = "openXPopup"
 const CROSSPOST_TO_TAITTSUU_KEY = "crosspostToTaittsuu"
+const SHOW_CROSSPOST_X_BUTTON = "showCrosspostXButton"
 /**
  * 「Xをポップアップで開く」設定を localStorage から読み取る。
  *
@@ -21,7 +22,7 @@ const CROSSPOST_TO_TAITTSUU_KEY = "crosspostToTaittsuu"
  * - 入力: `false`
  * - 出力: `true`（保存済み値が true の場合）
  */
-export const readOpenXPopupSetting = (defaultValue: boolean) => {
+export const readOpenPopupSetting = (defaultValue: boolean) => {
     if (typeof window === "undefined") {
         return defaultValue
     }
@@ -50,7 +51,7 @@ export const readOpenXPopupSetting = (defaultValue: boolean) => {
  * - 入力: `true`
  * - 出力: localStorage に `openXPopup=true` を保存
  */
-export const writeOpenXPopupSetting = (value: boolean) => {
+export const writeOpenPopupSetting = (value: boolean) => {
     if (typeof window === "undefined") {
         return
     }
@@ -111,6 +112,60 @@ export const writeCrosspostToTaittsuuSetting = (value: boolean) => {
 
     try {
         window.localStorage.setItem(CROSSPOST_TO_TAITTSUU_KEY, String(value))
+    } catch (error) {
+        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
+    }
+}
+
+/**
+ * 「タイッツークロスポスト時も X 投稿ボタンを表示する」設定を localStorage から読み取る。
+ *
+ * Input:
+ * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
+ *
+ * Output:
+ * - 保存済み設定値。未設定/失敗時は `defaultValue`
+ *
+ * 例:
+ * - 入力: `false`
+ * - 出力: `true`（保存済み値が true の場合）
+ */
+export const readShowCrosspostXButtonSetting = (defaultValue: boolean) => {
+    if (typeof window === "undefined") {
+        return defaultValue
+    }
+
+    try {
+        const rawValue = window.localStorage.getItem(SHOW_CROSSPOST_X_BUTTON)
+        if (rawValue === null) {
+            return defaultValue
+        }
+        return rawValue === "true"
+    } catch (error) {
+        return defaultValue
+    }
+}
+
+/**
+ * 「タイッツークロスポスト時も X 投稿ボタンを表示する」設定を localStorage に保存する。
+ *
+ * Input:
+ * - `value`: 保存したい設定値
+ *
+ * Output:
+ * - なし
+ *
+ * 例:
+ * - 入力: `true`
+ * - 出力: localStorage に `showCrosspostXButton=true` を保存
+ */
+export const writeShowCrosspostXButtonSetting = (value: boolean) => {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    try {
+        window.localStorage.setItem(SHOW_CROSSPOST_X_BUTTON, String(value))
     } catch (error) {
         // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
     }

@@ -11,6 +11,7 @@ import twitterText from "twitter-text"
 import { createEntry } from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
+import Collapsible from "@/components/Collapsible/index"
 import ImagePicker, { type ImageEntry } from "@/components/ImagePicker"
 import ImagePreview from "@/components/ImagePreview"
 import LanguageSelect from "@/components/LanguageSelect"
@@ -20,9 +21,11 @@ import SelfLabelsSelect from "@/components/SelfLabelsSelect"
 import ToggleSwitch from "@/components/ToggleSwitch"
 import {
   readCrosspostToTaittsuuSetting,
-  readOpenXPopupSetting,
+  readOpenPopupSetting,
+  readShowCrosspostXButtonSetting,
   writeCrosspostToTaittsuuSetting,
-  writeOpenXPopupSetting,
+  writeOpenPopupSetting,
+  writeShowCrosspostXButtonSetting,
 } from "@/lib/shareSettings"
 import {
   buildTaittsuuIntentText,
@@ -36,11 +39,6 @@ import ui from "@/styles/ui.module.css"
 type Props = {
   onClose?: () => void
   avatarUrl?: string | null
-}
-
-type PendingIntentShare = {
-  xIntentText: string
-  taittsuuIntentText: string
 }
 
 type ImageSizeCandidate = {
@@ -209,6 +207,37 @@ const resolveImageMetadata = async (
 }
 
 /**
+ * 共有オプション折りたたみの初期開閉状態を決める。
+ *
+ * 処理の趣旨:
+ * - フォーム表示時点で、共有系トグルが1つでも ON なら詳細設定を開いたまま見せる。
+ * - すべて OFF の場合のみ折りたたんだ状態で開始する。
+ *
+ * Input:
+ * - `openXPopup`: ポップアップ利用トグル
+ * - `crosspostToTaittsuu`: タイッツー連携トグル
+ * - `showXWhenCrosspost`: X 投稿ボタン表示トグル
+ *
+ * Output:
+ * - 初回表示時に折りたたみを開くべきなら `true`
+ *
+ * 例:
+ * - 入力: `{ openXPopup: false, crosspostToTaittsuu: true, showXWhenCrosspost: false }`
+ * - 出力: `true`
+ */
+const resolveShareOptionsDefaultOpen = ({
+  openXPopup,
+  crosspostToTaittsuu,
+  showXWhenCrosspost,
+}: {
+  openXPopup: boolean
+  crosspostToTaittsuu: boolean
+  showXWhenCrosspost: boolean
+}) => {
+  return openXPopup || crosspostToTaittsuu || showXWhenCrosspost
+}
+
+/**
  * 投稿フォーム本体を描画する。
  *
  * Input:
@@ -229,15 +258,16 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
     readCrosspostToTaittsuuSetting(false),
   )
   const [openXPopup, setOpenXPopup] = useState(() =>
-    readOpenXPopupSetting(false),
+    readOpenPopupSetting(false),
+  )
+  const [showXWhenCrosspost, setShowXWhenCrosspost] = useState(() =>
+    readShowCrosspostXButtonSetting(false),
   )
   const [selfLabel, setSelfLabel] = useState<
     CreateEntryBodySelfLabels | undefined
   >(undefined)
   const [status, setStatus] = useState<string | null>(null)
   const [statusColor, setStatusColor] = useState<string | undefined>(undefined)
-  const [pendingIntentShare, setPendingIntentShare] =
-    useState<PendingIntentShare | null>(null)
   const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
   const [ogpResult, setOgpResult] = useState<OgpResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -306,12 +336,45 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
       : textCountOnX > xWarnCount && textCountOnBsky <= bskyMaxCount
         ? styles.charCountWarn
         : ""
+  const showXIntentButton = openXPopup && showXWhenCrosspost
+  const showTaittsuuIntentButton = openXPopup && crosspostToTaittsuu
+  const hasTextInput = text.trim().length > 0
+  const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
+    openXPopup,
+    crosspostToTaittsuu,
+    showXWhenCrosspost,
+  })
 
   useEffect(() => {
     return () => {
       revokeImageEntry(imageEntry)
     }
   }, [imageEntry])
+
+  /**
+   * 投稿フォームの入力内容を初期状態へ戻す。
+   *
+   * Input:
+   * - なし
+   *
+   * Output:
+   * - なし
+   *
+   * 例:
+   * - 入力: 任意の入力済み状態
+   * - 出力: テキスト・画像・OGP・ステータスをリセット
+   */
+  const clearForm = () => {
+    setText("")
+    setSelfLabel(undefined)
+    setImageEntry(prevImageEntry => {
+      revokeImageEntry(prevImageEntry)
+      return null
+    })
+    setOgpResult(null)
+    setStatus(null)
+    setStatusColor(undefined)
+  }
 
   /**
    * 投稿フォームの内容を API 契約に合わせて送信する。
@@ -324,7 +387,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
    *
    * 例:
    * - 入力: テキストと画像付きフォーム送信
-   * - 出力: createEntry を呼び出し、成功時は状態を初期化
+   * - 出力: createEntry を呼び出し、成功時は状態を更新
    */
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -367,25 +430,19 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         text,
         res.data.skyshare.uri,
       )
-      let shouldKeepInputForRetry = false
 
-      setPendingIntentShare(null)
-
-      // タイッツー有効時はタイッツー intent のみを実行し、X 共有は行わない。
-      if (crosspostToTaittsuu) {
+      // タイッツーと X の両方を有効化している場合は自動ポップアップを抑制する。
+      if (crosspostToTaittsuu && showXWhenCrosspost) {
+        setStatus(
+          "投稿に成功しました。クロスポスト先のボタンを押して投稿してください。",
+        )
+      } else if (crosspostToTaittsuu) {
         const popupOpened = openTaittsuuIntentPopup(taittsuuIntentText)
         setStatus(
           popupOpened
             ? `投稿に成功しました。`
             : `投稿に成功しました。タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
-        if (!popupOpened) {
-          shouldKeepInputForRetry = true
-          setPendingIntentShare({
-            xIntentText: shareText,
-            taittsuuIntentText,
-          })
-        }
       } else if (openXPopup) {
         const popupOpened = openXIntentPopup(shareText)
         setStatus(
@@ -393,13 +450,6 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             ? `投稿に成功しました。`
             : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
-        if (!popupOpened) {
-          shouldKeepInputForRetry = true
-          setPendingIntentShare({
-            xIntentText: shareText,
-            taittsuuIntentText,
-          })
-        }
       } else if (canShareWithWebApi()) {
         const shareResult = await shareWithWebApi({ text: shareText })
         if (shareResult.ok) {
@@ -416,21 +466,6 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             ? `投稿に成功しました。WebShareAPI 非対応のため x.com 投稿画面を開きました。`
             : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
         )
-        if (!popupOpened) {
-          shouldKeepInputForRetry = true
-          setPendingIntentShare({
-            xIntentText: shareText,
-            taittsuuIntentText,
-          })
-        }
-      }
-
-      if (!shouldKeepInputForRetry) {
-        setText("")
-        // 生成済みプレビューURLを解放してリークを防ぐ。
-        revokeImageEntry(imageEntry)
-        setImageEntry(null)
-        setOgpResult(null)
       }
     } catch (err) {
       console.error(err)
@@ -442,26 +477,33 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
   }
 
   return (
-    <div
-      className={`${ui.baseCard} ${styles.modal}`}
-      role="dialog"
-      aria-label="投稿フォーム"
-    >
+    <div className={`${ui.baseCard}`} role="dialog" aria-label="投稿フォーム">
       {isSubmitting && <Loading overlay message="投稿中..." />}
       <div
         className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
       >
-        <button
-          className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-          aria-label="キャンセル"
-          disabled={isSubmitting}
-          onClick={() => {
-            if (onClose) onClose()
-          }}
-        >
-          キャンセル
-        </button>
-        <div>
+        <div className={`${ui.baseComponent}`}>
+          <button
+            className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+            aria-label="キャンセル"
+            disabled={isSubmitting}
+            onClick={() => {
+              if (onClose) onClose()
+            }}
+          >
+            キャンセル
+          </button>
+          {hasTextInput && (
+            <button
+              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+              disabled={isSubmitting}
+              onClick={clearForm}
+            >
+              フォームをクリア
+            </button>
+          )}
+        </div>
+        <div className={`${ui.baseComponent}`}>
           <button
             className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
             disabled={isSubmitting}
@@ -476,45 +518,56 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
           >
             投稿
           </button>
-          {pendingIntentShare && (
-            <>
-              <button
-                type="button"
-                className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-                disabled={isSubmitting}
-                onClick={() => {
-                  const popupOpened = openXIntentPopup(
-                    pendingIntentShare.xIntentText,
-                  )
-                  setStatus(
-                    popupOpened
-                      ? "x.com 投稿画面を開きました。"
-                      : "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
-                  )
-                  setStatusColor(popupOpened ? "green" : "#b00")
-                }}
-              >
-                X投稿
-              </button>
-              <button
-                type="button"
-                className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-                disabled={isSubmitting}
-                onClick={() => {
-                  const popupOpened = openTaittsuuIntentPopup(
-                    pendingIntentShare.taittsuuIntentText,
-                  )
-                  setStatus(
-                    popupOpened
-                      ? "タイッツー投稿画面を開きました。"
-                      : "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
-                  )
-                  setStatusColor(popupOpened ? "green" : "#b00")
-                }}
-              >
-                タイッツー投稿
-              </button>
-            </>
+
+          {showXIntentButton && (
+            <button
+              type="button"
+              className={`${ui.baseButton} ${ui.textButton} ${ui.blackButton}`}
+              disabled={isSubmitting}
+              onClick={() => {
+                const intentText = text.trim()
+                if (!intentText) {
+                  setStatus("共有する投稿本文を入力してください。")
+                  setStatusColor("#b00")
+                  return
+                }
+
+                const popupOpened = openXIntentPopup(intentText)
+                setStatus(
+                  popupOpened
+                    ? "x.com 投稿画面を開きました。"
+                    : "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                )
+                setStatusColor(popupOpened ? "green" : "#b00")
+              }}
+            >
+              X投稿
+            </button>
+          )}
+          {showTaittsuuIntentButton && (
+            <button
+              type="button"
+              className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
+              disabled={isSubmitting}
+              onClick={() => {
+                const intentText = text.trim()
+                if (!intentText) {
+                  setStatus("共有する投稿本文を入力してください。")
+                  setStatusColor("#b00")
+                  return
+                }
+
+                const popupOpened = openTaittsuuIntentPopup(intentText)
+                setStatus(
+                  popupOpened
+                    ? "タイッツー投稿画面を開きました。"
+                    : "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                )
+                setStatusColor(popupOpened ? "green" : "#b00")
+              }}
+            >
+              タイッツー投稿
+            </button>
           )}
         </div>
       </div>
@@ -610,37 +663,58 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
             disabled={isSubmitting}
           />
         </div>
-        <div
-          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
-        >
-          <ToggleSwitch
-            checked={openXPopup}
-            disabled={isSubmitting || crosspostToTaittsuu}
-            label="共有メニューを使わない"
-            onCheckedChange={next => {
-              setOpenXPopup(next)
-              writeOpenXPopupSetting(next)
-              if (!next) {
-                setCrosspostToTaittsuu(false)
-                writeCrosspostToTaittsuuSetting(false)
-              }
-            }}
-          />
-          <ToggleSwitch
-            checked={crosspostToTaittsuu}
-            disabled={isSubmitting}
-            label="タイッツーにクロスポスト"
-            onCheckedChange={next => {
-              setCrosspostToTaittsuu(next)
-              writeCrosspostToTaittsuuSetting(next)
-
-              if (next) {
-                setOpenXPopup(true)
-                writeOpenXPopupSetting(true)
-              }
-            }}
-          />
+        <div>
           <ImagePreview value={imageEntry} />
+        </div>
+        <div className={ui.baseComponent}>
+          <Collapsible
+            label="詳細オプション"
+            defaultOpen={defaultOpenShareOptions}
+          >
+            <div className={`${ui.toolbar}`}>
+              <ToggleSwitch
+                checked={openXPopup}
+                disabled={isSubmitting || crosspostToTaittsuu}
+                label="ポップアップを利用する"
+                onCheckedChange={next => {
+                  setOpenXPopup(next)
+                  writeOpenPopupSetting(next)
+                  if (!next) {
+                    setCrosspostToTaittsuu(false)
+                    writeCrosspostToTaittsuuSetting(false)
+                  }
+                }}
+              />
+              <ToggleSwitch
+                checked={crosspostToTaittsuu}
+                disabled={isSubmitting}
+                label="タイッツーにクロスポスト"
+                onCheckedChange={next => {
+                  setCrosspostToTaittsuu(next)
+                  writeCrosspostToTaittsuuSetting(next)
+
+                  if (next) {
+                    setOpenXPopup(true)
+                    writeOpenPopupSetting(true)
+                  }
+                }}
+              />
+              <ToggleSwitch
+                checked={showXWhenCrosspost}
+                disabled={isSubmitting || !openXPopup}
+                label="X投稿ボタンを表示"
+                onCheckedChange={next => {
+                  setShowXWhenCrosspost(next)
+                  writeShowCrosspostXButtonSetting(next)
+
+                  if (next) {
+                    setOpenXPopup(true)
+                    writeOpenPopupSetting(true)
+                  }
+                }}
+              />
+            </div>
+          </Collapsible>
         </div>
         <div
           id="status"

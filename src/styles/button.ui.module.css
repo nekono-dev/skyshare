@@ -2,13 +2,13 @@
 
 /* Button-specific CSS variables and size tokens */
 :root {
-  /* White button specific colors */
+  /* White button */
   --color-white-button-bg: var(--color-card-bg);
   --color-white-button-hover: var(--surface-muted);
   --color-white-button-border: var(--border-color-muted);
   --color-white-button-color: var(--color-bluesky);
 
-  /* Blue button specific colors  */
+  /* Blue button  */
   --color-blue-button-bg: var(--color-primary);
   --color-blue-button-hover: var(--color-primary-hover);
   --color-blue-button-border: var(
@@ -17,11 +17,17 @@
   );
   --color-blue-button-color: var(--color-white);
 
-  /* Gray button specific colors */
+  /* Gray button */
   --color-gray-button-bg: var(--color-gray);
   --color-gray-button-hover: var(--color-gray-hover);
   --color-gray-button-border: var(--border-color-muted);
   --color-gray-button-color: var(--color-gray-color);
+
+  /* Black button */
+  --color-black-button-bg: var(--color-black);
+  --color-black-button-hover: var(--color-black-hover);
+  --color-black-button-border: var(--border-color-muted);
+  --color-black-button-color: var(--color-black-color);
 
   /* Size tokens */
   --size-button-md: 40px;
@@ -31,18 +37,33 @@
   --btn-padding-y: calc(var(--space-1));
 }
 
-/*
-  baseButton Style
+/* 
+  ボタン
   本アプリケーションで利用するすべてのボタンの基本スタイルを定義する。
+  
+  基底
+    .baseButton: 基底ボタンスタイル
+
+  種別
+    .textButton: テキスト主体のボタンスタイル
+    .nontextButton: 非テキスト主体のボタンスタイル
+
+  色系統
+    .whiteButton: 白系統のボタンスタイル
+    .blueButton: 青系統のボタンスタイル
+    .grayButton: グレー系統のボタンスタイル
+
+  サイズ
+    .mdButton: 中サイズのボタンスタイル
+    .lgButton: 大サイズのボタンスタイル
 */
 
-/* ボタンを定義する場合は必ず適応すること */
 :local(.baseButton) {
   border: var(--border-button);
   cursor: pointer;
 }
 
-/* テキストを主体とするボタンに適応すること */
+/* テキストボタン */
 :local(.textButton) {
   padding: var(--btn-padding-y) var(--btn-padding-x);
   border-radius: var(--radius-button-md);
@@ -51,7 +72,7 @@
   line-height: var(--line-height-normal);
 }
 
-/* 白系統ボタンに適応すること */
+/* 白系統ボタン */
 :local(.whiteButton) {
   background: var(--color-white-button-bg);
   color: var(--color-white-button-color);
@@ -61,7 +82,7 @@
   background: var(--color-white-button-hover);
 }
 
-/* 青系統ボタンに適応すること */
+/* 青系統ボタン */
 :local(.blueButton) {
   background: var(--color-blue-button-bg);
   color: var(--color-blue-button-color);
@@ -71,7 +92,7 @@
   background: var(--color-blue-button-hover);
 }
 
-/* グレー系統ボタンに適応すること */
+/* グレー系統ボタン */
 :local(.grayButton) {
   background: var(--color-gray-button-bg);
   color: var(--color-gray-button-color);
@@ -81,7 +102,17 @@
   background: var(--color-gray-button-hover);
 }
 
-/* アイコンを主体とするボタンに適応すること */
+/* 黒系統ボタン */
+:local(.blackButton) {
+  background: var(--color-black-button-bg);
+  color: var(--color-black-button-color);
+  border-color: var(--color-black-button-border);
+}
+:local(.blackButton):hover {
+  background: var(--color-black-button-hover);
+}
+
+/* アイコンボタン */
 :local(.nontextButton) {
   padding: 0;
   border-radius: var(--radius-button-max);
@@ -90,13 +121,13 @@
   justify-content: center;
 }
 
-/* 固定サイズボタン（アイコンボタンなど）で中サイズの物に利用する */
+/* 中サイズ */
 :local(.mdButton) {
   width: var(--size-button-md);
   height: var(--size-button-md);
 }
 
-/* 固定サイズボタン（アイコンボタンなど）で大サイズの物に利用する */
+/* 大サイズ */
 :local(.lgButton) {
   width: var(--size-button-lg);
   height: var(--size-button-lg);
