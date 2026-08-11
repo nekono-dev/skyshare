@@ -1,0 +1,132 @@
+summary: Get own Bluesky posts with attached Skyshare entries
+operationId: getEntry
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../common.yaml#/cookie
+  - name: limit
+    in: query
+    required: false
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 100
+  - name: cursor
+    in: query
+    required: false
+    schema:
+      type: string
+responses:
+  "200":
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            cursor:
+              type: string
+            posts:
+              type: array
+              items:
+                type: object
+                properties:
+                  uri:
+                    type: string
+                  cid:
+                    type: string
+                  url:
+                    type: string
+                  indexedAt:
+                    type: string
+                    format: date-time
+                  text:
+                    type: string
+                  author:
+                    type: object
+                    properties:
+                      did:
+                        type: string
+                      handle:
+                        type: string
+                      displayName:
+                        type: string
+                      avatar:
+                        type: string
+                    required:
+                      - did
+                      - handle
+                  images:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                        alt:
+                          type: string
+                      required:
+                        - url
+                        - alt
+                  skyshareEntry:
+                    type: object
+                    properties:
+                      uri:
+                        type: string
+                      cid:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      sourceUri:
+                        type: string
+                      sourceCid:
+                        type: string
+                      heading:
+                        type: string
+                      caption:
+                        type: string
+                      visualUrl:
+                        type: string
+                    required:
+                      - uri
+                      - cid
+                      - createdAt
+                      - sourceUri
+                      - sourceCid
+                required:
+                  - uri
+                  - cid
+                  - url
+                  - indexedAt
+                  - text
+                  - author
+                  - images
+          required:
+            - posts
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "429":
+    description: Too Many Requests
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
