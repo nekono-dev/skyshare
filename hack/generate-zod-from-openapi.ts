@@ -67,6 +67,7 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
     const header = ["/**", " * GENERATED CODE - DO NOT MODIFY.", " */", ""]
 
     const idMap: Record<string, string> = {}
+    const schemaSourceFile: Record<string, string> = {}
 
     let outDir = outputPath
     try {
@@ -108,7 +109,9 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         const baseDir = baseFile
             ? path.dirname(baseFile)
             : path.dirname(rootFilePath)
-        const refFile = path.resolve(baseDir, filePart)
+        const refFile = filePart
+            ? path.resolve(baseDir, filePart)
+            : path.resolve(baseFile || rootFilePath)
         const doc = loadAndParse(refFile)
         if (!fragPart || !fragPart.startsWith("/"))
             throw new Error("Unsupported external $ref fragment: " + $ref)
@@ -140,6 +143,9 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
                 const a = JSON.stringify(schemas[candidate])
                 const b = JSON.stringify(cur)
                 if (a === b) {
+                    if (!schemaSourceFile[candidate]) {
+                        schemaSourceFile[candidate] = refFile
+                    }
                     registerSchema(candidate)
                     return { name: candidate, refFile }
                 }
@@ -147,11 +153,13 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             const disamb = `${fileBasePascal}_${lastPascal}`
             if (!schemas[disamb]) {
                 schemas[disamb] = cur
+                schemaSourceFile[disamb] = refFile
                 registerSchema(disamb)
             }
             return { name: disamb, refFile }
         }
         schemas[candidate] = cur
+        schemaSourceFile[candidate] = refFile
         registerSchema(candidate)
         return { name: candidate, refFile }
     }
@@ -182,12 +190,44 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
                     const key = `${baseName}_${tailParts.join("_")}`
                     if (!schemas[key]) {
                         schemas[key] = cur
+                        schemaSourceFile[key] = baseFile
                         registerSchema(key)
                     }
                     return registerSchema(key)
                 }
             }
             return registerSchema(lastPart)
+        }
+        if ($ref.startsWith("#/")) {
+            const doc = baseFile
+                ? loadAndParse(baseFile)
+                : loadedFiles[path.resolve(rootFilePath)]
+            const parts = $ref.replace(/^#\//, "").split("/")
+            let cur: any = doc
+            for (const p of parts) {
+                if (cur === undefined) break
+                cur = cur[p]
+            }
+            if (cur === undefined) {
+                throw new Error("Could not resolve local $ref: " + $ref)
+            }
+            if (
+                cur &&
+                typeof cur === "object" &&
+                cur.schema &&
+                (cur.schema.type || cur.schema.properties || cur.schema.enum)
+            ) {
+                cur = cur.schema
+            }
+            const baseName = path
+                .basename(baseFile || rootFilePath)
+                .replace(/\.[^.]+$/, "")
+            const key = `${baseName}_${parts.join("_")}`
+            if (!schemas[key]) {
+                schemas[key] = cur
+                schemaSourceFile[key] = baseFile || rootFilePath
+            }
+            return registerSchema(key)
         }
         const res = resolveExternalRef($ref, baseFile)
         return registerSchema(res.name)
@@ -201,7 +241,11 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         if (!s) return "z.any()"
         if (s.$ref) {
             const id = refToIdent(s.$ref, baseFile)
-            return forEndpoint ? `Components.${id}` : id
+            if (forEndpoint) {
+                return `Components.${id}`
+            }
+            // components.ts では前方参照や循環参照が発生しうるため lazy で評価順序依存を回避する。
+            return `z.lazy(() => ${id})`
         }
         if (s.oneOf)
             return `z.union([${s.oneOf.map((x: any) => renderSchema(x, baseFile, forEndpoint)).join(", ")}])`
@@ -497,11 +541,10 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
         for (const name of names) {
             registerSchema(name)
             const id = idMap[name]
-            const body = renderSchema(
-                schemas[name],
-                path.resolve(rootFilePath),
-                false,
-            )
+            const sourceForSchema = schemaSourceFile[name]
+                ? path.resolve(schemaSourceFile[name])
+                : path.resolve(rootFilePath)
+            const body = renderSchema(schemas[name], sourceForSchema, false)
             const typeBase = id.replace(/Schema$/, "")
             compLines.push(
                 `export const ${id} = ${body};`,

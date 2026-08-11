@@ -11,3 +11,5 @@ paths: # APIドキュメントのエンドポイント
     $ref: ./v1/session/index.yaml
   /v1/extract:
     $ref: ./v1/extract/index.yaml
+  /v1/drafts:
+    $ref: ./v1/drafts/index.yaml
