@@ -18,12 +18,6 @@
 
 /* Use global .base-button / .white-button / .blue-button from src/styles/ui.css */
 
-.headerRight {
-  display: flex;
-  gap: var(--space-2);
-  align-items: center;
-}
-
 .linkSmall {
   background: transparent;
   border: none;
@@ -96,22 +90,6 @@
   cursor: pointer;
 }
 
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid var(--border-color-muted);
-  padding-top: var(--space-1);
-}
-
-.labelSelect {
-  flex: 0 0 auto;
-}
-
-.langSelect {
-  max-width: 19rem;
-}
-
 .charCountRow {
   display: flex;
   justify-content: flex-end;
@@ -130,15 +108,6 @@
   font-size: var(--font-size-sm);
 }
 
-.charCountX {
-  white-space: nowrap;
-}
-
-.charCountBsky {
-  min-width: 9.5rem;
-  text-align: right;
-}
-
 .charCountWarn {
   background: #fde68a;
   color: #854d0e;
@@ -147,9 +116,4 @@
 .charCountError {
   background: #fca5a5;
   color: #7f1d1d;
-}
-
-.status {
-  margin-top: var(--space-3);
-  font-size: var(--font-size-sm);
 }

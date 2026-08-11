@@ -448,7 +448,9 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
       aria-label="投稿フォーム"
     >
       {isSubmitting && <Loading overlay message="投稿中..." />}
-      <div className={styles.header}>
+      <div
+        className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+      >
         <button
           className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
           aria-label="キャンセル"
@@ -459,7 +461,7 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
         >
           キャンセル
         </button>
-        <div className={styles.headerRight}>
+        <div>
           <button
             className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
             disabled={isSubmitting}
@@ -547,39 +549,42 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
               onChange={e => setText(e.target.value)}
               disabled={isSubmitting}
             />
-            <div className={styles.charCountRow}>
+            <div
+              className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignRight}`}
+            >
               <div
                 className={[styles.charCount, charCountAlertClass]
                   .filter(Boolean)
                   .join(" ")}
               >
-                <span className={styles.charCountX}>
+                <span style={{ whiteSpace: "nowrap" }}>
                   {textCountOnX}/{xWarnCount}:X
                 </span>
-                <span className={styles.charCountBsky}>
+                <span style={{ minWidth: "9.5rem", textAlign: "right" }}>
                   {textCountOnBsky}/{bskyMaxCount}:Bluesky
                 </span>
               </div>
             </div>
           </div>
         </div>
-        <div className={styles.toolbar}>
-          <div className={styles.labelSelect}>
-            <SelfLabelsSelect
-              value={selfLabel}
-              onChange={setSelfLabel}
-              disabled={isSubmitting}
-            />
-          </div>
+        <div
+          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+        >
+          <SelfLabelsSelect
+            value={selfLabel}
+            onChange={setSelfLabel}
+            disabled={isSubmitting}
+          />
           <LanguageSelect
             value={languageCode}
             onChange={setLanguageCode}
-            className={styles.langSelect}
             disabled={isSubmitting}
           />
         </div>
 
-        <div className={styles.toolbar}>
+        <div
+          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+        >
           <OgpFetchButton
             text={text}
             value={ogpResult}
@@ -606,41 +611,45 @@ export const Component: React.FC<Props> = ({ onClose, avatarUrl }) => {
           />
         </div>
         <div
+          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+        >
+          <ToggleSwitch
+            checked={openXPopup}
+            disabled={isSubmitting || crosspostToTaittsuu}
+            label="共有メニューを使わない"
+            onCheckedChange={next => {
+              setOpenXPopup(next)
+              writeOpenXPopupSetting(next)
+              if (!next) {
+                setCrosspostToTaittsuu(false)
+                writeCrosspostToTaittsuuSetting(false)
+              }
+            }}
+          />
+          <ToggleSwitch
+            checked={crosspostToTaittsuu}
+            disabled={isSubmitting}
+            label="タイッツーにクロスポスト"
+            onCheckedChange={next => {
+              setCrosspostToTaittsuu(next)
+              writeCrosspostToTaittsuuSetting(next)
+
+              if (next) {
+                setOpenXPopup(true)
+                writeOpenXPopupSetting(true)
+              }
+            }}
+          />
+          <ImagePreview value={imageEntry} />
+        </div>
+        <div
           id="status"
           aria-live="polite"
-          className={styles.status}
+          className={`${ui.toolbar}`}
           style={{ color: statusColor }}
         >
           {status}
         </div>
-        <ToggleSwitch
-          checked={openXPopup}
-          disabled={isSubmitting || crosspostToTaittsuu}
-          label="共有メニューを使わない"
-          onCheckedChange={next => {
-            setOpenXPopup(next)
-            writeOpenXPopupSetting(next)
-            if (!next) {
-              setCrosspostToTaittsuu(false)
-              writeCrosspostToTaittsuuSetting(false)
-            }
-          }}
-        />
-        <ToggleSwitch
-          checked={crosspostToTaittsuu}
-          disabled={isSubmitting}
-          label="タイッツーにクロスポスト"
-          onCheckedChange={next => {
-            setCrosspostToTaittsuu(next)
-            writeCrosspostToTaittsuuSetting(next)
-
-            if (next) {
-              setOpenXPopup(true)
-              writeOpenXPopupSetting(true)
-            }
-          }}
-        />
-        <ImagePreview value={imageEntry} />
       </form>
     </div>
   )

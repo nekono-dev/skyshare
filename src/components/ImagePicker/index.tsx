@@ -340,7 +340,7 @@ export const Component = ({ value, onChange, disabled = false }: Props) => {
   }
 
   return (
-    <section className={styles.section}>
+    <section>
       {isPreparingPreview && <Loading message="画像プレビューを生成中..." />}
       <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         <label

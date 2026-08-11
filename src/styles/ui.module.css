@@ -27,6 +27,27 @@
   --btn-padding-y: calc(var(--space-1));
 }
 
+/* 
+  baseButton Style
+  本アプリケーションで利用するすべてのボタンの基本スタイルを定義する。
+  
+  基底
+    .baseButton: 基底ボタンスタイル
+
+  種別
+    .textButton: テキスト主体のボタンスタイル
+    .nontextButton: 非テキスト主体のボタンスタイル
+
+  色系統
+    .whiteButton: 白系統のボタンスタイル
+    .blueButton: 青系統のボタンスタイル
+    .grayButton: グレー系統のボタンスタイル
+
+  サイズ
+    .mdButton: 中サイズのボタンスタイル
+    .lgButton: 大サイズのボタンスタイル
+*/
+
 /* ボタンを定義する場合は必ず適応すること */
 :local(.baseButton) {
   border: var(--border-button);
@@ -154,3 +175,46 @@
   background: var(--color-gray-disabled);
   cursor: not-allowed;
 }
+
+/* 複数の子要素を横方向に整列する共通 toolbar */
+:local(.toolbar) {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  border-top: 1px solid var(--border-color-muted);
+  padding-top: var(--space-1);
+}
+
+/* toolbar の横方向配置を切り替える共通クラス */
+:local(.toolbarAlign) {
+  justify-content: var(--toolbar-justify-content, flex-start);
+}
+
+:local(.toolbarAlignLeft) {
+  --toolbar-justify-content: flex-start;
+}
+
+:local(.toolbarAlignBetween) {
+  --toolbar-justify-content: space-between;
+}
+
+:local(.toolbarAlignRight) {
+  --toolbar-justify-content: flex-end;
+}
+
+/* 子要素に左右マージンのみを付与する */
+:local(.toolbar) > * {
+  margin: 0 var(--space-1);
+}
+
+:local(.toolbar) > :first-child {
+  margin-left: 0;
+}
+
+:local(.toolbar) > :last-child {
+  margin-right: 0;
+}
+
+/* アイコンのような固定サイズを持つコンポーネント */
+:local(.icon);

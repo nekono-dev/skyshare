@@ -90,7 +90,7 @@ export const Component: React.FC<Props> = ({
   }
 
   return (
-    <>
+    <span>
       <svg
         className={`${styles.icon} ${value !== undefined ? styles.iconActive : styles.iconInactive}`}
       >
@@ -114,7 +114,7 @@ export const Component: React.FC<Props> = ({
           ))}
         </select>
       </span>
-    </>
+    </span>
   )
 }
 
