@@ -35,57 +35,12 @@ responses:
                 properties:
                   id:
                     type: string
-                  draft:
-                    type: object
-                    properties:
-                      posts:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            text:
-                              type: string
-                            labels:
-                              type: object
-                              additionalProperties: true
-                            embedImages:
-                              type: array
-                              items:
-                                type: object
-                                additionalProperties: true
-                            embedVideos:
-                              type: array
-                              items:
-                                type: object
-                                additionalProperties: true
-                            embedExternals:
-                              type: array
-                              items:
-                                type: object
-                                additionalProperties: true
-                            embedRecords:
-                              type: array
-                              items:
-                                type: object
-                                additionalProperties: true
-                          required:
-                            - text
-                      langs:
-                        type: array
-                        items:
-                          type: string
-                      postgateEmbeddingRules:
-                        type: array
-                        items:
-                          type: object
-                          additionalProperties: true
-                      threadgateAllow:
-                        type: array
-                        items:
-                          type: object
-                          additionalProperties: true
-                    required:
-                      - posts
+                  text:
+                    type: string
+                  labels:
+                    type: array
+                    items:
+                      type: string
                   createdAt:
                     type: string
                     format: date-time
@@ -94,7 +49,7 @@ responses:
                     format: date-time
                 required:
                   - id
-                  - draft
+                  - text
                   - createdAt
                   - updatedAt
           required:

@@ -27,7 +27,7 @@
 }
 
 :local(.baseSelect):focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-bluesky);
   outline-offset: 1px;
 }
 

@@ -5,15 +5,15 @@ import type { ExtractUrl200 } from "@/client/openapi/model"
 import { extractLinkUrisFromFacets } from "@/lib/richtext"
 import { createOgpThumbnailFromBlob } from "@/lib/postImageProcessing"
 import ui from "@/styles/ui.module.css"
-import styles from "./index.module.css"
 
 /**
- * 投稿文から URL を検出して OGP 情報を取得するコンポーネント。
+ * 投稿文から URL を検出して OGP 情報を取得するコンポーネント群。
  *
  * 責務と処理概要:
- * - テキストから URL を抽出し、OGP 取得 API を呼び出す。
- * - 取得画像を OGP サムネイル仕様へ変換して `onChange` で返す。
- * - 失敗時は状態メッセージを表示し、親の OGP 状態をクリアする。
+ * - `useOgpFetch` がテキストからの URL 検出・OGP 取得・状態管理を担う。
+ * - `OgpFetchButton` は取得操作ボタンのみを描画する。
+ * - プレビュー表示は `@/components/OgpPreview` に分離しており、`useOgpFetch` の戻り値を渡して利用する。
+ * - レイアウトの自由度を確保するため、呼び出し側が任意の位置にボタンとプレビューを配置できるよう分離している。
  */
 
 type OgpMeta = {
@@ -27,11 +27,24 @@ export type OgpResult = {
   sourceUrl: string
 }
 
-type Props = {
+type UseOgpFetchProps = {
   text: string
   value: OgpResult | null
   onChange: (ogp: OgpResult | null) => void
   disabled?: boolean
+}
+
+/**
+ * OgpFetchButtonで取得した情報をPreviewに送信するための型
+ */
+export type UseOgpFetchResult = {
+  detectedUrl: string | null
+  isOgpLoading: boolean
+  ogpStatus: string | null
+  previewUrl: string | null
+  title?: string
+  handleFetchOgp: () => void
+  clearOgpStatus: () => void
 }
 
 /**
@@ -54,7 +67,7 @@ const isOgpWithImage = (
 }
 
 /**
- * OGP 取得 UI を描画する。
+ * 投稿文から OGP 対象 URL を検出し、取得処理と状態を提供するフック。
  *
  * Input:
  * - `text`: 投稿本文
@@ -63,18 +76,16 @@ const isOgpWithImage = (
  * - `disabled`: 操作可否
  *
  * Output:
- * - URL 検出時の取得ボタン、ステータス、画像プレビュー
+ * - 検出 URL・読込状態・ステータス文言・プレビュー URL・取得実行関数
  */
-export const Component: React.FC<Props> = ({
+export const useOgpFetch = ({
   text,
   value,
   onChange,
-  disabled = false,
-}) => {
+}: UseOgpFetchProps): UseOgpFetchResult => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [ogpStatus, setOgpStatus] = useState<string | null>(null)
   const [isOgpLoading, setIsOgpLoading] = useState(false)
-  const [lastFetchedUrl, setLastFetchedUrl] = useState<string | null>(null)
 
   /**
    * 本文から OGP 対象 URL を抽出する。
@@ -141,10 +152,10 @@ export const Component: React.FC<Props> = ({
    * - 返り値なし（state 更新と `onChange` 通知）
    */
   const handleFetchOgp = async () => {
-    if (!detectedUrl || isOgpLoading || disabled) return
+    if (!detectedUrl || isOgpLoading) return
 
     setIsOgpLoading(true)
-    setOgpStatus("OGPを取得中…")
+    setOgpStatus(null)
 
     try {
       const res = await extractUrl({ url: detectedUrl })
@@ -196,8 +207,7 @@ export const Component: React.FC<Props> = ({
         sourceUrl: detectedUrl,
       }
 
-      setLastFetchedUrl(detectedUrl)
-      setOgpStatus("OGPを取得しました。")
+      setOgpStatus(`OGPを取得しました: ${detectedUrl}`)
       onChange(nextResult)
     } catch (err) {
       console.error(err)
@@ -208,40 +218,59 @@ export const Component: React.FC<Props> = ({
     }
   }
 
-  if (!detectedUrl && !value && !ogpStatus) {
-    return null
+  /**
+   * OGP 取得ステータス文言をクリアする。
+   *
+   * 処理の趣旨:
+   * - 画像選択など、OGP 結果と無関係な操作でステータス表示だけ残るのを防ぐために呼び出す。
+   *
+   * Output:
+   * - 返り値なし（`ogpStatus` を `null` に更新）
+   */
+  const clearOgpStatus = () => {
+    setOgpStatus(null)
   }
 
-  return (
-    <div className={styles.section}>
-      {detectedUrl && (
-        <div className={styles.actionRow}>
-          <button
-            type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-            onClick={handleFetchOgp}
-            disabled={isOgpLoading || disabled}
-          >
-            {isOgpLoading ? "取得中…" : "OGP取得"}
-          </button>
-          <span className={styles.detectedUrl}>{detectedUrl}</span>
-        </div>
-      )}
-
-      {ogpStatus && <div className={styles.status}>{ogpStatus}</div>}
-
-      {previewUrl && (
-        <div className={styles.previewArea}>
-          <img
-            src={previewUrl}
-            alt={value?.meta.title || "検出URLのOGP画像"}
-            className={styles.previewImg}
-            loading="lazy"
-          />
-        </div>
-      )}
-    </div>
-  )
+  return {
+    detectedUrl,
+    isOgpLoading,
+    ogpStatus,
+    previewUrl,
+    title: value?.meta.title,
+    handleFetchOgp,
+    clearOgpStatus,
+  }
 }
 
-export default Component
+type OgpFetchButtonProps = {
+  ogpFetch: UseOgpFetchResult
+  disabled?: boolean
+}
+
+/**
+ * OGP 取得ボタンのみを描画する。
+ *
+ * Input:
+ * - `ogpFetch`: `useOgpFetch` の戻り値
+ *
+ * Output:
+ * - 取得ボタン。検出 URL が無ければ `null`
+ */
+export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
+  ogpFetch,
+  disabled,
+}) => {
+  const { detectedUrl, isOgpLoading, handleFetchOgp } = ogpFetch
+  if (!detectedUrl) return null
+
+  return (
+    <button
+      type="button"
+      className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+      onClick={handleFetchOgp}
+      disabled={isOgpLoading || disabled}
+    >
+      OGP取得
+    </button>
+  )
+}

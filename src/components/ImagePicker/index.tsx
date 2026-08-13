@@ -9,7 +9,6 @@ import {
   getSlotDefs,
   loadImageSize,
 } from "@/lib/postImageProcessing"
-import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import pic from "@/images/image.svg"
 

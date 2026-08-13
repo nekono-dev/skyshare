@@ -8,17 +8,32 @@
  */
 import React, { useEffect, useState } from "react"
 import twitterText from "twitter-text"
-import { createEntry } from "@/client/openapi/client"
+import {
+  createDraft,
+  createEntry,
+  deleteDraft,
+  getDrafts,
+  updateDraft,
+} from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
 import Collapsible from "@/components/Collapsible/index"
+import DraftListPanel from "@/components/DraftListPanel"
+import DraftSaveConfirmDialog from "@/components/DraftSaveConfirmDialog"
 import ImagePicker, { type ImageEntry } from "@/components/ImagePicker"
 import ImagePreview from "@/components/ImagePreview"
 import LanguageSelect from "@/components/LanguageSelect"
 import Loading from "@/components/Loading"
-import OgpFetchButton, { type OgpResult } from "@/components/OgpFetchButton"
+import {
+  OgpFetchButton,
+  useOgpFetch,
+  type OgpResult,
+} from "@/components/OgpFetchButton"
+import OgpPreview from "@/components/OgpPreview"
+import Overlay from "@/components/Overlay"
 import SelfLabelsSelect from "@/components/SelfLabelsSelect"
 import ToggleSwitch from "@/components/ToggleSwitch"
+import { normalizeDraftList } from "@/lib/draftList"
 import {
   readCrosspostToTaittsuuSetting,
   readOpenPopupSetting,
@@ -276,6 +291,19 @@ export const Component: React.FC<Props> = ({
   const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
   const [ogpResult, setOgpResult] = useState<OgpResult | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [draftModalOpen, setDraftModalOpen] = useState(false)
+  const [draftItems, setDraftItems] = useState<
+    ReturnType<typeof normalizeDraftList>
+  >([])
+  const [draftListLoading, setDraftListLoading] = useState(false)
+  const [draftListError, setDraftListError] = useState<string | null>(null)
+  const [loadedDraft, setLoadedDraft] = useState<{
+    id: string
+    text: string
+    label?: CreateEntryBodySelfLabels
+  } | null>(null)
+  const [draftSaveConfirmOpen, setDraftSaveConfirmOpen] = useState(false)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
 
   const bskyMaxCount = 300
   const xWarnCount = 140
@@ -350,6 +378,21 @@ export const Component: React.FC<Props> = ({
     showXWhenCrosspost,
   })
 
+  const ogpFetch = useOgpFetch({
+    text,
+    value: ogpResult,
+    onChange: nextOgp => {
+      if (nextOgp) {
+        setImageEntry(prevImageEntry => {
+          revokeImageEntry(prevImageEntry)
+          return null
+        })
+      }
+      setOgpResult(nextOgp)
+    },
+    disabled: isSubmitting,
+  })
+
   useEffect(() => {
     return () => {
       revokeImageEntry(imageEntry)
@@ -379,6 +422,179 @@ export const Component: React.FC<Props> = ({
     setOgpResult(null)
     setStatus(null)
     setStatusColor(undefined)
+    setLoadedDraft(null)
+  }
+
+  /**
+   * 下書き一覧を取得して選択ダイアログを開く。
+   *
+   * Input:
+   * - なし
+   *
+   * Output:
+   * - なし（state 更新のみ）
+   */
+  const openDraftPicker = async () => {
+    setDraftModalOpen(true)
+    setDraftListLoading(true)
+    setDraftListError(null)
+
+    try {
+      const res = await getDrafts({ limit: 100 })
+      if (res.status !== 200) {
+        setDraftItems([])
+        setDraftListError("下書き一覧の取得に失敗しました。")
+        return
+      }
+
+      setDraftItems(normalizeDraftList(res.data.drafts))
+    } catch (error) {
+      console.error("PostForm: failed to load drafts", error)
+      setDraftItems([])
+      setDraftListError("下書き一覧の取得に失敗しました。")
+    } finally {
+      setDraftListLoading(false)
+    }
+  }
+
+  /**
+   * 選択した下書きをフォームに注入する。
+   *
+   * Input:
+   * - `draft`: 下書き一覧の 1 レコード
+   *
+   * Output:
+   * - なし（フォームの state を更新）
+   */
+  const applyDraftToForm = (
+    draft: ReturnType<typeof normalizeDraftList>[number],
+  ) => {
+    const label =
+      draft.labels && draft.labels[0]
+        ? (draft.labels[0] as CreateEntryBodySelfLabels)
+        : undefined
+    setText(draft.text ?? "")
+    setSelfLabel(label)
+    setLoadedDraft({ id: draft.id, text: draft.text ?? "", label })
+    setStatus("下書きを反映しました。")
+    setStatusColor("green")
+  }
+
+  /**
+   * 投稿成功後、使用済みの下書きをバックグラウンドで削除する。
+   *
+   * 処理の趣旨:
+   * - 投稿完了ステータスの表示を邪魔しないよう、失敗してもコンソール出力のみに留める。
+   *
+   * Input:
+   * - `draftId`: 削除対象の下書き ID
+   *
+   * Output:
+   * - なし
+   */
+  const deleteDraftSilently = async (draftId: string) => {
+    try {
+      const res = await deleteDraft({ id: draftId })
+      if (res.status !== 200) {
+        console.error("PostForm: failed to delete draft after posting")
+      }
+    } catch (error) {
+      console.error("PostForm: failed to delete draft after posting", error)
+    }
+  }
+
+  /**
+   * 現在の入力内容が、開いている下書きから変更されているかを判定する。
+   *
+   * Input:
+   * - なし（`text` / `selfLabel` / `loadedDraft` を参照）
+   *
+   * Output:
+   * - 未保存の変更があれば `true`
+   *
+   * 例:
+   * - 入力: 下書きを開かず本文だけ入力した状態
+   * - 出力: `true`
+   */
+  const hasUnsavedDraftChanges = (): boolean => {
+    if (!hasTextInput) return false
+    if (!loadedDraft) return true
+    return (
+      loadedDraft.text !== text ||
+      (loadedDraft.label ?? undefined) !== selfLabel
+    )
+  }
+
+  /**
+   * 下書きを保存(新規作成/更新)してからフォームを閉じる。
+   *
+   * 処理の趣旨:
+   * - 既に開いている下書きがあれば更新 API、なければ作成 API を呼ぶ。
+   * - 失敗時はダイアログを閉じずエラーを表示し、入力内容を保持する。
+   *
+   * Input:
+   * - なし
+   *
+   * Output:
+   * - なし
+   */
+  const handleSaveDraftAndClose = async () => {
+    setIsSavingDraft(true)
+    try {
+      const labels = selfLabel ? [selfLabel] : undefined
+      const res = loadedDraft
+        ? await updateDraft({ id: loadedDraft.id, text, labels })
+        : await createDraft({ text, labels })
+
+      if (res.status !== 200) {
+        setStatus("下書きの保存に失敗しました。")
+        setStatusColor("#b00")
+        return
+      }
+
+      setDraftSaveConfirmOpen(false)
+      onClose?.()
+    } catch (error) {
+      console.error("PostForm: failed to save draft", error)
+      setStatus("下書きの保存に失敗しました。")
+      setStatusColor("#b00")
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }
+
+  /**
+   * 下書きを保存せずフォームを閉じる。
+   *
+   * Input:
+   * - なし
+   *
+   * Output:
+   * - なし
+   */
+  const handleDiscardDraftAndClose = () => {
+    setDraftSaveConfirmOpen(false)
+    onClose?.()
+  }
+
+  /**
+   * キャンセルボタン押下時の処理。
+   *
+   * 処理の趣旨:
+   * - 未保存の本文があれば保存確認ダイアログを開き、なければそのまま閉じる。
+   *
+   * Input:
+   * - なし
+   *
+   * Output:
+   * - なし
+   */
+  const handleCancelClick = () => {
+    if (hasUnsavedDraftChanges()) {
+      setDraftSaveConfirmOpen(true)
+      return
+    }
+    onClose?.()
   }
 
   /**
@@ -430,6 +646,10 @@ export const Component: React.FC<Props> = ({
       }
 
       setStatusColor("green")
+      if (loadedDraft) {
+        void deleteDraftSilently(loadedDraft.id)
+        setLoadedDraft(null)
+      }
       onPosted?.()
       const shareText = buildXIntentText(text, res.data.skyshare.uri)
       const taittsuuIntentText = buildTaittsuuIntentText(
@@ -483,255 +703,301 @@ export const Component: React.FC<Props> = ({
   }
 
   return (
-    <div className={`${ui.baseCard}`} role="dialog" aria-label="投稿フォーム">
-      {isSubmitting && <Loading overlay message="投稿中..." />}
-      <div
-        className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+    <>
+      {draftListLoading && <Loading overlay message="下書きを読み込み中..." />}
+
+      <Overlay
+        open={draftModalOpen}
+        onClose={() => setDraftModalOpen(false)}
+        contentClassName={`${styles.draftListOverlay}`}
       >
-        <div className={`${ui.baseComponent}`}>
-          <button
-            className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-            aria-label="キャンセル"
-            disabled={isSubmitting}
-            onClick={() => {
-              if (onClose) onClose()
-            }}
+        <div
+          className={`${ui.baseCard}`}
+          role="dialog"
+          aria-label="下書き一覧"
+          style={{ maxHeight: "80vh", overflow: "hidden" }}
+        >
+          <div
+            className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignCenter}`}
           >
-            キャンセル
-          </button>
-          {hasTextInput && (
-            <button
-              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-              disabled={isSubmitting}
-              onClick={clearForm}
-            >
-              フォームをクリア
-            </button>
-          )}
-        </div>
-        <div className={`${ui.baseComponent}`}>
-          <button
-            className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
-            disabled={isSubmitting}
-          >
-            下書き
-          </button>
-          <button
-            form="entry-form"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
-            type="submit"
-            disabled={isSubmitting}
-          >
-            投稿
-          </button>
-
-          {showXIntentButton && (
             <button
               type="button"
-              className={`${ui.baseButton} ${ui.textButton} ${ui.blackButton}`}
-              disabled={isSubmitting}
-              onClick={() => {
-                const intentText = text.trim()
-                if (!intentText) {
-                  setStatus("共有する投稿本文を入力してください。")
-                  setStatusColor("#b00")
-                  return
-                }
-
-                const popupOpened = openXIntentPopup(intentText)
-                setStatus(
-                  popupOpened
-                    ? "x.com 投稿画面を開きました。"
-                    : "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
-                )
-                setStatusColor(popupOpened ? "green" : "#b00")
-              }}
+              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton} ${ui.toolbarItemLeft}`}
+              onClick={() => setDraftModalOpen(false)}
             >
-              X投稿
+              閉じる
             </button>
-          )}
-          {showTaittsuuIntentButton && (
-            <button
-              type="button"
-              className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
-              disabled={isSubmitting}
-              onClick={() => {
-                const intentText = text.trim()
-                if (!intentText) {
-                  setStatus("共有する投稿本文を入力してください。")
-                  setStatusColor("#b00")
-                  return
-                }
-
-                const popupOpened = openTaittsuuIntentPopup(intentText)
-                setStatus(
-                  popupOpened
-                    ? "タイッツー投稿画面を開きました。"
-                    : "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
-                )
-                setStatusColor(popupOpened ? "green" : "#b00")
-              }}
-            >
-              タイッツー投稿
-            </button>
-          )}
-        </div>
-      </div>
-
-      <form id="entry-form" className={styles.form} onSubmit={handleSubmit}>
-        <div className={styles.bodyRow}>
-          <div className={styles.avatar} aria-hidden>
-            {avatarUrl ? (
-              <img src={avatarUrl} className={styles.avatarImg} alt="avatar" />
-            ) : (
-              <svg viewBox="0 0 36 36" className={styles.avatarImg}>
-                <circle cx="18" cy="18" r="18" fill="#e6eef9" />
-                <text
-                  x="50%"
-                  y="55%"
-                  textAnchor="middle"
-                  fontSize="14"
-                  fill="#2b6cb0"
-                ></text>
-              </svg>
-            )}
+            <div>下書き一覧</div>
           </div>
 
-          <div className={styles.inputArea}>
-            <textarea
-              className={styles.textarea}
-              id="text"
-              name="text"
-              rows={6}
-              placeholder="最近どう？"
-              value={text}
-              onChange={e => setText(e.target.value)}
-              disabled={isSubmitting}
+          <div className={styles.draftListBody}>
+            <DraftListPanel
+              items={draftItems}
+              loading={draftListLoading}
+              error={draftListError ?? undefined}
+              onSelectDraft={draft => {
+                setDraftModalOpen(false)
+                applyDraftToForm(draft)
+                setDraftItems(prev => prev.filter(item => item.id !== draft.id))
+              }}
             />
-            <div
-              className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignRight}`}
+          </div>
+        </div>
+      </Overlay>
+
+      <DraftSaveConfirmDialog
+        open={draftSaveConfirmOpen}
+        isSaving={isSavingDraft}
+        onSave={handleSaveDraftAndClose}
+        onDiscard={handleDiscardDraftAndClose}
+        onContinueEditing={() => setDraftSaveConfirmOpen(false)}
+      />
+
+      <div className={`${ui.baseCard}`} role="dialog" aria-label="投稿フォーム">
+        {isSubmitting && <Loading overlay message="投稿中..." />}
+        <div
+          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+        >
+          <div className={`${ui.baseComponent}`}>
+            <button
+              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+              aria-label="キャンセル"
+              disabled={isSubmitting}
+              onClick={handleCancelClick}
             >
-              <div
-                className={[styles.charCount, charCountAlertClass]
-                  .filter(Boolean)
-                  .join(" ")}
+              キャンセル
+            </button>
+            {hasTextInput && (
+              <button
+                className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+                disabled={isSubmitting}
+                onClick={clearForm}
               >
-                <span style={{ whiteSpace: "nowrap" }}>
-                  {textCountOnX}/{xWarnCount}:X
-                </span>
-                <span style={{ minWidth: "9.5rem", textAlign: "right" }}>
-                  {textCountOnBsky}/{bskyMaxCount}:Bluesky
-                </span>
+                フォームをクリア
+              </button>
+            )}
+          </div>
+          <div className={`${ui.baseComponent}`}>
+            <button
+              type="button"
+              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+              disabled={isSubmitting}
+              onClick={() => {
+                void openDraftPicker()
+              }}
+            >
+              下書き
+            </button>
+            <button
+              form="entry-form"
+              className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
+              type="submit"
+              disabled={isSubmitting}
+            >
+              投稿
+            </button>
+
+            {showXIntentButton && (
+              <button
+                type="button"
+                className={`${ui.baseButton} ${ui.textButton} ${ui.blackButton}`}
+                disabled={isSubmitting}
+                onClick={() => {
+                  const intentText = text.trim()
+                  if (!intentText) {
+                    setStatus("共有する投稿本文を入力してください。")
+                    setStatusColor("#b00")
+                    return
+                  }
+
+                  const popupOpened = openXIntentPopup(intentText)
+                  setStatus(
+                    popupOpened
+                      ? "x.com 投稿画面を開きました。"
+                      : "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                  )
+                  setStatusColor(popupOpened ? "green" : "#b00")
+                }}
+              >
+                X投稿
+              </button>
+            )}
+            {showTaittsuuIntentButton && (
+              <button
+                type="button"
+                className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
+                disabled={isSubmitting}
+                onClick={() => {
+                  const intentText = text.trim()
+                  if (!intentText) {
+                    setStatus("共有する投稿本文を入力してください。")
+                    setStatusColor("#b00")
+                    return
+                  }
+
+                  const popupOpened = openTaittsuuIntentPopup(intentText)
+                  setStatus(
+                    popupOpened
+                      ? "タイッツー投稿画面を開きました。"
+                      : "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                  )
+                  setStatusColor(popupOpened ? "green" : "#b00")
+                }}
+              >
+                タイッツー投稿
+              </button>
+            )}
+          </div>
+        </div>
+
+        <form id="entry-form" className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.bodyRow}>
+            <div className={styles.avatar} aria-hidden>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  className={styles.avatarImg}
+                  alt="avatar"
+                />
+              ) : (
+                <svg viewBox="0 0 36 36" className={styles.avatarImg}>
+                  <circle cx="18" cy="18" r="18" fill="#e6eef9" />
+                  <text
+                    x="50%"
+                    y="55%"
+                    textAnchor="middle"
+                    fontSize="14"
+                    fill="#2b6cb0"
+                  ></text>
+                </svg>
+              )}
+            </div>
+
+            <div className={styles.inputArea}>
+              <textarea
+                className={styles.textarea}
+                id="text"
+                name="text"
+                rows={6}
+                placeholder="最近どう？"
+                value={text}
+                onChange={e => setText(e.target.value)}
+                disabled={isSubmitting}
+              />
+              <div
+                className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignRight}`}
+              >
+                <div
+                  className={[styles.charCount, charCountAlertClass]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
+                  <span style={{ whiteSpace: "nowrap" }}>
+                    {textCountOnX}/{xWarnCount}:X
+                  </span>
+                  <span style={{ minWidth: "9.5rem", textAlign: "right" }}>
+                    {textCountOnBsky}/{bskyMaxCount}:Bluesky
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div
-          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
-        >
-          <SelfLabelsSelect
-            value={selfLabel}
-            onChange={setSelfLabel}
-            disabled={isSubmitting}
-          />
-          <LanguageSelect
-            value={languageCode}
-            onChange={setLanguageCode}
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <div
-          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
-        >
-          <OgpFetchButton
-            text={text}
-            value={ogpResult}
-            onChange={nextOgp => {
-              if (nextOgp) {
-                setImageEntry(prevImageEntry => {
-                  revokeImageEntry(prevImageEntry)
-                  return null
-                })
-              }
-              setOgpResult(nextOgp)
-            }}
-            disabled={isSubmitting}
-          />
-          <ImagePicker
-            value={imageEntry}
-            onChange={entry => {
-              if (entry && ogpResult) {
-                setOgpResult(null)
-              }
-              setImageEntry(entry)
-            }}
-            disabled={isSubmitting}
-          />
-        </div>
-        <div>
-          <ImagePreview value={imageEntry} />
-        </div>
-        <div className={ui.baseComponent}>
-          <Collapsible
-            label="詳細オプション"
-            defaultOpen={defaultOpenShareOptions}
+          <div
+            className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
           >
-            <div className={`${ui.toolbar}`}>
-              <ToggleSwitch
-                checked={openXPopup}
-                disabled={isSubmitting || crosspostToTaittsuu}
-                label="ポップアップを利用する"
-                onCheckedChange={next => {
-                  setOpenXPopup(next)
-                  writeOpenPopupSetting(next)
-                  if (!next) {
-                    setCrosspostToTaittsuu(false)
-                    writeCrosspostToTaittsuuSetting(false)
-                  }
-                }}
-              />
-              <ToggleSwitch
-                checked={crosspostToTaittsuu}
-                disabled={isSubmitting}
-                label="タイッツーにクロスポスト"
-                onCheckedChange={next => {
-                  setCrosspostToTaittsuu(next)
-                  writeCrosspostToTaittsuuSetting(next)
+            <SelfLabelsSelect
+              value={selfLabel}
+              onChange={setSelfLabel}
+              disabled={isSubmitting}
+            />
+            <LanguageSelect
+              value={languageCode}
+              onChange={setLanguageCode}
+              disabled={isSubmitting}
+            />
+          </div>
 
-                  if (next) {
-                    setOpenXPopup(true)
-                    writeOpenPopupSetting(true)
-                  }
-                }}
-              />
-              <ToggleSwitch
-                checked={showXWhenCrosspost}
-                disabled={isSubmitting || !openXPopup}
-                label="X投稿ボタンを表示"
-                onCheckedChange={next => {
-                  setShowXWhenCrosspost(next)
-                  writeShowCrosspostXButtonSetting(next)
+          <div
+            className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+          >
+            <ImagePicker
+              value={imageEntry}
+              onChange={entry => {
+                if (entry && ogpResult) {
+                  setOgpResult(null)
+                  ogpFetch.clearOgpStatus()
+                }
+                setImageEntry(entry)
+              }}
+              disabled={isSubmitting}
+            />
+            <OgpFetchButton ogpFetch={ogpFetch} disabled={isSubmitting} />
+          </div>
+          <div>
+            <OgpPreview ogpFetch={ogpFetch} />
+            <ImagePreview value={imageEntry} />
+          </div>
+          <div className={ui.baseComponent}>
+            <Collapsible
+              label="詳細オプション"
+              defaultOpen={defaultOpenShareOptions}
+            >
+              <div className={styles.shareOptions}>
+                <ToggleSwitch
+                  checked={openXPopup}
+                  disabled={isSubmitting || crosspostToTaittsuu}
+                  label="ポップアップを利用する"
+                  onCheckedChange={next => {
+                    setOpenXPopup(next)
+                    writeOpenPopupSetting(next)
+                    if (!next) {
+                      setCrosspostToTaittsuu(false)
+                      writeCrosspostToTaittsuuSetting(false)
+                    }
+                  }}
+                />
+                <ToggleSwitch
+                  checked={crosspostToTaittsuu}
+                  disabled={isSubmitting}
+                  label="タイッツーにクロスポスト"
+                  onCheckedChange={next => {
+                    setCrosspostToTaittsuu(next)
+                    writeCrosspostToTaittsuuSetting(next)
 
-                  if (next) {
-                    setOpenXPopup(true)
-                    writeOpenPopupSetting(true)
-                  }
-                }}
-              />
-            </div>
-          </Collapsible>
-        </div>
-        <div
-          id="status"
-          aria-live="polite"
-          className={`${ui.toolbar}`}
-          style={{ color: statusColor }}
-        >
-          {status}
-        </div>
-      </form>
-    </div>
+                    if (next) {
+                      setOpenXPopup(true)
+                      writeOpenPopupSetting(true)
+                    }
+                  }}
+                />
+                <ToggleSwitch
+                  checked={showXWhenCrosspost}
+                  disabled={isSubmitting || !openXPopup}
+                  label="X投稿ボタンを表示"
+                  onCheckedChange={next => {
+                    setShowXWhenCrosspost(next)
+                    writeShowCrosspostXButtonSetting(next)
+
+                    if (next) {
+                      setOpenXPopup(true)
+                      writeOpenPopupSetting(true)
+                    }
+                  }}
+                />
+              </div>
+            </Collapsible>
+          </div>
+          <div
+            id="status"
+            aria-live="polite"
+            className={`${ui.toolbar}`}
+            style={{ color: statusColor }}
+          >
+            {status}
+          </div>
+        </form>
+      </div>
+    </>
   )
 }
 

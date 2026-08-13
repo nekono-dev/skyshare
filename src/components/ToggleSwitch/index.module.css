@@ -55,18 +55,18 @@
      ピル形を保証する --radius-pill を使用する。 */
   border-radius: var(--radius-pill);
   background: var(--color-muted);
-  transition: background 0.2s ease;
+  transition: 0.2s ease;
   flex-shrink: 0;
 }
 
 /* ON 状態のトラック色: Bluesky ブランドカラーを使用 */
 .input:checked + .label .track {
-  background: var(--color-primary);
+  background: var(--color-bluesky);
 }
 
 /* フォーカス可視化: キーボード操作時のみ表示する */
 .input:focus-visible + .label .track {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-bluesky);
   outline-offset: 2px;
 }
 

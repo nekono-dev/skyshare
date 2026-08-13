@@ -12,9 +12,17 @@ import LoginForm from "@/components/LoginForm"
 import Baselayout from "@/layout/Baselayout.astro"
 import { serviceName, serviceVersion } from "@/vars"
 const robots = ["index", "follow", "noarchive", "noimageindex"]
+import ui from "@/styles/ui.module.css"
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={serviceName} robots={robots}>
-    <h1>{serviceName} v{serviceVersion}</h1>
-    <LoginForm client:load />
+    <div class={ui.center}>
+        <div class=`${ui.page} ${ui.pageWidth} ${ui.center}`>
+            <img class={ui.pageWidth} src="/materials/longlogo.svg" alt={serviceName} />
+            <div class=`${ui.left} ${ui.selfEnd} ${ui.subject}`>v{serviceVersion}</div>
+            <div class=`${ui.componentWidth}`>
+                <LoginForm client:load />
+            </div>
+        </div>
+    </div>
 </Baselayout>

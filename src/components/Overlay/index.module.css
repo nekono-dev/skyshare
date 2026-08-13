@@ -17,6 +17,7 @@
   max-width: 640px;
   max-height: calc(100% - 48px);
   overflow: auto;
+  overscroll-behavior: contain;
   background: var(--color-card-bg);
   border-radius: var(--radius-lg);
   padding: var(--space-1);

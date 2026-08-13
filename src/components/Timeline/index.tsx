@@ -137,7 +137,7 @@ const Component = ({ avatarUrl }: Props) => {
   })
 
   return (
-    <section className={`${ui.baseCard} ${styles.timelineCard}`}>
+    <section className={`${ui.baseCard} ${ui.pageWidth}`}>
       <PostLauncher avatarUrl={resolvedAvatarUrl} onPosted={handlePosted} />
 
       <header className={styles.timelineHeader}>

@@ -7,6 +7,7 @@
  */
 import type { ImageEntry } from "@/components/ImagePicker"
 import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
 
 type Props = {
   value: ImageEntry | null
@@ -31,15 +32,15 @@ export const Component = ({ value }: Props) => {
   }
 
   return (
-    <section className={styles.section}>
-      <article className={styles.previewItem}>
-        <p className={styles.previewTitle}>サムネイル（visual: 1200x630）</p>
+    <section className={ui.baseCard}>
+      <div className={`${ui.label}`}>サムネイル（visual: 1200x630）</div>
+      <div className={ui.center}>
         <img
           src={value.thumbnailPreview}
           alt="1200x630 サムネイル"
-          className={styles.previewImg}
+          className={ui.preview}
         />
-      </article>
+      </div>
     </section>
   )
 }

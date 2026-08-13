@@ -29,7 +29,7 @@
   height: 24px;
   border-radius: var(--radius-button-max);
   border: 2px solid var(--color-border);
-  border-top-color: var(--color-primary);
+  border-top-color: var(--color-bluesky);
   animation: spin 0.8s linear infinite;
 }
 

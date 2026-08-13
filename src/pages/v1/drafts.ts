@@ -17,25 +17,10 @@ import { XRPCError } from "@atproto/xrpc"
 import { convertHeaderToObj, errorResponseFromStatus } from "@/lib/api.js"
 import { parseSessionFromRequest } from "@/lib/cookies.js"
 
-type DraftPostPayload = {
-    text: string
-    labels?: Record<string, unknown>
-    embedImages?: Record<string, unknown>[]
-    embedVideos?: Record<string, unknown>[]
-    embedExternals?: Record<string, unknown>[]
-    embedRecords?: Record<string, unknown>[]
-}
-
-type DraftPayload = {
-    posts: DraftPostPayload[]
-    langs?: string[]
-    postgateEmbeddingRules?: Record<string, unknown>[]
-    threadgateAllow?: Record<string, unknown>[]
-}
-
 type DraftViewPayload = {
     id: string
-    draft: DraftPayload
+    text: string
+    labels?: string[]
     createdAt: string
     updatedAt: string
 }
@@ -95,156 +80,66 @@ const isObjectRecord = (value: unknown): value is Record<string, unknown> => {
 }
 
 /**
- * 値が文字列配列かを判定する。
+ * `com.atproto.label.defs#selfLabels` からラベル値の配列を抽出する。
  *
  * Input:
- * - `value`: 判定対象
+ * - `value`: draftPost.labels 候補
  *
  * Output:
- * - 文字列配列なら `true`
+ * - ラベル値の配列。値が無ければ `undefined`
  *
  * 例:
- * - 入力: `["ja", "en"]`
- * - 出力: `true`
+ * - 入力: `{ values: [{ val: "sexual" }] }`
+ * - 出力: `["sexual"]`
  */
-const isStringArray = (value: unknown): value is string[] => {
-    return Array.isArray(value) && value.every(v => typeof v === "string")
+const extractLabelValues = (value: unknown): string[] | undefined => {
+    if (!isObjectRecord(value) || !Array.isArray(value.values)) {
+        return undefined
+    }
+
+    const labels = value.values
+        .map(entry =>
+            isObjectRecord(entry) && typeof entry.val === "string"
+                ? entry.val
+                : undefined,
+        )
+        .filter((val): val is string => val !== undefined)
+
+    return labels.length > 0 ? labels : undefined
 }
 
 /**
- * 値がオブジェクト配列かを判定する。
- *
- * Input:
- * - `value`: 判定対象
- *
- * Output:
- * - オブジェクト配列なら `true`
- *
- * 例:
- * - 入力: `[{ key: "value" }]`
- * - 出力: `true`
- */
-const isObjectArray = (value: unknown): value is Record<string, unknown>[] => {
-    return Array.isArray(value) && value.every(isObjectRecord)
-}
-
-/**
- * 下書き投稿要素を最小要件で検証する。
- *
- * 想定する入力形状(必要な場合):
- * - `text` を必須とし、埋め込み/ラベルは任意オブジェクトとして扱う。
+ * 下書き本体から一覧表示に必要な最小要件(先頭投稿の text/labels)を取り出す。
  *
  * 処理の趣旨:
- * - app.bsky.draft.defs#draftPost の実用上必要な最低形状を保証する。
- *
- * Input:
- * - `value`: draftPost 候補
- *
- * Output:
- * - 検証済み `DraftPostPayload`。不正時は `undefined`
- *
- * 例:
- * - 入力: `{ text: "hello" }`
- * - 出力: `{ text: "hello" }`
- */
-const parseDraftPost = (value: unknown): DraftPostPayload | undefined => {
-    if (!isObjectRecord(value)) {
-        return undefined
-    }
-
-    if (typeof value.text !== "string") {
-        return undefined
-    }
-
-    if (value.labels !== undefined && !isObjectRecord(value.labels)) {
-        return undefined
-    }
-
-    if (value.embedImages !== undefined && !isObjectArray(value.embedImages)) {
-        return undefined
-    }
-
-    if (value.embedVideos !== undefined && !isObjectArray(value.embedVideos)) {
-        return undefined
-    }
-
-    if (
-        value.embedExternals !== undefined &&
-        !isObjectArray(value.embedExternals)
-    ) {
-        return undefined
-    }
-
-    if (
-        value.embedRecords !== undefined &&
-        !isObjectArray(value.embedRecords)
-    ) {
-        return undefined
-    }
-
-    return {
-        text: value.text,
-        labels: value.labels,
-        embedImages: value.embedImages,
-        embedVideos: value.embedVideos,
-        embedExternals: value.embedExternals,
-        embedRecords: value.embedRecords,
-    }
-}
-
-/**
- * 下書き本体を最小要件で検証する。
+ * - 画像等の埋め込みはデバイスローカル参照のためこのアプリでは扱えず、
+ *   langs/postgateEmbeddingRules/threadgateAllow も一覧表示や再利用では使わない。
  *
  * Input:
  * - `value`: draft 候補
  *
  * Output:
- * - 検証済み `DraftPayload`。不正時は `undefined`
+ * - 検証済み `{ text, labels? }`。不正時は `undefined`
  *
  * 例:
  * - 入力: `{ posts: [{ text: "hello" }] }`
- * - 出力: `{ posts: [{ text: "hello" }] }`
+ * - 出力: `{ text: "hello" }`
  */
-const parseDraft = (value: unknown): DraftPayload | undefined => {
-    if (!isObjectRecord(value)) {
+const parseDraft = (
+    value: unknown,
+): { text: string; labels?: string[] } | undefined => {
+    if (!isObjectRecord(value) || !Array.isArray(value.posts)) {
         return undefined
     }
 
-    if (!Array.isArray(value.posts) || value.posts.length === 0) {
-        return undefined
-    }
-
-    const posts = value.posts
-        .map(parseDraftPost)
-        .filter((post): post is DraftPostPayload => post !== undefined)
-
-    if (posts.length !== value.posts.length) {
-        return undefined
-    }
-
-    if (value.langs !== undefined && !isStringArray(value.langs)) {
-        return undefined
-    }
-
-    if (
-        value.postgateEmbeddingRules !== undefined &&
-        !isObjectArray(value.postgateEmbeddingRules)
-    ) {
-        return undefined
-    }
-
-    if (
-        value.threadgateAllow !== undefined &&
-        !isObjectArray(value.threadgateAllow)
-    ) {
+    const firstPost = value.posts[0]
+    if (!isObjectRecord(firstPost) || typeof firstPost.text !== "string") {
         return undefined
     }
 
     return {
-        posts,
-        langs: value.langs,
-        postgateEmbeddingRules: value.postgateEmbeddingRules,
-        threadgateAllow: value.threadgateAllow,
+        text: firstPost.text,
+        labels: extractLabelValues(firstPost.labels),
     }
 }
 
@@ -266,6 +161,110 @@ const parseDeleteDraftBody = (value: unknown): { id: string } | undefined => {
         return undefined
     }
     return { id: value.id }
+}
+
+/**
+ * 下書き作成・更新で共通の本文(text/labels)を検証する。
+ *
+ * Input:
+ * - `value`: JSON ボディ候補
+ *
+ * Output:
+ * - 検証済み `{ text, labels? }`。不正時は `undefined`
+ *
+ * 例:
+ * - 入力: `{ text: "hello", labels: ["sexual"] }`
+ * - 出力: 同等オブジェクト
+ */
+const parseDraftPostInput = (
+    value: unknown,
+): { text: string; labels?: string[] } | undefined => {
+    if (!isObjectRecord(value) || typeof value.text !== "string") {
+        return undefined
+    }
+
+    if (value.labels !== undefined) {
+        if (
+            !Array.isArray(value.labels) ||
+            !value.labels.every(label => typeof label === "string")
+        ) {
+            return undefined
+        }
+    }
+
+    return {
+        text: value.text,
+        labels: Array.isArray(value.labels)
+            ? (value.labels as string[])
+            : undefined,
+    }
+}
+
+/**
+ * 下書き作成リクエストを検証する。
+ *
+ * Input:
+ * - `value`: JSON ボディ候補
+ *
+ * Output:
+ * - 検証済み `{ text, labels? }`。不正時は `undefined`
+ *
+ * 例:
+ * - 入力: `{ text: "hello" }`
+ * - 出力: 同等オブジェクト
+ */
+const parseCreateDraftBody = parseDraftPostInput
+
+/**
+ * 下書き更新リクエストを検証する。
+ *
+ * Input:
+ * - `value`: JSON ボディ候補
+ *
+ * Output:
+ * - 検証済み `{ id, text, labels? }`。不正時は `undefined`
+ *
+ * 例:
+ * - 入力: `{ id: "3ldrafttid", text: "hello" }`
+ * - 出力: 同等オブジェクト
+ */
+const parseUpdateDraftBody = (
+    value: unknown,
+): { id: string; text: string; labels?: string[] } | undefined => {
+    if (!isObjectRecord(value) || typeof value.id !== "string") {
+        return undefined
+    }
+
+    const body = parseDraftPostInput(value)
+    if (!body) {
+        return undefined
+    }
+
+    return { id: value.id, ...body }
+}
+
+/**
+ * ラベル値の配列から `com.atproto.label.defs#selfLabels` を組み立てる。
+ *
+ * Input:
+ * - `labels`: 自己ラベル値の配列
+ *
+ * Output:
+ * - selfLabels オブジェクト。空/未指定時は `undefined`
+ *
+ * 例:
+ * - 入力: `["sexual"]`
+ * - 出力: `{ $type: "com.atproto.label.defs#selfLabels", values: [{ val: "sexual" }] }`
+ */
+const buildSelfLabels = (labels: string[] | undefined) => {
+    if (!labels || labels.length === 0) {
+        return undefined
+    }
+
+    return {
+        $type: "com.atproto.label.defs#selfLabels" as const,
+        values: labels.map(val => ({ val })),
+    }
 }
 
 /**
@@ -349,7 +348,8 @@ const parseDraftViewsResponse = (
 
         parsedDrafts.push({
             id: draftView.id,
-            draft,
+            text: draft.text,
+            labels: draft.labels,
             createdAt: draftView.createdAt,
             updatedAt: draftView.updatedAt,
         })
@@ -472,6 +472,118 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
         })
     } catch (error) {
         console.error("drafts.ts GET:", error)
+        return errorResponseFromStatus(resolveXrpcStatus(error))
+    }
+}
+
+/**
+ * POST /v1/drafts: 下書きを新規作成する。
+ *
+ * Input:
+ * - `request`: cookie と `{ text, labels? }` を含む HTTP リクエスト
+ *
+ * Output:
+ * - 200: `{ id: string }`
+ * - 4xx/5xx: 共通エラー JSON
+ *
+ * 例:
+ * - 入力: `{ "text": "hello" }`
+ * - 出力: `{"id":"3ldrafttid"}`
+ */
+export const POST: APIRoute = async ({ request }: { request: Request }) => {
+    try {
+        if (!hasCookieHeader(request)) {
+            return errorResponseFromStatus(400)
+        }
+
+        const body = parseCreateDraftBody(await request.json())
+        if (!body) {
+            return errorResponseFromStatus(400)
+        }
+
+        let agent: AtpAgent
+        try {
+            agent = await resumeDraftAgent(request)
+        } catch (error) {
+            if (error instanceof Error && error.message === "UNAUTHORIZED") {
+                return errorResponseFromStatus(401)
+            }
+            throw error
+        }
+
+        const response = await agent.app.bsky.draft.createDraft({
+            draft: {
+                posts: [
+                    {
+                        text: body.text,
+                        labels: buildSelfLabels(body.labels),
+                    },
+                ],
+            },
+        })
+
+        return new Response(JSON.stringify({ id: response.data.id }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+        })
+    } catch (error) {
+        console.error("drafts.ts POST:", error)
+        return errorResponseFromStatus(resolveXrpcStatus(error))
+    }
+}
+
+/**
+ * PUT /v1/drafts: 既存の下書きを更新する。
+ *
+ * Input:
+ * - `request`: cookie と `{ id, text, labels? }` を含む HTTP リクエスト
+ *
+ * Output:
+ * - 200: 本文なし
+ * - 4xx/5xx: 共通エラー JSON
+ *
+ * 例:
+ * - 入力: `{ "id": "3ldrafttid", "text": "hello" }`
+ * - 出力: `status 200`
+ */
+export const PUT: APIRoute = async ({ request }: { request: Request }) => {
+    try {
+        if (!hasCookieHeader(request)) {
+            return errorResponseFromStatus(400)
+        }
+
+        const body = parseUpdateDraftBody(await request.json())
+        if (!body) {
+            return errorResponseFromStatus(400)
+        }
+
+        let agent: AtpAgent
+        try {
+            agent = await resumeDraftAgent(request)
+        } catch (error) {
+            if (error instanceof Error && error.message === "UNAUTHORIZED") {
+                return errorResponseFromStatus(401)
+            }
+            throw error
+        }
+
+        await agent.app.bsky.draft.updateDraft({
+            draft: {
+                id: body.id,
+                draft: {
+                    posts: [
+                        {
+                            text: body.text,
+                            labels: buildSelfLabels(body.labels),
+                        },
+                    ],
+                },
+            },
+        })
+
+        return new Response(undefined, { status: 200 })
+    } catch (error) {
+        console.error("drafts.ts PUT:", error)
         return errorResponseFromStatus(resolveXrpcStatus(error))
     }
 }

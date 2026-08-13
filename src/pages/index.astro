@@ -10,12 +10,13 @@
 export const prerender = true
 import Baselayout from "@/layout/Baselayout.astro"
 import Timeline from "@/components/Timeline"
-import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
+
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
-    <div class={styles.page}>
+    <div class=`${ui.page} ${ui.center}`>
         <Timeline client:load />
     </div>
 </Baselayout>

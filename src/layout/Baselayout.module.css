@@ -25,13 +25,13 @@
 
 /* リンク色をトークンから指定（グローバル） */
 :global(a) {
-  color: var(--color-primary);
+  color: var(--color-bluesky);
   text-decoration: none;
 }
 
 :global(a:hover),
 :global(a:focus) {
-  color: var(--color-primary-hover);
+  color: var(--color-bluesky-hover);
   text-decoration: underline;
 }
 
