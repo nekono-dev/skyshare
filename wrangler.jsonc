@@ -1,10 +1,11 @@
 {
   "name": "skyshare",
+  "main": "./dist/server/entry.mjs",
   "compatibility_date": "2026-04-04",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "binding": "ASSETS",
-    "directory": "./dist",
+    "directory": "./dist/client",
   },
   "observability": {
     "enabled": true,
