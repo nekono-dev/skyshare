@@ -1,0 +1,147 @@
+/* Button styles extracted from ui.module.css */
+
+/* Button-specific CSS variables and size tokens */
+:root {
+  /* White button */
+  --color-white-button-bg: var(--color-card-bg);
+  --color-white-button-hover: var(--color-white-hover);
+  --color-white-button-border: var(--border-color-muted);
+  --color-white-button-color: var(--color-bluesky);
+
+  /* Blue button  */
+  --color-blue-button-bg: var(--color-bluesky);
+  --color-blue-button-hover: var(--color-bluesky-hover);
+  --color-blue-button-border: var(--border-color-muted);
+  --color-blue-button-color: var(--color-white);
+
+  /* Gray button */
+  --color-gray-button-bg: var(--color-gray);
+  --color-gray-button-hover: var(--color-gray-hover);
+  --color-gray-button-border: var(--border-color-muted);
+  --color-gray-button-color: var(--color-black);
+
+  /* Black button */
+  --color-black-button-bg: var(--color-black);
+  --color-black-button-hover: var(--color-black-hover);
+  --color-black-button-border: var(--border-color-muted);
+  --color-black-button-color: var(--color-white);
+
+  /* Red button  */
+  --color-red-button-bg: var(--color-red);
+  --color-red-button-hover: var(--color-red-hover);
+  --color-red-button-border: var(--border-color-muted);
+  --color-red-button-color: var(--color-red-text);
+
+  /* Size tokens */
+  --size-button-md: 40px;
+  --size-button-lg: 60px;
+
+  --btn-padding-x: calc(var(--space-3));
+  --btn-padding-y: calc(var(--space-1));
+}
+
+/* 
+  ボタン
+  本アプリケーションで利用するすべてのボタンの基本スタイルを定義する。
+  
+  基底
+    .baseButton: 基底ボタンスタイル
+
+  種別
+    .textButton: テキスト主体のボタンスタイル
+    .nontextButton: 非テキスト主体のボタンスタイル
+
+  色系統
+    .whiteButton: 白系統のボタンスタイル
+    .blueButton: 青系統のボタンスタイル
+    .grayButton: グレー系統のボタンスタイル
+
+  サイズ
+    .mdButton: 中サイズのボタンスタイル
+    .lgButton: 大サイズのボタンスタイル
+*/
+
+:local(.baseButton) {
+  border: var(--border-button);
+  cursor: pointer;
+}
+
+/* テキストボタン */
+:local(.textButton) {
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  border-radius: var(--radius-button-md);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+/* 白系統ボタン */
+:local(.whiteButton) {
+  background: var(--color-white-button-bg);
+  color: var(--color-white-button-color);
+  border-color: var(--color-white-button-border);
+}
+:local(.whiteButton):hover {
+  background: var(--color-white-button-hover);
+}
+
+/* 青系統ボタン */
+:local(.blueButton) {
+  background: var(--color-blue-button-bg);
+  color: var(--color-blue-button-color);
+  border-color: var(--color-blue-button-border);
+}
+:local(.blueButton):hover {
+  background: var(--color-blue-button-hover);
+}
+
+/* グレー系統ボタン */
+:local(.grayButton) {
+  background: var(--color-gray-button-bg);
+  color: var(--color-gray-button-color);
+  border-color: var(--color-gray-button-border);
+}
+:local(.grayButton):hover {
+  background: var(--color-gray-button-hover);
+}
+
+/* 黒系統ボタン */
+:local(.blackButton) {
+  background: var(--color-black-button-bg);
+  color: var(--color-black-button-color);
+  border-color: var(--color-black-button-border);
+}
+:local(.blackButton):hover {
+  background: var(--color-black-button-hover);
+}
+
+/* 赤系統ボタン */
+:local(.redButton) {
+  background: var(--color-red-button-bg);
+  color: var(--color-red-button-color);
+  border-color: var(--color-red-button-border);
+}
+:local(.redButton):hover {
+  background: var(--color-red-button-hover);
+}
+
+/* アイコンボタン */
+:local(.nontextButton) {
+  padding: 0;
+  border-radius: var(--radius-button-max);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 中サイズ */
+:local(.mdButton) {
+  width: var(--size-button-md);
+  height: var(--size-button-md);
+}
+
+/* 大サイズ */
+:local(.lgButton) {
+  width: var(--size-button-lg);
+  height: var(--size-button-lg);
+}

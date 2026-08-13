@@ -1,0 +1,52 @@
+error:
+  type: object
+  properties:
+    error:
+      type: string
+      example: Invalid credentials
+
+content-type:
+  description: The MIME type of the body of the request or response
+  schema:
+    type: string
+    enum:
+      - application/json
+    example: application/json
+
+cookie:
+  description: cookie
+  schema:
+    type: string
+    example: sid=abc123; Path=/; HttpOnly
+
+ogMeta:
+  type: object
+  properties:
+    title:
+      type: string
+      example: ""
+    description:
+      type: string
+      example: ""
+    image:
+      type: string
+      format: uri
+      example: "https://example.com/og.png"
+  required:
+    - title
+    - description
+
+imagesMeta:
+  type: array
+  items:
+    type: object
+    required:
+      - width
+      - height
+    properties:
+      width:
+        type: integer
+        minimum: 1
+      height:
+        type: integer
+        minimum: 1

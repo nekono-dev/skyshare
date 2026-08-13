@@ -1,0 +1,71 @@
+---
+/**
+ * ログインページ。
+ *
+ * 責務と処理概要:
+ * - `LoginForm` を表示し、セッション作成導線を提供する。
+ * - 静的配信可能なため prerender を有効化する。
+ */
+export const prerender = true
+import LoginForm from "@/components/LoginForm"
+
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName, serviceVersion } from "@/vars"
+const robots = ["index", "follow", "noarchive", "noimageindex"]
+import ui from "@/styles/ui.module.css"
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={serviceName} robots={robots}>
+    <div class={ui.center}>
+        <div class=`${ui.page} ${ui.pageWidth} ${ui.center}`>
+            <img class={ui.pageWidth} src="/materials/longlogo.svg" alt={serviceName} />
+            <div class=`${ui.left} ${ui.selfEnd} ${ui.subject}`>v{serviceVersion}</div>
+            <div class=`${ui.componentWidth}`>
+                <div class=`${ui.baseCard}`>
+                    <LoginForm client:load />
+                    <div style="margin-top: 1rem;">★ 新しいSkyshareは、以下がv1と違います</div>
+
+                    <h3>Skyshareが生成するコンテンツデータはあなたのものになります。</h3>
+                    <ul class={ui.list}>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            これまでは開発者のバックエンドに画像やテキストデータを配置していました。
+                            そのため、開発者がバックエンド費用を負担する都合から、データに賞味期限をつける対処をせざるを得ませんでした。
+                        </li>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            v2では、Skyshareで生成したコンテンツはあなたのPDSに配置されます。
+                            つまり、あなたがアカウントを消さない限り（BlueskyがPDSを保持する限り）永遠に保持できます<b
+                                >（データの有効期限の撤廃）</b
+                            >
+                        </li>
+                    </ul>
+                    <h3>クロスポスト用サムネイル生成の自由度が上がりました。</h3>
+                    <ul class={ui.list}>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            v1では、ロスポスト用サムネイル（OGP画像）をサーバサイド、クラウド上で生成していました。v2ではクライアント側で生成しています。
+                        </li>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            これにより、OGP画像を柔軟に編集可能になりました。<b>（OGP生成画像の編集機能追加）</b
+                            >現時点では、サムネイルにしたい箇所の切り抜き・複数画像配置時の表示位置調整に対応しています。
+                        </li>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            需要があればOGP用の画像を別で用意する（自動生成しない）・ラベラーの状態に応じた加工処理等を実装していこうと考えています。
+                            ...端的には、R-18画像のサムネにモザイクいれるとか。
+                        </li>
+                    </ul>
+                    <h3>その他、使いやすくなる改修いろいろ</h3>
+                    <ul class={ui.list}>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            v1ではできなかったことが色々できるようになっています。
+                            バックエンドはおおよそできており、あとはレイアウトや機能の調整・追加、ソースコードの整理などを終えたらリリース予定です。
+                        </li>
+                        <li class=`${ui.listItem} ${ui.text}`>
+                            正式リリースに向けて絶賛開発中なので #Skyshare
+                            などで感想や要望を書いておいていただけると活動の励みになります。
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div style="margin: 1rem;">2025-2026 © Skyshare</div>
+        </div>
+    </div></Baselayout
+>

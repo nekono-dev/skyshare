@@ -1,0 +1,100 @@
+.container {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.overlayContent {
+  width: min(96vw, 980px);
+  max-width: 980px;
+}
+
+.overlayContent1 {
+  width: min(96vw, 760px);
+  max-width: 760px;
+}
+
+.overlayContent2,
+.overlayContent3,
+.overlayContent4 {
+  width: min(96vw, 980px);
+  max-width: 980px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  color: var(--color-black);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.compositeArea {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.slotContainer {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.layout1 {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "slot0";
+}
+
+.layout2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "slot0 slot1";
+}
+
+.layout3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot0 slot2";
+}
+
+.layout4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot2 slot3";
+}
+
+.cropArea {
+  position: relative;
+  width: min(100%, 680px);
+  aspect-ratio: 40 / 21;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-gray);
+}
+
+.zoomLabel {
+  color: var(--color-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+}
+
+.zoomSlider {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

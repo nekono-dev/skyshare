@@ -1,0 +1,4 @@
+post:
+  $ref: ./post.yaml
+# put:
+#   $ref: ./put.yaml

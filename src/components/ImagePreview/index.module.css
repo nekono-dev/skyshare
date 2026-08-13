@@ -1,0 +1,8 @@
+.previewImg {
+  width: 100%;
+  max-width: 560px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+  display: block;
+}

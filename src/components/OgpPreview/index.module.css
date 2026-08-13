@@ -1,0 +1,8 @@
+.section {
+  display: grid;
+}
+
+.status {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}

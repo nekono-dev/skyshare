@@ -1,0 +1,208 @@
+---
+/**
+ * Skyshare エントリ詳細ページ（SSR）。
+ *
+ * 責務と処理概要:
+ * - URL slug からエントリ識別子を解析し、PDS 上の skyshare レコードを取得する。
+ * - 元投稿情報（本文・画像）を取得してページ表示用データへ整形する。
+ * - 取得失敗時は HTTP ステータスと理由を切り替えてエラーページを返す。
+ *
+ * 実装上の制約:
+ * - Cloudflare Workers 環境で動作するため Node.js 固有 API は利用しない。
+ */
+
+export const prerender = false
+
+import { AtpAgent } from "@atproto/api"
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName } from "@/vars"
+import styles from "./[slug].module.css"
+import { atpService } from "@/env"
+import { bskyPostUrlgen, parseAtUri } from "@/lib/url"
+import { resolvePdsServiceForDid } from "@/lib/did"
+import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry"
+import type { EntryLike, SourceImage } from "@/lib/entry"
+
+const robots = ["index", "follow", "noarchive", "noimageindex"]
+
+const slug = Astro.params.slug
+
+let statusCode = 200
+let pageTitle = `${serviceName} Entry`
+let cardPath = ""
+let sourceWebUrl = ""
+let sourceText = ""
+let sourceImages: SourceImage[] = []
+let createdAtText = ""
+let manifestHeading = ""
+let manifestCaption = ""
+let notFoundReason = "entry not found"
+
+// 入力パラメータ検証→レコード取得→表示用整形の順で段階的に失敗点を切り分ける。
+if (typeof slug === "undefined") {
+    statusCode = 404
+    notFoundReason = "Entry is not found"
+} else {
+    const locator = parseEntryLocator(slug)
+
+    if (!locator) {
+        statusCode = 404
+        notFoundReason = "Entry is not found"
+    } else {
+        const agent = new AtpAgent({ service: atpService })
+        console.debug(`service: ${atpService}, locator: ${JSON.stringify(locator)}`)
+        try {
+            const did = locator.actor
+            const pdsService = await resolvePdsServiceForDid(did)
+            if (!pdsService) {
+                statusCode = 500
+                console.warn("entries/[slug] SSR failed", {
+                    reason: "failed to resolve pds endpoint",
+                    slug,
+                    did,
+                })
+                return 500
+            }
+            console.debug(`resolved PDS service for DID ${did}: ${pdsService}`)
+
+            const recordAgent = new AtpAgent({ service: pdsService })
+
+            const recordRes = await recordAgent.com.atproto.repo.getRecord({
+                repo: did,
+                collection: ENTRY_COLLECTION,
+                rkey: locator.rkey,
+            })
+
+            const parsedEntryUri = parseAtUri(recordRes.data.uri)
+            const entryRepoDid = parsedEntryUri?.repo ?? did
+            const entry = recordRes.data.value as EntryLike
+
+            const sourceUriFromEntry =
+                typeof entry.source?.uri === "string"
+                    ? entry.source.uri
+                    : typeof entry.manifest?.source?.uri === "string"
+                      ? entry.manifest.source.uri
+                      : ""
+
+            if (!sourceUriFromEntry) {
+                statusCode = 404
+                notFoundReason = "Invalid skyshare entry"
+                return 404
+            }
+            const parsedSourceUri = parseAtUri(sourceUriFromEntry)
+
+            // サービス種別ごとに表示先URLを切り替える拡張ポイント。
+            // 現状は bsky 投稿のみ許可し、未知コレクションは無効データとして扱う。
+            switch (parsedSourceUri?.collection) {
+                case "app.bsky.feed.post":
+                    sourceWebUrl = bskyPostUrlgen(did, parsedSourceUri.rkey)
+                    break
+                default:
+                    statusCode = 500
+                    notFoundReason = "Invalid skyshare entry"
+                    return 500
+            }
+
+            createdAtText =
+                typeof entry.createdAt === "string"
+                    ? new Date(entry.createdAt).toLocaleString("ja-JP", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                      })
+                    : ""
+
+            manifestHeading = typeof entry.manifest?.heading === "string" ? (entry.manifest as any).heading : ""
+            manifestCaption = typeof entry.manifest?.caption === "string" ? (entry.manifest as any).caption : ""
+
+            const manifestVisualUrl = blobToCdnUrl(entryRepoDid, entry.manifest?.visual)
+            if (manifestVisualUrl) {
+                cardPath = manifestVisualUrl
+            }
+
+            if (manifestHeading) {
+                pageTitle = `${manifestHeading} | ${serviceName}`
+            }
+
+            const postRes = await agent.getPost({
+                repo: parsedSourceUri.repo,
+                rkey: parsedSourceUri.rkey,
+            })
+            const sourcePostRecord = postRes.value
+
+            sourceText = sourcePostRecord.text
+            sourceImages = extractSourceImages(sourcePostRecord, parsedSourceUri.repo)
+
+            if (!manifestCaption && sourceText) {
+                manifestCaption = sourceText.slice(0, 280)
+            }
+        } catch (error) {
+            statusCode = 500
+            console.warn("entries/[slug] SSR failed", {
+                reason: error instanceof Error ? error.message : String(error),
+                slug,
+            })
+        }
+    }
+}
+
+Astro.response.status = statusCode
+---
+
+<Baselayout
+    cardPath={cardPath}
+    pageTitle={pageTitle}
+    pageHeading={manifestHeading}
+    pageCaption={manifestCaption}
+    robots={robots}
+>
+    {
+        statusCode === 200 ? (
+            <article class={styles.container}>
+                <header>
+                    <h1 class={styles.heading}>{manifestHeading}</h1>
+                </header>
+
+                {manifestCaption ? <p class={styles.bodyText}>{manifestCaption}</p> : null}
+
+                <dl class={styles.metaList}>
+                    <div>
+                        <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
+                            Blueskyの投稿を見る
+                        </a>
+                    </div>
+                    <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
+                </dl>
+
+                {sourceImages.length > 0 ? (
+                    <section class={styles.imageGrid} aria-label="source images">
+                        {sourceImages.map(image => (
+                            <figure class={styles.imageCard}>
+                                <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
+                                {image.alt ? <figcaption>{image.alt}</figcaption> : null}
+                            </figure>
+                        ))}
+                    </section>
+                ) : (
+                    <p class={styles.emptyMessage}>画像はありません。</p>
+                )}
+            </article>
+        ) : (
+            <section class={styles.errorPane}>
+                <h1>
+                    {statusCode === 404
+                        ? "Entry Not Found"
+                        : statusCode === 503
+                          ? "Service Temporarily Unavailable"
+                          : "Internal Server Error"}
+                </h1>
+                <p>
+                    {statusCode === 404
+                        ? notFoundReason
+                        : statusCode === 503
+                          ? "データ取得が混み合っています。しばらくして再度お試しください。"
+                          : "ページの生成中にエラーが発生しました。"}
+                </p>
+            </section>
+        )
+    }
+</Baselayout>

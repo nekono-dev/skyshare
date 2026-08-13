@@ -1,0 +1,18 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.placeholder {
+  visibility: hidden;
+}
+
+.pageStatus {
+  min-width: 6.5rem;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.68);
+  font-size: 0.95rem;
+}

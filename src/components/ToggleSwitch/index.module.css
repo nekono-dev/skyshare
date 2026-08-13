@@ -1,0 +1,94 @@
+/**
+ * ToggleSwitch のスタイル定義。
+ *
+ * 設計方針:
+ * - Tailwind に依存しない CSS Modules で実装する。
+ * - 色・サイズ・余白は src/styles/tokens.css のトークンのみを使い、直接値を避ける。
+ * - アクセシビリティ（focus-visible によるフォーカス可視化）を担保する。
+ */
+
+/* コンテナ: ラベルとスイッチを横並びにするインラインブロック */
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ネイティブ input を視覚的に隠す。フォーカスリングは label 経由で表示する。 */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* label: スイッチとラベルテキストを横並びにする。クリック領域を広くするためコンテンツ全体をラベル化する。 */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* disabled 時のカーソルと透明度 */
+.input:disabled + .label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* トラック（スイッチ本体の溝）*/
+.track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 2rem; /* 32px */
+  height: 1.125rem; /* 18px */
+  /* --radius-button-max(100%) は幅≠高さの要素に使うと楕円になるため、
+     ピル形を保証する --radius-pill を使用する。 */
+  border-radius: var(--radius-pill);
+  background: var(--color-muted);
+  transition: 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* ON 状態のトラック色: Bluesky ブランドカラーを使用 */
+.input:checked + .label .track {
+  background: var(--color-bluesky);
+}
+
+/* フォーカス可視化: キーボード操作時のみ表示する */
+.input:focus-visible + .label .track {
+  outline: 2px solid var(--color-bluesky);
+  outline-offset: 2px;
+}
+
+/* ノブ（丸いボタン部分）*/
+.knob {
+  position: absolute;
+  left: var(--space-0);
+  width: 0.875rem; /* 14px */
+  height: 0.875rem; /* 14px */
+  border-radius: var(--radius-button-max);
+  background: var(--color-white);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+/* ON 状態: ノブを右へスライド */
+.input:checked + .label .knob {
+  /* トラック幅(32px) - ノブ幅(14px) - 左余白(2px) - 右余白(2px) = 14px */
+  transform: translateX(calc(2rem - 0.875rem - 2 * var(--space-0)));
+}
+
+/* ラベルテキスト: 改行させない */
+.labelText {
+  white-space: nowrap;
+}

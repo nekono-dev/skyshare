@@ -1,0 +1,37 @@
+textarea {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+input,
+textarea {
+  box-sizing: border-box;
+}
+/* Inner content wrapper for forms placed in ui.baseCard */
+:local(.content) {
+  padding: calc(var(--space-3, 12px));
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-2, 8px));
+}
+/* 小さいスクリーンでの適応 */
+@media (max-width: 420px) {
+  button {
+    padding: 6px 10px;
+  }
+}

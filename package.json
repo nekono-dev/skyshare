@@ -1,0 +1,45 @@
+{
+  "name": "skyshare",
+  "type": "module",
+  "version": "2.0.0-preview.r01",
+  "scripts": {
+    "lexgen": "./hack/gen-client.sh ./src/client/atproto",
+    "apigen:client": "orval",
+    "apigen:type": "tsx ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
+    "apigen": "npm run apigen:client && npm run apigen:type",
+    "codegen": "npm run lexgen && npm run apigen",
+    "dev": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro dev",
+    "build": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro build",
+    "format": "prettier --write .",
+    "generate-types": "wrangler types"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "14.1.4",
+    "@astrojs/react": "6.0.1",
+    "@atproto/api": "^0.20.30",
+    "@atproto/xrpc": "^0.7.7",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "astro": "7.1.3",
+    "multiformats": "^13.4.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-easy-crop": "^5.5.6",
+    "twitter-text": "*",
+    "zod-form-data": "*"
+  },
+  "devDependencies": {
+    "@atproto/lex-cli": "^0.9.8",
+    "@types/node": "^25.2.0",
+    "@types/twitter-text": "*",
+    "orval": "*",
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-sh": "^0.18.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "yaml": "^2.3.1"
+  },
+  "author": "nekono.dev"
+}
