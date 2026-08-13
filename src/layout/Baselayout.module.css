@@ -15,7 +15,6 @@
 :local(.root) {
   padding: var(--space-4);
   max-height: 100dvh;
-  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }

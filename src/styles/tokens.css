@@ -10,11 +10,11 @@
 
   /* max width*/
   --page-max-width: 760px;
-  --page-width: min(96vw, 760px);
+  --page-width: min(100%, 760px);
 
   /* max width*/
   --component-max-width: 640px;
-  --component-width: min(96vw, 640px);
+  --component-width: min(100%, 640px);
 
   /* Radii */
   --radius-sm: 4px;

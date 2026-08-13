@@ -64,9 +64,16 @@ export const Component = ({
           onClick={onPrev}
           disabled={Boolean(loading)}
         >
-          {prevLabel ?? "前へ"}
+          {prevLabel ?? "<<"}
         </button>
-      ) : null}
+      ) : (
+        <span
+          className={`${ui.baseButton} ${ui.textButton} ${styles.placeholder}`}
+          aria-hidden="true"
+        >
+          {prevLabel ?? "<<"}
+        </span>
+      )}
 
       <span className={styles.pageStatus}>ページ {currentPage}</span>
 
@@ -77,9 +84,16 @@ export const Component = ({
           onClick={onNext}
           disabled={Boolean(loading)}
         >
-          {nextLabel ?? "次へ"}
+          {nextLabel ?? ">>"}
         </button>
-      ) : null}
+      ) : (
+        <span
+          className={`${ui.baseButton} ${ui.textButton} ${styles.placeholder}`}
+          aria-hidden="true"
+        >
+          {nextLabel ?? ">>"}
+        </span>
+      )}
     </nav>
   )
 }

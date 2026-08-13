@@ -1,4 +1,4 @@
-summary: Create a new entry (supports multipart/form-data with optional file)
+summary: Create a new entry (supports multipart/form-data with optional file), or attach an entry to an existing Bluesky post when `uri` is given
 operationId: createEntry
 parameters:
   - name: cookie
@@ -14,6 +14,8 @@ requestBody:
         type: object
         anyOf:
           - required:
+              - uri
+          - required:
               - text
           - required:
               - images
@@ -21,6 +23,12 @@ requestBody:
           - required:
               - ogMeta
         properties:
+          uri:
+            type: string
+            description: >-
+              自分自身の既存 Bluesky 投稿の AT URI。指定された場合、他の項目は無視され、
+              その投稿から skyshare entry を発行する。
+            example: at://did:plc:abc/app.bsky.feed.post/3lxyz
           images:
             type: array
             items:
@@ -85,6 +93,12 @@ responses:
           $ref: ../../common.yaml#/error
   "401":
     description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "404":
+    description: Not Found
     content:
       application/json:
         schema:

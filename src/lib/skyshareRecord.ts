@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - bsky 投稿情報と visual blob から skyshare entry レコードを組み立て、atproto へ作成する。
- * - `/v1/entry`（新規投稿時）と `/v1/entry/from-post`（既存投稿からの発行）の両方から共有される。
+ * - `/v1/entry` の新規投稿時、および `uri` 指定時（既存投稿からの発行、from-post 相当）の両方から共有される。
  */
 import type { AtpAgent, ComAtprotoServerRefreshSession } from "@atproto/api"
 import { parseAtUri, skyshareEntryUrlgen } from "@/lib/url"

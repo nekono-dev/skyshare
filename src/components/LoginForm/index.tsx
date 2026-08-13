@@ -121,9 +121,13 @@ export const Component = () => {
           ログイン
         </button>
 
-        <p id="message" aria-live="polite" style={{ marginTop: "1rem", color }}>
+        <div
+          id="message"
+          aria-live="polite"
+          style={{ marginTop: "1rem", color }}
+        >
           {message}
-        </p>
+        </div>
       </div>
     </form>
   )

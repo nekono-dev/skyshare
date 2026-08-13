@@ -106,6 +106,11 @@
   font-weight: 600;
 }
 
+:local(.text) {
+  font-size: var(--font-size-md);
+  color: var(--color-muted);
+}
+
 /* プレビューエリア*/
 :local(.preview) {
   width: 100%;
@@ -183,3 +188,33 @@
 }
 
 /* アイコンのような固定サイズを持つコンポーネント */
+
+/* 汎用リスト（ul）の基本装飾 */
+:local(.list) {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-4);
+  list-style: none;
+}
+
+:local(.list) > :local(.listItem) {
+  position: relative;
+  padding-left: var(--space-3);
+  margin-bottom: var(--space-1);
+  line-height: var(--line-height-normal);
+}
+
+:local(.list) > :local(.listItem):last-child {
+  margin-bottom: 0;
+}
+
+/* カスタムの点マーカー */
+:local(.list) > :local(.listItem)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-muted);
+}

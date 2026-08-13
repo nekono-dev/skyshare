@@ -5,6 +5,8 @@ import {
     RichText,
     AtpAgent,
     ComAtprotoServerRefreshSession,
+    AppBskyEmbedImages,
+    AppBskyFeedPost,
 } from "@atproto/api"
 import { parseSessionFromRequest } from "@/lib/cookies.js"
 import {
@@ -22,16 +24,17 @@ import { createSkyshareEntry } from "@/lib/skyshareRecord"
 
 import * as PostSchema from "@/client/openapi/schemas/v1/entry/post"
 import * as Components from "@/client/openapi/schemas/components"
-import { bskyPostUrlgen } from "@/lib/url"
+import { bskyPostUrlgen, parseAtUri } from "@/lib/url"
 
 /**
  * Skyshare v1 entry 作成 API。
  *
  * 責務と処理概要:
  * - multipart/form-data リクエストを段階的に検証・解析する。
- * - 投稿データ（本文・画像・OGP情報）の排他条件と必須組み合わせを確認する。
+ * - `uri` が指定された場合は既存の Bluesky 投稿から skyshare entry を発行する（from-post 相当）。
+ * - `uri` が無い場合は投稿データ（本文・画像・OGP情報）の排他条件と必須組み合わせを確認する。
  * - atproto へ投稿を作成し、条件を満たす場合は dev.nekono.skyshare.entry レコードも生成する。
- * - 入力不正時は 400、認証不備は 401、外部連携失敗は 500 を返す。
+ * - 入力不正時は 400、認証不備は 401、対象投稿が見つからない場合は 404、外部連携失敗は 500 を返す。
  *
  * 実装上の制約:
  * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
@@ -306,6 +309,109 @@ const createBskyPost = async (
 }
 
 /**
+ * `uri` 指定時（from-post 相当）のレスポンス種別。
+ */
+type FromPostResult =
+    | { ok: true; bskyUrl: string; skyshareUri: string }
+    | { ok: false; status: 400 | 404 | 500 }
+
+/**
+ * 既存の Bluesky 投稿から skyshare entry を発行する（from-post 相当の処理）。
+ *
+ * 処理の趣旨:
+ * - `uri` の repo が session の DID と一致することを確認し、他人の投稿からの発行を防ぐ。
+ * - 対象投稿を取得し、先頭の画像 blob をそのまま manifest.visual として再利用する（再アップロードは行わない）。
+ * - bsky 投稿は新規作成せず、既存投稿の URL をそのまま返す。
+ *
+ * Input:
+ * - `agent`: 認証済み AtpAgent
+ * - `postUri`: 対象となる自分自身の app.bsky.feed.post の AT URI
+ * - `session`: セッション情報（DID・handle 取得用）
+ *
+ * Output:
+ * - 成功時: `{ ok: true, bskyUrl, skyshareUri }`
+ * - 失敗時: `{ ok: false, status }`（400: URI 不正/画像なし、404: 投稿が見つからない、500: 発行失敗）
+ */
+const createEntryFromExistingPost = async (
+    agent: AtpAgent,
+    postUri: string,
+    session: ComAtprotoServerRefreshSession.OutputSchema,
+): Promise<FromPostResult> => {
+    const parsedPostUri = parseAtUri(postUri)
+    if (
+        !parsedPostUri ||
+        parsedPostUri.collection !== "app.bsky.feed.post" ||
+        parsedPostUri.repo !== session.did
+    ) {
+        return { ok: false, status: 400 }
+    }
+
+    let postRecordRes
+    try {
+        postRecordRes = await agent.com.atproto.repo.getRecord({
+            repo: session.did,
+            collection: "app.bsky.feed.post",
+            rkey: parsedPostUri.rkey,
+        })
+    } catch (err) {
+        console.warn("createEntry: source post not found (from-post)", err)
+        return { ok: false, status: 404 }
+    }
+
+    const postCid = postRecordRes.data.cid
+    const postRecord = postRecordRes.data.value as AppBskyFeedPost.Main
+    if (!postCid) {
+        return { ok: false, status: 500 }
+    }
+
+    const embed = postRecord.embed
+    const visual =
+        embed?.$type === "app.bsky.embed.images"
+            ? (embed as AppBskyEmbedImages.Main).images?.[0]?.image
+            : undefined
+    if (!visual) {
+        console.warn(
+            "createEntry: source post has no eligible image (from-post)",
+        )
+        return { ok: false, status: 400 }
+    }
+
+    const postText = typeof postRecord.text === "string" ? postRecord.text : ""
+    const userName = await agent
+        .getProfile({ actor: session.did })
+        .then(res => res.data.displayName || session.handle)
+
+    let skyshareUri = ""
+    try {
+        skyshareUri = await createSkyshareEntry(
+            agent,
+            postUri,
+            postCid,
+            visual,
+            postText,
+            userName,
+            session,
+        )
+    } catch (err) {
+        console.error(
+            "createEntry: dev.nekono.skyshare.entry create failed (from-post)",
+            err,
+        )
+        return { ok: false, status: 500 }
+    }
+
+    if (!skyshareUri) {
+        return { ok: false, status: 500 }
+    }
+
+    return {
+        ok: true,
+        bskyUrl: bskyPostUrlgen(session.handle, parsedPostUri.rkey),
+        skyshareUri,
+    }
+}
+
+/**
  * limit クエリを検証する。
  *
  * Input:
@@ -392,6 +498,7 @@ const collectSkyshareEntries = async (agent: AtpAgent, repo: string) => {
  * 2. セッション復号と AtpAgent 初期化
  * 3. FormData 解析と構造化オブジェクト生成
  * 4. OpenAPI スキーマバリデーション
+ * 4.5. `uri` 指定時は既存投稿からの発行（from-post 相当）に分岐して結果を返却
  * 5. 投稿種別の排他条件検証
  * 6. 画像メタデータ検証
  * 7. 画像アップロード（複数並列）
@@ -404,15 +511,18 @@ const collectSkyshareEntries = async (agent: AtpAgent, repo: string) => {
  * 入力形状(最小要件):
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
- * - フィールド: text, [langs], [images], [imagesMeta], [ogMeta], [ogImage]
+ * - フィールド: uri のみ（既存投稿からの発行）、または
+ *   text, [langs], [images], [imagesMeta], [ogMeta], [ogImage]（新規投稿）
  *
  * 出力:
  * - 成功時（200）: { bsky: { url: "https://..." }, skyshare: { uri: "https://..." } }
- * - 失敗時: 400/401/500 と エラーメッセージ
+ * - 失敗時: 400/401/404/500 と エラーメッセージ
  *
  * 例:
  * - 入力: POST /v1/entry + multipart(text="Hello", images=[...], imagesMeta=[...], ogImage=[...])
  * - 出力: { bsky: { url: "https://bsky.app/profile/alice.bsky.social/post/xyz" }, skyshare: { uri: "https://skyshare.dev/did/rkey" } }
+ * - 入力: POST /v1/entry + multipart(uri="at://did:plc:abc/app.bsky.feed.post/3lxyz")
+ * - 出力: { bsky: { url: "https://bsky.app/profile/alice.bsky.social/post/3lxyz" }, skyshare: { uri: "https://skyshare.dev/did/rkey" } }
  */
 export const POST: APIRoute = async ({ request }: { request: Request }) => {
     try {
@@ -467,6 +577,29 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                 "createEntry: invalid request body: " + JSON.stringify(body),
             )
             return errorResponseFromStatus(400)
+        }
+
+        // フェーズ 4.5: uri 指定時は既存投稿からの発行（from-post 相当）に分岐する
+        if (body.data.uri) {
+            const fromPostResult = await createEntryFromExistingPost(
+                agent,
+                body.data.uri,
+                session,
+            )
+            if (!fromPostResult.ok) {
+                return errorResponseFromStatus(fromPostResult.status)
+            }
+
+            return new Response(
+                JSON.stringify({
+                    bsky: { url: fromPostResult.bskyUrl },
+                    skyshare: { uri: fromPostResult.skyshareUri },
+                }),
+                {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                },
+            )
         }
 
         // フェーズ 5: 投稿種別の排他条件検証

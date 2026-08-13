@@ -16,9 +16,14 @@ import type {
 } from "@/components/ComponentList"
 import { useCursorPaginationController } from "@/components/ComponentList"
 import NavigationBar from "@/components/NavigationBar"
+import PageSizeSelect from "@/components/PageSizeSelect"
 import PostCard from "@/components/PostCard"
 import PostLauncher from "@/components/PostLauncher"
 import type { TimelinePost } from "@/lib/posts"
+import {
+  readPageSizeSetting,
+  writePageSizeSetting,
+} from "@/lib/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -39,6 +44,7 @@ const PAGE_SIZE = 20
  */
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
+  const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     avatarUrl ?? null,
   )
@@ -128,11 +134,11 @@ const Component = ({ avatarUrl }: Props) => {
 
   const controller = useCursorPaginationController<TimelinePost>({
     cursorPagination: {
-      pageSize: PAGE_SIZE,
+      pageSize,
       fetchPage,
       reloadKey,
-      loadingText: "読み込み中…",
-      emptyText: "投稿がまだありません。",
+      loadingText: "読み込み中...",
+      emptyText: "初期化中...",
     },
   })
 
@@ -140,17 +146,22 @@ const Component = ({ avatarUrl }: Props) => {
     <section className={`${ui.baseCard} ${ui.pageWidth}`}>
       <PostLauncher avatarUrl={resolvedAvatarUrl} onPosted={handlePosted} />
 
-      <header className={styles.timelineHeader}>
-        <h2 className={styles.timelineTitle}>自分の投稿一覧</h2>
-        <p className={styles.timelineNote}>
-          Bluesky の投稿と、紐づく skyshare entry を並べて表示します。
-        </p>
-      </header>
-
-      <NavigationBar
-        pagination={controller.pagination}
-        ariaLabel="post timeline pagination"
-      />
+      <div
+        className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+      >
+        <PageSizeSelect
+          value={pageSize}
+          onChange={next => {
+            setPageSize(next)
+            writePageSizeSetting(next)
+          }}
+          ariaLabel="表示件数"
+        />
+        <NavigationBar
+          pagination={controller.pagination}
+          ariaLabel="post timeline pagination"
+        />
+      </div>
 
       {controller.loading || controller.error || controller.empty ? (
         <p className={controller.error ? styles.errorState : styles.emptyState}>

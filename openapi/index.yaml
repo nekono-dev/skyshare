@@ -7,8 +7,6 @@ info:
 paths: # APIドキュメントのエンドポイント
   /v1/entry:
     $ref: ./v1/entry/index.yaml
-  /v1/entry/from-post:
-    $ref: ./v1/entry/from-post/index.yaml
   /v1/session:
     $ref: ./v1/session/index.yaml
   /v1/extract:

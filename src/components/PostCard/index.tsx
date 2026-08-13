@@ -13,7 +13,7 @@ import { useState } from "react"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/posts"
-import { createEntryFromPost } from "@/client/openapi/client"
+import { createEntry } from "@/client/openapi/client"
 import SkyshareShareDialog from "@/components/SkyshareShareDialog"
 import blueskyIcon from "@/images/bluesky.svg"
 import skyshareIcon from "@/images/skyshare.svg"
@@ -73,7 +73,7 @@ const Component = ({ item }: PostCardProps) => {
     setCreateEntryError(null)
 
     try {
-      const res = await createEntryFromPost({ postUri: item.uri })
+      const res = await createEntry({ uri: item.uri })
       if (res.status !== 200) {
         setCreateEntryError("skyshareページの作成に失敗しました。")
         return
@@ -164,9 +164,7 @@ const Component = ({ item }: PostCardProps) => {
               {isCreatingEntry ? "作成中…" : "Skyshare Entryを作成"}
             </button>
           ) : (
-            <span className={styles.noSkyshare}>
-              skyshare entry はありません。
-            </span>
+            <span className={styles.noSkyshare}>Skyshare Entry作成対象外</span>
           )}
 
           {createEntryError ? (

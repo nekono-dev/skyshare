@@ -6,6 +6,10 @@
   padding-top: 0.25rem;
 }
 
+.placeholder {
+  visibility: hidden;
+}
+
 .pageStatus {
   min-width: 6.5rem;
   text-align: center;
