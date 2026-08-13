@@ -1,14 +1,24 @@
 .card {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
   gap: 1rem;
 }
 
-.header {
+/* skyshare entry を持たず、画像も無いため作成対象にもならない投稿を視覚的に区別する */
+.cardIneligible {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+
+/* avatar/本文/ツールバーの縦積み列。この列の高さに右側サムネイルを合わせる */
+.mainColumn {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
 }
 
 .authorBlock {
@@ -32,11 +42,20 @@
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
 }
 
+.authorMeta {
+  min-width: 0;
+}
+
 .authorNameRow {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.5rem;
+  min-width: 0;
+}
+
+.authorNameRow strong {
+  overflow-wrap: anywhere;
 }
 
 .handle,
@@ -51,101 +70,61 @@
   font-size: 0.9rem;
 }
 
-.link {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
 .text {
+  min-width: 0;
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.65;
 }
 
 .emptyText,
 .noSkyshare {
   margin: 0;
+  color: rgba(0, 0, 0, 0.62);
 }
 
-.imageGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
-}
-
-.imageCard {
+/* サムネイルはカード右端に固定幅で配置し、align-self: stretch により
+   mainColumn（author/本文/ツールバー列）の高さいっぱいに広げる。
+   複数画像がある場合は内部を縦に分割し、各画像を等分の帯として並べる。 */
+.thumbnail {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
+  width: 96px;
+  min-height: 96px;
   overflow: hidden;
-  border-radius: 0.9rem;
+  border-radius: 0.75rem;
   background: rgba(0, 0, 0, 0.03);
 }
 
-.imageCard img,
-.skyshareVisual {
+.thumbnailSlice {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.thumbnailSlice img {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
 }
 
-.imageCard figcaption {
-  padding: 0.6rem 0.75rem;
-  font-size: 0.9rem;
-  color: rgba(0, 0, 0, 0.65);
-}
-
-.skyshareEntry {
+.footer {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding-top: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem;
+  padding-top: 0.6rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.skyshareEntryHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.skyshareBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(0, 121, 191, 0.1);
-  color: rgb(0, 92, 153);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.skyshareMeta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.75rem;
+.createEntryError {
   margin: 0;
-}
-
-.skyshareMeta > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.skyshareMeta dt {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(0, 0, 0, 0.55);
-}
-
-.skyshareMeta dd {
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-.skyshareVisual {
-  border-radius: 0.9rem;
+  color: #b00;
+  font-size: 0.9rem;
 }

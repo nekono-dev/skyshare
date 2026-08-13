@@ -9,7 +9,7 @@
 
 import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
 import { blobToCdnUrl } from "@/lib/entry"
-import { bskyPostUrlgen, parseAtUri } from "@/lib/url"
+import { bskyPostUrlgen, parseAtUri, skyshareEntryUrlgen } from "@/lib/url"
 import type { SourceImage } from "@/lib/entry"
 
 export type TimelinePostAuthor = {
@@ -28,6 +28,7 @@ export type TimelineSkyshareEntry = {
     heading?: string
     caption?: string
     visualUrl?: string
+    webUrl?: string
 }
 
 export type TimelinePost = {
@@ -139,6 +140,9 @@ export const normalizeTimelineEntry = (
     const visualUrl = parsedEntryUri
         ? blobToCdnUrl(parsedEntryUri.repo, entry.value?.manifest?.visual)
         : undefined
+    const webUrl = parsedEntryUri
+        ? skyshareEntryUrlgen(parsedEntryUri.repo, parsedEntryUri.rkey)
+        : undefined
 
     return {
         uri: entry.uri,
@@ -149,6 +153,7 @@ export const normalizeTimelineEntry = (
         heading: entry.value.manifest?.heading,
         caption: entry.value.manifest?.caption,
         visualUrl,
+        webUrl,
     }
 }
 

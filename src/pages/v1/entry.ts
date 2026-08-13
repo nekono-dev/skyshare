@@ -1,5 +1,4 @@
 import type { APIRoute } from "astro"
-import { XRPCError } from "@atproto/xrpc"
 
 import { DevNekonoSkyshareEntry } from "@/client/atproto"
 import {
@@ -8,18 +7,22 @@ import {
     ComAtprotoServerRefreshSession,
 } from "@atproto/api"
 import { parseSessionFromRequest } from "@/lib/cookies.js"
-import { convertHeaderToObj, errorResponseFromStatus } from "@/lib/api.js"
+import {
+    convertHeaderToObj,
+    errorResponseFromStatus,
+    resolveXrpcStatus,
+} from "@/lib/api.js"
 import { extractLinkUrisFromFacets } from "@/lib/richtext"
 import { ENTRY_COLLECTION } from "@/lib/entry"
 import {
     groupTimelineEntriesBySourceUri,
     normalizeTimelinePost,
 } from "@/lib/posts"
+import { createSkyshareEntry } from "@/lib/skyshareRecord"
 
 import * as PostSchema from "@/client/openapi/schemas/v1/entry/post"
 import * as Components from "@/client/openapi/schemas/components"
-import { bskyPostUrlgen, skyshareEntryUrlgen } from "@/lib/url"
-import { parseAtUri } from "@/lib/url"
+import { bskyPostUrlgen } from "@/lib/url"
 
 /**
  * Skyshare v1 entry 作成 API。
@@ -300,127 +303,6 @@ const createBskyPost = async (
         labels,
         via: "Skyshare",
     })
-}
-
-/**
- * skyshare entry レコードを作成し、skyshareUri を返す。
- *
- * 処理の趣旨:
- * - 画像投稿時のみ、dev.nekono.skyshare.entry レコードを atproto へ追加作成する。
- * - bsky 投稿の URI・CID と、OG 画像 blob、テキスト情報を含むレコード構造を生成・バリデーション・作成。
- * - 副作用: atproto 外部 API を呼び出してレコードを作成。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `bskyPostUri`: bsky 投稿の AT URI（source）
- * - `bskyPostCid`: bsky 投稿の CID
- * - `visual`: OG 画像のアップロード済み blob 参照
- * - `postText`: 投稿本文（caption として使用）
- * - `userName`: 投稿者表示名
- * - `session`: セッション情報（DID 取得用）
- *
- * Output:
- * - skyshareUri: string（skyshare エントリの URL、作成失敗時は空文字列）
- *
- * 失敗時の方針:
- * - スキーマバリデーション失敗、atproto API 失敗 時は Error を throw。
- * - 呼び出し元で catch して 500 を返す。
- *
- * 例:
- * - 入力：agent(Auth済み),uri="at://...",cid="bafy...",visual=blobRef,postText="Hello",userName="alice"
- * - 出力：skyshareUri="https://skyshare.dev/AAAA/BBBB"
- */
-const createSkyshareEntry = async (
-    agent: AtpAgent,
-    bskyPostUri: string,
-    bskyPostCid: string,
-    visual: any,
-    postText: string,
-    userName: string,
-    session: ComAtprotoServerRefreshSession.OutputSchema,
-) => {
-    const createdAt = new Date().toISOString()
-    const headingText = postText.trim()
-
-    const record = {
-        $type: "dev.nekono.skyshare.entry",
-        source: {
-            uri: bskyPostUri,
-            cid: bskyPostCid,
-        },
-        manifest: {
-            $type: "dev.nekono.skyshare.defs#manifest",
-            visual,
-            heading: `${userName} 's Post`,
-            caption: headingText.length > 0 ? headingText : "",
-        },
-        createdAt,
-    }
-
-    console.debug("createSkyshareEntry: record to create", record)
-    // スキーマを検証し、失敗時の理由を明示的に throw する。
-
-    const createRecordRes = await agent.com.atproto.repo.createRecord({
-        repo: session.did,
-        collection: "dev.nekono.skyshare.entry",
-        record,
-    })
-
-    const parsedSkyshareUri = parseAtUri(createRecordRes.data.uri)
-    if (!parsedSkyshareUri) {
-        return ""
-    }
-
-    return skyshareEntryUrlgen(parsedSkyshareUri.repo, parsedSkyshareUri.rkey)
-}
-
-/**
- * XRPC エラーを HTTP ステータスへ変換する。
- *
- * Input:
- * - `error`: unknown エラー
- *
- * Output:
- * - 401/429/500 のいずれか
- */
-const resolveXrpcStatus = (error: unknown): number => {
-    let current: unknown = error
-    let errorCode: string | undefined
-
-    // atproto クライアントのラッパー例外（cause に XRPCError を持つ）も辿って error code を抽出する。
-    while (current !== undefined) {
-        if (current instanceof XRPCError) {
-            errorCode = current.error
-            break
-        }
-
-        if (!current || typeof current !== "object") {
-            break
-        }
-
-        const maybeError = (current as { error?: unknown }).error
-        if (typeof maybeError === "string") {
-            errorCode = maybeError
-            break
-        }
-
-        current = (current as { cause?: unknown }).cause
-    }
-
-    if (!errorCode) {
-        return 500
-    }
-
-    switch (errorCode) {
-        case "AuthenticationRequired":
-        case "InvalidToken":
-        case "ExpiredToken":
-            return 401
-        case "RateLimitExceeded":
-            return 429
-        default:
-            return 500
-    }
 }
 
 /**

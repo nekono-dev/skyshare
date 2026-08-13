@@ -4,7 +4,10 @@
  * 責務と処理概要:
  * - `Headers` を通常のオブジェクトへ変換し、ログ出力やJSON化を扱いやすくする。
  * - HTTP ステータスからフロント向けの標準エラーレスポンスを生成する。
+ * - atproto クライアントの例外を HTTP ステータスへ正規化する。
  */
+
+import { XRPCError } from "@atproto/xrpc"
 
 /**
  * `Headers` をプレーンオブジェクトへ変換する。
@@ -75,4 +78,55 @@ export const errorResponseFromStatus = (status: number): Response => {
         status: status,
         headers: { "content-type": "application/json" },
     })
+}
+
+/**
+ * XRPC エラーを HTTP ステータスへ変換する。
+ *
+ * 処理の趣旨:
+ * - atproto クライアントのラッパー例外（cause に XRPCError を持つ）も辿って error code を抽出する。
+ *
+ * Input:
+ * - `error`: unknown エラー
+ *
+ * Output:
+ * - 401/429/500 のいずれか
+ */
+export const resolveXrpcStatus = (error: unknown): number => {
+    let current: unknown = error
+    let errorCode: string | undefined
+
+    while (current !== undefined) {
+        if (current instanceof XRPCError) {
+            errorCode = current.error
+            break
+        }
+
+        if (!current || typeof current !== "object") {
+            break
+        }
+
+        const maybeError = (current as { error?: unknown }).error
+        if (typeof maybeError === "string") {
+            errorCode = maybeError
+            break
+        }
+
+        current = (current as { cause?: unknown }).cause
+    }
+
+    if (!errorCode) {
+        return 500
+    }
+
+    switch (errorCode) {
+        case "AuthenticationRequired":
+        case "InvalidToken":
+        case "ExpiredToken":
+            return 401
+        case "RateLimitExceeded":
+            return 429
+        default:
+            return 500
+    }
 }

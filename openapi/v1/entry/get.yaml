@@ -90,6 +90,8 @@ responses:
                         type: string
                       visualUrl:
                         type: string
+                      webUrl:
+                        type: string
                     required:
                       - uri
                       - cid

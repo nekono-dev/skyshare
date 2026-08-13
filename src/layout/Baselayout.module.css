@@ -9,11 +9,13 @@
 
 :global(html) {
   height: 100%;
+  overflow-x: hidden;
 }
 
 :local(.root) {
   padding: var(--space-4);
   max-height: 100dvh;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
 }
