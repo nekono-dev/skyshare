@@ -384,11 +384,34 @@ const createSkyshareEntry = async (
  * - 401/429/500 のいずれか
  */
 const resolveXrpcStatus = (error: unknown): number => {
-    if (!(error instanceof XRPCError)) {
+    let current: unknown = error
+    let errorCode: string | undefined
+
+    // atproto クライアントのラッパー例外（cause に XRPCError を持つ）も辿って error code を抽出する。
+    while (current !== undefined) {
+        if (current instanceof XRPCError) {
+            errorCode = current.error
+            break
+        }
+
+        if (!current || typeof current !== "object") {
+            break
+        }
+
+        const maybeError = (current as { error?: unknown }).error
+        if (typeof maybeError === "string") {
+            errorCode = maybeError
+            break
+        }
+
+        current = (current as { cause?: unknown }).cause
+    }
+
+    if (!errorCode) {
         return 500
     }
 
-    switch (error.error) {
+    switch (errorCode) {
         case "AuthenticationRequired":
         case "InvalidToken":
         case "ExpiredToken":
@@ -686,9 +709,9 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
                 headers: { "Content-Type": "application/json" },
             },
         )
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("createEntry: create entry error", err)
-        return errorResponseFromStatus(500)
+        return errorResponseFromStatus(resolveXrpcStatus(err))
     }
 }
 

@@ -74,6 +74,8 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             // atproto 側の既知エラーをHTTPステータスへ正規化して返す。
             switch (err.error) {
                 case "AuthenticationRequired":
+                case "InvalidToken":
+                case "ExpiredToken":
                     console.warn("login.ts: AuthenticationRequired")
                     return errorResponseFromStatus(401)
                 case "RateLimitExceeded":
