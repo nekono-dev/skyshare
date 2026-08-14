@@ -1,5 +1,5 @@
 {
-  "name": "skyshare2",
+  "name": "skyshare",
   // Set this to today's date
   "compatibility_date": "2026-08-14",
   "compatibility_flags": ["nodejs_compat"],
