@@ -9,6 +9,7 @@ import { inputtext_base, link } from "../common/tailwindVariants"
 import { Session_context, Profile_context } from "../common/contexts"
 import { type msgInfo } from "../common/types"
 import createSession from "@/utils/atproto_api/createSession"
+import createV2Session from "@/lib/v2BackendAPI/createV2Session"
 import loadProfile from "./lib/loadProfile"
 
 import ProcButton from "../common/ProcButton"
@@ -36,10 +37,19 @@ export const Component = ({
                 id = identifier
                 pw = password
             }
-            const res = await createSession({
-                identifier: id,
-                password: pw,
-            })
+            // 従来のBluesky直接ログインと、v2バックエンド(POST /v1/session)への
+            // ログインを並行実行する。v2側はHttpOnly Cookieでセッションを保持するため、
+            // 投稿処理(PostButton)はここで確立したCookieを利用してv2 API(/v1/entry)を呼び出す。
+            const [res, v2Res] = await Promise.all([
+                createSession({
+                    identifier: id,
+                    password: pw,
+                }),
+                createV2Session({
+                    identifier: id,
+                    password: pw,
+                }),
+            ])
             if ("error" in res) {
                 const e: Error = new Error(res.message)
                 e.name = res.error
@@ -48,10 +58,17 @@ export const Component = ({
                 setSession(res)
                 // セッションをlocalstorageへ保存
                 writeJwt(res.refreshJwt)
-                setMsgInfo({
-                    msg: "セッションを開始しました!",
-                    isError: false,
-                })
+                setMsgInfo(
+                    "error" in v2Res
+                        ? {
+                              msg: `セッションを開始しましたが、v2バックエンドへのログインに失敗しました(投稿に失敗する可能性があります): ${v2Res.message}`,
+                              isError: true,
+                          }
+                        : {
+                              msg: "セッションを開始しました!",
+                              isError: false,
+                          },
+                )
                 // savePasswordフラグにより、ブラウザへID/PWを保存
                 if (savePassword === true) {
                     setLogininfo({

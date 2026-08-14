@@ -25,6 +25,7 @@ import resolveHandle, {
 import createPage from "@/lib/pagedbAPI/createPage"
 import browserImageCompression from "@/utils/browserImageCompression"
 import { getOgpBlob, getOgpMeta } from "@/lib/getOgp"
+import createV2Entry from "@/lib/v2BackendAPI/createV2Entry"
 
 // service
 import { callbackPostOptions } from "../PostForm"
@@ -266,135 +267,157 @@ export const Component = ({
                 mediaData.images.length > 0 &&
                 mediaData.images[0].blob !== null
 
-            // メディアデータが存在する場合はRecordに対して特定の処理を行う
-            if (ImageAttached) {
-                // メディアのデータを圧縮
-                const compressTasks: Array<Promise<ArrayBuffer>> = []
-                mediaData.images.forEach((value, index) => {
-                    if (typeof value.blob !== "undefined") {
-                        const file: File = new File(
-                            [value.blob],
-                            `media${index}.data`,
-                            { type: value.blob.type },
+            // Blueskyへの投稿先URI(v1エントリ作成後に生成したatURIを格納する)
+            let postUri: string
+
+            if (mediaData?.type === "external") {
+                // OGPリンクカード付き投稿は既存の直接Bluesky呼び出しを維持する。
+                // (リンクカードのOGP取得はFirebaseバックエンド(getOgp.ts)に依存しており、v2への移行対象外)
+                if (ImageAttached) {
+                    // メディアのデータを圧縮
+                    const compressTasks: Array<Promise<ArrayBuffer>> = []
+                    mediaData.images.forEach((value, index) => {
+                        if (typeof value.blob !== "undefined") {
+                            const file: File = new File(
+                                [value.blob],
+                                `media${index}.data`,
+                                { type: value.blob.type },
+                            )
+                            compressTasks.push(
+                                browserImageCompression(file).then(
+                                    async value => await value.arrayBuffer(),
+                                ),
+                            )
+                        }
+                    })
+                    // compressを並列処理
+                    const resultCompress: Array<ArrayBuffer> =
+                        await Promise.all(compressTasks).then(values => {
+                            return values
+                        })
+
+                    const uploadBlobTasks: Array<Promise<uploadBlobResult>> =
+                        []
+                    resultCompress.forEach(value => {
+                        uploadBlobTasks.push(
+                            uploadBlob({
+                                accessJwt: session.accessJwt,
+                                mimeType: "image/jpeg",
+                                blob: new Uint8Array(value),
+                            }),
                         )
-                        compressTasks.push(
-                            browserImageCompression(file).then(
-                                async value => await value.arrayBuffer(),
-                            ),
-                        )
+                    })
+                    // uploadBlobを並列処理し、その結果を格納する
+                    const resultUploadBlob: uploadBlobResult[] =
+                        await Promise.all(uploadBlobTasks).then(values => {
+                            return values
+                        })
+                    // Blobのアップロードに失敗したファイルが一つでも存在した場合停止する
+                    const resultUploadBlobSuccess: uploadBlobSuccessResult[] =
+                        resultUploadBlob.map(value => {
+                            if ("error" in value) {
+                                const e: Error = new Error(value.message)
+                                e.name = value.error
+                                throw e
+                            }
+                            return value
+                        })
+
+                    // 外部OGPがない場合はthumbはundefinedとする
+                    Record = {
+                        ...Record,
+                        embed: {
+                            $type: "app.bsky.embed.external",
+                            external: {
+                                thumb:
+                                    resultUploadBlobSuccess.length >= 1
+                                        ? resultUploadBlobSuccess[0].blob
+                                        : undefined,
+                                uri: mediaData.meta.url,
+                                title: mediaData.meta.title,
+                                description: mediaData.meta.description,
+                            },
+                        },
                     }
-                })
-                // compressを並列処理
-                const resultCompress: Array<ArrayBuffer> = await Promise.all(
-                    compressTasks,
-                ).then(values => {
-                    return values
-                })
+                    // Bluesky側Post本文にURLのリンクカードがない場合はintent宛に埋め込む
+                    if (
+                        callbackPostOptions.externalPostText.indexOf(
+                            mediaData.meta.url,
+                        ) < 0
+                    ) {
+                        callbackPostOptions.externalPostText += `${postText !== "" ? "\n" : ""}${mediaData.meta.url}`
+                    }
+                }
 
-                // 元の Blob から画像サイズを取得しておく
-                const imageSizeTasks = mediaData.images.map(v =>
-                    typeof v.blob !== "undefined" && v.blob !== null
-                        ? getImageSize(v.blob)
-                        : Promise.resolve(undefined),
-                )
-                const imageSizes: Array<
-                    { width: number; height: number } | undefined
-                > = await Promise.all(imageSizeTasks)
-
-                const uploadBlobTasks: Array<Promise<uploadBlobResult>> = []
-                resultCompress.forEach(value => {
-                    uploadBlobTasks.push(
-                        uploadBlob({
-                            accessJwt: session.accessJwt,
-                            mimeType: "image/jpeg",
-                            blob: new Uint8Array(value),
+                setMsgInfo({
+                    msg: "Blueskyへポスト中...",
+                    isError: false,
+                })
+                const createRecordResult = await createRecord({
+                    repo: session.did,
+                    accessJwt: session.accessJwt,
+                    record: Record,
+                })
+                if ("error" in createRecordResult) {
+                    const e: Error = new Error(createRecordResult.message)
+                    e.name = createRecordResult.error
+                    throw e
+                }
+                postUri = createRecordResult.uri
+            } else {
+                // 画像投稿・テキストのみ投稿はv2バックエンド(POST /v1/entry)へ委譲する。
+                // Blobアップロード・レコード作成・facet検出はv2側が行うため、ここではファイルの準備のみ行う。
+                let compressedImages: File[] = []
+                let imageSizes: Array<{ width: number; height: number }> = []
+                if (ImageAttached && mediaData.type === "images") {
+                    // メディアのデータを圧縮
+                    compressedImages = await Promise.all(
+                        mediaData.images.map((value, index) => {
+                            const file: File = new File(
+                                [value.blob],
+                                `media${index}.data`,
+                                { type: value.blob.type },
+                            )
+                            return browserImageCompression(file)
                         }),
                     )
-                })
-                // uploadBlobを並列処理し、その結果を格納する
-                const resultUploadBlob: uploadBlobResult[] = await Promise.all(
-                    uploadBlobTasks,
-                ).then(values => {
-                    return values
-                })
-                // Blobのアップロードに失敗したファイルが一つでも存在した場合停止する
-                const resultUploadBlobSuccess: uploadBlobSuccessResult[] =
-                    resultUploadBlob.map(value => {
-                        if ("error" in value) {
-                            const e: Error = new Error(value.message)
-                            e.name = value.error
-                            throw e
-                        }
-                        return value
-                    })
-
-                // Recordの作成
-                switch (mediaData.type) {
-                    case "images":
-                        Record = {
-                            ...Record,
-                            embed: {
-                                $type: "app.bsky.embed.images",
-                                images: resultUploadBlobSuccess.map(
-                                    (value, index) => {
-                                        return {
-                                            image: value.blob,
-                                            alt: mediaData.images[index].alt,
-                                            aspectRatio: imageSizes[index]
-                                                ? {
-                                                      width: imageSizes[index]!
-                                                          .width,
-                                                      height: imageSizes[index]!
-                                                          .height,
-                                                  }
-                                                : undefined,
-                                        }
-                                    },
-                                ),
-                            },
-                        }
-                        break
-                    case "external":
-                        // 外部OGPがない場合はthumbはundefinedとする
-                        Record = {
-                            ...Record,
-                            embed: {
-                                $type: "app.bsky.embed.external",
-                                external: {
-                                    thumb:
-                                        resultUploadBlobSuccess.length >= 1
-                                            ? resultUploadBlobSuccess[0].blob
-                                            : undefined,
-                                    uri: mediaData.meta.url,
-                                    title: mediaData.meta.title,
-                                    description: mediaData.meta.description,
-                                },
-                            },
-                        }
-                        // Bluesky側Post本文にURLのリンクカードがない場合はintent宛に埋め込む
-                        if (
-                            callbackPostOptions.externalPostText.indexOf(
-                                mediaData.meta.url,
-                            ) < 0
-                        ) {
-                            callbackPostOptions.externalPostText += `${postText !== "" ? "\n" : ""}${mediaData.meta.url}`
-                        }
-                        break
+                    // 元の Blob から画像サイズを取得しておく
+                    imageSizes = await Promise.all(
+                        mediaData.images.map(v => getImageSize(v.blob)),
+                    )
                 }
-            }
-            setMsgInfo({
-                msg: "Blueskyへポスト中...",
-                isError: false,
-            })
-            const createRecordResult = await createRecord({
-                repo: session.did,
-                accessJwt: session.accessJwt,
-                record: Record,
-            })
-            if ("error" in createRecordResult) {
-                const e: Error = new Error(createRecordResult.message)
-                e.name = createRecordResult.error
-                throw e
+
+                setMsgInfo({
+                    msg: "Blueskyへポスト中...",
+                    isError: false,
+                })
+                const v2EntryResult = await createV2Entry({
+                    text: postText,
+                    langs: [language],
+                    selfLabels: selfLabel !== null ? selfLabel.val : undefined,
+                    images:
+                        compressedImages.length > 0
+                            ? compressedImages
+                            : undefined,
+                    imagesMeta:
+                        compressedImages.length > 0 ? imageSizes : undefined,
+                    // v2のPOST /v1/entryは画像投稿時にogImageを必須とするため、先頭画像をそのまま代用する。
+                    // (OGP画像の生成自体はlegacy/Firebase側の責務のままであり、ここではv2のAPI契約を満たす目的のみ)
+                    ogImage:
+                        compressedImages.length > 0
+                            ? compressedImages[0]
+                            : undefined,
+                })
+                if ("error" in v2EntryResult) {
+                    const e: Error = new Error(v2EntryResult.message)
+                    e.name = v2EntryResult.error
+                    throw e
+                }
+                const rkey = v2EntryResult.bsky.url
+                    .split("/")
+                    .filter(Boolean)
+                    .slice(-1)[0]
+                postUri = `at://${session.did}/app.bsky.feed.post/${rkey}`
             }
             setMsgInfo({
                 msg: "Blueskyへポストしました!",
@@ -412,7 +435,7 @@ export const Component = ({
                 })
                 const createPageResult = await createPage({
                     accessJwt: session.accessJwt,
-                    uri: createRecordResult.uri,
+                    uri: postUri,
                 })
                 if ("error" in createPageResult) {
                     const e: Error = new Error(createPageResult.message)
