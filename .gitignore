@@ -23,4 +23,4 @@ src/client/**/
 .astro
 /dist
 .wrangler
-wrangler.jsonc
+/wrangler.jsonc

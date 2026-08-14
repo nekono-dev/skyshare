@@ -2,10 +2,12 @@
     "extends": "astro/tsconfigs/strict",
     "include": ["src/**/*"],
     "exclude": ["src/node_modules", "dist/"],
+    "ignoreDeprecations": "6.0",
     "compilerOptions": {
         "baseUrl": "./",
+        "ignoreDeprecations": "6.0",
         "paths": {
-            "@/*": ["src/*"]
+            "@/*": ["./src/*"]
         },
         "jsx": "react-jsx",
         "jsxImportSource": "react",

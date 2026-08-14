@@ -1,0 +1,5 @@
+{
+  "name": "skyshare-legacy",
+  "compatibility_date": "2026-08-14",
+  "compatibility_flags": ["nodejs_compat"]
+}
