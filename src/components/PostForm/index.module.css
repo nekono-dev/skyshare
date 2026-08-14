@@ -78,6 +78,7 @@
   line-height: var(--line-height-normal);
   color: #111827;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .textarea::placeholder {

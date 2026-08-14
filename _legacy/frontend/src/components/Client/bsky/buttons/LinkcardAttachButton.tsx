@@ -33,7 +33,6 @@ const handleGetOGP = async ({
         let blob: Blob | undefined = undefined
         const ogpMeta = await getOgpMeta({
             externalUrl: linkUrl,
-            languageCode: "ja",
         })
         // titleが存在しない場合は、暫定的にTitleをURLにする
         if (ogpMeta.title === "") {
@@ -42,7 +41,6 @@ const handleGetOGP = async ({
         if (ogpMeta.image !== "") {
             blob = await getOgpBlob({
                 externalUrl: ogpMeta.image,
-                languageCode: "ja",
             })
         }
         setMediaData({

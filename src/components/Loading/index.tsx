@@ -1,3 +1,4 @@
+import Spinner from "@/components/Spinner"
 import styles from "./index.module.css"
 
 /**
@@ -35,7 +36,7 @@ export const Component = ({
     return (
       <div className={styles.overlay} role="status" aria-live="polite">
         <div className={styles.panel}>
-          <span className={styles.spinner} aria-hidden="true" />
+          <Spinner />
           <p className={styles.message}>{message}</p>
         </div>
       </div>
@@ -44,7 +45,7 @@ export const Component = ({
 
   return (
     <div className={styles.inline} role="status" aria-live="polite">
-      <span className={styles.spinner} aria-hidden="true" />
+      <Spinner />
       <p className={styles.message}>{message}</p>
     </div>
   )

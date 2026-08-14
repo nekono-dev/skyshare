@@ -7,16 +7,19 @@
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
  * - サムネイルはカード右側に配置し、左側の情報列（author/本文/ツールバー）の高さいっぱいに広げることで
  *   カード全体の縦幅を最小限に抑える。複数画像がある場合は縦に分割して並べる。
+ * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
+ *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
  */
 
 import { useState } from "react"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/posts"
-import { createEntry } from "@/client/openapi/client"
+import { useSkyshareEntryStatus } from "./useSkyshareEntryStatus"
+import Loading from "@/components/Loading"
+import PostCardEntryActions from "@/components/PostCardEntryActions"
 import SkyshareShareDialog from "@/components/SkyshareShareDialog"
 import blueskyIcon from "@/images/bluesky.svg"
-import skyshareIcon from "@/images/skyshare.svg"
 
 type PostCardProps = {
   item: TimelinePost
@@ -36,62 +39,38 @@ type PostCardProps = {
  * - 出力: 投稿本文と作者情報を持つカード
  */
 const Component = ({ item }: PostCardProps) => {
-  const [isCreatingEntry, setIsCreatingEntry] = useState(false)
-  const [createEntryError, setCreateEntryError] = useState<string | null>(null)
-  const [createdEntryUrl, setCreatedEntryUrl] = useState<string | null>(null)
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+
+  const {
+    display,
+    createError,
+    deleteError,
+    createEntryFromPost,
+    deleteEntryRecord,
+  } = useSkyshareEntryStatus(item, {
+    onCreated: () => setShareDialogOpen(true),
+  })
 
   const createdAtText = new Date(item.indexedAt).toLocaleString("ja-JP", {
     dateStyle: "medium",
     timeStyle: "short",
   })
 
-  // Entry へのリンクは既存の skyshareEntry を優先し、その場発行分は createdEntryUrl で補う。
-  const entryWebUrl = item.skyshareEntry?.webUrl ?? createdEntryUrl ?? undefined
+  const activeEntry =
+    display.kind === "entry" || display.kind === "deleting"
+      ? display.entry
+      : null
+  const entryWebUrl = activeEntry?.webUrl
   // サムネイルは skyshare の view 画像を優先する。無い場合、複数画像投稿は全画像を縦に分割して表示する。
-  const thumbnailImages = item.skyshareEntry?.visualUrl
-    ? [item.skyshareEntry.visualUrl]
+  const thumbnailImages = activeEntry?.visualUrl
+    ? [activeEntry.visualUrl]
     : item.images.map(image => image.url)
-  const canCreateEntry =
-    !item.skyshareEntry && !createdEntryUrl && item.images.length > 0
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
-  const isSkyshareIneligible = !entryWebUrl && !canCreateEntry
-
-  /**
-   * 既存の Bluesky 投稿から skyshare entry を発行する。
-   *
-   * Input:
-   * - なし（`item.uri` を対象投稿として送信）
-   *
-   * Output:
-   * - なし（成功時は `createdEntryUrl` を更新し、共有ダイアログを開く）
-   */
-  const handleCreateEntry = async () => {
-    if (isCreatingEntry) return
-
-    setIsCreatingEntry(true)
-    setCreateEntryError(null)
-
-    try {
-      const res = await createEntry({ uri: item.uri })
-      if (res.status !== 200) {
-        setCreateEntryError("skyshareページの作成に失敗しました。")
-        return
-      }
-
-      setCreatedEntryUrl(res.data.skyshare.uri)
-      setShareDialogOpen(true)
-    } catch (err) {
-      console.error("PostCard: failed to create skyshare entry", err)
-      setCreateEntryError("skyshareページの作成に失敗しました。")
-    } finally {
-      setIsCreatingEntry(false)
-    }
-  }
+  const isSkyshareIneligible = display.kind === "ineligible"
 
   return (
     <article
-      className={`${ui.baseCard} ${styles.card} ${isSkyshareIneligible ? styles.cardIneligible : ""}`}
+      className={`${ui.baseCard} ${styles.card} ${isSkyshareIneligible ? ui.cardMuted : ""}`}
     >
       <div className={styles.mainColumn}>
         <div className={styles.authorBlock}>
@@ -120,7 +99,7 @@ const Component = ({ item }: PostCardProps) => {
 
         {item.text ? <p className={styles.text}>{item.text}</p> : null}
 
-        <footer className={styles.footer}>
+        <footer className={`${styles.footer} ${ui.toolbar} ${ui.toolbarAlign}`}>
           <a
             className={`${ui.baseButton} ${ui.nontextButton} ${ui.mdButton} ${ui.whiteButton}`}
             href={item.url}
@@ -132,44 +111,14 @@ const Component = ({ item }: PostCardProps) => {
             <img src={blueskyIcon.src} width={20} height={20} alt="" />
           </a>
 
-          {entryWebUrl ? (
-            <>
-              <a
-                className={`${ui.baseButton} ${ui.nontextButton} ${ui.mdButton} ${ui.whiteButton}`}
-                href={entryWebUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Entry を開く"
-                title="Entry を開く"
-              >
-                <img src={skyshareIcon.src} width={20} height={20} alt="" />
-              </a>
-              <button
-                type="button"
-                className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
-                onClick={() => setShareDialogOpen(true)}
-              >
-                クロスポスト
-              </button>
-            </>
-          ) : canCreateEntry ? (
-            <button
-              type="button"
-              className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
-              disabled={isCreatingEntry}
-              onClick={() => {
-                void handleCreateEntry()
-              }}
-            >
-              {isCreatingEntry ? "作成中…" : "Skyshare Entryを作成"}
-            </button>
-          ) : (
-            <span className={styles.noSkyshare}>Skyshare Entry作成対象外</span>
-          )}
-
-          {createEntryError ? (
-            <span className={styles.createEntryError}>{createEntryError}</span>
-          ) : null}
+          <PostCardEntryActions
+            display={display}
+            createError={createError}
+            deleteError={deleteError}
+            onCreate={createEntryFromPost}
+            onDelete={deleteEntryRecord}
+            onCrosspost={() => setShareDialogOpen(true)}
+          />
         </footer>
       </div>
 
@@ -181,6 +130,10 @@ const Component = ({ item }: PostCardProps) => {
             </div>
           ))}
         </div>
+      ) : null}
+
+      {display.kind === "deleting" ? (
+        <Loading overlay message="Entryを削除中..." />
       ) : null}
 
       <SkyshareShareDialog

@@ -1,0 +1,10 @@
+.noSkyshare {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.createEntryError {
+  margin: 0;
+  color: #b00;
+  font-size: 0.9rem;
+}

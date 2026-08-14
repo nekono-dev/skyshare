@@ -24,29 +24,10 @@
   gap: var(--space-2);
 }
 
-.spinner {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-button-max);
-  border: 2px solid var(--color-border);
-  border-top-color: var(--color-bluesky);
-  animation: spin 0.8s linear infinite;
-}
-
 .message {
   margin: 0;
   color: var(--color-muted);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
 }

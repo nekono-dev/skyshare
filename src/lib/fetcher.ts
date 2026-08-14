@@ -1,12 +1,20 @@
 import { extractorApi } from "@/vars"
+import { v1Endpoint } from "@/env"
 
 /**
  * OpenAPI クライアント向けの共通 Fetcher。
  *
  * 責務と処理概要:
- * - `/v1/extract` 系の相対パスを `extractorApi` へ振り替える。
+ * - `/v1/extract` 宛リクエストを、外部 OGP 抽出サービス(`extractorApi`)へ付け替える。
+ * - `/v1/page` 宛リクエストを、legacy backend(`v1Endpoint`)へ付け替える。
  * - 空ボディや非 JSON ボディでも例外で落とさず `data` に格納して返す。
  * - orval 生成クライアントが期待する `{ data, status, headers }` 形式へ正規化する。
+ *
+ * 注意:
+ * - この `/v1/page` は openapi 上の名前空間であり、legacy backend の実 API を直接叩くための
+ *   ルーティングキーに過ぎない。本アプリ自身が持つ同名の Astro ルート
+ *   (`src/pages/v1/page.ts`、cookie セッションを検証してから legacy backend を呼ぶプロキシ)
+ *   とは別物で、両者はここで URL が書き換わるため実行時に衝突しない。
  */
 
 /**
@@ -17,7 +25,10 @@ import { extractorApi } from "@/vars"
  * - `options` は Fetch API の `RequestInit`
  *
  * 処理の趣旨:
- * - `/v1/extract` のみ抽出APIへルーティングし、それ以外は指定 URL をそのまま利用する。
+ * - `/v1/extract` は外部 OGP 抽出サービスがそのまま公開しているパスと一致するため、
+ *   ホスト(`extractorApi`)を先頭に付与するだけでよい。
+ * - `/v1/page` は legacy backend の実パス `${v1Endpoint}/page`(`v1Endpoint` に
+ *   `/api/v1` まで含む)に対応するため、`/v1` 部分を取り除いてから `v1Endpoint` を付与する。
  * - レスポンス本文は一度 `text()` で受け、JSON 解析失敗時は生文字列を返す。
  * - 失敗時に throw せず戻り値へ集約し、上位で HTTP ステータス判定できるようにする。
  *
@@ -29,8 +40,10 @@ import { extractorApi } from "@/vars"
  * - ジェネリック型 `T` として `{ data, status, headers }` 互換オブジェクト
  *
  * 例:
- * - 入力: `url="/v1/extract/ogp"`
+ * - 入力: `url="/v1/extract?url=https://example.com"`
  * - 出力: `extractorApi` を先頭に付与したリクエスト結果
+ * - 入力: `url="/v1/page/0/did:plc:abc@3lxyz"`
+ * - 出力: `${v1Endpoint}/page/0/did:plc:abc@3lxyz` へのリクエスト結果
  */
 export const customFetcher = async <T>(
     url: string,
@@ -38,6 +51,8 @@ export const customFetcher = async <T>(
 ): Promise<T> => {
     if (url.startsWith("/v1/extract")) {
         url = extractorApi + url
+    } else if (url.startsWith("/v1/page")) {
+        url = v1Endpoint + url.slice("/v1".length)
     }
     const res = await fetch(url, options)
     // ボディが空や非 JSON の場合でも例外を回避し、`data` へ安全に格納する。

@@ -1,0 +1,60 @@
+summary: Delete a Skyshare entry (dev.nekono.skyshare.entry). Optionally also deletes the underlying Bluesky post.
+operationId: deleteEntry
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../common.yaml#/cookie
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          uri:
+            type: string
+            description: 削除対象の dev.nekono.skyshare.entry の AT URI
+            example: at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz
+          deleteBskyPost:
+            type: boolean
+            description: >-
+              true の場合、skyshare entry に紐づく Bluesky 投稿 (app.bsky.feed.post)
+              も併せて削除する。未指定時は false（skyshare entry のみ削除）。
+            default: false
+        required:
+          - uri
+responses:
+  "200":
+    description: Success
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "404":
+    description: Not Found
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "429":
+    description: Too Many Requests
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error

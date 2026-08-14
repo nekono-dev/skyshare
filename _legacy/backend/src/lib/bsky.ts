@@ -1,9 +1,4 @@
-import {
-    AtpAgent,
-    AppBskyFeedDefs,
-    AppBskyFeedPost,
-    AppBskyEmbedImages,
-} from '@atproto/api';
+import { AtpAgent, AppBskyFeedDefs, AppBskyFeedPost } from '@atproto/api';
 
 /**
  * 指定 uri のスレッド投稿を取得してポストオブジェクトを返す。
@@ -29,20 +24,4 @@ const getThreadPost = async (agent: AtpAgent, uri: string) => {
     return post;
 };
 
-/**
- * post オブジェクトから画像埋め込みを抽出して返す。
- * 画像埋め込みでない場合は Error を投げる。
- */
-const extractImagesFromPost = (
-    post: AppBskyFeedDefs.PostView,
-): AppBskyEmbedImages.ViewImage[] => {
-    // post は getThreadPost で検証済みであることを前提とする
-
-    if (!AppBskyEmbedImages.isView(post.embed)) {
-        throw new Error('NoImageEmbed');
-    }
-
-    return post.embed.images;
-};
-
-export { getThreadPost, extractImagesFromPost };
+export { getThreadPost };

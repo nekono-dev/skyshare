@@ -2,7 +2,7 @@
  * 下書き一覧表示に必要な最小データに整形するユーティリティ。
  *
  * 責務と処理概要:
- * - GET /v1/drafts のレスポンスを、一覧カード表示と選択時のフォーム注入に必要な形へ変換する。
+ * - GET /v2/drafts のレスポンスを、一覧カード表示と選択時のフォーム注入に必要な形へ変換する。
  */
 
 export type DraftListItem = {
@@ -23,7 +23,7 @@ type DraftListApiRecord = {
  * 下書きの一覧表示用に API レスポンスを変換する。
  *
  * Input:
- * - `records`: `GET /v1/drafts` の `drafts` 配列
+ * - `records`: `GET /v2/drafts` の `drafts` 配列
  *
  * Output:
  * - `DraftListItem[]`: 一覧描画と選択処理に使える簡潔な下書き情報

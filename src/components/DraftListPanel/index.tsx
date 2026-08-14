@@ -12,6 +12,7 @@ import type { CursorPaginationViewModel } from "@/components/ComponentList"
 import NavigationBar from "@/components/NavigationBar"
 import { SELF_LABEL_OPTIONS } from "@/components/SelfLabelsSelect"
 import type { DraftListItem } from "@/lib/draftList"
+import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
 export type DraftListPanelProps = {
@@ -60,7 +61,7 @@ const DraftListRow = ({
   <div
     role="button"
     tabIndex={0}
-    className={styles.row}
+    className={`${styles.row} ${ui.cardSelect}`}
     onClick={() => void onUse(item)}
     onKeyDown={event => {
       if (event.key === "Enter" || event.key === " ") {

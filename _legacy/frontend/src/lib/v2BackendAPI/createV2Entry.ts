@@ -1,12 +1,11 @@
 import { v2BackendEndpoint } from "./endpoint"
 
-// v2バックエンド POST /v1/entry の呼び出し。
+// v2バックエンド POST /v2/entry の呼び出し。
 // Blobアップロード・app.bsky.feed.postレコード作成・facet検出をv2側にまとめて委譲する。
 // 認証は事前にcreateV2Sessionで発行されたCookie(atp_session, 同一オリジン)に依存する。
 //
-// 画像投稿時、v2は ogImage(OGP用サムネイル)を必須とする。legacy側に専用のクロップUIは
-// 用意しないため、先頭画像をそのまま代用して契約を満たす(OGP画像生成自体はlegacy/Firebase側の
-// 責務のまま変更しない)。
+// 画像投稿時、v2は ogImage(OGP用サムネイル)を必須とする。呼び出し元(PostButton.tsx)が
+// legacy backend の POST /ogp(複数画像レイアウト合成)で生成した画像をここに渡す。
 
 export type createV2EntrySuccessResult = {
     bsky: { url: string }
@@ -53,7 +52,7 @@ export const api = async ({
             formData.set("ogImage", ogImage, "ogImage.jpg")
         }
 
-        const response = await fetch(`${v2BackendEndpoint}/v1/entry`, {
+        const response = await fetch(`${v2BackendEndpoint}/v2/entry`, {
             method: "POST",
             credentials: "same-origin",
             body: formData,

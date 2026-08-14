@@ -19,5 +19,8 @@ pnpm-debug.log*
 .env.staging
 .env.production
 
+# secrets(実値)。テンプレートは wrangler.jsonc.template を参照
+/wrangler.jsonc
+
 # macOS-specific files
 .DS_Store

@@ -1,0 +1,6 @@
+get:
+  $ref: ./get.yaml
+post:
+  $ref: ./post.yaml
+delete:
+  $ref: ./delete.yaml

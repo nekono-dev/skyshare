@@ -53,6 +53,20 @@
   overflow: hidden;
 }
 
+/* baseCard 自体が選択可能な要素であることを示すバリエーション。hover で背景色が変わる */
+:local(.cardSelect) {
+  cursor: pointer;
+}
+
+:local(.cardSelect):hover {
+  background: var(--color-gray-hover);
+}
+
+/* baseCard の背景色を変更し、通常状態と区別するバリエーション（作成対象外など） */
+:local(.cardMuted) {
+  background: var(--color-card-muted-bg);
+}
+
 :local(.baseComponent) {
   margin-top: var(--space-1);
   margin-bottom: var(--space-1);

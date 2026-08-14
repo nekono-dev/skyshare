@@ -5,12 +5,6 @@
   gap: 1rem;
 }
 
-/* skyshare entry を持たず、画像も無いため作成対象にもならない投稿を視覚的に区別する */
-.cardIneligible {
-  opacity: 0.55;
-  filter: grayscale(0.6);
-}
-
 /* avatar/本文/ツールバーの縦積み列。この列の高さに右側サムネイルを合わせる */
 .mainColumn {
   flex: 1 1 auto;
@@ -60,7 +54,6 @@
 
 .handle,
 .createdAt,
-.noSkyshare,
 .emptyText {
   color: rgba(0, 0, 0, 0.62);
 }
@@ -115,16 +108,8 @@
 }
 
 .footer {
-  display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 0.1rem;
   padding-top: 0.6rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.createEntryError {
-  margin: 0;
-  color: #b00;
-  font-size: 0.9rem;
 }

@@ -6,10 +6,7 @@
  * - 「保存」「破棄」「編集を続ける」の3択を提示し、選択結果を呼び出し元へ委譲する。
  */
 import React from "react"
-import Loading from "@/components/Loading"
-import Overlay from "@/components/Overlay"
-import ui from "@/styles/ui.module.css"
-import styles from "./index.module.css"
+import DialogComponent from "@/components/DialogComponent"
 
 type Props = {
   open: boolean
@@ -45,48 +42,35 @@ export const Component: React.FC<Props> = ({
   onContinueEditing,
 }) => {
   return (
-    <Overlay
+    <DialogComponent
       open={open}
       onClose={onContinueEditing}
-      contentClassName={styles.draftConfirmOverlay}
-    >
-      <div
-        className={`${ui.baseCard} ${ui.draftConfirmCard}`}
-        role="dialog"
-        aria-label="下書き保存確認"
-      >
-        {isSaving && <Loading overlay message="下書きを保存中..." />}
-        <div className={ui.label}>下書きを保存しますか？</div>
-        <div className={styles.draftConfirmActions}>
-          <button
-            type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
-            disabled={isSaving}
-            onClick={() => {
-              void onSave()
-            }}
-          >
-            下書きを保存
-          </button>
-          <button
-            type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.redButton}`}
-            disabled={isSaving}
-            onClick={onDiscard}
-          >
-            破棄
-          </button>
-          <button
-            type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
-            disabled={isSaving}
-            onClick={onContinueEditing}
-          >
-            編集を続ける
-          </button>
-        </div>
-      </div>
-    </Overlay>
+      ariaLabel="下書き保存確認"
+      loading={isSaving ? { message: "下書きを保存中..." } : undefined}
+      buttons={[
+        {
+          key: "save",
+          label: "下書きを保存",
+          variant: "blue",
+          onClick: onSave,
+          disabled: isSaving,
+        },
+        {
+          key: "discard",
+          label: "破棄",
+          variant: "red",
+          onClick: onDiscard,
+          disabled: isSaving,
+        },
+        {
+          key: "continue",
+          label: "編集を続ける",
+          variant: "gray",
+          onClick: onContinueEditing,
+          disabled: isSaving,
+        },
+      ]}
+    />
   )
 }
 

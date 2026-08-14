@@ -84,20 +84,34 @@ const deleteOgp = async (
             service: atpService,
         });
         {
-            // handleからdidを取得し、accessJwtで自身を参照した際のhandleと突合する
+            // accessJwt が実際にどの DID のものかを PDS に問い合わせて解決し、
+            // 削除対象(didFromDb、クライアント入力の pageId 由来)と一致するか検証する。
+            // didFromDb をそのまま agent の did として信用すると、postUri の author が
+            // 常に didFromDb と一致してしまい本人確認にならないため、
+            // accessJwt 単体から解決した did とのみ突き合わせる。
             agent.sessionManager.session = {
                 accessJwt: parsedBody.accessJwt,
                 refreshJwt: '',
-                handle: handleFromDb,
-                did: didFromDb,
+                handle: '',
+                did: '',
                 active: true,
             };
-            const postUri = `at://${didFromDb}/${context}/${hashKey}`;
-            const post = await getThreadPost(agent, postUri);
-            const authorDid = post.author.did;
-            if (didFromDb !== authorDid) {
+
+            let verifiedDid: string;
+            try {
+                const sessionRes = await agent.com.atproto.server.getSession();
+                verifiedDid = sessionRes.data.did;
+            } catch (e: unknown) {
+                logger.debug(`accessJwt verification failed: ${String(e)}`);
+                return {
+                    success: false,
+                    error: 'BadRequest',
+                };
+            }
+
+            if (verifiedDid !== didFromDb) {
                 logger.error(
-                    `Identity verification failed: thread-author=${authorDid} from-db=${didFromDb}`,
+                    `Identity verification failed: accessJwt-did=${verifiedDid} from-db=${didFromDb}`,
                 );
                 return {
                     success: false,
@@ -105,8 +119,13 @@ const deleteOgp = async (
                 };
             }
             logger.debug(
-                `Identity verified: thread-author=${authorDid} from-db=${didFromDb}`,
+                `Identity verified: accessJwt-did=${verifiedDid} from-db=${didFromDb}`,
             );
+
+            agent.sessionManager.session.handle = handleFromDb;
+            agent.sessionManager.session.did = didFromDb;
+            const postUri = `at://${didFromDb}/${context}/${hashKey}`;
+            await getThreadPost(agent, postUri);
         }
 
         if (dbPlace !== 'legacy') {

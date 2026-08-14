@@ -12,7 +12,7 @@ export default defineConfig({
     server: {
         // legacyページはこのポートに直接アクセスする(v2側からはプロキシしない)。
         // v2のモジュールURL("/src/..."等)と名前空間が衝突するため、v2経由での
-        // プロキシ共有は行わず、v2バックエンドAPI(/v1/*)だけをこちらから転送する。
+        // プロキシ共有は行わず、v2バックエンドAPI(/v2/*)だけをこちらから転送する。
         port: 4322,
         host: true,
     },
@@ -20,10 +20,10 @@ export default defineConfig({
         server: {
             proxy: {
                 // ブラウザからは同一オリジン(4322)への相対パスとして疎通させ、
-                // v2バックエンドAPI(/v1/entry, /v1/session)だけをサーバー間で
+                // v2バックエンドAPI(/v2/entry, /v2/session)だけをサーバー間で
                 // v2 dev サーバー(4321)へ転送する。APIエンドポイントはJSモジュール
                 // ではないため、v2/legacy間のパス衝突は発生しない。
-                "/v1": {
+                "/v2": {
                     target: "http://localhost:4321",
                     changeOrigin: true,
                     // changeOriginはHostヘッダのみ書き換え、ブラウザが送るOriginヘッダ
@@ -33,7 +33,10 @@ export default defineConfig({
                     // 転送先オリジンに合わせてOriginヘッダを書き換えて回避する。
                     configure: proxy => {
                         proxy.on("proxyReq", proxyReq => {
-                            proxyReq.setHeader("origin", "http://localhost:4321")
+                            proxyReq.setHeader(
+                                "origin",
+                                "http://localhost:4321",
+                            )
                         })
                     },
                 },

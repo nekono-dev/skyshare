@@ -526,6 +526,10 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
             let op = (spec as any)[method]
             if (!op || typeof op !== "object") continue
             // resolve operation-level $ref (e.g., post: { $ref: './post.yaml' })
+            // 相対 $ref(request/response 内の共通スキーマ参照)は op 自身が定義された
+            // ファイルを基準に解決する必要があるため、path 直下でインライン $ref される
+            // ケース(index.yaml を介さない場合)に備え opSourceFile を追跡する。
+            let opSourceFile: string | undefined = specSourceFile
             if (op.$ref && typeof op.$ref === "string") {
                 const [filePart, fragPart] = op.$ref.split("#")
                 const refFile = path.resolve(
@@ -544,6 +548,7 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
                     }
                     op = cur || {}
                 }
+                opSourceFile = refFile
             }
             if (!op || typeof op !== "object") continue
             if (op.requestBody) {
@@ -554,7 +559,7 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
                     "application/x-www-form-urlencoded",
                     "*/*",
                 ])
-                if (reqSchema) renderSchema(reqSchema.schema, specSourceFile)
+                if (reqSchema) renderSchema(reqSchema.schema, opSourceFile)
             }
             if (Array.isArray(op.parameters) && op.parameters.length > 0) {
                 for (const p of op.parameters) {
@@ -564,7 +569,7 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
                             p.content["application/json"] &&
                             p.content["application/json"].schema) ||
                         {}
-                    renderSchema(s, specSourceFile)
+                    renderSchema(s, opSourceFile)
                 }
             }
             const responses = op.responses || {}
@@ -572,12 +577,11 @@ function generate(openapi: OpenAPI, outputPath: string, rootFilePath: string) {
                 if (!resp || typeof resp !== "object") continue
                 const content = (resp as any).content || {}
                 const json = content["application/json"] || content["*/*"]
-                if (json && json.schema)
-                    renderSchema(json.schema, specSourceFile)
+                if (json && json.schema) renderSchema(json.schema, opSourceFile)
                 if ((resp as any).headers) {
                     for (const hobj of Object.values((resp as any).headers)) {
                         const hs = (hobj as any).schema || {}
-                        renderSchema(hs, specSourceFile)
+                        renderSchema(hs, opSourceFile)
                     }
                 }
             }

@@ -22,16 +22,15 @@ import resolveHandle, {
 } from "@/utils/atproto_api/resolveHandle"
 
 // backend api
-import createPage from "@/lib/pagedbAPI/createPage"
 import browserImageCompression from "@/utils/browserImageCompression"
 import { getOgpBlob, getOgpMeta } from "@/lib/getOgp"
 import createV2Entry from "@/lib/v2BackendAPI/createV2Entry"
+import generateOgpImage from "@/lib/legacyOgpAPI/generateOgpImage"
 
 // service
 import { callbackPostOptions } from "../PostForm"
 import { msgInfo, MediaData } from "../../common/types"
 import { servicename } from "@/env/vars"
-import { pagesPrefix } from "@/env/envs"
 import saveTagToSavedTags from "../lib/saveTagList"
 import { richTextFacetParser } from "@/utils/richTextParser"
 import { bskyProfileURL } from "@/env/bsky"
@@ -70,8 +69,6 @@ export const Component = ({
     disabled: boolean
     userAgent: string
 }) => {
-    // 配置されたサイトのURL
-    const siteurl = location.origin
     // セッション
     const { session } = useContext(Session_context)
     /** Apple製品利用者の可能性がある場合True */
@@ -267,8 +264,9 @@ export const Component = ({
                 mediaData.images.length > 0 &&
                 mediaData.images[0].blob !== null
 
-            // Blueskyへの投稿先URI(v1エントリ作成後に生成したatURIを格納する)
-            let postUri: string
+            // v2バックエンドが画像投稿時に発行するskyshare entryページURL
+            // (X用OGPページ。旧legacy backendのv1.6/page APIが担っていた役割をv2側が兼ねる)
+            let skyshareEntryUrl: string | undefined
 
             if (mediaData?.type === "external") {
                 // OGPリンクカード付き投稿は既存の直接Bluesky呼び出しを維持する。
@@ -362,9 +360,8 @@ export const Component = ({
                     e.name = createRecordResult.error
                     throw e
                 }
-                postUri = createRecordResult.uri
             } else {
-                // 画像投稿・テキストのみ投稿はv2バックエンド(POST /v1/entry)へ委譲する。
+                // 画像投稿・テキストのみ投稿はv2バックエンド(POST /v2/entry)へ委譲する。
                 // Blobアップロード・レコード作成・facet検出はv2側が行うため、ここではファイルの準備のみ行う。
                 let compressedImages: File[] = []
                 let imageSizes: Array<{ width: number; height: number }> = []
@@ -386,6 +383,37 @@ export const Component = ({
                     )
                 }
 
+                // v2のPOST /v2/entryは画像投稿時にogImageを必須とする。
+                // legacy backend(Firebase Functions)の複数画像レイアウト合成処理(compositeImages)を
+                // POST /ogp経由で呼び出し、合成済みのOGP画像を取得してogImageとして渡す。
+                let ogImage: File | undefined = undefined
+                if (compressedImages.length > 0) {
+                    setMsgInfo({
+                        msg: "OGP画像を生成中...",
+                        isError: false,
+                    })
+                    const generateOgpImageResult = await generateOgpImage({
+                        accessJwt: session.accessJwt,
+                        images: compressedImages,
+                    })
+                    if ("error" in generateOgpImageResult) {
+                        const e: Error = new Error(
+                            generateOgpImageResult.message,
+                        )
+                        e.name = generateOgpImageResult.error
+                        throw e
+                    }
+                    ogImage = new File(
+                        [generateOgpImageResult.blob],
+                        "ogImage.jpg",
+                        {
+                            type:
+                                generateOgpImageResult.blob.type ||
+                                "image/jpeg",
+                        },
+                    )
+                }
+
                 setMsgInfo({
                     msg: "Blueskyへポスト中...",
                     isError: false,
@@ -400,72 +428,45 @@ export const Component = ({
                             : undefined,
                     imagesMeta:
                         compressedImages.length > 0 ? imageSizes : undefined,
-                    // v2のPOST /v1/entryは画像投稿時にogImageを必須とするため、先頭画像をそのまま代用する。
-                    // (OGP画像の生成自体はlegacy/Firebase側の責務のままであり、ここではv2のAPI契約を満たす目的のみ)
-                    ogImage:
-                        compressedImages.length > 0
-                            ? compressedImages[0]
-                            : undefined,
+                    ogImage,
                 })
                 if ("error" in v2EntryResult) {
                     const e: Error = new Error(v2EntryResult.message)
                     e.name = v2EntryResult.error
                     throw e
                 }
-                const rkey = v2EntryResult.bsky.url
-                    .split("/")
-                    .filter(Boolean)
-                    .slice(-1)[0]
-                postUri = `at://${session.did}/app.bsky.feed.post/${rkey}`
+                skyshareEntryUrl = v2EntryResult.skyshare.uri || undefined
             }
             setMsgInfo({
                 msg: "Blueskyへポストしました!",
                 isError: false,
             })
             // noGenerateではない場合かつ、添付メディアがimagesタイプの場合
+            // (X用ページはv2バックエンドが画像post時に既に生成済みのため、ここでは
+            // v2から受け取ったskyshareEntryUrlをそのまま利用する。生成自体は行わない)
             if (
                 !options.noGenerateOgp &&
                 ImageAttached &&
-                mediaData.type === "images"
+                mediaData.type === "images" &&
+                skyshareEntryUrl
             ) {
-                setMsgInfo({
-                    msg: "X用ページ生成中...",
-                    isError: false,
-                })
-                const createPageResult = await createPage({
-                    accessJwt: session.accessJwt,
-                    uri: postUri,
-                })
-                if ("error" in createPageResult) {
-                    const e: Error = new Error(createPageResult.message)
-                    e.name = createPageResult.error
-                    throw e
-                }
                 setMsgInfo({
                     msg: "生成したOGPの取得中...",
                     isError: false,
                 })
-                const [id, rkey] = createPageResult.uri.split(/[@/]/)
-                const dbIndex = createPageResult.dbIndex.toString()
-                const ogpUrl = new URL(
-                    `${pagesPrefix}/${dbIndex}/${id}@${rkey}/`,
-                    siteurl,
-                )
                 // 本文に生成URLを付与
                 callbackPostOptions.externalPostText += `${
                     postText !== "" ? "\n" : ""
-                }${ogpUrl.toString()}`
+                }${skyshareEntryUrl}`
                 // 生成URLからogpを取得
                 const getOgpMetaResult = await getOgpMeta({
-                    externalUrl: ogpUrl.toString(),
-                    languageCode: language,
+                    externalUrl: skyshareEntryUrl,
                 })
 
                 callbackPostOptions.previewTitle = getOgpMetaResult.title
                 if (getOgpMetaResult.image !== "") {
                     callbackPostOptions.previewData = await getOgpBlob({
                         externalUrl: getOgpMetaResult.image,
-                        languageCode: language,
                     })
                 }
                 setMsgInfo({

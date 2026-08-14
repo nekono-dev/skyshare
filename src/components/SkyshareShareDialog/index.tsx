@@ -5,10 +5,8 @@
  * - 発行済みの skyshare entry URL と Bluesky 投稿本文から X intent テキストを組み立てる。
  * - 「X に投稿」選択時は intent ポップアップを開いてダイアログを閉じる。
  */
-import Overlay from "@/components/Overlay"
+import DialogComponent from "@/components/DialogComponent"
 import { buildXIntentText, openXIntentPopup } from "@/lib/xIntent"
-import ui from "@/styles/ui.module.css"
-import styles from "./index.module.css"
 
 type Props = {
   open: boolean
@@ -36,39 +34,29 @@ type Props = {
  */
 const Component = ({ open, postText, entryUrl, onClose }: Props) => {
   return (
-    <Overlay
+    <DialogComponent
       open={open}
       onClose={onClose}
-      contentClassName={styles.shareDialogOverlay}
-    >
-      <div
-        className={`${ui.baseCard} ${styles.shareDialogCard}`}
-        role="dialog"
-        aria-label="skyshareページを共有"
-      >
-        <p className={ui.label}>skyshareページを作成しました。</p>
-        <div className={styles.shareDialogActions}>
-          <button
-            type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.blackButton}`}
-            onClick={() => {
-              if (!entryUrl) return
-              openXIntentPopup(buildXIntentText(postText, entryUrl))
-              onClose()
-            }}
-          >
-            X に投稿
-          </button>
-          <button
-            type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
-            onClick={onClose}
-          >
-            閉じる
-          </button>
-        </div>
-      </div>
-    </Overlay>
+      ariaLabel="skyshareページを共有"
+      buttons={[
+        {
+          key: "post-x",
+          label: "X に投稿",
+          variant: "black",
+          onClick: () => {
+            if (!entryUrl) return
+            openXIntentPopup(buildXIntentText(postText, entryUrl))
+            onClose()
+          },
+        },
+        {
+          key: "close",
+          label: "閉じる",
+          variant: "gray",
+          onClick: onClose,
+        },
+      ]}
+    />
   )
 }
 

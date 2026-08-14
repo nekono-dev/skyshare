@@ -21,6 +21,7 @@
     },
   ],
   "vars": {
+    "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
     "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",
     "PUBLIC_NODE_ENV": "develop",
     "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",

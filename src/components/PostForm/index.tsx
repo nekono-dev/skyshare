@@ -6,7 +6,12 @@
  * - 送信時に OpenAPI 契約へ整形し、`createEntry` API を呼び出す。
  * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
  */
-import React, { useEffect, useState } from "react"
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useState,
+} from "react"
 import twitterText from "twitter-text"
 import {
   createDraft,
@@ -55,6 +60,13 @@ type Props = {
   onClose?: () => void
   onPosted?: () => void
   avatarUrl?: string | null
+}
+
+/**
+ * 親（PostLauncher の Overlay など）から閉じ操作を要求するための命令的ハンドル。
+ */
+export type PostFormHandle = {
+  requestClose: () => void
 }
 
 type ImageSizeCandidate = {
@@ -267,11 +279,10 @@ const resolveShareOptionsDefaultOpen = ({
  * - 入力: `{ avatarUrl: "https://..." }`
  * - 出力: テキスト・画像・OGP を扱える投稿フォーム
  */
-export const Component: React.FC<Props> = ({
-  onClose,
-  onPosted,
-  avatarUrl,
-}) => {
+export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
+  { onClose, onPosted, avatarUrl },
+  ref,
+) {
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
   const [crosspostToTaittsuu, setCrosspostToTaittsuu] = useState(() =>
@@ -578,10 +589,12 @@ export const Component: React.FC<Props> = ({
   }
 
   /**
-   * キャンセルボタン押下時の処理。
+   * フォームを閉じる要求を処理する（キャンセルボタン・Overlay 背景クリック共通）。
    *
    * 処理の趣旨:
    * - 未保存の本文があれば保存確認ダイアログを開き、なければそのまま閉じる。
+   * - PostLauncher の Overlay 背景クリックでも同じ判定を通すため、
+   *   `useImperativeHandle` 経由で親コンポーネントから呼び出せるようにする。
    *
    * Input:
    * - なし
@@ -589,13 +602,15 @@ export const Component: React.FC<Props> = ({
    * Output:
    * - なし
    */
-  const handleCancelClick = () => {
+  const requestClose = () => {
     if (hasUnsavedDraftChanges()) {
       setDraftSaveConfirmOpen(true)
       return
     }
     onClose?.()
   }
+
+  useImperativeHandle(ref, () => ({ requestClose }))
 
   /**
    * 投稿フォームの内容を API 契約に合わせて送信する。
@@ -763,7 +778,7 @@ export const Component: React.FC<Props> = ({
               className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
               aria-label="キャンセル"
               disabled={isSubmitting}
-              onClick={handleCancelClick}
+              onClick={requestClose}
             >
               キャンセル
             </button>
@@ -999,6 +1014,6 @@ export const Component: React.FC<Props> = ({
       </div>
     </>
   )
-}
+})
 
 export default Component

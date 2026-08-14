@@ -10,6 +10,9 @@
 :global(html) {
   height: 100%;
   overflow-x: hidden;
+  /* スクロールバーを常時表示領域として確保し、モーダル開閉時のスクロールバー
+     表示切替による横方向のガタつき（コンテンツ幅の変化）を防ぐ。 */
+  overflow-y: scroll;
 }
 
 :local(.root) {
