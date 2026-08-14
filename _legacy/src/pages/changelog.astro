@@ -1,5 +1,6 @@
 ---
 import { servicename } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
 import Pagelayout from "@/layouts/Pagelayout.astro"
 const title = `Changelog - ${servicename}`
 const robots = ["index", "nofollow", "noarchive", "noimageindex"]
@@ -13,7 +14,7 @@ const html = markdownit().render(markdownString)
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     robots={robots}
     hidePostButton={true}

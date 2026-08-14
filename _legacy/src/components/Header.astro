@@ -1,7 +1,7 @@
 ---
 // thanks for https://tailblocks.cc/
 import { githuburl } from "@/env/vars"
-import { baseurl, qaurl, changeurl, featureurl } from "@/env/envs"
+import { baseurl, materialsurl, qaurl, changeurl, featureurl } from "@/env/envs"
 import App from "@/components/Client"
 import Loadingcircle from "./loadingcircle.astro"
 
@@ -19,7 +19,10 @@ const { hideLoader = false } = Astro.props
             href={baseurl}
             class="flex-initial title-font font-medium items-center ml-4 mb-0"
         >
-            <img src="/materials/longlogo.svg" class="max-w-24 sm:max-w-28" />
+            <img
+                src={`${materialsurl}longlogo.svg`}
+                class="max-w-24 sm:max-w-28"
+            />
         </a>
         <nav class="ml-auto flex items-center text-base justify-center">
             <div class="md:block hidden mb-0">

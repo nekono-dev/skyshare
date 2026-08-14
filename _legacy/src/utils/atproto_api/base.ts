@@ -1,4 +1,5 @@
-const xrpcurl = "https://bsky.social/xrpc"
+export const defaultService = "https://bsky.social"
+const xrpcurl = `${defaultService}/xrpc`
 export const getEndpoint = (path: string): string => {
     return `${xrpcurl}/${path}`
 }

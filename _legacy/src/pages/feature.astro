@@ -1,6 +1,6 @@
 ---
 import { servicename, githuburl, zennurl } from "@/env/vars"
-import { qaurl, abouturl } from "@/env/envs"
+import { qaurl, abouturl, materialsurl } from "@/env/envs"
 import version from "@/env/version"
 import Pagelayout from "@/layouts/Pagelayout.astro"
 import { Picture } from "astro:assets"
@@ -12,7 +12,7 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     robots={robots}
     hidePostButton={true}

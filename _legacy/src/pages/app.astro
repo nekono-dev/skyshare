@@ -3,12 +3,13 @@ export const prerender = false
 import Pagelayout from "@/layouts/Pagelayout.astro"
 import Loadingcircle from "@/components/loadingcircle.astro"
 import { servicename } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
 const title = `${servicename}`
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png`
+    cardPath=`${materialsurl}ogp_main.png`
     pageTitle={title}
     robots={robots}
     hideLoader={true}

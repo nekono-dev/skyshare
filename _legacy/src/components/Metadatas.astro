@@ -6,6 +6,7 @@ interface Props {
 }
 const { cardPath, pageTitle, robots } = Astro.props
 import { servicename, servicedesc } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
 
 const url = Astro.url
 const cardUrl = new URL(cardPath, Astro.url)
@@ -14,9 +15,13 @@ const description = servicedesc
 ---
 
 <title>{pageTitle}</title>
-<link rel="apple-touch-icon" sizes="512x512" href="/materials/icon-512.png" />
-<link rel="apple-touch-icon-precomposed" href="/materials/icon-512.png" />
-<link rel="manifest" href="/materials/manifest.webmanifest" />
+<link
+    rel="apple-touch-icon"
+    sizes="512x512"
+    href={`${materialsurl}icon-512.png`}
+/>
+<link rel="apple-touch-icon-precomposed" href={`${materialsurl}icon-512.png`} />
+<link rel="manifest" href={`${materialsurl}manifest.webmanifest`} />
 <meta property="og:url" content={url} />
 <meta property="og:type" content="website" />
 <meta property="og:title" content={pageTitle} />

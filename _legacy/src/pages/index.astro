@@ -1,7 +1,14 @@
 ---
 import Pagelayout from "@/layouts/Indexlayout.astro"
 import { servicename, githuburl } from "@/env/vars"
-import { posturl, qaurl, changeurl, featureurl, skythrowurl } from "@/env/envs"
+import {
+    posturl,
+    qaurl,
+    changeurl,
+    featureurl,
+    skythrowurl,
+    materialsurl,
+} from "@/env/envs"
 const title = `${servicename} - Share Bluesky to X`
 import version from "@/env/version"
 
@@ -12,7 +19,7 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     robots={robots}
 >
@@ -25,7 +32,7 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
                 {version}
             </div>
             <img
-                src="/materials/longlogo.svg"
+                src={`${materialsurl}longlogo.svg`}
                 class="max-w-2xl mb-8 mx-auto w-11/12"
                 alt={servicename}
             />

@@ -1,5 +1,6 @@
 ---
 import { servicename } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
 import Pagelayout from "@/layouts/Pagelayout.astro"
 import version from "@/env/version"
 
@@ -8,7 +9,7 @@ const robots = ["index", "noarchive", "noimageindex"]
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     robots={robots}
     hidePostButton={true}

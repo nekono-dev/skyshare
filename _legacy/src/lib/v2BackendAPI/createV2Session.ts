@@ -1,4 +1,5 @@
 import { v2BackendEndpoint } from "./endpoint"
+import { defaultService } from "@/utils/atproto_api/base"
 
 // v2バックエンド POST /v1/session の呼び出し。
 // 成功時はv2がHttpOnly Cookie(atp_session)をブラウザへ発行し、
@@ -14,16 +15,18 @@ export type createV2SessionErrorResult = {
 export const api = async ({
     identifier,
     password,
+    service = defaultService,
 }: {
     identifier: string
     password: string
+    service?: string
 }): Promise<createV2SessionResult> => {
     try {
         const response = await fetch(`${v2BackendEndpoint}/v1/session`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "same-origin",
-            body: JSON.stringify({ identifier, password }),
+            body: JSON.stringify({ identifier, password, service }),
         })
         if (!response.ok) {
             let message = `v2 session request failed (status ${response.status})`

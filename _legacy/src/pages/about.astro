@@ -1,6 +1,6 @@
 ---
 import { servicename, serviceurl, authorlink } from "@/env/vars"
-import { qaurl } from "@/env/envs"
+import { qaurl, materialsurl } from "@/env/envs"
 import version from "@/env/version"
 import Pagelayout from "@/layouts/Pagelayout.astro"
 const siteurl = Astro.url.origin
@@ -10,7 +10,7 @@ const robots = ["index", "nofollow", "noarchive", "noimageindex"]
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     robots={robots}
     hidePostButton={true}

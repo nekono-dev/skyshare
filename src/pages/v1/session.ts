@@ -20,8 +20,7 @@ import { XRPCError } from "@atproto/xrpc"
  * ログインを実行し、セッションCookieを返す API エンドポイント。
  *
  * 想定する入力形状(最小要件):
- * - JSON ボディに `identifier` と `password` を含む
- * - `service` は任意。未指定時は `https://bsky.social`
+ * - JSON ボディに `identifier`・`password`・`service` を含む(いずれも必須)
  *
  * 処理の趣旨:
  * - OpenAPI スキーマで入力検証後、AtpAgent.login の成功結果を Cookie 化して返却する。

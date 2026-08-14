@@ -7,6 +7,7 @@ const { error } = Astro.props
 
 import Pagelayout from "@/layouts/Pagelayout.astro"
 import { servicename } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
 import version from "@/env/version"
 
 let errorName: string
@@ -35,7 +36,7 @@ const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 ---
 
 <Pagelayout
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     robots={robots}
     hidePostButton={false}

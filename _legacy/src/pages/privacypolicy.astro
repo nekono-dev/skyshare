@@ -1,5 +1,6 @@
 ---
 import { servicename, authorlink, authorname, authormail } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
 import Pagelayout from "@/layouts/Pagelayout.astro"
 const title = `Privacy Policy - ${servicename}`
 const robots = ["index", "nofollow", "noarchive", "noimageindex"]
@@ -8,7 +9,7 @@ import version from "@/env/version"
 
 <Pagelayout
     robots={robots}
-    cardPath=`/materials/ogp_main.png?updated=${version}`
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
     pageTitle={title}
     hidePostButton={true}
 >
