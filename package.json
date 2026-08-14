@@ -10,6 +10,8 @@
     "codegen": "npm run lexgen && npm run apigen",
     "dev": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro dev",
     "build": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro build",
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy",
     "format": "prettier --write .",
     "generate-types": "wrangler types"
   },
@@ -39,6 +41,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
+    "wrangler": "^4.122.0",
     "yaml": "^2.3.1"
   },
   "author": "nekono.dev"
