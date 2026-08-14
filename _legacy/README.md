@@ -1,3 +1,8 @@
+# Legacy Frontend
+
+このディレクトリ配下は、Skyshare v1.X.X のフロントエンドのコードです。  
+移行のために残置しますが、今後の開発は v2.X.X のコードに追従します。
+
 # Build Frontend
 
 ## Setup
