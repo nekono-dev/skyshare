@@ -1,0 +1,30 @@
+{
+  "name": "skyshare",
+  // Set this to today's date
+  "compatibility_date": "2026-08-14",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client/",
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "preview.skyshare.nekono.dev",
+      "zone_name": "nekono.dev",
+      "custom_domain": true,
+      "enabled": true,
+      "previews_enabled": false,
+    },
+  ],
+  "vars": {
+    "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",
+    "PUBLIC_NODE_ENV": "develop",
+    "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
+    "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
+  },
+  "workers_dev": true,
+}

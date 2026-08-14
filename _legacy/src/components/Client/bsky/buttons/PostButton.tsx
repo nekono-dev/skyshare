@@ -296,8 +296,7 @@ export const Component = ({
                             return values
                         })
 
-                    const uploadBlobTasks: Array<Promise<uploadBlobResult>> =
-                        []
+                    const uploadBlobTasks: Array<Promise<uploadBlobResult>> = []
                     resultCompress.forEach(value => {
                         uploadBlobTasks.push(
                             uploadBlob({

@@ -17,8 +17,7 @@ export type createV2EntryErrorResult = {
     message: string
 }
 export type createV2EntryResult =
-    | createV2EntrySuccessResult
-    | createV2EntryErrorResult
+    createV2EntrySuccessResult | createV2EntryErrorResult
 
 export const api = async ({
     text,
@@ -60,9 +59,7 @@ export const api = async ({
             body: formData,
         })
         const body = (await response.json().catch(() => undefined)) as
-            | createV2EntrySuccessResult
-            | { error?: string }
-            | undefined
+            createV2EntrySuccessResult | { error?: string } | undefined
 
         if (!response.ok || !body || !("bsky" in body)) {
             const message =
