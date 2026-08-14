@@ -9,7 +9,8 @@
     "apigen": "npm run apigen:client && npm run apigen:type",
     "codegen": "npm run lexgen && npm run apigen",
     "build": "npm run codegen && npm run format && PUBLIC_VERSION=$npm_package_version astro build",
-    "dev": "npm run build && wrangler dev --ip 0.0.0.0",
+    "dev": "npm run codegen && npm run format && PUBLIC_VERSION=$npm_package_version astro dev",
+    "prev": "npm run build && wrangler dev --ip 0.0.0.0",
     "deploy": "npm run build && wrangler deploy",
     "format": "prettier --write .",
     "generate-types": "wrangler types"
