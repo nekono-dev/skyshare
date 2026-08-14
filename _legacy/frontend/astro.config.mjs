@@ -26,6 +26,16 @@ export default defineConfig({
                 "/v1": {
                     target: "http://localhost:4321",
                     changeOrigin: true,
+                    // changeOriginはHostヘッダのみ書き換え、ブラウザが送るOriginヘッダ
+                    // (http://localhost:4322)はそのまま転送されてしまう。v2側のAstroは
+                    // POST等のform-likeリクエストでOrigin===url.originを検証するCSRF
+                    // ガードを持つため、不一致のまま転送すると403 Forbiddenになる。
+                    // 転送先オリジンに合わせてOriginヘッダを書き換えて回避する。
+                    configure: proxy => {
+                        proxy.on("proxyReq", proxyReq => {
+                            proxyReq.setHeader("origin", "http://localhost:4321")
+                        })
+                    },
                 },
             },
         },
