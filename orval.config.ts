@@ -19,7 +19,7 @@ export default defineConfig({
             override: {
                 formData: {
                     mutator: {
-                        path: "./src/lib/openapi-form-data.ts",
+                        path: "./src/lib/openapiFormData.ts",
                         name: "customFormData",
                     },
                 },

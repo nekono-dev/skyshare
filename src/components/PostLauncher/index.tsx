@@ -46,10 +46,7 @@ const PostLauncher: React.FC<{
         <img src={pic.src} width={24} height={24} />
       </button>
 
-      <Overlay
-        open={open}
-        onClose={() => postFormRef.current?.requestClose()}
-      >
+      <Overlay open={open} onClose={() => postFormRef.current?.requestClose()}>
         <PostForm
           ref={postFormRef}
           onClose={() => setOpen(false)}

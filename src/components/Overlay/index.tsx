@@ -66,7 +66,8 @@ const Overlay: React.FC<Props> = ({
   }
 
   const handleBackdropMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    const shouldClose = pressedOnBackdrop.current && e.target === e.currentTarget
+    const shouldClose =
+      pressedOnBackdrop.current && e.target === e.currentTarget
     pressedOnBackdrop.current = false
     if (shouldClose) onClose()
   }

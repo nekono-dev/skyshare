@@ -63,11 +63,19 @@ export const Component: React.FC<Props> = ({
   loading,
 }) => {
   return (
-    <Overlay open={open} onClose={onClose} contentClassName={styles.dialogOverlay}>
-      <div className={`${ui.baseCard} ${styles.dialogCard}`} role="dialog" aria-label={ariaLabel}>
+    <Overlay
+      open={open}
+      onClose={onClose}
+      contentClassName={styles.dialogOverlay}
+    >
+      <div
+        className={`${ui.baseCard} ${styles.dialogCard}`}
+        role="dialog"
+        aria-label={ariaLabel}
+      >
         {loading && <Loading overlay message={loading.message} />}
         <div className={styles.dialogActions}>
-          {buttons.map((button) => (
+          {buttons.map(button => (
             <button
               key={button.key}
               type="button"
