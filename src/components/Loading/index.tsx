@@ -1,4 +1,5 @@
 import Spinner from "@/components/Spinner"
+import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
 /**
@@ -35,7 +36,7 @@ export const Component = ({
   if (overlay) {
     return (
       <div className={styles.overlay} role="status" aria-live="polite">
-        <div className={styles.panel}>
+        <div className={`${ui["base-card"]} ${styles.panel}`}>
           <Spinner />
           <p className={styles.message}>{message}</p>
         </div>

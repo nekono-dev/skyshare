@@ -10,6 +10,28 @@
 import { XRPCError } from "@atproto/xrpc"
 
 /**
+ * limit クエリを検証する。
+ *
+ * Input:
+ * - `value`: query string value
+ *
+ * Output:
+ * - 1〜100 の整数なら number、未指定なら undefined、不正値なら null
+ */
+export const parseLimit = (value: string | null) => {
+    if (value === null || value.trim().length === 0) {
+        return undefined
+    }
+
+    const parsed = Number(value)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100) {
+        return null
+    }
+
+    return parsed
+}
+
+/**
  * `Headers` をプレーンオブジェクトへ変換する。
  *
  * 処理の趣旨:
@@ -52,7 +74,6 @@ export const convertHeaderToObj = (headers: Headers) => {
  * - 出力: `{"error":"Unauthorized"}` を含む `Response`
  */
 export const errorResponseFromStatus = (status: number): Response => {
-    console.log(`API Error Response: ${status}`)
     const message = { error: "Unknown Error" }
     switch (status) {
         case 400:
@@ -90,7 +111,7 @@ export const errorResponseFromStatus = (status: number): Response => {
  * - `error`: unknown エラー
  *
  * Output:
- * - 401/429/500 のいずれか
+ * - 401/404/429/500 のいずれか
  */
 export const resolveXrpcStatus = (error: unknown): number => {
     let current: unknown = error
@@ -126,6 +147,10 @@ export const resolveXrpcStatus = (error: unknown): number => {
             return 401
         case "RateLimitExceeded":
             return 429
+        case "BlobNotFound":
+        case "RepoNotFound":
+        case "RecordNotFound":
+            return 404
         default:
             return 500
     }

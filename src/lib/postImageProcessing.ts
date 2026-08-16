@@ -606,41 +606,37 @@ export const createOgpThumbnailFromBlob = async (
 }
 
 /**
- * 複数画像を OGP レイアウトへ合成し、投稿用画像セットを生成する。
+ * スロット定義・クロップ座標に沿って複数画像を1枚のサムネイルへ合成する。
  *
  * 想定する入力形状(最小要件):
  * - `imageUrls` は 1〜4 枚分を想定（5枚以上は先頭4枚のみ使用）
  * - `cropStates[index].cropPixels` は各画像に対応する切り抜き領域を持つ
  *
  * 処理の趣旨:
- * - スロット定義に沿って各画像を合成し、サムネイル Blob を生成する。
- * - 同時に各画像について `canUsePostImageAsIs` で圧縮要否を判定し、既に投稿条件を
- *   満たす画像（JPEG/PNG かつ予算内）は元Blobをそのまま採用、満たさない画像のみ
- *   個別リサイズ+圧縮して原本配列として返す。
- * - 必須データ欠落時は早期にエラー化し、壊れた合成結果の生成を防ぐ。
+ * - `createProcessedImages`（投稿フォーム、原本画像のアップロードも伴う）と
+ *   `createDefaultThumbnail`（Timelineからのentry作成、合成サムネイルのみ必要）の
+ *   両方から共有される合成処理の核。読み込み済み `images` も返し、呼び出し元が
+ *   原本画像の再圧縮などに二重ロードせず使い回せるようにする。
  *
  * Input:
  * - `imageUrls`: 元画像 URL 配列
  * - `cropStates`: 画像ごとのクロップ状態配列
  *
  * Output:
- * - `originalBlobs`: 個別処理済み画像（圧縮対象外は元Blobそのもの）
  * - `thumbnailBlob`: 合成サムネイル
+ * - `images`: 読み込み済み `HTMLImageElement` 配列（スロット順）
  *
  * 例:
  * - 入力: 2枚の画像URL + 2件の cropPixels
- * - 出力: 2件の originalBlobs と 1件の thumbnailBlob
+ * - 出力: 1件の thumbnailBlob と 2件の images
  */
-export const createProcessedImages = async (
+const composeThumbnailBlob = async (
     imageUrls: string[],
     cropStates: SlotCropState[],
-) => {
+): Promise<{ thumbnailBlob: Blob; images: HTMLImageElement[] }> => {
     const slotDefs = getSlotDefs(Math.min(4, Math.max(1, imageUrls.length)))
     const targetUrls = imageUrls.slice(0, slotDefs.length)
-    const [images, sourceBlobs] = await Promise.all([
-        Promise.all(targetUrls.map(loadImage)),
-        Promise.all(targetUrls.map(url => fetch(url).then(res => res.blob()))),
-    ])
+    const images = await Promise.all(targetUrls.map(loadImage))
 
     const crops = slotDefs.map((_, index) => {
         const crop = cropStates[index]?.cropPixels
@@ -689,6 +685,48 @@ export const createProcessedImages = async (
         COMPOSITE_VISUAL_BYTE_BUDGET,
     )
 
+    return { thumbnailBlob, images }
+}
+
+/**
+ * 複数画像を OGP レイアウトへ合成し、投稿用画像セットを生成する。
+ *
+ * 想定する入力形状(最小要件):
+ * - `imageUrls` は 1〜4 枚分を想定（5枚以上は先頭4枚のみ使用）
+ * - `cropStates[index].cropPixels` は各画像に対応する切り抜き領域を持つ
+ *
+ * 処理の趣旨:
+ * - `composeThumbnailBlob` で合成サムネイルを生成しつつ、並行して原本 Blob を取得する。
+ * - 同時に各画像について `canUsePostImageAsIs` で圧縮要否を判定し、既に投稿条件を
+ *   満たす画像（JPEG/PNG かつ予算内）は元Blobをそのまま採用、満たさない画像のみ
+ *   個別リサイズ+圧縮して原本配列として返す。
+ * - 必須データ欠落時は早期にエラー化し、壊れた合成結果の生成を防ぐ。
+ *
+ * Input:
+ * - `imageUrls`: 元画像 URL 配列
+ * - `cropStates`: 画像ごとのクロップ状態配列
+ *
+ * Output:
+ * - `originalBlobs`: 個別処理済み画像（圧縮対象外は元Blobそのもの）
+ * - `thumbnailBlob`: 合成サムネイル
+ *
+ * 例:
+ * - 入力: 2枚の画像URL + 2件の cropPixels
+ * - 出力: 2件の originalBlobs と 1件の thumbnailBlob
+ */
+export const createProcessedImages = async (
+    imageUrls: string[],
+    cropStates: SlotCropState[],
+) => {
+    const targetUrls = imageUrls.slice(
+        0,
+        getSlotDefs(Math.min(4, Math.max(1, imageUrls.length))).length,
+    )
+    const [{ thumbnailBlob, images }, sourceBlobs] = await Promise.all([
+        composeThumbnailBlob(imageUrls, cropStates),
+        Promise.all(targetUrls.map(url => fetch(url).then(res => res.blob()))),
+    ])
+
     // 既に投稿条件（JPEG/PNG かつ予算内）を満たす画像は圧縮対象外として元Blobをそのまま採用し、
     // 満たさない画像のみ圧縮対象として圧縮エンジンに通す。
     const originalBlobs = await Promise.all(
@@ -706,4 +744,47 @@ export const createProcessedImages = async (
     )
 
     return { originalBlobs, thumbnailBlob }
+}
+
+/**
+ * クロップ編集を行わなかった場合の「デフォルト配置」で複数画像をサムネイルへ合成する。
+ *
+ * 処理の趣旨:
+ * - 投稿フォーム（`ImagePicker`）がクロップダイアログを開かず画像を追加した場合と同じ、
+ *   `getSlotDefs` によるスロット定義 + `computeInitialCrop` による中央基準クロップを使う。
+ * - Timelineからのentry作成など、ユーザーによるクロップ編集を経ない場面で使用する。
+ *
+ * 想定する入力形状(最小要件):
+ * - `imageUrls` は 1〜4 枚分を想定（5枚以上は先頭4枚のみ使用）。CORS制約を避けるため、
+ *   呼び出し元は同一オリジンの Blob URL（`URL.createObjectURL` 由来）を渡すこと。
+ *
+ * Input:
+ * - `imageUrls`: 元画像 URL 配列
+ *
+ * Output:
+ * - 合成済みサムネイル Blob
+ *
+ * 例:
+ * - 入力: 3枚の画像URL
+ * - 出力: 左1+右上下2のデフォルト配置で合成された Blob
+ */
+export const createDefaultThumbnail = async (
+    imageUrls: string[],
+): Promise<Blob> => {
+    const slotDefs = getSlotDefs(Math.min(4, Math.max(1, imageUrls.length)))
+    const targetUrls = imageUrls.slice(0, slotDefs.length)
+    const sizes = await Promise.all(targetUrls.map(loadImageSize))
+    const cropStates: SlotCropState[] = sizes.map((size, index) => ({
+        crop: { x: 0, y: 0 },
+        zoom: 1,
+        cropPixels: computeInitialCrop(
+            size.width,
+            size.height,
+            slotDefs[index].w,
+            slotDefs[index].h,
+        ),
+    }))
+
+    const { thumbnailBlob } = await composeThumbnailBlob(targetUrls, cropStates)
+    return thumbnailBlob
 }

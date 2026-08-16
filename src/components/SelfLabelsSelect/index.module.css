@@ -11,11 +11,11 @@
   margin-right: var(--space-1);
 }
 
-.iconActive {
+.icon-active {
   fill: var(--icon-active-fill);
 }
 
-.iconInactive {
+.icon-inactive {
   fill: var(--icon-inactive-fill);
 }
 

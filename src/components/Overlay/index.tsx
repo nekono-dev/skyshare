@@ -11,6 +11,9 @@ import styles from "./index.module.css"
  * - 背景上での押下（mousedown）と離す（mouseup）が両方とも背景自身で発生した場合のみ
  *   `onClose` を呼ぶ。内容領域内でのテキスト選択ドラッグ中にマウスが背景側で
  *   離された場合に誤ってダイアログが閉じてしまうのを防ぐため。
+ * - Esc キー押下でも `onClose` を呼ぶ。Overlay は入れ子になりうるため、
+ *   モジュール共有スタックで表示中インスタンスを管理し、最前面（最後に開いた）
+ *   インスタンスだけが反応するようにする。
  * - 表示中は背面のスクロールを止め、スクロール操作が内容領域（PostForm など）へ向くようにする。
  *   ロック自体は `scrollLock`（参照カウント方式）に委譲し、投稿フォーム内で
  *   下書き保存確認やクロップダイアログなど Overlay が入れ子になっても、
@@ -25,6 +28,10 @@ type Props = {
   contentClassName?: string
   contentStyle?: React.CSSProperties
 }
+
+// 表示中の Overlay インスタンスを開いた順に積む共有スタック。
+// Esc キーは最前面（末尾）のインスタンスだけが処理する。
+const openOverlayStack: symbol[] = []
 
 /**
  * オーバーレイと内容領域を描画する。
@@ -51,12 +58,32 @@ const Overlay: React.FC<Props> = ({
   contentStyle,
 }) => {
   const pressedOnBackdrop = useRef(false)
+  const instanceIdRef = useRef<symbol | undefined>(undefined)
+  if (!instanceIdRef.current) instanceIdRef.current = Symbol("overlay")
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!open || typeof document === "undefined") return
 
     acquireScrollLock()
-    return () => releaseScrollLock()
+
+    const instanceId = instanceIdRef.current!
+    openOverlayStack.push(instanceId)
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return
+      if (openOverlayStack[openOverlayStack.length - 1] !== instanceId) return
+      onCloseRef.current()
+    }
+    document.addEventListener("keydown", handleKeyDown)
+
+    return () => {
+      releaseScrollLock()
+      document.removeEventListener("keydown", handleKeyDown)
+      const idx = openOverlayStack.indexOf(instanceId)
+      if (idx !== -1) openOverlayStack.splice(idx, 1)
+    }
   }, [open])
 
   if (!open) return null

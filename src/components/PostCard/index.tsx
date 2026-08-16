@@ -16,13 +16,16 @@ import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/posts"
 import { useSkyshareEntryStatus } from "./useSkyshareEntryStatus"
+import { parseAtUri, skyshareEntryPath } from "@/lib/url"
 import Loading from "@/components/Loading"
 import PostCardEntryActions from "@/components/PostCardEntryActions"
 import SkyshareShareDialog from "@/components/SkyshareShareDialog"
+import EntryDeleteConfirmDialog from "@/components/EntryDeleteConfirmDialog"
 import blueskyIcon from "@/images/bluesky.svg"
 
 type PostCardProps = {
   item: TimelinePost
+  onPostDeleted?: () => void
 }
 
 /**
@@ -38,17 +41,21 @@ type PostCardProps = {
  * - 入力: `item.text = "hello"`
  * - 出力: 投稿本文と作者情報を持つカード
  */
-const Component = ({ item }: PostCardProps) => {
+const Component = ({ item, onPostDeleted }: PostCardProps) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   const {
     display,
     createError,
     deleteError,
+    isDeleteDialogOpen,
     createEntryFromPost,
-    deleteEntryRecord,
+    requestDeleteEntry,
+    cancelDeleteEntry,
+    confirmDeleteEntry,
   } = useSkyshareEntryStatus(item, {
     onCreated: () => setShareDialogOpen(true),
+    onPostDeleted,
   })
 
   const createdAtText = new Date(item.indexedAt).toLocaleString("ja-JP", {
@@ -61,6 +68,13 @@ const Component = ({ item }: PostCardProps) => {
       ? display.entry
       : null
   const entryWebUrl = activeEntry?.webUrl
+  // ページ内リンクは entry 自身の AT URI から直接パスを組み立てる（常に相対パス）。
+  // X共有（SkyshareShareDialog）は外部サービスへの絶対URLが必要なため、
+  // そちらは本番ドメイン固定で生成された entryWebUrl をそのまま渡す。
+  const parsedEntryUri = activeEntry ? parseAtUri(activeEntry.uri) : undefined
+  const entryPath = parsedEntryUri
+    ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
+    : undefined
   // サムネイルは skyshare の view 画像を優先する。無い場合、複数画像投稿は全画像を縦に分割して表示する。
   const thumbnailImages = activeEntry?.visualUrl
     ? [activeEntry.visualUrl]
@@ -70,10 +84,10 @@ const Component = ({ item }: PostCardProps) => {
 
   return (
     <article
-      className={`${ui.baseCard} ${styles.card} ${isSkyshareIneligible ? ui.cardMuted : ""}`}
+      className={`${ui["base-card"]} ${styles.card} ${isSkyshareIneligible ? ui["card-muted"] : ""}`}
     >
-      <div className={styles.mainColumn}>
-        <div className={styles.authorBlock}>
+      <div className={styles["main-column"]}>
+        <div className={styles["author-block"]}>
           {item.author.avatar ? (
             <img
               className={styles.avatar}
@@ -85,23 +99,36 @@ const Component = ({ item }: PostCardProps) => {
               decoding="async"
             />
           ) : (
-            <div className={styles.avatarPlaceholder} aria-hidden="true" />
+            <div className={styles["avatar-placeholder"]} aria-hidden="true" />
           )}
 
-          <div className={styles.authorMeta}>
-            <div className={styles.authorNameRow}>
+          <div className={styles["author-meta"]}>
+            <div className={styles["author-name-row"]}>
               <strong>{item.author.displayName ?? item.author.handle}</strong>
               <span className={styles.handle}>@{item.author.handle}</span>
             </div>
-            <p className={styles.createdAt}>{createdAtText}</p>
+            <p className={styles["created-at"]}>{createdAtText}</p>
           </div>
+
+          {entryPath ? (
+            <a
+              className={styles["entry-link"]}
+              href={entryPath}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Entryを開く
+            </a>
+          ) : null}
         </div>
 
         {item.text ? <p className={styles.text}>{item.text}</p> : null}
 
-        <footer className={`${styles.footer} ${ui.toolbar} ${ui.toolbarAlign}`}>
+        <footer
+          className={`${styles.footer} ${ui.toolbar} ${ui["toolbar-align"]}`}
+        >
           <a
-            className={`${ui.baseButton} ${ui.nontextButton} ${ui.mdButton} ${ui.whiteButton}`}
+            className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
@@ -116,7 +143,7 @@ const Component = ({ item }: PostCardProps) => {
             createError={createError}
             deleteError={deleteError}
             onCreate={createEntryFromPost}
-            onDelete={deleteEntryRecord}
+            onRequestDelete={requestDeleteEntry}
             onCrosspost={() => setShareDialogOpen(true)}
           />
         </footer>
@@ -125,7 +152,7 @@ const Component = ({ item }: PostCardProps) => {
       {thumbnailImages.length > 0 ? (
         <div className={styles.thumbnail}>
           {thumbnailImages.map((url, index) => (
-            <div key={`${url}-${index}`} className={styles.thumbnailSlice}>
+            <div key={`${url}-${index}`} className={styles["thumbnail-slice"]}>
               <img src={url} alt="" loading="lazy" decoding="async" />
             </div>
           ))}
@@ -141,6 +168,14 @@ const Component = ({ item }: PostCardProps) => {
         postText={item.text}
         entryUrl={entryWebUrl ?? null}
         onClose={() => setShareDialogOpen(false)}
+      />
+
+      <EntryDeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        isDeleting={display.kind === "deleting"}
+        onDeleteLink={() => confirmDeleteEntry(false)}
+        onDeletePost={() => confirmDeleteEntry(true)}
+        onCancel={cancelDeleteEntry}
       />
     </article>
   )

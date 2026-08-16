@@ -121,6 +121,11 @@ export type CursorPaginationController<TItem> = {
   empty: boolean
   message?: string
   pagination: CursorPaginationViewModel
+  removeItem: (matchItem: (item: TItem) => boolean) => void
+  updateItem: (
+    matchItem: (item: TItem) => boolean,
+    updater: (item: TItem) => TItem,
+  ) => void
 }
 
 export type ComponentListProps<
@@ -149,7 +154,7 @@ export type ComponentListProps<
  * - 入力: `{ id: "post-1" }`
  * - 出力: `"post-1"`
  */
-const resolveItemKey = <TItem, TItemProps extends object>(
+const resolveItemKey = <TItem,>(
   item: TItem,
   index: number,
   getItemKey?: (item: TItem, index: number) => Key,
@@ -341,6 +346,51 @@ export const useCursorPaginationController = <TItem,>({
 
   const items = isCursorMode ? pageItems : []
 
+  /**
+   * 指定条件に一致する1件を pageItems から取り除く（補充は行わない）。
+   *
+   * 処理の趣旨:
+   * - nextCursor 等のページング状態はサーバーから取得済みの値をそのまま維持するため、
+   *   このページの表示件数は一時的に減るだけで、前後ページ送りで取得できる
+   *   要素一覧が抜けたり重複したりすることはない。
+   *
+   * Input:
+   * - `matchItem`: 削除対象を判定する述語（例: `item => item.uri === deletedUri`）
+   *
+   * Output:
+   * - なし（pageItems の state のみ更新する）
+   *
+   * 例:
+   * - 入力: `removeItem(item => item.uri === "at://did:.../app.bsky.feed.post/abc")`
+   * - 出力: 該当要素が一覧から消える（他の state は変化しない）
+   */
+  const removeItem = useCallback((matchItem: (item: TItem) => boolean) => {
+    setPageItems(prev => prev.filter(item => !matchItem(item)))
+  }, [])
+
+  /**
+   * 指定条件に一致する1件を pageItems 内で更新する（件数・順序は変化しない）。
+   *
+   * Input:
+   * - `matchItem`: 更新対象を判定する述語（例: `item => item.uri === updatedUri`）
+   * - `updater`: 一致した要素から次の状態を生成する関数
+   *
+   * Output:
+   * - なし（pageItems の state のみ更新する）
+   *
+   * 例:
+   * - 入力: `updateItem(item => item.uri === uri, item => ({ ...item, heading: "新見出し" }))`
+   * - 出力: 該当要素の heading のみ更新される（他の state は変化しない）
+   */
+  const updateItem = useCallback(
+    (matchItem: (item: TItem) => boolean, updater: (item: TItem) => TItem) => {
+      setPageItems(prev =>
+        prev.map(item => (matchItem(item) ? updater(item) : item)),
+      )
+    },
+    [],
+  )
+
   const message = loading
     ? (loadingText ?? "読み込み中…")
     : error
@@ -363,6 +413,8 @@ export const useCursorPaginationController = <TItem,>({
       onPrev: handlePrevPage,
       onNext: handleNextPage,
     },
+    removeItem,
+    updateItem,
   }
 }
 

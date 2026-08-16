@@ -1,6 +1,5 @@
 import React from "react"
 import type { UseOgpFetchResult } from "@/components/OgpFetchButton"
-import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
 /**
@@ -29,7 +28,7 @@ export const Component: React.FC<Props> = ({ ogpFetch }) => {
   if (!isOgpLoading && !ogpStatus && !previewUrl) return null
 
   return (
-    <div className={ui.baseCard}>
+    <div className={ui["base-card"]}>
       {isOgpLoading && <div className={ui.label}>OGPを取得中…</div>}
       {!isOgpLoading && ogpStatus && (
         <div className={ui.label}>{ogpStatus}</div>

@@ -13,19 +13,19 @@
   line-height: var(--line-height-tight);
 }
 
-.metaList {
+.meta-list {
   margin-top: var(--space-4);
   display: grid;
   gap: var(--space-2);
 }
 
-.imageGrid {
+.image-grid {
   margin-top: var(--space-4);
   display: grid;
   gap: var(--space-3);
 }
 
-.imageCard {
+.image-card {
   margin: 0;
   border: var(--border-card);
   border-radius: var(--radius-md);
@@ -33,24 +33,24 @@
   background: var(--color-card-muted-bg);
 }
 
-.imageCard img {
+.image-card img {
   width: 100%;
   height: auto;
   display: block;
 }
 
-.imageCard figcaption {
+.image-card figcaption {
   padding: var(--space-2) var(--space-3);
   font-size: var(--font-size-sm);
   color: var(--color-muted);
 }
 
-.emptyMessage {
+.empty-message {
   margin-top: var(--space-4);
   color: var(--color-muted);
 }
 
-.errorPane {
+.error-pane {
   max-width: 680px;
   margin: 0 auto;
   background: var(--color-card-bg);
@@ -61,7 +61,7 @@
 
 @media (max-width: 640px) {
   .container,
-  .errorPane {
+  .error-pane {
     padding: var(--space-4);
   }
 }

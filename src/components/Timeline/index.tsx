@@ -2,13 +2,13 @@
  * 自分の投稿一覧と投稿ランチャーをまとめて扱うクライアントコンポーネント。
  *
  * 責務と処理概要:
- * - `/v2/entry` 取得処理を定義し、一覧コンポーネントへ提供する。
+ * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
  * - PostForm の投稿成功時に再取得トリガーを更新する。
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
 import { useCallback, useEffect, useState } from "react"
-import { getEntry } from "@/client/openapi/client"
+import { getEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/ComponentList"
 import type {
   CursorPageFetchInput,
@@ -76,7 +76,7 @@ const Component = ({ avatarUrl }: Props) => {
     }: CursorPageFetchInput): Promise<CursorPageFetchResult<TimelinePost>> => {
       try {
         const params = cursor ? { limit, cursor } : { limit }
-        const res = await getEntry(params)
+        const res = await getEntries(params)
 
         if (res.status === 200) {
           const posts = res.data.posts ?? []
@@ -143,11 +143,11 @@ const Component = ({ avatarUrl }: Props) => {
   })
 
   return (
-    <section className={`${ui.baseCard} ${ui.pageWidth}`}>
+    <section className={`${ui["base-card"]}`}>
       <PostLauncher avatarUrl={resolvedAvatarUrl} onPosted={handlePosted} />
 
       <div
-        className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+        className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
         <PageSizeSelect
           value={pageSize}
@@ -164,14 +164,22 @@ const Component = ({ avatarUrl }: Props) => {
       </div>
 
       {controller.loading || controller.error || controller.empty ? (
-        <p className={controller.error ? styles.errorState : styles.emptyState}>
+        <p
+          className={
+            controller.error ? styles["error-state"] : styles["empty-state"]
+          }
+        >
           {controller.message}
         </p>
       ) : (
         <ComponentList
           itemComponent={PostCard}
           getItemKey={item => item.uri}
-          className={styles.timelineList}
+          getItemProps={item => ({
+            onPostDeleted: () =>
+              controller.removeItem(candidate => candidate.uri === item.uri),
+          })}
+          className={styles["timeline-list"]}
           items={controller.items}
         />
       )}

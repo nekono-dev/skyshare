@@ -64,7 +64,7 @@ const Component = ({ dbIndex, dbKey }: Props) => {
     <div className={styles.container}>
       <button
         type="button"
-        className={`${ui.baseButton} ${ui.textButton} ${ui.redButton}`}
+        className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
         disabled={isDeleting}
         onClick={() => {
           void handleDelete()

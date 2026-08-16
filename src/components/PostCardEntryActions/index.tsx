@@ -1,5 +1,6 @@
 /**
  * PostCard の Entry 関連アクション（作成・クロスポスト・削除）を表示する専用コンポーネント。
+ * 「Entryを開く」リンクは author 情報カラム側（PostCard 側）で表示するため、ここでは扱わない。
  *
  * 責務と処理概要:
  * - `useSkyshareEntryStatus` が返す `display` の種別だけを見てボタン種を切り替える。
@@ -9,14 +10,13 @@
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { SkyshareEntryDisplayState } from "@/components/PostCard/useSkyshareEntryStatus"
-import skyshareIcon from "@/images/skyshare.svg"
 
 type Props = {
   display: SkyshareEntryDisplayState
   createError: string | null
   deleteError: string | null
   onCreate: () => void
-  onDelete: () => void
+  onRequestDelete: () => void
   onCrosspost: () => void
 }
 
@@ -26,10 +26,10 @@ type Props = {
  * Input:
  * - `display`: 現在の表示状態
  * - `createError`/`deleteError`: 直近の操作エラーメッセージ
- * - `onCreate`/`onDelete`/`onCrosspost`: 各ボタンの押下ハンドラ
+ * - `onCreate`/`onRequestDelete`/`onCrosspost`: 各ボタンの押下ハンドラ
  *
  * Output:
- * - `display.kind` に応じたボタン（作成・Entryを開く+クロスポスト+削除・作成対象外）
+ * - `display.kind` に応じたボタン（作成・クロスポスト+削除・作成対象外）
  *
  * 例:
  * - 入力: `display={{ kind: "creatable" }}`
@@ -40,37 +40,25 @@ const Component = ({
   createError,
   deleteError,
   onCreate,
-  onDelete,
+  onRequestDelete,
   onCrosspost,
 }: Props) => {
   return (
     <>
       {display.kind === "entry" || display.kind === "deleting" ? (
         <>
-          {display.entry.webUrl ? (
-            <a
-              className={`${ui.baseButton} ${ui.nontextButton} ${ui.mdButton} ${ui.whiteButton}`}
-              href={display.entry.webUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Entry を開く"
-              title="Entry を開く"
-            >
-              <img src={skyshareIcon.src} width={20} height={20} alt="" />
-            </a>
-          ) : null}
           <button
             type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
             onClick={onCrosspost}
           >
             クロスポスト
           </button>
           <button
             type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.redButton}`}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
             disabled={display.kind === "deleting"}
-            onClick={onDelete}
+            onClick={onRequestDelete}
           >
             Entryを削除
           </button>
@@ -78,22 +66,22 @@ const Component = ({
       ) : display.kind === "creatable" || display.kind === "creating" ? (
         <button
           type="button"
-          className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
+          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
           disabled={display.kind === "creating"}
           onClick={onCreate}
         >
           {display.kind === "creating" ? "作成中…" : "Skyshare Entryを作成"}
         </button>
       ) : (
-        <span className={styles.noSkyshare}>Skyshare Entry作成対象外</span>
+        <span className={styles["no-skyshare"]}>Skyshare Entry作成対象外</span>
       )}
 
       {createError ? (
-        <span className={styles.createEntryError}>{createError}</span>
+        <span className={styles["create-entry-error"]}>{createError}</span>
       ) : null}
 
       {deleteError ? (
-        <span className={styles.createEntryError}>{deleteError}</span>
+        <span className={styles["create-entry-error"]}>{deleteError}</span>
       ) : null}
     </>
   )

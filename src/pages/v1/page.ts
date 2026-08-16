@@ -14,7 +14,7 @@
 import type { APIRoute } from "astro"
 import { parseSessionFromRequest } from "@/lib/cookies.js"
 import { convertHeaderToObj, errorResponseFromStatus } from "@/lib/api.js"
-import { deletePageDbEntry } from "@/lib/legacy/pagedb"
+import { deletePageDbEntry } from "@/util/legacy/pagedb"
 
 /**
  * 削除リクエストボディを検証する。

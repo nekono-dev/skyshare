@@ -22,7 +22,7 @@ input,
 textarea {
   box-sizing: border-box;
 }
-/* Inner content wrapper for forms placed in ui.baseCard */
+/* Inner content wrapper for forms placed in ui.base-card */
 :local(.content) {
   padding: calc(var(--space-3, 12px));
   display: flex;

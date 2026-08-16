@@ -1,7 +1,9 @@
 @import "./tokens.css";
 @import "./button.ui.module.css";
 @import "./input.ui.module.css";
+@import "./dialog.ui.module.css";
 
+/* 初期化 */
 .root {
   all: initial;
 }
@@ -23,23 +25,71 @@
   line-height: 1.5;
 }
 
+/* ページ全体のUI */
+:global(body) {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: inherit;
+}
+
+:global(html) {
+  height: 100%;
+  overflow-x: hidden;
+  /* スクロールバーを常時表示領域として確保し、モーダル開閉時のスクロールバー
+     表示切替による横方向のガタつき（コンテンツ幅の変化）を防ぐ。 */
+  overflow-y: scroll;
+}
+
+/* リンク色をトークンから指定（グローバル） */
+:global(a) {
+  color: var(--color-bluesky);
+  text-decoration: none;
+}
+
+:global(a:hover),
+:global(a:focus) {
+  color: var(--color-bluesky-hover);
+  text-decoration: underline;
+}
+
+:local(.root) {
+  padding: var(--space-2);
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 個別ページ上の適応UI */
 :local(.page) {
   display: flex;
   flex-direction: column;
 }
 
-:local(.pageWidth) {
-  max-width: var(--page-max-width);
-  width: var(--page-width);
+/* サイズ規定 */
+
+:local(.width-xl) {
+  max-width: var(--width-xl-max);
+  width: var(--width-xl);
 }
 
-:local(.componentWidth) {
-  max-width: var(--component-max-width);
-  width: var(--component-width);
+:local(.width-lg) {
+  max-width: var(--width-lg-max);
+  width: var(--width-lg);
+}
+
+:local(.width-md) {
+  max-width: var(--width-md-max);
+  width: var(--width-md);
+}
+
+:local(.width-sm) {
+  max-width: var(--width-sm-max);
+  width: var(--width-sm);
 }
 
 /* Base card / container used as outer frame for forms and panels */
-:local(.baseCard) {
+:local(.base-card) {
   display: block;
   padding: var(--space-2);
   background: var(--color-card-bg);
@@ -48,31 +98,31 @@
   overflow: hidden;
 }
 
-:local(.baseCard) * {
+:local(.base-card) * {
   box-sizing: border-box;
   overflow: hidden;
 }
 
 /* baseCard 自体が選択可能な要素であることを示すバリエーション。hover で背景色が変わる */
-:local(.cardSelect) {
+:local(.card-select) {
   cursor: pointer;
 }
 
-:local(.cardSelect):hover {
+:local(.card-select):hover {
   background: var(--color-gray-hover);
 }
 
 /* baseCard の背景色を変更し、通常状態と区別するバリエーション（作成対象外など） */
-:local(.cardMuted) {
+:local(.card-muted) {
   background: var(--color-card-muted-bg);
 }
 
-:local(.baseComponent) {
+:local(.base-component) {
   margin-top: var(--space-1);
   margin-bottom: var(--space-1);
 }
 
-:local(.baseComponent) > * {
+:local(.base-component) > * {
   margin-left: var(--space-0);
   margin-right: var(--space-0);
 }
@@ -95,12 +145,12 @@
 }
 
 /* flex コンテナ内で自身のみ先頭(左)へ固定 */
-:local(.selfStart) {
+:local(.self-start) {
   align-self: flex-start;
 }
 
 /* flex コンテナ内で自身のみ後部(右)へ固定 */
-:local(.selfEnd) {
+:local(.self-end) {
   align-self: flex-end;
 }
 
@@ -151,29 +201,29 @@
 }
 
 /* toolbar の横方向配置を切り替える共通クラス */
-:local(.toolbarAlign) {
+:local(.toolbar-align) {
   justify-content: var(--toolbar-justify-content, flex-start);
 }
 
-:local(.toolbarAlignLeft) {
+:local(.toolbar-align-left) {
   --toolbar-justify-content: flex-start;
 }
 
-:local(.toolbarAlignBetween) {
+:local(.toolbar-align-between) {
   --toolbar-justify-content: space-between;
 }
 
-:local(.toolbarAlignRight) {
+:local(.toolbar-align-right) {
   --toolbar-justify-content: flex-end;
 }
 
-:local(.toolbarAlignCenter) {
+:local(.toolbar-align-center) {
   --toolbar-justify-content: center;
 }
 
 /* 子要素に左右マージンのみを付与する */
 :local(.toolbar) > * {
-  margin: 0 var(--space-1);
+  margin: 0 var(--space-0);
 }
 
 :local(.toolbar) > :first-child {
@@ -185,7 +235,7 @@
 }
 
 /* toolbar 内の特定の子要素を、他の子要素の中央寄せに関係なく左右端へ固定する共通クラス */
-:local(.toolbar) > :local(.toolbarItemLeft) {
+:local(.toolbar) > :local(.toolbar-item-left) {
   position: absolute;
   left: 0;
   top: 50%;
@@ -193,7 +243,7 @@
   margin: 0;
 }
 
-:local(.toolbar) > :local(.toolbarItemRight) {
+:local(.toolbar) > :local(.toolbar-item-right) {
   position: absolute;
   right: 0;
   top: 50%;
@@ -210,19 +260,19 @@
   list-style: none;
 }
 
-:local(.list) > :local(.listItem) {
+:local(.list) > :local(.list-item) {
   position: relative;
   padding-left: var(--space-3);
   margin-bottom: var(--space-1);
   line-height: var(--line-height-normal);
 }
 
-:local(.list) > :local(.listItem):last-child {
+:local(.list) > :local(.list-item):last-child {
   margin-bottom: 0;
 }
 
 /* カスタムの点マーカー */
-:local(.list) > :local(.listItem)::before {
+:local(.list) > :local(.list-item)::before {
   content: "";
   position: absolute;
   left: 0;

@@ -5,7 +5,7 @@
  * - 発行済みの skyshare entry URL と Bluesky 投稿本文から X intent テキストを組み立てる。
  * - 「X に投稿」選択時は intent ポップアップを開いてダイアログを閉じる。
  */
-import DialogComponent from "@/components/DialogComponent"
+import ChoiceDialog from "@/components/ChoiceDialog"
 import { buildXIntentText, openXIntentPopup } from "@/lib/xIntent"
 
 type Props = {
@@ -34,7 +34,7 @@ type Props = {
  */
 const Component = ({ open, postText, entryUrl, onClose }: Props) => {
   return (
-    <DialogComponent
+    <ChoiceDialog
       open={open}
       onClose={onClose}
       ariaLabel="skyshareページを共有"

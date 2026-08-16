@@ -6,7 +6,7 @@
  * - 「保存」「破棄」「編集を続ける」の3択を提示し、選択結果を呼び出し元へ委譲する。
  */
 import React from "react"
-import DialogComponent from "@/components/DialogComponent"
+import ChoiceDialog from "@/components/ChoiceDialog"
 
 type Props = {
   open: boolean
@@ -42,7 +42,7 @@ export const Component: React.FC<Props> = ({
   onContinueEditing,
 }) => {
   return (
-    <DialogComponent
+    <ChoiceDialog
       open={open}
       onClose={onContinueEditing}
       ariaLabel="下書き保存確認"

@@ -1,4 +1,4 @@
-summary: Create a new entry (supports multipart/form-data with optional file), or attach an entry to an existing Bluesky post when `uri` is given
+summary: Create a new image post together with a Skyshare entry, or attach an entry to an existing Bluesky post when `uri` is given
 operationId: createEntry
 parameters:
   - name: cookie
@@ -15,18 +15,24 @@ requestBody:
         anyOf:
           - required:
               - uri
-          - required:
-              - text
+              - ogImage
           - required:
               - images
               - imagesMeta
-          - required:
-              - ogMeta
+              - ogImage
         properties:
+          text:
+            type: string
+            example: Post content
+            minLength: 1
+          ogImage:
+            type: string
+            format: binary
           uri:
             type: string
             description: >-
-              自分自身の既存 Bluesky 投稿の AT URI。指定された場合、他の項目は無視され、
+              自分自身の既存 Bluesky 投稿の AT URI。指定する場合は `ogImage`
+              （元投稿の画像をデフォルト配置で合成したサムネイル）を併せて必須とし、
               その投稿から skyshare entry を発行する。
             example: at://did:plc:abc/app.bsky.feed.post/3lxyz
           images:
@@ -36,15 +42,6 @@ requestBody:
               format: binary
           imagesMeta:
             $ref: ../../common.yaml#/imagesMeta
-          ogImage:
-            type: string
-            format: binary
-          text:
-            type: string
-            example: Post content
-            minLength: 1
-          ogMeta:
-            $ref: ../../common.yaml#/ogMeta
           langs:
             type: array
             items:
@@ -77,8 +74,9 @@ responses:
             skyshare:
               type: object
               description: >-
-                発行された skyshare entry の情報。`atUri` はレコードの削除に必要な AT URI で、
-                entry が作成されなかった場合（OGP 投稿など）は `uri` 以外は省略される。
+                発行された skyshare entry の情報。`atUri` はレコードの削除（DELETE /v2/entry）に
+                必要な AT URI。このエンドポイントは常に skyshare entry を作成するため、
+                成功時は全フィールドが含まれる。
               properties:
                 uri:
                   type: string
@@ -105,6 +103,11 @@ responses:
                   type: string
               required:
                 - uri
+                - atUri
+                - cid
+                - createdAt
+                - sourceUri
+                - sourceCid
           required:
             - bsky
             - skyshare

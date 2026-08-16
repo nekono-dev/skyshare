@@ -61,7 +61,7 @@ const DraftListRow = ({
   <div
     role="button"
     tabIndex={0}
-    className={`${styles.row} ${ui.cardSelect}`}
+    className={`${styles.row} ${ui["card-select"]}`}
     onClick={() => void onUse(item)}
     onKeyDown={event => {
       if (event.key === "Enter" || event.key === " ") {
@@ -73,11 +73,11 @@ const DraftListRow = ({
     <p className={styles.text}>{item.text || "（本文なし）"}</p>
     <div className={styles.meta}>
       {item.labels?.map(label => (
-        <span key={label} className={styles.labelPill}>
+        <span key={label} className={styles["label-pill"]}>
           {LABEL_TEXT_BY_VALUE.get(label) ?? label}
         </span>
       ))}
-      <span className={styles.updatedAt}>
+      <span className={styles["updated-at"]}>
         {formatUpdatedAt(item.updatedAt)}
       </span>
     </div>
@@ -116,7 +116,7 @@ const DraftListPanel = ({
   return (
     <div>
       {loading || error || empty ? (
-        <p className={error ? styles.errorState : styles.emptyState}>
+        <p className={error ? styles["error-state"] : styles["empty-state"]}>
           {error ?? (loading ? "読み込み中…" : emptyText)}
         </p>
       ) : (

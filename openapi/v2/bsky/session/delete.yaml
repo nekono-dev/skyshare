@@ -1,0 +1,30 @@
+summary: Log out an account (removes it from the active session or the pooled accounts)
+operationId: deleteSession
+parameters:
+  - name: did
+    in: path
+    required: true
+    description: ログアウト対象アカウントの did
+    schema:
+      type: string
+responses:
+  "200":
+    description: Success
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "404":
+    description: Not Found
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error

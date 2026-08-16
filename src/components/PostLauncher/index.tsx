@@ -38,7 +38,7 @@ const PostLauncher: React.FC<{
   return (
     <>
       <button
-        className={`${ui.baseButton} ${ui.blueButton} ${ui.nontextButton} ${ui.lgButton} ${styles.launcherDelta}`}
+        className={`${ui["base-button"]} ${ui["blue-button"]} ${ui["nontext-button"]} ${ui["lg-button"]} ${styles["launcher-delta"]}`}
         type="button"
         onClick={() => setOpen(true)}
         aria-expanded={open}

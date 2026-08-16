@@ -12,8 +12,16 @@ import ui from "@/styles/ui.module.css"
  * - 成功/失敗メッセージを表示し、成功時はトップページへ遷移する。
  */
 
+type Props = {
+  /** ハンドル欄の初期値。再ログイン導線など、対象アカウントが既知の場合に指定する。 */
+  initialHandle?: string
+}
+
 /**
  * ログインフォームを描画する。
+ *
+ * Input:
+ * - `initialHandle`: ハンドル欄の初期値（省略時は空欄）
  *
  * Output:
  * - 認証情報入力フォームと状態メッセージ表示を含む JSX
@@ -21,10 +29,9 @@ import ui from "@/styles/ui.module.css"
  * 例:
  * - 出力: ハンドル入力・パスワード入力・ログインボタンを持つフォーム
  */
-export const Component = () => {
-  const [handle, setHandle] = useState("")
+export const Component = ({ initialHandle }: Props = {}) => {
+  const [handle, setHandle] = useState(initialHandle ?? "")
   const [password, setPassword] = useState("")
-  // const [service, setService] = useState("https://bsky.social")
   const [message, setMessage] = useState("")
   const [color, setColor] = useState("")
 
@@ -59,7 +66,6 @@ export const Component = () => {
         identifier: handle.trim(),
         password,
         service: "https://bsky.social",
-        // service: service.trim() || "https://bsky.social",
       }
       const res = await createSession(body)
 
@@ -83,7 +89,7 @@ export const Component = () => {
   }
 
   return (
-    <form id="login-form" className={ui.baseCard} onSubmit={onSubmit}>
+    <form id="login-form" className={ui["base-card"]} onSubmit={onSubmit}>
       <div className={styles.content}>
         <div>
           <label>ハンドル (@以降のhandle)</label>
@@ -116,7 +122,7 @@ export const Component = () => {
 
         <button
           type="submit"
-          className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
+          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
         >
           ログイン
         </button>

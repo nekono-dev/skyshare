@@ -1,0 +1,33 @@
+---
+/**
+ * Entry一覧ページ。
+ *
+ * 責務と処理概要:
+ * - `EntryList` を表示し、作成した Skyshare Entry を一覧・編集・削除できるようにする。
+ * - Blueskyの参照先投稿が削除された（孤立した）Entryは `EntryList`/`EntryCard` 側で
+ *   背景色を変えて識別できる。
+ * - 静的配信可能なため prerender を有効化する。実データ（entry一覧）は Cookie 依存のため、
+ *   クライアント側の `EntryList` が `GET /v2/entries/skyshare` を叩いて取得する。
+ */
+export const prerender = true
+import EntryList from "@/components/EntryList"
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName } from "@/vars"
+import ui from "@/styles/ui.module.css"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`Entry一覧 | ${serviceName}`} robots={robots}>
+    <div class={ui.center}>
+        <div class=`${ui["width-lg"]}`>
+            <a href="/" class={ui.text}>&lt;&lt; もどる</a>
+
+            <h1 class={ui.subject} style="margin-top: 1rem;">Entry一覧</h1>
+            <p class={ui.text}>
+                作成したSkyshare Entryの一覧です。Blueskyの参照先が削除されたEntryは背景色で識別できます。
+            </p>
+            <EntryList client:load />
+        </div>
+    </div>
+</Baselayout>

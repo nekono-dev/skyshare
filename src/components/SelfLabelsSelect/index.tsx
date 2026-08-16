@@ -71,8 +71,8 @@ export const Component: React.FC<Props> = ({
   ariaLabel = "コンテンツラベル",
 }) => {
   const selectClassName = className
-    ? `${ui.baseSelect} ${styles.select} ${className}`
-    : `${ui.baseSelect} ${styles.select}`
+    ? `${ui["base-select"]} ${styles.select} ${className}`
+    : `${ui["base-select"]} ${styles.select}`
 
   /**
    * select の onChange ハンドラ。
@@ -92,11 +92,11 @@ export const Component: React.FC<Props> = ({
   return (
     <span>
       <svg
-        className={`${styles.icon} ${value !== undefined ? styles.iconActive : styles.iconInactive}`}
+        className={`${styles.icon} ${value !== undefined ? styles["icon-active"] : styles["icon-inactive"]}`}
       >
         <use xlinkHref={pic.src + "#warn"} height="100%" width="100%" />
       </svg>
-      <span className={ui.selectWrapper}>
+      <span className={ui["select-wrapper"]}>
         <select
           id={id}
           name={name}

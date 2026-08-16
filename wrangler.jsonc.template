@@ -2,9 +2,7 @@
   "name": "skyshare",
   // Set this to today's date
   "compatibility_date": "2026-08-14",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist/client/",
     "binding": "ASSETS",
@@ -12,7 +10,6 @@
   "observability": {
     "enabled": true,
   },
-  "preview_urls": true,
   "routes": [
     {
       "pattern": "preview.skyshare.nekono.dev",

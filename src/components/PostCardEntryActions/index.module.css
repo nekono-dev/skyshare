@@ -1,9 +1,9 @@
-.noSkyshare {
+.no-skyshare {
   margin: 0;
   color: rgba(0, 0, 0, 0.62);
 }
 
-.createEntryError {
+.create-entry-error {
   margin: 0;
   color: #b00;
   font-size: 0.9rem;

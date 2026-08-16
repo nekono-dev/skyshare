@@ -16,7 +16,13 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
-    <div class=`${ui.page} ${ui.center}`>
-        <Timeline client:load />
+    <div class=`${ui["page"]} ${ui["center"]}`>
+        <div class=`${ui["width-lg"]} ${ui["width-lg"]} ${ui["page-padding"]}`>
+            <div class=`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`>
+                <a href="/entries" class={ui.text}>Entry一覧 &gt;&gt;</a>
+                <a href="/accounts" class={ui.text}>アカウント切り替え &gt;&gt;</a>
+            </div>
+            <Timeline client:load />
+        </div>
     </div>
 </Baselayout>

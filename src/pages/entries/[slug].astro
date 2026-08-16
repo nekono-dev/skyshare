@@ -13,8 +13,9 @@
 
 export const prerender = false
 
-import { AtpAgent } from "@atproto/api"
+import { AtpAgent, AppBskyFeedPost } from "@atproto/api"
 import Baselayout from "@/layout/Baselayout.astro"
+import PostEngagementStats from "@/components/PostEngagementStats"
 import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
 import { atpService } from "@/env"
@@ -22,6 +23,7 @@ import { bskyPostUrlgen, parseAtUri } from "@/lib/url"
 import { resolvePdsServiceForDid } from "@/lib/did"
 import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry"
 import type { EntryLike, SourceImage } from "@/lib/entry"
+import { resolveXrpcStatus } from "@/lib/api"
 
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 
@@ -33,10 +35,15 @@ let cardPath = ""
 let sourceWebUrl = ""
 let sourceText = ""
 let sourceImages: SourceImage[] = []
+let likeCount = 0
+let repostCount = 0
+let replyCount = 0
+let quoteCount = 0
 let createdAtText = ""
 let manifestHeading = ""
 let manifestCaption = ""
 let notFoundReason = "entry not found"
+let sourcePostAvailable = true
 
 // 入力パラメータ検証→レコード取得→表示用整形の順で段階的に失敗点を切り分ける。
 if (typeof slug === "undefined") {
@@ -123,23 +130,41 @@ if (typeof slug === "undefined") {
                 pageTitle = `${manifestHeading} | ${serviceName}`
             }
 
-            const postRes = await agent.getPost({
-                repo: parsedSourceUri.repo,
-                rkey: parsedSourceUri.rkey,
-            })
-            const sourcePostRecord = postRes.value
+            // PostView（AppView算出のリアクション数を含む）を1回のバッチ取得APIで取得する。
+            // 生レコード取得用の agent.getPost（com.atproto.repo.getRecord）は
+            // PostView の上位互換情報を持たないため、こちらに一本化している。
+            const postsRes = await agent.getPosts({ uris: [sourceUriFromEntry] })
+            const postView = postsRes.data.posts[0]
+            if (postView) {
+                const sourcePostRecord = postView.record as AppBskyFeedPost.Main
 
-            sourceText = sourcePostRecord.text
-            sourceImages = extractSourceImages(sourcePostRecord, parsedSourceUri.repo)
+                sourceText = sourcePostRecord.text
+                sourceImages = extractSourceImages(sourcePostRecord, parsedSourceUri.repo)
+                likeCount = typeof postView.likeCount === "number" ? postView.likeCount : 0
+                repostCount = typeof postView.repostCount === "number" ? postView.repostCount : 0
+                replyCount = typeof postView.replyCount === "number" ? postView.replyCount : 0
+                quoteCount = typeof postView.quoteCount === "number" ? postView.quoteCount : 0
+            } else {
+                // 元投稿が削除済み等で AppView から取得できない場合は、500 にはせず
+                // entry に保存された manifest 情報のみで表示する。
+                sourcePostAvailable = false
+            }
 
             if (!manifestCaption && sourceText) {
                 manifestCaption = sourceText.slice(0, 280)
             }
         } catch (error) {
-            statusCode = 500
+            // entry レコード自体が見つからない場合（削除済み等）は RecordNotFound として
+            // 404 を返す。source の Bluesky 投稿が見つからない場合は上の getPosts 分岐で
+            // sourcePostAvailable = false として処理するため、ここには到達しない。
+            statusCode = resolveXrpcStatus(error)
+            if (statusCode === 404) {
+                notFoundReason = "Entry is not found"
+            }
             console.warn("entries/[slug] SSR failed", {
                 reason: error instanceof Error ? error.message : String(error),
                 slug,
+                statusCode,
             })
         }
     }
@@ -162,32 +187,54 @@ Astro.response.status = statusCode
                     <h1 class={styles.heading}>{manifestHeading}</h1>
                 </header>
 
-                {manifestCaption ? <p class={styles.bodyText}>{manifestCaption}</p> : null}
+                {!sourcePostAvailable ? (
+                    <p class={styles["empty-message"]}>
+                        元の投稿は削除されているため、保存された内容のみを表示しています。
+                    </p>
+                ) : null}
 
-                <dl class={styles.metaList}>
+                {manifestCaption ? <p class={styles["body-text"]}>{manifestCaption}</p> : null}
+
+                <dl class={styles["meta-list"]}>
                     <div>
-                        <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
-                            Blueskyの投稿を見る
-                        </a>
+                        {sourcePostAvailable ? (
+                            <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
+                                Blueskyの投稿を見る
+                            </a>
+                        ) : (
+                            "Blueskyの投稿は見つかりませんでした"
+                        )}
                     </div>
                     <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
                 </dl>
 
-                {sourceImages.length > 0 ? (
-                    <section class={styles.imageGrid} aria-label="source images">
-                        {sourceImages.map(image => (
-                            <figure class={styles.imageCard}>
-                                <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
-                                {image.alt ? <figcaption>{image.alt}</figcaption> : null}
-                            </figure>
-                        ))}
-                    </section>
-                ) : (
-                    <p class={styles.emptyMessage}>画像はありません。</p>
-                )}
+                {sourcePostAvailable ? (
+                    <PostEngagementStats
+                        client:visible
+                        likeCount={likeCount}
+                        repostCount={repostCount}
+                        replyCount={replyCount}
+                        quoteCount={quoteCount}
+                    />
+                ) : null}
+
+                {sourcePostAvailable ? (
+                    sourceImages.length > 0 ? (
+                        <section class={styles["image-grid"]} aria-label="source images">
+                            {sourceImages.map(image => (
+                                <figure class={styles["image-card"]}>
+                                    <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
+                                    {image.alt ? <figcaption>{image.alt}</figcaption> : null}
+                                </figure>
+                            ))}
+                        </section>
+                    ) : (
+                        <p class={styles["empty-message"]}>画像はありません。</p>
+                    )
+                ) : null}
             </article>
         ) : (
-            <section class={styles.errorPane}>
+            <section class={styles["error-pane"]}>
                 <h1>
                     {statusCode === 404
                         ? "Entry Not Found"

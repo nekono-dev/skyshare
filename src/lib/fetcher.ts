@@ -7,6 +7,8 @@ import { v1Endpoint } from "@/env"
  * 責務と処理概要:
  * - `/v1/extract` 宛リクエストを、外部 OGP 抽出サービス(`extractorApi`)へ付け替える。
  * - `/v1/page` 宛リクエストを、legacy backend(`v1Endpoint`)へ付け替える。
+ * - `/v2/bsky/images` 宛リクエストは URL 書き換えなし（同一オリジン）で、レスポンスを
+ *   JSON化せず Blob のまま返す（Canvas合成用の画像バイナリのため）。
  * - 空ボディや非 JSON ボディでも例外で落とさず `data` に格納して返す。
  * - orval 生成クライアントが期待する `{ data, status, headers }` 形式へ正規化する。
  *
@@ -44,6 +46,8 @@ import { v1Endpoint } from "@/env"
  * - 出力: `extractorApi` を先頭に付与したリクエスト結果
  * - 入力: `url="/v1/page/0/did:plc:abc@3lxyz"`
  * - 出力: `${v1Endpoint}/page/0/did:plc:abc@3lxyz` へのリクエスト結果
+ * - 入力: `url="/v2/bsky/images?cid=bafkre..."`
+ * - 出力: `data` が画像 `Blob` であるリクエスト結果
  */
 export const customFetcher = async <T>(
     url: string,
@@ -55,6 +59,17 @@ export const customFetcher = async <T>(
         url = v1Endpoint + url.slice("/v1".length)
     }
     const res = await fetch(url, options)
+
+    if (url.startsWith("/v2/bsky/images")) {
+        // 画像バイナリを Blob のまま返す（base64/JSON化はメモリ・CPUコストが増えるだけで
+        // メリットが無いため行わない）。
+        return {
+            data: await res.blob(),
+            status: res.status,
+            headers: res.headers,
+        } as unknown as T
+    }
+
     // ボディが空や非 JSON の場合でも例外を回避し、`data` へ安全に格納する。
     const text = await res.text()
     let parsed: any = undefined

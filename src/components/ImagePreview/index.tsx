@@ -6,7 +6,6 @@
  * - 画像未選択時は何も描画せず、レイアウト上の責務を最小化する。
  */
 import type { ImageEntry } from "@/components/ImagePicker"
-import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
 type Props = {
@@ -32,7 +31,7 @@ export const Component = ({ value }: Props) => {
   }
 
   return (
-    <section className={ui.baseCard}>
+    <section className={ui["base-card"]}>
       <div className={`${ui.label}`}>サムネイル（visual: 1200x630）</div>
       <div className={ui.center}>
         <img

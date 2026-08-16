@@ -108,3 +108,89 @@ export const createSkyshareEntry = async (
         ),
     }
 }
+
+/**
+ * 更新に成功した skyshare entry の情報。
+ */
+export type UpdatedSkyshareEntry = {
+    atUri: string
+    cid: string
+    heading: string
+    caption: string
+}
+
+/**
+ * skyshare entry レコードの heading/caption を更新する。
+ *
+ * 処理の趣旨:
+ * - atproto の putRecord はレコード全体を書き直す方式のため、まず対象レコードを
+ *   取得し、source・manifest.visual・createdAt は既存値のまま維持しつつ
+ *   manifest.heading/caption のみ差し替えて書き戻す。
+ * - 取得時の cid を swapRecord に指定し、取得後に他リクエストがレコードを
+ *   更新していた場合の競合（lost update）を検出する。
+ * - 副作用: atproto 外部 API を呼び出してレコードを取得・更新。
+ *
+ * Input:
+ * - `agent`: 認証済み AtpAgent
+ * - `repo`: 対象レコードの repo（DID）
+ * - `rkey`: 対象レコードの rkey
+ * - `heading`: 新しい heading
+ * - `caption`: 新しい caption
+ *
+ * Output:
+ * - `UpdatedSkyshareEntry`
+ *
+ * 失敗時の方針:
+ * - getRecord/putRecord が失敗した場合は Error を throw する。呼び出し元で
+ *   catch して resolveXrpcStatus によりステータスへ変換する
+ *   （対象が見つからない場合は RecordNotFound として自動的に 404 になる）。
+ *
+ * 例:
+ * - 入力：agent(Auth済み),repo="did:plc:abc",rkey="3lxyz",heading="旅行",caption="京都にて"
+ * - 出力：{ atUri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz", cid: "bafy...", heading: "旅行", caption: "京都にて" }
+ */
+export const updateSkyshareEntry = async (
+    agent: AtpAgent,
+    repo: string,
+    rkey: string,
+    heading: string,
+    caption: string,
+): Promise<UpdatedSkyshareEntry> => {
+    const currentRes = await agent.com.atproto.repo.getRecord({
+        repo,
+        collection: "dev.nekono.skyshare.entry",
+        rkey,
+    })
+    const current = currentRes.data.value as {
+        source: { uri: string; cid: string }
+        manifest: { visual: unknown }
+        createdAt: string
+    }
+
+    const record = {
+        $type: "dev.nekono.skyshare.entry",
+        source: current.source,
+        manifest: {
+            $type: "dev.nekono.skyshare.defs#manifest",
+            visual: current.manifest.visual,
+            heading,
+            caption,
+        },
+        createdAt: current.createdAt,
+    }
+
+    const putRes = await agent.com.atproto.repo.putRecord({
+        repo,
+        collection: "dev.nekono.skyshare.entry",
+        rkey,
+        record,
+        swapRecord: currentRes.data.cid,
+    })
+
+    return {
+        atUri: putRes.data.uri,
+        cid: putRes.data.cid,
+        heading,
+        caption,
+    }
+}

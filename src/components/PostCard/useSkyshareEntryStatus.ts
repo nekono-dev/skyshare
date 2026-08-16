@@ -9,7 +9,8 @@
  *   ボタン表示を切り替えられる。
  */
 import { useRef, useState } from "react"
-import { createEntry, deleteEntry } from "@/client/openapi/client"
+import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
+import { createDefaultThumbnail } from "@/lib/postImageProcessing"
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/posts"
 
 /**
@@ -31,13 +32,22 @@ export type UseSkyshareEntryStatusResult = {
     display: SkyshareEntryDisplayState
     createError: string | null
     deleteError: string | null
+    isDeleteDialogOpen: boolean
     createEntryFromPost: () => void
-    deleteEntryRecord: () => void
+    requestDeleteEntry: () => void
+    cancelDeleteEntry: () => void
+    confirmDeleteEntry: (deleteBskyPost: boolean) => void
 }
 
 type Options = {
     /** 作成成功直後（共有ダイアログを開く等）に呼び出す副作用 */
     onCreated?: (entry: TimelineSkyshareEntry) => void
+    /**
+     * Bluesky投稿ごと削除された直後に呼び出す副作用。
+     * リンクのみ削除（deleteBskyPost=false）の場合は呼ばれない
+     * （元投稿はTimelineに残り続けるため）。
+     */
+    onPostDeleted?: () => void
 }
 
 /**
@@ -50,7 +60,8 @@ type Options = {
  * Output:
  * - `display`: 現在の表示状態（ineligible/creatable/creating/entry/deleting）
  * - `createError`/`deleteError`: 直近の操作エラーメッセージ
- * - `createEntryFromPost`/`deleteEntryRecord`: ボタンの onClick から呼び出す実行関数
+ * - `createEntryFromPost`: 作成ボタンの onClick から呼び出す実行関数
+ * - `requestDeleteEntry`/`cancelDeleteEntry`/`confirmDeleteEntry`: 削除確認ダイアログの開閉・確定を行う関数
  */
 export const useSkyshareEntryStatus = (
     item: TimelinePost,
@@ -62,6 +73,7 @@ export const useSkyshareEntryStatus = (
     }))
     const [createError, setCreateError] = useState<string | null>(null)
     const [deleteError, setDeleteError] = useState<string | null>(null)
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐため、
     // 同期的に確定する ref で即座にガードする。
     const isCreatingRef = useRef(false)
@@ -83,6 +95,12 @@ export const useSkyshareEntryStatus = (
     /**
      * 既存の Bluesky 投稿から skyshare entry を発行する。
      *
+     * 処理の趣旨:
+     * - 元投稿の全画像を `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
+     *   回避するためのBluesky APIバイパスAPI）経由で取得し、投稿フォームでクロップ編集
+     *   しなかった場合と同じデフォルト配置（`createDefaultThumbnail`）でユーザから見えない
+     *   Canvas上に合成してから送信する。
+     *
      * Output:
      * - なし（成功時は state を entry ありへ遷移し `onCreated` を呼ぶ）
      */
@@ -96,8 +114,28 @@ export const useSkyshareEntryStatus = (
         setCreateError(null)
 
         void (async () => {
+            const objectUrls: string[] = []
             try {
-                const res = await createEntry({ uri: item.uri })
+                objectUrls.push(
+                    ...(await Promise.all(
+                        item.images.map(async image => {
+                            const res = await getBskyImage({ cid: image.cid })
+                            if (
+                                res.status !== 200 ||
+                                !(res.data instanceof Blob)
+                            ) {
+                                throw new Error("元画像の取得に失敗しました。")
+                            }
+                            return URL.createObjectURL(res.data)
+                        }),
+                    )),
+                )
+
+                const thumbnailBlob = await createDefaultThumbnail(objectUrls)
+                const res = await createEntry({
+                    uri: item.uri,
+                    ogImage: thumbnailBlob,
+                })
                 if (res.status !== 200) {
                     setCreateError("skyshareページの作成に失敗しました。")
                     setState({ phase: "idle", entry: null })
@@ -129,38 +167,58 @@ export const useSkyshareEntryStatus = (
                 setCreateError("skyshareページの作成に失敗しました。")
                 setState({ phase: "idle", entry: null })
             } finally {
+                objectUrls.forEach(url => URL.revokeObjectURL(url))
                 isCreatingRef.current = false
             }
         })()
     }
 
     /**
-     * skyshare entry を削除する（Bluesky 側の投稿は削除しない）。
+     * Entry削除確認ダイアログを開く。
+     *
+     * Output:
+     * - なし（`isDeleteDialogOpen` を true にする）
+     */
+    const requestDeleteEntry = () => {
+        if (isDeletingRef.current || state.phase !== "idle" || !state.entry) {
+            return
+        }
+        setIsDeleteDialogOpen(true)
+    }
+
+    /**
+     * Entry削除確認ダイアログを閉じる（削除を実行しない）。
+     */
+    const cancelDeleteEntry = () => {
+        setIsDeleteDialogOpen(false)
+    }
+
+    /**
+     * skyshare entry を削除する。
+     *
+     * Input:
+     * - `deleteBskyPost`: true の場合、紐づく Bluesky 投稿も併せて削除する
      *
      * Output:
      * - なし（成功時は state を entry なしへ遷移する）
      */
-    const deleteEntryRecord = () => {
+    const confirmDeleteEntry = (deleteBskyPost: boolean) => {
         if (isDeletingRef.current || state.phase !== "idle" || !state.entry) {
             return
         }
         const entry = state.entry
 
-        if (
-            !window.confirm(
-                "Skyshare Entryを削除しますか？（Blueskyの投稿は削除されません）",
-            )
-        ) {
-            return
-        }
-
+        setIsDeleteDialogOpen(false)
         isDeletingRef.current = true
         setState({ phase: "deleting", entry })
         setDeleteError(null)
 
         void (async () => {
             try {
-                const res = await deleteEntry({ uri: entry.uri })
+                const res = await deleteEntry({
+                    uri: entry.uri,
+                    deleteBskyPost,
+                })
                 if (res.status !== 200) {
                     setDeleteError("Entryの削除に失敗しました。")
                     setState({ phase: "idle", entry })
@@ -168,6 +226,12 @@ export const useSkyshareEntryStatus = (
                 }
 
                 setState({ phase: "idle", entry: null })
+                if (deleteBskyPost) {
+                    // サーバーはBluesky投稿削除の成否に関わらず200を返す仕様
+                    // （src/pages/v2/entry.ts DELETEハンドラ）のため、200が返った時点で
+                    // 削除確定とみなしてTimeline側にカード除去を通知する。
+                    options.onPostDeleted?.()
+                }
             } catch (err) {
                 console.error("PostCard: failed to delete skyshare entry", err)
                 setDeleteError("Entryの削除に失敗しました。")
@@ -182,7 +246,10 @@ export const useSkyshareEntryStatus = (
         display,
         createError,
         deleteError,
+        isDeleteDialogOpen,
         createEntryFromPost,
-        deleteEntryRecord,
+        requestDeleteEntry,
+        cancelDeleteEntry,
+        confirmDeleteEntry,
     }
 }

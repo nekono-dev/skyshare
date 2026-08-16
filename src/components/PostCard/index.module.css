@@ -6,7 +6,7 @@
 }
 
 /* avatar/本文/ツールバーの縦積み列。この列の高さに右側サムネイルを合わせる */
-.mainColumn {
+.main-column {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -15,15 +15,30 @@
   gap: 0.6rem;
 }
 
-.authorBlock {
+.author-block {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   min-width: 0;
 }
 
+.entry-link {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-left: auto;
+  padding-top: 0.15rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  color: var(--color-bluesky);
+  text-decoration: none;
+}
+
+.entry-link:hover {
+  text-decoration: underline;
+}
+
 .avatar,
-.avatarPlaceholder {
+.avatar-placeholder {
   width: 48px;
   height: 48px;
   border-radius: 999px;
@@ -32,15 +47,16 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.avatarPlaceholder {
+.avatar-placeholder {
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
 }
 
-.authorMeta {
+.author-meta {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.authorNameRow {
+.author-name-row {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -48,17 +64,16 @@
   min-width: 0;
 }
 
-.authorNameRow strong {
+.author-name-row strong {
   overflow-wrap: anywhere;
 }
 
 .handle,
-.createdAt,
-.emptyText {
+.created-at {
   color: rgba(0, 0, 0, 0.62);
 }
 
-.createdAt {
+.created-at {
   margin: 0.15rem 0 0;
   font-size: 0.9rem;
 }
@@ -69,12 +84,6 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.65;
-}
-
-.emptyText,
-.noSkyshare {
-  margin: 0;
-  color: rgba(0, 0, 0, 0.62);
 }
 
 /* サムネイルはカード右端に固定幅で配置し、align-self: stretch により
@@ -94,13 +103,13 @@
   background: rgba(0, 0, 0, 0.03);
 }
 
-.thumbnailSlice {
+.thumbnail-slice {
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
 }
 
-.thumbnailSlice img {
+.thumbnail-slice img {
   display: block;
   width: 100%;
   height: 100%;

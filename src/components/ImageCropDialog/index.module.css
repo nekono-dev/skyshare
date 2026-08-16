@@ -1,25 +1,3 @@
-.container {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.overlayContent {
-  width: min(96vw, 980px);
-  max-width: 980px;
-}
-
-.overlayContent1 {
-  width: min(96vw, 760px);
-  max-width: 760px;
-}
-
-.overlayContent2,
-.overlayContent3,
-.overlayContent4 {
-  width: min(96vw, 980px);
-  max-width: 980px;
-}
-
 .title {
   margin: 0;
   font-family: var(--font-family-sans);
@@ -36,7 +14,7 @@
   line-height: var(--line-height-normal);
 }
 
-.compositeArea {
+.composite-area {
   display: grid;
   gap: var(--space-3);
   width: 100%;
@@ -44,7 +22,7 @@
   margin-inline: auto;
 }
 
-.slotContainer {
+.slot-container {
   min-width: 0;
   display: flex;
   justify-content: center;
@@ -72,25 +50,6 @@
   grid-template-areas:
     "slot0 slot1"
     "slot2 slot3";
-}
-
-.cropArea {
-  position: relative;
-  width: min(100%, 680px);
-  aspect-ratio: 40 / 21;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  background: var(--color-gray);
-}
-
-.zoomLabel {
-  color: var(--color-muted);
-  font-family: var(--font-family-sans);
-  font-size: var(--font-size-sm);
-}
-
-.zoomSlider {
-  width: 100%;
 }
 
 .actions {

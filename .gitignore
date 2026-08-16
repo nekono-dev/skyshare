@@ -24,3 +24,4 @@ src/client/**/
 /dist
 .wrangler
 /wrangler.jsonc
+/.memo

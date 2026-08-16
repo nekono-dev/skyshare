@@ -9,10 +9,21 @@ paths: # APIドキュメントのエンドポイント
     $ref: ./v1/extract/index.yaml
   /v2/entry:
     $ref: ./v2/entry/index.yaml
-  /v2/session:
-    $ref: ./v2/session/index.yaml
-  /v2/drafts:
-    $ref: ./v2/drafts/index.yaml
+  /v2/entries:
+    $ref: ./v2/entries/index.yaml
+  /v2/entries/skyshare:
+    $ref: ./v2/entries/skyshare/index.yaml
+  /v2/bsky/session:
+    $ref: ./v2/bsky/session/index.yaml
+  /v2/bsky/session/{did}:
+    delete:
+      $ref: ./v2/bsky/session/delete.yaml
+  /v2/bsky/drafts:
+    $ref: ./v2/bsky/drafts/index.yaml
+  /v2/bsky/images:
+    $ref: ./v2/bsky/images/index.yaml
+  /v2/bsky/record:
+    $ref: ./v2/bsky/record/index.yaml
   /v1/page:
     delete:
       $ref: ./v1/page/delete.yaml

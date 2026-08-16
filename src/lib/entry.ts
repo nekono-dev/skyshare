@@ -37,6 +37,7 @@ export type EntryLike = {
 export type SourceImage = {
     url: string
     alt: string
+    cid: string
 }
 
 export const ENTRY_COLLECTION = "dev.nekono.skyshare.entry"
@@ -131,10 +132,12 @@ export const extractSourceImages = (
         return imagesRecord.images
             .map(img => {
                 const url = blobToCdnUrl(sourceRepoDid, img.image)
-                if (!url) return
+                const cid = toCidString(img.image?.ref)
+                if (!url || !cid) return
                 return {
                     url,
                     alt: typeof img?.alt === "string" ? img.alt : "",
+                    cid,
                 }
             })
             .filter((img): img is SourceImage => img !== undefined)

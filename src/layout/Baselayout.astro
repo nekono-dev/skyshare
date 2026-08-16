@@ -19,8 +19,7 @@ interface Props {
 import Metadatas from "@/components/Metadatas.astro"
 const { cardPath, pageTitle, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
 const favicon = "favicon.svg"
-import "@/styles/tokens.css"
-import styles from "./Baselayout.module.css"
+import ui from "@/styles/ui.module.css"
 ---
 
 <html lang="ja">
@@ -35,11 +34,9 @@ import styles from "./Baselayout.module.css"
             pageCaption={pageCaption}
         />
     </head>
-    <body id="root" class={styles.root}>
+    <body id="root" class={ui.root}>
         <slot name="header" />
-        <main class={styles.content}>
-            <slot />
-        </main>
+        <slot />
         <slot name="footer" />
     </body>
 </html>

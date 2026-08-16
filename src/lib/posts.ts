@@ -8,7 +8,7 @@
  */
 
 import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
-import { blobToCdnUrl } from "@/lib/entry"
+import { blobToCdnUrl, toCidString } from "@/lib/entry"
 import { bskyPostUrlgen, parseAtUri, skyshareEntryUrlgen } from "@/lib/url"
 import type { SourceImage } from "@/lib/entry"
 
@@ -29,6 +29,8 @@ export type TimelineSkyshareEntry = {
     caption?: string
     visualUrl?: string
     webUrl?: string
+    /** source（紐づく Bluesky 投稿）が既に削除され存在しないか。`/v2/entries/skyshare` のみ設定する。 */
+    orphaned?: boolean
 }
 
 export type TimelinePost = {
@@ -94,13 +96,15 @@ export const extractTimelinePostImages = (
     return imagesRecord.images
         .map(image => {
             const url = blobToCdnUrl(sourceRepoDid, image.image)
-            if (!url) {
+            const cid = toCidString(image.image?.ref)
+            if (!url || !cid) {
                 return undefined
             }
 
             return {
                 url,
                 alt: typeof image.alt === "string" ? image.alt : "",
+                cid,
             }
         })
         .filter((image): image is SourceImage => image !== undefined)

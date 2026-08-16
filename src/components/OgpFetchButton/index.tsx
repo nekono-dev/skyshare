@@ -266,7 +266,7 @@ export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
   return (
     <button
       type="button"
-      className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+      className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
       onClick={handleFetchOgp}
       disabled={isOgpLoading || disabled}
     >

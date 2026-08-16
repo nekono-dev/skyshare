@@ -16,7 +16,7 @@ export const prerender = false
 import Baselayout from "@/layout/Baselayout.astro"
 import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
-import { fetchPageDbEntry, type PageDbImage } from "@/lib/legacy/pagedb"
+import { fetchPageDbEntry, type PageDbImage } from "@/util/legacy/pagedb"
 import { bskyPostUrlgen } from "@/lib/url"
 import { parseSessionFromRequest } from "@/lib/cookies"
 import LegacyPageDeleteButton from "@/components/LegacyPageDeleteButton"
@@ -104,7 +104,7 @@ Astro.response.status = statusCode
                     </h1>
                 </header>
 
-                <dl class={styles.metaList}>
+                <dl class={styles["meta-list"]}>
                     <div>
                         <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
                             Blueskyの投稿を見る
@@ -113,16 +113,16 @@ Astro.response.status = statusCode
                 </dl>
 
                 {images.length > 0 ? (
-                    <section class={styles.imageGrid} aria-label="post images">
+                    <section class={styles["image-grid"]} aria-label="post images">
                         {images.map(image => (
-                            <figure class={styles.imageCard}>
+                            <figure class={styles["image-card"]}>
                                 <img src={image.thumb} alt={image.alt} loading="lazy" decoding="async" />
                                 {image.alt ? <figcaption>{image.alt}</figcaption> : null}
                             </figure>
                         ))}
                     </section>
                 ) : (
-                    <p class={styles.emptyMessage}>画像はありません。</p>
+                    <p class={styles["empty-message"]}>画像はありません。</p>
                 )}
 
                 {canDeletePost ? (
@@ -130,7 +130,7 @@ Astro.response.status = statusCode
                 ) : null}
             </article>
         ) : (
-            <section class={styles.errorPane}>
+            <section class={styles["error-pane"]}>
                 <h1>
                     {statusCode === 404
                         ? "Post Not Found"

@@ -3,15 +3,15 @@
   本アプリケーションで利用するすべてのプルダウンの基本スタイルを定義する。
 
   基底
-    .baseSelect 基底ボタンスタイル
+    .base-select 基底ボタンスタイル
 
   種別
-    .selectWrapper プルダウンの外枠。擬似要素でドロップダウン矢印を表示する
+    .select-wrapper プルダウンの外枠。擬似要素でドロップダウン矢印を表示する
 
 */
 
 /* セレクトUI本体。必要に応じて幅クラスを別CSSで合成する */
-:local(.baseSelect) {
+:local(.base-select) {
   appearance: none;
   display: block;
   width: 100%;
@@ -26,18 +26,18 @@
   line-height: var(--line-height-normal);
 }
 
-:local(.baseSelect):focus-visible {
+:local(.base-select):focus-visible {
   outline: 2px solid var(--color-bluesky);
   outline-offset: 1px;
 }
 
-:local(.baseSelect):disabled {
+:local(.base-select):disabled {
   background: var(--color-gray-disabled);
   cursor: not-allowed;
 }
 
 /* セレクトUIの外枠。擬似要素でドロップダウン矢印を表示する */
-:local(.selectWrapper) {
+:local(.select-wrapper) {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -45,7 +45,7 @@
   max-width: 10rem;
 }
 
-:local(.selectWrapper)::after {
+:local(.select-wrapper)::after {
   content: "▼";
   position: absolute;
   right: var(--space-2);
@@ -61,4 +61,41 @@
 /*
   テキスト入力
   本アプリケーションで利用するすべてのテキスト入力の基本スタイルを定義する。
+
+  基底
+    .base-input-box テキスト入力＋カウンタを内包する外枠（枠線・背景・角丸）
+    .base-input-field input/textarea本体の基本スタイル（枠なし・背景透明）
 */
+
+:local(.base-input-box) {
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--color-card-bg);
+  padding: var(--space-2);
+}
+
+:local(.base-input-box):focus-within {
+  outline: 2px solid var(--color-bluesky);
+  outline-offset: 1px;
+}
+
+:local(.base-input-field) {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: #111827;
+}
+
+:local(.base-input-field)::placeholder {
+  color: #9ca3af;
+  font-size: var(--font-size-md);
+}
+
+:local(.base-input-field):disabled {
+  cursor: not-allowed;
+}

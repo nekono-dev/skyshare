@@ -48,7 +48,37 @@ export const bskyCdnUrlgen = (repoDid: string, ref: string) => {
 }
 
 /**
- * Skyshare 上のエントリページ URL を生成する。
+ * Skyshare 上のエントリページのパスを生成する。
+ *
+ * 処理の趣旨:
+ * - サイト内リンクは常にこのパスを使う。現在表示中のオリジン（dev/本番いずれも）に
+ *   対して相対的にリンクできるため、dev サーバ実行時に本番ドメインへ遷移する事故を
+ *   構造的に防げる。絶対URLが要る場合（外部サービスへの共有等）のみ `skyshareEntryUrlgen`
+ *   でこのパスをラップする。
+ *
+ * Input:
+ * - `handle`: 投稿者 handle
+ * - `rkey`: 投稿レコードキー
+ *
+ * Output:
+ * - `/entries/{handle}@{rkey}` 形式のパス
+ *
+ * 例:
+ * - 入力: `("alice.bsky.social", "3lxyz")`
+ * - 出力: `"/entries/alice.bsky.social@3lxyz"`
+ */
+export const skyshareEntryPath = (handle: string, rkey: string) => {
+    return `/entries/${handle}@${rkey}`
+}
+
+/**
+ * Skyshare 上のエントリページ URL（絶対URL）を生成する。
+ *
+ * 処理の趣旨:
+ * - `import.meta.env.SITE` は本番ドメイン固定のため、この関数が返す URL は
+ *   dev サーバ実行時であっても常に本番ドメインを指す。X共有等、外部サービスへ
+ *   渡す絶対URLが本当に必要な箇所でのみ使うこと。同一オリジン内のリンクには
+ *   `skyshareEntryPath` を直接使う。
  *
  * Input:
  * - `handle`: 投稿者 handle
@@ -62,7 +92,7 @@ export const bskyCdnUrlgen = (repoDid: string, ref: string) => {
  * - 出力: `"https://skyshare.example/entries/alice.bsky.social@3lxyz"`
  */
 export const skyshareEntryUrlgen = (handle: string, rkey: string) => {
-    return `${import.meta.env.SITE}/entries/${handle}@${rkey}`
+    return `${import.meta.env.SITE}${skyshareEntryPath(handle, rkey)}`
 }
 
 /**

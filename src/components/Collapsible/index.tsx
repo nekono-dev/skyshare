@@ -63,7 +63,7 @@ export const Component: React.FC<Props> = ({
 
   return (
     <section
-      className={`${styles.container}${className ? ` ${className}` : ""}`}
+      className={`${styles.container} ${className ? ` ${className}` : ""}`}
     >
       <button
         type="button"
@@ -75,7 +75,7 @@ export const Component: React.FC<Props> = ({
       >
         <span className={styles.label}>{label}</span>
         <span
-          className={`${styles.indicator}${open ? ` ${styles.indicatorOpen}` : ""}`}
+          className={`${styles.indicator}${open ? ` ${styles["indicator-open"]}` : ""}`}
           aria-hidden
         />
       </button>
