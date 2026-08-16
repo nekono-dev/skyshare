@@ -4,6 +4,15 @@
 - 特に指示がない場合、作業は `(root)/src/` 配下のコードを対象とする。`_legacy`を対象とする作業の場合は明示的に示す。曖昧な場合は確認すること。
 - APIは OpenAPI 定義を作成し、クライアントを生成して利用すること。クライアントは `npm run codegen` ですべて生成できる。また、OpenAPIのスキーマはhackスクリプトにより`src/client/openapi/schemas`に生成されるため、validation工程に利用する。
 
+# lib / util の使い分け
+
+- `src/util/` は、ドメイン知識ゼロで他プロジェクトへそのまま持ち出しても成立する汎用ヘルパーの置き場とする。判定基準（ポータビリティテスト）:
+  - skyshareのドメイン型や `@/lib/*` `@/client/*` を一切importしない
+  - 入出力がプリミティブ値（string/number/boolean/DOM/Blob/FormData等）のみで完結する
+  - 全く別のアプリに貼り付けても意味が通じる
+- `src/lib/` は、上記に当てはまらない、skyshareのドメイン知識（セッション/エントリ/atproto連携/画像仕様/コード生成契約）に依存する処理の置き場とする。複数ファイルにまたがる場合は責務ごとにサブディレクトリへ分類すること（例: `lib/session/`, `lib/entry/`, `lib/atproto/`, `lib/image/`, `lib/settings/`, `lib/api/`, `lib/codegen/`, `lib/legacy/`）。
+- 新規ファイルを追加する際は、まず上記ポータビリティテストで `util` 行きかを判定し、`lib` 行きの場合は既存のサブディレクトリに合致する責務があればそこに配置し、無ければ新しい責務ディレクトリを作成すること。
+
 # API設計原則
 
 - APIのパスは操作（動詞）を示さないこと。操作の意味は HTTP メソッド（GET/POST/PUT/DELETE等）で表現する。

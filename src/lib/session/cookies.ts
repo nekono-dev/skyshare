@@ -11,7 +11,7 @@
  *   （localStorage 等クライアント側ストレージにトークンを置かないことが、XSS 時の被害範囲を単一アカウントに限定するための前提）。
  */
 
-import { atpService } from "../env"
+import { atpService } from "../../env"
 
 // Cloudflare Workers 環境では Node の `Buffer` が存在しないため
 // Web 標準 API (TextEncoder/TextDecoder + atob/btoa) を使って

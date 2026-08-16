@@ -19,12 +19,12 @@ export default defineConfig({
             override: {
                 formData: {
                     mutator: {
-                        path: "./src/lib/openapiFormData.ts",
+                        path: "./src/lib/codegen/openapiFormData.ts",
                         name: "customFormData",
                     },
                 },
                 mutator: {
-                    path: "./src/lib/fetcher.ts",
+                    path: "./src/lib/codegen/fetcher.ts",
                     name: "customFetcher",
                 },
             },

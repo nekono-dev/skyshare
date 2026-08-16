@@ -6,8 +6,8 @@ import {
     makeAccountsSetCookie,
     makeClearSetCookie,
     SESSION_COOKIE_NAME,
-} from "@/lib/cookies.js"
-import { errorResponseFromStatus } from "@/lib/api.js"
+} from "@/lib/session/cookies.js"
+import { errorResponseFromStatus } from "@/lib/api/response.js"
 
 /**
  * Skyshare v2 bsky/session ログアウト API。

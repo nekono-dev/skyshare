@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - openapi(`/legacy/page`)経由で orval 生成された client 関数を呼び出す。
- *   legacy backend へのホスト付け替えは `@/lib/fetcher` の `customFetcher` が担う。
+ *   legacy backend へのホスト付け替えは `@/lib/codegen/fetcher` の `customFetcher` が担う。
  * - レスポンスを成功/失敗を判別可能な型へ正規化する。
  *
  * 実装上の制約:

@@ -15,7 +15,7 @@
 import type { APIRoute } from "astro"
 import { XRPCError } from "@atproto/xrpc"
 
-import { errorResponseFromStatus } from "@/lib/api.js"
+import { errorResponseFromStatus } from "@/lib/api/response.js"
 
 type DraftViewPayload = {
     id: string

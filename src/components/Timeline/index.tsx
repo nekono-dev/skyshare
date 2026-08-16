@@ -19,11 +19,11 @@ import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
 import PostCard from "@/components/PostCard"
 import PostLauncher from "@/components/PostLauncher"
-import type { TimelinePost } from "@/lib/posts"
+import type { TimelinePost } from "@/lib/entry/posts"
 import {
   readPageSizeSetting,
   writePageSizeSetting,
-} from "@/lib/timelineSettings"
+} from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

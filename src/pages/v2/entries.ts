@@ -4,13 +4,13 @@ import { AtpAgent, AppBskyFeedDefs } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
-    parseLimit,
-} from "@/lib/api.js"
-import { ENTRY_COLLECTION } from "@/lib/entry"
+} from "@/lib/api/response.js"
+import { parseLimit } from "@/util/http"
+import { ENTRY_COLLECTION } from "@/lib/entry/entry"
 import {
     groupTimelineEntriesBySourceUri,
     normalizeTimelinePost,
-} from "@/lib/posts"
+} from "@/lib/entry/posts"
 
 /**
  * Skyshare v2 entries API。

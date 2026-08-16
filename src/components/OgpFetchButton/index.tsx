@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react"
 import { RichText } from "@atproto/api"
 import { extractUrl } from "@/client/openapi/client"
 import type { ExtractUrl200 } from "@/client/openapi/model"
-import { extractLinkUrisFromFacets } from "@/lib/richtext"
-import { createOgpThumbnailFromBlob } from "@/lib/postImageProcessing"
+import { extractLinkUrisFromFacets } from "@/lib/atproto/richtext"
+import { createOgpThumbnailFromBlob } from "@/lib/image/postImageProcessing"
 import ui from "@/styles/ui.module.css"
 
 /**

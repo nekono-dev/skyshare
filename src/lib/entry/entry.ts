@@ -9,7 +9,7 @@
  * Cloudflare Workers 環境制約を遵守すること。
  */
 import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
-import { bskyCdnUrlgen } from "@/lib/url"
+import { bskyCdnUrlgen } from "@/lib/entry/url"
 
 export type SourceLocator = {
     actor: string

@@ -11,7 +11,7 @@ import ComponentList from "@/components/ComponentList"
 import type { CursorPaginationViewModel } from "@/components/ComponentList"
 import NavigationBar from "@/components/NavigationBar"
 import { SELF_LABEL_OPTIONS } from "@/components/SelfLabelsSelect"
-import type { DraftListItem } from "@/lib/draftList"
+import type { DraftListItem } from "@/lib/entry/draftList"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

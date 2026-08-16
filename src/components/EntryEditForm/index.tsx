@@ -19,7 +19,7 @@ import CountedTextInput, {
 } from "@/components/CountedTextInput"
 import Loading from "@/components/Loading"
 import Overlay from "@/components/Overlay"
-import { countGraphemes } from "@/lib/textCount"
+import { countGraphemes } from "@/util/textCount"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

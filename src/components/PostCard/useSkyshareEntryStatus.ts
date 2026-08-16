@@ -10,8 +10,8 @@
  */
 import { useRef, useState } from "react"
 import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
-import { createDefaultThumbnail } from "@/lib/postImageProcessing"
-import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/posts"
+import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
+import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
 
 /**
  * PostCard の Entry 関連 UI が参照する、その時点で確定している唯一の表示状態。

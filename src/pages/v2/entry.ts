@@ -8,22 +8,22 @@ import {
     AppBskyFeedPost,
 } from "@atproto/api"
 import {
-    convertHeaderToObj,
     errorResponseFromStatus,
     resolveXrpcStatus,
-} from "@/lib/api.js"
-import { ENTRY_COLLECTION } from "@/lib/entry"
+} from "@/lib/api/response.js"
+import { convertHeaderToObj } from "@/util/http"
+import { ENTRY_COLLECTION } from "@/lib/entry/entry"
 import {
     createSkyshareEntry,
     updateSkyshareEntry,
     type CreatedSkyshareEntry,
-} from "@/lib/skyshareRecord"
+} from "@/lib/entry/skyshareRecord"
 
 import * as PostSchema from "@/client/openapi/schemas/v2/entry/post"
 import * as PutSchema from "@/client/openapi/schemas/v2/entry/put"
 import * as DeleteSchema from "@/client/openapi/schemas/v2/entry/delete"
 import * as Components from "@/client/openapi/schemas/components"
-import { bskyPostUrlgen, parseAtUri } from "@/lib/url"
+import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
 
 /**
  * Skyshare v2 entry API。

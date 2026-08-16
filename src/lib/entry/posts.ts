@@ -8,9 +8,13 @@
  */
 
 import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
-import { blobToCdnUrl, toCidString } from "@/lib/entry"
-import { bskyPostUrlgen, parseAtUri, skyshareEntryUrlgen } from "@/lib/url"
-import type { SourceImage } from "@/lib/entry"
+import { blobToCdnUrl, toCidString } from "@/lib/entry/entry"
+import {
+    bskyPostUrlgen,
+    parseAtUri,
+    skyshareEntryUrlgen,
+} from "@/lib/entry/url"
+import type { SourceImage } from "@/lib/entry/entry"
 
 export type TimelinePostAuthor = {
     did: string

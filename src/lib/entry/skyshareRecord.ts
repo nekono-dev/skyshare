@@ -6,8 +6,8 @@
  * - `/v2/entry` の新規投稿時、および `uri` 指定時（既存投稿からの発行、from-post 相当）の両方から共有される。
  */
 import type { AtpAgent, ComAtprotoServerRefreshSession } from "@atproto/api"
-import { blobToCdnUrl } from "@/lib/entry"
-import { parseAtUri, skyshareEntryUrlgen } from "@/lib/url"
+import { blobToCdnUrl } from "@/lib/entry/entry"
+import { parseAtUri, skyshareEntryUrlgen } from "@/lib/entry/url"
 
 /**
  * 作成に成功した skyshare entry の情報。

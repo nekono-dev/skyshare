@@ -9,15 +9,15 @@ import {
     toPooledAccount,
     upsertPooledAccount,
     MAX_POOLED_ACCOUNTS,
-} from "@/lib/cookies.js"
+} from "@/lib/session/cookies.js"
 import * as PostSchema from "@/client/openapi/schemas/v2/bsky/session/post"
 import * as PutSchema from "@/client/openapi/schemas/v2/bsky/session/put"
 
 import {
-    convertHeaderToObj,
     errorResponseFromStatus,
     resolveXrpcStatus,
-} from "@/lib/api.js"
+} from "@/lib/api/response.js"
+import { convertHeaderToObj } from "@/util/http"
 import { atpService } from "@/env.js"
 
 /**

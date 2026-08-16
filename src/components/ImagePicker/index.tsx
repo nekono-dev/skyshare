@@ -16,7 +16,7 @@ import {
   createProcessedImages,
   getSlotDefs,
   loadImageSize,
-} from "@/lib/postImageProcessing"
+} from "@/lib/image/postImageProcessing"
 import ui from "@/styles/ui.module.css"
 import pic from "@/images/image.svg"
 

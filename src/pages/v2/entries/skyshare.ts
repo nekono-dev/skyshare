@@ -4,10 +4,13 @@ import { AtpAgent } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
-    parseLimit,
-} from "@/lib/api.js"
-import { ENTRY_COLLECTION } from "@/lib/entry"
-import { normalizeTimelineEntry, type TimelineSkyshareEntry } from "@/lib/posts"
+} from "@/lib/api/response.js"
+import { parseLimit } from "@/util/http"
+import { ENTRY_COLLECTION } from "@/lib/entry/entry"
+import {
+    normalizeTimelineEntry,
+    type TimelineSkyshareEntry,
+} from "@/lib/entry/posts"
 
 /**
  * Skyshare v2 entries/skyshare API。

@@ -2,7 +2,10 @@ import { useEffect, useState } from "react"
 import CropSlot, { type SlotCropState } from "@/components/CropSlot"
 import Overlay from "@/components/Overlay"
 import Loading from "@/components/Loading"
-import { createProcessedImages, getSlotDefs } from "@/lib/postImageProcessing"
+import {
+  createProcessedImages,
+  getSlotDefs,
+} from "@/lib/image/postImageProcessing"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 

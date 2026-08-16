@@ -16,9 +16,9 @@ export const prerender = false
 import Baselayout from "@/layout/Baselayout.astro"
 import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
-import { fetchPageDbEntry, type PageDbImage } from "@/util/legacy/pagedb"
-import { bskyPostUrlgen } from "@/lib/url"
-import { parseSessionFromRequest } from "@/lib/cookies"
+import { fetchPageDbEntry, type PageDbImage } from "@/lib/legacy/pagedb"
+import { bskyPostUrlgen } from "@/lib/entry/url"
+import { parseSessionFromRequest } from "@/lib/session/cookies"
 import LegacyPageDeleteButton from "@/components/LegacyPageDeleteButton"
 
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]

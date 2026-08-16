@@ -15,7 +15,10 @@
  */
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus, resolveXrpcStatus } from "@/lib/api.js"
+import {
+    errorResponseFromStatus,
+    resolveXrpcStatus,
+} from "@/lib/api/response.js"
 
 /**
  * GET /v2/bsky/images: 自分自身の repo から画像 blob を取得する。

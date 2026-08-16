@@ -20,11 +20,11 @@ import { useCursorPaginationController } from "@/components/ComponentList"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
 import EntryCard from "@/components/EntryCard"
-import type { TimelineSkyshareEntry } from "@/lib/posts"
+import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
 import {
   readPageSizeSetting,
   writePageSizeSetting,
-} from "@/lib/timelineSettings"
+} from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

@@ -2,12 +2,12 @@ import type { APIRoute } from "astro"
 
 import { RichText, AtpAgent } from "@atproto/api"
 import {
-    convertHeaderToObj,
     errorResponseFromStatus,
     resolveXrpcStatus,
-} from "@/lib/api.js"
-import { extractLinkUrisFromFacets } from "@/lib/richtext"
-import { bskyPostUrlgen } from "@/lib/url"
+} from "@/lib/api/response.js"
+import { convertHeaderToObj } from "@/util/http"
+import { extractLinkUrisFromFacets } from "@/lib/atproto/richtext"
+import { bskyPostUrlgen } from "@/lib/entry/url"
 
 import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
 import * as Components from "@/client/openapi/schemas/components"

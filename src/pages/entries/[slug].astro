@@ -19,11 +19,11 @@ import PostEngagementStats from "@/components/PostEngagementStats"
 import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
 import { atpService } from "@/env"
-import { bskyPostUrlgen, parseAtUri } from "@/lib/url"
-import { resolvePdsServiceForDid } from "@/lib/did"
-import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry"
-import type { EntryLike, SourceImage } from "@/lib/entry"
-import { resolveXrpcStatus } from "@/lib/api"
+import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
+import { resolvePdsServiceForDid } from "@/lib/atproto/did"
+import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry/entry"
+import type { EntryLike, SourceImage } from "@/lib/entry/entry"
+import { resolveXrpcStatus } from "@/lib/api/response"
 
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 

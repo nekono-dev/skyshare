@@ -49,7 +49,7 @@ import OgpPreview from "@/components/OgpPreview"
 import Overlay from "@/components/Overlay"
 import SelfLabelsSelect from "@/components/SelfLabelsSelect"
 import ToggleSwitch from "@/components/ToggleSwitch"
-import { normalizeDraftList } from "@/lib/draftList"
+import { normalizeDraftList } from "@/lib/entry/draftList"
 import {
   readCrosspostToTaittsuuSetting,
   readOpenPopupSetting,
@@ -57,14 +57,14 @@ import {
   writeCrosspostToTaittsuuSetting,
   writeOpenPopupSetting,
   writeShowCrosspostXButtonSetting,
-} from "@/lib/shareSettings"
+} from "@/lib/settings/shareSettings"
 import {
   buildTaittsuuIntentText,
   openTaittsuuIntentPopup,
-} from "@/lib/taittsuuIntent"
-import { countGraphemes, countWeightedTweetLength } from "@/lib/textCount"
-import { canShareWithWebApi, shareWithWebApi } from "@/lib/webShare"
-import { buildXIntentText, openXIntentPopup } from "@/lib/xIntent"
+} from "@/util/share/taittsuuIntent"
+import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
+import { canShareWithWebApi, shareWithWebApi } from "@/util/share/webShare"
+import { buildXIntentText, openXIntentPopup } from "@/util/share/xIntent"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 

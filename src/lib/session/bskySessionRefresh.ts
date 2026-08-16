@@ -16,8 +16,14 @@
  */
 import { AtpAgent } from "@atproto/api"
 import type { MiddlewareHandler } from "astro"
-import { parseSessionFromRequest, makeSessionSetCookie } from "@/lib/cookies.js"
-import { errorResponseFromStatus, resolveXrpcStatus } from "@/lib/api.js"
+import {
+    parseSessionFromRequest,
+    makeSessionSetCookie,
+} from "@/lib/session/cookies.js"
+import {
+    errorResponseFromStatus,
+    resolveXrpcStatus,
+} from "@/lib/api/response.js"
 
 /**
  * このミドルウェアが認証処理の対象とするパスかどうかを判定する。
