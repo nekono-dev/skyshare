@@ -21,11 +21,14 @@ import ui from "@/styles/ui.module.css"
             <img class={ui["width-lg"]} src="/materials/longlogo.svg" alt={serviceName} />
             <div class=`${ui.left} ${ui["self-end"]} ${ui.subject}`>v{serviceVersion}</div>
             <div class=`${ui["width-md"]}`>
-                <div class=`${ui["base-card"]}`>
+                <div class=`${ui["base-card"]} ${ui["base-card-padding"]}`>
                     <LoginForm client:load />
-                    <div style="margin-top: 1rem;">★ 新しいSkyshareは、以下がv1と違います</div>
+                    <div style="margin-top: 1rem; font-weight: 600;" class=`${ui["subject"]}`>
+                        旧UIはこちら <a href="/legacy/">Skyshare v1.6.3</a>
+                    </div>
+                    <div style="margin-top: 1rem;">★ Skyshare v2を開発中です。以下の違いがあります</div>
 
-                    <h3>Skyshareが生成するコンテンツデータはあなたのものになります。</h3>
+                    <h3>Skyshare生成コンテンツの永続化</h3>
                     <ul class={ui.list}>
                         <li class=`${ui["list-item"]} ${ui.text}`>
                             これまでは開発者のバックエンドに画像やテキストデータを配置していました。
@@ -38,7 +41,7 @@ import ui from "@/styles/ui.module.css"
                             >
                         </li>
                     </ul>
-                    <h3>クロスポスト用サムネイル生成の自由度が上がりました。</h3>
+                    <h3>クロスポスト用サムネイル生成の自由度向上</h3>
                     <ul class={ui.list}>
                         <li class=`${ui["list-item"]} ${ui.text}`>
                             v1では、ロスポスト用サムネイル（OGP画像）をサーバサイド、クラウド上で生成していました。v2ではクライアント側で生成しています。
@@ -59,7 +62,9 @@ import ui from "@/styles/ui.module.css"
                             バックエンドはおおよそできており、あとはレイアウトや機能の調整・追加、ソースコードの整理などを終えたらリリース予定です。
                         </li>
                         <li class=`${ui["list-item"]} ${ui.text}`>
-                            正式リリースに向けて絶賛開発中なので #Skyshare
+                            正式リリースに向けて絶賛開発中なので <a
+                                href="https://bsky.app/intent/compose?text=%23Skyshare%20">#Skyshare</a
+                            >
                             などで感想や要望を書いておいていただけると活動の励みになります。
                         </li>
                     </ul>

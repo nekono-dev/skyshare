@@ -158,6 +158,10 @@
   overflow: hidden;
 }
 
+:local(.base-card-padding) {
+  padding: var(--space-3);
+}
+
 :local(.base-card) * {
   box-sizing: border-box;
   overflow: hidden;
