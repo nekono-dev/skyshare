@@ -20,6 +20,7 @@ import Metadatas from "@/components/Metadatas.astro"
 const { cardPath, pageTitle, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
 const favicon = "favicon.svg"
 import ui from "@/styles/ui.module.css"
+import { ClientRouter } from "astro:transitions"
 ---
 
 <html lang="ja">
@@ -33,6 +34,43 @@ import ui from "@/styles/ui.module.css"
             pageHeading={pageHeading}
             pageCaption={pageCaption}
         />
+        <ClientRouter />
+        <script>
+            /**
+             * ホーム/Entry一覧/アカウント切り替えを横一列（Entry一覧=左, ホーム=中央, アカウント切り替え=右）
+             * とみなし、View Transitionsのslideアニメーションが実際の移動方向（左右）と一致するよう
+             * `astro:before-preparation` イベントの `direction` を上書きする。
+             *
+             * 処理の趣旨:
+             * - Astro標準の`direction`はブラウザの戻る/進むボタン（`navigationType === "traverse"`）
+             *   でのみ履歴インデックスから正しく算出される。リンククリックによる遷移は常に"forward"
+             *   扱いになるため、対象ページ同士の遷移ではここで明示的に上書きする。
+             *
+             * Input:
+             * - `astro:before-preparation` イベント（`from`/`to`はURL、`direction`は書き換え可能）
+             *
+             * Output:
+             * - なし（イベントの`direction`プロパティを副作用として書き換える）
+             */
+            const pagePositions: Record<string, number> = {
+                "/entries": -1,
+                "/": 0,
+                "/accounts": 1,
+            }
+            const normalizePathname = (pathname: string): string =>
+                pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname
+
+            document.addEventListener("astro:before-preparation", event => {
+                // 戻る/進むボタン操作はAstro標準の履歴インデックス判定に委ねる
+                if (event.navigationType === "traverse") return
+
+                const fromPosition = pagePositions[normalizePathname(event.from.pathname)]
+                const toPosition = pagePositions[normalizePathname(event.to.pathname)]
+                if (fromPosition === undefined || toPosition === undefined || fromPosition === toPosition) return
+
+                event.direction = toPosition > fromPosition ? "forward" : "back"
+            })
+        </script>
     </head>
     <body id="root" class={ui.root}>
         <slot name="header" />

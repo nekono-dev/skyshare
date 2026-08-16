@@ -16,14 +16,21 @@ import type {
   CursorPageFetchInput,
   CursorPageFetchResult,
 } from "@/components/ComponentList"
-import { useCursorPaginationController } from "@/components/ComponentList"
+import {
+  useCursorPaginationController,
+  useInfiniteScrollController,
+} from "@/components/ComponentList"
+import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
+import PaginationModeSelect from "@/components/PaginationModeSelect"
 import EntryCard from "@/components/EntryCard"
 import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
 import {
   readPageSizeSetting,
+  readPaginationModeSetting,
   writePageSizeSetting,
+  writePaginationModeSetting,
 } from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -38,6 +45,9 @@ const PAGE_SIZE = 20
  */
 const Component = () => {
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
+  const [paginationMode, setPaginationMode] = useState(() =>
+    readPaginationModeSetting("infinite"),
+  )
 
   /**
    * 指定 cursor のページを取得して ComponentList に返す。
@@ -94,41 +104,75 @@ const Component = () => {
     [],
   )
 
-  const controller = useCursorPaginationController<TimelineSkyshareEntry>({
+  const pagedController = useCursorPaginationController<TimelineSkyshareEntry>({
     cursorPagination: {
       pageSize,
       fetchPage,
+      enabled: paginationMode === "paged",
       loadingText: "読み込み中...",
       emptyText: "表示できるEntryはありません。",
     },
   })
+
+  const infiniteController = useInfiniteScrollController<TimelineSkyshareEntry>(
+    {
+      infiniteScrollPagination: {
+        fetchPage,
+        enabled: paginationMode === "infinite",
+        loadingText: "読み込み中...",
+        emptyText: "表示できるEntryはありません。",
+      },
+    },
+  )
+
+  const isPaged = paginationMode === "paged"
+  const items = isPaged ? pagedController.items : infiniteController.items
+  const loading = isPaged ? pagedController.loading : infiniteController.loading
+  const error = isPaged ? pagedController.error : infiniteController.error
+  const empty = isPaged ? pagedController.empty : infiniteController.empty
+  const message = isPaged ? pagedController.message : infiniteController.message
+  const removeItem = isPaged
+    ? pagedController.removeItem
+    : infiniteController.removeItem
+  const updateItem = isPaged
+    ? pagedController.updateItem
+    : infiniteController.updateItem
 
   return (
     <section className={`${ui["base-card"]}`}>
       <div
         className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
-        <PageSizeSelect
-          value={pageSize}
+        {isPaged ? (
+          <PageSizeSelect
+            value={pageSize}
+            onChange={next => {
+              setPageSize(next)
+              writePageSizeSetting(next)
+            }}
+            ariaLabel="表示件数"
+          />
+        ) : (
+          <span aria-hidden="true" />
+        )}
+        <PaginationModeSelect
+          value={paginationMode}
           onChange={next => {
-            setPageSize(next)
-            writePageSizeSetting(next)
+            setPaginationMode(next)
+            writePaginationModeSetting(next)
           }}
-          ariaLabel="表示件数"
         />
-        <NavigationBar
-          pagination={controller.pagination}
-          ariaLabel="entry list pagination"
-        />
+        {isPaged ? (
+          <NavigationBar
+            pagination={pagedController.pagination}
+            ariaLabel="entry list pagination"
+          />
+        ) : null}
       </div>
 
-      {controller.loading || controller.error || controller.empty ? (
-        <p
-          className={
-            controller.error ? styles["error-state"] : styles["empty-state"]
-          }
-        >
-          {controller.message}
+      {loading || error || empty ? (
+        <p className={error ? styles["error-state"] : styles["empty-state"]}>
+          {message}
         </p>
       ) : (
         <ComponentList
@@ -136,22 +180,31 @@ const Component = () => {
           getItemKey={item => item.uri}
           getItemProps={item => ({
             onDeleted: () =>
-              controller.removeItem(candidate => candidate.uri === item.uri),
+              removeItem(candidate => candidate.uri === item.uri),
             onSaved: (next: { heading: string; caption: string }) =>
-              controller.updateItem(
+              updateItem(
                 candidate => candidate.uri === item.uri,
                 candidate => ({ ...candidate, ...next }),
               ),
           })}
           className={styles["entry-list"]}
-          items={controller.items}
+          items={items}
         />
       )}
 
-      <NavigationBar
-        pagination={controller.pagination}
-        ariaLabel="entry list pagination"
-      />
+      {isPaged ? (
+        <NavigationBar
+          pagination={pagedController.pagination}
+          ariaLabel="entry list pagination"
+        />
+      ) : (
+        <InfiniteScrollSentinel
+          hasMore={infiniteController.hasMore}
+          loadingMore={infiniteController.loadingMore}
+          onLoadMore={infiniteController.loadMore}
+          ariaLabel="entry list infinite scroll"
+        />
+      )}
     </section>
   )
 }

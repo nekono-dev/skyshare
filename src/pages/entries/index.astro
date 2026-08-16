@@ -14,12 +14,13 @@ import EntryList from "@/components/EntryList"
 import Baselayout from "@/layout/Baselayout.astro"
 import { serviceName } from "@/vars"
 import ui from "@/styles/ui.module.css"
+import { slide } from "astro:transitions"
 
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`Entry一覧 | ${serviceName}`} robots={robots}>
-    <div class={ui.center}>
+    <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
         <div class=`${ui["width-lg"]}`>
             <a href="/" class={ui.text}>&lt;&lt; もどる</a>
 

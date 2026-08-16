@@ -14,15 +14,22 @@ import type {
   CursorPageFetchInput,
   CursorPageFetchResult,
 } from "@/components/ComponentList"
-import { useCursorPaginationController } from "@/components/ComponentList"
+import {
+  useCursorPaginationController,
+  useInfiniteScrollController,
+} from "@/components/ComponentList"
+import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
+import PaginationModeSelect from "@/components/PaginationModeSelect"
 import PostCard from "@/components/PostCard"
 import PostLauncher from "@/components/PostLauncher"
 import type { TimelinePost } from "@/lib/entry/posts"
 import {
   readPageSizeSetting,
+  readPaginationModeSetting,
   writePageSizeSetting,
+  writePaginationModeSetting,
 } from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -45,6 +52,9 @@ const PAGE_SIZE = 20
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
+  const [paginationMode, setPaginationMode] = useState(() =>
+    readPaginationModeSetting("infinite"),
+  )
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     avatarUrl ?? null,
   )
@@ -132,15 +142,36 @@ const Component = ({ avatarUrl }: Props) => {
     setReloadKey(prev => prev + 1)
   }
 
-  const controller = useCursorPaginationController<TimelinePost>({
+  const pagedController = useCursorPaginationController<TimelinePost>({
     cursorPagination: {
       pageSize,
       fetchPage,
       reloadKey,
+      enabled: paginationMode === "paged",
       loadingText: "読み込み中...",
       emptyText: "初期化中...",
     },
   })
+
+  const infiniteController = useInfiniteScrollController<TimelinePost>({
+    infiniteScrollPagination: {
+      fetchPage,
+      reloadKey,
+      enabled: paginationMode === "infinite",
+      loadingText: "読み込み中...",
+      emptyText: "初期化中...",
+    },
+  })
+
+  const isPaged = paginationMode === "paged"
+  const items = isPaged ? pagedController.items : infiniteController.items
+  const loading = isPaged ? pagedController.loading : infiniteController.loading
+  const error = isPaged ? pagedController.error : infiniteController.error
+  const empty = isPaged ? pagedController.empty : infiniteController.empty
+  const message = isPaged ? pagedController.message : infiniteController.message
+  const removeItem = isPaged
+    ? pagedController.removeItem
+    : infiniteController.removeItem
 
   return (
     <section className={`${ui["base-card"]}`}>
@@ -149,27 +180,36 @@ const Component = ({ avatarUrl }: Props) => {
       <div
         className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
-        <PageSizeSelect
-          value={pageSize}
+        {isPaged ? (
+          <PageSizeSelect
+            value={pageSize}
+            onChange={next => {
+              setPageSize(next)
+              writePageSizeSetting(next)
+            }}
+            ariaLabel="表示件数"
+          />
+        ) : (
+          <span aria-hidden="true" />
+        )}
+        <PaginationModeSelect
+          value={paginationMode}
           onChange={next => {
-            setPageSize(next)
-            writePageSizeSetting(next)
+            setPaginationMode(next)
+            writePaginationModeSetting(next)
           }}
-          ariaLabel="表示件数"
         />
-        <NavigationBar
-          pagination={controller.pagination}
-          ariaLabel="post timeline pagination"
-        />
+        {isPaged ? (
+          <NavigationBar
+            pagination={pagedController.pagination}
+            ariaLabel="post timeline pagination"
+          />
+        ) : null}
       </div>
 
-      {controller.loading || controller.error || controller.empty ? (
-        <p
-          className={
-            controller.error ? styles["error-state"] : styles["empty-state"]
-          }
-        >
-          {controller.message}
+      {loading || error || empty ? (
+        <p className={error ? styles["error-state"] : styles["empty-state"]}>
+          {message}
         </p>
       ) : (
         <ComponentList
@@ -177,17 +217,26 @@ const Component = ({ avatarUrl }: Props) => {
           getItemKey={item => item.uri}
           getItemProps={item => ({
             onPostDeleted: () =>
-              controller.removeItem(candidate => candidate.uri === item.uri),
+              removeItem(candidate => candidate.uri === item.uri),
           })}
           className={styles["timeline-list"]}
-          items={controller.items}
+          items={items}
         />
       )}
 
-      <NavigationBar
-        pagination={controller.pagination}
-        ariaLabel="post timeline pagination"
-      />
+      {isPaged ? (
+        <NavigationBar
+          pagination={pagedController.pagination}
+          ariaLabel="post timeline pagination"
+        />
+      ) : (
+        <InfiniteScrollSentinel
+          hasMore={infiniteController.hasMore}
+          loadingMore={infiniteController.loadingMore}
+          onLoadMore={infiniteController.loadMore}
+          ariaLabel="post timeline infinite scroll"
+        />
+      )}
     </section>
   )
 }

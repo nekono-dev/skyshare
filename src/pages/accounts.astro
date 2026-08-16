@@ -16,12 +16,13 @@ import AccountSwitchPanel from "@/components/AccountSwitchPanel"
 import Baselayout from "@/layout/Baselayout.astro"
 import { serviceName } from "@/vars"
 import ui from "@/styles/ui.module.css"
+import { slide } from "astro:transitions"
 
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`アカウント切り替え | ${serviceName}`} robots={robots}>
-    <div class={ui.center}>
+    <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
         <div class=`${ui.page} ${ui["width-lg"]} ${ui.center}`>
             <div class=`${ui["width-md"]}`>
                 <a href="/" class={ui.text}>&lt;&lt; もどる</a>

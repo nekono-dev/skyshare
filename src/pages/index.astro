@@ -11,12 +11,13 @@ export const prerender = true
 import Baselayout from "@/layout/Baselayout.astro"
 import Timeline from "@/components/Timeline"
 import ui from "@/styles/ui.module.css"
+import { slide } from "astro:transitions"
 
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
-    <div class=`${ui["page"]} ${ui["center"]}`>
+    <div class=`${ui["page"]} ${ui["center"]}` transition:name="page-slide" transition:animate={slide()}>
         <div class=`${ui["width-lg"]} ${ui["width-lg"]} ${ui["page-padding"]}`>
             <div class=`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`>
                 <a href="/entries" class={ui.text}>Entry一覧 &gt;&gt;</a>
