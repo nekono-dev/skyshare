@@ -1,15 +1,18 @@
 {
   "name": "skyshare",
   "type": "module",
-  "version": "2.0.0-preview.r01",
+  "version": "2.0.0-preview.r02",
   "scripts": {
     "lexgen": "./hack/gen-client.sh ./src/client/atproto",
     "apigen:client": "orval",
     "apigen:type": "tsx ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
     "apigen": "npm run apigen:client && npm run apigen:type",
     "codegen": "npm run lexgen && npm run apigen",
-    "dev": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro dev",
-    "build": "npm run codegen && PUBLIC_VERSION=$npm_package_version astro build",
+    "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
+    "build": "npm run codegen && npm run format && PUBLIC_VERSION=$npm_package_version astro build && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
+    "dev": "npm run codegen && npm run format && PUBLIC_VERSION=$npm_package_version astro dev",
+    "prev": "npm run build && wrangler dev --ip 0.0.0.0",
+    "deploy": "npm run build && wrangler deploy",
     "format": "prettier --write .",
     "generate-types": "wrangler types"
   },
@@ -39,6 +42,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
+    "wrangler": "^4.122.0",
     "yaml": "^2.3.1"
   },
   "author": "nekono.dev"

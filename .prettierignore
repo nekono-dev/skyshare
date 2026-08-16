@@ -3,6 +3,5 @@ node_modules/**
 .gitignore
 .github/**
 astro/**
-frontend/src/api/**
-frontend/public/**
+_legacy/**
 atproto/**

@@ -1,0 +1,45 @@
+summary: Overwrite the active session with a pooled account's session (account switch)
+operationId: updateSession
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          did:
+            type: string
+            example: did:plc:abc123
+        required:
+          - did
+responses:
+  "200":
+    description: Success
+    headers:
+      set-cookie:
+        schema:
+          $ref: ../../../common.yaml#/cookie
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "404":
+    description: Not Found
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error

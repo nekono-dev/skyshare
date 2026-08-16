@@ -1,0 +1,22 @@
+---
+/**
+ * legacy pageDB 投稿表示ページ(dbIndex省略時のフォールバック)。
+ *
+ * 責務と処理概要:
+ * - dbIndexを含まない旧形式URL(`/posts/{slug}`)を、legacy pageDBの `dbIndex=legacy` として
+ *   `/posts/legacy/{slug}` へ内部的に書き換えて表示する。
+ *
+ * 実装上の制約:
+ * - Cloudflare Workers 環境で動作するため Node.js 固有 API は利用しない。
+ */
+
+export const prerender = false
+
+const { slug } = Astro.params
+
+if (typeof slug === "undefined") {
+    return new Response(null, { status: 404 })
+}
+
+return await Astro.rewrite(`/posts/legacy/${slug}`)
+---

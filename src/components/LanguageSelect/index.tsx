@@ -253,11 +253,11 @@ export const Component: React.FC<Props> = ({
   // （以前は動的にIntlで取得していましたが、互換性のため静的ラベルに変更）
 
   const selectClassName = className
-    ? `${ui.baseSelect} ${styles.select} ${className}`
-    : `${ui.baseSelect} ${styles.select}`
+    ? `${ui["base-select"]} ${styles.select} ${className}`
+    : `${ui["base-select"]} ${styles.select}`
 
   return (
-    <span className={ui.selectWrapper}>
+    <span className={ui["select-wrapper"]}>
       <select
         id={id}
         name={name}

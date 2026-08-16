@@ -3,24 +3,40 @@
  *
  * 責務と処理概要:
  * - テキスト投稿・画像投稿・OGP 投稿の入力状態を管理する。
- * - 送信時に OpenAPI 契約へ整形し、`createEntry` API を呼び出す。
+ * - 送信時に OpenAPI 契約へ整形し、画像投稿は `createEntry`（skyshare entry を伴う）、
+ *   テキスト・OGP投稿は `createBskyRecord`（skyshare entry を伴わない）を呼び出す。
  * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
  */
-import React, { useEffect, useState } from "react"
-import twitterText from "twitter-text"
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react"
 import {
+  createBskyRecord,
   createDraft,
   createEntry,
   deleteDraft,
   getDrafts,
   updateDraft,
 } from "@/client/openapi/client"
-import type { CreateEntryBody } from "@/client/openapi/model"
+import type {
+  CreateBskyRecordBody,
+  CreateEntryBody,
+} from "@/client/openapi/model"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
 import Collapsible from "@/components/Collapsible/index"
+import CountedTextInput, {
+  type CounterSpec,
+} from "@/components/CountedTextInput"
 import DraftListPanel from "@/components/DraftListPanel"
 import DraftSaveConfirmDialog from "@/components/DraftSaveConfirmDialog"
-import ImagePicker, { type ImageEntry } from "@/components/ImagePicker"
+import ImagePicker, {
+  type ImageEntry,
+  type ImagePickerHandle,
+} from "@/components/ImagePicker"
 import ImagePreview from "@/components/ImagePreview"
 import LanguageSelect from "@/components/LanguageSelect"
 import Loading from "@/components/Loading"
@@ -33,7 +49,7 @@ import OgpPreview from "@/components/OgpPreview"
 import Overlay from "@/components/Overlay"
 import SelfLabelsSelect from "@/components/SelfLabelsSelect"
 import ToggleSwitch from "@/components/ToggleSwitch"
-import { normalizeDraftList } from "@/lib/draftList"
+import { normalizeDraftList } from "@/lib/entry/draftList"
 import {
   readCrosspostToTaittsuuSetting,
   readOpenPopupSetting,
@@ -41,13 +57,14 @@ import {
   writeCrosspostToTaittsuuSetting,
   writeOpenPopupSetting,
   writeShowCrosspostXButtonSetting,
-} from "@/lib/shareSettings"
+} from "@/lib/settings/shareSettings"
 import {
   buildTaittsuuIntentText,
   openTaittsuuIntentPopup,
-} from "@/lib/taittsuuIntent"
-import { canShareWithWebApi, shareWithWebApi } from "@/lib/webShare"
-import { buildXIntentText, openXIntentPopup } from "@/lib/xIntent"
+} from "@/util/share/taittsuuIntent"
+import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
+import { canShareWithWebApi, shareWithWebApi } from "@/util/share/webShare"
+import { buildXIntentText, openXIntentPopup } from "@/util/share/xIntent"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -55,6 +72,13 @@ type Props = {
   onClose?: () => void
   onPosted?: () => void
   avatarUrl?: string | null
+}
+
+/**
+ * 親（PostLauncher の Overlay など）から閉じ操作を要求するための命令的ハンドル。
+ */
+export type PostFormHandle = {
+  requestClose: () => void
 }
 
 type ImageSizeCandidate = {
@@ -267,11 +291,10 @@ const resolveShareOptionsDefaultOpen = ({
  * - 入力: `{ avatarUrl: "https://..." }`
  * - 出力: テキスト・画像・OGP を扱える投稿フォーム
  */
-export const Component: React.FC<Props> = ({
-  onClose,
-  onPosted,
-  avatarUrl,
-}) => {
+export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
+  { onClose, onPosted, avatarUrl },
+  ref,
+) {
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
   const [crosspostToTaittsuu, setCrosspostToTaittsuu] = useState(() =>
@@ -304,71 +327,28 @@ export const Component: React.FC<Props> = ({
   } | null>(null)
   const [draftSaveConfirmOpen, setDraftSaveConfirmOpen] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const [isDraggingImage, setIsDraggingImage] = useState(false)
+  const imagePickerRef = useRef<ImagePickerHandle>(null)
 
   const bskyMaxCount = 300
   const xWarnCount = 140
+  const textCounters: CounterSpec[] = [
+    {
+      key: "x",
+      label: "X",
+      count: countWeightedTweetLength,
+      maxAssumed: xWarnCount,
+      warnAt: xWarnCount,
+    },
+    {
+      key: "bsky",
+      label: "Bluesky",
+      count: countGraphemes,
+      maxAssumed: bskyMaxCount,
+      errorAt: bskyMaxCount,
+    },
+  ]
 
-  /**
-   * X.com 向けの投稿文字数を返す。
-   *
-   * 処理の趣旨:
-   * - 旧実装 TextInputBox と同様に twitter-text の重み付きカウントを 2 で割って切り上げる。
-   * - 解析失敗時は入力文字列長へフォールバックする。
-   *
-   * Input:
-   * - `rawText`: 投稿入力文字列
-   *
-   * Output:
-   * - X.com 換算の投稿文字数
-   *
-   * 例:
-   * - 入力: "hello"
-   * - 出力: 5
-   */
-  const countTextOnX = (rawText: string): number => {
-    try {
-      return Math.ceil(twitterText.parseTweet(rawText).weightedLength / 2)
-    } catch {
-      return rawText.length
-    }
-  }
-
-  /**
-   * Bluesky 向けの投稿文字数を返す。
-   *
-   * 処理の趣旨:
-   * - 絵文字などの結合文字を過大評価しないよう grapheme 単位でカウントする。
-   * - Intl.Segmenter 非対応環境では文字列長へフォールバックする。
-   *
-   * Input:
-   * - `rawText`: 投稿入力文字列
-   *
-   * Output:
-   * - Bluesky 換算の投稿文字数
-   *
-   * 例:
-   * - 入力: "☕️"
-   * - 出力: 1
-   */
-  const countTextOnBsky = (rawText: string): number => {
-    try {
-      const segmenterJa = new Intl.Segmenter("ja-JP", {
-        granularity: "grapheme",
-      })
-      return Array.from(segmenterJa.segment(rawText)).length
-    } catch {
-      return rawText.length
-    }
-  }
-
-  const textCountOnX = countTextOnX(text)
-  const textCountOnBsky = countTextOnBsky(text)
-  const charCountAlertClass =
-    textCountOnBsky > bskyMaxCount
-      ? styles.charCountError
-      : textCountOnX > xWarnCount && textCountOnBsky <= bskyMaxCount
-        ? styles.charCountWarn
-        : ""
   const showXIntentButton = openXPopup && showXWhenCrosspost
   const showTaittsuuIntentButton = openXPopup && crosspostToTaittsuu
   const hasTextInput = text.trim().length > 0
@@ -578,10 +558,12 @@ export const Component: React.FC<Props> = ({
   }
 
   /**
-   * キャンセルボタン押下時の処理。
+   * フォームを閉じる要求を処理する（キャンセルボタン・Overlay 背景クリック共通）。
    *
    * 処理の趣旨:
    * - 未保存の本文があれば保存確認ダイアログを開き、なければそのまま閉じる。
+   * - PostLauncher の Overlay 背景クリックでも同じ判定を通すため、
+   *   `useImperativeHandle` 経由で親コンポーネントから呼び出せるようにする。
    *
    * Input:
    * - なし
@@ -589,12 +571,88 @@ export const Component: React.FC<Props> = ({
    * Output:
    * - なし
    */
-  const handleCancelClick = () => {
+  const requestClose = () => {
     if (hasUnsavedDraftChanges()) {
       setDraftSaveConfirmOpen(true)
       return
     }
     onClose?.()
+  }
+
+  useImperativeHandle(ref, () => ({ requestClose }))
+
+  /**
+   * クリップボードから画像を貼り付けたときに `ImagePicker` へ受け渡す。
+   *
+   * 処理の趣旨:
+   * - クリップボードに画像ファイルが含まれる場合のみ処理し、それ以外
+   *   （通常のテキスト貼り付け）はブラウザ標準の挙動に委ねる。
+   *
+   * Input:
+   * - `e`: 貼り付けイベント
+   *
+   * Output:
+   * - なし（`imagePickerRef` 経由で画像を追加）
+   */
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    if (isSubmitting) return
+
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    const files = Array.from(items)
+      .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => file !== null)
+
+    if (files.length === 0) return
+
+    e.preventDefault()
+    void imagePickerRef.current?.addFiles(files)
+  }
+
+  /**
+   * ドラッグ中の要素がファイルを含む場合のみ、ドロップを許可する。
+   *
+   * Input:
+   * - `e`: dragover イベント
+   *
+   * Output:
+   * - なし
+   */
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (isSubmitting) return
+    if (!e.dataTransfer.types.includes("Files")) return
+    e.preventDefault()
+    setIsDraggingImage(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+    setIsDraggingImage(false)
+  }
+
+  /**
+   * ドラッグ&ドロップされた画像ファイルを `ImagePicker` へ受け渡す。
+   *
+   * Input:
+   * - `e`: drop イベント
+   *
+   * Output:
+   * - なし（`imagePickerRef` 経由で画像を追加）
+   */
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer.types.includes("Files")) return
+    e.preventDefault()
+    setIsDraggingImage(false)
+    if (isSubmitting) return
+
+    const files = Array.from(e.dataTransfer.files).filter(file =>
+      file.type.startsWith("image/"),
+    )
+    if (files.length === 0) return
+
+    void imagePickerRef.current?.addFiles(files)
   }
 
   /**
@@ -619,30 +677,55 @@ export const Component: React.FC<Props> = ({
     setStatusColor(undefined)
 
     try {
-      const payload: CreateEntryBody = {
-        text,
-        langs: [languageCode],
-        selfLabels: selfLabel,
-      }
+      // skyshare entry を作成するのは画像投稿の場合のみ。画像が無い投稿
+      // （テキスト投稿・OGP投稿）は skyshare entry を伴わないため、
+      // v2/bsky 名前空間の純粋な bypass エンドポイントを使う。
+      let skyshareUri = ""
 
       if (imageEntry) {
-        payload.ogImage = imageEntry.thumbnailBlob
-        payload.images = imageEntry.originalBlobs
-        payload.imagesMeta = await resolveImageMetadata(imageEntry)
-      } else if (ogpResult) {
-        payload.ogMeta = ogpResult.meta
-        payload.ogImage = ogpResult.imageBlob
-      }
+        const payload: CreateEntryBody = {
+          text,
+          langs: [languageCode],
+          selfLabels: selfLabel,
+          ogImage: imageEntry.thumbnailBlob,
+          images: imageEntry.originalBlobs,
+          imagesMeta: await resolveImageMetadata(imageEntry),
+        }
 
-      const res = await createEntry(payload)
-      if (res.status !== 200) {
-        setStatusColor("#b00")
-        const errorCode =
-          "error" in res.data && typeof res.data.error === "string"
-            ? res.data.error
-            : "投稿に失敗しました。"
-        setStatus(resolveEntryErrorMessage(errorCode))
-        return
+        const res = await createEntry(payload)
+        if (res.status !== 200) {
+          setStatusColor("#b00")
+          const errorCode =
+            "error" in res.data && typeof res.data.error === "string"
+              ? res.data.error
+              : "投稿に失敗しました。"
+          setStatus(resolveEntryErrorMessage(errorCode))
+          return
+        }
+
+        skyshareUri = res.data.skyshare.uri
+      } else {
+        const payload: CreateBskyRecordBody = {
+          text,
+          langs: [languageCode],
+          selfLabels: selfLabel,
+        }
+
+        if (ogpResult) {
+          payload.ogMeta = ogpResult.meta
+          payload.ogImage = ogpResult.imageBlob
+        }
+
+        const res = await createBskyRecord(payload)
+        if (res.status !== 200) {
+          setStatusColor("#b00")
+          const errorCode =
+            "error" in res.data && typeof res.data.error === "string"
+              ? res.data.error
+              : "投稿に失敗しました。"
+          setStatus(resolveEntryErrorMessage(errorCode))
+          return
+        }
       }
 
       setStatusColor("green")
@@ -651,11 +734,8 @@ export const Component: React.FC<Props> = ({
         setLoadedDraft(null)
       }
       onPosted?.()
-      const shareText = buildXIntentText(text, res.data.skyshare.uri)
-      const taittsuuIntentText = buildTaittsuuIntentText(
-        text,
-        res.data.skyshare.uri,
-      )
+      const shareText = buildXIntentText(text, skyshareUri)
+      const taittsuuIntentText = buildTaittsuuIntentText(text, skyshareUri)
 
       // タイッツーと X の両方を有効化している場合は自動ポップアップを抑制する。
       if (crosspostToTaittsuu && showXWhenCrosspost) {
@@ -709,20 +789,20 @@ export const Component: React.FC<Props> = ({
       <Overlay
         open={draftModalOpen}
         onClose={() => setDraftModalOpen(false)}
-        contentClassName={`${styles.draftListOverlay}`}
+        contentClassName={`${ui["width-lg"]} ${styles["draft-list-overlay"]}`}
       >
         <div
-          className={`${ui.baseCard}`}
+          className={`${ui["base-card"]} ${ui["dialog-card"]}`}
           role="dialog"
           aria-label="下書き一覧"
           style={{ maxHeight: "80vh", overflow: "hidden" }}
         >
           <div
-            className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignCenter}`}
+            className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]}`}
           >
             <button
               type="button"
-              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton} ${ui.toolbarItemLeft}`}
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["toolbar-item-left"]}`}
               onClick={() => setDraftModalOpen(false)}
             >
               閉じる
@@ -730,7 +810,7 @@ export const Component: React.FC<Props> = ({
             <div>下書き一覧</div>
           </div>
 
-          <div className={styles.draftListBody}>
+          <div className={styles["draft-list-body"]}>
             <DraftListPanel
               items={draftItems}
               loading={draftListLoading}
@@ -753,23 +833,36 @@ export const Component: React.FC<Props> = ({
         onContinueEditing={() => setDraftSaveConfirmOpen(false)}
       />
 
-      <div className={`${ui.baseCard}`} role="dialog" aria-label="投稿フォーム">
+      <div
+        className={`${ui["base-card"]} ${ui["dialog-card"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
+        role="dialog"
+        aria-label="投稿フォーム"
+        onPaste={handlePaste}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         {isSubmitting && <Loading overlay message="投稿中..." />}
+        {isDraggingImage && (
+          <div className={styles["drag-overlay"]} aria-hidden>
+            画像をドロップして添付
+          </div>
+        )}
         <div
-          className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+          className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
         >
-          <div className={`${ui.baseComponent}`}>
+          <div className={`${ui["base-component"]}`}>
             <button
-              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
               aria-label="キャンセル"
               disabled={isSubmitting}
-              onClick={handleCancelClick}
+              onClick={requestClose}
             >
               キャンセル
             </button>
             {hasTextInput && (
               <button
-                className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
                 disabled={isSubmitting}
                 onClick={clearForm}
               >
@@ -777,10 +870,10 @@ export const Component: React.FC<Props> = ({
               </button>
             )}
           </div>
-          <div className={`${ui.baseComponent}`}>
+          <div className={`${ui["base-component"]}`}>
             <button
               type="button"
-              className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
               disabled={isSubmitting}
               onClick={() => {
                 void openDraftPicker()
@@ -790,7 +883,7 @@ export const Component: React.FC<Props> = ({
             </button>
             <button
               form="entry-form"
-              className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
               type="submit"
               disabled={isSubmitting}
             >
@@ -800,7 +893,7 @@ export const Component: React.FC<Props> = ({
             {showXIntentButton && (
               <button
                 type="button"
-                className={`${ui.baseButton} ${ui.textButton} ${ui.blackButton}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["black-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
                   const intentText = text.trim()
@@ -825,7 +918,7 @@ export const Component: React.FC<Props> = ({
             {showTaittsuuIntentButton && (
               <button
                 type="button"
-                className={`${ui.baseButton} ${ui.textButton} ${ui.grayButton}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
                   const intentText = text.trim()
@@ -850,17 +943,21 @@ export const Component: React.FC<Props> = ({
           </div>
         </div>
 
-        <form id="entry-form" className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.bodyRow}>
+        <form
+          id="entry-form"
+          className={ui["dialog-body"]}
+          onSubmit={handleSubmit}
+        >
+          <div className={styles["body-row"]}>
             <div className={styles.avatar} aria-hidden>
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
-                  className={styles.avatarImg}
+                  className={styles["avatar-img"]}
                   alt="avatar"
                 />
               ) : (
-                <svg viewBox="0 0 36 36" className={styles.avatarImg}>
+                <svg viewBox="0 0 36 36" className={styles["avatar-img"]}>
                   <circle cx="18" cy="18" r="18" fill="#e6eef9" />
                   <text
                     x="50%"
@@ -873,37 +970,22 @@ export const Component: React.FC<Props> = ({
               )}
             </div>
 
-            <div className={styles.inputArea}>
-              <textarea
-                className={styles.textarea}
+            <div className={styles["input-area"]}>
+              <CountedTextInput
                 id="text"
                 name="text"
+                multiline
                 rows={6}
                 placeholder="最近どう？"
                 value={text}
-                onChange={e => setText(e.target.value)}
+                onChange={setText}
                 disabled={isSubmitting}
+                counters={textCounters}
               />
-              <div
-                className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignRight}`}
-              >
-                <div
-                  className={[styles.charCount, charCountAlertClass]
-                    .filter(Boolean)
-                    .join(" ")}
-                >
-                  <span style={{ whiteSpace: "nowrap" }}>
-                    {textCountOnX}/{xWarnCount}:X
-                  </span>
-                  <span style={{ minWidth: "9.5rem", textAlign: "right" }}>
-                    {textCountOnBsky}/{bskyMaxCount}:Bluesky
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
           <div
-            className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+            className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
           >
             <SelfLabelsSelect
               value={selfLabel}
@@ -918,9 +1000,10 @@ export const Component: React.FC<Props> = ({
           </div>
 
           <div
-            className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+            className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]}`}
           >
             <ImagePicker
+              ref={imagePickerRef}
               value={imageEntry}
               onChange={entry => {
                 if (entry && ogpResult) {
@@ -937,12 +1020,12 @@ export const Component: React.FC<Props> = ({
             <OgpPreview ogpFetch={ogpFetch} />
             <ImagePreview value={imageEntry} />
           </div>
-          <div className={ui.baseComponent}>
+          <div className={ui["base-component"]}>
             <Collapsible
               label="詳細オプション"
               defaultOpen={defaultOpenShareOptions}
             >
-              <div className={styles.shareOptions}>
+              <div className={styles["share-options"]}>
                 <ToggleSwitch
                   checked={openXPopup}
                   disabled={isSubmitting || crosspostToTaittsuu}
@@ -999,6 +1082,6 @@ export const Component: React.FC<Props> = ({
       </div>
     </>
   )
-}
+})
 
 export default Component

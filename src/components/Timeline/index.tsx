@@ -2,28 +2,33 @@
  * 自分の投稿一覧と投稿ランチャーをまとめて扱うクライアントコンポーネント。
  *
  * 責務と処理概要:
- * - `/v1/entry` 取得処理を定義し、一覧コンポーネントへ提供する。
+ * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
  * - PostForm の投稿成功時に再取得トリガーを更新する。
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
 import { useCallback, useEffect, useState } from "react"
-import { getEntry } from "@/client/openapi/client"
+import { getEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/ComponentList"
 import type {
   CursorPageFetchInput,
   CursorPageFetchResult,
 } from "@/components/ComponentList"
-import { useCursorPaginationController } from "@/components/ComponentList"
+import {
+  useCursorPaginationController,
+  useInfiniteScrollController,
+} from "@/components/ComponentList"
+import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
 import PostCard from "@/components/PostCard"
 import PostLauncher from "@/components/PostLauncher"
-import type { TimelinePost } from "@/lib/posts"
+import type { TimelinePost } from "@/lib/entry/posts"
+import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import {
   readPageSizeSetting,
   writePageSizeSetting,
-} from "@/lib/timelineSettings"
+} from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -45,6 +50,10 @@ const PAGE_SIZE = 20
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
+  // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
+  // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
+  // 到達不能なデッドコードとして残置している。
+  const paginationMode = "infinite" as PaginationMode
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     avatarUrl ?? null,
   )
@@ -76,7 +85,7 @@ const Component = ({ avatarUrl }: Props) => {
     }: CursorPageFetchInput): Promise<CursorPageFetchResult<TimelinePost>> => {
       try {
         const params = cursor ? { limit, cursor } : { limit }
-        const res = await getEntry(params)
+        const res = await getEntries(params)
 
         if (res.status === 200) {
           const posts = res.data.posts ?? []
@@ -99,7 +108,7 @@ const Component = ({ avatarUrl }: Props) => {
 
         if (res.status === 401) {
           if (typeof window !== "undefined") {
-            window.location.href = "/login"
+            window.location.href = "/login/"
           }
           return {
             items: [],
@@ -132,54 +141,96 @@ const Component = ({ avatarUrl }: Props) => {
     setReloadKey(prev => prev + 1)
   }
 
-  const controller = useCursorPaginationController<TimelinePost>({
+  const pagedController = useCursorPaginationController<TimelinePost>({
     cursorPagination: {
       pageSize,
       fetchPage,
       reloadKey,
+      enabled: paginationMode === "paged",
       loadingText: "読み込み中...",
       emptyText: "初期化中...",
     },
   })
 
+  const infiniteController = useInfiniteScrollController<TimelinePost>({
+    infiniteScrollPagination: {
+      fetchPage,
+      reloadKey,
+      enabled: paginationMode === "infinite",
+      loadingText: "読み込み中...",
+      emptyText: "初期化中...",
+    },
+  })
+
+  const isPaged = paginationMode === "paged"
+  const items = isPaged ? pagedController.items : infiniteController.items
+  const loading = isPaged ? pagedController.loading : infiniteController.loading
+  const error = isPaged ? pagedController.error : infiniteController.error
+  const empty = isPaged ? pagedController.empty : infiniteController.empty
+  const message = isPaged ? pagedController.message : infiniteController.message
+  const removeItem = isPaged
+    ? pagedController.removeItem
+    : infiniteController.removeItem
+
   return (
-    <section className={`${ui.baseCard} ${ui.pageWidth}`}>
+    <section className={`${ui["base-card"]}`}>
       <PostLauncher avatarUrl={resolvedAvatarUrl} onPosted={handlePosted} />
 
       <div
-        className={`${ui.toolbar} ${ui.toolbarAlign} ${ui.toolbarAlignBetween}`}
+        className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
-        <PageSizeSelect
-          value={pageSize}
-          onChange={next => {
-            setPageSize(next)
-            writePageSizeSetting(next)
-          }}
-          ariaLabel="表示件数"
-        />
-        <NavigationBar
-          pagination={controller.pagination}
-          ariaLabel="post timeline pagination"
-        />
+        {isPaged ? (
+          <PageSizeSelect
+            value={pageSize}
+            onChange={next => {
+              setPageSize(next)
+              writePageSizeSetting(next)
+            }}
+            ariaLabel="表示件数"
+          />
+        ) : (
+          <span aria-hidden="true" />
+        )}
+        {isPaged ? (
+          <NavigationBar
+            pagination={pagedController.pagination}
+            ariaLabel="post timeline pagination"
+          />
+        ) : null}
       </div>
 
-      {controller.loading || controller.error || controller.empty ? (
-        <p className={controller.error ? styles.errorState : styles.emptyState}>
-          {controller.message}
+      {loading || error || empty ? (
+        <p className={error ? styles["error-state"] : styles["empty-state"]}>
+          {message}
         </p>
       ) : (
         <ComponentList
           itemComponent={PostCard}
           getItemKey={item => item.uri}
-          className={styles.timelineList}
-          items={controller.items}
+          getItemProps={item => ({
+            onPostDeleted: () =>
+              removeItem(candidate => candidate.uri === item.uri),
+          })}
+          className={styles["timeline-list"]}
+          items={items}
         />
       )}
 
-      <NavigationBar
-        pagination={controller.pagination}
-        ariaLabel="post timeline pagination"
-      />
+      {isPaged ? (
+        <NavigationBar
+          pagination={pagedController.pagination}
+          ariaLabel="post timeline pagination"
+        />
+      ) : (
+        <InfiniteScrollSentinel
+          hasMore={infiniteController.hasMore}
+          loadingMore={infiniteController.loadingMore}
+          onLoadMore={infiniteController.loadMore}
+          showEndMessage={!error && !empty}
+          endText="最初の投稿に到達しました"
+          ariaLabel="post timeline infinite scroll"
+        />
+      )}
     </section>
   )
 }

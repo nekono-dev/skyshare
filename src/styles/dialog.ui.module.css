@@ -1,0 +1,29 @@
+/*
+  ダイアログ
+  Overlay直下のダイアログカード（ui.base-cardと併用する）で共通して使うレイアウトスタイルを定義する。
+  Overlay自体は背景・開閉制御のみ、ui.base-cardは枠線・背景・paddingのみを担当するため、
+  カード内部の縦積み（gap）はここに集約する。
+
+  基底
+    .dialog-card ui.base-cardと併用し、カード内を縦積み(gap)にする。padding/背景/枠線は持たない
+    .dialog-body カード内の縦積みグループ（フォーム本体など、ボタン以外の内容）
+    .dialog-actions カード内の縦積みグループ（選択肢・操作ボタン列）
+*/
+
+:local(.dialog-card) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+:local(.dialog-body) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0);
+}
+
+:local(.dialog-actions) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

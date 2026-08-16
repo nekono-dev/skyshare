@@ -130,7 +130,7 @@ export const ToggleSwitch = ({
         <span className={styles.track} aria-hidden>
           <span className={styles.knob} />
         </span>
-        <span className={styles.labelText}>{label}</span>
+        <span className={styles["label-text"]}>{label}</span>
       </label>
     </span>
   )

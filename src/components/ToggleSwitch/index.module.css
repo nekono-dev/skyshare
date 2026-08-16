@@ -89,6 +89,6 @@
 }
 
 /* ラベルテキスト: 改行させない */
-.labelText {
+.label-text {
   white-space: nowrap;
 }

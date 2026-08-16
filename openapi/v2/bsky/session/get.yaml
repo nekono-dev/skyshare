@@ -1,0 +1,49 @@
+summary: List accounts linked in this browser (active session + pooled accounts)
+operationId: getSession
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../../common.yaml#/cookie
+responses:
+  "200":
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            accounts:
+              type: array
+              items:
+                type: object
+                properties:
+                  did:
+                    type: string
+                  handle:
+                    type: string
+                  displayName:
+                    type: string
+                  avatarUrl:
+                    type: string
+                  isActive:
+                    type: boolean
+                required:
+                  - did
+                  - handle
+                  - isActive
+          required:
+            - accounts
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error

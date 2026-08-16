@@ -10,7 +10,7 @@
   visibility: hidden;
 }
 
-.pageStatus {
+.page-status {
   min-width: 6.5rem;
   text-align: center;
   color: rgba(0, 0, 0, 0.68);

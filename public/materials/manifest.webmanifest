@@ -1,32 +1,32 @@
 {
-    "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-    "name": "Skyshare",
-    "short_name": "Skyshare",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#FFFFFF",
-    "theme_color": "#FFFFFF",
-    "icons": [
-        {
-            "src": "/materials/icon.svg",
-            "sizes": "any",
-            "type": "image/svg+xml",
-            "purpose": "any"
-        },
-        {
-            "src": "/materials/icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        }
-    ],
-    "share_target": {
-        "action": "/app",
-        "method": "GET",
-        "enctype": "application/x-www-form-urlencoded",
-        "params": {
-            "title": "sharedTitle",
-            "text": "sharedText",
-            "url": "sharedUrl"
-        }
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "name": "Skyshare",
+  "short_name": "Skyshare",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    {
+      "src": "/materials/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/materials/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
+  ],
+  "share_target": {
+    "action": "/app",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "sharedTitle",
+      "text": "sharedText",
+      "url": "sharedUrl"
+    }
+  }
 }

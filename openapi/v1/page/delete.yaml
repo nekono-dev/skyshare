@@ -1,0 +1,46 @@
+summary: Delete a legacy pageDB entry (and its underlying OGP asset)
+operationId: deleteLegacyPage
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          pageId:
+            type: string
+            description: "`${dbIndex}/${dbKey}` 形式の投稿識別子"
+            example: 0/did:plc:abc@3lxyz
+          did:
+            type: string
+            description: 削除対象投稿の DID（legacy dbIndex の場合に必須）
+          accessJwt:
+            type: string
+            description: 呼び出しユーザーの Bluesky accessJwt
+        required:
+          - pageId
+          - accessJwt
+responses:
+  "200":
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            result:
+              type: string
+          required:
+            - result
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/legacyPageError
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/legacyPageError

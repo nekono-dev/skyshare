@@ -1,16 +1,22 @@
 // @ts-check
-import { defineConfig } from "astro/config"
+import { defineConfig, sessionDrivers } from "astro/config"
 import cloudflare from "@astrojs/cloudflare"
 
 import react from "@astrojs/react"
 
 export default defineConfig({
   output: "server",
-  adapter: cloudflare(),
-  site: "https://preview.skyshare.nekono.dev",
+  adapter: cloudflare({ imageService: "compile" }),
+  site: "https://skyshare.nekono.dev",
   server: {
     port: 4321,
     host: true,
+  },
+  trailingSlash: "always",
+  session: {
+    driver: sessionDrivers.lruCache({
+      max: 1000,
+    }),
   },
   // Vite 固有の設定を乗せて、いくつかのビルド時警告を抑制する
   vite: {

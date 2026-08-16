@@ -53,8 +53,8 @@ export const Component = ({
   ariaLabel = "表示件数",
 }: PageSizeSelectProps) => {
   const selectClassName = className
-    ? `${ui.baseSelect} ${styles.select} ${className}`
-    : `${ui.baseSelect} ${styles.select}`
+    ? `${ui["base-select"]} ${styles.select} ${className}`
+    : `${ui["base-select"]} ${styles.select}`
 
   const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const next = Number(event.target.value)
@@ -64,7 +64,7 @@ export const Component = ({
   }
 
   return (
-    <span className={ui.selectWrapper}>
+    <span className={ui["select-wrapper"]}>
       <select
         id={id}
         name={name}

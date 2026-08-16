@@ -1,7 +1,9 @@
 @import "./tokens.css";
 @import "./button.ui.module.css";
 @import "./input.ui.module.css";
+@import "./dialog.ui.module.css";
 
+/* 初期化 */
 .root {
   all: initial;
 }
@@ -23,42 +25,168 @@
   line-height: 1.5;
 }
 
+/* ページ全体のUI */
+:global(body) {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: inherit;
+}
+
+:global(html) {
+  height: 100%;
+  overflow-x: hidden;
+  /* スクロールバーを常時表示領域として確保し、モーダル開閉時のスクロールバー
+     表示切替による横方向のガタつき（コンテンツ幅の変化）を防ぐ。 */
+  overflow-y: scroll;
+}
+
+/* リンク色をトークンから指定（グローバル） */
+:global(a) {
+  color: var(--color-bluesky);
+  text-decoration: none;
+}
+
+:global(a:hover),
+:global(a:focus) {
+  color: var(--color-bluesky-hover);
+  text-decoration: underline;
+}
+
+:local(.root) {
+  padding: var(--space-1);
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* nav / footer スロット(Sidebar / FooterNav)を表示するページのみ対象。
+   640px未満はFooterNav(画面下固定バー)の高さ分だけ本文の下に余白を確保する。
+   640px以上はFooterNavがdisplay:noneになりSidebarへ切り替わる。Sidebarは
+   .shell のGridカラムに配置されるため、ここでのpadding計算は不要(以前あった
+   vwベースのpadding-left逆算は、二重の中央寄せメカニズムによる不具合の原因に
+   なっていたため廃止した。詳細は tokens.css のコメント参照)。 */
+@media (max-width: 639px) {
+  :local(.root.with-nav) {
+    padding-bottom: var(--nav-bar-height);
+  }
+}
+
+/* デスクトップ用サイドバー(Sidebar)とページ本文をひとつのGridコンテナとして中央寄せする。
+   vwベースのcalc()やflexによる独立した中央寄せを廃止し、Gridの
+   justify-content: center 一本に統一するための仕組み。
+
+   minmax(0, var(--width-lg-max)) という非1frのトラックは、コンテナ(.shell、
+   width:100%でビューポート基準の確定幅を持つ)がトラック合計の最大幅より広い場合、
+   justify-content:center によって「サイドバー+コンテンツの組」がひとつの塊として
+   中央に寄り、左右に均等な余白ができる(フルサイドバー時に求められる挙動)。
+   逆にコンテナがトラック合計の最大幅より狭い場合(ミニサイドバー域)は、Gridの
+   トラックサイジングにより非fr・非stretchのminmaxトラックが自動的に縮小し、
+   コンテンツが画面幅の変化にそのまま追従する(ミニサイドバー時にTimelineが
+   狭くなっていく挙動)。計算式の分岐なしに、Gridのアルゴリズム自体が両方の
+   要求を自然に満たすのがこの設計の核。
+
+   nav/footerスロットを使わないページ(login.astro等)では、この .shell 自体を
+   Baselayout.astro 側でラップしないため、このクラスは影響しない。 */
+:local(.shell) {
+  display: grid;
+  grid-template-columns: minmax(0, var(--width-lg-max));
+  justify-content: center;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  :local(.shell) {
+    grid-template-columns: var(--nav-sidebar-icon-width) minmax(
+        0,
+        var(--width-lg-max)
+      );
+    column-gap: var(--space-2);
+  }
+}
+
+/* 848px = --nav-sidebar-width(200px) + column-gap(--space-2=8px) + --width-lg-max(640px)。
+   根拠は tokens.css 参照。 */
+@media (min-width: 848px) {
+  :local(.shell) {
+    grid-template-columns: var(--nav-sidebar-width) minmax(
+        0,
+        var(--width-lg-max)
+      );
+  }
+}
+
+/* 個別ページ上の適応UI */
 :local(.page) {
   display: flex;
   flex-direction: column;
 }
 
-:local(.pageWidth) {
-  max-width: var(--page-max-width);
-  width: var(--page-width);
+/* サイズ規定 */
+
+:local(.width-xl) {
+  max-width: var(--width-xl-max);
+  width: var(--width-xl);
 }
 
-:local(.componentWidth) {
-  max-width: var(--component-max-width);
-  width: var(--component-width);
+/* max-width の 100% は、.shell のGridカラム幅(minmax(0, var(--width-lg-max)))が
+   実際のコンテナ幅より広く算出されるケースへの安全弁。100%は実際のコンテナ幅
+   (vwと違いスクロールバー分も自動的に除外される)を指すため、これが無いと
+   Timelineが自分のGridカラムからはみ出す可能性がある。 */
+:local(.width-lg) {
+  max-width: min(var(--width-lg-max), 100%);
+  width: var(--width-lg);
+}
+
+:local(.width-md) {
+  max-width: var(--width-md-max);
+  width: var(--width-md);
+}
+
+:local(.width-sm) {
+  max-width: var(--width-sm-max);
+  width: var(--width-sm);
 }
 
 /* Base card / container used as outer frame for forms and panels */
-:local(.baseCard) {
+:local(.base-card) {
   display: block;
-  padding: var(--space-2);
+  padding: var(--space-1);
   background: var(--color-card-bg);
   border: var(--border-card);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
 
-:local(.baseCard) * {
+:local(.base-card-padding) {
+  padding: var(--space-3);
+}
+
+:local(.base-card) * {
   box-sizing: border-box;
   overflow: hidden;
 }
 
-:local(.baseComponent) {
+/* baseCard 自体が選択可能な要素であることを示すバリエーション。hover で背景色が変わる */
+:local(.card-select) {
+  cursor: pointer;
+}
+
+:local(.card-select):hover {
+  background: var(--color-gray-hover);
+}
+
+/* baseCard の背景色を変更し、通常状態と区別するバリエーション（作成対象外など） */
+:local(.card-muted) {
+  background: var(--color-card-muted-bg);
+}
+
+:local(.base-component) {
   margin-top: var(--space-1);
   margin-bottom: var(--space-1);
 }
 
-:local(.baseComponent) > * {
+:local(.base-component) > * {
   margin-left: var(--space-0);
   margin-right: var(--space-0);
 }
@@ -81,12 +209,12 @@
 }
 
 /* flex コンテナ内で自身のみ先頭(左)へ固定 */
-:local(.selfStart) {
+:local(.self-start) {
   align-self: flex-start;
 }
 
 /* flex コンテナ内で自身のみ後部(右)へ固定 */
-:local(.selfEnd) {
+:local(.self-end) {
   align-self: flex-end;
 }
 
@@ -137,29 +265,29 @@
 }
 
 /* toolbar の横方向配置を切り替える共通クラス */
-:local(.toolbarAlign) {
+:local(.toolbar-align) {
   justify-content: var(--toolbar-justify-content, flex-start);
 }
 
-:local(.toolbarAlignLeft) {
+:local(.toolbar-align-left) {
   --toolbar-justify-content: flex-start;
 }
 
-:local(.toolbarAlignBetween) {
+:local(.toolbar-align-between) {
   --toolbar-justify-content: space-between;
 }
 
-:local(.toolbarAlignRight) {
+:local(.toolbar-align-right) {
   --toolbar-justify-content: flex-end;
 }
 
-:local(.toolbarAlignCenter) {
+:local(.toolbar-align-center) {
   --toolbar-justify-content: center;
 }
 
 /* 子要素に左右マージンのみを付与する */
 :local(.toolbar) > * {
-  margin: 0 var(--space-1);
+  margin: 0 var(--space-0);
 }
 
 :local(.toolbar) > :first-child {
@@ -171,7 +299,7 @@
 }
 
 /* toolbar 内の特定の子要素を、他の子要素の中央寄せに関係なく左右端へ固定する共通クラス */
-:local(.toolbar) > :local(.toolbarItemLeft) {
+:local(.toolbar) > :local(.toolbar-item-left) {
   position: absolute;
   left: 0;
   top: 50%;
@@ -179,7 +307,7 @@
   margin: 0;
 }
 
-:local(.toolbar) > :local(.toolbarItemRight) {
+:local(.toolbar) > :local(.toolbar-item-right) {
   position: absolute;
   right: 0;
   top: 50%;
@@ -196,19 +324,19 @@
   list-style: none;
 }
 
-:local(.list) > :local(.listItem) {
+:local(.list) > :local(.list-item) {
   position: relative;
   padding-left: var(--space-3);
   margin-bottom: var(--space-1);
   line-height: var(--line-height-normal);
 }
 
-:local(.list) > :local(.listItem):last-child {
+:local(.list) > :local(.list-item):last-child {
   margin-bottom: 0;
 }
 
 /* カスタムの点マーカー */
-:local(.list) > :local(.listItem)::before {
+:local(.list) > :local(.list-item)::before {
   content: "";
   position: absolute;
   left: 0;

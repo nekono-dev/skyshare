@@ -1,0 +1,86 @@
+.list {
+  gap: var(--space-2);
+}
+
+.card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.avatar,
+.avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.avatar-placeholder {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
+}
+
+.meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.name-row strong {
+  overflow-wrap: anywhere;
+}
+
+.handle {
+  display: block;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.active-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem var(--space-1);
+  border-radius: var(--radius-pill);
+  background: rgba(22, 163, 74, 0.12);
+  color: rgb(21, 128, 61);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reauth-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem var(--space-1);
+  border-radius: var(--radius-pill);
+  background: rgba(160, 32, 32, 0.12);
+  color: rgb(160, 32, 32);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.logout-button {
+  flex: 0 0 auto;
+}
+
+.state,
+.error-state {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.error-state {
+  color: rgb(160, 32, 32);
+}

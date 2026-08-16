@@ -50,3 +50,39 @@ imagesMeta:
       height:
         type: integer
         minimum: 1
+
+legacyPageEntry:
+  type: object
+  properties:
+    ogp:
+      type: string
+    handle:
+      type: string
+    imgs:
+      type: array
+      items:
+        type: object
+        properties:
+          thumb:
+            type: string
+          alt:
+            type: string
+        required:
+          - thumb
+          - alt
+  required:
+    - ogp
+    - handle
+    - imgs
+
+legacyPageError:
+  type: object
+  properties:
+    error:
+      type: string
+      enum:
+        - BadRequest
+        - RateLimitExceeded
+        - InternalServerError
+  required:
+    - error

@@ -1,0 +1,40 @@
+---
+/**
+ * アカウント切り替えページ。
+ *
+ * 責務と処理概要:
+ * - `AccountSwitchPanel` を表示し、この端末に紐付いた複数アカウントの一覧・切り替え・ログアウトを行う。
+ * - 別アカウントの追加ログイン、および切り替え先セッションが失効していた場合の再ログインは、
+ *   いずれも `AccountSwitchPanel` 内の `LoginForm` で行う
+ *   （`POST /v2/bsky/session` が既にアクティブなセッションをプールへ退避する実装になっているため、
+ *   ここでログインするだけで自然に「アカウント追加」または「再ログイン」として機能する）。
+ * - 静的配信可能なため prerender を有効化する。実データ（アカウント一覧）は Cookie 依存のため、
+ *   クライアント側の `AccountSwitchPanel` が `GET /v2/bsky/session` を叩いて取得する。
+ */
+export const prerender = true
+import AccountSwitchPanel from "@/components/AccountSwitchPanel"
+import Baselayout from "@/layout/Baselayout.astro"
+import FooterNav from "@/components/FooterNav/index.astro"
+import Sidebar from "@/components/Sidebar/index.astro"
+import { serviceName } from "@/vars"
+import ui from "@/styles/ui.module.css"
+import { slide } from "astro:transitions"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`アカウント切り替え | ${serviceName}`} robots={robots}>
+    <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
+        <div class=`${ui.page} ${ui["width-lg"]} ${ui.center}`>
+            <div class=`${ui["width-md"]}`>
+                <h1 class={ui.subject} style="margin-top: 1rem;">アカウントを切り替え</h1>
+                <p class={ui.text}>
+                    カードをクリックするとそのアカウントに切り替わります。カード内の「ログアウト」ボタンでそのアカウントからログアウトできます。
+                </p>
+                <AccountSwitchPanel client:load />
+            </div>
+        </div>
+    </div>
+    <Sidebar slot="nav" />
+    <FooterNav slot="footer" />
+</Baselayout>

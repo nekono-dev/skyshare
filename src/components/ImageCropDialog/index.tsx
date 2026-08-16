@@ -2,7 +2,10 @@ import { useEffect, useState } from "react"
 import CropSlot, { type SlotCropState } from "@/components/CropSlot"
 import Overlay from "@/components/Overlay"
 import Loading from "@/components/Loading"
-import { createProcessedImages, getSlotDefs } from "@/lib/postImageProcessing"
+import {
+  createProcessedImages,
+  getSlotDefs,
+} from "@/lib/image/postImageProcessing"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -126,21 +129,23 @@ export const Component: React.FC<Props> = ({
     <Overlay
       open
       onClose={isProcessing ? () => {} : onCancel}
-      contentClassName={`${styles.overlayContent} ${styles[`overlayContent${count}`]}`}
+      contentClassName={ui["width-xl"]}
     >
       {isProcessing && <Loading overlay message="画像を処理中..." />}
-      <div className={`${ui.baseCard} ${styles.container}`}>
+      <div className={`${ui["base-card"]} ${ui["dialog-card"]}`}>
         <h3 className={styles.title}>画像を調整</h3>
         <p className={styles.caption}>
           1200 x 630 の範囲で配置と拡大率を調整します。
         </p>
 
-        <div className={`${styles.compositeArea} ${styles[`layout${count}`]}`}>
+        <div
+          className={`${styles["composite-area"]} ${styles[`layout${count}`]}`}
+        >
           {slotDefs.map((def, i) => (
             <div
               key={i}
               style={{ gridArea: `slot${i}` }}
-              className={styles.slotContainer}
+              className={styles["slot-container"]}
             >
               <CropSlot
                 imageUrl={imageUrls[i]}
@@ -156,7 +161,7 @@ export const Component: React.FC<Props> = ({
         <div className={styles.actions}>
           <button
             type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
             onClick={onCancel}
             disabled={isProcessing}
           >
@@ -164,7 +169,7 @@ export const Component: React.FC<Props> = ({
           </button>
           <button
             type="button"
-            className={`${ui.baseButton} ${ui.textButton} ${ui.blueButton}`}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
             onClick={handleConfirm}
             disabled={!canConfirm || isProcessing}
           >

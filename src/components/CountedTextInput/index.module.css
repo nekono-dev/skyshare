@@ -1,0 +1,57 @@
+.wrapper {
+  display: flex;
+}
+.wrapper-single-line {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+}
+.wrapper-multiline {
+  flex-direction: column;
+}
+
+.field-single-line {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.field-multiline {
+  min-height: 4rem;
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.counters-row-single-line {
+  flex: 0 0 auto;
+}
+.counters-row-multiline {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+.counters {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  border-radius: var(--radius-md);
+  padding: 2px var(--space-2);
+  background: color-mix(in srgb, var(--color-card-bg) 85%, #ffffff 15%);
+  opacity: 0.92;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+.counters-warn {
+  background: #fde68a;
+  color: #854d0e;
+}
+.counters-error {
+  background: #fca5a5;
+  color: #7f1d1d;
+}
+
+.counter-item {
+  white-space: nowrap;
+  text-align: right;
+}

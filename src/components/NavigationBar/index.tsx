@@ -60,7 +60,7 @@ export const Component = ({
       {hasPrevPage ? (
         <button
           type="button"
-          className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
           onClick={onPrev}
           disabled={Boolean(loading)}
         >
@@ -68,19 +68,19 @@ export const Component = ({
         </button>
       ) : (
         <span
-          className={`${ui.baseButton} ${ui.textButton} ${styles.placeholder}`}
+          className={`${ui["base-button"]} ${ui["text-button"]} ${styles.placeholder}`}
           aria-hidden="true"
         >
           {prevLabel ?? "<<"}
         </span>
       )}
 
-      <span className={styles.pageStatus}>ページ {currentPage}</span>
+      <span className={styles["page-status"]}>ページ {currentPage}</span>
 
       {hasNextPage ? (
         <button
           type="button"
-          className={`${ui.baseButton} ${ui.textButton} ${ui.whiteButton}`}
+          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
           onClick={onNext}
           disabled={Boolean(loading)}
         >
@@ -88,7 +88,7 @@ export const Component = ({
         </button>
       ) : (
         <span
-          className={`${ui.baseButton} ${ui.textButton} ${styles.placeholder}`}
+          className={`${ui["base-button"]} ${ui["text-button"]} ${styles.placeholder}`}
           aria-hidden="true"
         >
           {nextLabel ?? ">>"}

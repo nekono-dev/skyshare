@@ -1,0 +1,62 @@
+summary: Update the heading/caption of an existing Skyshare entry (dev.nekono.skyshare.entry)
+operationId: updateEntry
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../common.yaml#/cookie
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          uri:
+            type: string
+            description: 更新対象の dev.nekono.skyshare.entry の AT URI
+            example: at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz
+          heading:
+            type: string
+            maxLength: 100
+          caption:
+            type: string
+            maxLength: 300
+        required:
+          - uri
+          - heading
+          - caption
+responses:
+  "200":
+    description: Success
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "404":
+    description: Not Found
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "429":
+    description: Too Many Requests
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error

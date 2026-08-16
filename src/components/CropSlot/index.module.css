@@ -1,4 +1,4 @@
-.slotOuter {
+.slot-outer {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -6,12 +6,12 @@
   margin-inline: auto;
 }
 
-.slotLabel {
+.slot-label {
   font-size: var(--font-size-sm);
   color: var(--color-muted);
 }
 
-.cropWrapper {
+.crop-wrapper {
   position: relative;
   width: 100%;
   aspect-ratio: 40 / 21;
@@ -20,6 +20,6 @@
   overflow: hidden;
 }
 
-.sliderArea {
+.slider-area {
   display: block;
 }

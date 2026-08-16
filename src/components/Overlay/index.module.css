@@ -13,8 +13,6 @@
 }
 
 .content {
-  width: 100%;
-  max-width: 640px;
   max-height: calc(100% - 48px);
   overflow: auto;
   overscroll-behavior: contain;
@@ -25,4 +23,13 @@
   font-family: var(--font-family-sans);
   font-size: var(--font-size-md);
   line-height: var(--line-height-normal);
+}
+
+/* 幅の既定値は :where() で詳細度 0 にし、contentClassName 側の単一クラス指定
+   （ui.dialog-overlay-* など）が CSS の記述順（バンドル時の import 順）に
+   関係なく必ず優先されるようにする。通常のクラスセレクタ同士は詳細度が同点になり、
+   どちらが勝つかは import グラフの並び順というビルド上の偶然に左右されてしまうため。 */
+:where(.content) {
+  width: 100%;
+  max-width: 640px;
 }

@@ -1,0 +1,18 @@
+---
+import { materialsurl } from "@/env/envs"
+const svgbsky_url = `url('${materialsurl}bluesky.svg')`
+---
+
+<style define:vars={{ svgbsky_url }}>
+    .bsky {
+        mask-image: var(--svgbsky_url);
+        mask-size: 100%;
+        mask-repeat: no-repeat;
+        background: #1185fe;
+    }
+</style>
+<img
+    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAG3RFWHRTb2Z0d2FyZQBDZWxzeXMgU3R1ZGlvIFRvb2zBp+F8AAAACXBIWXMAABnWAAAZ1gEY0crtAAAAA1BMVEVHcEyC+tLSAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII="
+    class="bsky max-w-12 mx-4 w-full aspect-square my-auto inline-block align-middle"
+    alt="Bluesky"
+/>

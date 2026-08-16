@@ -175,10 +175,10 @@ const CropSlot: React.FC<Props> = ({
   }
 
   return (
-    <div className={styles.slotOuter}>
-      {label && <div className={styles.slotLabel}>{label}</div>}
+    <div className={styles["slot-outer"]}>
+      {label && <div className={styles["slot-label"]}>{label}</div>}
       <div
-        className={styles.cropWrapper}
+        className={styles["crop-wrapper"]}
         ref={containerRef}
         style={{ aspectRatio: String(aspect) }}
       >
@@ -197,7 +197,7 @@ const CropSlot: React.FC<Props> = ({
           onMediaLoaded={handleMediaLoaded}
         />
       </div>
-      <div className={styles.sliderArea}>
+      <div className={styles["slider-area"]}>
         <input
           type="range"
           min={minZoom}

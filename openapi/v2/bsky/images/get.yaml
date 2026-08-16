@@ -1,0 +1,45 @@
+summary: Fetch a raw image blob from the caller's own PDS (bypasses Bluesky CDN, which lacks CORS headers)
+operationId: getBskyImage
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../../common.yaml#/cookie
+  - name: cid
+    in: query
+    required: true
+    schema:
+      type: string
+responses:
+  "200":
+    description: Success
+    content:
+      image/*:
+        schema:
+          type: string
+          format: binary
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "404":
+    description: Not Found
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error

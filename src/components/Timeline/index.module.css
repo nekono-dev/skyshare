@@ -1,24 +1,13 @@
-.timelineHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.timelineTitle {
-  margin: 0;
-}
-
-.timelineNote,
-.emptyState,
-.errorState {
+.empty-state,
+.error-state {
   margin: 0;
   color: rgba(0, 0, 0, 0.68);
 }
 
-.errorState {
+.error-state {
   color: rgb(160, 32, 32);
 }
 
-.timelineList {
+.timeline-list {
   gap: 1rem;
 }
