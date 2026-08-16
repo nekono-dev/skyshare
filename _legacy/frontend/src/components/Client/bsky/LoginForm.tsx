@@ -37,9 +37,9 @@ export const Component = ({
                 id = identifier
                 pw = password
             }
-            // 従来のBluesky直接ログインと、v2バックエンド(POST /v2/session)への
+            // 従来のBluesky直接ログインと、v2バックエンド(POST /v2/bsky/session)への
             // ログインを並行実行する。v2側はHttpOnly Cookieでセッションを保持するため、
-            // 投稿処理(PostButton)はここで確立したCookieを利用してv2 API(/v2/entry)を呼び出す。
+            // 投稿処理(PostButton)はここで確立したCookieを利用してv2 API(/v2/entry, /v2/bsky/record)を呼び出す。
             const [res, v2Res] = await Promise.all([
                 createSession({
                     identifier: id,

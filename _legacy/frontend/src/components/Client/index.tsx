@@ -15,7 +15,6 @@ import ProcButton from "./common/ProcButton"
 
 import LogoutButton from "./bsky/buttons/LogoutButton"
 import LoadSession from "./bsky/unique/LoadSession"
-import PageControllerForm from "./pagedb/PageControllerForm"
 import type model_getProfile from "@/utils/atproto_api/models/getProfile.json"
 import { link } from "./common/tailwindVariants"
 import { buttonID } from "./bsky/types"
@@ -39,7 +38,6 @@ const Component = ({ portalonly = false }: { portalonly?: boolean }) => {
         location.href = posturl
     }
     const appElem = document.getElementById("app")
-    const pageElem = document.getElementById("page")
     const handleLoaded = () => {
         const loadElem = document.getElementById("bload")
         const headerElem = document.getElementById("hload")
@@ -107,31 +105,11 @@ const Component = ({ portalonly = false }: { portalonly?: boolean }) => {
                                   appElem,
                               ))}
                 </Profile_context.Provider>
-                {/* 各OGPページ向けのコンポーネント */}
-                {pageElem !== null &&
-                    isLoaded &&
-                    ReactDOM.createPortal(
-                        <>
-                            <PageControllerForm
-                                pageId={pageElem.getAttribute("pageid")!}
-                                session={session}
-                                setMsgInfo={setMsgInfo}
-                            />
-                            <InfoLabel msgInfo={msgInfo} />
-                        </>,
-                        pageElem,
-                    )}
                 {/* 本体のコンポーネント */}
                 {!portalonly &&
                     isLoaded &&
                     (session.accessJwt !== "" ? (
                         <>
-                            <a
-                                className={link({ class: ["mx-2"] })}
-                                href={posturl}
-                            >
-                                PostForm
-                            </a>
                             <LogoutButton
                                 className={buttonstyle}
                                 reload={true}

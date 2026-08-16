@@ -25,6 +25,7 @@ import resolveHandle, {
 import browserImageCompression from "@/utils/browserImageCompression"
 import { getOgpBlob, getOgpMeta } from "@/lib/getOgp"
 import createV2Entry from "@/lib/v2BackendAPI/createV2Entry"
+import createV2BskyRecord from "@/lib/v2BackendAPI/createV2BskyRecord"
 import generateOgpImage from "@/lib/legacyOgpAPI/generateOgpImage"
 
 // service
@@ -361,7 +362,9 @@ export const Component = ({
                     throw e
                 }
             } else {
-                // 画像投稿・テキストのみ投稿はv2バックエンド(POST /v2/entry)へ委譲する。
+                // 画像投稿はv2バックエンド(POST /v2/entry)へ、テキストのみ投稿は
+                // skyshare entryを伴わないPOST /v2/bsky/recordへ委譲する
+                // (POST /v2/entryはogImageを常に必須とするため、テキストのみ投稿には使えない)。
                 // Blobアップロード・レコード作成・facet検出はv2側が行うため、ここではファイルの準備のみ行う。
                 let compressedImages: File[] = []
                 let imageSizes: Array<{ width: number; height: number }> = []
@@ -383,11 +386,10 @@ export const Component = ({
                     )
                 }
 
-                // v2のPOST /v2/entryは画像投稿時にogImageを必須とする。
-                // legacy backend(Firebase Functions)の複数画像レイアウト合成処理(compositeImages)を
-                // POST /ogp経由で呼び出し、合成済みのOGP画像を取得してogImageとして渡す。
-                let ogImage: File | undefined = undefined
                 if (compressedImages.length > 0) {
+                    // legacy backend(Firebase Functions)の複数画像レイアウト合成処理(compositeImages)を
+                    // POST /ogp経由で呼び出し、合成済みのOGP画像を取得する。
+                    // v2のPOST /v2/entryは画像投稿時にこのogImageを必須とする。
                     setMsgInfo({
                         msg: "OGP画像を生成中...",
                         isError: false,
@@ -403,7 +405,7 @@ export const Component = ({
                         e.name = generateOgpImageResult.error
                         throw e
                     }
-                    ogImage = new File(
+                    const ogImage = new File(
                         [generateOgpImageResult.blob],
                         "ogImage.jpg",
                         {
@@ -412,30 +414,43 @@ export const Component = ({
                                 "image/jpeg",
                         },
                     )
-                }
 
-                setMsgInfo({
-                    msg: "Blueskyへポスト中...",
-                    isError: false,
-                })
-                const v2EntryResult = await createV2Entry({
-                    text: postText,
-                    langs: [language],
-                    selfLabels: selfLabel !== null ? selfLabel.val : undefined,
-                    images:
-                        compressedImages.length > 0
-                            ? compressedImages
-                            : undefined,
-                    imagesMeta:
-                        compressedImages.length > 0 ? imageSizes : undefined,
-                    ogImage,
-                })
-                if ("error" in v2EntryResult) {
-                    const e: Error = new Error(v2EntryResult.message)
-                    e.name = v2EntryResult.error
-                    throw e
+                    setMsgInfo({
+                        msg: "Blueskyへポスト中...",
+                        isError: false,
+                    })
+                    const v2EntryResult = await createV2Entry({
+                        text: postText,
+                        langs: [language],
+                        selfLabels:
+                            selfLabel !== null ? selfLabel.val : undefined,
+                        images: compressedImages,
+                        imagesMeta: imageSizes,
+                        ogImage,
+                    })
+                    if ("error" in v2EntryResult) {
+                        const e: Error = new Error(v2EntryResult.message)
+                        e.name = v2EntryResult.error
+                        throw e
+                    }
+                    skyshareEntryUrl = v2EntryResult.skyshare.uri || undefined
+                } else {
+                    setMsgInfo({
+                        msg: "Blueskyへポスト中...",
+                        isError: false,
+                    })
+                    const v2RecordResult = await createV2BskyRecord({
+                        text: postText,
+                        langs: [language],
+                        selfLabels:
+                            selfLabel !== null ? selfLabel.val : undefined,
+                    })
+                    if ("error" in v2RecordResult) {
+                        const e: Error = new Error(v2RecordResult.message)
+                        e.name = v2RecordResult.error
+                        throw e
+                    }
                 }
-                skyshareEntryUrl = v2EntryResult.skyshare.uri || undefined
             }
             setMsgInfo({
                 msg: "Blueskyへポストしました!",

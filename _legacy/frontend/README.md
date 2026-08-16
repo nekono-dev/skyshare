@@ -36,12 +36,17 @@ v2バックエンド(このリポジトリのルートにある Astro/Cloudflare
   legacyが `https://skyshare.nekono.dev/legacy/` のように同一ドメイン配下)。別オリジンで配信する場合、
   v2側にCORS対応(`Access-Control-Allow-Origin`/`Access-Control-Allow-Credentials`)を追加しない限り
   ログイン・投稿は失敗する。
-- OGP共有ページ生成(`POST/GET/DELETE {PUBLIC_BACKEND_ENDPOINT}/page` および `ogp/meta`,`ogp/blob`)は
-  **移行対象外**であり、従来どおりFirebase Functionsバックエンドを直接呼び出す。これらの呼び出しには
-  legacy自身のBluesky直接ログイン(`createSession`)で取得した `accessJwt` を引き続き利用するため、
-  ログイン処理はBluesky直接ログインとv2ログインを**並行して両方実行**している(`LoginForm.tsx`)。
+- OGP共有ページのメタデータ抽出は、Firebase Functionsバックエンドの `ogp/meta`,`ogp/blob` から
+  v2と共通の外部OGP抽出サービス(`PUBLIC_OGP_EXTRACTOR_API`)を直接呼び出す実装に移行済み(`lib/getOgp.ts`)。
+  `page`(pageDB)のGET/DELETEもlegacyフロントエンドからは呼び出されなくなっており(削除UIごと撤去済み)、
+  現在v2側が独自に `_legacy/backend` の `page` APIをプロキシ利用しているのみである。
+  Firebase Functionsバックエンドへの依存が残るのは、複数画像を合成したOGP画像を生成する
+  `POST {PUBLIC_BACKEND_ENDPOINT}/ogp`(`lib/legacyOgpAPI/generateOgpImage.ts`)のみであり、
+  この呼び出しにはlegacy自身のBluesky直接ログイン(`createSession`)で取得した `accessJwt` を
+  引き続き利用するため、ログイン処理はBluesky直接ログインとv2ログインを
+  **並行して両方実行**している(`LoginForm.tsx`)。
 - 外部リンク埋め込み投稿(OGPリンクカード付き投稿、`mediaData.type === "external"`)は、
-  Firebaseの `ogp/meta`,`ogp/blob` から得たサムネイルに依存しているため、**従来どおり直接Bluesky APIを
+  `getOgp.ts` 経由で取得したサムネイルに依存しているため、**従来どおり直接Bluesky APIを
   呼び出す実装のまま**としている(`PostButton.tsx`)。
 - v2の `POST /v2/entry` は画像投稿時に `ogImage`(OGPサムネイル)を必須とするが、legacyには専用の
   クロップUIがないため、先頭画像をそのまま `ogImage` として送信して契約を満たしている。

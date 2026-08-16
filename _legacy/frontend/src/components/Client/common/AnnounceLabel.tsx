@@ -4,7 +4,7 @@ import { button_base } from "./tailwindVariants"
 import Marquee from "react-fast-marquee"
 
 export const Component = () => {
-    const refreshDate = new Date("2026-01-11").getTime()
+    const refreshDate = new Date("2026-08-16").getTime()
     const [closed, setClosed] = useState(
         readAnnounceClosed(refreshDate).getTime() > refreshDate,
     )
@@ -30,9 +30,12 @@ export const Component = () => {
                             <div className="flex-1">
                                 <Marquee delay={3}>
                                     <span className="bg-white rounded-lg py-0.5 px-2 mr-2">
-                                        お知らせ
+                                        重大発表
                                     </span>
-                                    1/2~1/6にSkyshare上で作成されたリンクについて、DBのレートリミット超過により2/1まで表示できなくなる可能性があります。ご迷惑をおかけして申し訳ありません。
+                                    <a href="/login">
+                                        Skyshare
+                                        v2のPreviewをリリースしています。ぜひ正式リリースに向けた肩慣らしにお試しください。
+                                    </a>
                                 </Marquee>
                             </div>
                             <button

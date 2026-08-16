@@ -1,7 +1,7 @@
 import { v2BackendEndpoint } from "./endpoint"
 import { defaultService } from "@/utils/atproto_api/base"
 
-// v2バックエンド POST /v2/session の呼び出し。
+// v2バックエンド POST /v2/bsky/session の呼び出し。
 // 成功時はv2がHttpOnly Cookie(atp_session)をブラウザへ発行し、
 // 以後 createV2Entry などの呼び出しがそのCookieで認証される。
 // (v2側はアクセストークンをレスポンスに含めないため、呼び出し側でJWTを保持することはできない)
@@ -22,7 +22,7 @@ export const api = async ({
     service?: string
 }): Promise<createV2SessionResult> => {
     try {
-        const response = await fetch(`${v2BackendEndpoint}/v2/session`, {
+        const response = await fetch(`${v2BackendEndpoint}/v2/bsky/session`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "same-origin",
