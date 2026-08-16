@@ -129,7 +129,7 @@ export const Component: React.FC<Props> = ({
     <Overlay
       open
       onClose={isProcessing ? () => {} : onCancel}
-      contentClassName={ui["width-lg"]}
+      contentClassName={ui["width-xl"]}
     >
       {isProcessing && <Loading overlay message="画像を処理中..." />}
       <div className={`${ui["base-card"]} ${ui["dialog-card"]}`}>

@@ -23,14 +23,12 @@ import {
 import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
-import PaginationModeSelect from "@/components/PaginationModeSelect"
 import EntryCard from "@/components/EntryCard"
 import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
+import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import {
   readPageSizeSetting,
-  readPaginationModeSetting,
   writePageSizeSetting,
-  writePaginationModeSetting,
 } from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -45,9 +43,10 @@ const PAGE_SIZE = 20
  */
 const Component = () => {
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
-  const [paginationMode, setPaginationMode] = useState(() =>
-    readPaginationModeSetting("infinite"),
-  )
+  // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
+  // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
+  // 到達不能なデッドコードとして残置している。
+  const paginationMode = "infinite" as PaginationMode
 
   /**
    * 指定 cursor のページを取得して ComponentList に返す。
@@ -155,13 +154,6 @@ const Component = () => {
         ) : (
           <span aria-hidden="true" />
         )}
-        <PaginationModeSelect
-          value={paginationMode}
-          onChange={next => {
-            setPaginationMode(next)
-            writePaginationModeSetting(next)
-          }}
-        />
         {isPaged ? (
           <NavigationBar
             pagination={pagedController.pagination}
@@ -202,6 +194,8 @@ const Component = () => {
           hasMore={infiniteController.hasMore}
           loadingMore={infiniteController.loadingMore}
           onLoadMore={infiniteController.loadMore}
+          showEndMessage={!error && !empty}
+          endText="最初のEntryに到達しました"
           ariaLabel="entry list infinite scroll"
         />
       )}

@@ -488,7 +488,9 @@ export const useInfiniteScrollController = <TItem,>({
 }): InfiniteScrollController<TItem> => {
   const [items, setItems] = useState<TItem[]>([])
   const [cursor, setCursor] = useState<string | undefined>(undefined)
-  const [hasMore, setHasMore] = useState(true)
+  // 初回取得が完了するまでは次ページの有無が不明なため false とし、
+  // InfiniteScrollSentinel が初回取得完了前から監視・追加取得を開始しないようにする。
+  const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState("")

@@ -9,6 +9,8 @@ import styles from "./index.module.css"
  * - `NavigationBar` の無限スクロール版に相当する純粋UI。
  * - 自身がビューポートに近づいたことを `IntersectionObserver` で検知し、
  *   `onLoadMore` を呼び出すだけで、取得ロジックやページング状態は保持しない。
+ * - `hasMore` が `false` になった時点で、`showEndMessage` が `true` なら
+ *   末尾到達メッセージを表示し、全件読み込み済みであることを明示する。
  */
 
 export type InfiniteScrollSentinelProps = {
@@ -16,6 +18,10 @@ export type InfiniteScrollSentinelProps = {
   loadingMore: boolean
   onLoadMore: () => void
   loadingText?: string
+  /** 末尾到達メッセージを表示するかどうか（一覧が空・エラー時は呼び出し側で `false` を渡す） */
+  showEndMessage?: boolean
+  /** 末尾到達時のメッセージ文言 */
+  endText?: string
   ariaLabel?: string
   className?: string
 }
@@ -43,6 +49,8 @@ export const Component = ({
   loadingMore,
   onLoadMore,
   loadingText,
+  showEndMessage,
+  endText,
   ariaLabel,
   className,
 }: InfiniteScrollSentinelProps) => {
@@ -75,7 +83,23 @@ export const Component = ({
   }, [hasMore, onLoadMore])
 
   if (!hasMore) {
-    return null
+    if (!showEndMessage) {
+      return null
+    }
+
+    const endContainerClassName = className
+      ? `${styles["end-container"]} ${className}`
+      : styles["end-container"]
+
+    return (
+      <div
+        className={endContainerClassName}
+        role="status"
+        aria-label={ariaLabel ?? "all items loaded"}
+      >
+        {endText ?? "最初の投稿に到達しました"}
+      </div>
+    )
   }
 
   const containerClassName = className
