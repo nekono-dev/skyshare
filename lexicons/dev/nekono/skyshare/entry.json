@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "dev.nekono.skyshare.entry",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A share entry that represents another AT record with a derived asset.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["source", "manifest", "createdAt"],
+        "properties": {
+          "source": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "Reference to the original AT record this entry is derived from."
+          },
+          "manifest": {
+            "type": "ref",
+            "ref": "dev.nekono.skyshare.defs#manifest",
+            "description": "Reference to the manifest definition."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

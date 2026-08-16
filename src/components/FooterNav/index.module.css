@@ -1,0 +1,77 @@
+/* モバイル専用: 画面最下部に固定、横並び。640px以上はSidebarが担当するため非表示にする。
+   box-sizing: border-box は必須。指定が無い(content-box)と、padding分だけ実際の
+   描画幅がずれるため。 */
+.nav {
+  position: fixed;
+  z-index: 50;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: space-around;
+  height: var(--nav-bar-height);
+  padding-bottom: var(--space-4);
+  background: var(--color-card-bg);
+  border-top: var(--border-card);
+}
+
+.item {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.item:hover,
+.item:focus {
+  color: var(--color-bluesky);
+  text-decoration: none;
+}
+
+.item[aria-current="page"] {
+  color: var(--color-bluesky);
+  font-weight: 600;
+}
+
+.item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item-icon [data-nav-icon-root] {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
+
+/* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。 */
+.item:hover [data-nav-icon="active"],
+.item:focus [data-nav-icon="active"],
+.item[aria-current="page"] [data-nav-icon="active"] {
+  opacity: 1;
+}
+
+.item:hover [data-nav-icon="muted"],
+.item:focus [data-nav-icon="muted"],
+.item[aria-current="page"] [data-nav-icon="muted"] {
+  opacity: 0;
+}
+
+.item-label {
+  display: none;
+}
+
+/* 640px以上はSidebarに切り替わるため、FooterNav自体を非表示にする。
+   境界値は tokens.css の根拠コメント参照(Sidebar/index.module.cssと同期させること)。 */
+@media (min-width: 640px) {
+  .nav {
+    display: none;
+  }
+}

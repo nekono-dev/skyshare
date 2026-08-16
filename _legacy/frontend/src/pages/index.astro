@@ -1,0 +1,79 @@
+---
+import Pagelayout from "@/layouts/Indexlayout.astro"
+import { servicename, githuburl } from "@/env/vars"
+import {
+    posturl,
+    qaurl,
+    changeurl,
+    featureurl,
+    skythrowurl,
+    materialsurl,
+} from "@/env/envs"
+const title = `${servicename} - Share Bluesky to X`
+import version from "@/env/version"
+
+import Xicon from "@/components/Xicon.astro"
+import Bskyicon from "@/components/Bskyicon.astro"
+
+const robots = ["index", "follow", "noarchive", "noimageindex"]
+---
+
+<Pagelayout
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
+    pageTitle={title}
+    robots={robots}
+>
+    <div class="text-center mx-auto md:max-w-3xl my-4 font-extrabold relative">
+        <div class="relative">
+            <div
+                class="absolute right-[10%] -bottom-[10%] font-mono text-sky-500"
+                style="font-size: min(24px,3.7vw)"
+            >
+                {version}
+            </div>
+            <img
+                src={`${materialsurl}longlogo.svg`}
+                class="max-w-2xl mb-8 mx-auto w-11/12"
+                alt={servicename}
+            />
+        </div>
+        <div class="max-w-3xl my-4 text-2xl font-normal">
+            <div class="h-16">
+                <Bskyicon />
+                <span class="align-middle">と</span>
+                <Xicon />
+            </div>
+            <span class="block my-2 text-xl">同時投稿を"少し楽にする"</span>
+            <span class="block my-2 text-xl">ウェブアプリです</span>
+        </div>
+
+        <a
+            href={posturl}
+            class="bg-white text-xl
+                    bg-opacity-80 border-0 py-4 px-10
+                    focus:outline-none hover:bg-sky-200
+                    inline-flex rounded-full transition-colors shadow-md"
+            >Blueskyへログイン
+        </a>
+        <div class="text-center mx-auto md:max-w-3xl my-5">
+            <div
+                class="bg-white bg-opacity-80 rounded-lg w-fit px-4 py-2 m-auto"
+            >
+                <a href={featureurl} class="mx-2">Feature</a>
+                <a href={changeurl} class="mx-2">Changelog</a>
+                <a href={qaurl} class="mx-2">Q&A</a>
+                <a href={githuburl} class="mx-2">Github</a>
+            </div>
+        </div>
+
+        <div
+            class="max-w-sm mt-4 my-8 mx-auto font-normal rounded-2xl bg-white bg-opacity-80 py-2"
+        >
+            <div class="mt-2"><b>ネイティブアプリ対応</b>の</div>
+            <div class="mb-2">Bluesky投稿専用クライアント</div>
+            <a href="https://skythrow.com">SkyThrow</a>を<a href={skythrowurl}
+                >応援しています。</a
+            >
+        </div>
+    </div>
+</Pagelayout>

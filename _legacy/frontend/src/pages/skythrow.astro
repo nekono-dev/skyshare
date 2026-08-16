@@ -1,0 +1,86 @@
+---
+import { servicename } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
+import Pagelayout from "@/layouts/Pagelayout.astro"
+import version from "@/env/version"
+
+const title = `SkyThrow introduction - ${servicename}`
+const robots = ["index", "noarchive", "noimageindex"]
+---
+
+<Pagelayout
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
+    pageTitle={title}
+    robots={robots}
+    hidePostButton={true}
+>
+    <div class="my-4">
+        <h1>SkyThrowの紹介</h1>
+        <h3>Bluesky投稿専用クライアント「SkyThrow」についての紹介です。</h3>
+        <div class="my-4">
+            当サービスではネイティブ対応は行わずPWAアプリとして、Xへのクロスポスト補助ツールとしてのBluesky投稿専用クライアントとしてサービスを展開していましたが、ついに<a
+                href="https://skythrow.com"
+                >ネイティブアプリ対応の投稿専用クライアント「SkyThrow」</a
+            >がリリースされました！
+        </div>
+        <div class="my-2">
+            <a class="text-lg" href="https://skythrow.com"
+                >SkyThrow | SkyThrow (https://skythrow.com)</a
+            >
+        </div>
+        <div class="mx-auto max-w-xl">
+            <blockquote
+                class="bluesky-embed"
+                data-bluesky-uri="at://did:plc:5nor25cnkgdkhfgkgmgz4tn5/app.bsky.feed.post/3ksl2357b6z2g"
+                data-bluesky-cid="bafyreiduwr5yevf2p7g7fu5utrj24mtnhs7iqhrfhju2tp3g6s6ujphriy"
+                data-bluesky-embed-color-mode="system"
+            >
+                <p lang="ja">
+                    bluesky投稿専用クライアント「SkyThrow」のiOS版もリリースしました!!
+                    The iOS version of SkyThrow, Bluesky posting only client,
+                    has also been released! https://skythrow.com/help/install/
+                    #skythrow<br /><br /><a
+                        href="https://bsky.app/profile/did:plc:5nor25cnkgdkhfgkgmgz4tn5/post/3ksl2357b6z2g?ref_src=embed"
+                        >[image or embed]</a
+                    >
+                </p>&mdash; SkyThrow (<a
+                    href="https://bsky.app/profile/did:plc:5nor25cnkgdkhfgkgmgz4tn5?ref_src=embed"
+                    >@skythrow.com</a
+                >) <a
+                    href="https://bsky.app/profile/did:plc:5nor25cnkgdkhfgkgmgz4tn5/post/3ksl2357b6z2g?ref_src=embed"
+                    >2024年5月16日 10:18</a
+                >
+            </blockquote><script
+                async
+                src="https://embed.bsky.app/static/embed.js"
+                charset="utf-8"></script>
+        </div>
+        <div class="my-4">
+            こちら、<b
+                >投稿の共有機能を用いることで、Xや様々なサービスへのクロスポストが可能です。</b
+            >
+        </div>
+        <div class="mx-auto max-w-md">
+            <iframe
+                width="409"
+                height="727"
+                src="https://www.youtube.com/embed/laUPVd6Lfvc"
+                title='bluesky post only client "SkyThrow" DEMO'
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allowfullscreen></iframe>
+        </div>
+        <div class="my-4">
+            現在はAndroid版とiOS版がすでにリリースされています！<br />
+            「SkyThrow」もよろしくお願いいたします。
+        </div>
+        <b
+            >インストールはこちら → <a
+                class="text-lg"
+                href="https://skythrow.com/help/install/"
+                >Install ／インストール | SkyThrow
+                (https://skythrow.com/help/install/)</a
+            ></b
+        >
+    </div>
+</Pagelayout>

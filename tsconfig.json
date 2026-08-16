@@ -1,0 +1,19 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "src/**/*", "./worker-configuration.d.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "verbatimModuleSyntax": false,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "resolveJsonModule": true,
+    "noImplicitAny": false,
+    "rootDir": "./",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

@@ -1,0 +1,92 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.main-column {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.created-at {
+  margin: 0;
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.entry-link {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-left: auto;
+  padding-top: 0.15rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  color: var(--color-bluesky);
+  text-decoration: none;
+}
+
+.entry-link:hover {
+  text-decoration: underline;
+}
+
+.caption {
+  min-width: 0;
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+
+.empty-caption {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.footer {
+  flex-wrap: wrap;
+  padding-top: var(--space-2);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.error-text {
+  margin: 0;
+  color: var(--color-red-text);
+  font-size: 0.9rem;
+}
+
+/* サムネイルはカード右端に固定幅で配置し、align-self: stretch により
+   mainColumn の高さいっぱいに広げる。 */
+.thumbnail,
+.thumbnail-placeholder {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 96px;
+  min-height: 96px;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.thumbnail img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-placeholder {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
+}

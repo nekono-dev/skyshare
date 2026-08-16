@@ -1,0 +1,131 @@
+---
+import { servicename, serviceurl, authorlink } from "@/env/vars"
+import { qaurl, materialsurl } from "@/env/envs"
+import version from "@/env/version"
+import Pagelayout from "@/layouts/Pagelayout.astro"
+const siteurl = Astro.url.origin
+
+const title = `About - ${servicename}`
+const robots = ["index", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Pagelayout
+    cardPath=`${materialsurl}ogp_main.png?updated=${version}`
+    pageTitle={title}
+    robots={robots}
+    hidePostButton={true}
+>
+    <div class="mb-8">
+        <h1>当サイトについて</h1>
+        <h3>
+            {servicename}のWebサービス(<a href={siteurl}>{serviceurl}</a
+            >)としての仕様および注意事項について記載します。
+        </h3>
+    </div>
+    <div class="mb-8">
+        <h2>ご利用にあたって</h2>
+        <div>
+            <div>
+                当サイトは運営開始から現在まで <a href={authorlink}
+                    >@nekono.dev
+                </a>個人により開発・運用・管理されています。
+                そのため、企業が実施されているような手厚いサポート等は実施が難しい状況です。
+            </div>
+            <div>
+                当サイトは正常な稼働にむけて可能な限りの改善・改修の努力を致しますが、前提条件として、自己責任でのご利用をお願いいたします。
+                また、当サイトを利用したことによる過失や損害につきまして、一切の責任を取りかねます。ご了承ください。
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2>OGP/ページの生成について</h2>
+        <div>
+            <div>
+                当サイトのOGP/ページ生成機能を用いた場合にのみ、OGP/ページが生成されます。
+                OGP/ページ生成機能は「Xへの画像は自身で添付する」フラグがOFFの状態にて、画像を添付した投稿を行う際に実行されます。
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2>生成OGP/ページの有効期限について</h2>
+        <div>
+            <div>
+                当サイトにて生成したOGP/ページにつきまして、DB容量の節約のためいずれも365日後削除されます。
+                また、本規約の制定より前に投稿されたページについては前規約制定と同様90日後に削除いたします。
+                なお、OGPリンクページが削除されてもBlueskyおよびXへの投稿は残ります。
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2>生成ページの削除機能について</h2>
+        <div>
+            <div>
+                当サイトにて生成したページにつきましては、ログインした状態で生成済みページを開くと
+                「ページを削除」ボタンが表示されるのでこれを押していただけば削除可能です。
+            </div>
+            <div>
+                削除の際、生成ページが操作ユーザご自身の投稿であるかを判定するため、
+                Blueskyの元のポストを参照しています。<b
+                    >元ポストが削除されている場合はページ削除は出来ません。</b
+                >
+                申し訳ありませんが自動削除をお待ちください。
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2>対応環境について</h2>
+        <div>
+            可能な限り広くサポートしたいと考えていますが、全てに対応することは難しいと思っています。
+            そのため、動作の推奨環境（開発と同様の環境）を以下に示します。
+        </div>
+        <div>
+            推奨環境（開発と同等程度の環境）
+            <ul>
+                <li>
+                    OS: iOS/iPad OS 最新版 / Windows 11.X / macOS 14(Sonoma)
+                </li>
+                <li>Browser: Safari(最新版) / Google Chrome(最新版)</li>
+            </ul>
+        </div>
+
+        <div>可能な限り推奨環境下での利用をご検討ください。</div>
+    </div>
+
+    <div class="mb-8">
+        <h2>拡張機能・コンテンツブロッカーについて</h2>
+        <div>
+            Javascriptを用いている都合上、いくらかの拡張機能・コンテンツブロッカーの影響でサービスが正常に動作しない可能性があります。
+            拡張機能を設定した状態での動作につきましては、推奨・必須環境いずれを満たしている場合でも対応しかねます。
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2>当サイトの運用方針に関して</h2>
+        <div>
+            当サイト（<a href={siteurl}>{serviceurl}</a
+            >）はあったらいいなを形にしたいという想い、AT
+            Protocolの開発事例・技術習得学習の一環としてのみ構築されていました。
+            時はたち、研究目的はなくなりましたが、まだまだ需要があるサービスということで、今後も継続して運用していきたいと考えています。
+        </div>
+        <div>
+            各種クラウドサービスの無料範囲での稼働を目指しています（最近は課金されていますが...）
+            全体の利用状況によっては1ユーザごとの画像やページの保存期間や制限を課したり、
+            計画停止・投稿数制限などで不便をおかけする可能性があります。ご理解お願いします。
+        </div>
+        <div>
+            また、当サイトの仕様の変更がありましたら当ページおよび<a
+                href={authorlink}
+                >@nekono.dev
+            </a>にて発信いたします。
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <h2>困ったときは</h2>
+        よくある質問として、<a href={qaurl}>Q & A</a>を参照してください。
+    </div>
+</Pagelayout>

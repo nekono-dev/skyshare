@@ -1,0 +1,47 @@
+---
+/**
+ * Sidebar/FooterNav 共通のナビアイコン描画コンポーネント。
+ *
+ * 責務と処理概要:
+ * - entries/post: 非アクティブ色(muted)・アクティブ色(bluesky)それぞれで塗り分けた
+ *   実SVGファイルを重ねて配置し、呼び出し側CSSの `.item:hover`/`.item[aria-current="page"]`
+ *   に応じて data-nav-icon="active" 側の opacity を切り替えるクロスフェード方式で
+ *   動的な色変化を表現する(インラインSVGの複製を避けるための方式)。
+ * - accounts: 現在ログイン中のアカウントアバターを円形に表示する。実際のURLは
+ *   prerender時点では取得できないため、初期状態はプレースホルダーのみを表示し、
+ *   syncAccountAvatar.ts がクライアント側で data-account-avatar-img の src を補完する。
+ * - サイズは呼び出し側CSSが `[data-nav-icon-root]` を介して指定する(tokens.css の
+ *   --size-icon-sm/--size-icon-md を使うこと)。
+ */
+import styles from "./NavIcon.module.css"
+import docBluesky from "@/images/doc.svg"
+import docMuted from "@/images/doc-muted.svg"
+import blueskyBluesky from "@/images/bluesky.svg"
+import blueskyMuted from "@/images/bluesky-muted.svg"
+import type { NavItem } from "./navItems"
+
+interface Props {
+    navKey: NavItem["key"]
+}
+
+const { navKey } = Astro.props
+
+const iconSrcByKey = {
+    entries: { muted: docMuted.src, active: docBluesky.src },
+    post: { muted: blueskyMuted.src, active: blueskyBluesky.src },
+} as const
+---
+
+{
+    navKey === "accounts" ? (
+        <span class={styles["avatar-wrap"]} data-nav-icon-root>
+            <span class={styles["avatar-placeholder"]} aria-hidden="true" />
+            <img class={styles["avatar-img"]} data-account-avatar-img alt="" hidden />
+        </span>
+    ) : (
+        <span class={styles["icon-swap"]} data-nav-icon-root>
+            <img src={iconSrcByKey[navKey].muted} data-nav-icon="muted" alt="" aria-hidden="true" />
+            <img src={iconSrcByKey[navKey].active} data-nav-icon="active" alt="" aria-hidden="true" />
+        </span>
+    )
+}

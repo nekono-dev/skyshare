@@ -1,0 +1,14 @@
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  text-align: left;
+}
+
+.error-text {
+  margin: 0;
+  color: var(--color-red-text);
+  font-size: 0.9rem;
+}

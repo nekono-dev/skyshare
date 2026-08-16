@@ -1,0 +1,59 @@
+summary: Create a new Bluesky draft
+operationId: createDraft
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../../common.yaml#/cookie
+requestBody:
+  required: true
+  content:
+    application/json:
+      schema:
+        type: object
+        properties:
+          text:
+            type: string
+          labels:
+            type: array
+            items:
+              type: string
+        required:
+          - text
+responses:
+  "200":
+    description: Success
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            id:
+              type: string
+          required:
+            - id
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "429":
+    description: Too Many Requests
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error

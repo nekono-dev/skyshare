@@ -1,0 +1,13 @@
+.empty-state,
+.error-state {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.68);
+}
+
+.error-state {
+  color: rgb(160, 32, 32);
+}
+
+.timeline-list {
+  gap: 1rem;
+}

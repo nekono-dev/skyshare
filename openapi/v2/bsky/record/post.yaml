@@ -1,0 +1,87 @@
+summary: Create a Bluesky post (text or OGP link post) without creating a Skyshare entry
+operationId: createBskyRecord
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../../common.yaml#/cookie
+requestBody:
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        type: object
+        anyOf:
+          - required:
+              - text
+          - required:
+              - ogMeta
+              - ogImage
+        properties:
+          text:
+            type: string
+            example: Post content
+            minLength: 1
+          ogImage:
+            type: string
+            format: binary
+          ogMeta:
+            $ref: ../../../common.yaml#/ogMeta
+          langs:
+            type: array
+            items:
+              type: string
+              example: ja
+          selfLabels:
+            type: string
+            enum:
+              - sexual
+              - nudity
+              - porn
+              - spoiler
+              - "!warn"
+responses:
+  "200":
+    description: Success post
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            url:
+              type: string
+              example: https://bsky.app/profile/alice.bsky.social/post/3lxyz
+            uri:
+              type: string
+              example: at://did:plc:abc/app.bsky.feed.post/3lxyz
+            cid:
+              type: string
+          required:
+            - url
+            - uri
+            - cid
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "429":
+    description: Too Many Requests
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../../common.yaml#/error

@@ -1,0 +1,151 @@
+---
+/**
+ * legacy pageDB 投稿表示ページ(SSR)。
+ *
+ * 責務と処理概要:
+ * - URLの dbIndex/slug から legacy pageDB 上の投稿情報(OGP画像・投稿者handle・添付画像)を取得する。
+ * - 取得結果を v2 デザインで表示し、投稿者プロフィール・元のBluesky投稿へのリンクを提供する。
+ * - 取得失敗時は HTTP ステータスと理由を切り替えてエラー表示に切り替える。
+ *
+ * 実装上の制約:
+ * - Cloudflare Workers 環境で動作するため Node.js 固有 API は利用しない。
+ */
+
+export const prerender = false
+
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName } from "@/vars"
+import styles from "./[slug].module.css"
+import { fetchPageDbEntry, type PageDbImage } from "@/lib/legacy/pagedb"
+import { bskyPostUrlgen } from "@/lib/entry/url"
+import { parseSessionFromRequest } from "@/lib/session/cookies"
+import LegacyPageDeleteButton from "@/components/LegacyPageDeleteButton"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+
+const { dbIndex, slug } = Astro.params
+
+let statusCode = 200
+let pageTitle = `${serviceName} Post`
+let cardPath = ""
+let handle = ""
+let profileUrl = ""
+let sourceWebUrl = ""
+let images: PageDbImage[] = []
+let notFoundReason = "Post is not found"
+let resolvedDbIndex = ""
+let resolvedSlug = ""
+let canDeletePost = false
+
+// 削除ボタンは v2 セッション（Bluesky ログイン）を持ち、かつ投稿者本人の場合にのみ表示する。
+// legacy dbIndex(数値)の pageId は `${did}@${rkey}` 形式のため did で突合できるが、
+// "legacy" dbIndex の pageId は handle ベース(`${handle}@${rkey}`)のため session.handle で突合する。
+// フロントエンドでの表示制御はあくまで UX 目的であり、実際の本人確認は legacy backend 側で行う。
+const { session } = parseSessionFromRequest(Astro.request)
+const hasSession = Boolean(session?.did && session?.accessJwt)
+
+// dbIndex/slug の形式検証 → pageDB問い合わせ → 表示用整形、の順で段階的に失敗点を切り分ける。
+if (typeof dbIndex === "undefined" || typeof slug === "undefined") {
+    statusCode = 404
+} else if (dbIndex !== "legacy" && !/^\d+$/.test(dbIndex)) {
+    statusCode = 404
+} else {
+    const [did, rkey] = slug.split("@")
+
+    if (!did || !rkey) {
+        statusCode = 404
+        notFoundReason = "Invalid post identifier"
+    } else {
+        resolvedDbIndex = dbIndex
+        resolvedSlug = slug
+        canDeletePost = hasSession && (dbIndex === "legacy" ? session?.handle === did : session?.did === did)
+        const result = await fetchPageDbEntry({ dbIndex, dbKey: slug })
+
+        if ("error" in result) {
+            switch (result.error) {
+                case "RateLimitExceeded":
+                    statusCode = 503
+                    break
+                case "BadRequest":
+                    statusCode = 404
+                    break
+                default:
+                    statusCode = 500
+            }
+            console.warn("posts/[dbIndex]/[slug] SSR failed", {
+                reason: result.error,
+                dbIndex,
+                slug,
+            })
+        } else {
+            handle = result.handle
+            cardPath = result.ogp
+            images = result.imgs
+            profileUrl = `https://bsky.app/profile/${handle}`
+            sourceWebUrl = bskyPostUrlgen(did, rkey)
+            pageTitle = `${handle} Post - ${serviceName}`
+        }
+    }
+}
+
+Astro.response.status = statusCode
+---
+
+<Baselayout cardPath={cardPath} pageTitle={pageTitle} pageHeading={handle ? `@${handle}` : ""} robots={robots}>
+    {
+        statusCode === 200 ? (
+            <article class={styles.container}>
+                <header>
+                    <h1 class={styles.heading}>
+                        <a href={profileUrl} rel="noopener noreferrer" target="_blank">
+                            @{handle}
+                        </a>
+                        の投稿
+                    </h1>
+                </header>
+
+                <dl class={styles["meta-list"]}>
+                    <div>
+                        <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
+                            Blueskyの投稿を見る
+                        </a>
+                    </div>
+                </dl>
+
+                {images.length > 0 ? (
+                    <section class={styles["image-grid"]} aria-label="post images">
+                        {images.map(image => (
+                            <figure class={styles["image-card"]}>
+                                <img src={image.thumb} alt={image.alt} loading="lazy" decoding="async" />
+                                {image.alt ? <figcaption>{image.alt}</figcaption> : null}
+                            </figure>
+                        ))}
+                    </section>
+                ) : (
+                    <p class={styles["empty-message"]}>画像はありません。</p>
+                )}
+
+                {canDeletePost ? (
+                    <LegacyPageDeleteButton client:load dbIndex={resolvedDbIndex} dbKey={resolvedSlug} />
+                ) : null}
+            </article>
+        ) : (
+            <section class={styles["error-pane"]}>
+                <h1>
+                    {statusCode === 404
+                        ? "Post Not Found"
+                        : statusCode === 503
+                          ? "Service Temporarily Unavailable"
+                          : "Internal Server Error"}
+                </h1>
+                <p>
+                    {statusCode === 404
+                        ? notFoundReason
+                        : statusCode === 503
+                          ? "データ取得が混み合っています。しばらくして再度お試しください。"
+                          : "ページの生成中にエラーが発生しました。"}
+                </p>
+            </section>
+        )
+    }
+</Baselayout>

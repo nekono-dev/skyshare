@@ -1,0 +1,76 @@
+.launcher-delta {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--nav-bar-height) + var(--space-4));
+  box-shadow: var(--shadow-primary);
+}
+
+/* デスクトップ(サイドバーレイアウト)専用ボタン。Sidebar の #sidebar-action へ
+   Portal で描画され、サイドバーの flex column にナビ項目と同列で自然に並ぶため、
+   位置指定は不要(サイズ調整のみ)。 */
+.sidebar-action {
+  display: none;
+}
+
+.sidebar-action-icon {
+  display: none;
+}
+
+/* アイコンのみサイドバー段階(Sidebar側の640px境界と対応):
+   フローティングボタンを隠し、代わりにフローティングボタンと同じペンアイコンを
+   丸ボタンでサイドバー内に表示する。ラベルを表示する余白は無い。 */
+@media (min-width: 640px) {
+  .launcher-delta {
+    display: none;
+  }
+
+  .sidebar-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-button-md);
+    height: var(--size-button-md);
+    margin: 0 auto 0;
+    padding: 0;
+    border-radius: var(--radius-button-max);
+  }
+
+  .sidebar-action-icon {
+    display: block;
+  }
+
+  .sidebar-action-label {
+    display: none;
+  }
+}
+
+/* フルサイドバー段階(Sidebar側の848px境界と対応。根拠は tokens.css 参照):
+   サイドバーがフルラベル表示に戻るのに合わせ、他のnav項目(.item)と同様に
+   ペンアイコン+テキストラベルを横並びで表示する */
+@media (min-width: 848px) {
+  .sidebar-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    width: 100%;
+    height: auto;
+    margin-top: 0;
+    box-sizing: border-box;
+    text-align: left;
+    /* サイドバーの他のnav項目(.item, 848px時点)と大きさを揃える */
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-md);
+    border-radius: var(--radius-pill);
+  }
+
+  .sidebar-action-icon {
+    display: block;
+    width: var(--size-icon-sm);
+    height: var(--size-icon-sm);
+  }
+
+  .sidebar-action-label {
+    display: inline;
+  }
+}

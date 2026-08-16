@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "dev.nekono.skyshare.defs",
+  "defs": {
+    "manifest": {
+      "type": "object",
+      "description": "A fixed, human-facing manifestation of a source record.",
+      "required": ["visual"],
+      "properties": {
+        "visual": {
+          "type": "blob",
+          "accept": ["image/png", "image/jpeg", "image/webp"]
+        },
+        "heading": {
+          "type": "string",
+          "description": "A short human-readable heading identifying the source.",
+          "maxLength": 100
+        },
+        "caption": {
+          "type": "string",
+          "description": "Optional caption providing additional context for the visual.",
+          "maxLength": 300
+        }
+      }
+    }
+  }
+}

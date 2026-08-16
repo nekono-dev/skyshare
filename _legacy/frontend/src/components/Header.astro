@@ -1,0 +1,42 @@
+---
+// thanks for https://tailblocks.cc/
+import { githuburl } from "@/env/vars"
+import { baseurl, materialsurl, qaurl, changeurl, featureurl } from "@/env/envs"
+import App from "@/components/Client"
+import Loadingcircle from "./loadingcircle.astro"
+
+interface Props {
+    hideLoader: boolean
+}
+const { hideLoader = false } = Astro.props
+---
+
+<header id="header" class="bg-opacity-90 text-gray-600 body-font bg-white">
+    <div
+        class="container mx-auto max-w-5xl flex px-1 flex-row items-center sm:h-16 h-14 mb-0"
+    >
+        <a
+            href={baseurl}
+            class="flex-initial title-font font-medium items-center ml-4 mb-0"
+        >
+            <img
+                src={`${materialsurl}longlogo.svg`}
+                class="max-w-24 sm:max-w-28"
+            />
+        </a>
+        <nav class="ml-auto flex items-center text-base justify-center">
+            <div class="md:block hidden mb-0">
+                <a href={featureurl} class="mx-2">Feature</a>
+                <a href={changeurl} class="mx-2">Changelog</a>
+                <a href={qaurl} class="mx-2">Q&A</a>
+                <a href={githuburl} class="mx-2">Github</a>
+            </div>
+            <a href="/login/" class="mx-2">Skyshare-v2</a>
+
+            <div id="hload" class="mb-0">
+                {!hideLoader && <Loadingcircle size="s" />}
+            </div>
+            <App client:only />
+        </nav>
+    </div>
+</header>

@@ -1,0 +1,101 @@
+/*
+  プルダウン
+  本アプリケーションで利用するすべてのプルダウンの基本スタイルを定義する。
+
+  基底
+    .base-select 基底ボタンスタイル
+
+  種別
+    .select-wrapper プルダウンの外枠。擬似要素でドロップダウン矢印を表示する
+
+*/
+
+/* セレクトUI本体。必要に応じて幅クラスを別CSSで合成する */
+:local(.base-select) {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card-bg);
+  color: var(--color-muted);
+  padding: var(--space-1) var(--space-5) var(--space-1) var(--space-2);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+:local(.base-select):focus-visible {
+  outline: 2px solid var(--color-bluesky);
+  outline-offset: 1px;
+}
+
+:local(.base-select):disabled {
+  background: var(--color-gray-disabled);
+  cursor: not-allowed;
+}
+
+/* セレクトUIの外枠。擬似要素でドロップダウン矢印を表示する */
+:local(.select-wrapper) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  max-width: 10rem;
+}
+
+:local(.select-wrapper)::after {
+  content: "▼";
+  position: absolute;
+  right: var(--space-2);
+  top: 0;
+  bottom: 0;
+  margin-top: auto;
+  margin-bottom: auto;
+  height: fit-content;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+/*
+  テキスト入力
+  本アプリケーションで利用するすべてのテキスト入力の基本スタイルを定義する。
+
+  基底
+    .base-input-box テキスト入力＋カウンタを内包する外枠（枠線・背景・角丸）
+    .base-input-field input/textarea本体の基本スタイル（枠なし・背景透明）
+*/
+
+:local(.base-input-box) {
+  border: var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--color-card-bg);
+  padding: var(--space-2);
+}
+
+:local(.base-input-box):focus-within {
+  outline: 2px solid var(--color-bluesky);
+  outline-offset: 1px;
+}
+
+:local(.base-input-field) {
+  width: 100%;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  color: #111827;
+}
+
+:local(.base-input-field)::placeholder {
+  color: #9ca3af;
+  font-size: var(--font-size-md);
+}
+
+:local(.base-input-field):disabled {
+  cursor: not-allowed;
+}

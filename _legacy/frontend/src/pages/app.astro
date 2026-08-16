@@ -1,0 +1,24 @@
+---
+import Pagelayout from "@/layouts/Pagelayout.astro"
+import Loadingcircle from "@/components/loadingcircle.astro"
+import { servicename } from "@/env/vars"
+import { materialsurl } from "@/env/envs"
+const title = `${servicename}`
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Pagelayout
+    cardPath=`${materialsurl}ogp_main.png`
+    pageTitle={title}
+    robots={robots}
+    hideLoader={true}
+    hidePostButton={true}
+>
+    <div class="p-0 mx-auto
+            items-center text-center">
+        <div id="bload">
+            <Loadingcircle size="l" />
+        </div>
+        <div id="app"></div>
+    </div>
+</Pagelayout>

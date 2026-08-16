@@ -1,0 +1,25 @@
+.icon {
+  --icon-active-fill: rgb(56, 189, 248);
+  --icon-inactive-fill: rgb(156, 163, 175);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: var(--space-0);
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-right: var(--space-1);
+}
+
+.icon-active {
+  fill: var(--icon-active-fill);
+}
+
+.icon-inactive {
+  fill: var(--icon-inactive-fill);
+}
+
+.select {
+  min-width: 10rem;
+  max-width: 18rem;
+}

@@ -1,0 +1,143 @@
+summary: Create a new image post together with a Skyshare entry, or attach an entry to an existing Bluesky post when `uri` is given
+operationId: createEntry
+parameters:
+  - name: cookie
+    in: header
+    required: true
+    schema:
+      $ref: ../../common.yaml#/cookie
+requestBody:
+  required: true
+  content:
+    multipart/form-data:
+      schema:
+        type: object
+        anyOf:
+          - required:
+              - uri
+              - ogImage
+          - required:
+              - images
+              - imagesMeta
+              - ogImage
+        properties:
+          text:
+            type: string
+            example: Post content
+            minLength: 1
+          ogImage:
+            type: string
+            format: binary
+          uri:
+            type: string
+            description: >-
+              自分自身の既存 Bluesky 投稿の AT URI。指定する場合は `ogImage`
+              （元投稿の画像をデフォルト配置で合成したサムネイル）を併せて必須とし、
+              その投稿から skyshare entry を発行する。
+            example: at://did:plc:abc/app.bsky.feed.post/3lxyz
+          images:
+            type: array
+            items:
+              type: string
+              format: binary
+          imagesMeta:
+            $ref: ../../common.yaml#/imagesMeta
+          langs:
+            type: array
+            items:
+              type: string
+              example: ja
+          selfLabels:
+            type: string
+            enum:
+              - sexual
+              - nudity
+              - porn
+              - spoiler
+              - "!warn"
+responses:
+  "200":
+    description: Success post
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            bsky:
+              type: object
+              properties:
+                url:
+                  type: string
+                  example: did:example.com/abcd1234
+              required:
+                - url
+            skyshare:
+              type: object
+              description: >-
+                発行された skyshare entry の情報。`atUri` はレコードの削除（DELETE /v2/entry）に
+                必要な AT URI。このエンドポイントは常に skyshare entry を作成するため、
+                成功時は全フィールドが含まれる。
+              properties:
+                uri:
+                  type: string
+                  description: skyshare entry の Web URL
+                  example: https://skyshare.dev/did/rkey
+                atUri:
+                  type: string
+                  description: skyshare entry レコードの AT URI（削除時に必要）
+                  example: at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz
+                cid:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+                sourceUri:
+                  type: string
+                sourceCid:
+                  type: string
+                heading:
+                  type: string
+                caption:
+                  type: string
+                visualUrl:
+                  type: string
+              required:
+                - uri
+                - atUri
+                - cid
+                - createdAt
+                - sourceUri
+                - sourceCid
+          required:
+            - bsky
+            - skyshare
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "401":
+    description: Unauthorized
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "404":
+    description: Not Found
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "429":
+    description: Too Many Requests
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/error

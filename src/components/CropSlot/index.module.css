@@ -1,0 +1,25 @@
+.slot-outer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-inline: auto;
+}
+
+.slot-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.crop-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 40 / 21;
+  background: #777;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.slider-area {
+  display: block;
+}

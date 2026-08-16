@@ -1,43 +1,14 @@
-![](./astro/public/materials/longlogo.svg)
+![](./public/materials/longlogo.svg)
 
-[Skyshare](https://skyshare.nekono.dev/) is web application that BlueSky user saves their time of boring SNS X.com(Twitter).
+[Skyshare](https://skyshare.nekono.dev/) is a web application that allows Bluesky’s main users to share their posts on “X.com (Twitter)” and other social media platforms.
 
-## How works
+## Overview
 
-Skyshare post your post to Bluesky with AT Protocol.  
-for twitter, because of X taxes, Skyshare present Post Link, can only with media by OGP image.
+Skyshare aggregates a user’s Bluesky posts into a single OGP image and saves it to the user’s PDS as a Skyshare Entry.
+Skyshare generates a web page corresponding to the Skyshare Entry, and users can share their Bluesky posts on other social media platforms by using the link to that web page.
 
-## AT Protocol
-
-Because of bluesky official typescript client seems not available works on React, Skyshare uses REST API directry by fetch API like that...  
-
-```ts:src/utils/atproto_api/createSession.ts
-import endpoint_url, { com_atproto } from "./base"
-import mtype from "./models/createSession.json"
-import etype from "./models/error.json"
-const endpoint = endpoint_url(com_atproto.server.createSession)
-
-export const api = async ({
-    identifier,
-    password,
-}:{
-    identifier: string,
-    password: string,
-}): Promise<typeof mtype & typeof etype> => fetch(endpoint,
-    {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-            {
-                identifier: identifier,
-                password: password,
-            })
-    }).then((response) => response.json()
-    ).catch(() => {})
-
-export default api
-```
+Translated with DeepL.com (free version)
 
 ## more info
 
-[Zenn article: for japanese developer](https://zenn.dev/nkte8/articles/2024-02-03-r01)
+[for japanese developer: Zenn article(Old archtecture)](https://zenn.dev/nkte8/articles/2024-02-03-r01)

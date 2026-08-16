@@ -1,0 +1,7 @@
+node_modules/**
+.vscode/**
+.gitignore
+.github/**
+astro/**
+_legacy/**
+atproto/**

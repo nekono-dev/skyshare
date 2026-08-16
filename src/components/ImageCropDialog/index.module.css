@@ -1,0 +1,59 @@
+.title {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  color: var(--color-black);
+}
+
+.caption {
+  margin: 0;
+  color: var(--color-muted);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.composite-area {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.slot-container {
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.layout1 {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "slot0";
+}
+
+.layout2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "slot0 slot1";
+}
+
+.layout3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot0 slot2";
+}
+
+.layout4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot2 slot3";
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

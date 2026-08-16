@@ -1,0 +1,40 @@
+summary: Get a legacy pageDB entry (OGP image / poster handle / attached images)
+operationId: getLegacyPage
+parameters:
+  - name: dbIndex
+    in: path
+    required: true
+    description: pageDBのシャード番号、または旧形式データを示す "legacy"
+    schema:
+      type: string
+  - name: dbKey
+    in: path
+    required: true
+    description: "`${did}@${rkey}` 形式の投稿識別子"
+    schema:
+      type: string
+responses:
+  "200":
+    description: Success
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/legacyPageEntry
+  "400":
+    description: Bad Request
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/legacyPageError
+  "500":
+    description: Internal Server Error
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/legacyPageError
+  "503":
+    description: Rate Limit Exceeded
+    content:
+      application/json:
+        schema:
+          $ref: ../../common.yaml#/legacyPageError
