@@ -32,7 +32,7 @@ export const Component = () => {
                                     <span className="bg-white rounded-lg py-0.5 px-2 mr-2">
                                         重大発表
                                     </span>
-                                    <a href="/login">
+                                    <a href="/login/">
                                         Skyshare
                                         v2のPreviewをリリースしています。ぜひ正式リリースに向けた肩慣らしにお試しください。
                                     </a>

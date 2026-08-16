@@ -80,7 +80,7 @@ const Component = () => {
 
         if (res.status === 401) {
           if (typeof window !== "undefined") {
-            window.location.href = "/login"
+            window.location.href = "/login/"
           }
           return {
             items: [],

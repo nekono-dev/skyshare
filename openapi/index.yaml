@@ -5,28 +5,28 @@ info:
   description: ATProto ClientをAstro SSGで利用するためのAPIラッパー
 
 paths: # APIドキュメントのエンドポイント
-  /v1/extract:
+  /v1/extract/:
     $ref: ./v1/extract/index.yaml
-  /v2/entry:
+  /v2/entry/:
     $ref: ./v2/entry/index.yaml
-  /v2/entries:
+  /v2/entries/:
     $ref: ./v2/entries/index.yaml
-  /v2/entries/skyshare:
+  /v2/entries/skyshare/:
     $ref: ./v2/entries/skyshare/index.yaml
-  /v2/bsky/session:
+  /v2/bsky/session/:
     $ref: ./v2/bsky/session/index.yaml
-  /v2/bsky/session/{did}:
+  /v2/bsky/session/{did}/:
     delete:
       $ref: ./v2/bsky/session/delete.yaml
-  /v2/bsky/drafts:
+  /v2/bsky/drafts/:
     $ref: ./v2/bsky/drafts/index.yaml
-  /v2/bsky/images:
+  /v2/bsky/images/:
     $ref: ./v2/bsky/images/index.yaml
-  /v2/bsky/record:
+  /v2/bsky/record/:
     $ref: ./v2/bsky/record/index.yaml
-  /v1/page:
+  /v1/page/:
     delete:
       $ref: ./v1/page/delete.yaml
-  /v1/page/{dbIndex}/{dbKey}:
+  /v1/page/{dbIndex}/{dbKey}/:
     get:
       $ref: ./v1/page/get.yaml

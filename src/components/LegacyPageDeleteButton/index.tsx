@@ -40,7 +40,7 @@ const Component = ({ dbIndex, dbKey }: Props) => {
     setError(null)
 
     try {
-      const res = await fetch("/v1/page", {
+      const res = await fetch("/v1/page/", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dbIndex, dbKey }),

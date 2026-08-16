@@ -61,14 +61,14 @@ export const bskyCdnUrlgen = (repoDid: string, ref: string) => {
  * - `rkey`: 投稿レコードキー
  *
  * Output:
- * - `/entries/{handle}@{rkey}` 形式のパス
+ * - `/entries/{handle}@{rkey}/` 形式のパス
  *
  * 例:
  * - 入力: `("alice.bsky.social", "3lxyz")`
- * - 出力: `"/entries/alice.bsky.social@3lxyz"`
+ * - 出力: `"/entries/alice.bsky.social@3lxyz/"`
  */
 export const skyshareEntryPath = (handle: string, rkey: string) => {
-    return `/entries/${handle}@${rkey}`
+    return `/entries/${handle}@${rkey}/`
 }
 
 /**
@@ -85,11 +85,11 @@ export const skyshareEntryPath = (handle: string, rkey: string) => {
  * - `rkey`: 投稿レコードキー
  *
  * Output:
- * - `SITE/entries/{handle}@{rkey}` 形式の URL
+ * - `SITE/entries/{handle}@{rkey}/` 形式の URL
  *
  * 例:
  * - 入力: `("alice.bsky.social", "3lxyz")`
- * - 出力: `"https://skyshare.example/entries/alice.bsky.social@3lxyz"`
+ * - 出力: `"https://skyshare.example/entries/alice.bsky.social@3lxyz/"`
  */
 export const skyshareEntryUrlgen = (handle: string, rkey: string) => {
     return `${import.meta.env.SITE}${skyshareEntryPath(handle, rkey)}`

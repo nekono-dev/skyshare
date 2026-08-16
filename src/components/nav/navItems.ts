@@ -19,7 +19,7 @@ export interface NavItem {
 }
 
 const entries: NavItem = {
-    href: "/entries",
+    href: "/entries/",
     label: "Entry一覧",
     ariaLabel: "Entry一覧",
     key: "entries",
@@ -31,7 +31,7 @@ const post: NavItem = {
     key: "post",
 }
 const accounts: NavItem = {
-    href: "/accounts",
+    href: "/accounts/",
     label: "アカウントの切り替え",
     ariaLabel: "アカウント切り替え",
     key: "accounts",

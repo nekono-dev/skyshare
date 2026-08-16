@@ -12,6 +12,7 @@ export default defineConfig({
     port: 4321,
     host: true,
   },
+  trailingSlash: "always",
   session: {
     driver: sessionDrivers.lruCache({
       max: 1000,

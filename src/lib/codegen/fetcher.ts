@@ -2,6 +2,27 @@ import { extractorApi } from "@/vars"
 import { v1Endpoint } from "@/env"
 
 /**
+ * パス部分の末尾スラッシュを除去する（クエリ文字列は保持する）。
+ *
+ * 処理の趣旨:
+ * - openapi 上のパスは本アプリ自身のルーティング（`trailingSlash: "always"`）に
+ *   合わせて末尾スラッシュ付きで定義しているが、転送先の外部サービス
+ *   （legacy backend / OGP 抽出サービス）はこの設定と無関係であり、
+ *   末尾スラッシュ付きのパスを受け取る保証がない。転送直前に取り除くことで、
+ *   外部サービスへのリクエスト形状を変更前と同じに保つ。
+ */
+const stripPathTrailingSlash = (path: string): string => {
+    const queryIndex = path.indexOf("?")
+    const pathname = queryIndex === -1 ? path : path.slice(0, queryIndex)
+    const query = queryIndex === -1 ? "" : path.slice(queryIndex)
+    const normalizedPathname =
+        pathname.length > 1 && pathname.endsWith("/")
+            ? pathname.slice(0, -1)
+            : pathname
+    return normalizedPathname + query
+}
+
+/**
  * OpenAPI クライアント向けの共通 Fetcher。
  *
  * 責務と処理概要:
@@ -54,9 +75,9 @@ export const customFetcher = async <T>(
     options: RequestInit,
 ): Promise<T> => {
     if (url.startsWith("/v1/extract")) {
-        url = extractorApi + url
+        url = extractorApi + stripPathTrailingSlash(url)
     } else if (url.startsWith("/v1/page")) {
-        url = v1Endpoint + url.slice("/v1".length)
+        url = v1Endpoint + stripPathTrailingSlash(url.slice("/v1".length))
     }
     const res = await fetch(url, options)
 
