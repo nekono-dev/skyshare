@@ -7,7 +7,7 @@ import react from "@astrojs/react"
 export default defineConfig({
   output: "server",
   adapter: cloudflare({ imageService: "compile" }),
-  site: "https://preview.skyshare.nekono.dev",
+  site: "https://skyshare.nekono.dev",
   server: {
     port: 4321,
     host: true,

@@ -22,7 +22,7 @@ export const api = async ({
     service?: string
 }): Promise<createV2SessionResult> => {
     try {
-        const response = await fetch(`${v2BackendEndpoint}/v2/bsky/session`, {
+        const response = await fetch(`${v2BackendEndpoint}/v2/bsky/session/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "same-origin",

@@ -1,4 +1,4 @@
-const endpoint_url = import.meta.env.PUBLIC_BACKEND_ENDPOINT as string
+const endpoint_url = import.meta.env.PUBLIC_LEGACY_BACKEND_ENDPOINT as string
 
 // legacy backend(Firebase Functions) POST /ogp の呼び出し。
 // 複数画像(最大4枚)をレイアウト合成したOGP画像を生成してもらい、

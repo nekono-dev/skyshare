@@ -22,7 +22,7 @@ docker run --rm -v $PWD:/src -w /src -u `id -u`:`id -g` -p 80:4321 -it node:18.1
 setup .env:
 
 ```sh
-PUBLIC_BACKEND_ENDPOINT="backend_endpoint" # set firebase fucntion endpoint
+PUBLIC_LEGACY_BACKEND_ENDPOINT="backend_endpoint" # set firebase fucntion endpoint
 PUBLIC_V2_BACKEND_ENDPOINT="" # v2 backend(skyshare v2, /v1/*)のオリジン。本番は空文字(同一オリジン配信)前提
 ```
 
@@ -41,7 +41,7 @@ v2バックエンド(このリポジトリのルートにある Astro/Cloudflare
   `page`(pageDB)のGET/DELETEもlegacyフロントエンドからは呼び出されなくなっており(削除UIごと撤去済み)、
   現在v2側が独自に `_legacy/backend` の `page` APIをプロキシ利用しているのみである。
   Firebase Functionsバックエンドへの依存が残るのは、複数画像を合成したOGP画像を生成する
-  `POST {PUBLIC_BACKEND_ENDPOINT}/ogp`(`lib/legacyOgpAPI/generateOgpImage.ts`)のみであり、
+  `POST {PUBLIC_LEGACY_BACKEND_ENDPOINT}/ogp`(`lib/legacyOgpAPI/generateOgpImage.ts`)のみであり、
   この呼び出しにはlegacy自身のBluesky直接ログイン(`createSession`)で取得した `accessJwt` を
   引き続き利用するため、ログイン処理はBluesky直接ログインとv2ログインを
   **並行して両方実行**している(`LoginForm.tsx`)。

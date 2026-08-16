@@ -39,37 +39,43 @@ const createOpenApiHono = () =>
         },
     });
 
-const client = createOpenApiHono();
+const createClient = () => {
+    const app = createOpenApiHono();
 
-let origin = '*';
-if (launchEnv !== 'local') {
-    origin = serviceUrl;
-}
+    let origin = '*';
+    if (launchEnv !== 'local') {
+        origin = serviceUrl;
+    }
 
-// CORS対応
-client.use('/*', cors());
-client.use(
-    '/*',
-    cors({
-        origin: origin,
-        allowHeaders: ['Content-Type', 'Authorization'],
-    }),
-);
-// APIドキュメントを出力
-if (launchEnv === 'local') {
-    client
-        .doc('/openapi.json', {
+    // CORS対応
+    app.use('/*', cors());
+    app.use(
+        '/*',
+        cors({
+            origin: origin,
+            allowHeaders: ['Content-Type', 'Authorization'],
+        }),
+    );
+    // APIドキュメントを出力
+    if (launchEnv === 'local') {
+        app.doc('/openapi.json', {
             openapi: '3.0.0',
             info: {
                 title: 'Skyshare backend API',
                 version: '1.0.0',
             },
         })
-        // swagger側は相対パス
-        .get('/doc', swaggerUI({ url: './openapi.json' }));
-}
+            // swagger側は相対パス
+            .get('/doc', swaggerUI({ url: './openapi.json' }));
+    }
 
-client.notFound((c) => {
-    return c.json({ error: 'BadRequest' }, 400);
-});
-export { client, createOpenApiHono };
+    app.notFound((c) => {
+        return c.json({ error: 'BadRequest' }, 400);
+    });
+
+    return app;
+};
+
+const client = createClient();
+
+export { client, createOpenApiHono, createClient };

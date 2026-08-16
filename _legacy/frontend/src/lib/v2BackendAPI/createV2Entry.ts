@@ -52,7 +52,7 @@ export const api = async ({
             formData.set("ogImage", ogImage, "ogImage.jpg")
         }
 
-        const response = await fetch(`${v2BackendEndpoint}/v2/entry`, {
+        const response = await fetch(`${v2BackendEndpoint}/v2/entry/`, {
             method: "POST",
             credentials: "same-origin",
             body: formData,

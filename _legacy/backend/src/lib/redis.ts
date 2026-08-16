@@ -5,6 +5,8 @@ import { dbEndpointRule } from '../common/environments.js';
 import { logger } from '../common/logger.js';
 import type { DbEndpointRule } from '../common/dbEndpoint.schema.js';
 
+const DEFAULT_TTL = 60 * 60 * 24 * 365; // 365日
+
 // upstashに登録する情報
 const ZodPageDb = z.object({
     ogp: z.string(),
@@ -22,6 +24,7 @@ type PageDb = z.infer<typeof ZodPageDb>;
 
 class RedisClient {
     private endpoint: string;
+    private ttl: number;
     public redisIndex: number = 0;
 
     constructor(
@@ -40,6 +43,7 @@ class RedisClient {
             dbEndpointRule: dbEndpointRule,
         },
     ) {
+        this.ttl = opt.ttl || DEFAULT_TTL;
         const now = new Date();
 
         // endpoint が直接指定されている場合はそれを使用する
@@ -228,6 +232,40 @@ class RedisClient {
                 return true;
         }
         return false;
+    }
+
+    async addPage(key: string, raw: PageDb): Promise<void> {
+        const client = this.createClient();
+        try {
+            const body = Buffer.from(JSON.stringify(raw)).toString('base64');
+            await client.set(key, body, 'EX', this.ttl);
+            logger.debug(
+                `addPage succeeded key=${key} dbIndex=${this.redisIndex}`,
+            );
+        } catch (e: unknown) {
+            if (this.isUpstashRateLimitError(e)) {
+                logger.warn(
+                    `Upstash rate limit hit on set for index=${
+                        this.redisIndex
+                    }: ${String(e instanceof Error ? e.message : e)}`,
+                );
+                throw new RedisClient.UpstashRateLimitError(
+                    String(e instanceof Error ? e.message : e),
+                );
+            }
+            throw e;
+        } finally {
+            try {
+                await client.quit();
+            } catch (e) {
+                // fallback to disconnect if quit fails
+                try {
+                    client.disconnect();
+                } catch (_) {
+                    // ignore
+                }
+            }
+        }
     }
 
     async getPage(key: string): Promise<PageDb | undefined> {
