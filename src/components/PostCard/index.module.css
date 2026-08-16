@@ -1,12 +1,19 @@
 .card {
   display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* avatar/本文とサムネイルを横並びにする行。ツールバーはこの下に独立して配置する */
+.top-row {
+  display: flex;
   flex-direction: row;
   align-items: stretch;
   gap: 1rem;
 }
 
-/* avatar/本文/ツールバーの縦積み列。この列の高さに右側サムネイルを合わせる */
-.main-column {
+/* avatar/本文の縦積み列。この列の高さに右側サムネイルを合わせる */
+.content-column {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -86,8 +93,8 @@
   line-height: 1.65;
 }
 
-/* サムネイルはカード右端に固定幅で配置し、align-self: stretch により
-   mainColumn（author/本文/ツールバー列）の高さいっぱいに広げる。
+/* サムネイルは top-row 右端に固定幅で配置し、align-self: stretch により
+   contentColumn（author/本文列）の高さいっぱいに広げる。ツールバーには被らない。
    複数画像がある場合は内部を縦に分割し、各画像を等分の帯として並べる。 */
 .thumbnail {
   flex: 0 0 auto;

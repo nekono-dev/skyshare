@@ -9,11 +9,11 @@
   --space-6: 2rem;
 
   /* 各コンポーネントの幅の規格 */
-  --width-xl-max: min(980px, 96vw);
-  --width-xl: min(980px, 96vw);
+  --width-xl-max: min(960px, 96vw);
+  --width-xl: min(960px, 96vw);
 
-  --width-lg-max: min(760px, 92vw);
-  --width-lg: min(760px, 92vw);
+  --width-lg-max: min(640px, 92vw);
+  --width-lg: min(640px, 92vw);
 
   --width-md-max: min(480px, 92vw);
   --width-md: min(480px, 92vw);
@@ -32,6 +32,15 @@
   /* Button-specific */
   --radius-button-md: 20px;
   --radius-button-max: 100%;
+
+  --nav-bar-height: 84px;
+  --nav-sidebar-width: 220px;
+  --nav-sidebar-icon-width: 76px;
+
+  /* Icon-specific: ナビゲーション等のアイコン画像自体の一辺サイズ(button.ui.module.css の
+     --size-button-* とは別に、アイコン画像そのもののサイズを規定する)。 */
+  --size-icon-sm: 20px;
+  --size-icon-md: 24px;
 
   --color-bluesky: hsl(209, 100%, 50%);
   --color-bluesky-hover: hsl(209, 100%, 40%);

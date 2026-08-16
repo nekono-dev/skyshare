@@ -1,0 +1,48 @@
+/* サイズは呼び出し側が [data-nav-icon-root] を介して上書きする想定のため、
+   ここでは既定値(tokens.css の --size-icon-md)のみを規定する。 */
+.icon-swap,
+.avatar-wrap {
+  position: relative;
+  display: inline-block;
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+  flex: none;
+}
+
+[data-nav-icon] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 0.15s ease;
+}
+
+/* 既定は非アクティブ(muted)側を表示し、アクティブ(bluesky)側は透明にしておく。
+   呼び出し側CSSが .item の状態に応じてこの opacity を反転させる。 */
+[data-nav-icon="active"] {
+  opacity: 0;
+}
+
+.avatar-wrap {
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.avatar-placeholder {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-pill);
+  box-sizing: border-box;
+}
+
+.avatar-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-pill);
+}

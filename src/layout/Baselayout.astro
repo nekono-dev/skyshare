@@ -5,7 +5,9 @@
  * 責務と処理概要:
  * - HTML スケルトン（head/body/main）を提供する。
  * - OGP/SEO メタ情報は `Metadatas` へ委譲する。
- * - header/footer は named slot、本文は default slot で受け取る。
+ * - header/nav(Sidebar)/footer(FooterNav) は named slot、本文は default slot で受け取る。
+ * - nav/footer のいずれかが埋まっているページでは、nav と本文を .shell (CSS Grid) で
+ *   包み、サイドバーとタイムラインをひとつの塊として中央寄せする。
  */
 
 interface Props {
@@ -21,6 +23,12 @@ const { cardPath, pageTitle, robots, avatarUrl, pageHeading, pageCaption } = Ast
 const favicon = "favicon.svg"
 import ui from "@/styles/ui.module.css"
 import { ClientRouter } from "astro:transitions"
+
+// nav / footer いずれかのスロットが埋められているページのみ、
+// フッター/サイドバーナビ用の .shell (Gridレイアウト) を適用し、
+// 本文とナビが重ならないよう余白を確保する。
+const hasNav = Astro.slots.has("nav") || Astro.slots.has("footer")
+const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
 ---
 
 <html lang="ja">
@@ -72,9 +80,18 @@ import { ClientRouter } from "astro:transitions"
             })
         </script>
     </head>
-    <body id="root" class={ui.root}>
+    <body id="root" class={bodyClass}>
         <slot name="header" />
-        <slot />
+        {
+            hasNav ? (
+                <div class={ui.shell}>
+                    <slot name="nav" />
+                    <slot />
+                </div>
+            ) : (
+                <slot />
+            )
+        }
         <slot name="footer" />
     </body>
 </html>

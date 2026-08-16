@@ -1,0 +1,142 @@
+/* 640px未満(モバイル)ではSidebar自体を非表示にする。FooterNavが代わりに表示される。 */
+.nav {
+  display: none;
+}
+
+/* /accounts はアイコン画像自体(アバター)がボタンとして機能するため、他のnavアイコンより
+   大きい lg-button(60px) いっぱいに広がるサイズにする。ミニ/フル両方のサイドバーで
+   共通のルールとして、ブレークポイントの外(このファイル冒頭)に置く。 */
+.item[data-nav-key="accounts"] .item-icon [data-nav-icon-root] {
+  width: var(--size-button-lg);
+  height: var(--size-button-lg);
+}
+
+/* ボタン形状のリンクのため、ホバー/フォーカス時もブラウザ既定・グローバルa要素の
+   下線(text-decoration)は表示させない。 */
+.item,
+.item:hover,
+.item:focus {
+  text-decoration: none;
+}
+
+/* ミニサイドバー: 640px以上で .shell (Grid) の1列目に配置される。position:fixedではなく
+   sticky を使うことで、Gridによる中央寄せ計算(.shell)と両立しつつ、
+   スクロール中も画面内に留まる見た目を維持する。
+   box-sizing: border-box は必須(パディング分の幅ズレを防ぐ)。 */
+@media (min-width: 640px) {
+  .nav {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-2);
+    box-sizing: border-box;
+    position: sticky;
+    top: 0;
+    background: transparent;
+  }
+
+  .item {
+    flex: none;
+    display: flex;
+    justify-content: center;
+    padding: var(--space-1) 0;
+  }
+
+  .item-icon {
+    display: flex;
+  }
+
+  .item:hover .item-icon,
+  .item:focus .item-icon {
+    background: var(--color-gray-hover);
+  }
+
+  .item[aria-current="page"] .item-icon {
+    background: var(--surface-muted);
+  }
+
+  /* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。
+     NavIcon.astro側の既定(active側 opacity:0)をここで反転させる。 */
+  .item:hover [data-nav-icon="active"],
+  .item:focus [data-nav-icon="active"],
+  .item[aria-current="page"] [data-nav-icon="active"] {
+    opacity: 1;
+  }
+
+  .item:hover [data-nav-icon="muted"],
+  .item:focus [data-nav-icon="muted"],
+  .item[aria-current="page"] [data-nav-icon="muted"] {
+    opacity: 0;
+  }
+
+  .item-label {
+    display: none;
+  }
+}
+
+/* フルサイドバー: 848px以上(tokens.css参照: 200px + 8px(gap) + 640px)。
+   .item は上のミニサイドバー段階のスタイルを引き継がない(padding/border-radius/
+   背景色はここで明示し直す)ため、行の高さは常にテキスト1行分の自然な高さになる。 */
+@media (min-width: 848px) {
+  .item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    justify-content: flex-start;
+    text-align: left;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-pill);
+  }
+
+  .item:hover,
+  .item:focus {
+    background: var(--color-gray-hover);
+  }
+
+  .item[aria-current="page"] {
+    background: var(--surface-muted);
+  }
+
+  /* ミニサイドバー段階の丸ボタンchrome(固定40pxサイズ/円形border/背景)を打ち消し、
+     ラベル左の小さいインラインアイコンとして表示する。アイコン自体の色切り替え
+     (クロスフェード)ロジックは640px以上の共通ルールをそのまま引き継ぐ。
+     ただし /accounts のアバターはミニサイドバーと同じ円形lg-buttonの見た目を
+     フルサイドバーでも維持したいため、この打ち消しの対象外とする(下記参照)。 */
+  .item:not([data-nav-key="accounts"]) .item-icon {
+    display: flex;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+  }
+
+  .item:not([data-nav-key="accounts"]):hover .item-icon,
+  .item:not([data-nav-key="accounts"]):focus .item-icon,
+  .item:not([data-nav-key="accounts"])[aria-current="page"] .item-icon {
+    background: none;
+  }
+
+  .item:not([data-nav-key="accounts"]) .item-icon [data-nav-icon-root] {
+    width: var(--size-icon-sm);
+    height: var(--size-icon-sm);
+  }
+
+  .item-label {
+    display: block;
+  }
+
+  /* /accounts: アバターは他の項目と同じく左揃え(.item の共通レイアウトをそのまま使う)。
+     ラベルは常時表示せず、hover/focus時にのみ「アカウントの切り替え」を表示する。 */
+  .item[data-nav-key="accounts"] .item-label {
+    display: none;
+  }
+
+  .item[data-nav-key="accounts"]:hover .item-label,
+  .item[data-nav-key="accounts"]:focus .item-label {
+    display: block;
+  }
+}

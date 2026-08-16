@@ -54,10 +54,66 @@
 }
 
 :local(.root) {
-  padding: var(--space-2);
+  padding: var(--space-1);
   max-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+/* nav / footer スロット(Sidebar / FooterNav)を表示するページのみ対象。
+   640px未満はFooterNav(画面下固定バー)の高さ分だけ本文の下に余白を確保する。
+   640px以上はFooterNavがdisplay:noneになりSidebarへ切り替わる。Sidebarは
+   .shell のGridカラムに配置されるため、ここでのpadding計算は不要(以前あった
+   vwベースのpadding-left逆算は、二重の中央寄せメカニズムによる不具合の原因に
+   なっていたため廃止した。詳細は tokens.css のコメント参照)。 */
+@media (max-width: 639px) {
+  :local(.root.with-nav) {
+    padding-bottom: var(--nav-bar-height);
+  }
+}
+
+/* デスクトップ用サイドバー(Sidebar)とページ本文をひとつのGridコンテナとして中央寄せする。
+   vwベースのcalc()やflexによる独立した中央寄せを廃止し、Gridの
+   justify-content: center 一本に統一するための仕組み。
+
+   minmax(0, var(--width-lg-max)) という非1frのトラックは、コンテナ(.shell、
+   width:100%でビューポート基準の確定幅を持つ)がトラック合計の最大幅より広い場合、
+   justify-content:center によって「サイドバー+コンテンツの組」がひとつの塊として
+   中央に寄り、左右に均等な余白ができる(フルサイドバー時に求められる挙動)。
+   逆にコンテナがトラック合計の最大幅より狭い場合(ミニサイドバー域)は、Gridの
+   トラックサイジングにより非fr・非stretchのminmaxトラックが自動的に縮小し、
+   コンテンツが画面幅の変化にそのまま追従する(ミニサイドバー時にTimelineが
+   狭くなっていく挙動)。計算式の分岐なしに、Gridのアルゴリズム自体が両方の
+   要求を自然に満たすのがこの設計の核。
+
+   nav/footerスロットを使わないページ(login.astro等)では、この .shell 自体を
+   Baselayout.astro 側でラップしないため、このクラスは影響しない。 */
+:local(.shell) {
+  display: grid;
+  grid-template-columns: minmax(0, var(--width-lg-max));
+  justify-content: center;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  :local(.shell) {
+    grid-template-columns: var(--nav-sidebar-icon-width) minmax(
+        0,
+        var(--width-lg-max)
+      );
+    column-gap: var(--space-2);
+  }
+}
+
+/* 848px = --nav-sidebar-width(200px) + column-gap(--space-2=8px) + --width-lg-max(640px)。
+   根拠は tokens.css 参照。 */
+@media (min-width: 848px) {
+  :local(.shell) {
+    grid-template-columns: var(--nav-sidebar-width) minmax(
+        0,
+        var(--width-lg-max)
+      );
+  }
 }
 
 /* 個別ページ上の適応UI */
@@ -73,8 +129,12 @@
   width: var(--width-xl);
 }
 
+/* max-width の 100% は、.shell のGridカラム幅(minmax(0, var(--width-lg-max)))が
+   実際のコンテナ幅より広く算出されるケースへの安全弁。100%は実際のコンテナ幅
+   (vwと違いスクロールバー分も自動的に除外される)を指すため、これが無いと
+   Timelineが自分のGridカラムからはみ出す可能性がある。 */
 :local(.width-lg) {
-  max-width: var(--width-lg-max);
+  max-width: min(var(--width-lg-max), 100%);
   width: var(--width-lg);
 }
 
@@ -91,7 +151,7 @@
 /* Base card / container used as outer frame for forms and panels */
 :local(.base-card) {
   display: block;
-  padding: var(--space-2);
+  padding: var(--space-1);
   background: var(--color-card-bg);
   border: var(--border-card);
   border-radius: var(--radius-md);

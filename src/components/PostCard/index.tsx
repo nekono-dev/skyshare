@@ -5,8 +5,8 @@
  * - 投稿本文、作者情報、画像サムネイルを 1 枚のカードにまとめて描画する。
  * - `skyshareEntry` が付与されている場合はその view 画像を優先表示し、Entry ページへのリンクを出す。
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
- * - サムネイルはカード右側に配置し、左側の情報列（author/本文/ツールバー）の高さいっぱいに広げることで
- *   カード全体の縦幅を最小限に抑える。複数画像がある場合は縦に分割して並べる。
+ * - サムネイルはカード右側・author/本文の高さいっぱいに配置し、ツールバーには被らないよう
+ *   ツールバーはその下に独立した行として配置する。複数画像がある場合は縦に分割して並べる。
  * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
  *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
  */
@@ -86,78 +86,86 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
     <article
       className={`${ui["base-card"]} ${styles.card} ${isSkyshareIneligible ? ui["card-muted"] : ""}`}
     >
-      <div className={styles["main-column"]}>
-        <div className={styles["author-block"]}>
-          {item.author.avatar ? (
-            <img
-              className={styles.avatar}
-              src={item.author.avatar}
-              alt={item.author.displayName ?? item.author.handle}
-              width={48}
-              height={48}
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <div className={styles["avatar-placeholder"]} aria-hidden="true" />
-          )}
+      <div className={styles["top-row"]}>
+        <div className={styles["content-column"]}>
+          <div className={styles["author-block"]}>
+            {item.author.avatar ? (
+              <img
+                className={styles.avatar}
+                src={item.author.avatar}
+                alt={item.author.displayName ?? item.author.handle}
+                width={48}
+                height={48}
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <div
+                className={styles["avatar-placeholder"]}
+                aria-hidden="true"
+              />
+            )}
 
-          <div className={styles["author-meta"]}>
-            <div className={styles["author-name-row"]}>
-              <strong>{item.author.displayName ?? item.author.handle}</strong>
-              <span className={styles.handle}>@{item.author.handle}</span>
+            <div className={styles["author-meta"]}>
+              <div className={styles["author-name-row"]}>
+                <strong>{item.author.displayName ?? item.author.handle}</strong>
+                <span className={styles.handle}>@{item.author.handle}</span>
+              </div>
+              <p className={styles["created-at"]}>{createdAtText}</p>
             </div>
-            <p className={styles["created-at"]}>{createdAtText}</p>
+
+            {entryPath ? (
+              <a
+                className={styles["entry-link"]}
+                href={entryPath}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Entryを開く
+              </a>
+            ) : null}
           </div>
 
-          {entryPath ? (
-            <a
-              className={styles["entry-link"]}
-              href={entryPath}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Entryを開く
-            </a>
-          ) : null}
+          {item.text ? <p className={styles.text}>{item.text}</p> : null}
         </div>
 
-        {item.text ? <p className={styles.text}>{item.text}</p> : null}
-
-        <footer
-          className={`${styles.footer} ${ui.toolbar} ${ui["toolbar-align"]}`}
-        >
-          <a
-            className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Bluesky で開く"
-            title="Bluesky で開く"
-          >
-            <img src={blueskyIcon.src} width={20} height={20} alt="" />
-          </a>
-
-          <PostCardEntryActions
-            display={display}
-            createError={createError}
-            deleteError={deleteError}
-            onCreate={createEntryFromPost}
-            onRequestDelete={requestDeleteEntry}
-            onCrosspost={() => setShareDialogOpen(true)}
-          />
-        </footer>
+        {thumbnailImages.length > 0 ? (
+          <div className={styles.thumbnail}>
+            {thumbnailImages.map((url, index) => (
+              <div
+                key={`${url}-${index}`}
+                className={styles["thumbnail-slice"]}
+              >
+                <img src={url} alt="" loading="lazy" decoding="async" />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      {thumbnailImages.length > 0 ? (
-        <div className={styles.thumbnail}>
-          {thumbnailImages.map((url, index) => (
-            <div key={`${url}-${index}`} className={styles["thumbnail-slice"]}>
-              <img src={url} alt="" loading="lazy" decoding="async" />
-            </div>
-          ))}
-        </div>
-      ) : null}
+      <footer
+        className={`${styles.footer} ${ui.toolbar} ${ui["toolbar-align"]}`}
+      >
+        <a
+          className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
+          href={item.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Bluesky で開く"
+          title="Bluesky で開く"
+        >
+          <img src={blueskyIcon.src} width={20} height={20} alt="" />
+        </a>
+
+        <PostCardEntryActions
+          display={display}
+          createError={createError}
+          deleteError={deleteError}
+          onCreate={createEntryFromPost}
+          onRequestDelete={requestDeleteEntry}
+          onCrosspost={() => setShareDialogOpen(true)}
+        />
+      </footer>
 
       {display.kind === "deleting" ? (
         <Loading overlay message="Entryを削除中..." />

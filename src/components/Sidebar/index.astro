@@ -1,0 +1,51 @@
+---
+/**
+ * デスクトップ専用の常設サイドバーナビゲーション(Post一覧・Entry一覧・アカウント切り替え)。
+ *
+ * 責務と処理概要:
+ * - 画面幅640px以上でのみ表示する(640px未満はFooterNavが担当、このコンポーネントは
+ *   display:noneで非表示のままDOMには常に存在する)。
+ * - 640px〜847px(ミニサイドバー): アイコンの丸ボタンのみを縦に並べる。
+ * - 848px以上(フルサイドバー): アイコン+ラベル付きのフル表示。
+ * - 実際の幅・位置は src/styles/ui.module.css の .shell (CSS Grid) が1列目として
+ *   決定するため、このコンポーネント自身は width/left を一切指定しない。
+ * - `Astro.url.pathname` から現在地を判定し、該当リンクへ `aria-current` を付与する。
+ * - `transition:persist` によりView Transitions中もDOMを再生成せず保持する。
+ *   保持されたDOMのaria-currentは src/components/nav/syncActiveState.ts が同期し直す。
+ */
+import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
+import { sidebarNavItems, normalizePathname, isActiveHref } from "@/components/nav/navItems"
+import NavIcon from "@/components/nav/NavIcon.astro"
+
+const current = normalizePathname(Astro.url.pathname)
+---
+
+<nav class={styles.nav} aria-label="メインナビゲーション" data-nav="sidebar" transition:persist="sidebar-nav">
+    {
+        sidebarNavItems.map(item => (
+            <a
+                href={item.href}
+                class={`${styles.item} ${ui.text}`}
+                data-nav-key={item.key}
+                aria-current={isActiveHref(item.href, current) ? "page" : undefined}
+                aria-label={item.ariaLabel}
+            >
+                <span
+                    class={`${styles["item-icon"]} ${ui["base-button"]} ${ui["nontext-button"]} ${item.key === "accounts" ? ui["lg-button"] : ui["md-button"]}`}
+                    aria-hidden="true"
+                >
+                    <NavIcon navKey={item.key} />
+                </span>
+                <span class={styles["item-label"]}>{item.label}</span>
+            </a>
+        ))
+    }
+    {/* サイドバー表示時、PostLauncher がここへ「新規投稿」ボタンを Portal で描画する */}
+    <div id="sidebar-action"></div>
+</nav>
+
+<script>
+    import "@/components/nav/syncActiveState"
+    import "@/components/nav/syncAccountAvatar"
+</script>

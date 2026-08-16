@@ -12,6 +12,8 @@
 export const prerender = true
 import EntryList from "@/components/EntryList"
 import Baselayout from "@/layout/Baselayout.astro"
+import FooterNav from "@/components/FooterNav/index.astro"
+import Sidebar from "@/components/Sidebar/index.astro"
 import { serviceName } from "@/vars"
 import ui from "@/styles/ui.module.css"
 import { slide } from "astro:transitions"
@@ -22,13 +24,11 @@ const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`Entry一覧 | ${serviceName}`} robots={robots}>
     <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
         <div class=`${ui["width-lg"]}`>
-            <a href="/" class={ui.text}>&lt;&lt; もどる</a>
+            <h1 class={ui.subject} style="margin-top: 1rem;">Skyshare Entry一覧</h1>
 
-            <h1 class={ui.subject} style="margin-top: 1rem;">Entry一覧</h1>
-            <p class={ui.text}>
-                作成したSkyshare Entryの一覧です。Blueskyの参照先が削除されたEntryは背景色で識別できます。
-            </p>
             <EntryList client:load />
         </div>
     </div>
+    <Sidebar slot="nav" />
+    <FooterNav slot="footer" />
 </Baselayout>
