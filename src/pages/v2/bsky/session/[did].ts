@@ -66,6 +66,7 @@ export const DELETE: APIRoute = async ({ params, request }) => {
             const nextPool = pool.filter((_, index) => index !== poolIndex)
             headers.append("set-cookie", makeAccountsSetCookie(nextPool))
         }
+        headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })
     } catch (err) {

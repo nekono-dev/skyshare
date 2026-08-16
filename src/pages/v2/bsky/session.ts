@@ -33,6 +33,9 @@ import { atpService } from "@/env.js"
  * 実装上の制約:
  * - セッショントークン本体は常に HttpOnly cookie 内にのみ存在させ、レスポンス JSON には一切含めない
  *   （クライアント JS からトークンを読み取れる状態を作らないことが、複数アカウント機能導入時の必須要件）。
+ * - 全レスポンスに `Cache-Control: no-store` を付与する。GET のURLはクエリを持たず常に同一のため、
+ *   これが無いとログイン前に取得した 401/空一覧のレスポンスがブラウザ/CDNにキャッシュされ、
+ *   ログイン直後もキャッシュされた古い応答が返り続ける不具合が起きる。
  */
 
 /**
@@ -158,7 +161,10 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
 
         return new Response(JSON.stringify({ accounts }), {
             status: 200,
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-store",
+            },
         })
     } catch (err) {
         console.error("session.ts GET:", err)
@@ -238,6 +244,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         const headers = new Headers()
         headers.append("set-cookie", makeSessionSetCookie({ session, service }))
         headers.append("set-cookie", makeAccountsSetCookie(pool))
+        headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })
     } catch (err: unknown) {
@@ -339,6 +346,7 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
             }),
         )
         headers.append("set-cookie", makeAccountsSetCookie(nextPool))
+        headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })
     } catch (err) {

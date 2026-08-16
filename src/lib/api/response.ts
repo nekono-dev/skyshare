@@ -15,12 +15,14 @@ import { XRPCError } from "@atproto/xrpc"
  * 処理の趣旨:
  * - API 層で共通のエラー形式 `{ error: string }` を維持する。
  * - `switch` で主要なクライアント/認証/レート制限エラーを明示し、未定義は 500 相当へ寄せる。
+ * - `cache-control: no-store` を付与し、cookie 依存のレスポンスをブラウザ/CDNにキャッシュさせない
+ *   （キャッシュされると、ログイン直後でも古い 401 応答が返り続ける不具合につながるため）。
  *
  * Input:
  * - `status`: 返却する HTTP ステータス
  *
  * Output:
- * - `content-type: application/json` を持つ `Response`
+ * - `content-type: application/json` と `cache-control: no-store` を持つ `Response`
  *
  * 例:
  * - 入力: `401`
@@ -50,7 +52,10 @@ export const errorResponseFromStatus = (status: number): Response => {
     }
     return new Response(JSON.stringify(message), {
         status: status,
-        headers: { "content-type": "application/json" },
+        headers: {
+            "content-type": "application/json",
+            "cache-control": "no-store",
+        },
     })
 }
 
