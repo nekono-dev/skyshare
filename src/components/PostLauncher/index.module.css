@@ -21,6 +21,18 @@
   display: none;
 }
 
+/* スマホレイアウト時、PostForm は画面上部に固定配置する。
+   Overlay の backdrop は既定で align-items: center のため、フォームの領域が
+   （画像添付や詳細オプション展開などで）拡大すると上下均等に広がり、上端が
+   上方向へ動いてしまう。align-items: flex-start に切り替えて上端を固定し、
+   領域拡大が下方向にのみ起こるようにする。 */
+@media (max-width: 639px) {
+  .postform-backdrop {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+}
+
 /* アイコンのみサイドバー段階(Sidebar側の640px境界と対応):
    フローティングボタンを隠し、代わりにフローティングボタンと同じペンアイコンを
    丸ボタンでサイドバー内に表示する。ラベルを表示する余白は無い。 */
