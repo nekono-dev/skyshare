@@ -26,5 +26,5 @@
     "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
     "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
   },
-  "workers_dev": true,
+  "workers_dev": false,
 }
