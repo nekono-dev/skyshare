@@ -1,8 +1,13 @@
+/* position: relative なカードのフッター(toolbar)は z-index: auto の
+   positioned要素としてこのボタンと同じスタッキング層で競合し、DOM順序次第では
+   スクロール中のカードのフッターがこのボタンより上に乗ってタップを奪ってしまう。
+   FooterNav(z-index: 50)より上、モーダル系オーバーレイ(60〜70)より下に固定する。 */
 .launcher-delta {
   position: fixed;
   right: var(--space-4);
   bottom: calc(var(--nav-bar-height) + var(--space-4));
   box-shadow: var(--shadow-primary);
+  z-index: 55;
 }
 
 /* デスクトップ(サイドバーレイアウト)専用ボタン。Sidebar の #sidebar-action へ
