@@ -145,24 +145,36 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
    *
    * 処理の趣旨:
    * - ログアウト後の再描画にも使うため、初回読み込みと共通化する。
+   * - Cookie 自体が無い、またはプール・アクティブとも空でサーバが401を返す場合は
+   *   「そもそもこの端末にログイン中のアカウントが無い」ことを意味するため、この画面に
+   *   留まらせず `/login/` へ遷移させる（`/accounts/` への直接アクセス・全アカウント
+   *   ログアウト後の再取得のいずれもこの分岐を通る）。
    *
    * Output:
-   * - 返り値なし（state 更新を副作用として実行）
+   * - 取得成功時: 最新のアカウント一覧
+   * - 401時: `/login/` へ遷移し、`undefined`
+   * - その他の取得失敗時: `undefined`
    */
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<AccountItem[] | undefined> => {
     setLoading(true)
     setLoadError("")
     try {
       const res = await getSession()
+      if (res.status === 401) {
+        window.location.href = "/login/"
+        return undefined
+      }
       if (res.status !== 200) {
         setAccounts([])
         setLoadError("アカウント一覧の取得に失敗しました。")
-        return
+        return undefined
       }
       setAccounts(res.data.accounts)
+      return res.data.accounts
     } catch (err) {
       console.error(err)
       setLoadError("サーバへ接続できませんでした。")
+      return undefined
     } finally {
       setLoading(false)
     }
@@ -212,12 +224,15 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
    *
    * 処理の趣旨:
    * - `DELETE /v2/bsky/session/{did}` を呼び出し、成功したら一覧を再取得して表示を更新する。
+   * - 再取得の結果、ログイン中のアカウントが0件になった（＝全アカウントからログアウトした）場合、
+   *   または再取得自体に失敗した場合は、この画面に留まっても操作できることがないため
+   *   `/login/` へフォールバックする。
    *
    * Input:
    * - `item`: ログアウト対象アカウント
    *
    * Output:
-   * - 返り値なし（成功時は一覧再取得、失敗時はエラー表示）
+   * - 返り値なし（成功時は一覧再取得または `/login/` へ遷移、失敗時はエラー表示）
    */
   const handleLogout = async (item: AccountItem) => {
     setActionError("")
@@ -227,7 +242,10 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
         setActionError("ログアウトに失敗しました。")
         return
       }
-      await load()
+      const remaining = await load()
+      if (!remaining || remaining.length === 0) {
+        window.location.href = "/login/"
+      }
     } catch (err) {
       console.error(err)
       setActionError("サーバへ接続できませんでした。")
