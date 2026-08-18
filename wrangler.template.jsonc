@@ -12,7 +12,7 @@
   },
   "routes": [
     {
-      "pattern": "preview.skyshare.nekono.dev",
+      "pattern": "skyshare.nekono.dev",
       "zone_name": "nekono.dev",
       "custom_domain": true,
       "enabled": true,
