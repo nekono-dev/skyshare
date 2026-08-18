@@ -66,10 +66,11 @@ const COMPOSITE_VISUAL_BYTE_BUDGET = 1_000_000
 export const loadImage = (url: string) =>
     new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image()
-        image.onload = () => resolve(image)
-        image.onerror = () =>
-            reject(new Error("画像の読み込みに失敗しました。"))
         image.src = url
+        image
+            .decode()
+            .then(() => resolve(image))
+            .catch(() => reject(new Error("画像の読み込みに失敗しました。")))
     })
 
 /**
