@@ -4,9 +4,7 @@ import { createBskyPost } from "@/lib/atproto/post"
 
 describe("createBskyPost", () => {
     it("selfLabel指定時はlabelsをselfLabels形式に変換してpostへ渡す", async () => {
-        const postFn = vi
-            .fn()
-            .mockResolvedValue({ uri: "at://x", cid: "bafy" })
+        const postFn = vi.fn().mockResolvedValue({ uri: "at://x", cid: "bafy" })
         const agent = { post: postFn }
 
         const result = await createBskyPost(
@@ -36,7 +34,14 @@ describe("createBskyPost", () => {
         const postFn = vi.fn().mockResolvedValue({ uri: "at://x", cid: "bafy" })
         const agent = { post: postFn }
 
-        await createBskyPost(agent, "hello", undefined, undefined, undefined, undefined)
+        await createBskyPost(
+            agent,
+            "hello",
+            undefined,
+            undefined,
+            undefined,
+            undefined,
+        )
 
         expect(postFn).toHaveBeenCalledWith(
             expect.objectContaining({ labels: undefined }),

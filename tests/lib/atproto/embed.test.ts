@@ -43,10 +43,13 @@ describe("validateImageMetadata", () => {
 describe("createImageEmbed", () => {
     it("blobとメタデータからembedを組み立てる", () => {
         expect(
-            createImageEmbed(["blobRef1", "blobRef2"], [
-                { width: 100, height: 100 },
-                { width: 200, height: 200 },
-            ]),
+            createImageEmbed(
+                ["blobRef1", "blobRef2"],
+                [
+                    { width: 100, height: 100 },
+                    { width: 200, height: 200 },
+                ],
+            ),
         ).toEqual({
             $type: "app.bsky.embed.images",
             images: [
@@ -98,6 +101,8 @@ describe("createExternalEmbed", () => {
     })
 
     it("リンクが無ければthrow", () => {
-        expect(() => createExternalEmbed(undefined, ogMeta, undefined)).toThrow()
+        expect(() =>
+            createExternalEmbed(undefined, ogMeta, undefined),
+        ).toThrow()
     })
 })

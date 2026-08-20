@@ -43,13 +43,13 @@ describe("skyshareEntryUrlgen", () => {
 
 describe("parseAtUri", () => {
     it("正常な at:// URI を repo/collection/rkey へ分解する", () => {
-        expect(
-            parseAtUri("at://did:plc:abc/app.bsky.feed.post/3lxyz"),
-        ).toEqual({
-            repo: "did:plc:abc",
-            collection: "app.bsky.feed.post",
-            rkey: "3lxyz",
-        })
+        expect(parseAtUri("at://did:plc:abc/app.bsky.feed.post/3lxyz")).toEqual(
+            {
+                repo: "did:plc:abc",
+                collection: "app.bsky.feed.post",
+                rkey: "3lxyz",
+            },
+        )
     })
 
     it("形式不正な文字列は undefined を返す", () => {
@@ -85,7 +85,11 @@ describe("parseOwnedAtUri", () => {
 
     it("URI 自体が不正な形式なら undefined", () => {
         expect(
-            parseOwnedAtUri("not-an-at-uri", "app.bsky.feed.post", "did:plc:abc"),
+            parseOwnedAtUri(
+                "not-an-at-uri",
+                "app.bsky.feed.post",
+                "did:plc:abc",
+            ),
         ).toBeUndefined()
     })
 })

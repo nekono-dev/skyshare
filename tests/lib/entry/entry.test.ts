@@ -71,9 +71,7 @@ describe("toCidString", () => {
 
 describe("blobToCdnUrl", () => {
     it("blob refからCDN URLを生成する", () => {
-        expect(
-            blobToCdnUrl("did:plc:abc", { ref: "bafkre123" }),
-        ).toBe(
+        expect(blobToCdnUrl("did:plc:abc", { ref: "bafkre123" })).toBe(
             "https://cdn.bsky.app/img/feed_fullsize/plain/did%3Aplc%3Aabc/bafkre123",
         )
     })

@@ -34,9 +34,7 @@ describe("extractTimelinePostImages", () => {
             text: "hello",
             createdAt: "2026-01-01T00:00:00Z",
         } as any
-        expect(extractTimelinePostImages(postRecord, "did:plc:abc")).toEqual(
-            [],
-        )
+        expect(extractTimelinePostImages(postRecord, "did:plc:abc")).toEqual([])
     })
 })
 
@@ -45,7 +43,10 @@ describe("normalizeTimelineEntry", () => {
         uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
         cid: "bafyentry",
         value: {
-            source: { uri: "at://did:plc:abc/app.bsky.feed.post/3labc", cid: "bafypost" },
+            source: {
+                uri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+                cid: "bafypost",
+            },
             manifest: { heading: "旅行", caption: "京都にて" },
             createdAt: "2026-01-01T00:00:00Z",
         },
@@ -140,9 +141,9 @@ describe("normalizeTimelinePost", () => {
             sourceUri: "z",
             sourceCid: "w",
         }
-        expect(normalizeTimelinePost(feedItem, skyshareEntry)?.skyshareEntry).toBe(
-            skyshareEntry,
-        )
+        expect(
+            normalizeTimelinePost(feedItem, skyshareEntry)?.skyshareEntry,
+        ).toBe(skyshareEntry)
     })
 
     it("必須フィールドが欠ける場合は undefined", () => {

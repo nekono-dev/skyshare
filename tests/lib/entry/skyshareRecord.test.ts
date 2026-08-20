@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { createSkyshareEntry, updateSkyshareEntry } from "@/lib/entry/skyshareRecord"
+import {
+    createSkyshareEntry,
+    updateSkyshareEntry,
+} from "@/lib/entry/skyshareRecord"
 
 const session = {
     did: "did:plc:abc",

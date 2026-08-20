@@ -58,7 +58,10 @@ describe("encodeBase64Utf8 / decodeBase64Utf8", () => {
 
 describe("parseSessionFromRequest", () => {
     it("atp_session cookie を復号してsession/serviceを取得する", () => {
-        const payload = { session: { did: "did:plc:abc" }, service: "https://x" }
+        const payload = {
+            session: { did: "did:plc:abc" },
+            service: "https://x",
+        }
         const cookieVal = encodeBase64Utf8(JSON.stringify(payload))
         const request = new Request("https://example.com", {
             headers: { cookie: `atp_session=${cookieVal}` },

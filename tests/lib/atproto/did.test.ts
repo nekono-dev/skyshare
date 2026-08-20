@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { readPdsServiceFromDidDoc, resolvePdsServiceForDid } from "@/lib/atproto/did"
+import {
+    readPdsServiceFromDidDoc,
+    resolvePdsServiceForDid,
+} from "@/lib/atproto/did"
 
 describe("readPdsServiceFromDidDoc", () => {
     it("atproto PDS のserviceEndpointを抽出する", () => {
@@ -20,7 +23,9 @@ describe("readPdsServiceFromDidDoc", () => {
     it("該当するserviceが無ければ undefined", () => {
         expect(
             readPdsServiceFromDidDoc({
-                service: [{ id: "#other", type: "Other", serviceEndpoint: "x" }],
+                service: [
+                    { id: "#other", type: "Other", serviceEndpoint: "x" },
+                ],
             }),
         ).toBeUndefined()
     })
@@ -62,14 +67,9 @@ describe("resolvePdsServiceForDid", () => {
     })
 
     it("レスポンスが失敗(ok=false)なら undefined", async () => {
-        vi.stubGlobal(
-            "fetch",
-            vi.fn().mockResolvedValue({ ok: false }),
-        )
+        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }))
 
-        expect(
-            await resolvePdsServiceForDid("did:plc:abc"),
-        ).toBeUndefined()
+        expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
     })
 
     it("正常なDID Documentからserviceを解決する", async () => {

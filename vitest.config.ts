@@ -3,6 +3,7 @@
  *
  * 責務と処理概要:
  * - `src/lib/*` `src/util/*` の単体テストを Node 環境で実行するための最小構成。
+ * - テストコードはルートの `tests/` 配下に `src/` のディレクトリ構造を維持して配置する。
  * - Astro/Cloudflareアダプタ/Reactインテグレーションへは依存しないため、
  *   Astro の Vite 設定を丸ごと読み込まず、スタンドアロン構成にする。
  * - `tsconfig.json` の `paths` にある `@/*` エイリアスを解決する。
@@ -26,7 +27,7 @@ export default defineConfig({
     },
     test: {
         environment: "node",
-        include: ["src/**/*.test.ts"],
+        include: ["tests/**/*.test.ts"],
         coverage: {
             provider: "v8",
             include: ["src/lib/**", "src/util/**"],

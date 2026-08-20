@@ -88,7 +88,9 @@ describe("createEntryFromExistingPost", () => {
             com: {
                 atproto: {
                     repo: {
-                        getRecord: vi.fn().mockRejectedValue(new Error("not found")),
+                        getRecord: vi
+                            .fn()
+                            .mockRejectedValue(new Error("not found")),
                         createRecord: vi.fn(),
                     },
                 },
@@ -111,7 +113,10 @@ describe("createEntryFromExistingPost", () => {
                         getRecord: vi.fn().mockResolvedValue({
                             data: {
                                 cid: "bafypost",
-                                value: { $type: "app.bsky.feed.post", text: "hello" },
+                                value: {
+                                    $type: "app.bsky.feed.post",
+                                    text: "hello",
+                                },
                             },
                         }),
                         createRecord: vi.fn(),

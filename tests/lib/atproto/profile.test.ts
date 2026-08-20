@@ -16,7 +16,9 @@ describe("resolveDisplayName", () => {
 
     it("displayNameが空文字ならfallbackHandleを採用する", async () => {
         const agent = {
-            getProfile: vi.fn().mockResolvedValue({ data: { displayName: "" } }),
+            getProfile: vi
+                .fn()
+                .mockResolvedValue({ data: { displayName: "" } }),
         }
         expect(
             await resolveDisplayName(agent, "did:plc:abc", "alice.bsky.social"),
