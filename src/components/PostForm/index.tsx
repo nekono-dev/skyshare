@@ -69,6 +69,12 @@ import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
 type Props = {
+  /**
+   * "dialog": PostLauncher の Overlay に埋め込まれるモーダル表示（既定値）。
+   * "page": ページに常時表示する単独フォーム（post.astro 等）。dialog専用の
+   * role="dialog"/aria-labelとキャンセルボタンを省く。
+   */
+  variant?: "dialog" | "page"
   onClose?: () => void
   onPosted?: () => void
   avatarUrl?: string | null
@@ -292,7 +298,7 @@ const resolveShareOptionsDefaultOpen = ({
  * - 出力: テキスト・画像・OGP を扱える投稿フォーム
  */
 export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
-  { onClose, onPosted, avatarUrl },
+  { variant = "dialog", onClose, onPosted, avatarUrl },
   ref,
 ) {
   const [text, setText] = useState("")
@@ -380,19 +386,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   }, [imageEntry])
 
   /**
-   * 投稿フォームの入力内容を初期状態へ戻す。
+   * 投稿フォームの入力項目（本文・画像・OGP・下書き紐付け）のみを初期状態へ戻す。
+   * status/statusColor は触らない（投稿成功メッセージ表示と両立させるため）。
    *
    * Input:
    * - なし
    *
    * Output:
    * - なし
-   *
-   * 例:
-   * - 入力: 任意の入力済み状態
-   * - 出力: テキスト・画像・OGP・ステータスをリセット
    */
-  const clearForm = () => {
+  const resetInputFields = () => {
     setText("")
     setSelfLabel(undefined)
     setImageEntry(prevImageEntry => {
@@ -400,8 +403,6 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       return null
     })
     setOgpResult(null)
-    setStatus(null)
-    setStatusColor(undefined)
     setLoadedDraft(null)
   }
 
@@ -736,6 +737,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       onPosted?.()
       const shareText = buildXIntentText(text, skyshareUri)
       const taittsuuIntentText = buildTaittsuuIntentText(text, skyshareUri)
+      resetInputFields()
 
       // タイッツーと X の両方を有効化している場合は自動ポップアップを抑制する。
       if (crosspostToTaittsuu && showXWhenCrosspost) {
@@ -792,7 +794,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         contentClassName={`${ui["width-lg"]} ${styles["draft-list-overlay"]}`}
       >
         <div
-          className={`${ui["base-card"]} ${ui["dialog-card"]}`}
+          className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-card-padding"]}`}
           role="dialog"
           aria-label="下書き一覧"
           style={{ maxHeight: "80vh", overflow: "hidden" }}
@@ -834,9 +836,10 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       />
 
       <div
-        className={`${ui["base-card"]} ${ui["dialog-card"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
-        role="dialog"
-        aria-label="投稿フォーム"
+        className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-card-padding"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
+        {...(variant === "dialog"
+          ? { role: "dialog", "aria-label": "投稿フォーム" }
+          : {})}
         onPaste={handlePaste}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -852,21 +855,14 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
         >
           <div className={`${ui["base-component"]}`}>
-            <button
-              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-              aria-label="キャンセル"
-              disabled={isSubmitting}
-              onClick={requestClose}
-            >
-              キャンセル
-            </button>
-            {hasTextInput && (
+            {variant === "dialog" && (
               <button
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                aria-label="キャンセル"
                 disabled={isSubmitting}
-                onClick={clearForm}
+                onClick={requestClose}
               >
-                フォームをクリア
+                キャンセル
               </button>
             )}
           </div>
@@ -975,7 +971,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 id="text"
                 name="text"
                 multiline
-                rows={6}
+                rows={7}
                 placeholder="最近どう？"
                 value={text}
                 onChange={setText}

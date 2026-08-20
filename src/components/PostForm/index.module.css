@@ -13,7 +13,7 @@
 
 .body-row {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-1);
   position: relative;
 }
 

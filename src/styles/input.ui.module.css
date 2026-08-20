@@ -86,7 +86,7 @@
   outline: none;
   background: transparent;
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-lg);
   line-height: var(--line-height-normal);
   color: #111827;
 }

@@ -159,7 +159,7 @@
 }
 
 :local(.base-card-padding) {
-  padding: var(--space-3);
+  padding: var(--space-2);
 }
 
 :local(.base-card) * {
