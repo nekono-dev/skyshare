@@ -17,7 +17,9 @@
     "prev": "npm run build && wrangler versions upload",
     "deploy": "npm run build && wrangler deploy",
     "format": "prettier --write .",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.1.4",

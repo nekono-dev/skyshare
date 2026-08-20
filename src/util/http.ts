@@ -4,6 +4,7 @@
  * 責務と処理概要:
  * - `Headers` を通常のオブジェクトへ変換し、ログ出力やJSON化を扱いやすくする。
  * - `limit` クエリパラメータの妥当性を検証する。
+ * - cookie ヘッダの有無、Content-Type が multipart/form-data かどうかを判定する。
  * - いずれもskyshare固有のドメイン知識を持たない、Fetch API標準の型のみを扱う処理。
  */
 
@@ -52,4 +53,42 @@ export const convertHeaderToObj = (headers: Headers) => {
         headersObj[key] = value
     })
     return headersObj
+}
+
+/**
+ * リクエストに cookie ヘッダが付与されているかを検証する。
+ *
+ * 処理の趣旨:
+ * - cookie の中身までは解釈せず、未ログイン状態を早期に弾くための軽量チェックに使う。
+ *
+ * Input:
+ * - `request`: Fetch API の `Request`
+ *
+ * Output:
+ * - cookie ヘッダが存在し空でなければ `true`
+ *
+ * 例:
+ * - 入力: `Request` に `Cookie: atp_session=xxx`
+ * - 出力: `true`
+ */
+export const hasCookieHeader = (request: Request): boolean => {
+    const headers = convertHeaderToObj(request.headers)
+    return typeof headers.cookie === "string" && headers.cookie.length > 0
+}
+
+/**
+ * Content-Type が multipart/form-data かどうかを判定する。
+ *
+ * Input:
+ * - `contentType`: `request.headers.get("content-type")` の値
+ *
+ * Output:
+ * - multipart/form-data を含んでいれば `true`
+ *
+ * 例:
+ * - 入力: `"multipart/form-data; boundary=----xxx"`
+ * - 出力: `true`
+ */
+export const isMultipartFormData = (contentType: string | null): boolean => {
+    return (contentType ?? "").includes("multipart/form-data")
 }

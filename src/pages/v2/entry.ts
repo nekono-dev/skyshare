@@ -1,29 +1,28 @@
 import type { APIRoute } from "astro"
 
-import {
-    RichText,
-    AtpAgent,
-    ComAtprotoServerRefreshSession,
-    AppBskyEmbedImages,
-    AppBskyFeedPost,
-} from "@atproto/api"
+import { RichText } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
-import { convertHeaderToObj } from "@/util/http"
+import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
+import { dropEmptyStringField } from "@/util/formData"
 import { ENTRY_COLLECTION } from "@/lib/entry/entry"
 import {
     createSkyshareEntry,
     updateSkyshareEntry,
     type CreatedSkyshareEntry,
 } from "@/lib/entry/skyshareRecord"
+import { uploadBlob } from "@/lib/atproto/blob"
+import { createBskyPost } from "@/lib/atproto/post"
+import { resolveDisplayName } from "@/lib/atproto/profile"
+import { createImageEmbed, validateImageMetadata } from "@/lib/atproto/embed"
+import { createEntryFromExistingPost } from "@/lib/entry/fromPost"
 
 import * as PostSchema from "@/client/openapi/schemas/v2/entry/post"
 import * as PutSchema from "@/client/openapi/schemas/v2/entry/put"
 import * as DeleteSchema from "@/client/openapi/schemas/v2/entry/delete"
-import * as Components from "@/client/openapi/schemas/components"
-import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
+import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
 
 /**
  * Skyshare v2 entry API。
@@ -44,293 +43,6 @@ import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
  * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
  * - 画像アップロード・facet 検出・外部 API 呼び出しを含む副作用が複数発生する。
  */
-
-/**
- * 画像 Blob を atproto にアップロードし、投稿埋め込み用 blob 参照を返す。
- *
- * 処理の趣旨:
- * - Blob を Uint8Array へ変換し、MIME タイプを付与して uploadBlob を呼び出す。
- * - 副作用: atproto 外部 API（uploadBlob）を呼び出してアップロードを実行。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `blob`: アップロード対象画像データ
- *
- * Output:
- * - atproto の投稿埋め込みで利用可能な blob 参照オブジェクト
- *
- * 失敗時の方針:
- * - uploadBlob が例外を発生させた場合、呼び出し元で catch して 500 を返す。
- *
- * 例:
- * - 入力: `uploadBlob(authenticatedAgent, imageBlobData)`
- * - 出力: `{ $type: 'blob', link: { ... }, mimeType: 'image/jpeg' }`
- */
-const uploadBlob = async (agent: AtpAgent, blob: Blob) => {
-    const mime = blob.type || "application/octet-stream"
-    const buffer = new Uint8Array(await blob.arrayBuffer())
-    const uploadRes = await agent.uploadBlob(buffer, {
-        encoding: mime,
-    })
-    return uploadRes.data.blob
-}
-
-/**
- * 画像投稿時のメタデータ整合性を検証する。
- *
- * 処理の趣旨:
- * - bsky 投稿作成前に、画像投稿として成立する最小条件を確認する。
- * - images が未指定または空配列の場合は画像投稿ではないため、検証をスキップする。
- * - images が存在する場合は imagesMeta が必須であり、件数一致を確認する。
- *
- * Input:
- * - `images`: Blob 配列（undefined 可）
- * - `imagesMeta`: { width: number, height: number }[] 配列（undefined 可）
- *
- * Output:
- * - void（エラー時は Error を throw）
- *
- * 失敗時の方針:
- * - images があるのに imagesMeta がない場合は Error を throw。
- * - カウント不一致は Error を throw し、呼び出し元で catch して 400 を返す。
- *
- * 例:
- * - 入力：images=[BlobA, BlobB], imagesMeta=[{w:100,h:100}] → throw「カウント不一致」
- * - 入力：images=[BlobA, BlobB], imagesMeta=[{w:100,h:100}, {w:200,h:200}] → void
- */
-const validateImageMetadata = (
-    images: Blob[] | undefined,
-    imagesMeta: Components.CommonImagesMetaType | undefined,
-) => {
-    if (!images || images.length === 0) {
-        return
-    }
-
-    if (!imagesMeta) {
-        throw new Error("imagesMeta is required when images are provided")
-    }
-
-    const widths = imagesMeta?.map(v => v.width) ?? []
-    const heights = imagesMeta?.map(v => v.height) ?? []
-
-    if (widths.length !== images.length || heights.length !== images.length) {
-        throw new Error("image size metadata count mismatch")
-    }
-}
-
-/**
- * 画像投稿の app.bsky.embed.images embed オブジェクトを組み立てる。
- *
- * 処理の趣旨:
- * - アップロード済み blob と メタデータ（幅・高さ）から、
- *   atproto の投稿埋め込み形式に適合した embed 構造を生成。
- * - aspetRatio は メタデータが存在する場合のみセット。
- *
- * Input:
- * - `uploadedBlobs`: atproto サーバーで生成された blob 参照配列
- * - `metadata`: { width: number, height: number }[] メタデータ配列
- *
- * Output:
- * - { $type: "app.bsky.embed.images", images: [...] }
- *
- * 例:
- * - 入力：uploadedBlobs=[blobRef1, blobRef2], metadata=[{w:100,h:100}, {w:200,h:200}]
- * - 出力：{ $type: "app.bsky.embed.images", images: [{image: blobRef1, alt: "", aspectRatio: {width: 100, height: 100}}, ...] }
- */
-const createImageEmbed = (
-    uploadedBlobs: any[],
-    metadata: Components.CommonImagesMetaType | undefined,
-) => {
-    const widths = metadata?.map(v => v.width) ?? []
-    const heights = metadata?.map(v => v.height) ?? []
-
-    return {
-        $type: "app.bsky.embed.images" as const,
-        images: uploadedBlobs.map((blob, idx) => ({
-            image: blob,
-            alt: "",
-            aspectRatio:
-                widths[idx] && heights[idx]
-                    ? {
-                          width: widths[idx],
-                          height: heights[idx],
-                      }
-                    : undefined,
-        })),
-    }
-}
-
-/**
- * atproto へ投稿を作成する。
- *
- * 処理の趣旨:
- * - AtpAgent の post メソッドを呼び出し、app.bsky.feed.post レコードを作成。
- * - selfLabel が指定された場合は com.atproto.label.defs#selfLabels 形式で labels を付与。
- * - 副作用: atproto 外部 API を呼び出して投稿を作成。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `text`: 投稿本文テキスト
- * - `facets`: 検出済みの facets 配列（リンク・mention 情報）
- * - `langs`: 言語タグ配列
- * - `embed`: 埋め込みオブジェクト
- * - `selfLabel`: 自己ラベル値（未指定時は undefined）
- *
- * Output:
- * - { uri: string, cid: string } — 投稿の URI と CID
- *
- * 失敗時の方針:
- * - agent.post が失敗した場合は Error を throw。呼び出し元で catch して 500 を返す。
- *
- * 例:
- * - 入力：agent(Auth済み),text="Hello world",facets=[],langs=["ja"],embed={$type:"..."},selfLabel="sexual"
- * - 出力：{ uri:"at://did:plc:xxx/app.bsky.feed.post/xxxxx",cid:"bafy..." }
- */
-const createBskyPost = async (
-    agent: AtpAgent,
-    text: string,
-    facets: any[] | undefined,
-    langs: string[] | undefined,
-    embed: any,
-    selfLabel: string | undefined,
-) => {
-    // selfLabel が指定されている場合は com.atproto.label.defs#selfLabels 形式に変換する
-    const labels = selfLabel
-        ? {
-              $type: "com.atproto.label.defs#selfLabels",
-              values: [{ val: selfLabel }],
-          }
-        : undefined
-
-    return await agent.post({
-        $type: "app.bsky.feed.post",
-        text,
-        facets: facets ?? undefined,
-        langs,
-        embed,
-        labels,
-        via: "Skyshare",
-    })
-}
-
-/**
- * `uri` 指定時（from-post 相当）のレスポンス種別。
- */
-type FromPostResult =
-    | { ok: true; bskyUrl: string; skyshareEntry: CreatedSkyshareEntry }
-    | { ok: false; status: 400 | 404 | 500 }
-
-/**
- * 既存の Bluesky 投稿から skyshare entry を発行する（from-post 相当の処理）。
- *
- * 処理の趣旨:
- * - `uri` の repo が session の DID と一致することを確認し、他人の投稿からの発行を防ぐ。
- * - 対象投稿が画像投稿であることを確認した上で、クライアントが元投稿の全画像から
- *   デフォルト配置（クロップ編集なし）で合成した `ogImage` をアップロードし、
- *   その blob 参照を manifest.visual として採用する（先頭画像の直接流用はしない）。
- * - bsky 投稿は新規作成せず、既存投稿の URL をそのまま返す。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `postUri`: 対象となる自分自身の app.bsky.feed.post の AT URI
- * - `session`: セッション情報（DID・handle 取得用）
- * - `ogImage`: クライアントが合成したサムネイル Blob（必須）
- *
- * Output:
- * - 成功時: `{ ok: true, bskyUrl, skyshareUri }`
- * - 失敗時: `{ ok: false, status }`（400: URI 不正/画像なし/ogImage欠落、404: 投稿が見つからない、500: 発行失敗）
- */
-const createEntryFromExistingPost = async (
-    agent: AtpAgent,
-    postUri: string,
-    session: ComAtprotoServerRefreshSession.OutputSchema,
-    ogImage: Blob | undefined,
-): Promise<FromPostResult> => {
-    const parsedPostUri = parseAtUri(postUri)
-    if (
-        !parsedPostUri ||
-        parsedPostUri.collection !== "app.bsky.feed.post" ||
-        parsedPostUri.repo !== session.did
-    ) {
-        return { ok: false, status: 400 }
-    }
-
-    let postRecordRes
-    try {
-        postRecordRes = await agent.com.atproto.repo.getRecord({
-            repo: session.did,
-            collection: "app.bsky.feed.post",
-            rkey: parsedPostUri.rkey,
-        })
-    } catch (err) {
-        console.warn("createEntry: source post not found (from-post)", err)
-        return { ok: false, status: 404 }
-    }
-
-    const postCid = postRecordRes.data.cid
-    const postRecord = postRecordRes.data.value as AppBskyFeedPost.Main
-    if (!postCid) {
-        return { ok: false, status: 500 }
-    }
-
-    const embed = postRecord.embed
-    const hasEligibleImage =
-        embed?.$type === "app.bsky.embed.images" &&
-        ((embed as AppBskyEmbedImages.Main).images?.length ?? 0) > 0
-    if (!hasEligibleImage) {
-        console.warn(
-            "createEntry: source post has no eligible image (from-post)",
-        )
-        return { ok: false, status: 400 }
-    }
-
-    if (!ogImage) {
-        console.warn("createEntry: ogImage is required (from-post)")
-        return { ok: false, status: 400 }
-    }
-
-    let visual
-    try {
-        visual = await uploadBlob(agent, ogImage)
-    } catch (err) {
-        console.error("createEntry: ogImage upload failed (from-post)", err)
-        return { ok: false, status: 500 }
-    }
-
-    const postText = typeof postRecord.text === "string" ? postRecord.text : ""
-    const userName = await agent
-        .getProfile({ actor: session.did })
-        .then(res => res.data.displayName || session.handle)
-
-    let skyshareEntry: CreatedSkyshareEntry | undefined
-    try {
-        skyshareEntry = await createSkyshareEntry(
-            agent,
-            postUri,
-            postCid,
-            visual,
-            postText,
-            userName,
-            session,
-        )
-    } catch (err) {
-        console.error(
-            "createEntry: dev.nekono.skyshare.entry create failed (from-post)",
-            err,
-        )
-        return { ok: false, status: 500 }
-    }
-
-    if (!skyshareEntry) {
-        return { ok: false, status: 500 }
-    }
-
-    return {
-        ok: true,
-        bskyUrl: bskyPostUrlgen(session.handle, parsedPostUri.rkey),
-        skyshareEntry,
-    }
-}
 
 /**
  * `CreatedSkyshareEntry` をレスポンス（`skyshare` フィールド）用の形へ変換する。
@@ -356,32 +68,6 @@ const serializeSkyshareEntry = (entry: CreatedSkyshareEntry) => ({
     caption: entry.caption,
     visualUrl: entry.visualUrl,
 })
-
-/**
- * multipart/form-data の入力を API 仕様に沿って正規化する。
- *
- * 処理の趣旨:
- * - `text` は空文字列が送られうるため、未指定と同義として扱えるよう除去する。
- * - OpenAPI の anyOf（uri+ogImage または images+imagesMeta+ogImage）判定において、
- *   空文字が意図せず `text` の min(1) 制約を壊さないようにする。
- *
- * Input:
- * - `formData`: request.formData() で取得した生データ
- *
- * Output:
- * - 正規化後の FormData（同一インスタンスを破壊的更新）
- *
- * 例:
- * - 入力: text="" + images/imagesMeta が存在
- * - 出力: text キーを除去して後続バリデーションへ渡す
- */
-const normalizeEntryFormData = (formData: FormData) => {
-    const rawText = formData.get("text")
-    if (typeof rawText === "string" && rawText.trim().length === 0) {
-        formData.delete("text")
-    }
-    return formData
-}
 
 /**
  * POST /v2/entry — 画像投稿＋skyshare entry を新規作成する、または既存投稿から
@@ -441,8 +127,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         // フェーズ 3: FormData 解析
-        const contentType = request.headers.get("content-type") || ""
-        if (!contentType.includes("multipart/form-data")) {
+        if (!isMultipartFormData(request.headers.get("content-type"))) {
             return errorResponseFromStatus(400)
         }
 
@@ -454,7 +139,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        normalizeEntryFormData(formData)
+        dropEmptyStringField(formData, "text")
 
         // フェーズ 4: OpenAPI スキーマバリデーション
         const body = PostSchema.RequestBodySchema.safeParse(formData)
@@ -563,9 +248,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // フェーズ 11: skyshare entry 作成
         let skyshareEntry: CreatedSkyshareEntry | undefined
         try {
-            const userName = await agent
-                .getProfile({ actor: session.did })
-                .then(res => res.data.displayName || session.handle)
+            const userName = await resolveDisplayName(
+                agent,
+                session.did,
+                session.handle,
+            )
 
             skyshareEntry = await createSkyshareEntry(
                 agent,
@@ -655,12 +342,12 @@ export const PUT: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        const parsedEntryUri = parseAtUri(body.data.uri)
-        if (
-            !parsedEntryUri ||
-            parsedEntryUri.collection !== ENTRY_COLLECTION ||
-            parsedEntryUri.repo !== session.did
-        ) {
+        const parsedEntryUri = parseOwnedAtUri(
+            body.data.uri,
+            ENTRY_COLLECTION,
+            session.did,
+        )
+        if (!parsedEntryUri) {
             return errorResponseFromStatus(400)
         }
 
@@ -730,12 +417,12 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        const parsedEntryUri = parseAtUri(body.data.uri)
-        if (
-            !parsedEntryUri ||
-            parsedEntryUri.collection !== ENTRY_COLLECTION ||
-            parsedEntryUri.repo !== session.did
-        ) {
+        const parsedEntryUri = parseOwnedAtUri(
+            body.data.uri,
+            ENTRY_COLLECTION,
+            session.did,
+        )
+        if (!parsedEntryUri) {
             return errorResponseFromStatus(400)
         }
 
@@ -768,12 +455,12 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
         })
 
         if (body.data.deleteBskyPost && sourceUri) {
-            const parsedSourceUri = parseAtUri(sourceUri)
-            if (
-                parsedSourceUri &&
-                parsedSourceUri.collection === "app.bsky.feed.post" &&
-                parsedSourceUri.repo === session.did
-            ) {
+            const parsedSourceUri = parseOwnedAtUri(
+                sourceUri,
+                "app.bsky.feed.post",
+                session.did,
+            )
+            if (parsedSourceUri) {
                 try {
                     await agent.com.atproto.repo.deleteRecord({
                         repo: session.did,

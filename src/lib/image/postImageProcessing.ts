@@ -536,7 +536,7 @@ const renderImageAtLongSide = (
  * - 入力: `{ type: "image/jpeg", size: 800000 }`
  * - 出力: `true`
  */
-const canUsePostImageAsIs = (blob: Blob): boolean =>
+export const canUsePostImageAsIs = (blob: Blob): boolean =>
     (blob.type === "image/jpeg" || blob.type === "image/png") &&
     blob.size <= POST_IMAGE_BYTE_BUDGET
 
