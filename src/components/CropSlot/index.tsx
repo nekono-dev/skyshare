@@ -57,6 +57,12 @@ const CropSlot: React.FC<Props> = ({
     width: number
     height: number
   } | null>(null)
+  // react-easy-crop は画像読み込み完了時、`onMediaLoaded` を呼ぶより前に
+  // まだ補正前の crop/zoom（{0,0}/1）で `onCropComplete` を1回発火させる。
+  // このタイミングで報告される cropPixels は幅・高さが 0 になりうる不正な値であり、
+  // かつ react-easy-crop 側の再計算で確実に上書きされる保証もない。
+  // 補正が完了するまでは onCropComplete を親へ伝播させない。
+  const isInitializedRef = useRef(false)
 
   useEffect(() => {
     const container = containerRef.current
@@ -92,6 +98,7 @@ const CropSlot: React.FC<Props> = ({
     setCrop({ x: 0, y: 0 })
     setZoom(1)
     setMinZoom(1)
+    isInitializedRef.current = false
   }, [imageUrl])
 
   /**
@@ -147,15 +154,27 @@ const CropSlot: React.FC<Props> = ({
       const xPercent = (centerX / natW - 0.5) * 100
       const yPercent = (centerY / natH - 0.5) * 100
 
-      setZoom(calculatedZoom)
-      setCrop({
+      const nextCrop = {
         x: Number(xPercent.toFixed(4)),
         y: Number(yPercent.toFixed(4)),
+      }
+      setZoom(calculatedZoom)
+      setCrop(nextCrop)
+      isInitializedRef.current = true
+      // 復元対象の cropPixels は算出済みのため、react-easy-crop 側の再計算完了を
+      // 待たずにここで確定値として直接通知する。再計算完了を待つ実装は、
+      // 再計算が完了する前に確定操作が行われた場合に不正な cropPixels
+      // （幅・高さ 0 になることがある）を親へ伝えてしまう不具合があったため。
+      onChange?.({
+        crop: nextCrop,
+        zoom: calculatedZoom,
+        cropPixels: initialCropPixels,
       })
       return
     }
 
     setZoom(requiredMinZoom)
+    isInitializedRef.current = true
   }
 
   /**
@@ -169,6 +188,7 @@ const CropSlot: React.FC<Props> = ({
    * - 返り値なし（`onChange` 呼び出し）
    */
   const handleCropComplete = (_area: Area, areaPixels: Area) => {
+    if (!isInitializedRef.current) return
     if (onChange) {
       onChange({ crop, zoom, cropPixels: areaPixels })
     }

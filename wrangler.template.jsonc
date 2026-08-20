@@ -16,7 +16,7 @@
       "zone_name": "nekono.dev",
       "custom_domain": true,
       "enabled": true,
-      "previews_enabled": false,
+      "previews_enabled": true,
     },
   ],
   "vars": {
@@ -27,4 +27,5 @@
     "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
   },
   "workers_dev": false,
+  "preview_urls": true,
 }
