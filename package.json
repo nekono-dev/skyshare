@@ -1,20 +1,25 @@
 {
   "name": "skyshare",
   "type": "module",
-  "version": "2.0.0-preview.r02",
+  "version": "2.0.0-preview.r04",
   "scripts": {
     "lexgen": "./hack/gen-client.sh ./src/client/atproto",
     "apigen:client": "orval",
     "apigen:type": "tsx ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
     "apigen": "npm run apigen:client && npm run apigen:type",
     "codegen": "npm run lexgen && npm run apigen",
+    "build:pripare": "npm run codegen && npm run format",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
-    "build": "npm run codegen && npm run format && PUBLIC_VERSION=$npm_package_version astro build && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
-    "dev": "npm run codegen && npm run format && PUBLIC_VERSION=$npm_package_version astro dev",
-    "prev": "npm run build && wrangler dev --ip 0.0.0.0",
+    "build:v2": "PUBLIC_VERSION=$npm_package_version astro build",
+    "build": "npm run build:pripare && npm run build:v2 && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
+    "dev": "npm run build:pripare && PUBLIC_VERSION=$npm_package_version astro dev",
+    "dev:build": "npm run build && wrangler dev --ip 0.0.0.0",
+    "prev": "npm run build && wrangler versions upload",
     "deploy": "npm run build && wrangler deploy",
     "format": "prettier --write .",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.1.4",

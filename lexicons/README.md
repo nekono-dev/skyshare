@@ -50,7 +50,7 @@ Some lexicon NSIDs did not resolve via DNS:
 
 To make these resolve, add DNS TXT entries like:
 
-    _lexicon.skyshare.nekono.dev        TXT     "did=did:web:lex.example.com"
+    _lexicon.skyshare.nekono.dev        TXT     "did=did:web:skyshare.nekono.dev"
 
 (substituting your account DID for the example value)
 
@@ -84,5 +84,10 @@ Repo Rev: 3me24x4vhdk2m
 ```
 
 ```sh
-goat lex publish --did did:web:lex.example.com ./lexicons/dev/nekono/skyshare/
+goat lex publish ./lexicons/dev/
+```
+
+```log
+ 🟢 dev.nekono.skyshare.defs
+ 🟢 dev.nekono.skyshare.entry
 ```

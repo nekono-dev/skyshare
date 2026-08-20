@@ -10,6 +10,29 @@ import { blobToCdnUrl } from "@/lib/entry/entry"
 import { parseAtUri, skyshareEntryUrlgen } from "@/lib/entry/url"
 
 /**
+ * `createSkyshareEntry`/`updateSkyshareEntry` それぞれが実際に呼ぶメソッドだけへ
+ * 絞り込んだ最小インターフェース型（テストで軽量なフェイクを渡せるようにするため）。
+ */
+type RepoCreateAgent = {
+    com: {
+        atproto: {
+            repo: Pick<AtpAgent["com"]["atproto"]["repo"], "createRecord">
+        }
+    }
+}
+
+type RepoUpdateAgent = {
+    com: {
+        atproto: {
+            repo: Pick<
+                AtpAgent["com"]["atproto"]["repo"],
+                "getRecord" | "putRecord"
+            >
+        }
+    }
+}
+
+/**
  * 作成に成功した skyshare entry の情報。
  * `atUri` は削除 API（DELETE /v2/entry）の対象指定に必要。
  */
@@ -54,7 +77,7 @@ export type CreatedSkyshareEntry = {
  * - 出力：{ atUri: "at://.../dev.nekono.skyshare.entry/xyz", webUrl: "https://skyshare.dev/did/rkey", ... }
  */
 export const createSkyshareEntry = async (
-    agent: AtpAgent,
+    agent: RepoCreateAgent,
     bskyPostUri: string,
     bskyPostCid: string,
     visual: any,
@@ -150,7 +173,7 @@ export type UpdatedSkyshareEntry = {
  * - 出力：{ atUri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz", cid: "bafy...", heading: "旅行", caption: "京都にて" }
  */
 export const updateSkyshareEntry = async (
-    agent: AtpAgent,
+    agent: RepoUpdateAgent,
     repo: string,
     rkey: string,
     heading: string,

@@ -14,6 +14,9 @@ import pic from "@/images/pen.svg"
  * - Overlay 内で PostForm を表示し、閉じ操作を集中管理する。
  * - Overlay 背景クリックでの閉じ操作は PostForm の `requestClose` に委譲し、
  *   キャンセルボタンと同様に未保存の変更があれば下書き保存確認ダイアログを挟む。
+ * - スマホレイアウトでは PostForm を画面上部に固定配置する（`backdropClassName`）。
+ *   PostForm は画像添付や詳細オプション展開で領域が拡大しうるため、上端を固定し
+ *   拡大が下方向にのみ起こるようにしている。
  */
 
 /**
@@ -77,7 +80,11 @@ const PostLauncher: React.FC<{
           sidebarActionEl,
         )}
 
-      <Overlay open={open} onClose={() => postFormRef.current?.requestClose()}>
+      <Overlay
+        open={open}
+        onClose={() => postFormRef.current?.requestClose()}
+        backdropClassName={styles["postform-backdrop"]}
+      >
         <PostForm
           ref={postFormRef}
           onClose={() => setOpen(false)}

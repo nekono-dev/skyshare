@@ -104,6 +104,7 @@ export const resolveXrpcStatus = (error: unknown): number => {
         case "ExpiredToken":
             return 401
         case "RateLimitExceeded":
+        case "DraftLimitReached":
             return 429
         case "BlobNotFound":
         case "RepoNotFound":

@@ -25,6 +25,7 @@ type Props = {
   open: boolean
   onClose: () => void
   children: React.ReactNode
+  backdropClassName?: string
   contentClassName?: string
   contentStyle?: React.CSSProperties
 }
@@ -40,6 +41,7 @@ const openOverlayStack: symbol[] = []
  * - `open`: 表示状態
  * - `onClose`: 背景を押下→離すが両方とも背景自身で完結した場合のクローズ処理
  * - `children`: 表示する内容
+ * - `backdropClassName`: 背景領域に追加するクラス名（内容の配置位置調整などに使用）
  * - `contentClassName`: 内容領域に追加するクラス名
  *
  * Output:
@@ -54,6 +56,7 @@ const Overlay: React.FC<Props> = ({
   open,
   onClose,
   children,
+  backdropClassName,
   contentClassName,
   contentStyle,
 }) => {
@@ -101,7 +104,7 @@ const Overlay: React.FC<Props> = ({
 
   const overlay = (
     <div
-      className={styles.backdrop}
+      className={[styles.backdrop, backdropClassName].filter(Boolean).join(" ")}
       onMouseDown={handleBackdropMouseDown}
       onMouseUp={handleBackdropMouseUp}
       role="presentation"

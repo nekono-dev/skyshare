@@ -14,7 +14,7 @@
 import type { APIRoute } from "astro"
 import { parseSessionFromRequest } from "@/lib/session/cookies.js"
 import { errorResponseFromStatus } from "@/lib/api/response.js"
-import { convertHeaderToObj } from "@/util/http"
+import { hasCookieHeader } from "@/util/http"
 import { deletePageDbEntry } from "@/lib/legacy/pagedb"
 
 /**
@@ -54,20 +54,6 @@ const parseDeleteBody = (
     }
 
     return { dbIndex: record.dbIndex, dbKey: record.dbKey }
-}
-
-/**
- * Cookie ヘッダの存在を検証する。
- *
- * Input:
- * - `request`: HTTP リクエスト
- *
- * Output:
- * - cookie があれば `true`
- */
-const hasCookieHeader = (request: Request): boolean => {
-    const headers = convertHeaderToObj(request.headers)
-    return typeof headers.cookie === "string" && headers.cookie.length > 0
 }
 
 /**

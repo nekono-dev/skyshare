@@ -17,7 +17,7 @@ import {
     errorResponseFromStatus,
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
-import { convertHeaderToObj } from "@/util/http"
+import { hasCookieHeader } from "@/util/http"
 import { atpService } from "@/env.js"
 
 /**
@@ -37,20 +37,6 @@ import { atpService } from "@/env.js"
  *   これが無いとログイン前に取得した 401/空一覧のレスポンスがブラウザ/CDNにキャッシュされ、
  *   ログイン直後もキャッシュされた古い応答が返り続ける不具合が起きる。
  */
-
-/**
- * Cookie ヘッダの存在を検証する。
- *
- * Input:
- * - `request`: HTTP リクエスト
- *
- * Output:
- * - cookie があれば `true`
- */
-const hasCookieHeader = (request: Request): boolean => {
-    const headers = convertHeaderToObj(request.headers)
-    return typeof headers.cookie === "string" && headers.cookie.length > 0
-}
 
 /**
  * 汎用のエラーレスポンスを生成する（`errorResponseFromStatus` では表現できない具体的な文言用）。

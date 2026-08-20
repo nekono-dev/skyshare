@@ -34,7 +34,7 @@ import {
  * Output:
  * - `/v2/` 配下かつ `/v2/bsky/session` 系でなければ `true`
  */
-const isManagedByThisMiddleware = (pathname: string): boolean => {
+export const isManagedByThisMiddleware = (pathname: string): boolean => {
     if (!pathname.startsWith("/v2/")) return false
     if (pathname === "/v2/bsky/session") return false
     if (pathname.startsWith("/v2/bsky/session/")) return false

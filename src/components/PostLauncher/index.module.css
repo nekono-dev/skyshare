@@ -1,8 +1,13 @@
+/* position: relative なカードのフッター(toolbar)は z-index: auto の
+   positioned要素としてこのボタンと同じスタッキング層で競合し、DOM順序次第では
+   スクロール中のカードのフッターがこのボタンより上に乗ってタップを奪ってしまう。
+   FooterNav(z-index: 50)より上、モーダル系オーバーレイ(60〜70)より下に固定する。 */
 .launcher-delta {
   position: fixed;
   right: var(--space-4);
   bottom: calc(var(--nav-bar-height) + var(--space-4));
   box-shadow: var(--shadow-primary);
+  z-index: 55;
 }
 
 /* デスクトップ(サイドバーレイアウト)専用ボタン。Sidebar の #sidebar-action へ
@@ -14,6 +19,18 @@
 
 .sidebar-action-icon {
   display: none;
+}
+
+/* スマホレイアウト時、PostForm は画面上部に固定配置する。
+   Overlay の backdrop は既定で align-items: center のため、フォームの領域が
+   （画像添付や詳細オプション展開などで）拡大すると上下均等に広がり、上端が
+   上方向へ動いてしまう。align-items: flex-start に切り替えて上端を固定し、
+   領域拡大が下方向にのみ起こるようにする。 */
+@media (max-width: 639px) {
+  .postform-backdrop {
+    align-items: flex-start;
+    padding-top: 0;
+  }
 }
 
 /* アイコンのみサイドバー段階(Sidebar側の640px境界と対応):

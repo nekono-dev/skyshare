@@ -1,16 +1,18 @@
 import type { APIRoute } from "astro"
 
-import { RichText, AtpAgent } from "@atproto/api"
+import { RichText } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
-import { convertHeaderToObj } from "@/util/http"
-import { extractLinkUrisFromFacets } from "@/lib/atproto/richtext"
+import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
+import { dropEmptyStringField } from "@/util/formData"
 import { bskyPostUrlgen } from "@/lib/entry/url"
+import { uploadBlob } from "@/lib/atproto/blob"
+import { createBskyPost } from "@/lib/atproto/post"
+import { createExternalEmbed } from "@/lib/atproto/embed"
 
 import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
-import * as Components from "@/client/openapi/schemas/components"
 
 /**
  * Skyshare v2 bsky/record API。
@@ -24,156 +26,6 @@ import * as Components from "@/client/openapi/schemas/components"
  * 実装上の制約:
  * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
  */
-
-/**
- * 画像 Blob を atproto にアップロードし、投稿埋め込み用 blob 参照を返す。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `blob`: アップロード対象画像データ
- *
- * Output:
- * - atproto の投稿埋め込みで利用可能な blob 参照オブジェクト
- *
- * 失敗時の方針:
- * - uploadBlob が例外を発生させた場合、呼び出し元で catch して 500 を返す。
- *
- * 例:
- * - 入力: `uploadBlob(authenticatedAgent, imageBlobData)`
- * - 出力: `{ $type: 'blob', link: { ... }, mimeType: 'image/jpeg' }`
- */
-const uploadBlob = async (agent: AtpAgent, blob: Blob) => {
-    const mime = blob.type || "application/octet-stream"
-    const buffer = new Uint8Array(await blob.arrayBuffer())
-    const uploadRes = await agent.uploadBlob(buffer, {
-        encoding: mime,
-    })
-    return uploadRes.data.blob
-}
-
-/**
- * OGP 投稿の app.bsky.embed.external embed オブジェクトを組み立てる。
- *
- * 処理の趣旨:
- * - facets から テキスト内のリンク URI を抽出し、
- * - OGP メタデータ（title, description）を合成して、
- * - atproto の external embed 形式に変換する。
- *
- * Input:
- * - `facets`: RichText より生成された facets（リンク抽出用）
- * - `ogMeta`: { title: string, description: string, ... }
- * - `thumbBlob`: サムネイル blob（アップロード済み、未指定可）
- *
- * Output:
- * - { $type: "app.bsky.embed.external", external: { uri, title, description, thumb? } }
- *
- * 失敗時の方針:
- * - リンク URI が見つからない場合は Error を throw。
- *
- * 例:
- * - 入力：facets=[...], ogMeta={title:"Example",description:"..."},thumbBlob=blobRef
- * - 出力：{ $type:"app.bsky.embed.external",external:{uri:"https://...",title:"Example",description:"..."，thumb:blobRef} }
- */
-const createExternalEmbed = (
-    facets: any[] | undefined,
-    ogMeta: Components.CommonOgMetaType,
-    thumbBlob: any,
-) => {
-    const linkUris = extractLinkUrisFromFacets(facets)
-    const externalUri = linkUris[0]
-
-    if (!externalUri) {
-        throw new Error("ogp post requires a link in the text")
-    }
-
-    return {
-        $type: "app.bsky.embed.external" as const,
-        external: {
-            uri: externalUri,
-            title: ogMeta.title,
-            description: ogMeta.description,
-            thumb: thumbBlob,
-        },
-    }
-}
-
-/**
- * atproto へ投稿を作成する。
- *
- * 処理の趣旨:
- * - AtpAgent の post メソッドを呼び出し、app.bsky.feed.post レコードを作成。
- * - selfLabel が指定された場合は com.atproto.label.defs#selfLabels 形式で labels を付与。
- * - 副作用: atproto 外部 API を呼び出して投稿を作成。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `text`: 投稿本文テキスト
- * - `facets`: 検出済みの facets 配列（リンク・mention 情報）
- * - `langs`: 言語タグ配列
- * - `embed`: 埋め込みオブジェクト（外部リンク embed、未指定可）
- * - `selfLabel`: 自己ラベル値（未指定時は undefined）
- *
- * Output:
- * - { uri: string, cid: string } — 投稿の URI と CID
- *
- * 失敗時の方針:
- * - agent.post が失敗した場合は Error を throw。呼び出し元で catch して 500 を返す。
- *
- * 例:
- * - 入力：agent(Auth済み),text="Hello world",facets=[],langs=["ja"],embed=undefined,selfLabel="sexual"
- * - 出力：{ uri:"at://did:plc:xxx/app.bsky.feed.post/xxxxx",cid:"bafy..." }
- */
-const createBskyPost = async (
-    agent: AtpAgent,
-    text: string,
-    facets: any[] | undefined,
-    langs: string[] | undefined,
-    embed: any,
-    selfLabel: string | undefined,
-) => {
-    const labels = selfLabel
-        ? {
-              $type: "com.atproto.label.defs#selfLabels",
-              values: [{ val: selfLabel }],
-          }
-        : undefined
-
-    return await agent.post({
-        $type: "app.bsky.feed.post",
-        text,
-        facets: facets ?? undefined,
-        langs,
-        embed,
-        labels,
-        via: "Skyshare",
-    })
-}
-
-/**
- * multipart/form-data の入力を API 仕様に沿って正規化する。
- *
- * 処理の趣旨:
- * - `text` は空文字列が送られうるため、未指定と同義として扱えるよう除去する。
- * - OpenAPI の anyOf（text または ogMeta+ogImage）判定において、
- *   空文字が意図せず `text` の min(1) 制約を壊さないようにする。
- *
- * Input:
- * - `formData`: request.formData() で取得した生データ
- *
- * Output:
- * - 正規化後の FormData（同一インスタンスを破壊的更新）
- *
- * 例:
- * - 入力: text="" + ogMeta/ogImage が存在
- * - 出力: text キーを除去して後続バリデーションへ渡す
- */
-const normalizeRecordFormData = (formData: FormData) => {
-    const rawText = formData.get("text")
-    if (typeof rawText === "string" && rawText.trim().length === 0) {
-        formData.delete("text")
-    }
-    return formData
-}
 
 /**
  * POST /v2/bsky/record — skyshare entry を伴わない Bluesky 投稿を作成する。
@@ -223,8 +75,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         // フェーズ 3: FormData 解析
-        const contentType = request.headers.get("content-type") || ""
-        if (!contentType.includes("multipart/form-data")) {
+        if (!isMultipartFormData(request.headers.get("content-type"))) {
             return errorResponseFromStatus(400)
         }
 
@@ -236,7 +87,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        normalizeRecordFormData(formData)
+        dropEmptyStringField(formData, "text")
 
         // フェーズ 4: OpenAPI スキーマバリデーション
         const body = PostSchema.RequestBodySchema.safeParse(formData)

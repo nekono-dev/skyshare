@@ -11,6 +11,7 @@ import {
     groupTimelineEntriesBySourceUri,
     normalizeTimelinePost,
 } from "@/lib/entry/posts"
+import { listAllRecords } from "@/lib/atproto/repo"
 
 /**
  * Skyshare v2 entries API。
@@ -92,37 +93,6 @@ const fetchOwnAuthorFeed = async (
 }
 
 /**
- * dev.nekono.skyshare.entry を全件取得する。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `repo`: 取得対象 repo DID
- *
- * Output:
- * - listRecords の records 配列
- */
-const collectSkyshareEntries = async (agent: AtpAgent, repo: string) => {
-    const entries: any[] = []
-    let cursor: string | undefined
-
-    do {
-        const res = await agent.com.atproto.repo
-            .listRecords({
-                repo,
-                collection: ENTRY_COLLECTION,
-                cursor,
-                limit: 100,
-            })
-            .then(res => res.data)
-
-        entries.push(...(res.records ?? []))
-        cursor = res.cursor
-    } while (cursor)
-
-    return entries
-}
-
-/**
  * GET /v2/entries — 自分の Bluesky 投稿一覧を取得する。
  *
  * Input:
@@ -151,7 +121,10 @@ export const GET: APIRoute = async ({ request, locals }) => {
 
         const [feedRes, rawEntries] = await Promise.all([
             fetchOwnAuthorFeed(agent, session.did, limit, cursor),
-            collectSkyshareEntries(agent, session.did),
+            listAllRecords(agent, {
+                repo: session.did,
+                collection: ENTRY_COLLECTION,
+            }),
         ])
 
         const entriesBySourceUri = groupTimelineEntriesBySourceUri(rawEntries)
