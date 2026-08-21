@@ -22,7 +22,12 @@
 /* ミニサイドバー: 640px以上で .shell (Grid) の1列目に配置される。position:fixedではなく
    sticky を使うことで、Gridによる中央寄せ計算(.shell)と両立しつつ、
    スクロール中も画面内に留まる見た目を維持する。
-   box-sizing: border-box は必須(パディング分の幅ズレを防ぐ)。 */
+   box-sizing: border-box は必須(パディング分の幅ズレを防ぐ)。
+   align-self: start は必須。.shell の align-items 既定値(stretch)のままだと、
+   .nav が本文(Timeline)側と同じ行の高さまで引き伸ばされ、その伸びた自身の
+   ボックス内でsticky計算が狂って画面内に留まらず素通りしてしまう
+   (Chromiumで実機確認済み)。align-self: start でコンテンツ分の高さに
+   留めることで、この不具合を回避しつつ本来の「スクロール追従」を実現する。 */
 @media (min-width: 640px) {
   .nav {
     display: flex;
@@ -34,6 +39,7 @@
     box-sizing: border-box;
     position: sticky;
     top: 0;
+    align-self: start;
     background: transparent;
   }
 
