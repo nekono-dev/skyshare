@@ -22,8 +22,10 @@ import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
 import PostCard from "@/components/PostCard"
+import PostForm from "@/components/PostForm"
 import PostLauncher from "@/components/PostLauncher"
 import type { TimelinePost } from "@/lib/entry/posts"
+import { readPinnedFormDisabledSetting } from "@/lib/settings/shareSettings"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import {
   readPageSizeSetting,
@@ -50,6 +52,9 @@ const PAGE_SIZE = 20
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
+    readPinnedFormDisabledSetting(false),
+  )
   // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
   // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
   // 到達不能なデッドコードとして残置している。
@@ -174,7 +179,21 @@ const Component = ({ avatarUrl }: Props) => {
 
   return (
     <section className={`${ui["base-card"]}`}>
-      <PostLauncher avatarUrl={resolvedAvatarUrl} onPosted={handlePosted} />
+      {!pinnedFormDisabled && (
+        <div className={styles["pinned-form"]}>
+          <PostForm
+            variant="page"
+            avatarUrl={resolvedAvatarUrl}
+            onPosted={handlePosted}
+            onPinnedFormDisabledChange={setPinnedFormDisabled}
+          />
+        </div>
+      )}
+      <PostLauncher
+        avatarUrl={resolvedAvatarUrl}
+        onPosted={handlePosted}
+        onPinnedFormDisabledChange={setPinnedFormDisabled}
+      />
 
       <div
         className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}

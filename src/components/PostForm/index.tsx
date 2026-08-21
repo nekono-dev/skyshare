@@ -53,9 +53,11 @@ import { normalizeDraftList } from "@/lib/entry/draftList"
 import {
   readCrosspostToTaittsuuSetting,
   readOpenPopupSetting,
+  readPinnedFormDisabledSetting,
   readShowCrosspostXButtonSetting,
   writeCrosspostToTaittsuuSetting,
   writeOpenPopupSetting,
+  writePinnedFormDisabledSetting,
   writeShowCrosspostXButtonSetting,
 } from "@/lib/settings/shareSettings"
 import {
@@ -78,6 +80,12 @@ type Props = {
   onClose?: () => void
   onPosted?: () => void
   avatarUrl?: string | null
+  /**
+   * 「投稿フォームを固定表示しない」設定が変更されたときに呼ばれる。
+   * タイムライン先頭の常時表示フォームとフローティングボタン側のモーダルフォームが
+   * 同一ページに同時に存在しうるため、片方での変更をもう片方の表示制御へ即時反映する用途。
+   */
+  onPinnedFormDisabledChange?: (next: boolean) => void
 }
 
 /**
@@ -263,24 +271,27 @@ const resolveImageMetadata = async (
  * - `openXPopup`: ポップアップ利用トグル
  * - `crosspostToTaittsuu`: タイッツー連携トグル
  * - `showXWhenCrosspost`: X 投稿ボタン表示トグル
+ * - `pinnedFormDisabled`: 投稿フォーム固定表示を無効化するトグル
  *
  * Output:
  * - 初回表示時に折りたたみを開くべきなら `true`
  *
  * 例:
- * - 入力: `{ openXPopup: false, crosspostToTaittsuu: true, showXWhenCrosspost: false }`
+ * - 入力: `{ openXPopup: false, crosspostToTaittsuu: true, showXWhenCrosspost: false, pinnedFormDisabled: false }`
  * - 出力: `true`
  */
 const resolveShareOptionsDefaultOpen = ({
   openXPopup,
   crosspostToTaittsuu,
   showXWhenCrosspost,
+  pinnedFormDisabled,
 }: {
   openXPopup: boolean
   crosspostToTaittsuu: boolean
   showXWhenCrosspost: boolean
+  pinnedFormDisabled: boolean
 }) => {
-  return openXPopup || crosspostToTaittsuu || showXWhenCrosspost
+  return openXPopup || crosspostToTaittsuu || showXWhenCrosspost || pinnedFormDisabled
 }
 
 /**
@@ -298,7 +309,7 @@ const resolveShareOptionsDefaultOpen = ({
  * - 出力: テキスト・画像・OGP を扱える投稿フォーム
  */
 export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
-  { variant = "dialog", onClose, onPosted, avatarUrl },
+  { variant = "dialog", onClose, onPosted, avatarUrl, onPinnedFormDisabledChange },
   ref,
 ) {
   const [text, setText] = useState("")
@@ -311,6 +322,9 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   )
   const [showXWhenCrosspost, setShowXWhenCrosspost] = useState(() =>
     readShowCrosspostXButtonSetting(false),
+  )
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
+    readPinnedFormDisabledSetting(false),
   )
   const [selfLabel, setSelfLabel] = useState<
     CreateEntryBodySelfLabels | undefined
@@ -362,6 +376,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     openXPopup,
     crosspostToTaittsuu,
     showXWhenCrosspost,
+    pinnedFormDisabled,
   })
 
   const ogpFetch = useOgpFetch({
@@ -1061,6 +1076,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                       setOpenXPopup(true)
                       writeOpenPopupSetting(true)
                     }
+                  }}
+                />
+                <ToggleSwitch
+                  checked={pinnedFormDisabled}
+                  disabled={isSubmitting}
+                  label="投稿フォームを固定表示しない"
+                  onCheckedChange={next => {
+                    setPinnedFormDisabled(next)
+                    writePinnedFormDisabledSetting(next)
+                    onPinnedFormDisabledChange?.(next)
                   }}
                 />
               </div>

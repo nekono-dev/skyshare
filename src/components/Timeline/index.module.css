@@ -11,3 +11,7 @@
 .timeline-list {
   gap: 1rem;
 }
+
+.pinned-form {
+  margin-bottom: var(--space-2);
+}
