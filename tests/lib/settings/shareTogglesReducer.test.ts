@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
     reconcileShareToggles,
     type ShareTogglesState,
-} from "@/components/PostForm/shareTogglesReducer"
+} from "@/lib/settings/shareTogglesReducer"
 
 /**
  * テスト用の基底状態を組み立てる。

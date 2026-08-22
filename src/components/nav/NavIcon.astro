@@ -18,6 +18,8 @@ import docBluesky from "@/images/doc.svg"
 import docMuted from "@/images/doc-muted.svg"
 import blueskyBluesky from "@/images/bluesky.svg"
 import blueskyMuted from "@/images/bluesky-muted.svg"
+import settingsBluesky from "@/images/settings.svg"
+import settingsMuted from "@/images/settings-muted.svg"
 import type { NavItem } from "./navItems"
 
 interface Props {
@@ -29,6 +31,7 @@ const { navKey } = Astro.props
 const iconSrcByKey = {
     entries: { muted: docMuted.src, active: docBluesky.src },
     post: { muted: blueskyMuted.src, active: blueskyBluesky.src },
+    settings: { muted: settingsMuted.src, active: settingsBluesky.src },
 } as const
 ---
 

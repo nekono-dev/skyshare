@@ -1,5 +1,5 @@
 /**
- * PostForm の共有系トグル（PopupIntentInsteadOfWebshare / CrosspostToTaittsuu / ShowXIntentButton /
+ * 共有系トグル（PopupIntentInsteadOfWebshare / CrosspostToTaittsuu / ShowXIntentButton /
  * NoAutoPopupAfterPost / ManualImageAttach）の state・永続化を管理するフック。
  *
  * 責務と処理概要:
@@ -8,9 +8,11 @@
  *   自体は `shareTogglesReducer.ts` の純粋関数 `reconcileShareToggles` に委譲し、
  *   ここでは React state 化と永続化という副作用のみを担う
  *   （連動ルールをReact/localStorageから切り離すことで単体テストしやすくするため）。
- * - `index.tsx` 側の JSX ハンドラを単純な `checked`/`onCheckedChange` の受け渡しだけに保つ。
+ * - `PostForm`（投稿フォーム内のトグル）と `Settings`（設定ページ）の双方から利用され、
+ *   どちらの画面から変更しても同じ連動ルール・永続化が適用される。
+ * - 呼び出し側の JSX ハンドラを単純な `checked`/`onCheckedChange` の受け渡しだけに保つ。
  */
-import { useEffect, useReducer, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
     readCrosspostToTaittsuuSetting,
     readManualImageAttachSetting,
@@ -28,6 +30,20 @@ import {
     type ShareTogglesState,
 } from "./shareTogglesReducer"
 
+/**
+ * 4トグルの現在値を localStorage から読み直す。
+ *
+ * Output:
+ * - localStorage 上の最新値（未保存/失敗時は全て false）
+ */
+const readShareTogglesState = (): ShareTogglesState => ({
+    crosspostToTaittsuu: readCrosspostToTaittsuuSetting(false),
+    popupIntentInsteadOfWebshare:
+        readPopupIntentInsteadOfWebshareSetting(false),
+    showXWhenCrosspost: readShowCrosspostXButtonSetting(false),
+    noAutoPopupAfterPost: readNoAutoPopupAfterPostSetting(false),
+})
+
 export type UseShareTogglesResult = ShareTogglesState & {
     manualImageAttach: boolean
     onCrosspostToTaittsuuChange: (next: boolean) => void
@@ -35,6 +51,8 @@ export type UseShareTogglesResult = ShareTogglesState & {
     onShowXWhenCrosspostChange: (next: boolean) => void
     onNoAutoPopupAfterPostChange: (next: boolean) => void
     onManualImageAttachChange: (next: boolean) => void
+    /** localStorage上の最新値を読み直し、stateへ反映する（書き込みは行わない） */
+    reload: () => void
 }
 
 /**
@@ -44,20 +62,11 @@ export type UseShareTogglesResult = ShareTogglesState & {
  * - なし
  *
  * Output:
- * - 現在値と、連動ルール適用後の状態を反映する各トグルの変更ハンドラ
+ * - 現在値と、連動ルール適用後の状態を反映する各トグルの変更ハンドラ、
+ *   および明示的な再読み込み用の `reload`
  */
 export const useShareToggles = (): UseShareTogglesResult => {
-    const [state, dispatch] = useReducer(
-        reconcileShareToggles,
-        undefined,
-        () => ({
-            crosspostToTaittsuu: readCrosspostToTaittsuuSetting(false),
-            popupIntentInsteadOfWebshare:
-                readPopupIntentInsteadOfWebshareSetting(false),
-            showXWhenCrosspost: readShowCrosspostXButtonSetting(false),
-            noAutoPopupAfterPost: readNoAutoPopupAfterPostSetting(false),
-        }),
-    )
+    const [state, setState] = useState<ShareTogglesState>(readShareTogglesState)
     const [manualImageAttach, setManualImageAttach] = useState(() =>
         readManualImageAttachSetting(false),
     )
@@ -75,19 +84,33 @@ export const useShareToggles = (): UseShareTogglesResult => {
     }, [state])
 
     const onCrosspostToTaittsuuChange = (next: boolean) => {
-        dispatch({ field: "crosspostToTaittsuu", next })
+        setState(prev =>
+            reconcileShareToggles(prev, { field: "crosspostToTaittsuu", next }),
+        )
     }
 
     const onPopupIntentInsteadOfWebshareChange = (next: boolean) => {
-        dispatch({ field: "popupIntentInsteadOfWebshare", next })
+        setState(prev =>
+            reconcileShareToggles(prev, {
+                field: "popupIntentInsteadOfWebshare",
+                next,
+            }),
+        )
     }
 
     const onShowXWhenCrosspostChange = (next: boolean) => {
-        dispatch({ field: "showXWhenCrosspost", next })
+        setState(prev =>
+            reconcileShareToggles(prev, { field: "showXWhenCrosspost", next }),
+        )
     }
 
     const onNoAutoPopupAfterPostChange = (next: boolean) => {
-        dispatch({ field: "noAutoPopupAfterPost", next })
+        setState(prev =>
+            reconcileShareToggles(prev, {
+                field: "noAutoPopupAfterPost",
+                next,
+            }),
+        )
     }
 
     /**
@@ -101,6 +124,23 @@ export const useShareToggles = (): UseShareTogglesResult => {
         writeManualImageAttachSetting(next)
     }
 
+    /**
+     * localStorage上の最新値を読み直し、stateへ反映する。
+     *
+     * 処理の趣旨:
+     * - 他画面（PostForm/Settingsのどちらか一方）での変更や、Astroのクライアント側
+     *   ページ遷移でこのフックのReactインスタンスが再マウントされずに再利用される
+     *   場合に、呼び出し側（`Settings` の astro:page-load ハンドラ等）から明示的に
+     *   呼び出して最新状態へ同期するために提供する。
+     *
+     * Output:
+     * - なし（stateを最新のlocalStorage値へ置き換える）
+     */
+    const reload = useCallback(() => {
+        setState(readShareTogglesState())
+        setManualImageAttach(readManualImageAttachSetting(false))
+    }, [])
+
     return {
         ...state,
         manualImageAttach,
@@ -109,5 +149,6 @@ export const useShareToggles = (): UseShareTogglesResult => {
         onShowXWhenCrosspostChange,
         onNoAutoPopupAfterPostChange,
         onManualImageAttachChange,
+        reload,
     }
 }

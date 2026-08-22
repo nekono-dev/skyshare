@@ -47,7 +47,7 @@
     justify-content: center;
     width: var(--size-button-md);
     height: var(--size-button-md);
-    margin: 0 auto 0;
+    margin: var(--space-2) auto 0;
     padding: 0;
     border-radius: var(--radius-button-max);
   }

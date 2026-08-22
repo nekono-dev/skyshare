@@ -59,10 +59,6 @@
     background: var(--color-gray-hover);
   }
 
-  .item[aria-current="page"] .item-icon {
-    background: var(--surface-muted);
-  }
-
   /* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。
      NavIcon.astro側の既定(active側 opacity:0)をここで反転させる。 */
   .item:hover [data-nav-icon="active"],
@@ -101,8 +97,10 @@
     background: var(--color-gray-hover);
   }
 
+  /* フルサイドバーのみ: 現在開いているページはラベル文字色をbluesky色にする
+     (背景は変更しない。アイコン自体の色切り替えは640px以上の共通ルールを継承)。 */
   .item[aria-current="page"] {
-    background: var(--surface-muted);
+    color: var(--color-bluesky);
   }
 
   /* ミニサイドバー段階の丸ボタンchrome(固定40pxサイズ/円形border/背景)を打ち消し、

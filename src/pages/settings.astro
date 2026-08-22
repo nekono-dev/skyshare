@@ -1,0 +1,36 @@
+---
+/**
+ * 設定ページ。
+ *
+ * 責務と処理概要:
+ * - `Settings` コンポーネントを表示し、投稿フォーム関連のトグル設定を一覧・変更する。
+ * - 設定値はすべて localStorage に保存されアカウント非依存のため、静的配信可能。
+ *   prerender を有効化する。
+ * - 同じ `Settings` コンポーネントは `SettingsDialog` からダイアログとしても
+ *   再利用できる（設定値の state・永続化ロジックは `Settings` 側に閉じているため、
+ *   ページ・ダイアログどちらから開いても表示・挙動は一致する）。
+ */
+export const prerender = true
+import Settings from "@/components/Settings"
+import Baselayout from "@/layout/Baselayout.astro"
+import FooterNav from "@/components/FooterNav/index.astro"
+import Sidebar from "@/components/Sidebar/index.astro"
+import { serviceName } from "@/vars"
+import ui from "@/styles/ui.module.css"
+import { slide } from "astro:transitions"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`設定 | ${serviceName}`} robots={robots}>
+    <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
+        <div class=`${ui.page} ${ui["width-lg"]} ${ui.center}`>
+            <div class=`${ui["width-md"]}`>
+                <h1 class={ui.subject} style="margin-top: 1rem;">設定</h1>
+                <Settings client:load />
+            </div>
+        </div>
+    </div>
+    <Sidebar slot="nav" />
+    <FooterNav slot="footer" />
+</Baselayout>
