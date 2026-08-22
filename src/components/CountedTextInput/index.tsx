@@ -1,3 +1,9 @@
+import { useLayoutEffect, useRef } from "react"
+import {
+  clampAutoGrowHeightPx,
+  computeAutoGrowBounds,
+  resolveLineHeightPx,
+} from "./autoGrowHeight"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -27,12 +33,18 @@ type Props = {
   onChange: (next: string) => void
   /** trueで<textarea>、false/未指定で<input type="text"> */
   multiline?: boolean
-  /** multiline時のみ有効。デフォルト6 */
+  /** multiline時のみ有効。デフォルト6。autoGrow時は初期表示行数(最小行数)として使う */
   rows?: number
+  /** multiline && autoGrow時のみ有効。true=コンテンツに合わせて高さを自動伸長する（デフォルトfalse=現状の固定rows+内部スクロール） */
+  autoGrow?: boolean
+  /** autoGrow時のみ有効。伸長できる最大行数（省略時は無制限に伸びる） */
+  maxRows?: number
   placeholder?: string
   disabled?: boolean
   /** 0件以上。要素数がそのままカウンタ表示個数になる */
   counters?: CounterSpec[]
+  /** 外枠divに追加するクラス名。見た目の上書き（枠線なし化など）を呼び出し側に委ねる */
+  wrapperClassName?: string
 }
 
 type CounterState = "normal" | "warn" | "error"
@@ -98,6 +110,8 @@ const computeCounterCellWidthCh = (spec: CounterSpec): number => {
  * 例:
  * - 入力: `{ multiline: true, counters: [{ key: "bsky", label: "Bluesky", count: countGraphemes, maxAssumed: 300, errorAt: 300 }] }`
  * - 出力: 複数行テキストエリア + 右下に "12/300:Bluesky" 形式のカウンタ
+ * - 入力: `{ multiline: true, autoGrow: true, rows: 2, maxRows: 7 }`
+ * - 出力: 2行分の高さから開始し、改行に応じて最大7行まで自動的に高さが伸びるテキストエリア
  */
 const Component: React.FC<Props> = ({
   id,
@@ -106,10 +120,46 @@ const Component: React.FC<Props> = ({
   onChange,
   multiline = false,
   rows = 6,
+  autoGrow = false,
+  maxRows,
   placeholder,
   disabled,
   counters = [],
+  wrapperClassName,
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  useLayoutEffect(() => {
+    if (!multiline || !autoGrow) return
+    const el = textareaRef.current
+    if (!el) return
+
+    const computed = getComputedStyle(el)
+    const fontSizePx = parseFloat(computed.fontSize) || 16
+    const lineHeightPx = resolveLineHeightPx(computed.lineHeight, fontSizePx)
+    const verticalExtraPx =
+      parseFloat(computed.paddingTop || "0") +
+      parseFloat(computed.paddingBottom || "0") +
+      parseFloat(computed.borderTopWidth || "0") +
+      parseFloat(computed.borderBottomWidth || "0")
+
+    const { minHeightPx, maxHeightPx } = computeAutoGrowBounds(
+      rows,
+      maxRows,
+      lineHeightPx,
+      verticalExtraPx,
+    )
+
+    el.style.height = "auto" // 縮小も検知できるよう一旦リセット
+    const { heightPx, overflowY } = clampAutoGrowHeightPx(
+      el.scrollHeight,
+      minHeightPx,
+      maxHeightPx,
+    )
+    el.style.height = `${heightPx}px`
+    el.style.overflowY = overflowY
+  }, [value, autoGrow, multiline, rows, maxRows])
+
   const aggregateState = resolveAggregateState(value, counters)
   const aggregateClass =
     aggregateState === "error"
@@ -122,12 +172,18 @@ const Component: React.FC<Props> = ({
     ui["base-input-box"],
     styles.wrapper,
     multiline ? styles["wrapper-multiline"] : styles["wrapper-single-line"],
-  ].join(" ")
+    wrapperClassName,
+  ]
+    .filter(Boolean)
+    .join(" ")
   const fieldClass = [
     ui["base-input-field"],
     styles.field,
     multiline ? styles["field-multiline"] : styles["field-single-line"],
-  ].join(" ")
+    multiline && autoGrow ? styles["field-multiline-autogrow"] : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
 
   return (
     <div className={wrapperClass}>
@@ -136,6 +192,7 @@ const Component: React.FC<Props> = ({
           id={id}
           name={name}
           rows={rows}
+          ref={textareaRef}
           className={fieldClass}
           placeholder={placeholder}
           value={value}

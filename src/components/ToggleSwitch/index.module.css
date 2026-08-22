@@ -7,12 +7,6 @@
  * - アクセシビリティ（focus-visible によるフォーカス可視化）を担保する。
  */
 
-/* コンテナ: ラベルとスイッチを横並びにするインラインブロック */
-.wrapper {
-  display: inline-flex;
-  align-items: center;
-}
-
 /* ネイティブ input を視覚的に隠す。フォーカスリングは label 経由で表示する。 */
 .input {
   position: absolute;

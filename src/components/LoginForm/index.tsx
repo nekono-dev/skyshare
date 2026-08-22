@@ -93,15 +93,17 @@ export const Component = ({ initialHandle }: Props = {}) => {
       <div className={styles.content}>
         <div>
           <label>ハンドル (@以降のhandle)</label>
-          <input
-            className={styles.input}
-            id="handle"
-            name="handle"
-            placeholder="example.bsky.social"
-            required
-            value={handle}
-            onChange={e => setHandle(e.target.value)}
-          />
+          <div className={ui["base-input-box"]}>
+            <input
+              className={ui["base-input-field"]}
+              id="handle"
+              name="handle"
+              placeholder="example.bsky.social"
+              required
+              value={handle}
+              onChange={e => setHandle(e.target.value)}
+            />
+          </div>
         </div>
 
         <div>
@@ -109,15 +111,17 @@ export const Component = ({ initialHandle }: Props = {}) => {
             アプリパスワード（
             <a href="https://bsky.app/settings/app-passwords">作成ページ</a>）
           </label>
-          <input
-            className={styles.input}
-            id="password"
-            name="password"
-            type="password"
-            required
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-          />
+          <div className={ui["base-input-box"]}>
+            <input
+              className={ui["base-input-field"]}
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+            />
+          </div>
         </div>
 
         <button

@@ -137,7 +137,9 @@ export const Component: React.FC<Props> = ({
             <CountedTextInput
               id="entry-edit-caption"
               multiline
-              rows={5}
+              rows={1}
+              maxRows={6}
+              autoGrow
               value={caption}
               onChange={setCaption}
               counters={captionCounters}

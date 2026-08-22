@@ -36,12 +36,12 @@
   flex: 1 1 auto;
 }
 
-/* 詳細オプション（共有トグル群）: 画面幅が狭い場合は折り返して見切れを防ぐ */
-.share-options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2) var(--space-3);
+/* 投稿本文欄は共通の枠付きスタイルを持たず、コンポーザー的な見た目にする */
+.text-input-wrapper {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 /* 画像ドラッグ&ドロップ時の受け入れ表示 */
@@ -61,4 +61,16 @@
   font-weight: 600;
   pointer-events: none;
   z-index: 60;
+}
+
+/* ラベル設定と言語選択の行。幅が足りない場合は右側（言語選択）を単位ごと折り返す */
+.label-language-row {
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+.share-icon {
+  display: inline-block;
+  vertical-align: -3px;
+  margin: 0 2px;
 }

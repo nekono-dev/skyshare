@@ -162,6 +162,12 @@
   padding: var(--space-2);
 }
 
+@media (max-width: 639px) {
+  :local(.base-padding) {
+    padding: var(--space-0);
+  }
+}
+
 :local(.base-card) * {
   box-sizing: border-box;
   overflow: hidden;
@@ -182,14 +188,13 @@
 }
 
 :local(.base-component) {
-  margin-top: var(--space-0);
-  margin-bottom: var(--space-0);
+  margin: var(--space-0);
 }
 
-:local(.base-component) > * {
+/* :local(.base-component) > * {
   margin-left: var(--space-0);
   margin-right: var(--space-0);
-}
+} */
 
 /* 中央添え */
 :local(.center) {
@@ -221,6 +226,13 @@
 /* ブロック表示 */
 :local(.block) {
   display: block;
+}
+
+/* アイコンとプルダウンを1つの単位として扱い、折り返し時も分離させない */
+:local(.block-wrapper) {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 /* テキスト */

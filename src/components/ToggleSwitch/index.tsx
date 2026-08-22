@@ -11,6 +11,7 @@
  */
 import React, { useId } from "react"
 import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
 
 type Props = {
   /** 現在のトグル状態 */
@@ -89,7 +90,7 @@ const resolveCheckedChange = (
  * - トグルスイッチ（label + 非表示 input + 表示用スイッチ）のマークアップ
  *
  * 例:
- * - 入力: `{ checked: false, onCheckedChange: setOpenXPopup, label: "Xをポップアップで開く" }`
+ * - 入力: `{ checked: false, onCheckedChange: setPopupIntentInsteadOfWebshare, label: "Xをポップアップで開く" }`
  * - 出力: OFF 状態のスライドスイッチ + ラベルを含む要素
  */
 export const ToggleSwitch = ({
@@ -114,7 +115,9 @@ export const ToggleSwitch = ({
   }
 
   return (
-    <span className={`${styles.wrapper}${className ? ` ${className}` : ""}`}>
+    <span
+      className={`${ui["block-wrapper"]} ${className ? ` ${className}` : ""}`}
+    >
       <input
         id={inputId}
         type="checkbox"

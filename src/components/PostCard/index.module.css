@@ -1,7 +1,8 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--space-2);
+  padding: var(--space-2);
 }
 
 /* avatar/本文とサムネイルを横並びにする行。ツールバーはこの下に独立して配置する */
@@ -67,7 +68,6 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.5rem;
   min-width: 0;
 }
 
@@ -88,6 +88,7 @@
 .text {
   min-width: 0;
   margin: 0;
+  margin-left: var(--space-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.65;

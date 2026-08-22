@@ -45,6 +45,7 @@
 .caption {
   min-width: 0;
   margin: 0;
+  margin-left: var(--space-2);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.65;
