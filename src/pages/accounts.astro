@@ -12,10 +12,10 @@
  *   クライアント側の `AccountSwitchPanel` が `GET /v2/bsky/session` を叩いて取得する。
  */
 export const prerender = true
-import AccountSwitchPanel from "@/components/AccountSwitchPanel"
+import AccountSwitchPanel from "@/components/account/AccountSwitchPanel"
 import Baselayout from "@/layout/Baselayout.astro"
-import FooterNav from "@/components/FooterNav/index.astro"
-import Sidebar from "@/components/Sidebar/index.astro"
+import FooterNav from "@/components/layout/FooterNav/index.astro"
+import Sidebar from "@/components/layout/Sidebar/index.astro"
 import { serviceName } from "@/vars"
 import ui from "@/styles/ui.module.css"
 import { slide } from "astro:transitions"

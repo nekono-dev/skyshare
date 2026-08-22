@@ -10,10 +10,10 @@
  *   クライアント側の `EntryList` が `GET /v2/entries/skyshare` を叩いて取得する。
  */
 export const prerender = true
-import EntryList from "@/components/EntryList"
+import EntryList from "@/components/entry/EntryList"
 import Baselayout from "@/layout/Baselayout.astro"
-import FooterNav from "@/components/FooterNav/index.astro"
-import Sidebar from "@/components/Sidebar/index.astro"
+import FooterNav from "@/components/layout/FooterNav/index.astro"
+import Sidebar from "@/components/layout/Sidebar/index.astro"
 import { serviceName } from "@/vars"
 import ui from "@/styles/ui.module.css"
 import { slide } from "astro:transitions"
