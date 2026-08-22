@@ -1,13 +1,17 @@
+/* アイコンとプルダウンを1つの単位として扱い、折り返し時も分離させない */
+.root {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
 .icon {
   --icon-active-fill: rgb(56, 189, 248);
   --icon-inactive-fill: rgb(156, 163, 175);
   width: 1.5rem;
   height: 1.5rem;
   padding: var(--space-0);
-  display: inline-block;
-  vertical-align: middle;
-  margin-top: auto;
-  margin-bottom: auto;
+  flex: 0 0 auto;
   margin-right: var(--space-1);
 }
 

@@ -94,14 +94,14 @@ export const customFormData = <T extends Record<string, unknown>>(
                 continue
             }
 
-            if (rawValue.every(isBlobValue)) {
+            if (rawValue.every(value => isBlobValue(value))) {
                 rawValue.forEach(value => {
                     formData.append(key, value)
                 })
                 continue
             }
 
-            if (rawValue.every(isPrimitiveValue)) {
+            if (rawValue.every(value => isPrimitiveValue(value))) {
                 rawValue.forEach(value => {
                     formData.append(key, String(value))
                 })

@@ -46,6 +46,9 @@
   }
   export default Component
   ```
+- `map(fn)` `filter(fn)` `some(fn)` `find(fn)` `reduce(fn)` のように、組み込みメソッドから複数の引数が暗黙的に渡されるコールバックについては、関数参照を直接渡さないこと。アロー関数を使用し、呼び出す関数に渡す引数を明示すること。
+  - 悪い例: `items.map(toShareFile)`
+  - 良い例: `items.map((item, index) => toShareFile(item, index))`
 
 # コード理解負債改善規定
 

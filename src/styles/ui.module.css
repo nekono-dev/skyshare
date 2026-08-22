@@ -158,7 +158,7 @@
   overflow: hidden;
 }
 
-:local(.base-card-padding) {
+:local(.base-padding) {
   padding: var(--space-2);
 }
 
@@ -182,8 +182,8 @@
 }
 
 :local(.base-component) {
-  margin-top: var(--space-1);
-  margin-bottom: var(--space-1);
+  margin-top: var(--space-0);
+  margin-bottom: var(--space-0);
 }
 
 :local(.base-component) > * {
@@ -255,8 +255,6 @@
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  margin-top: var(--space-1);
-  margin-bottom: var(--space-1);
   position: relative;
   /* baseCard の子孫要素に一律で掛かる overflow: hidden を打ち消す。
      toolbarItemLeft/Right の絶対配置要素は他の子要素の行高から外れるため、

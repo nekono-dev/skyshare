@@ -144,7 +144,7 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
       </div>
 
       <footer
-        className={`${styles.footer} ${ui.toolbar} ${ui["toolbar-align"]}`}
+        className={`${styles.footer} ${ui["toolbar"]} ${ui["toolbar-align"]}`}
       >
         <a
           className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}

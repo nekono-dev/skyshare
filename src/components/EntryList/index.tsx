@@ -138,9 +138,9 @@ const Component = () => {
     : infiniteController.updateItem
 
   return (
-    <section className={`${ui["base-card"]}`}>
+    <section>
       <div
-        className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
+        className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
         {isPaged ? (
           <PageSizeSelect

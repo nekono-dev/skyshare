@@ -20,7 +20,7 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
     <div class=`${ui["page"]} ${ui["center"]}` transition:name="page-slide" transition:animate={slide()}>
-        <div class=`${ui["width-lg"]} ${ui["page-padding"]}`>
+        <div class=`${ui["width-lg"]}`>
             <Timeline client:load />
         </div>
     </div>

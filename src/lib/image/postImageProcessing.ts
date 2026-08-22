@@ -636,7 +636,7 @@ const composeThumbnailBlob = async (
 ): Promise<{ thumbnailBlob: Blob; images: HTMLImageElement[] }> => {
     const slotDefs = getSlotDefs(Math.min(4, Math.max(1, imageUrls.length)))
     const targetUrls = imageUrls.slice(0, slotDefs.length)
-    const images = await Promise.all(targetUrls.map(loadImage))
+    const images = await Promise.all(targetUrls.map(url => loadImage(url)))
 
     const crops = slotDefs.map((_, index) => {
         const crop = cropStates[index]?.cropPixels
@@ -773,7 +773,7 @@ export const createDefaultThumbnail = async (
 ): Promise<Blob> => {
     const slotDefs = getSlotDefs(Math.min(4, Math.max(1, imageUrls.length)))
     const targetUrls = imageUrls.slice(0, slotDefs.length)
-    const sizes = await Promise.all(targetUrls.map(loadImageSize))
+    const sizes = await Promise.all(targetUrls.map(url => loadImageSize(url)))
     const cropStates: SlotCropState[] = sizes.map((size, index) => ({
         crop: { x: 0, y: 0 },
         zoom: 1,
