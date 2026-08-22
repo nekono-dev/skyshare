@@ -116,7 +116,12 @@ export const Component: React.FC<Props> = ({
   }
 
   return (
-    <Overlay open={open} onClose={onClose} contentClassName={ui["width-md"]}>
+    <Overlay
+      open={open}
+      onClose={onClose}
+      contentClassName={`${ui["width-md"]} ${styles["edit-form-content"]}`}
+      backdropClassName={styles["edit-form-backdrop"]}
+    >
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]}`}
         role="dialog"

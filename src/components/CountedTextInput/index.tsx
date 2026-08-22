@@ -39,6 +39,8 @@ type Props = {
   autoGrow?: boolean
   /** autoGrow時のみ有効。伸長できる最大行数（省略時は無制限に伸びる） */
   maxRows?: number
+  /** multiline時のみ有効。textareaのfocusイベントをそのまま呼び出し側に通知する */
+  onFocus?: () => void
   placeholder?: string
   disabled?: boolean
   /** 0件以上。要素数がそのままカウンタ表示個数になる */
@@ -122,6 +124,7 @@ const Component: React.FC<Props> = ({
   rows = 6,
   autoGrow = false,
   maxRows,
+  onFocus,
   placeholder,
   disabled,
   counters = [],
@@ -198,6 +201,7 @@ const Component: React.FC<Props> = ({
           value={value}
           disabled={disabled}
           onChange={e => onChange(e.target.value)}
+          onFocus={onFocus}
         />
       ) : (
         <input

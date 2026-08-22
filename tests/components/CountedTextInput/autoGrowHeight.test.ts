@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
     clampAutoGrowHeightPx,
     computeAutoGrowBounds,
+    computeRowsFromAvailableHeight,
     resolveLineHeightPx,
 } from "@/components/CountedTextInput/autoGrowHeight"
 
@@ -33,6 +34,20 @@ describe("computeAutoGrowBounds", () => {
             minHeightPx: 48,
             maxHeightPx: undefined,
         })
+    })
+})
+
+describe("computeRowsFromAvailableHeight", () => {
+    it("computeAutoGrowBoundsの逆算として、範囲内の高さからrows数を算出する", () => {
+        expect(computeRowsFromAvailableHeight(148, 20, 8, 2, 7)).toBe(7)
+    })
+
+    it("算出結果がminRows未満になる場合、minRowsにクランプする", () => {
+        expect(computeRowsFromAvailableHeight(30, 20, 8, 2, 6)).toBe(2)
+    })
+
+    it("算出結果がmaxRowsを超える場合、maxRowsにクランプする", () => {
+        expect(computeRowsFromAvailableHeight(1000, 20, 8, 2, 6)).toBe(6)
     })
 })
 

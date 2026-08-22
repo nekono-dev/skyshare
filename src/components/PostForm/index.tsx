@@ -53,6 +53,7 @@ import { openXIntentPopup } from "@/util/share/xIntent"
 import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
 import { runShareDispatch } from "./shareDispatch"
 import { submitEntry } from "./submitEntry"
+import { useDialogKeyboardRows } from "./useDialogKeyboardRows"
 import { useShareToggles } from "./useShareToggles"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
@@ -195,6 +196,9 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
+  const formRef = useRef<HTMLDivElement>(null)
+  const inputAreaRef = useRef<HTMLDivElement>(null)
+  const toolboxRef = useRef<HTMLDivElement>(null)
 
   const bskyMaxCount = 300
   const xWarnCount = 140
@@ -227,6 +231,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   // dialog表示(PostLauncherのモーダル)ではOverlay内でダイアログごとスクロールする
   // 構造になるため、本文欄の自動高さ拡張はpage表示(常駐フォーム/単独ページ)時のみ有効にする。
   const autoGrowText = variant === "page"
+  // defaultRows がテキストボックスのサイズ調整の上限値
+  const { rows: dialogKeyboardRows, handleTextareaFocus } =
+    useDialogKeyboardRows({
+      enabled: variant === "dialog",
+      formRef,
+      inputAreaRef,
+      toolboxRef,
+      defaultRows: 12,
+      minRows: 2,
+    })
   const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
     optionsList: [
       shareToggles.popupIntentInsteadOfWebshare,
@@ -671,6 +685,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       />
 
       <div
+        ref={formRef}
         className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
         {...(variant === "dialog"
           ? { role: "dialog", "aria-label": "投稿フォーム" }
@@ -801,17 +816,18 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               )}
             </div>
 
-            <div className={styles["input-area"]}>
+            <div className={styles["input-area"]} ref={inputAreaRef}>
               <CountedTextInput
                 id="text"
                 name="text"
                 multiline
-                rows={autoGrowText ? 2 : 6}
+                rows={autoGrowText ? 2 : (dialogKeyboardRows ?? 6)}
                 maxRows={autoGrowText ? 7 : undefined}
                 autoGrow={autoGrowText}
                 placeholder="最近どう？"
                 value={text}
                 onChange={setText}
+                onFocus={handleTextareaFocus}
                 disabled={isSubmitting}
                 counters={textCounters}
                 wrapperClassName={styles["text-input-wrapper"]}
@@ -834,6 +850,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           </div>
 
           <div
+            ref={toolboxRef}
             className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]}`}
           >
             <ImagePicker

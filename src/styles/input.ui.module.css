@@ -80,14 +80,14 @@
   border-radius: 0;
   background: transparent;
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-xl);
   line-height: var(--line-height-normal);
   color: #111827;
 }
 
 :local(.base-input-field)::placeholder {
   color: #9ca3af;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-xl);
 }
 
 :local(.base-input-field):disabled {

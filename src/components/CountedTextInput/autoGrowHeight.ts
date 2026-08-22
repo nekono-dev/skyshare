@@ -68,6 +68,36 @@ export const computeAutoGrowBounds = (
 })
 
 /**
+ * 割り当て可能な高さ(px)から、textareaに設定できる行数を算出する。
+ * computeAutoGrowBoundsの逆算にあたる。
+ *
+ * Input:
+ * - `availableHeightPx`: textareaに割り当てられる高さ(px)
+ * - `lineHeightPx`: 1行の高さ(px)
+ * - `verticalExtraPx`: padding-top/bottom + border-top/bottom-widthの合計(px)
+ * - `minRows` / `maxRows`: 算出結果のクランプ範囲
+ *
+ * Output:
+ * - `minRows`〜`maxRows`にクランプ済みのrows数
+ *
+ * 例:
+ * - 入力: `(148, 20, 8, 2, 7)`
+ * - 出力: `7`
+ */
+export const computeRowsFromAvailableHeight = (
+    availableHeightPx: number,
+    lineHeightPx: number,
+    verticalExtraPx: number,
+    minRows: number,
+    maxRows: number,
+): number => {
+    const rawRows = Math.floor(
+        (availableHeightPx - verticalExtraPx) / lineHeightPx,
+    )
+    return Math.min(maxRows, Math.max(minRows, rawRows))
+}
+
+/**
  * scrollHeightをmin/max(px)にクランプし、適用すべきheightとoverflow-yを決める。
  *
  * Input:
