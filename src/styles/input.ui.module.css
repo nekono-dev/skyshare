@@ -90,6 +90,16 @@
   font-size: var(--font-size-xl);
 }
 
+/* 本文テキストエリアのフォントサイズ: PCはmdにする */
+@media (min-width: 640px) {
+  :local(.base-input-field) {
+    font-size: var(--font-size-md);
+  }
+  :local(.base-input-field)::placeholder {
+    font-size: var(--font-size-md);
+  }
+}
+
 :local(.base-input-field):disabled {
   cursor: not-allowed;
 }

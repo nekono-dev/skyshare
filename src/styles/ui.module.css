@@ -159,7 +159,7 @@
 }
 
 :local(.base-padding) {
-  padding: var(--space-2);
+  padding: var(--space-0) var(--space-2);
 }
 
 @media (max-width: 639px) {
@@ -191,10 +191,9 @@
   margin: var(--space-0);
 }
 
-/* :local(.base-component) > * {
-  margin-left: var(--space-0);
-  margin-right: var(--space-0);
-} */
+:local(.base-component) > * {
+  margin: 0 var(--space-0) 0;
+}
 
 /* 中央添え */
 :local(.center) {
