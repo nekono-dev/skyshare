@@ -16,7 +16,6 @@
       "zone_name": "nekono.dev",
       "custom_domain": true,
       "enabled": true,
-      "previews_enabled": true,
     },
   ],
   "vars": {
