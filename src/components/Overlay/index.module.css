@@ -7,9 +7,15 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.25);
   display: flex;
-  align-items: center;
   justify-content: center;
   z-index: var(--overlay-z);
+}
+
+/* 配置(align-items)の既定値も :where() で詳細度 0 にし、backdropClassName 側
+   （.postform-backdrop の align-items: flex-start など）が import 順に関係なく
+   必ず優先されるようにする。理由は下の .content の :where() コメントと同様。 */
+:where(.backdrop) {
+  align-items: center;
 }
 
 .content {
