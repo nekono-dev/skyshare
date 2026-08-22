@@ -1,27 +1,27 @@
 ---
 /**
- * 投稿ホームページ。
+ * 投稿フォームを常時表示するページ。
  *
  * 責務と処理概要:
- * - Cookie からセッションを復元し、投稿フォーム起動 UI を表示する。
- * - セッション無効時はログインページへリダイレクトする。
- * - セッション更新成功時は最新 Cookie を再発行する。
+ * - 投稿一覧は表示せず、PostForm を単独でマウントする。
+ * - セッション復元・未ログイン時のリダイレクトは PostPage（クライアント側）が
+ *   `/v2/bsky/session` 経由で行う。
  */
 export const prerender = true
 import Baselayout from "@/layout/Baselayout.astro"
 import FooterNav from "@/components/FooterNav/index.astro"
 import Sidebar from "@/components/Sidebar/index.astro"
-import Timeline from "@/components/Timeline"
+import PostPage from "@/components/PostPage"
 import ui from "@/styles/ui.module.css"
 import { slide } from "astro:transitions"
 
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 ---
 
-<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="Skyshare" robots={robots}>
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="投稿 - Skyshare" robots={robots}>
     <div class=`${ui["page"]} ${ui["center"]}` transition:name="page-slide" transition:animate={slide()}>
-        <div class=`${ui["width-lg"]}`>
-            <Timeline client:load />
+        <div class=`${ui["width-lg"]} ${ui["page-padding"]}`>
+            <PostPage client:load />
         </div>
     </div>
     <Sidebar slot="nav" />

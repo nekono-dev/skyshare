@@ -102,7 +102,7 @@ const fetchSkyshareEntries = async (
         .then(res => res.data)
 
     const pageEntries = (res.records ?? [])
-        .map(normalizeTimelineEntry)
+        .map(entry => normalizeTimelineEntry(entry))
         .filter((entry): entry is TimelineSkyshareEntry => entry !== undefined)
 
     const aliveSourceUris = await fetchAliveSourceUris(

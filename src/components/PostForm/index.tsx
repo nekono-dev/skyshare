@@ -3,9 +3,9 @@
  *
  * 責務と処理概要:
  * - テキスト投稿・画像投稿・OGP 投稿の入力状態を管理する。
- * - 送信時に OpenAPI 契約へ整形し、画像投稿は `createEntry`（skyshare entry を伴う）、
- *   テキスト・OGP投稿は `createBskyRecord`（skyshare entry を伴わない）を呼び出す。
- * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
+ * - 共有系トグルの state・永続化・連動ルールは `useShareToggles`、
+ *   API送信は `submitEntry`、投稿成功後のポップアップ/WebShareAPI分岐は
+ *   `shareDispatch` にそれぞれ委譲し、本体は入力状態の管理とそれらの呼び出しに専念する。
  */
 import React, {
   forwardRef,
@@ -15,18 +15,11 @@ import React, {
   useState,
 } from "react"
 import {
-  createBskyRecord,
   createDraft,
-  createEntry,
   deleteDraft,
   getDrafts,
   updateDraft,
 } from "@/client/openapi/client"
-import type {
-  CreateBskyRecordBody,
-  CreateEntryBody,
-} from "@/client/openapi/model"
-import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
 import Collapsible from "@/components/Collapsible/index"
 import CountedTextInput, {
   type CounterSpec,
@@ -50,28 +43,38 @@ import Overlay from "@/components/Overlay"
 import SelfLabelsSelect from "@/components/SelfLabelsSelect"
 import ToggleSwitch from "@/components/ToggleSwitch"
 import { normalizeDraftList } from "@/lib/entry/draftList"
+import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
 import {
-  readCrosspostToTaittsuuSetting,
-  readOpenPopupSetting,
-  readShowCrosspostXButtonSetting,
-  writeCrosspostToTaittsuuSetting,
-  writeOpenPopupSetting,
-  writeShowCrosspostXButtonSetting,
+  readPinnedFormDisabledSetting,
+  writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
-import {
-  buildTaittsuuIntentText,
-  openTaittsuuIntentPopup,
-} from "@/util/share/taittsuuIntent"
+import { openTaittsuuIntentPopup } from "@/util/share/taittsuuIntent"
+import { openXIntentPopup } from "@/util/share/xIntent"
 import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
-import { canShareWithWebApi, shareWithWebApi } from "@/util/share/webShare"
-import { buildXIntentText, openXIntentPopup } from "@/util/share/xIntent"
+import { runShareDispatch } from "./shareDispatch"
+import { submitEntry } from "./submitEntry"
+import { useDialogKeyboardRows } from "./useDialogKeyboardRows"
+import { useShareToggles } from "./useShareToggles"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
+import shareIcon from "@/images/share.svg"
 
 type Props = {
+  /**
+   * "dialog": PostLauncher の Overlay に埋め込まれるモーダル表示（既定値）。
+   * "page": ページに常時表示する単独フォーム（post.astro 等）。dialog専用の
+   * role="dialog"/aria-labelとキャンセルボタンを省く。
+   */
+  variant?: "dialog" | "page"
   onClose?: () => void
   onPosted?: () => void
   avatarUrl?: string | null
+  /**
+   * 「投稿フォームを固定表示しない」設定が変更されたときに呼ばれる。
+   * タイムライン先頭の常時表示フォームとフローティングボタン側のモーダルフォームが
+   * 同一ページに同時に存在しうるため、片方での変更をもう片方の表示制御へ即時反映する用途。
+   */
+  onPinnedFormDisabledChange?: (next: boolean) => void
 }
 
 /**
@@ -79,37 +82,6 @@ type Props = {
  */
 export type PostFormHandle = {
   requestClose: () => void
-}
-
-type ImageSizeCandidate = {
-  width?: number
-  height?: number
-}
-
-/**
- * API エラーコードを表示文言へ変換する。
- *
- * Input:
- * - `errorCode`: API から返却されたエラーコード
- *
- * Output:
- * - ユーザー向け日本語メッセージ
- *
- * 例:
- * - 入力: "APP_BSKY_POST_FAILED"
- * - 出力: "Blueskyへの投稿に失敗しました。"
- */
-const resolveEntryErrorMessage = (errorCode: string) => {
-  switch (errorCode) {
-    case "APP_BSKY_POST_FAILED":
-      return "Blueskyへの投稿に失敗しました。"
-    case "SKYSHARE_ENTRY_CREATE_FAILED":
-      return "Blueskyへの投稿は成功しましたが、SkyShareレコード作成に失敗しました。"
-    case "ENTRY_CREATE_UNEXPECTED_ERROR":
-      return "投稿処理中に予期せぬエラーが発生しました。"
-    default:
-      return errorCode
-  }
 }
 
 /**
@@ -143,110 +115,6 @@ const revokeImageEntry = (entry: ImageEntry | null) => {
 }
 
 /**
- * Blob から画像の自然サイズを読み取る。
- *
- * 処理の趣旨:
- * - ImagePicker 側でサイズ取得に失敗した場合でも、送信直前に API 必須の width/height を補完する。
- *
- * Input:
- * - `blob`: 投稿対象の画像 Blob
- *
- * Output:
- * - `{ width, height }`
- *
- * 例:
- * - 入力: JPEG Blob
- * - 出力: `{ width: 1200, height: 630 }`
- */
-const loadBlobImageSize = async (blob: Blob) => {
-  const objectUrl = URL.createObjectURL(blob)
-
-  try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const nextImage = new Image()
-      nextImage.onload = () => resolve(nextImage)
-      nextImage.onerror = () =>
-        reject(new Error("画像サイズの取得に失敗しました。"))
-      nextImage.src = objectUrl
-    })
-
-    if (image.naturalWidth < 1 || image.naturalHeight < 1) {
-      throw new Error("画像サイズが不正です。")
-    }
-
-    return {
-      width: image.naturalWidth,
-      height: image.naturalHeight,
-    }
-  } finally {
-    URL.revokeObjectURL(objectUrl)
-  }
-}
-
-/**
- * 画像サイズ候補が API 契約を満たす完全な width/height を持つか判定する。
- *
- * Input:
- * - `value`: ImagePicker が保持している画像サイズ候補
- *
- * Output:
- * - 完全なサイズなら `true`
- *
- * 例:
- * - 入力: `{ width: 800, height: 600 }`
- * - 出力: `true`
- */
-const hasValidImageSize = (
-  value: ImageSizeCandidate,
-): value is { width: number; height: number } => {
-  return (
-    typeof value?.width === "number" &&
-    value.width > 0 &&
-    typeof value.height === "number" &&
-    value.height > 0
-  )
-}
-
-/**
- * 画像投稿用の imagesMeta を必ず完全な形で組み立てる。
- *
- * 想定する入力形状:
- * - `entry.originalBlobs` は投稿対象画像の配列
- * - `entry.meta` は ImagePicker が保持する元画像サイズ配列（欠落の可能性あり）
- *
- * 処理の趣旨:
- * - 既存メタデータが完全ならそれを利用する。
- * - 欠落がある場合は Blob から再読込して API 契約を満たす。
- *
- * Input:
- * - `entry`: 投稿対象の画像エントリ
- *
- * Output:
- * - API に送信できる `imagesMeta`
- *
- * 例:
- * - 入力: meta が完全な `ImageEntry`
- * - 出力: 既存 meta をそのまま返す
- */
-const resolveImageMetadata = async (
-  entry: ImageEntry,
-): Promise<NonNullable<CreateEntryBody["imagesMeta"]>> => {
-  const imageSizes = entry.meta ?? []
-  const hasCompleteImageSizes =
-    imageSizes.length === entry.originalBlobs.length &&
-    imageSizes.every(hasValidImageSize)
-
-  if (hasCompleteImageSizes) {
-    return imageSizes.map(value => ({
-      width: value.width,
-      height: value.height,
-    }))
-  }
-
-  return Promise.all(entry.originalBlobs.map(loadBlobImageSize))
-}
-
-/**
  * 共有オプション折りたたみの初期開閉状態を決める。
  *
  * 処理の趣旨:
@@ -254,27 +122,24 @@ const resolveImageMetadata = async (
  * - すべて OFF の場合のみ折りたたんだ状態で開始する。
  *
  * Input:
- * - `openXPopup`: ポップアップ利用トグル
+ * - `popupIntentInsteadOfWebshare`: ポップアップ利用トグル
  * - `crosspostToTaittsuu`: タイッツー連携トグル
  * - `showXWhenCrosspost`: X 投稿ボタン表示トグル
+ * - `pinnedFormDisabled`: 投稿フォーム固定表示を無効化するトグル
  *
  * Output:
  * - 初回表示時に折りたたみを開くべきなら `true`
  *
  * 例:
- * - 入力: `{ openXPopup: false, crosspostToTaittsuu: true, showXWhenCrosspost: false }`
+ * - 入力: `{ popupIntentInsteadOfWebshare: false, crosspostToTaittsuu: true, showXWhenCrosspost: false, pinnedFormDisabled: false }`
  * - 出力: `true`
  */
 const resolveShareOptionsDefaultOpen = ({
-  openXPopup,
-  crosspostToTaittsuu,
-  showXWhenCrosspost,
+  optionsList,
 }: {
-  openXPopup: boolean
-  crosspostToTaittsuu: boolean
-  showXWhenCrosspost: boolean
+  optionsList: boolean[]
 }) => {
-  return openXPopup || crosspostToTaittsuu || showXWhenCrosspost
+  return optionsList.some(Boolean)
 }
 
 /**
@@ -292,20 +157,22 @@ const resolveShareOptionsDefaultOpen = ({
  * - 出力: テキスト・画像・OGP を扱える投稿フォーム
  */
 export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
-  { onClose, onPosted, avatarUrl },
+  {
+    variant = "dialog",
+    onClose,
+    onPosted,
+    avatarUrl,
+    onPinnedFormDisabledChange,
+  },
   ref,
 ) {
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
-  const [crosspostToTaittsuu, setCrosspostToTaittsuu] = useState(() =>
-    readCrosspostToTaittsuuSetting(false),
+  const shareToggles = useShareToggles()
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
+    readPinnedFormDisabledSetting(false),
   )
-  const [openXPopup, setOpenXPopup] = useState(() =>
-    readOpenPopupSetting(false),
-  )
-  const [showXWhenCrosspost, setShowXWhenCrosspost] = useState(() =>
-    readShowCrosspostXButtonSetting(false),
-  )
+
   const [selfLabel, setSelfLabel] = useState<
     CreateEntryBodySelfLabels | undefined
   >(undefined)
@@ -329,6 +196,9 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
+  const formRef = useRef<HTMLDivElement>(null)
+  const inputAreaRef = useRef<HTMLDivElement>(null)
+  const toolboxRef = useRef<HTMLDivElement>(null)
 
   const bskyMaxCount = 300
   const xWarnCount = 140
@@ -349,13 +219,34 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     },
   ]
 
-  const showXIntentButton = openXPopup && showXWhenCrosspost
-  const showTaittsuuIntentButton = openXPopup && crosspostToTaittsuu
+  // ボタンは自動ポップアップの代わりに手動で投稿する手段のため、
+  // NoAutoPopupAfterPost が ON（自動ポップアップ抑制中）の場合のみ表示する。
+  // 特にタイッツー側は、CrosspostToTaittsuu ON かつ NoAutoPopupAfterPost OFF
+  // （＝Taittsuへ自動ポップアップ中）ではボタン表示は不要な点に注意。
+  const showXIntentButton =
+    shareToggles.showXWhenCrosspost && shareToggles.noAutoPopupAfterPost
+  const showTaittsuuIntentButton =
+    shareToggles.crosspostToTaittsuu && shareToggles.noAutoPopupAfterPost
   const hasTextInput = text.trim().length > 0
+  // dialog表示(PostLauncherのモーダル)ではOverlay内でダイアログごとスクロールする
+  // 構造になるため、本文欄の自動高さ拡張はpage表示(常駐フォーム/単独ページ)時のみ有効にする。
+  const autoGrowText = variant === "page"
+  // defaultRows がテキストボックスのサイズ調整の上限値
+  const { rows: dialogKeyboardRows, handleTextareaFocus } =
+    useDialogKeyboardRows({
+      enabled: variant === "dialog",
+      formRef,
+      inputAreaRef,
+      toolboxRef,
+      defaultRows: 12,
+      minRows: 2,
+    })
   const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
-    openXPopup,
-    crosspostToTaittsuu,
-    showXWhenCrosspost,
+    optionsList: [
+      shareToggles.popupIntentInsteadOfWebshare,
+      shareToggles.crosspostToTaittsuu,
+      shareToggles.showXWhenCrosspost,
+    ],
   })
 
   const ogpFetch = useOgpFetch({
@@ -380,19 +271,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   }, [imageEntry])
 
   /**
-   * 投稿フォームの入力内容を初期状態へ戻す。
+   * 投稿フォームの入力項目（本文・画像・OGP・下書き紐付け）のみを初期状態へ戻す。
+   * status/statusColor は触らない（投稿成功メッセージ表示と両立させるため）。
    *
    * Input:
    * - なし
    *
    * Output:
    * - なし
-   *
-   * 例:
-   * - 入力: 任意の入力済み状態
-   * - 出力: テキスト・画像・OGP・ステータスをリセット
    */
-  const clearForm = () => {
+  const resetInputFields = () => {
     setText("")
     setSelfLabel(undefined)
     setImageEntry(prevImageEntry => {
@@ -400,9 +288,23 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       return null
     })
     setOgpResult(null)
+    setLoadedDraft(null)
+  }
+
+  /**
+   * 「投稿後にフォームをクリアしない」設定により保持していたフォームを
+   * 「クリア」ボタン押下でリセットし、ロックを解除する。
+   *
+   * Input:
+   * - なし
+   *
+   * Output:
+   * - なし
+   */
+  const handleClearAfterPost = () => {
+    resetInputFields()
     setStatus(null)
     setStatusColor(undefined)
-    setLoadedDraft(null)
   }
 
   /**
@@ -677,102 +579,51 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     setStatusColor(undefined)
 
     try {
-      // skyshare entry を作成するのは画像投稿の場合のみ。画像が無い投稿
-      // （テキスト投稿・OGP投稿）は skyshare entry を伴わないため、
-      // v2/bsky 名前空間の純粋な bypass エンドポイントを使う。
-      let skyshareUri = ""
+      const entryResult = await submitEntry({
+        text,
+        languageCode,
+        selfLabel,
+        imageEntry,
+        manualImageAttach: shareToggles.manualImageAttach,
+        ogpResult,
+      })
 
-      if (imageEntry) {
-        const payload: CreateEntryBody = {
-          text,
-          langs: [languageCode],
-          selfLabels: selfLabel,
-          ogImage: imageEntry.thumbnailBlob,
-          images: imageEntry.originalBlobs,
-          imagesMeta: await resolveImageMetadata(imageEntry),
-        }
-
-        const res = await createEntry(payload)
-        if (res.status !== 200) {
-          setStatusColor("#b00")
-          const errorCode =
-            "error" in res.data && typeof res.data.error === "string"
-              ? res.data.error
-              : "投稿に失敗しました。"
-          setStatus(resolveEntryErrorMessage(errorCode))
-          return
-        }
-
-        skyshareUri = res.data.skyshare.uri
-      } else {
-        const payload: CreateBskyRecordBody = {
-          text,
-          langs: [languageCode],
-          selfLabels: selfLabel,
-        }
-
-        if (ogpResult) {
-          payload.ogMeta = ogpResult.meta
-          payload.ogImage = ogpResult.imageBlob
-        }
-
-        const res = await createBskyRecord(payload)
-        if (res.status !== 200) {
-          setStatusColor("#b00")
-          const errorCode =
-            "error" in res.data && typeof res.data.error === "string"
-              ? res.data.error
-              : "投稿に失敗しました。"
-          setStatus(resolveEntryErrorMessage(errorCode))
-          return
-        }
+      if (!entryResult.ok) {
+        setStatusColor("#b00")
+        setStatus(entryResult.message)
+        return
       }
 
-      setStatusColor("green")
       if (loadedDraft) {
         void deleteDraftSilently(loadedDraft.id)
         setLoadedDraft(null)
       }
       onPosted?.()
-      const shareText = buildXIntentText(text, skyshareUri)
-      const taittsuuIntentText = buildTaittsuuIntentText(text, skyshareUri)
 
-      // タイッツーと X の両方を有効化している場合は自動ポップアップを抑制する。
-      if (crosspostToTaittsuu && showXWhenCrosspost) {
-        setStatus(
-          "投稿に成功しました。クロスポスト先のボタンを押して投稿してください。",
-        )
-      } else if (crosspostToTaittsuu) {
-        const popupOpened = openTaittsuuIntentPopup(taittsuuIntentText)
-        setStatus(
-          popupOpened
-            ? `投稿に成功しました。`
-            : `投稿に成功しました。タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
-        )
-      } else if (openXPopup) {
-        const popupOpened = openXIntentPopup(shareText)
-        setStatus(
-          popupOpened
-            ? `投稿に成功しました。`
-            : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
-        )
-      } else if (canShareWithWebApi()) {
-        const shareResult = await shareWithWebApi({ text: shareText })
-        if (shareResult.ok) {
-          setStatus(`投稿に成功しました。`)
-        } else if (shareResult.reason === "aborted") {
-          setStatus(`投稿に成功しました。共有はキャンセルされました。`)
-        } else {
-          setStatus(`投稿に成功しました。WebShareAPI での共有に失敗しました。`)
-        }
-      } else {
-        const popupOpened = openXIntentPopup(shareText)
-        setStatus(
-          popupOpened
-            ? `投稿に成功しました。WebShareAPI 非対応のため x.com 投稿画面を開きました。`
-            : `投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。`,
-        )
+      const dispatch = await runShareDispatch({
+        text,
+        skyshareUri: entryResult.skyshareUri,
+        imageEntry,
+        manualImageAttach: shareToggles.manualImageAttach,
+        crosspostToTaittsuu: shareToggles.crosspostToTaittsuu,
+        popupIntentInsteadOfWebshare: shareToggles.popupIntentInsteadOfWebshare,
+        noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
+      })
+
+      if (dispatch.forcedShowXIntentButtonOn) {
+        // onShowXWhenCrosspostChange は内部で popupIntentInsteadOfWebshare / noAutoPopupAfterPost の
+        // 強制ONも行うため、onNoAutoPopupAfterPostChange は別途呼ぶ必要がない。
+        shareToggles.onShowXWhenCrosspostChange(true)
+      } else if (dispatch.forcedNoAutoPopupOn) {
+        shareToggles.onNoAutoPopupAfterPostChange(true)
       }
+      if (dispatch.textToKeep !== null) {
+        setText(dispatch.textToKeep)
+      } else {
+        resetInputFields()
+      }
+      setStatus(dispatch.status)
+      setStatusColor(dispatch.statusColor)
     } catch (err) {
       console.error(err)
       setStatusColor("#b00")
@@ -792,13 +643,13 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         contentClassName={`${ui["width-lg"]} ${styles["draft-list-overlay"]}`}
       >
         <div
-          className={`${ui["base-card"]} ${ui["dialog-card"]}`}
+          className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]}`}
           role="dialog"
           aria-label="下書き一覧"
           style={{ maxHeight: "80vh", overflow: "hidden" }}
         >
           <div
-            className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]}`}
+            className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]}`}
           >
             <button
               type="button"
@@ -834,9 +685,11 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       />
 
       <div
-        className={`${ui["base-card"]} ${ui["dialog-card"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
-        role="dialog"
-        aria-label="投稿フォーム"
+        ref={formRef}
+        className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
+        {...(variant === "dialog"
+          ? { role: "dialog", "aria-label": "投稿フォーム" }
+          : {})}
         onPaste={handlePaste}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -849,24 +702,17 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           </div>
         )}
         <div
-          className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
+          className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
         >
           <div className={`${ui["base-component"]}`}>
-            <button
-              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-              aria-label="キャンセル"
-              disabled={isSubmitting}
-              onClick={requestClose}
-            >
-              キャンセル
-            </button>
-            {hasTextInput && (
+            {variant === "dialog" && (
               <button
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                aria-label="キャンセル"
                 disabled={isSubmitting}
-                onClick={clearForm}
+                onClick={requestClose}
               >
-                フォームをクリア
+                キャンセル
               </button>
             )}
           </div>
@@ -970,22 +816,26 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               )}
             </div>
 
-            <div className={styles["input-area"]}>
+            <div className={styles["input-area"]} ref={inputAreaRef}>
               <CountedTextInput
                 id="text"
                 name="text"
                 multiline
-                rows={6}
+                rows={autoGrowText ? 2 : (dialogKeyboardRows ?? 6)}
+                maxRows={autoGrowText ? 7 : undefined}
+                autoGrow={autoGrowText}
                 placeholder="最近どう？"
                 value={text}
                 onChange={setText}
+                onFocus={handleTextareaFocus}
                 disabled={isSubmitting}
                 counters={textCounters}
+                wrapperClassName={styles["text-input-wrapper"]}
               />
             </div>
           </div>
           <div
-            className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
+            className={`${ui["base-component"]} ${ui["base-padding"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]} ${styles["label-language-row"]}`}
           >
             <SelfLabelsSelect
               value={selfLabel}
@@ -1000,7 +850,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           </div>
 
           <div
-            className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]}`}
+            ref={toolboxRef}
+            className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]}`}
           >
             <ImagePicker
               ref={imagePickerRef}
@@ -1020,64 +871,81 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             <OgpPreview ogpFetch={ogpFetch} />
             <ImagePreview value={imageEntry} />
           </div>
+          <div className={`${ui["base-padding"]} ${ui["toggle-box"]}`}>
+            <ToggleSwitch
+              checked={pinnedFormDisabled}
+              disabled={isSubmitting}
+              label="投稿フォームを固定表示しない"
+              onCheckedChange={next => {
+                setPinnedFormDisabled(next)
+                writePinnedFormDisabledSetting(next)
+                onPinnedFormDisabledChange?.(next)
+              }}
+            />
+            <ToggleSwitch
+              checked={shareToggles.popupIntentInsteadOfWebshare}
+              disabled={isSubmitting}
+              label={
+                <>
+                  <img
+                    src={shareIcon.src}
+                    width={18}
+                    height={18}
+                    alt=""
+                    className={styles["share-icon"]}
+                  />
+                  の代わりにポップアップを開く
+                </>
+              }
+              onCheckedChange={
+                shareToggles.onPopupIntentInsteadOfWebshareChange
+              }
+            />
+            <ToggleSwitch
+              checked={shareToggles.manualImageAttach}
+              disabled={isSubmitting}
+              label="画像を自分で添付する(SkyshareのURLを発行しない)"
+              onCheckedChange={shareToggles.onManualImageAttachChange}
+            />
+          </div>
+
           <div className={ui["base-component"]}>
             <Collapsible
               label="詳細オプション"
               defaultOpen={defaultOpenShareOptions}
             >
-              <div className={styles["share-options"]}>
+              <div className={ui["toggle-box"]}>
                 <ToggleSwitch
-                  checked={openXPopup}
-                  disabled={isSubmitting || crosspostToTaittsuu}
-                  label="ポップアップを利用する"
-                  onCheckedChange={next => {
-                    setOpenXPopup(next)
-                    writeOpenPopupSetting(next)
-                    if (!next) {
-                      setCrosspostToTaittsuu(false)
-                      writeCrosspostToTaittsuuSetting(false)
-                    }
-                  }}
-                />
-                <ToggleSwitch
-                  checked={crosspostToTaittsuu}
+                  checked={shareToggles.crosspostToTaittsuu}
                   disabled={isSubmitting}
                   label="タイッツーにクロスポスト"
-                  onCheckedChange={next => {
-                    setCrosspostToTaittsuu(next)
-                    writeCrosspostToTaittsuuSetting(next)
-
-                    if (next) {
-                      setOpenXPopup(true)
-                      writeOpenPopupSetting(true)
-                    }
-                  }}
+                  onCheckedChange={shareToggles.onCrosspostToTaittsuuChange}
                 />
                 <ToggleSwitch
-                  checked={showXWhenCrosspost}
-                  disabled={isSubmitting || !openXPopup}
+                  checked={shareToggles.showXWhenCrosspost}
+                  disabled={isSubmitting}
                   label="X投稿ボタンを表示"
-                  onCheckedChange={next => {
-                    setShowXWhenCrosspost(next)
-                    writeShowCrosspostXButtonSetting(next)
-
-                    if (next) {
-                      setOpenXPopup(true)
-                      writeOpenPopupSetting(true)
-                    }
-                  }}
+                  onCheckedChange={shareToggles.onShowXWhenCrosspostChange}
+                />
+                <ToggleSwitch
+                  checked={shareToggles.noAutoPopupAfterPost}
+                  disabled={isSubmitting}
+                  label="自動ポップアップをOFFにする"
+                  onCheckedChange={shareToggles.onNoAutoPopupAfterPostChange}
                 />
               </div>
             </Collapsible>
           </div>
-          <div
-            id="status"
-            aria-live="polite"
-            className={`${ui.toolbar}`}
-            style={{ color: statusColor }}
-          >
-            {status}
-          </div>
+          {status !== "" && status !== null && (
+            <div
+              id="status"
+              aria-live="polite"
+              className={`${ui["base-component"]} ${ui["toolbar"]}`}
+              style={{ color: statusColor }}
+            >
+              {status}
+            </div>
+          )}
         </form>
       </div>
     </>

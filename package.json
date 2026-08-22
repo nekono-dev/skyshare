@@ -1,7 +1,7 @@
 {
   "name": "skyshare",
   "type": "module",
-  "version": "2.0.0-preview.r04",
+  "version": "2.0.0-preview.r05",
   "scripts": {
     "lexgen": "./hack/gen-client.sh ./src/client/atproto",
     "apigen:client": "orval",

@@ -226,7 +226,9 @@ export function parseAccountsFromRequest(request: Request): PooledAccount[] {
     try {
         const parsed = decodeBase64Json(raw)
         if (!Array.isArray(parsed)) return []
-        return parsed.filter(isPooledAccount)
+        return parsed.filter((value): value is PooledAccount =>
+            isPooledAccount(value),
+        )
     } catch {
         return []
     }

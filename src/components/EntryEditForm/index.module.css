@@ -12,3 +12,16 @@
   color: var(--color-red-text);
   font-size: 0.9rem;
 }
+
+/* スマホレイアウト時、PostFormと同様にダイアログを画面上部に固定配置し
+  スマホレイアウト時、PostFormと同様に横幅いっぱいに広げる。 */
+@media (max-width: 639px) {
+  .edit-form-backdrop {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+  .edit-form-content {
+    width: 100%;
+    max-width: 100%;
+  }
+}

@@ -35,7 +35,8 @@ import pic from "@/images/pen.svg"
 const PostLauncher: React.FC<{
   avatarUrl?: string | null
   onPosted?: () => void
-}> = ({ avatarUrl, onPosted }) => {
+  onPinnedFormDisabledChange?: (next: boolean) => void
+}> = ({ avatarUrl, onPosted, onPinnedFormDisabledChange }) => {
   const [open, setOpen] = useState(false)
   const postFormRef = useRef<PostFormHandle>(null)
   // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
@@ -93,6 +94,7 @@ const PostLauncher: React.FC<{
             onPosted?.()
           }}
           avatarUrl={avatarUrl}
+          onPinnedFormDisabledChange={onPinnedFormDisabledChange}
         />
       </Overlay>
     </>

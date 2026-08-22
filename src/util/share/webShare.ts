@@ -17,7 +17,7 @@ type ShareExecutionResult = {
  * 指定データで WebShareAPI が利用可能か判定する。
  *
  * Input:
- * - `shareData`: 共有候補データ
+ * - `shareData`: 共有候補データ（省略時は API 対応可否のみ判定）
  *
  * Output:
  * - 利用可能なら `true`
@@ -26,11 +26,14 @@ type ShareExecutionResult = {
  * - 入力: `{ text: "hello" }`
  * - 出力: `true`（対応ブラウザの場合）
  */
-export const canShareWithWebApi = () => {
+export const canShareWithWebApi = (shareData?: ShareData) => {
     if (typeof navigator === "undefined") {
         return false
     }
     if (navigator.share === undefined || navigator.canShare === undefined) {
+        return false
+    }
+    if (shareData && !navigator.canShare(shareData)) {
         return false
     }
     return true

@@ -116,7 +116,12 @@ export const Component: React.FC<Props> = ({
   }
 
   return (
-    <Overlay open={open} onClose={onClose} contentClassName={ui["width-md"]}>
+    <Overlay
+      open={open}
+      onClose={onClose}
+      contentClassName={`${ui["width-md"]} ${styles["edit-form-content"]}`}
+      backdropClassName={styles["edit-form-backdrop"]}
+    >
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]}`}
         role="dialog"
@@ -137,7 +142,9 @@ export const Component: React.FC<Props> = ({
             <CountedTextInput
               id="entry-edit-caption"
               multiline
-              rows={5}
+              rows={1}
+              maxRows={6}
+              autoGrow
               value={caption}
               onChange={setCaption}
               counters={captionCounters}

@@ -90,7 +90,7 @@ export const Component: React.FC<Props> = ({
   }
 
   return (
-    <span>
+    <span className={`${ui["block-wrapper"]}`}>
       <svg
         className={`${styles.icon} ${value !== undefined ? styles["icon-active"] : styles["icon-inactive"]}`}
       >

@@ -2,7 +2,9 @@
  * vitest 設定。
  *
  * 責務と処理概要:
- * - `src/lib/*` `src/util/*` の単体テストを Node 環境で実行するための最小構成。
+ * - `src/lib/*` `src/util/*`、および React に依存しない純粋関数を切り出した
+ *   コンポーネント内モジュール（例: `src/components/PostForm/shareTogglesReducer.ts`）の
+ *   単体テストを Node 環境で実行するための最小構成。
  * - テストコードはルートの `tests/` 配下に `src/` のディレクトリ構造を維持して配置する。
  * - Astro/Cloudflareアダプタ/Reactインテグレーションへは依存しないため、
  *   Astro の Vite 設定を丸ごと読み込まず、スタンドアロン構成にする。
@@ -30,7 +32,12 @@ export default defineConfig({
         include: ["tests/**/*.test.ts"],
         coverage: {
             provider: "v8",
-            include: ["src/lib/**", "src/util/**"],
+            include: [
+                "src/lib/**",
+                "src/util/**",
+                "src/components/PostForm/shareTogglesReducer.ts",
+                "src/components/CountedTextInput/autoGrowHeight.ts",
+            ],
         },
     },
 })

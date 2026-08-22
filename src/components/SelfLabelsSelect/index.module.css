@@ -4,10 +4,7 @@
   width: 1.5rem;
   height: 1.5rem;
   padding: var(--space-0);
-  display: inline-block;
-  vertical-align: middle;
-  margin-top: auto;
-  margin-bottom: auto;
+  flex: 0 0 auto;
   margin-right: var(--space-1);
 }
 

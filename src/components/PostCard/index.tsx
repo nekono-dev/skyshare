@@ -108,7 +108,9 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
 
             <div className={styles["author-meta"]}>
               <div className={styles["author-name-row"]}>
-                <strong>{item.author.displayName ?? item.author.handle}</strong>
+                {item.author.displayName !== "" && (
+                  <strong>{item.author.displayName}</strong>
+                )}
                 <span className={styles.handle}>@{item.author.handle}</span>
               </div>
               <p className={styles["created-at"]}>{createdAtText}</p>
@@ -144,7 +146,7 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
       </div>
 
       <footer
-        className={`${styles.footer} ${ui.toolbar} ${ui["toolbar-align"]}`}
+        className={`${styles.footer} ${ui["toolbar"]} ${ui["toolbar-align"]}`}
       >
         <a
           className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}

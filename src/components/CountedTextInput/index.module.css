@@ -20,6 +20,12 @@
   overflow-x: hidden;
   overflow-y: auto;
 }
+.field-multiline-autogrow {
+  /* border=0のためscrollHeightをそのままstyle.heightへ流用できるようにする */
+  box-sizing: border-box;
+  /* 固定4remのmin-heightはJS側のminHeightPxと衝突するため無効化する */
+  min-height: 0;
+}
 
 .counters-row-single-line {
   flex: 0 0 auto;

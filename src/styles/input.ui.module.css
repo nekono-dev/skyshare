@@ -26,14 +26,14 @@
   line-height: var(--line-height-normal);
 }
 
-:local(.base-select):focus-visible {
-  outline: 2px solid var(--color-bluesky);
-  outline-offset: 1px;
-}
-
 :local(.base-select):disabled {
   background: var(--color-gray-disabled);
   cursor: not-allowed;
+}
+
+:local(.base-select):focus,
+:local(.base-select):focus-visible {
+  outline: none;
 }
 
 /* セレクトUIの外枠。擬似要素でドロップダウン矢印を表示する */
@@ -74,28 +74,27 @@
   padding: var(--space-2);
 }
 
-:local(.base-input-box):focus-within {
-  outline: 2px solid var(--color-bluesky);
-  outline-offset: 1px;
-}
-
 :local(.base-input-field) {
   width: 100%;
   border: none;
   border-radius: 0;
-  outline: none;
   background: transparent;
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-xl);
   line-height: var(--line-height-normal);
   color: #111827;
 }
 
 :local(.base-input-field)::placeholder {
   color: #9ca3af;
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-xl);
 }
 
 :local(.base-input-field):disabled {
   cursor: not-allowed;
+}
+
+:local(.base-input-field):focus,
+:local(.base-input-field):focus-visible {
+  outline: none;
 }

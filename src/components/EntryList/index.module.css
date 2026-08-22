@@ -9,5 +9,5 @@
 }
 
 .entry-list {
-  gap: 1rem;
+  gap: var(--space-2);
 }

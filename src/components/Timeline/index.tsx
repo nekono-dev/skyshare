@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react"
-import { getEntries } from "@/client/openapi/client"
+import { getEntries, getSession } from "@/client/openapi/client"
 import ComponentList from "@/components/ComponentList"
 import type {
   CursorPageFetchInput,
@@ -22,8 +22,10 @@ import InfiniteScrollSentinel from "@/components/InfiniteScrollSentinel"
 import NavigationBar from "@/components/NavigationBar"
 import PageSizeSelect from "@/components/PageSizeSelect"
 import PostCard from "@/components/PostCard"
+import PostForm from "@/components/PostForm"
 import PostLauncher from "@/components/PostLauncher"
 import type { TimelinePost } from "@/lib/entry/posts"
+import { readPinnedFormDisabledSetting } from "@/lib/settings/shareSettings"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import {
   readPageSizeSetting,
@@ -50,6 +52,9 @@ const PAGE_SIZE = 20
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
+    readPinnedFormDisabledSetting(false),
+  )
   // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
   // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
   // 到達不能なデッドコードとして残置している。
@@ -61,6 +66,34 @@ const Component = ({ avatarUrl }: Props) => {
   useEffect(() => {
     setResolvedAvatarUrl(avatarUrl ?? null)
   }, [avatarUrl])
+
+  // 投稿一覧（getEntries）の取得完了を待たずにアバターを表示するため、
+  // AccountSwitcher/syncAccountAvatar と同じ getSession を並行して叩く。
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAvatarFromSession = async () => {
+      try {
+        const res = await getSession()
+        if (res.status !== 200) return
+
+        const activeAccount = res.data.accounts.find(
+          account => account.isActive,
+        )
+        if (!cancelled && activeAccount?.avatarUrl) {
+          setResolvedAvatarUrl(activeAccount.avatarUrl)
+        }
+      } catch (err) {
+        console.error("Timeline: failed to load session for avatar", err)
+      }
+    }
+
+    void loadAvatarFromSession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   /**
    * 指定 cursor のページを取得して ComponentList に返す。
@@ -173,11 +206,25 @@ const Component = ({ avatarUrl }: Props) => {
     : infiniteController.removeItem
 
   return (
-    <section className={`${ui["base-card"]}`}>
-      <PostLauncher avatarUrl={resolvedAvatarUrl} onPosted={handlePosted} />
+    <section>
+      {!pinnedFormDisabled && (
+        <div>
+          <PostForm
+            variant="page"
+            avatarUrl={resolvedAvatarUrl}
+            onPosted={handlePosted}
+            onPinnedFormDisabledChange={setPinnedFormDisabled}
+          />
+        </div>
+      )}
+      <PostLauncher
+        avatarUrl={resolvedAvatarUrl}
+        onPosted={handlePosted}
+        onPinnedFormDisabledChange={setPinnedFormDisabled}
+      />
 
-      <div
-        className={`${ui.toolbar} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
+      {/* <div
+        className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
         {isPaged ? (
           <PageSizeSelect
@@ -197,7 +244,7 @@ const Component = ({ avatarUrl }: Props) => {
             ariaLabel="post timeline pagination"
           />
         ) : null}
-      </div>
+      </div> */}
 
       {loading || error || empty ? (
         <p className={error ? styles["error-state"] : styles["empty-state"]}>

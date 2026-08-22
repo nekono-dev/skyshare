@@ -13,17 +13,17 @@
 :local(.dialog-card) {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
 }
 
 :local(.dialog-body) {
   display: flex;
   flex-direction: column;
-  gap: var(--space-0);
+  gap: var(--space-1);
 }
 
 :local(.dialog-actions) {
+  margin: var(--space-2) var(--space-0);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
