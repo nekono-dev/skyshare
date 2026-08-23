@@ -23,6 +23,7 @@ import {
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
+import { isValidMastodonInstanceDomain } from "@/util/share/mastodonIntent"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -33,7 +34,7 @@ import styles from "./index.module.css"
  * - 「投稿フォーム」「クロスポスト」の2グループに分けた設定一覧
  *
  * 例:
- * - 出力: 投稿フォーム設定3件・クロスポスト設定3件、計6件のトグル付き設定一覧
+ * - 出力: 投稿フォーム設定3件・クロスポスト設定4件、計7件のトグル付き設定一覧
  */
 export const Settings = () => {
   const shareToggles = useShareToggles()
@@ -125,6 +126,25 @@ export const Settings = () => {
 
   const crosspostItems: SettingListItem[] = [
     {
+      key: "showXWhenCrosspost",
+      label: "X投稿ボタンを表示",
+      description: (
+        <>
+          オンにすると、X投稿ボタンを表示します。自動ポップアップはOFFになります。他SNSのクロスポストオプションを設定している場合、両方のボタンを表示します。
+        </>
+      ),
+      checked: shareToggles.showXWhenCrosspost,
+      onCheckedChange: shareToggles.onShowXWhenCrosspostChange,
+    },
+    {
+      key: "noAutoPopupAfterPost",
+      label: "自動ポップアップをOFFにする",
+      description:
+        "オンにすると、投稿完了時に共有ポップアップを自動的に開きません。X投稿ボタンを表示がOFFの場合はONになります。自動ポップアップを開くことができない場合は、このオプションがONになります。",
+      checked: shareToggles.noAutoPopupAfterPost,
+      onCheckedChange: shareToggles.onNoAutoPopupAfterPostChange,
+    },
+    {
       key: "crosspostToTaittsuu",
       label: (
         <>
@@ -143,23 +163,30 @@ export const Settings = () => {
       onCheckedChange: shareToggles.onCrosspostToTaittsuuChange,
     },
     {
-      key: "showXWhenCrosspost",
-      label: "X投稿ボタンを表示",
-      description: (
+      key: "crosspostToMastodon",
+      label: (
         <>
-          オンにすると、X投稿ボタンを表示します。自動ポップアップはOFFになります。他SNSのクロスポストオプションを設定している場合、両方のボタンを表示します。
+          <InlineIcon name="mastodon" />
+          にクロスポスト
         </>
       ),
-      checked: shareToggles.showXWhenCrosspost,
-      onCheckedChange: shareToggles.onShowXWhenCrosspostChange,
-    },
-    {
-      key: "noAutoPopupAfterPost",
-      label: "自動ポップアップをOFFにする",
-      description:
-        "オンにすると、投稿完了時に共有ポップアップを自動的に開きません。X投稿ボタンを表示がOFFの場合はONになります。自動ポップアップを開くことができない場合は、このオプションがONになります。",
-      checked: shareToggles.noAutoPopupAfterPost,
-      onCheckedChange: shareToggles.onNoAutoPopupAfterPostChange,
+      description: (
+        <>
+          オンにすると、クロスポスト先にMastodon
+          <InlineIcon name="mastodon" />
+          を追加します。ドメイン未設定の場合は mastodon.social
+          が既定値として設定されます。
+        </>
+      ),
+      checked: shareToggles.crosspostToMastodon,
+      onCheckedChange: shareToggles.onCrosspostToMastodonChange,
+      textInput: true,
+      textInputValue: shareToggles.mastodonInstanceDomain,
+      onTextInputChange: shareToggles.onMastodonInstanceDomainChange,
+      textInputPlaceholder: "mastodon.social",
+      textInputValidate: isValidMastodonInstanceDomain,
+      textInputErrorMessage:
+        "ドメインの形式が正しくありません。スキーム（https://等）やパス（/以降）を含めず、ドメイン名のみを入力してください。",
     },
   ]
 

@@ -9,6 +9,7 @@
  */
 import type React from "react"
 import ComponentList from "@/components/common/ComponentList"
+import CountedTextInput from "@/components/common/CountedTextInput"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
 import styles from "./index.module.css"
 
@@ -27,6 +28,36 @@ export type SettingListItem = {
   disabled?: boolean
   /** label が文字列でない場合のアクセシビリティ用ラベル（省略時はlabelが文字列の場合のみそれを使用） */
   ariaLabel?: string
+  /**
+   * true の場合、トグル行の下にテキスト入力欄を追加表示する
+   * （例: 「連携を有効にする」トグル + インスタンスドメイン入力欄）。
+   * true の場合は `textInputValue` / `onTextInputChange` も指定する。
+   */
+  textInput?: boolean
+  /** textInput が true の場合のテキスト入力欄の値 */
+  textInputValue?: string
+  /** textInput が true の場合のテキスト入力欄の変更コールバック */
+  onTextInputChange?: (next: string) => void
+  /** textInput が true の場合のプレースホルダ */
+  textInputPlaceholder?: string
+  /**
+   * textInput が true の場合の入力値バリデーション。
+   * 値が空でなく、この関数が true を返す場合のみ入力欄右端にチェックマークを表示する。
+   * 省略時は値が空でない限り常に妥当とみなす。
+   */
+  textInputValidate?: (value: string) => boolean
+  /**
+   * textInputValidate が false を返した場合（値が空でない場合のみ）に表示するエラー文言。
+   * 省略時はエラー文言を表示しない（チェックマークが出ないだけになる）。
+   */
+  textInputErrorMessage?: string
+  /**
+   * true の場合、テキスト入力欄自体を操作不能にする。
+   * 行自体の `disabled`（トグルの操作可否）とは独立させる
+   * （例: トグルがドメイン未入力等の理由でdisabledでも、ドメインを
+   * 入力できるようテキスト入力欄はこの値でのみ制御する。省略時は常に有効）。
+   */
+  textInputDisabled?: boolean
 }
 
 type SettingListRowProps = {
@@ -51,20 +82,53 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
   const ariaLabel =
     item.ariaLabel ?? (typeof item.label === "string" ? item.label : undefined)
 
+  const textInputValue = item.textInputValue ?? ""
+  const hasTextInputValue = textInputValue.trim() !== ""
+  const isTextInputValid = item.textInputValidate
+    ? item.textInputValidate(textInputValue)
+    : true
+
   return (
     <div className={styles.row}>
-      <label className={styles.text} htmlFor={inputId}>
-        <span className={styles.label}>{item.label}</span>
-        <span className={styles.description}>{item.description}</span>
-      </label>
-      <ToggleSwitch
-        id={inputId}
-        checked={item.checked}
-        disabled={item.disabled}
-        label=""
-        aria-label={ariaLabel}
-        onCheckedChange={item.onCheckedChange}
-      />
+      <div className={styles["toggle-row"]}>
+        <label className={styles.text} htmlFor={inputId}>
+          <span className={styles.label}>{item.label}</span>
+          <span className={styles.description}>{item.description}</span>
+        </label>
+        <ToggleSwitch
+          id={inputId}
+          checked={item.checked}
+          disabled={item.disabled}
+          label=""
+          aria-label={ariaLabel}
+          onCheckedChange={item.onCheckedChange}
+        />
+      </div>
+      {item.textInput && (
+        <div className={styles["text-input-row"]}>
+          <div className={styles["text-input-wrapper"]}>
+            <CountedTextInput
+              id={`${inputId}-text`}
+              value={textInputValue}
+              onChange={next => item.onTextInputChange?.(next)}
+              placeholder={item.textInputPlaceholder}
+              disabled={item.textInputDisabled ?? false}
+            />
+            {hasTextInputValue && isTextInputValid && (
+              <span className={styles["text-input-check"]} aria-hidden>
+                ✓
+              </span>
+            )}
+          </div>
+          {hasTextInputValue &&
+            !isTextInputValid &&
+            item.textInputErrorMessage && (
+              <span className={styles["text-input-error"]}>
+                {item.textInputErrorMessage}
+              </span>
+            )}
+        </div>
+      )}
     </div>
   )
 }

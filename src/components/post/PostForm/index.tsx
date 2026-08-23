@@ -49,6 +49,7 @@ import {
   readPinnedFormDisabledSetting,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
+import { openMastodonIntentPopup } from "@/util/share/mastodonIntent"
 import { openTaittsuuIntentPopup } from "@/util/share/taittsuuIntent"
 import { openXIntentPopup } from "@/util/share/xIntent"
 import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
@@ -169,6 +170,17 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
   const shareToggles = useShareToggles()
+  // useShareToggles はハイドレーション不一致を避けるため、マウント直後は
+  // 共有系トグルを全てfalse固定で返し、実際の値はマウント後のuseEffectで非同期に
+  // 反映する。Collapsible の defaultOpen は初回マウント時のみ評価される
+  // （内部 state の初期化関数のため）ので、そのままでは常にfalseの仮値を見て
+  // 折りたたんだ状態になってしまう。トグルの読み込み完了を検知して
+  // Collapsible の key を変えることで、正しい値が揃った時点で再マウント
+  // させ、defaultOpen を正しく再評価させる。
+  const [shareTogglesReady, setShareTogglesReady] = useState(false)
+  useEffect(() => {
+    setShareTogglesReady(true)
+  }, [])
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
     readPinnedFormDisabledSetting(false),
   )
@@ -222,12 +234,14 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
 
   // ボタンは自動ポップアップの代わりに手動で投稿する手段のため、
   // NoAutoPopupAfterPost が ON（自動ポップアップ抑制中）の場合のみ表示する。
-  // 特にタイッツー側は、CrosspostToTaittsuu ON かつ NoAutoPopupAfterPost OFF
-  // （＝Taittsuへ自動ポップアップ中）ではボタン表示は不要な点に注意。
+  // クロスポスト先のトグル（taittsuu/mastodon）がONでもNoAutoPopupAfterPost OFF
+  // （＝当該SNSへ自動ポップアップ中）の間はボタン表示は不要な点に注意。
   const showXIntentButton =
     shareToggles.showXWhenCrosspost && shareToggles.noAutoPopupAfterPost
   const showTaittsuuIntentButton =
     shareToggles.crosspostToTaittsuu && shareToggles.noAutoPopupAfterPost
+  const showMastodonIntentButton =
+    shareToggles.crosspostToMastodon && shareToggles.noAutoPopupAfterPost
   const hasTextInput = text.trim().length > 0
   // page表示でのautoGrow上限行数。ソフトウェアキーボードが表示されないプラットフォーム
   // (PC等)では、page表示のフォーカス時rows・dialog表示の固定rowsとしても使う。
@@ -269,6 +283,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       shareToggles.popupIntentInsteadOfWebshare,
       shareToggles.crosspostToTaittsuu,
       shareToggles.showXWhenCrosspost,
+      shareToggles.crosspostToMastodon,
     ],
   })
 
@@ -629,6 +644,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         imageEntry,
         manualImageAttach: shareToggles.manualImageAttach,
         crosspostToTaittsuu: shareToggles.crosspostToTaittsuu,
+        crosspostToMastodon: shareToggles.crosspostToMastodon,
+        mastodonInstanceDomain: shareToggles.mastodonInstanceDomain,
         popupIntentInsteadOfWebshare: shareToggles.popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
       })
@@ -814,6 +831,35 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 投稿
               </button>
             )}
+            {showMastodonIntentButton && (
+              <button
+                type="button"
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+                disabled={isSubmitting}
+                onClick={() => {
+                  const intentText = text.trim()
+                  if (!intentText) {
+                    setStatus("共有する投稿本文を入力してください。")
+                    setStatusColor("#b00")
+                    return
+                  }
+
+                  const popupOpened = openMastodonIntentPopup(
+                    shareToggles.mastodonInstanceDomain,
+                    intentText,
+                  )
+                  setStatus(
+                    popupOpened
+                      ? "Mastodon投稿画面を開きました。"
+                      : "Mastodon投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                  )
+                  setStatusColor(popupOpened ? "green" : "#b00")
+                }}
+              >
+                <InlineIcon name="mastodon" />
+                投稿
+              </button>
+            )}
           </div>
         </div>
 
@@ -949,10 +995,23 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
 
           <div className={ui["base-component"]}>
             <Collapsible
+              key={shareTogglesReady ? "loaded" : "loading"}
               label="詳細オプション"
               defaultOpen={defaultOpenShareOptions}
             >
               <div className={ui["toggle-box"]}>
+                <ToggleSwitch
+                  checked={shareToggles.showXWhenCrosspost}
+                  disabled={isSubmitting}
+                  label="X投稿ボタンを表示"
+                  onCheckedChange={shareToggles.onShowXWhenCrosspostChange}
+                />
+                <ToggleSwitch
+                  checked={shareToggles.noAutoPopupAfterPost}
+                  disabled={isSubmitting}
+                  label="自動ポップアップをOFFにする"
+                  onCheckedChange={shareToggles.onNoAutoPopupAfterPostChange}
+                />
                 <ToggleSwitch
                   checked={shareToggles.crosspostToTaittsuu}
                   disabled={isSubmitting}
@@ -965,16 +1024,15 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                   onCheckedChange={shareToggles.onCrosspostToTaittsuuChange}
                 />
                 <ToggleSwitch
-                  checked={shareToggles.showXWhenCrosspost}
+                  checked={shareToggles.crosspostToMastodon}
                   disabled={isSubmitting}
-                  label="X投稿ボタンを表示"
-                  onCheckedChange={shareToggles.onShowXWhenCrosspostChange}
-                />
-                <ToggleSwitch
-                  checked={shareToggles.noAutoPopupAfterPost}
-                  disabled={isSubmitting}
-                  label="自動ポップアップをOFFにする"
-                  onCheckedChange={shareToggles.onNoAutoPopupAfterPostChange}
+                  label={
+                    <>
+                      <InlineIcon name="mastodon" />
+                      にクロスポスト
+                    </>
+                  }
+                  onCheckedChange={shareToggles.onCrosspostToMastodonChange}
                 />
               </div>
             </Collapsible>

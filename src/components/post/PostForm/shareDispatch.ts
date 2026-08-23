@@ -10,6 +10,10 @@
  */
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import {
+    buildMastodonIntentText,
+    openMastodonIntentPopup,
+} from "@/util/share/mastodonIntent"
+import {
     buildTaittsuuIntentText,
     openTaittsuuIntentPopup,
 } from "@/util/share/taittsuuIntent"
@@ -26,6 +30,8 @@ export type ShareDispatchParams = {
     imageEntry: ImageEntry | null
     manualImageAttach: boolean
     crosspostToTaittsuu: boolean
+    crosspostToMastodon: boolean
+    mastodonInstanceDomain: string
     popupIntentInsteadOfWebshare: boolean
     noAutoPopupAfterPost: boolean
 }
@@ -102,8 +108,9 @@ const buildWebShareData = ({
  * 処理の趣旨（spec.submitButton.md準拠）:
  * - NoAutoPopupAfterPost がONの場合、自動ポップアップ・WebShareAPIともに行わず、
  *   共有用テキスト（skyshare entry作成時はURL付き）をtextboxに保持する。
- * - OFFの場合、CrosspostToTaittsuu ON なら Taittsu、そうでなくPopupIntentInsteadOfWebshare ON
- *   なら X をターゲットに自動ポップアップする。失敗時はその旨を伝えたうえで
+ * - OFFの場合、CrosspostToTaittsuu ON なら Taittsu、そうでなくCrosspostToMastodon ON なら
+ *   Mastodon、そうでなくPopupIntentInsteadOfWebshare ON なら X をターゲットに自動ポップアップ
+ *   する（優先順位: タイッツー > Mastodon > X）。失敗時はその旨を伝えたうえで
  *   NoAutoPopupAfterPost をONへフォールバックし、テキストも保持する。
  * - どちらのポップアップ系トグルもOFFならWebShareAPIを試行する。非対応環境、または
  *   対応環境で実際に試行したが失敗した場合（ユーザーによる共有シートのキャンセルを
@@ -113,7 +120,8 @@ const buildWebShareData = ({
  *   をONへフォールバックする。
  * - ボタン表示はNoAutoPopupAfterPostに連動するため、Xターゲットの自動ポップアップが
  *   失敗した場合はShowXIntentButtonも強制ONにし、再試行用ボタンを必ず提示する
- *   （Taittsuターゲットの場合はCrosspostToTaittsuuが既にONのため不要）。
+ *   （Taittsu/Mastodonターゲットの場合はCrosspostToTaittsuu/CrosspostToMastodonが
+ *   既にONのため不要）。
  *
  * Input:
  * - `params`: 投稿本文・skyshare URI・共有系トグルの現在値
@@ -134,6 +142,8 @@ export const runShareDispatch = async (
         imageEntry,
         manualImageAttach,
         crosspostToTaittsuu,
+        crosspostToMastodon,
+        mastodonInstanceDomain,
         popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost,
     } = params
@@ -143,6 +153,10 @@ export const runShareDispatch = async (
     const effectiveSkyshareUri = manualImageAttach ? "" : skyshareUri
     const shareText = buildXIntentText(text, effectiveSkyshareUri)
     const taittsuuIntentText = buildTaittsuuIntentText(
+        text,
+        effectiveSkyshareUri,
+    )
+    const mastodonIntentText = buildMastodonIntentText(
         text,
         effectiveSkyshareUri,
     )
@@ -157,14 +171,36 @@ export const runShareDispatch = async (
             forcedPopupIntentInsteadOfWebshareOn: false,
         }
     }
-    const target = crosspostToTaittsuu ? "taittsuu" : "x"
-    const serviceLabel = target === "taittsuu" ? "タイッツー" : "x.com"
+    // 不変条件: NoAutoPopupAfterPostがOFFの間、crosspostToTaittsuu/crosspostToMastodonが
+    // 同時にONになることはない（reconcileShareTogglesが両方ONにする際に必ず
+    // noAutoPopupAfterPostも強制ONにするため）。ただし将来の変更で不変条件が崩れた場合に
+    // 備え、優先順位を明示的に定義しておく: タイッツー > Mastodon > X。
+    const target: "taittsuu" | "mastodon" | "x" = crosspostToTaittsuu
+        ? "taittsuu"
+        : crosspostToMastodon
+          ? "mastodon"
+          : "x"
+    const serviceLabel =
+        target === "taittsuu"
+            ? "タイッツー"
+            : target === "mastodon"
+              ? "Mastodon"
+              : "x.com"
 
-    if (crosspostToTaittsuu || popupIntentInsteadOfWebshare) {
+    if (
+        crosspostToTaittsuu ||
+        crosspostToMastodon ||
+        popupIntentInsteadOfWebshare
+    ) {
         const opened =
             target === "taittsuu"
                 ? openTaittsuuIntentPopup(taittsuuIntentText)
-                : openXIntentPopup(shareText)
+                : target === "mastodon"
+                  ? openMastodonIntentPopup(
+                        mastodonInstanceDomain,
+                        mastodonIntentText,
+                    )
+                  : openXIntentPopup(shareText)
 
         if (opened) {
             return {
@@ -182,8 +218,8 @@ export const runShareDispatch = async (
             statusColor: "green",
             textToKeep: shareText,
             forcedNoAutoPopupOn: true,
-            // Taittsuターゲットの場合は CrosspostToTaittsuu が既にONのため、
-            // NoAutoPopupAfterPost連動ルールでタイッツーボタンが自動的に表示される。
+            // Taittsu/Mastodonターゲットの場合は CrosspostToTaittsuu/CrosspostToMastodon が
+            // 既にONのため、NoAutoPopupAfterPost連動ルールで対応するボタンが自動的に表示される。
             // Xターゲットの場合のみ、再試行用のボタンを出すために明示的な強制が必要。
             forcedShowXIntentButtonOn: target === "x",
             forcedPopupIntentInsteadOfWebshareOn: false,

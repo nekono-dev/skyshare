@@ -13,6 +13,8 @@ const PINNED_FORM_DISABLED_KEY = "pinnedFormDisabled"
 const NO_AUTO_POPUP_AFTER_POST_KEY = "noAutoPopupAfterPost"
 const MANUAL_IMAGE_ATTACH_KEY = "manualImageAttach"
 const TEXTAREA_ROWS_KEY = "textareaRows"
+const MASTODON_INSTANCE_DOMAIN_KEY = "mastodonInstanceDomain"
+const CROSSPOST_TO_MASTODON_KEY = "crosspostToMastodon"
 /**
  * 「WebShareAPIの代わりにインテントポップアップを開く」設定を localStorage から読み取る。
  *
@@ -400,6 +402,141 @@ export const writeTextareaRowsSetting = (value: number) => {
 
     try {
         window.localStorage.setItem(TEXTAREA_ROWS_KEY, String(value))
+    } catch (error) {
+        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
+    }
+}
+
+/**
+ * Mastodonインスタンスのドメインを localStorage から読み取る。
+ *
+ * Input:
+ * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
+ *
+ * Output:
+ * - 保存済みドメイン文字列。未設定/失敗時は `defaultValue`
+ *
+ * 例:
+ * - 入力: `""`
+ * - 出力: `"mastodon.social"`（保存済み値がある場合）
+ */
+export const readMastodonInstanceDomainSetting = (defaultValue: string) => {
+    if (typeof window === "undefined") {
+        return defaultValue
+    }
+
+    try {
+        const rawValue = window.localStorage.getItem(
+            MASTODON_INSTANCE_DOMAIN_KEY,
+        )
+        if (rawValue === null) {
+            return defaultValue
+        }
+        return rawValue
+    } catch (error) {
+        return defaultValue
+    }
+}
+
+/**
+ * Mastodonインスタンスのドメインを localStorage に保存する。
+ *
+ * Input:
+ * - `value`: 保存したいドメイン文字列
+ *
+ * Output:
+ * - なし
+ *
+ * 例:
+ * - 入力: `"mastodon.social"`
+ * - 出力: localStorage に `mastodonInstanceDomain=mastodon.social` を保存
+ */
+export const writeMastodonInstanceDomainSetting = (value: string) => {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    try {
+        window.localStorage.setItem(MASTODON_INSTANCE_DOMAIN_KEY, value)
+    } catch (error) {
+        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
+    }
+}
+
+/**
+ * Mastodonインスタンスのドメイン設定を localStorage から削除する。
+ *
+ * 処理の趣旨:
+ * - 「Mastodon連携を有効にする」トグルをOFFにしたとき、設定値そのものを
+ *   削除するために使う（空文字での上書きではなく明示的な削除）。
+ *
+ * Input:
+ * - なし
+ *
+ * Output:
+ * - なし
+ */
+export const removeMastodonInstanceDomainSetting = () => {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    try {
+        window.localStorage.removeItem(MASTODON_INSTANCE_DOMAIN_KEY)
+    } catch (error) {
+        // 削除失敗時は UI 動作を優先し、例外を握りつぶす。
+    }
+}
+
+/**
+ * 「Mastodonにクロスポスト」設定を localStorage から読み取る。
+ *
+ * Input:
+ * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
+ *
+ * Output:
+ * - 保存済み設定値。未設定/失敗時は `defaultValue`
+ *
+ * 例:
+ * - 入力: `false`
+ * - 出力: `true`（保存済み値が true の場合）
+ */
+export const readCrosspostToMastodonSetting = (defaultValue: boolean) => {
+    if (typeof window === "undefined") {
+        return defaultValue
+    }
+
+    try {
+        const rawValue = window.localStorage.getItem(CROSSPOST_TO_MASTODON_KEY)
+        if (rawValue === null) {
+            return defaultValue
+        }
+        return rawValue === "true"
+    } catch (error) {
+        return defaultValue
+    }
+}
+
+/**
+ * 「Mastodonにクロスポスト」設定を localStorage に保存する。
+ *
+ * Input:
+ * - `value`: 保存したい設定値
+ *
+ * Output:
+ * - なし
+ *
+ * 例:
+ * - 入力: `true`
+ * - 出力: localStorage に `crosspostToMastodon=true` を保存
+ */
+export const writeCrosspostToMastodonSetting = (value: boolean) => {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    try {
+        window.localStorage.setItem(CROSSPOST_TO_MASTODON_KEY, String(value))
     } catch (error) {
         // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
     }

@@ -31,12 +31,24 @@ PostFormから実行される「投稿」ボタンの挙動を以下に示す
 ## CrosspostToTaittsuu
 
 - 概要
-  - クロスポスト先をTaittsuに変更する
+  - クロスポスト先にTaittsuuを追加する
 - 想定する挙動
-  - ONの場合、インテントの自動ポップアップ対象をTaittsuに変更する。
-  - タイッツー投稿ボタンの表示は NoAutoPopupAfterPost が ON の場合に限る。OFFの場合は自動ポップアップがTaittsuへの投稿を処理するため、ボタンは表示しない。
+  - ONの場合、インテントの自動ポップアップ対象をTaittsuuに変更する（他の連携先SNSトグルとの複合時の挙動は「複合した際の挙動」セクション参照）。
+  - タイッツー投稿ボタンの表示は NoAutoPopupAfterPost が ON の場合に限る。OFFの場合は自動ポップアップがTaittsuuへの投稿を処理するため、ボタンは表示しない。
 - 注意
-  - WebShareAPIはTaittsuで使用できないため、PopupIntentInsteadOfWebshareは自動的にONにする
+  - WebShareAPIはTaittsuuで使用できないため、PopupIntentInsteadOfWebshareは自動的にONにする
+
+## CrosspostToMastodon
+
+- 概要
+  - クロスポスト先にMastodonを追加する
+- 想定する挙動
+  - ONの場合、インテントの自動ポップアップ対象をMastodonに変更する（他の連携先SNSトグルとの複合時の挙動は「複合した際の挙動」セクション参照）。
+  - Mastodon投稿ボタンの表示は NoAutoPopupAfterPost が ON の場合に限る。OFFの場合は自動ポップアップがMastodonへの投稿を処理するため、ボタンは表示しない（CrosspostToTaittsuuと同じ扱い）。
+  - ドメインの妥当性に関わらず、いつでもONにできる（トグル自体はドメイン未設定・不正な形式でも操作可能）。ONにする時点でMastodonインスタンスのドメインが未設定（空文字）の場合、既定値 `mastodon.social` を補って保存する。ドメインが既に設定されている場合は、トグルのON/OFFに関わらず値を変更しない（ユーザの設定を尊重する）。
+  - ドメイン名の設定はSettingsページでのみ行い、CrosspostToMastodonのON/OFF状態に関わらず常に編集できる。ドメインが無効な形式になった場合、CrosspostToMastodonは強制的にOFFになる。
+- 注意
+  - WebShareAPIはMastodonで使用できないため、PopupIntentInsteadOfWebshareは自動的にONにする
 
 ## ShowXIntentButton
 
@@ -54,39 +66,52 @@ _submitButtonの挙動に影響しないため省略_
 
 各トグルの複合条件に応じた挙動について、誤解が発生しそうな内容について定義する。
 
+CrosspostToTaittsuu / CrosspostToMastodon は「X.com以外の連携先SNSグループ」を構成する（今後連携先が増えた場合はこのグループに加える）。ShowXIntentButtonはこのグループに含まれない（X.comはデフォルトの投稿先であり、連携先SNSではないため）。
+
 ## 挙動における注意点
 
-- CrosspostToTaittsuu がON かつ ShowXIntentButton がONの場合
-  - ユーザは両方のサービスのインテントポップアップを実行したい意図であると解釈し、自動ポップアップは無効化される（ NoAutoPopupAfterPost を強制的にONに変更する）
+- 連携先SNSグループ（CrosspostToTaittsuu / CrosspostToMastodon）のうち2つ以上が同時にONの場合
+  - 自動ポップアップは単一の宛先しか選べず矛盾するため、自動ポップアップは無効化される（ NoAutoPopupAfterPost を強制的にONに変更する）
+- ShowXIntentButton がONの場合
+  - 連携先SNSグループの状態に関わらず、単独で自動ポップアップは無効化される（ NoAutoPopupAfterPost を強制的にONに変更する）。X.comはデフォルトの投稿先であり、その手動投稿ボタンを表示する時点で自動ポップアップは不要と判断するため。
 - ManualImageAttach がON かつ PopupIntentInsteadOfWebshare がOFFの場合
   - WebShareAPIでは画像データを直接添付できることから、ユーザのオプション設定目的を果たすため、WebShareAPIで送信するデータは画像データを添付する。
-- NoAutoPopupAfterPost がOFF かつ CrosspostToTaittsuu がOFFの場合
+- NoAutoPopupAfterPost がOFF かつ 連携先SNSグループがいずれもOFFの場合
   - デフォルトのインテント実行先であるXIntentをターゲットにして自動ポップアップする
 - NoAutoPopupAfterPost がOFF かつ CrosspostToTaittsuu がONの場合
-  - Taittsuのインテントを自動ポップアップする
+  - Taittsuuのインテントを自動ポップアップする
+- NoAutoPopupAfterPost がOFF かつ CrosspostToMastodon がONの場合
+  - Mastodonのインテントを自動ポップアップする
 
 ## トグル間の設定可能値
 
-- NoAutoPopupAfterPost は CrosspostToTaittsuu / ShowXIntentButton の状態に関わらず、常にユーザが直接ON/OFFを切り替えられる
-  - 他の2トグルがOFFであることを理由に操作不能にはしない
-- NoAutoPopupAfterPost がONになった場合に、CrosspostToTaittsuu / ShowXIntentButton がいずれもOFFである場合
+- NoAutoPopupAfterPost は CrosspostToTaittsuu / CrosspostToMastodon / ShowXIntentButton の状態に関わらず、常にユーザが直接ON/OFFを切り替えられる
+  - 他のトグルがOFFであることを理由に操作不能にはしない
+- NoAutoPopupAfterPost がONになった場合に、CrosspostToTaittsuu / CrosspostToMastodon / ShowXIntentButton がいずれもOFFである場合
   - 手動投稿ボタンが一つも表示されず操作不能になることを避けるため、デフォルトのインテントである ShowXIntentButton を強制的にONにする。
 - ShowXIntentButton がONになった場合
-  - CrosspostToTaittsuuの状態によらず NoAutoPopupAfterPost は強制的にONになる
+  - 連携先SNSグループの状態によらず NoAutoPopupAfterPost は強制的にONになる
   - Xの手動投稿ボタンを表示する時点で、自動ポップアップは不要と判断する
+- CrosspostToTaittsuu / CrosspostToMastodon の一方がONになった場合、もう一方が既にONであれば
+  - 連携先SNSグループのON数が2以上になるため NoAutoPopupAfterPost は強制的にONになる
+  - もう一方がOFFであれば（グループ内でONなのは1つだけであれば）NoAutoPopupAfterPostは変更しない。そのトグルが唯一の自動ポップアップ対象として機能する。
 - NoAutoPopupAfterPost がOFFになった場合に、ShowXIntentButton がONである場合
   - 自動ポップアップを実行するにも関わらず、Xインテントの実行ボタンが表示されてしまうことになるため、 ShowXIntentButton を強制的にOFFにする。
-- NoAutoPopupAfterPost がON かつ CrosspostToTaittsuu / ShowXIntentButton いずれかがOFFで、どちらかのトグルの操作により CrosspostToTaittsuu / ShowXIntentButton がともにOFFになった場合
+- NoAutoPopupAfterPost がON かつ 連携先SNSグループ/ShowXIntentButton のいずれかがOFFで、どちらかのトグルの操作により連携先SNSグループとShowXIntentButtonがすべてOFFになった場合
   - NoAutoPopupAfterPost は強制的にOFFにする。
   - これは、各インテントのボタン表示がなくなったことにより、自動ポップアップをする挙動に戻さなければ、ユーザがインテントを実行する手段がなくなるためである。
-  - PopupIntentInsteadOfWebshare をOFFにした場合も、連動して CrosspostToTaittsuu / ShowXIntentButton がともにOFFになるため、同じ理由で NoAutoPopupAfterPost を強制的にOFFにする。
+  - PopupIntentInsteadOfWebshare をOFFにした場合も、連動して CrosspostToTaittsuu / CrosspostToMastodon / ShowXIntentButton がすべてOFFになるため、同じ理由で NoAutoPopupAfterPost を強制的にOFFにする。
+- NoAutoPopupAfterPost をユーザが直接OFFにする場合、X.comが最も優先されるべきクロスポスト先である
+  - 連携先SNSグループ（CrosspostToTaittsuu / CrosspostToMastodon）のうち2つ以上が同時にONの状態でNoAutoPopupAfterPostを直接OFFにすると、自動ポップアップ先を一意に定めるためX.comへ一本化し、連携先SNSグループのトグルは両方ともOFFにする。
+  - 連携先SNSグループのON数が1以下の場合は、ユーザがX.comより優先したい投稿先を選んでいると解釈し、そのトグルには一切手を触れず NoAutoPopupAfterPost のみをOFFにする。
 
 ## フォールバックのルール
 
 - 自動ポップアップの起動に失敗した場合（ポップアップブロック等）、その旨をユーザに伝えたうえで NoAutoPopupAfterPost を自動的にONへフォールバックする（以降は手動での共有操作に切り替わる）
+- 自動ポップアップのターゲット選択の優先順位は タイッツー > Mastodon > X とする（連携先SNSグループが同時に2つ以上ONの間はNoAutoPopupAfterPostが強制ONになるため、原則としてこの優先順位が実際に問われることはないが、防御的に優先順位を明示する）
 - Xをターゲットとした自動ポップアップが失敗した場合、上記フォールバックに加えて ShowXIntentButton も強制的にONにする
   - ボタン表示がNoAutoPopupAfterPostに連動するため、これをしないと再試行手段がユーザに提供されない。
-  - Taittsuをターゲットとした場合は CrosspostToTaittsuu が既にONであり、上記ルールにより自動的にタイッツーボタンが表示されるため、追加の強制は不要。
+  - Taittsuu/Mastodonをターゲットとした場合は CrosspostToTaittsuu/CrosspostToMastodon が既にONであり、上記ルールにより自動的に対応するボタンが表示されるため、追加の強制は不要。
 
 # テストの実装
 

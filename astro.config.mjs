@@ -5,6 +5,16 @@ import basicSsl from "@vitejs/plugin-basic-ssl"
 
 import react from "@astrojs/react"
 
+// astro dev サーバーは HTTPS 化のため vite-plugin-basic-ssl 経由で
+// Node の http2 secure server を使う（Vite が https 設定時に自動選択するため）。
+// このとき Astro の CSRF 対策ミドルウェア（security.checkOrigin）が
+// リクエストURLのポート番号を http2 の :authority から正しく復元できず、
+// 同一オリジンからの multipart/form-data POST まで
+// 「Cross-site POST form submissions are forbidden」として弾いてしまう
+// （Astro/Vite 側の http2 対応の不具合）。本番ビルドは Cloudflare Workers
+// ランタイム上で動作しこの問題の対象外のため、dev サーバーのみ無効化する。
+const isDevServer = process.argv.includes("dev")
+
 export default defineConfig({
   output: "server",
   adapter: cloudflare({ imageService: "compile" }),
@@ -12,6 +22,9 @@ export default defineConfig({
   server: {
     port: 4321,
     host: true,
+  },
+  security: {
+    checkOrigin: !isDevServer,
   },
   trailingSlash: "always",
   session: {

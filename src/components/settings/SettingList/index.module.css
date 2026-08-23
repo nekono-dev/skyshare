@@ -10,10 +10,16 @@
 
 .row {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-0);
+}
+
+.toggle-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-0);
 }
 
 .text {
@@ -30,4 +36,30 @@
 .description {
   font-size: var(--font-size-sm);
   color: var(--color-muted);
+}
+
+.text-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.text-input-wrapper {
+  position: relative;
+}
+
+/* 入力欄右端のチェックマーク。テキスト入力欄自体は変更しないため、外側から重ねて配置する */
+.text-input-check {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  color: #16a34a;
+  font-size: var(--font-size-md);
+  pointer-events: none;
+}
+
+.text-input-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-red-text);
 }
