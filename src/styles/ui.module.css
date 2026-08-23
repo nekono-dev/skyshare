@@ -53,6 +53,21 @@
   text-decoration: underline;
 }
 
+/* ページ遷移のView Transitionsアニメーション(各pages/*.astroのtransition:animate={slide()}である
+   "page-slide"、および名前を持たない要素がまとめて属する既定の"root")は、FooterNav(画面下タブ)を
+   左右にスワイプする体験を再現するためのもの。640px以上はSidebarに切り替わり水平タブという見た目が
+   なくなるため、アニメーションさせず即座に切り替える。"page-slide"のみを対象にすると、名前を持たない
+   要素群("root")の既定フェードだけが引き続き再生され、切り替わった新しいDOMの上に旧画面のフェード
+   アウトが重なって見えてしまう(前の画面が残っているように見える不具合の原因)ため、`*`で全グループを
+   対象にする。境界値はFooterNav/Sidebarの表示切替と同じ640px(tokens.css参照)。 */
+@media (min-width: 640px) {
+  :global(::view-transition-group(*)),
+  :global(::view-transition-old(*)),
+  :global(::view-transition-new(*)) {
+    animation: none !important;
+  }
+}
+
 :local(.root) {
   padding: var(--space-1);
   max-height: 100dvh;
