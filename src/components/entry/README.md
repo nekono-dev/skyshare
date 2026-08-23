@@ -25,6 +25,7 @@ graph TD
 ```
 
 外部カテゴリへの依存の内訳:
+
 - `common`: EntryList(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、EntryCard(ChoiceDialog・Loading)、EntryEditForm(Overlay・Loading・CountedTextInput)、EntryDeleteConfirmDialog(ChoiceDialog)、DraftListPanel(ComponentList・NavigationBar)、DraftSaveConfirmDialog(ChoiceDialog)、LegacyPageDeleteButton(Loading)
 - `post`: DraftListPanel(SelfLabelsSelect のラベル表示用定数のみ)
 

@@ -31,6 +31,7 @@ graph TD
 ```
 
 外部カテゴリへの依存の内訳:
+
 - `common`: Timeline(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、PostLauncher(Overlay)、PostCard(Loading)、PostForm(Collapsible・CountedTextInput・LanguageSelect・Loading・Overlay・ToggleSwitch)、SkyshareShareDialog(ChoiceDialog)
 - `image`: PostForm(ImagePicker・ImagePreview・OgpFetchButton・OgpPreview)
 - `entry`: PostCard(EntryDeleteConfirmDialog)
