@@ -39,6 +39,12 @@ export type ShareDispatchResult = {
      * 連動するため、これをしないと再試行手段が無くなる）。
      */
     forcedShowXIntentButtonOn: boolean
+    /**
+     * true なら呼び出し側で onPopupIntentInsteadOfWebshareChange(true) を呼ぶ必要がある
+     * （WebShareAPIが非対応、または実際に試行して失敗した場合。以後はWebShareAPIを
+     * 試さずポップアップ経由の共有に切り替えるフォールバック）。
+     */
+    forcedPopupIntentInsteadOfWebshareOn: boolean
 }
 
 /**
@@ -116,9 +122,12 @@ const buildWebShareData = ({
  * - OFFの場合、CrosspostToTaittsuu ON なら Taittsu、そうでなくPopupIntentInsteadOfWebshare ON
  *   なら X をターゲットに自動ポップアップする。失敗時はその旨を伝えたうえで
  *   NoAutoPopupAfterPost をONへフォールバックし、テキストも保持する。
- * - どちらのポップアップ系トグルもOFFならWebShareAPIを試行し、非対応環境では
- *   Xポップアップにフォールバックする（このフォールバックの失敗時も同様に
- *   NoAutoPopupAfterPostをONへフォールバックする）。
+ * - どちらのポップアップ系トグルもOFFならWebShareAPIを試行する。非対応環境、または
+ *   対応環境で実際に試行したが失敗した場合（ユーザーによる共有シートのキャンセルを
+ *   除く）は、いずれもPopupIntentInsteadOfWebshareをONへフォールバックし、以後は
+ *   WebShareAPIを試さずポップアップ経由の共有に切り替える。非対応環境の場合は
+ *   その場でXポップアップも試行し、それも失敗した場合は同様にNoAutoPopupAfterPost
+ *   をONへフォールバックする。
  * - ボタン表示はNoAutoPopupAfterPostに連動するため、Xターゲットの自動ポップアップが
  *   失敗した場合はShowXIntentButtonも強制ONにし、再試行用ボタンを必ず提示する
  *   （Taittsuターゲットの場合はCrosspostToTaittsuuが既にONのため不要）。
@@ -157,16 +166,18 @@ export const runShareDispatch = async (
 
     if (noAutoPopupAfterPost) {
         return {
-            status: "投稿に成功しました。共有用のテキストを入力欄に保持しました。",
+            status: "Blueskyへの投稿に成功しました。クロスポストを行うには他SNS向け投稿ボタンを押してください。",
             statusColor: "green",
             textToKeep: shareText,
             forcedNoAutoPopupOn: false,
             forcedShowXIntentButtonOn: false,
+            forcedPopupIntentInsteadOfWebshareOn: false,
         }
     }
+    const target = crosspostToTaittsuu ? "taittsuu" : "x"
+    const serviceLabel = target === "taittsuu" ? "タイッツー" : "x.com"
 
     if (crosspostToTaittsuu || popupIntentInsteadOfWebshare) {
-        const target = crosspostToTaittsuu ? "taittsuu" : "x"
         const opened =
             target === "taittsuu"
                 ? openTaittsuuIntentPopup(taittsuuIntentText)
@@ -174,17 +185,17 @@ export const runShareDispatch = async (
 
         if (opened) {
             return {
-                status: "投稿に成功しました。",
+                status: `Blueskyへの投稿に成功しました。${serviceLabel} 投稿画面を開きました。`,
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
                 forcedShowXIntentButtonOn: false,
+                forcedPopupIntentInsteadOfWebshareOn: false,
             }
         }
 
-        const serviceLabel = target === "taittsuu" ? "タイッツー" : "x.com"
         return {
-            status: `投稿に成功しました。${serviceLabel} 投稿画面を開けませんでした。ポップアップブロックを確認してください。以後は自動ポップアップをOFFにしました。`,
+            status: `Blueskyへの投稿に成功しました。${serviceLabel} 投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
             statusColor: "green",
             textToKeep: shareText,
             forcedNoAutoPopupOn: true,
@@ -192,6 +203,7 @@ export const runShareDispatch = async (
             // NoAutoPopupAfterPost連動ルールでタイッツーボタンが自動的に表示される。
             // Xターゲットの場合のみ、再試行用のボタンを出すために明示的な強制が必要。
             forcedShowXIntentButtonOn: target === "x",
+            forcedPopupIntentInsteadOfWebshareOn: false,
         }
     }
 
@@ -205,49 +217,57 @@ export const runShareDispatch = async (
         const shareResult = await shareWithWebApi(webShareData)
         if (shareResult.ok) {
             return {
-                status: "投稿に成功しました。",
+                status: "Blueskyへの投稿に成功しました。WebShareAPIに投稿内容を転送しました。",
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
                 forcedShowXIntentButtonOn: false,
+                forcedPopupIntentInsteadOfWebshareOn: false,
             }
         }
         if (shareResult.reason === "aborted") {
             return {
-                status: "投稿に成功しました。共有はキャンセルされました。",
+                status: "Blueskyへの投稿に成功しました。WebShareAPIでの共有操作はキャンセルされました。",
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
                 forcedShowXIntentButtonOn: false,
+                forcedPopupIntentInsteadOfWebshareOn: false,
             }
         }
         return {
-            status: "投稿に成功しました。WebShareAPI での共有に失敗しました。",
+            status: "Blueskyへの投稿に成功しました。WebShareAPI での共有に失敗したため、ポップアップを開くオプションをONにしました。",
             statusColor: "green",
-            textToKeep: null,
+            textToKeep: shareText,
             forcedNoAutoPopupOn: false,
             forcedShowXIntentButtonOn: false,
+            forcedPopupIntentInsteadOfWebshareOn: true,
         }
     }
 
     // WebShareAPI非対応環境でのXポップアップフォールバック。ここもXターゲットの
     // 自動実行であるため、失敗時は上のX分岐と同様にShowXIntentButtonを強制ONにする。
+    // 非対応であること自体が「うまくいかなかった」ケースのため、開閉の成否に関わらず
+    // 以後はWebShareAPIを試さずポップアップ経由にするようPopupIntentInsteadOfWebshareを
+    // ONへフォールバックする。
     const opened = openXIntentPopup(shareText)
     if (opened) {
         return {
-            status: "投稿に成功しました。WebShareAPI 非対応のため x.com 投稿画面を開きました。",
+            status: "Blueskyへの投稿に成功し、投稿画面を開きました。ブラウザがWebShareAPI非対応のため、ポップアップを開くオプションをONにしました。",
             statusColor: "green",
             textToKeep: null,
             forcedNoAutoPopupOn: false,
             forcedShowXIntentButtonOn: false,
+            forcedPopupIntentInsteadOfWebshareOn: true,
         }
     }
 
     return {
-        status: "投稿に成功しました。x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。以後は自動ポップアップをOFFにしました。",
+        status: "Blueskyへの投稿に成功しましたが、投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。",
         statusColor: "green",
         textToKeep: shareText,
         forcedNoAutoPopupOn: true,
         forcedShowXIntentButtonOn: true,
+        forcedPopupIntentInsteadOfWebshareOn: true,
     }
 }

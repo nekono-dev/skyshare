@@ -616,6 +616,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         shareToggles.onShowXWhenCrosspostChange(true)
       } else if (dispatch.forcedNoAutoPopupOn) {
         shareToggles.onNoAutoPopupAfterPostChange(true)
+      } else if (dispatch.forcedPopupIntentInsteadOfWebshareOn) {
+        shareToggles.onPopupIntentInsteadOfWebshareChange(true)
       }
       if (dispatch.textToKeep !== null) {
         setText(dispatch.textToKeep)
