@@ -598,7 +598,6 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         void deleteDraftSilently(loadedDraft.id)
         setLoadedDraft(null)
       }
-      onPosted?.()
 
       const dispatch = await runShareDispatch({
         text,
@@ -609,6 +608,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         popupIntentInsteadOfWebshare: shareToggles.popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
       })
+
+      onPosted?.()
 
       if (dispatch.forcedShowXIntentButtonOn) {
         // onShowXWhenCrosspostChange は内部で popupIntentInsteadOfWebshare / noAutoPopupAfterPost の
