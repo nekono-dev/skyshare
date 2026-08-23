@@ -86,11 +86,11 @@
   font-family: var(--font-family-sans);
   font-size: var(--font-size-xl);
   line-height: var(--line-height-normal);
-  color: #111827;
+  color: var(--color-text);
 }
 
 :local(.base-input-field)::placeholder {
-  color: #9ca3af;
+  color: var(--color-muted);
   font-size: var(--font-size-xl);
 }
 

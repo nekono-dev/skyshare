@@ -32,8 +32,8 @@
 .avatar-placeholder {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--color-card-muted-bg);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   box-sizing: border-box;
 }

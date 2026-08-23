@@ -1,10 +1,10 @@
 .no-skyshare {
   margin: 0;
-  color: rgba(0, 0, 0, 0.62);
+  color: var(--color-text-muted);
 }
 
 .create-entry-error {
   margin: 0;
-  color: #b00;
+  color: var(--color-danger-text);
   font-size: 0.9rem;
 }

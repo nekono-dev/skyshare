@@ -16,8 +16,8 @@
   padding: 0;
   box-sizing: border-box;
 
-  color: #000;
-  background: transparent;
+  color: var(--color-text);
+  background: var(--color-bg);
 
   font-family: sans-serif;
   font-size: 16px;

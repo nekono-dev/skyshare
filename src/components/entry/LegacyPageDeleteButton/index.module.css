@@ -7,6 +7,6 @@
 
 .error {
   margin: 0;
-  color: #b00;
+  color: var(--color-danger-text);
   font-size: var(--font-size-sm);
 }

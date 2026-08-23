@@ -40,6 +40,17 @@
   --btn-padding-y: calc(var(--space-1));
 }
 
+/* グレーボタンの文字色はダークモードでは --color-black 固定だと背景（--color-gray）に
+   埋もれて読めなくなるため、テーマに追従する --color-text に差し替える */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-gray-button-color: var(--color-text);
+  }
+}
+:root[data-theme="dark"] {
+  --color-gray-button-color: var(--color-text);
+}
+
 /* 
   ボタン
   本アプリケーションで利用するすべてのボタンの基本スタイルを定義する。

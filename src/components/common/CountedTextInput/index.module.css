@@ -49,12 +49,12 @@
   font-variant-numeric: tabular-nums;
 }
 .counters-warn {
-  background: #fde68a;
-  color: #854d0e;
+  background: var(--color-warning-soft-bg);
+  color: var(--color-warning-soft-text);
 }
 .counters-error {
-  background: #fca5a5;
-  color: #7f1d1d;
+  background: var(--color-danger-soft-bg);
+  color: var(--color-danger-soft-text);
 }
 
 .counter-item {

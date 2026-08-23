@@ -24,7 +24,7 @@
 .created-at {
   margin: 0;
   font-size: 0.9rem;
-  color: rgba(0, 0, 0, 0.62);
+  color: var(--color-text-muted);
 }
 
 .entry-link {
@@ -53,13 +53,13 @@
 
 .empty-caption {
   margin: 0;
-  color: rgba(0, 0, 0, 0.62);
+  color: var(--color-text-muted);
 }
 
 .footer {
   flex-wrap: wrap;
   padding-top: var(--space-2);
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid var(--color-border);
 }
 
 .error-text {
@@ -78,7 +78,7 @@
   min-height: 96px;
   overflow: hidden;
   border-radius: 0.75rem;
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--color-card-muted-bg);
 }
 
 .thumbnail img {
@@ -89,5 +89,5 @@
 }
 
 .thumbnail-placeholder {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.02));
+  background: var(--color-card-muted-bg);
 }

@@ -70,11 +70,28 @@
   --border-color-muted: transparent;
 
   /* Semantic tokens */
+  --color-bg: #ffffff;
+  --color-text: #000000;
+  --color-text-muted: rgba(0, 0, 0, 0.62);
   --color-card-bg: #ffffff;
   --color-muted: #6b7280;
   --color-card-muted-bg: var(--color-gray);
   --color-border: rgba(0, 0, 0, 0.06);
   --surface-muted: rgb(204, 225, 255);
+
+  /* Status tokens */
+  --color-danger-text: rgb(160, 32, 32);
+  --color-danger-bg: rgba(160, 32, 32, 0.12);
+  --color-success-text: rgb(21, 128, 61);
+  --color-success-bg: rgba(22, 163, 74, 0.12);
+  --color-warning-text: rgb(146, 64, 14);
+  --color-warning-bg: rgba(217, 119, 6, 0.12);
+  --color-warning-soft-bg: #fde68a;
+  --color-warning-soft-text: #854d0e;
+  --color-danger-soft-bg: #fca5a5;
+  --color-danger-soft-text: #7f1d1d;
+
+  color-scheme: light;
 
   /* Font stack: Gothic / sans-serif bias, system fonts for macOS/Windows */
   --font-family-sans:
@@ -97,4 +114,61 @@
   --line-height-tight: 1.2;
   --line-height-normal: 1.4;
   --line-height-loose: 1.6;
+}
+
+/*
+  ダークモード用トークン上書き。
+  - `prefers-color-scheme: dark` ブロック: OSのダーク設定に自動追従する
+    （設定で明示的に "light" が選ばれている場合は `:not([data-theme="light"])` で除外）。
+  - `[data-theme="dark"]` ブロック: 設定で明示的に "dark" が選ばれた場合、OS設定に関わらず適用する。
+  2ブロックの中身は同一。
+*/
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #131417;
+    --color-text: #e8eaed;
+    --color-text-muted: rgba(232, 234, 237, 0.64);
+    --color-card-bg: #1c1e21;
+    --color-muted: #9aa4b2;
+    --color-card-muted-bg: #2a2d31;
+    --color-border: rgba(255, 255, 255, 0.12);
+    --surface-muted: rgb(30, 58, 95);
+
+    --color-gray: #2a2d31;
+    --color-gray-hover: #35383d;
+
+    --color-danger-bg: rgba(160, 32, 32, 0.24);
+    --color-success-bg: rgba(22, 163, 74, 0.24);
+    --color-warning-bg: rgba(217, 119, 6, 0.24);
+    --color-warning-soft-bg: #4a3a10;
+    --color-warning-soft-text: #fde68a;
+    --color-danger-soft-bg: #4a1414;
+    --color-danger-soft-text: #fca5a5;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #131417;
+  --color-text: #e8eaed;
+  --color-text-muted: rgba(232, 234, 237, 0.64);
+  --color-card-bg: #1c1e21;
+  --color-muted: #9aa4b2;
+  --color-card-muted-bg: #2a2d31;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --surface-muted: rgb(30, 58, 95);
+
+  --color-gray: #2a2d31;
+  --color-gray-hover: #35383d;
+
+  --color-danger-bg: rgba(160, 32, 32, 0.24);
+  --color-success-bg: rgba(22, 163, 74, 0.24);
+  --color-warning-bg: rgba(217, 119, 6, 0.24);
+  --color-warning-soft-bg: #4a3a10;
+  --color-warning-soft-text: #fde68a;
+  --color-danger-soft-bg: #4a1414;
+  --color-danger-soft-text: #fca5a5;
+
+  color-scheme: dark;
 }

@@ -22,6 +22,12 @@ import {
   readPinnedFormDisabledSetting,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
+import {
+  applyThemeMode,
+  readThemeModeSetting,
+  type ThemeMode,
+  writeThemeModeSetting,
+} from "@/lib/settings/themeSettings"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import { isValidMastodonInstanceDomain } from "@/util/share/mastodonIntent"
 import ui from "@/styles/ui.module.css"
@@ -41,6 +47,9 @@ export const Settings = () => {
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
     readPinnedFormDisabledSetting(false),
   )
+  const [themeMode, setThemeMode] = useState(() =>
+    readThemeModeSetting("system"),
+  )
 
   /**
    * 「投稿フォームを固定表示しない」設定を変更する。
@@ -53,6 +62,18 @@ export const Settings = () => {
     writePinnedFormDisabledSetting(next)
   }
 
+  /**
+   * 表示テーマ設定を変更する。
+   *
+   * Input:
+   * - `next`: 変更後のテーマ設定
+   */
+  const onThemeModeChange = (next: ThemeMode) => {
+    setThemeMode(next)
+    writeThemeModeSetting(next)
+    applyThemeMode(next)
+  }
+
   // reload実体は毎レンダーで作り直されるため ref 経由で最新版を参照し、
   // イベントリスナーの登録・解除自体は初回マウント時の一度だけに保つ
   // （Overlay.tsx の onCloseRef と同じパターン）。
@@ -60,6 +81,7 @@ export const Settings = () => {
   reloadRef.current = () => {
     shareToggles.reload()
     setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+    setThemeMode(readThemeModeSetting("system"))
   }
 
   useEffect(() => {
@@ -190,8 +212,24 @@ export const Settings = () => {
     },
   ]
 
+  const displayItems: SettingListItem[] = [
+    {
+      key: "themeMode",
+      label: "表示テーマ",
+      description: "サイト全体の配色（ライト/ダーク）を切り替えます。",
+      control: "select",
+      selectValue: themeMode,
+      onSelectChange: onThemeModeChange,
+    },
+  ]
+
   return (
     <div className={`${styles.groups}`}>
+      <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
+        <h2 className={ui.subject}>表示</h2>
+        <SettingList items={displayItems} />
+      </section>
+
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
         <h2 className={ui.subject}>投稿フォーム</h2>
         <SettingList items={postFormItems} />

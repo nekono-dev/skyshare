@@ -33,6 +33,37 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
 
 <html lang="ja">
     <head>
+        <script is:inline>
+            // ダークモード設定を初回ペイント前に反映する（FOUC防止）。
+            // themeSettings.ts の read/apply ロジックと同等の処理をここでは
+            // モジュール分割せずインラインで複製する（is:inline スクリプトは
+            // バンドル対象外のため import が使えないため）。
+            try {
+                const themeMode = localStorage.getItem("themeMode")
+                if (themeMode === "light" || themeMode === "dark") {
+                    document.documentElement.dataset.theme = themeMode
+                }
+            } catch (error) {
+                // 読み取り失敗時はシステム設定（prefers-color-scheme）にフォールバック
+            }
+
+            // Astro View Transitions（ClientRouter）はページ遷移のたびに
+            // <html> の属性を遷移先ページがサーバーから返した属性で置き換える。
+            // data-theme はクライアント側の localStorage にしか存在せず
+            // SSR結果には現れないため、何もしないと遷移後に消えてしまう
+            // （＝ダークモードが解除されたように見える）。
+            // 遷移直前（astro:before-swap）に、現在適用中の data-theme を
+            // 遷移先ドキュメントへコピーしておくことで、スワップ後も
+            // ちらつきなく維持されるようにする。
+            document.addEventListener("astro:before-swap", event => {
+                const currentTheme = document.documentElement.dataset.theme
+                if (currentTheme) {
+                    event.newDocument.documentElement.dataset.theme = currentTheme
+                } else {
+                    delete event.newDocument.documentElement.dataset.theme
+                }
+            })
+        </script>
         <link rel="icon" href={favicon} />
         <Metadatas
             cardPath={cardPath}
