@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig, sessionDrivers } from "astro/config"
 import cloudflare from "@astrojs/cloudflare"
+import basicSsl from "@vitejs/plugin-basic-ssl"
 
 import react from "@astrojs/react"
 
@@ -31,6 +32,11 @@ export default defineConfig({
     },
     // 新しい選択肢である oxc を空のオブジェクトで用意しておく（互換性援助）
     oxc: {},
+    // 自己署名証明書で dev サーバーを HTTPS 化する（Web Share API はセキュアコンテキスト必須のため）
+    plugins: [basicSsl()],
+    server: {
+      https: true,
+    },
   },
 
   integrations: [react()],

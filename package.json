@@ -40,6 +40,7 @@
     "@atproto/lex-cli": "^0.9.8",
     "@types/node": "^25.2.0",
     "@types/twitter-text": "*",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "orval": "*",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
