@@ -63,14 +63,15 @@
   z-index: 60;
 }
 
+/* タイッツー投稿ボタンのアイコン。ボタンラベルの文字と縦位置を揃える */
+.taittsuu-icon {
+  display: inline-block;
+  vertical-align: -4px;
+  margin-right: 2px;
+}
+
 /* ラベル設定と言語選択の行。幅が足りない場合は右側（言語選択）を単位ごと折り返す */
 .label-language-row {
   flex-wrap: wrap;
   row-gap: var(--space-1);
-}
-
-.share-icon {
-  display: inline-block;
-  vertical-align: -3px;
-  margin: 0 2px;
 }

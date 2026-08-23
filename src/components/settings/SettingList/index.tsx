@@ -7,6 +7,7 @@
  * - 各設定値の state・永続化・連動ルールは呼び出し元（`Settings` など）に委ね、
  *   このコンポーネントは表示と `onCheckedChange` の橋渡しのみを担う。
  */
+import type React from "react"
 import ComponentList from "@/components/common/ComponentList"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
 import styles from "./index.module.css"
@@ -14,16 +15,18 @@ import styles from "./index.module.css"
 export type SettingListItem = {
   /** 一覧内での一意なキー（React key および ToggleSwitch の id に使用） */
   key: string
-  /** 設定値のラベル */
-  label: string
-  /** 設定値の説明文 */
-  description: string
+  /** 設定値のラベル（文中にInlineIconなどを埋め込む場合はReactNodeを渡す） */
+  label: React.ReactNode
+  /** 設定値の説明文（文中にInlineIconなどを埋め込む場合はReactNodeを渡す） */
+  description: React.ReactNode
   /** 現在の ON/OFF 値 */
   checked: boolean
   /** 値が変化した後に呼ばれるコールバック */
   onCheckedChange: (next: boolean) => void
   /** true の場合、トグルを操作不能にする */
   disabled?: boolean
+  /** label が文字列でない場合のアクセシビリティ用ラベル（省略時はlabelが文字列の場合のみそれを使用） */
+  ariaLabel?: string
 }
 
 type SettingListRowProps = {
@@ -45,6 +48,8 @@ type SettingListRowProps = {
  */
 const SettingListRow = ({ item }: SettingListRowProps) => {
   const inputId = `setting-${item.key}`
+  const ariaLabel =
+    item.ariaLabel ?? (typeof item.label === "string" ? item.label : undefined)
 
   return (
     <div className={styles.row}>
@@ -57,7 +62,7 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
         checked={item.checked}
         disabled={item.disabled}
         label=""
-        aria-label={item.label}
+        aria-label={ariaLabel}
         onCheckedChange={item.onCheckedChange}
       />
     </div>

@@ -14,6 +14,7 @@
  *   localStorageの最新状態を、開かれるたびに確実に反映するため。
  */
 import { useEffect, useRef, useState } from "react"
+import InlineIcon from "@/components/common/InlineIcon"
 import SettingList, {
   type SettingListItem,
 } from "@/components/settings/SettingList"
@@ -75,24 +76,48 @@ export const Settings = () => {
     {
       key: "pinnedFormDisabled",
       label: "投稿フォームを固定表示しない",
-      description:
-        "オンにすると、スクロールしても投稿フォームが画面上部に固定表示されなくなります。",
+      description: (
+        <>
+          オンにすると、投稿フォームが画面上部に固定表示されなくなります。
+          投稿フォームはサイドバーまたはフローティングの新規投稿ボタンを押して表示してください。
+        </>
+      ),
       checked: pinnedFormDisabled,
       onCheckedChange: onPinnedFormDisabledChange,
     },
     {
       key: "popupIntentInsteadOfWebshare",
-      label: "共有をポップアップで開く",
-      description:
-        "オンにすると、投稿後の共有をWeb Share APIの代わりにポップアップウィンドウで行います。",
+      label: (
+        <>
+          <InlineIcon name="share" />
+          の代わりにポップアップを開く
+        </>
+      ),
+      description: (
+        <>
+          オンにすると、投稿後の共有をWebshareAPI（
+          <InlineIcon name="share" />
+          で表示できる共有メニュー ）を使わず、投稿インテントをポップアップ
+          <InlineIcon name="popup" />
+          します。
+        </>
+      ),
       checked: shareToggles.popupIntentInsteadOfWebshare,
       onCheckedChange: shareToggles.onPopupIntentInsteadOfWebshareChange,
     },
     {
       key: "manualImageAttach",
       label: "画像を自分で添付する",
-      description:
-        "オンにすると、SkyshareのURLを発行せず、画像を手動で添付する形式に切り替わります。",
+      description: (
+        <>
+          オンにすると、SkyshareのURLを発行しません。
+          <InlineIcon name="share" />
+          を使用する場合は、共有先へ画像データを共有します。投稿インテント（ポップアップ
+          <InlineIcon name="popup" />）
+          を使う場合は、対象SNSの投稿フォーム側で画像を設定してください。
+        </>
+      ),
+
       checked: shareToggles.manualImageAttach,
       onCheckedChange: shareToggles.onManualImageAttachChange,
     },
@@ -101,24 +126,38 @@ export const Settings = () => {
   const crosspostItems: SettingListItem[] = [
     {
       key: "crosspostToTaittsuu",
-      label: "タイッツーにクロスポスト",
-      description: "オンにすると、投稿と同時にタイッツーへも共有します。",
+      label: (
+        <>
+          <InlineIcon name="taittsuu" />
+          にクロスポスト
+        </>
+      ),
+      description: (
+        <>
+          オンにすると、クロスポスト先をXではなくタイッツー
+          <InlineIcon name="taittsuu" />
+          に変更します。
+        </>
+      ),
       checked: shareToggles.crosspostToTaittsuu,
       onCheckedChange: shareToggles.onCrosspostToTaittsuuChange,
     },
     {
       key: "showXWhenCrosspost",
       label: "X投稿ボタンを表示",
-      description:
-        "オンにすると、投稿後にXへ投稿するためのボタンを表示します。",
+      description: (
+        <>
+          オンにすると、X投稿ボタンを表示します。自動ポップアップはOFFになります。他SNSのクロスポストオプションを設定している場合、両方のボタンを表示します。
+        </>
+      ),
       checked: shareToggles.showXWhenCrosspost,
       onCheckedChange: shareToggles.onShowXWhenCrosspostChange,
     },
     {
       key: "noAutoPopupAfterPost",
-      label: "投稿後の自動ポップアップをOFFにする",
+      label: "自動ポップアップをOFFにする",
       description:
-        "オンにすると、投稿完了時に共有ポップアップが自動的に開かなくなります。",
+        "オンにすると、投稿完了時に共有ポップアップを自動的に開きません。X投稿ボタンを表示がOFFの場合はONになります。自動ポップアップを開くことができない場合は、このオプションがONになります。",
       checked: shareToggles.noAutoPopupAfterPost,
       onCheckedChange: shareToggles.onNoAutoPopupAfterPostChange,
     },

@@ -31,6 +31,7 @@ import ImagePicker, {
   type ImagePickerHandle,
 } from "@/components/image/ImagePicker"
 import ImagePreview from "@/components/image/ImagePreview"
+import InlineIcon from "@/components/common/InlineIcon"
 import LanguageSelect from "@/components/common/LanguageSelect"
 import Loading from "@/components/common/Loading"
 import {
@@ -57,7 +58,6 @@ import { useKeyboardRows } from "./useKeyboardRows"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
-import shareIcon from "@/images/share.svg"
 
 type Props = {
   /**
@@ -810,7 +810,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                   setStatusColor(popupOpened ? "green" : "#b00")
                 }}
               >
-                タイッツー投稿
+                <InlineIcon name="taittsuu" />
+                投稿
               </button>
             )}
           </div>
@@ -928,14 +929,10 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               disabled={isSubmitting}
               label={
                 <>
-                  <img
-                    src={shareIcon.src}
-                    width={18}
-                    height={18}
-                    alt=""
-                    className={styles["share-icon"]}
-                  />
-                  の代わりにポップアップを開く
+                  <InlineIcon name="share" />
+                  の代わりにポップアップ
+                  <InlineIcon name="popup" />
+                  を開く
                 </>
               }
               onCheckedChange={
@@ -945,7 +942,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             <ToggleSwitch
               checked={shareToggles.manualImageAttach}
               disabled={isSubmitting}
-              label="画像を自分で添付する(SkyshareのURLを発行しない)"
+              label="画像を自分で添付する（URLを発行しない）"
               onCheckedChange={shareToggles.onManualImageAttachChange}
             />
           </div>
@@ -959,7 +956,12 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 <ToggleSwitch
                   checked={shareToggles.crosspostToTaittsuu}
                   disabled={isSubmitting}
-                  label="タイッツーにクロスポスト"
+                  label={
+                    <>
+                      <InlineIcon name="taittsuu" />
+                      にクロスポスト
+                    </>
+                  }
                   onCheckedChange={shareToggles.onCrosspostToTaittsuuChange}
                 />
                 <ToggleSwitch
