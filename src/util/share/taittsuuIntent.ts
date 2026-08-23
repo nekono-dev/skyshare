@@ -7,37 +7,6 @@
  */
 
 /**
- * 現在のユーザーエージェントが Safari 系かを判定する。
- *
- * 処理の趣旨:
- * - Safari では `window.open` が null を返しても実際には新規タブが開くケースがある。
- * - 戻り値だけで誤って失敗扱いしないための補助判定として使う。
- *
- * Input:
- * - なし
- *
- * Output:
- * - Safari 系ブラウザと推定できる場合は `true`
- *
- * 例:
- * - 入力: なし
- * - 出力: `true`（iOS Safari の場合）
- */
-const isLikelySafari = () => {
-    if (typeof navigator === "undefined") {
-        return false
-    }
-
-    const userAgent = navigator.userAgent
-    return (
-        userAgent.includes("Safari") &&
-        !userAgent.includes("Chrome") &&
-        !userAgent.includes("Chromium") &&
-        !userAgent.includes("Android")
-    )
-}
-
-/**
  * タイッツー intent に渡す投稿文を組み立てる。
  *
  * Input:
@@ -81,17 +50,15 @@ export const openTaittsuuIntentPopup = (intentText: string) => {
     intentUrl.searchParams.set("text", intentText)
 
     try {
-        const popupWindow = window.open(
-            intentUrl.toString(),
-            "_blank",
-            "noopener,noreferrer",
-        )
-        if (popupWindow !== null) {
-            return true
+        const popupWindow = window.open(intentUrl.toString(), "_blank")
+        if (popupWindow === null) {
+            return false
         }
 
-        // Safari では null 戻りでも実際にタブ遷移できるケースを成功扱いにする。
-        return isLikelySafari()
+        // windowFeatures で noopener を指定すると戻り値が常に null になり
+        // 成功判定ができなくなるため、開いた後に opener を手動で切り離す。
+        popupWindow.opener = null
+        return true
     } catch (error) {
         return false
     }
