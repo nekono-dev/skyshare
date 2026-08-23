@@ -10,7 +10,11 @@ import { dropEmptyStringField } from "@/util/formData"
 import { bskyPostUrlgen } from "@/lib/entry/url"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { createBskyPost } from "@/lib/atproto/post"
-import { createExternalEmbed } from "@/lib/atproto/embed"
+import {
+    createExternalEmbed,
+    createImageEmbed,
+    validateImageMetadata,
+} from "@/lib/atproto/embed"
 
 import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
 
@@ -18,9 +22,11 @@ import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
  * Skyshare v2 bsky/record API。
  *
  * 責務と処理概要:
- * - skyshare entry を一切伴わない Bluesky 投稿（テキスト投稿・OGPリンク付き投稿）を作成する、
- *   純粋な Bluesky API bypass エンドポイント（`v2/bsky` 名前空間の原則通り、
- *   dev.nekono.skyshare.entry の作成・参照は一切行わない）。
+ * - skyshare entry を一切伴わない Bluesky 投稿（テキスト投稿・OGPリンク付き投稿・
+ *   手動画像添付投稿）を作成する、純粋な Bluesky API bypass エンドポイント
+ *   （`v2/bsky` 名前空間の原則通り、dev.nekono.skyshare.entry の作成・参照は一切行わない）。
+ * - 手動画像添付投稿は、ユーザーが「画像を添付しない（skyshare entryを作成しない）」
+ *   オプションを選んだ場合の経路。skyshare entry は作らないが、Bluesky への画像添付自体は行う。
  * - 画像投稿＋skyshare entry の作成は `/v2/entry` を使う。
  *
  * 実装上の制約:
@@ -34,17 +40,19 @@ import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
  * 1. ヘッダ検証（Content-Type, Authorization）
  * 2. 認証済みセッションの取得（`bskySessionRefresh` ミドルウェアが `locals` へ供給）
  * 3. FormData 解析と構造化オブジェクト生成
- * 4. OpenAPI スキーマバリデーション（`text` のみ、または `ogMeta`+`ogImage`）
- * 5. OGP サムネイルのアップロード（指定時）
+ * 4. OpenAPI スキーマバリデーション（`text` のみ、`ogMeta`+`ogImage`、または `images`+`imagesMeta`）
+ * 5. 手動画像添付のメタデータ検証（images 指定時）
  * 6. テキスト facet 検出
- * 7. Embed 作成（OGP 投稿の場合のみ）
+ * 7. Embed 作成（images 指定時は画像 embed、ogMeta+ogImage 指定時は外部リンク embed。
+ *    両者は Bluesky 上で同時に埋め込めないため images を優先する）
  * 8. bsky 投稿作成
  * 9. 結果返却
  *
  * 入力形状(最小要件):
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
- * - フィールド: text（テキスト投稿）、または ogMeta + ogImage（OGPリンク投稿, text併用可）
+ * - フィールド: text（テキスト投稿）、ogMeta + ogImage（OGPリンク投稿, text併用可）、
+ *   または images + imagesMeta（手動画像添付投稿, text併用可）
  *
  * 出力:
  * - 成功時（200）: { url: "https://...", uri: "at://...", cid: "bafy..." }
@@ -99,15 +107,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        // フェーズ 5: OGP サムネイルのアップロード（指定時）
-        let uploadedOgImage: any = undefined
-        if (body.data.ogImage) {
-            try {
-                uploadedOgImage = await uploadBlob(agent, body.data.ogImage)
-            } catch (err) {
-                console.error("createBskyRecord: ogImage upload failed", err)
-                return errorResponseFromStatus(500)
-            }
+        // フェーズ 5: 手動画像添付のメタデータ検証
+        try {
+            validateImageMetadata(body.data.images, body.data.imagesMeta)
+        } catch (err) {
+            console.warn(
+                "createBskyRecord: image metadata validation failed",
+                err,
+            )
+            return errorResponseFromStatus(400)
         }
 
         // フェーズ 6: テキスト facet 検出
@@ -115,9 +123,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const rt = new RichText({ text: postText })
         await rt.detectFacets(agent)
 
-        // フェーズ 7: Embed 作成（OGP 投稿の場合のみ）
+        // フェーズ 7: Embed 作成
+        // 画像（手動添付）と OGP リンクカードは Bluesky 上で同時に埋め込めないため、
+        // 画像が指定されている場合はそちらを優先する。
         let embed: any = undefined
-        if (body.data.ogMeta && uploadedOgImage) {
+        if (body.data.images && body.data.images.length > 0) {
+            let uploadedImages: any[]
+            try {
+                uploadedImages = await Promise.all(
+                    body.data.images.map(image => uploadBlob(agent, image)),
+                )
+            } catch (err) {
+                console.error("createBskyRecord: image upload failed", err)
+                return errorResponseFromStatus(500)
+            }
+            embed = createImageEmbed(uploadedImages, body.data.imagesMeta)
+        } else if (body.data.ogMeta && body.data.ogImage) {
+            let uploadedOgImage: any
+            try {
+                uploadedOgImage = await uploadBlob(agent, body.data.ogImage)
+            } catch (err) {
+                console.error("createBskyRecord: ogImage upload failed", err)
+                return errorResponseFromStatus(500)
+            }
+
             try {
                 embed = createExternalEmbed(
                     rt.facets ?? undefined,

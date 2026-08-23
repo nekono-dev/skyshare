@@ -2,8 +2,10 @@
  * PostForm の投稿送信（OpenAPI契約への整形とAPI呼び出し）を担うモジュール。
  *
  * 責務と処理概要:
- * - 画像投稿は `createEntry`（skyshare entry を伴う）、テキスト・OGP投稿は
- *   `createBskyRecord`（skyshare entry を伴わない）を呼び出す。
+ * - 画像投稿は `createEntry`（skyshare entry を伴う）、テキスト・OGP投稿・
+ *   手動画像添付投稿（`manualImageAttach` 有効時の画像投稿）は `createBskyRecord`
+ *   （skyshare entry を伴わない）を呼び出す。手動画像添付投稿でも Bluesky への
+ *   画像添付自体は行う。
  * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
  * - API エラーコードをユーザー向け文言へ変換する。
  */
@@ -169,9 +171,11 @@ const resolveImageMetadata = async (
  * 投稿フォームの入力内容を OpenAPI 契約へ整形して送信する。
  *
  * 処理の趣旨:
- * - skyshare entry を作成するのは画像投稿の場合のみ。画像が無い投稿
- *   （テキスト投稿・OGP投稿）は skyshare entry を伴わないため、
- *   v2/bsky 名前空間の純粋な bypass エンドポイントを使う。
+ * - skyshare entry を作成するのは `manualImageAttach` が無効な画像投稿の場合のみ。
+ *   `manualImageAttach` が有効な場合（skyshare entry を作らずBlueskyにのみ画像を
+ *   添付したい場合）や、画像が無い投稿（テキスト投稿・OGP投稿）は skyshare entry
+ *   を伴わないため、v2/bsky 名前空間の純粋な bypass エンドポイントを使う
+ *   （画像添付自体はこの経路でも行う）。
  *
  * Input:
  * - `params`: 投稿内容一式
@@ -223,7 +227,10 @@ export const submitEntry = async (
         selfLabels: selfLabel,
     }
 
-    if (ogpResult) {
+    if (imageEntry) {
+        payload.images = imageEntry.originalBlobs
+        payload.imagesMeta = await resolveImageMetadata(imageEntry)
+    } else if (ogpResult) {
         payload.ogMeta = ogpResult.meta
         payload.ogImage = ogpResult.imageBlob
     }

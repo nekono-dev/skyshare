@@ -1,4 +1,4 @@
-summary: Create a Bluesky post (text or OGP link post) without creating a Skyshare entry
+summary: Create a Bluesky post (text, OGP link post, or manual image post) without creating a Skyshare entry
 operationId: createBskyRecord
 parameters:
   - name: cookie
@@ -18,6 +18,9 @@ requestBody:
           - required:
               - ogMeta
               - ogImage
+          - required:
+              - images
+              - imagesMeta
         properties:
           text:
             type: string
@@ -28,6 +31,16 @@ requestBody:
             format: binary
           ogMeta:
             $ref: ../../../common.yaml#/ogMeta
+          images:
+            type: array
+            description: >-
+              手動画像添付モード（skyshare entry を作成せず Bluesky にのみ画像を添付する）用の画像。
+              指定する場合は `imagesMeta` を併せて必須とする。
+            items:
+              type: string
+              format: binary
+          imagesMeta:
+            $ref: ../../../common.yaml#/imagesMeta
           langs:
             type: array
             items:
