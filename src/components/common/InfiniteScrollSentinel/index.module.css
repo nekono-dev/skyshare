@@ -17,12 +17,3 @@
   font-size: var(--font-size-sm);
   text-align: center;
 }
-
-/* スマホ幅ではフッターナビが画面下部を固定占有するため、
-   読み込み中インジケーター・末尾到達メッセージがフッターに隠れないよう余白を追加する */
-@media (max-width: 639px) {
-  .container,
-  .end-container {
-    padding-bottom: var(--nav-bar-height);
-  }
-}

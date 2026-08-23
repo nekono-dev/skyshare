@@ -20,7 +20,7 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 
 <Baselayout cardPath={`/materials/ogp_main.png`} pageTitle="投稿 - Skyshare" robots={robots}>
     <div class=`${ui["page"]} ${ui["center"]}` transition:name="page-slide" transition:animate={slide()}>
-        <div class=`${ui["width-lg"]} ${ui["page-padding"]}`>
+        <div class=`${ui["width-lg"]} ${ui["page-padding"]} ${ui["footer-nav-spacing"]}`>
             <PostPage client:load />
         </div>
     </div>

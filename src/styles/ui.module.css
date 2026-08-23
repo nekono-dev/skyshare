@@ -72,6 +72,17 @@
   }
 }
 
+/* フッターナビ表示ページ(640px未満)で、本文末尾がFooterNav(画面下固定バー)に
+   隠れないよう確保する余白。.root.with-nav の padding-bottom は body 自体の
+   下端にのみ効くため、それとは別のスクロール文脈にある一覧末尾（Timeline/
+   EntryListのInfiniteScrollSentinel等）や、そもそも末尾に余白確保用の要素を
+   持たないページ本文には、このクラスを個別に付与する必要がある。 */
+@media (max-width: 639px) {
+  :local(.footer-nav-spacing) {
+    padding-bottom: var(--nav-bar-height);
+  }
+}
+
 /* デスクトップ用サイドバー(Sidebar)とページ本文をひとつのGridコンテナとして中央寄せする。
    vwベースのcalc()やflexによる独立した中央寄せを廃止し、Gridの
    justify-content: center 一本に統一するための仕組み。

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import Loading from "@/components/common/Loading"
+import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
 /**
@@ -87,9 +88,13 @@ export const Component = ({
       return null
     }
 
-    const endContainerClassName = className
-      ? `${styles["end-container"]} ${className}`
-      : styles["end-container"]
+    const endContainerClassName = [
+      styles["end-container"],
+      ui["footer-nav-spacing"],
+      className,
+    ]
+      .filter(Boolean)
+      .join(" ")
 
     return (
       <div
@@ -102,9 +107,13 @@ export const Component = ({
     )
   }
 
-  const containerClassName = className
-    ? `${styles.container} ${className}`
-    : styles.container
+  const containerClassName = [
+    styles.container,
+    ui["footer-nav-spacing"],
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ")
 
   return (
     <div
