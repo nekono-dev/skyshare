@@ -12,7 +12,7 @@
  * PostFormと同種の性質を持つが内容が個別具体的なためコンポーネントとしては汎化しない。
  * カード外枠・縦積みレイアウトはdialog.ui.module.cssを通じてPostForm/ChoiceDialogと共通化する。
  */
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { updateEntry } from "@/client/openapi/client"
 import CountedTextInput, {
   type CounterSpec,
@@ -86,6 +86,24 @@ export const Component: React.FC<Props> = ({
   }, [open, initialHeading, initialCaption])
 
   /**
+   * キャプション欄フォーカス中、Ctrl(Windows/Linux) または Cmd(Mac) + Enter で保存を実行する。
+   *
+   * Input:
+   * - `e`: keydown イベント
+   *
+   * Output:
+   * - なし（保存処理をトリガー）
+   */
+  const handleCaptionKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return
+    e.preventDefault()
+    if (isSaving || heading.trim().length === 0) return
+    void confirmSave()
+  }
+
+  /**
    * 入力中の heading/caption を保存する。
    *
    * Output:
@@ -127,7 +145,27 @@ export const Component: React.FC<Props> = ({
         role="dialog"
         aria-label="Entry編集"
       >
-        <div className={ui["dialog-body"]}>
+        <div
+          className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
+        >
+          <button
+            type="button"
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+            onClick={onClose}
+            disabled={isSaving}
+          >
+            キャンセル
+          </button>
+          <button
+            type="button"
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+            onClick={() => void confirmSave()}
+            disabled={isSaving || heading.trim().length === 0}
+          >
+            保存
+          </button>
+        </div>
+        <div className={`${ui["dialog-body"]} ${ui["base-padding"]}`}>
           <label className={styles["field-label"]} htmlFor="entry-edit-heading">
             見出し
             <CountedTextInput
@@ -142,35 +180,18 @@ export const Component: React.FC<Props> = ({
             <CountedTextInput
               id="entry-edit-caption"
               multiline
-              rows={1}
+              rows={3}
               maxRows={6}
               autoGrow
               value={caption}
               onChange={setCaption}
+              onKeyDown={handleCaptionKeyDown}
               counters={captionCounters}
             />
           </label>
           {saveError ? (
             <p className={styles["error-text"]}>{saveError}</p>
           ) : null}
-        </div>
-        <div className={ui["dialog-actions"]}>
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-            onClick={() => void confirmSave()}
-            disabled={isSaving || heading.trim().length === 0}
-          >
-            保存
-          </button>
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
-            onClick={onClose}
-            disabled={isSaving}
-          >
-            キャンセル
-          </button>
         </div>
       </div>
       {isSaving ? <Loading overlay message="保存中..." /> : null}

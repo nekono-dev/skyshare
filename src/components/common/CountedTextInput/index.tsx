@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react"
+import React, { useLayoutEffect, useRef } from "react"
 import {
   clampAutoGrowHeightPx,
   computeAutoGrowBounds,
@@ -43,6 +43,8 @@ type Props = {
   onFocus?: () => void
   /** multiline時のみ有効。textareaのblurイベントをそのまま呼び出し側に通知する */
   onBlur?: () => void
+  /** multiline時のみ有効。textareaのkeydownイベントをそのまま呼び出し側に通知する */
+  onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
   placeholder?: string
   disabled?: boolean
   /** 0件以上。要素数がそのままカウンタ表示個数になる */
@@ -128,6 +130,7 @@ const Component: React.FC<Props> = ({
   maxRows,
   onFocus,
   onBlur,
+  onKeyDown,
   placeholder,
   disabled,
   counters = [],
@@ -206,6 +209,7 @@ const Component: React.FC<Props> = ({
           onChange={e => onChange(e.target.value)}
           onFocus={onFocus}
           onBlur={onBlur}
+          onKeyDown={onKeyDown}
         />
       ) : (
         <input

@@ -197,6 +197,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
   const formRef = useRef<HTMLDivElement>(null)
+  const entryFormRef = useRef<HTMLFormElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
   const toolboxRef = useRef<HTMLDivElement>(null)
 
@@ -231,6 +232,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   // page表示でのautoGrow上限行数。ソフトウェアキーボードが表示されないプラットフォーム
   // (PC等)では、page表示のフォーカス時rows・dialog表示の固定rowsとしても使う。
   const pageMaxRows = 7
+  const pageMinRows = 3
   // モバイル幅で本文欄をフォーカスした際にソフトウェアキーボードの残り領域へ
   // rowsを合わせるフック。dialog/page両方で使うが、localStorageへの保存/初期値反映は
   // dialogのみ（page＝常時表示フォームは、フォーカスの度のその場限りの調整とし、
@@ -253,7 +255,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     inputAreaRef,
     toolboxRef,
     defaultRows: 12,
-    minRows: 2,
+    minRows: pageMinRows,
     nonKeyboardFixedRows: pageMaxRows,
     persistToStorage: variant === "dialog",
     resetOnBlur: variant === "page",
@@ -516,6 +518,23 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
 
     e.preventDefault()
     void imagePickerRef.current?.addFiles(files)
+  }
+
+  /**
+   * 本文欄フォーカス中、Ctrl(Windows/Linux) または Cmd(Mac) + Enter で投稿を実行する。
+   *
+   * Input:
+   * - `e`: keydown イベント
+   *
+   * Output:
+   * - なし（フォームの送信をトリガー）
+   */
+  const handleTextareaKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return
+    e.preventDefault()
+    entryFormRef.current?.requestSubmit()
   }
 
   /**
@@ -799,6 +818,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
 
         <form
           id="entry-form"
+          ref={entryFormRef}
           className={ui["dialog-body"]}
           onSubmit={handleSubmit}
         >
@@ -832,7 +852,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 rows={
                   keyboardRows ??
                   (variant === "page"
-                    ? 2
+                    ? pageMinRows
                     : isKeyboardPlatform
                       ? 6
                       : pageMaxRows)
@@ -848,6 +868,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 onChange={setText}
                 onFocus={handleTextareaFocus}
                 onBlur={handleTextareaBlur}
+                onKeyDown={handleTextareaKeyDown}
                 disabled={isSubmitting}
                 counters={textCounters}
                 wrapperClassName={styles["text-input-wrapper"]}
