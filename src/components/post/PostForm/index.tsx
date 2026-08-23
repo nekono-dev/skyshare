@@ -53,7 +53,7 @@ import { openXIntentPopup } from "@/util/share/xIntent"
 import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
 import { runShareDispatch } from "./shareDispatch"
 import { submitEntry } from "./submitEntry"
-import { useDialogKeyboardRows } from "./useDialogKeyboardRows"
+import { useKeyboardRows } from "./useKeyboardRows"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
@@ -228,19 +228,40 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const showTaittsuuIntentButton =
     shareToggles.crosspostToTaittsuu && shareToggles.noAutoPopupAfterPost
   const hasTextInput = text.trim().length > 0
-  // dialog表示(PostLauncherのモーダル)ではOverlay内でダイアログごとスクロールする
-  // 構造になるため、本文欄の自動高さ拡張はpage表示(常駐フォーム/単独ページ)時のみ有効にする。
-  const autoGrowText = variant === "page"
+  // page表示でのautoGrow上限行数。ソフトウェアキーボードが表示されないプラットフォーム
+  // (PC等)では、page表示のフォーカス時rows・dialog表示の固定rowsとしても使う。
+  const pageMaxRows = 7
+  // モバイル幅で本文欄をフォーカスした際にソフトウェアキーボードの残り領域へ
+  // rowsを合わせるフック。dialog/page両方で使うが、localStorageへの保存/初期値反映は
+  // dialogのみ（page＝常時表示フォームは、フォーカスの度のその場限りの調整とし、
+  // フォーカスを外すと最小行数（rows）はフォーカス前のベースラインへ戻る＝以後は本文量に
+  // autoGrowが追従する）。ただしautoGrowの上限行数（keyboardMaxRows）はフォーカス解除で
+  // リセットしない。ここをリセットすると、十分な文章量がある状態でフォーカスを外した際に
+  // 表示がフォーカス時より縮んでしまう（正しい表示はフォーカス時の大きさを維持すること）。
+  // ソフトウェアキーボードが表示されないプラットフォーム(PC等)では、pageはフォーカス時に
+  // pageMaxRows・フォーカス解除時は本文量に応じたサイズ、dialogは常にpageMaxRowsで固定する
+  // （キーボードが表示される環境向けの上記の挙動は適用しない）。
   // defaultRows がテキストボックスのサイズ調整の上限値
-  const { rows: dialogKeyboardRows, handleTextareaFocus } =
-    useDialogKeyboardRows({
-      enabled: variant === "dialog",
-      formRef,
-      inputAreaRef,
-      toolboxRef,
-      defaultRows: 12,
-      minRows: 2,
-    })
+  const {
+    rows: keyboardRows,
+    keyboardMaxRows,
+    handleTextareaFocus,
+    handleTextareaBlur,
+    isKeyboardPlatform,
+  } = useKeyboardRows({
+    formRef,
+    inputAreaRef,
+    toolboxRef,
+    defaultRows: 12,
+    minRows: 2,
+    nonKeyboardFixedRows: pageMaxRows,
+    persistToStorage: variant === "dialog",
+    resetOnBlur: variant === "page",
+  })
+  // dialog表示(PostLauncherのモーダル)はOverlay内でダイアログごとスクロールする構造のため、
+  // 固定rows（内部スクロール）のままにする。page表示のみ、本文欄の高さ変更を
+  // 入力内容に応じたautoGrowで行う。
+  const autoGrowText = variant === "page"
   const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
     optionsList: [
       shareToggles.popupIntentInsteadOfWebshare,
@@ -289,22 +310,6 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     })
     setOgpResult(null)
     setLoadedDraft(null)
-  }
-
-  /**
-   * 「投稿後にフォームをクリアしない」設定により保持していたフォームを
-   * 「クリア」ボタン押下でリセットし、ロックを解除する。
-   *
-   * Input:
-   * - なし
-   *
-   * Output:
-   * - なし
-   */
-  const handleClearAfterPost = () => {
-    resetInputFields()
-    setStatus(null)
-    setStatusColor(undefined)
   }
 
   /**
@@ -824,13 +829,25 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 id="text"
                 name="text"
                 multiline
-                rows={autoGrowText ? 2 : (dialogKeyboardRows ?? 6)}
-                maxRows={autoGrowText ? 7 : undefined}
+                rows={
+                  keyboardRows ??
+                  (variant === "page"
+                    ? 2
+                    : isKeyboardPlatform
+                      ? 6
+                      : pageMaxRows)
+                }
+                maxRows={
+                  autoGrowText && variant === "page"
+                    ? Math.max(pageMaxRows, keyboardMaxRows ?? pageMaxRows)
+                    : undefined
+                }
                 autoGrow={autoGrowText}
                 placeholder="最近どう？"
                 value={text}
                 onChange={setText}
                 onFocus={handleTextareaFocus}
+                onBlur={handleTextareaBlur}
                 disabled={isSubmitting}
                 counters={textCounters}
                 wrapperClassName={styles["text-input-wrapper"]}

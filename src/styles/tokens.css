@@ -8,18 +8,24 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
 
+  /* スマホ幅（各コンポーネントの px 上限より画面が狭い場合）で画面端に確保する
+     左右の余白量。片側の値を指定し、実際の余白は左右合計でその2倍になる。
+     0 にすると画面幅ぴったりまでコンテンツが広がる。 */
+  --mobile-edge-margin-xl: 2vw;
+  --mobile-edge-margin: 2vw;
+
   /* 各コンポーネントの幅の規格 */
-  --width-xl-max: min(960px, 96vw);
-  --width-xl: min(960px, 96vw);
+  --width-xl-max: min(960px, calc(100vw - var(--mobile-edge-margin-xl) * 2));
+  --width-xl: min(960px, calc(100vw - var(--mobile-edge-margin-xl) * 2));
 
-  --width-lg-max: min(640px, 92vw);
-  --width-lg: min(640px, 92vw);
+  --width-lg-max: min(640px, calc(100vw - var(--mobile-edge-margin) * 2));
+  --width-lg: min(640px, calc(100vw - var(--mobile-edge-margin) * 2));
 
-  --width-md-max: min(480px, 92vw);
-  --width-md: min(480px, 92vw);
+  --width-md-max: min(480px, calc(100vw - var(--mobile-edge-margin) * 2));
+  --width-md: min(480px, calc(100vw - var(--mobile-edge-margin) * 2));
 
-  --width-sm-max: min(240px, 92vw);
-  --width-sm: min(240px, 92vw);
+  --width-sm-max: min(240px, calc(100vw - var(--mobile-edge-margin) * 2));
+  --width-sm: min(240px, calc(100vw - var(--mobile-edge-margin) * 2));
 
   /* Radii */
   --radius-sm: 4px;

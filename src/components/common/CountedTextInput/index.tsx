@@ -41,6 +41,8 @@ type Props = {
   maxRows?: number
   /** multiline時のみ有効。textareaのfocusイベントをそのまま呼び出し側に通知する */
   onFocus?: () => void
+  /** multiline時のみ有効。textareaのblurイベントをそのまま呼び出し側に通知する */
+  onBlur?: () => void
   placeholder?: string
   disabled?: boolean
   /** 0件以上。要素数がそのままカウンタ表示個数になる */
@@ -125,6 +127,7 @@ const Component: React.FC<Props> = ({
   autoGrow = false,
   maxRows,
   onFocus,
+  onBlur,
   placeholder,
   disabled,
   counters = [],
@@ -202,6 +205,7 @@ const Component: React.FC<Props> = ({
           disabled={disabled}
           onChange={e => onChange(e.target.value)}
           onFocus={onFocus}
+          onBlur={onBlur}
         />
       ) : (
         <input

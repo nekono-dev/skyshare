@@ -20,17 +20,13 @@ import {
 } from "@/components/common/ComponentList"
 import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
-import PageSizeSelect from "@/components/common/PageSizeSelect"
 import PostCard from "@/components/post/PostCard"
 import PostForm from "@/components/post/PostForm"
 import PostLauncher from "@/components/post/PostLauncher"
 import type { TimelinePost } from "@/lib/entry/posts"
 import { readPinnedFormDisabledSetting } from "@/lib/settings/shareSettings"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
-import {
-  readPageSizeSetting,
-  writePageSizeSetting,
-} from "@/lib/settings/timelineSettings"
+import { readPageSizeSetting } from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
