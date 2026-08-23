@@ -51,14 +51,14 @@ export const Component: React.FC<Props> = ({
       buttons={[
         {
           key: "delete-link",
-          label: "リンクのみ削除",
+          label: "Skyshareリンクを削除",
           variant: "black",
           onClick: onDeleteLink,
           disabled: isDeleting,
         },
         {
           key: "delete-post",
-          label: "投稿を削除",
+          label: "リンク・Bluesky投稿を削除",
           variant: "red",
           onClick: onDeletePost,
           disabled: isDeleting,

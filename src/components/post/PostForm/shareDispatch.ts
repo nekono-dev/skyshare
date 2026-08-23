@@ -13,7 +13,11 @@ import {
     buildTaittsuuIntentText,
     openTaittsuuIntentPopup,
 } from "@/util/share/taittsuuIntent"
-import { canShareWithWebApi, shareWithWebApi } from "@/util/share/webShare"
+import {
+    canShareWithWebApi,
+    shareWithWebApi,
+    toShareFile,
+} from "@/util/share/webShare"
 import { buildXIntentText, openXIntentPopup } from "@/util/share/xIntent"
 
 export type ShareDispatchParams = {
@@ -45,27 +49,6 @@ export type ShareDispatchResult = {
      * 試さずポップアップ経由の共有に切り替えるフォールバック）。
      */
     forcedPopupIntentInsteadOfWebshareOn: boolean
-}
-
-/**
- * Blob を WebShareAPI が要求する File へ変換する。
- *
- * Input:
- * - `blob`: 画像 Blob
- * - `index`: ファイル名採番用のインデックス
- *
- * Output:
- * - MIME タイプから拡張子を推定した `File`
- *
- * 例:
- * - 入力: `image/png` の Blob, `0`
- * - 出力: ファイル名 `image-0.png` の `File`
- */
-const toShareFile = (blob: Blob, index: number) => {
-    const extension = blob.type.split("/")[1] ?? "png"
-    return new File([blob], `image-${index}.${extension}`, {
-        type: blob.type,
-    })
 }
 
 /**

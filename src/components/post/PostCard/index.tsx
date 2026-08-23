@@ -16,12 +16,14 @@ import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/entry/posts"
 import { useSkyshareEntryStatus } from "./useSkyshareEntryStatus"
+import { useWebShareCrosspost } from "./useWebShareCrosspost"
 import { parseAtUri, skyshareEntryPath } from "@/lib/entry/url"
 import Loading from "@/components/common/Loading"
 import PostCardEntryActions from "@/components/post/PostCardEntryActions"
 import SkyshareShareDialog from "@/components/post/SkyshareShareDialog"
 import EntryDeleteConfirmDialog from "@/components/entry/EntryDeleteConfirmDialog"
 import blueskyIcon from "@/images/bluesky.svg"
+import shareIcon from "@/images/share.svg"
 
 type PostCardProps = {
   item: TimelinePost
@@ -68,6 +70,14 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
       ? display.entry
       : null
   const entryWebUrl = activeEntry?.webUrl
+
+  const {
+    isSupported: isWebShareSupported,
+    isSharing: isWebSharing,
+    shareError,
+    shareViaWebApi,
+  } = useWebShareCrosspost(item, entryWebUrl ?? null)
+
   // ページ内リンクは entry 自身の AT URI から直接パスを組み立てる（常に相対パス）。
   // X共有（SkyshareShareDialog）は外部サービスへの絶対URLが必要なため、
   // そちらは本番ドメイン固定で生成された entryWebUrl をそのまま渡す。
@@ -159,6 +169,19 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
           <img src={blueskyIcon.src} width={20} height={20} alt="" />
         </a>
 
+        {isWebShareSupported ? (
+          <button
+            type="button"
+            className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
+            disabled={isWebSharing}
+            onClick={shareViaWebApi}
+            aria-label="Web Share APIで共有"
+            title="Web Share APIで共有"
+          >
+            <img src={shareIcon.src} width={20} height={20} alt="" />
+          </button>
+        ) : null}
+
         <PostCardEntryActions
           display={display}
           createError={createError}
@@ -167,10 +190,18 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
           onRequestDelete={requestDeleteEntry}
           onCrosspost={() => setShareDialogOpen(true)}
         />
+
+        {shareError ? (
+          <span className={styles["share-error"]}>{shareError}</span>
+        ) : null}
       </footer>
 
       {display.kind === "deleting" ? (
         <Loading overlay message="Entryを削除中..." />
+      ) : null}
+
+      {isWebSharing && !entryWebUrl && item.images.length > 0 ? (
+        <Loading overlay message="画像を読み込み中..." />
       ) : null}
 
       <SkyshareShareDialog

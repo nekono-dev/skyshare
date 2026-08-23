@@ -10,6 +10,7 @@
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { SkyshareEntryDisplayState } from "@/components/post/PostCard/useSkyshareEntryStatus"
+import crosspostIcon from "@/images/crosspost.svg"
 
 type Props = {
   display: SkyshareEntryDisplayState
@@ -49,10 +50,12 @@ const Component = ({
         <>
           <button
             type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+            className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
             onClick={onCrosspost}
+            aria-label="クロスポスト"
+            title="クロスポスト"
           >
-            クロスポスト
+            <img src={crosspostIcon.src} width={20} height={20} alt="" />
           </button>
           <button
             type="button"
@@ -60,7 +63,7 @@ const Component = ({
             disabled={display.kind === "deleting"}
             onClick={onRequestDelete}
           >
-            Entryを削除
+            投稿を削除
           </button>
         </>
       ) : display.kind === "creatable" || display.kind === "creating" ? (
@@ -73,7 +76,7 @@ const Component = ({
           {display.kind === "creating" ? "作成中…" : "Skyshare Entryを作成"}
         </button>
       ) : (
-        <span className={styles["no-skyshare"]}>Skyshare Entry作成対象外</span>
+        <span className={styles["no-skyshare"]}>Skyshareリンク作成対象外</span>
       )}
 
       {createError ? (
