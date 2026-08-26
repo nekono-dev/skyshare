@@ -112,6 +112,10 @@ CrosspostToTaittsuu / CrosspostToMastodon は「X.com以外の連携先SNSグル
 - Xをターゲットとした自動ポップアップが失敗した場合、上記フォールバックに加えて ShowXIntentButton も強制的にONにする
   - ボタン表示がNoAutoPopupAfterPostに連動するため、これをしないと再試行手段がユーザに提供されない。
   - Taittsuu/Mastodonをターゲットとした場合は CrosspostToTaittsuu/CrosspostToMastodon が既にONであり、上記ルールにより自動的に対応するボタンが表示されるため、追加の強制は不要。
+- WebShareAPIが非対応、または対応環境で実際に試行したが失敗した場合（ユーザーによる共有シートのキャンセルを除く）
+  - その場でXポップアップを即時に試行する（次回投稿時までポップアップを開かず待たせない）。
+  - 開けた場合はPopupIntentInsteadOfWebshareを自動的にONへフォールバックし、以後はWebShareAPIを試さずポップアップ経由の共有に切り替える。
+  - 開けなかった場合は上記のXポップアップ失敗時と同じフォールバック（NoAutoPopupAfterPost / ShowXIntentButton を強制的にON）に加えて、PopupIntentInsteadOfWebshareも自動的にONにする。
 
 # テストの実装
 

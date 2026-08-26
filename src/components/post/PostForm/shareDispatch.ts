@@ -115,9 +115,9 @@ const buildWebShareData = ({
  * - どちらのポップアップ系トグルもOFFならWebShareAPIを試行する。非対応環境、または
  *   対応環境で実際に試行したが失敗した場合（ユーザーによる共有シートのキャンセルを
  *   除く）は、いずれもPopupIntentInsteadOfWebshareをONへフォールバックし、以後は
- *   WebShareAPIを試さずポップアップ経由の共有に切り替える。非対応環境の場合は
- *   その場でXポップアップも試行し、それも失敗した場合は同様にNoAutoPopupAfterPost
- *   をONへフォールバックする。
+ *   WebShareAPIを試さずポップアップ経由の共有に切り替える。あわせてその場でXポップアップ
+ *   も即時に試行し、それも失敗した場合は同様にNoAutoPopupAfterPostをONへフォールバック
+ *   する。
  * - ボタン表示はNoAutoPopupAfterPostに連動するため、Xターゲットの自動ポップアップが
  *   失敗した場合はShowXIntentButtonも強制ONにし、再試行用ボタンを必ず提示する
  *   （Taittsu/Mastodonターゲットの場合はCrosspostToTaittsuu/CrosspostToMastodonが
@@ -232,6 +232,8 @@ export const runShareDispatch = async (
         manualImageAttach,
     })
 
+    let webShareUnavailableReason: "unsupported" | "failed" | null = null
+
     if (canShareWithWebApi(webShareData)) {
         const shareResult = await shareWithWebApi(webShareData)
         if (shareResult.ok) {
@@ -254,25 +256,26 @@ export const runShareDispatch = async (
                 forcedPopupIntentInsteadOfWebshareOn: false,
             }
         }
-        return {
-            status: "Blueskyへの投稿に成功しました。WebShareAPI での共有に失敗したため、ポップアップを開くオプションをONにしました。",
-            statusColor: "green",
-            textToKeep: shareText,
-            forcedNoAutoPopupOn: false,
-            forcedShowXIntentButtonOn: false,
-            forcedPopupIntentInsteadOfWebshareOn: true,
-        }
+        webShareUnavailableReason = "failed"
+    } else {
+        webShareUnavailableReason = "unsupported"
     }
 
-    // WebShareAPI非対応環境でのXポップアップフォールバック。ここもXターゲットの
-    // 自動実行であるため、失敗時は上のX分岐と同様にShowXIntentButtonを強制ONにする。
-    // 非対応であること自体が「うまくいかなかった」ケースのため、開閉の成否に関わらず
-    // 以後はWebShareAPIを試さずポップアップ経由にするようPopupIntentInsteadOfWebshareを
-    // ONへフォールバックする。
+    // WebShareAPIが非対応、または対応環境で実際に試行したが失敗した場合の
+    // Xポップアップ即時フォールバック。ここもXターゲットの自動実行であるため、
+    // 失敗時は上のX分岐と同様にShowXIntentButtonを強制ONにする。WebShareAPIが
+    // 使えなかったこと自体が「うまくいかなかった」ケースのため、ポップアップの
+    // 開閉の成否に関わらず以後はWebShareAPIを試さずポップアップ経由にするよう
+    // PopupIntentInsteadOfWebshareをONへフォールバックする。
+    const unavailableLabel =
+        webShareUnavailableReason === "unsupported"
+            ? "ブラウザがWebShareAPI非対応のため"
+            : "WebShareAPI での共有に失敗したため"
+
     const opened = openXIntentPopup(shareText)
     if (opened) {
         return {
-            status: "Blueskyへの投稿に成功し、投稿画面を開きました。ブラウザがWebShareAPI非対応のため、ポップアップを開くオプションをONにしました。",
+            status: `Blueskyへの投稿に成功し、投稿画面を開きました。${unavailableLabel}、ポップアップを開くオプションをONにしました。`,
             statusColor: "green",
             textToKeep: null,
             forcedNoAutoPopupOn: false,
