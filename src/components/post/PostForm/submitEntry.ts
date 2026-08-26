@@ -17,6 +17,7 @@ import type {
 } from "@/client/openapi/model"
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { OgpResult } from "@/components/image/OgpFetchButton"
+import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 
 export type SubmitEntryParams = {
     text: string
@@ -217,6 +218,8 @@ export const submitEntry = async (
                     : "投稿に失敗しました。"
             return { ok: false, message: resolveEntryErrorMessage(errorCode) }
         }
+
+        await warmOgpCache(res.data.skyshare.uri)
 
         return { ok: true, skyshareUri: res.data.skyshare.uri }
     }

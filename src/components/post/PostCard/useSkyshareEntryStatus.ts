@@ -11,6 +11,7 @@
 import { useRef, useState } from "react"
 import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
+import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
 
 /**
@@ -160,6 +161,9 @@ export const useSkyshareEntryStatus = (
                     visualUrl: skyshare.visualUrl,
                     webUrl: skyshare.uri,
                 }
+
+                await warmOgpCache(skyshare.uri)
+
                 setState({ phase: "idle", entry })
                 options.onCreated?.(entry)
             } catch (err) {
