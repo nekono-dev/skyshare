@@ -3,9 +3,11 @@
  *
  * 責務と処理概要:
  * - 投稿本文と SkyShare URI から intent 用テキストを生成する。
- * - ユーザが設定したMastodonインスタンスのドメインを使い、投稿ページのポップアップを起動する。
+ * - ユーザが設定したMastodonインスタンスのドメインを使い、投稿ページのポップアップを起動する
+ *   （実際のポップアップ処理は `openIntentPopup` に委譲する）。
  * - X/タイッツーと異なり全ユーザ共通のURLを持てないため、インスタンスドメインを引数で受け取る。
  */
+import { openIntentPopup } from "@/util/share/openIntentPopup"
 
 // ドメイン名（ホスト名）のみを許可する。ラベルは英数字とハイフンのみ・先頭/末尾ハイフン不可・
 // 1〜63文字、ラベルを`.`で1つ以上連結する（最低2ラベル＝ドット必須）。
@@ -82,15 +84,7 @@ export const openMastodonIntentPopup = (
         // searchParams.set が text の値をURLエンコードする。
         intentUrl.searchParams.set("text", intentText)
 
-        const popupWindow = window.open(intentUrl.toString(), "_blank")
-        if (popupWindow === null) {
-            return false
-        }
-
-        // windowFeatures で noopener を指定すると戻り値が常に null になり
-        // 成功判定ができなくなるため、開いた後に opener を手動で切り離す。
-        popupWindow.opener = null
-        return true
+        return openIntentPopup(intentUrl.toString())
     } catch (error) {
         return false
     }
