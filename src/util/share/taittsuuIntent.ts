@@ -3,8 +3,10 @@
  *
  * 責務と処理概要:
  * - 投稿本文と SkyShare URI から intent 用テキストを生成する。
- * - タイッツー投稿ページのポップアップを起動する。
+ * - タイッツー投稿ページのポップアップを起動する（実際のポップアップ処理は
+ *   `openIntentPopup` に委譲する）。
  */
+import { openIntentPopup } from "@/util/share/openIntentPopup"
 
 /**
  * タイッツー intent に渡す投稿文を組み立てる。
@@ -49,17 +51,5 @@ export const openTaittsuuIntentPopup = (intentText: string) => {
     const intentUrl = new URL("https://taittsuu.com/share")
     intentUrl.searchParams.set("text", intentText)
 
-    try {
-        const popupWindow = window.open(intentUrl.toString(), "_blank")
-        if (popupWindow === null) {
-            return false
-        }
-
-        // windowFeatures で noopener を指定すると戻り値が常に null になり
-        // 成功判定ができなくなるため、開いた後に opener を手動で切り離す。
-        popupWindow.opener = null
-        return true
-    } catch (error) {
-        return false
-    }
+    return openIntentPopup(intentUrl.toString())
 }

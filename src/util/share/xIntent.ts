@@ -3,8 +3,10 @@
  *
  * 責務と処理概要:
  * - 投稿本文と SkyShare URI から intent 用テキストを生成する。
- * - x.com 投稿ページのポップアップを起動する。
+ * - x.com 投稿ページのポップアップを起動する（実際のポップアップ処理は
+ *   `openIntentPopup` に委譲する）。
  */
+import { openIntentPopup } from "@/util/share/openIntentPopup"
 
 /**
  * x.com intent に渡す投稿文を組み立てる。
@@ -46,20 +48,8 @@ export const openXIntentPopup = (intentText: string) => {
         return false
     }
 
-    const intentUrl = new URL("https://x.com/intent/post")
+    const intentUrl = new URL("https://x.com/intent/tweet")
     intentUrl.searchParams.set("text", intentText)
 
-    try {
-        const popupWindow = window.open(intentUrl.toString(), "_blank")
-        if (popupWindow === null) {
-            return false
-        }
-
-        // windowFeatures で noopener を指定すると戻り値が常に null になり
-        // 成功判定ができなくなるため、開いた後に opener を手動で切り離す。
-        popupWindow.opener = null
-        return true
-    } catch (error) {
-        return false
-    }
+    return openIntentPopup(intentUrl.toString())
 }
