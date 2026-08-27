@@ -394,14 +394,16 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             disabled={disabled}
           />
 
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-            onClick={handleOpenCrop}
-            disabled={disabled || slots.length === 0}
-          >
-            クロップ設定
-          </button>
+          {slots.length > 0 && (
+            <button
+              type="button"
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+              onClick={handleOpenCrop}
+              disabled={disabled}
+            >
+              クロップ設定
+            </button>
+          )}
 
           {slots.length > 0 && (
             <button
