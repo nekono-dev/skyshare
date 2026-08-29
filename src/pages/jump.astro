@@ -1,0 +1,45 @@
+---
+/**
+ * SNSクロスポスト用ポップアップの繋ぎページ。
+ *
+ * 責務と処理概要:
+ * - PostForm は投稿API呼び出し（await）の前に、ユーザー操作と同期的なコールスタック内で
+ *   このページをポップアップとして開いておき（`preOpenPopupWindow`）、投稿完了後に
+ *   `location.href` で実際のintent URL（x.com/taittsuu/Mastodon）へ遷移させる
+ *   （詳細は `src/util/share/openIntentPopup.ts` を参照）。
+ * - 空白（about:blank）のまま数秒待たせるとユーザーが不安になるため、遷移中である
+ *   ことを示す待機画面のみを提供する。このページ自身は次の遷移先を知らず、
+ *   呼び出し元ウィンドウからの`location.href`書き換えを待つだけの受け皿。
+ * - スピナー表示は`Loading`（既存の共通コンポーネント。PostForm等の「投稿中...」と
+ *   同じ見た目）をそのまま流用し、このページ専用のスタイルは持たない。
+ * - 何らかの理由で遷移が行われないまま残った場合（例: 呼び出し元が誤って閉じ忘れた）
+ *   に備え、一定時間後に案内文を表示する。
+ */
+export const prerender = true
+import Loading from "@/components/common/Loading"
+import Baselayout from "@/layout/Baselayout.astro"
+import { serviceName } from "@/vars"
+import ui from "@/styles/ui.module.css"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath="/materials/ogp_main.png" pageTitle={`移動しています... - ${serviceName}`} robots={robots}>
+    <div class={ui.center}>
+        <div class={`${ui.page} ${ui["width-md"]} ${ui.center}`}>
+            <Loading message="投稿画面を開いています…" client:load />
+            <p class={ui.text} id="jump-hint" hidden>
+                しばらく経っても切り替わらない場合は、ポップアップブロックの設定をご確認いただくか、このウィンドウを閉じてください。
+            </p>
+        </div>
+    </div>
+</Baselayout>
+
+<script>
+    // 呼び出し元がlocation.hrefでこのウィンドウを遷移させた時点でこのページ自体は
+    // 破棄されるため、このタイマーが発火する＝何らかの理由で遷移が行われなかった
+    // ことを意味する。その場合のみ案内文を表示する。
+    setTimeout(() => {
+        document.getElementById("jump-hint")?.removeAttribute("hidden")
+    }, 4000)
+</script>

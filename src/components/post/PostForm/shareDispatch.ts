@@ -34,6 +34,13 @@ export type ShareDispatchParams = {
     mastodonInstanceDomain: string
     popupIntentInsteadOfWebshare: boolean
     noAutoPopupAfterPost: boolean
+    /**
+     * 呼び出し側が投稿API呼び出し（await）より前に`preOpenPopupWindow`で
+     * 事前に開いておいたポップアップウィンドウ。自動ポップアップ対象になった
+     * targetの遷移先として使う（詳細は`openIntentPopup`を参照）。未使用に
+     * 終わった場合はこの関数側で閉じる。
+     */
+    popupWindow: Window | null
 }
 
 export type ShareDispatchResult = {
@@ -146,6 +153,7 @@ export const runShareDispatch = async (
         mastodonInstanceDomain,
         popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost,
+        popupWindow,
     } = params
 
     // 「画像を自分で添付する」有効時は skyshare エントリを作らないため、
@@ -162,6 +170,7 @@ export const runShareDispatch = async (
     )
 
     if (noAutoPopupAfterPost) {
+        popupWindow?.close()
         return {
             status: "Blueskyへの投稿に成功しました。クロスポストを行うには他SNS向け投稿ボタンを押してください。",
             statusColor: "green",
@@ -194,13 +203,14 @@ export const runShareDispatch = async (
     ) {
         const opened =
             target === "taittsuu"
-                ? openTaittsuuIntentPopup(taittsuuIntentText)
+                ? openTaittsuuIntentPopup(taittsuuIntentText, popupWindow)
                 : target === "mastodon"
                   ? openMastodonIntentPopup(
                         mastodonInstanceDomain,
                         mastodonIntentText,
+                        popupWindow,
                     )
-                  : openXIntentPopup(shareText)
+                  : openXIntentPopup(shareText, popupWindow)
 
         if (opened) {
             return {
@@ -225,6 +235,11 @@ export const runShareDispatch = async (
             forcedPopupIntentInsteadOfWebshareOn: false,
         }
     }
+
+    // ここに到達する時点でpopupWindowは未使用（このパスの対象はWebShareAPI、
+    // 失敗時のフォールバックのみ改めてXポップアップを新規に開く）。呼び出し側が
+    // 事前に開いていた場合に取り残さないよう閉じる。
+    popupWindow?.close()
 
     const webShareData = buildWebShareData({
         text: shareText,

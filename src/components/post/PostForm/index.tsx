@@ -50,6 +50,7 @@ import {
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
 import { openMastodonIntentPopup } from "@/util/share/mastodonIntent"
+import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
 import { openTaittsuuIntentPopup } from "@/util/share/taittsuuIntent"
 import { openXIntentPopup } from "@/util/share/xIntent"
 import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
@@ -613,6 +614,19 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     e.preventDefault()
     if (isSubmitting) return
 
+    // 投稿API呼び出し（下のawait）を挟んでからwindow.openすると、iOS Safariでは
+    // ユーザーアクティベーションが失効気味になり、実際にはポップアップが開いて
+    // いるのに戻り値だけ`false`扱いになりフォールバック（ボタン表示）が誤って
+    // 走ることがある。そのため自動ポップアップが行われる設定の場合は、ここ
+    // （ユーザー操作と同期的なコールスタック内）で先に空のポップアップを開いて
+    // おき、URL確定後にrunShareDispatch内でそこへ遷移させる。
+    const willAutoPopup =
+      !shareToggles.noAutoPopupAfterPost &&
+      (shareToggles.crosspostToTaittsuu ||
+        shareToggles.crosspostToMastodon ||
+        shareToggles.popupIntentInsteadOfWebshare)
+    const popupWindow = willAutoPopup ? preOpenPopupWindow() : null
+
     setIsSubmitting(true)
     setStatus("送信中…")
     setStatusColor(undefined)
@@ -628,6 +642,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       })
 
       if (!entryResult.ok) {
+        popupWindow?.close()
         setStatusColor("#b00")
         setStatus(entryResult.message)
         return
@@ -648,6 +663,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         mastodonInstanceDomain: shareToggles.mastodonInstanceDomain,
         popupIntentInsteadOfWebshare: shareToggles.popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
+        popupWindow,
       })
 
       onPosted?.()
@@ -669,6 +685,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       setStatus(dispatch.status)
       setStatusColor(dispatch.statusColor)
     } catch (err) {
+      popupWindow?.close()
       console.error(err)
       setStatusColor("#b00")
       setStatus("サーバへ接続できませんでした。")

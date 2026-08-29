@@ -42,6 +42,7 @@ const buildParams = (
     mastodonInstanceDomain: "",
     popupIntentInsteadOfWebshare: false,
     noAutoPopupAfterPost: false,
+    popupWindow: null,
     ...overrides,
 })
 

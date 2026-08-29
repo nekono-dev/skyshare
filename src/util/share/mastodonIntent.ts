@@ -63,6 +63,8 @@ export const buildMastodonIntentText = (text: string, skyshareUri: string) => {
  * Input:
  * - `instanceDomain`: ユーザが設定したMastodonインスタンスのドメイン（例: "mastodon.social"）
  * - `intentText`: intent に渡す投稿文字列
+ * - `preOpenedWindow`: `preOpenPopupWindow`で事前に開いておいたウィンドウ
+ *   （省略時は新規にポップアップを開く。詳細は`openIntentPopup`を参照）
  *
  * Output:
  * - ウィンドウオープンに成功したら `true`
@@ -74,6 +76,7 @@ export const buildMastodonIntentText = (text: string, skyshareUri: string) => {
 export const openMastodonIntentPopup = (
     instanceDomain: string,
     intentText: string,
+    preOpenedWindow?: Window | null,
 ) => {
     if (typeof window === "undefined") {
         return false
@@ -84,7 +87,7 @@ export const openMastodonIntentPopup = (
         // searchParams.set が text の値をURLエンコードする。
         intentUrl.searchParams.set("text", intentText)
 
-        return openIntentPopup(intentUrl.toString())
+        return openIntentPopup(intentUrl.toString(), preOpenedWindow)
     } catch (error) {
         return false
     }

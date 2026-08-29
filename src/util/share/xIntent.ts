@@ -35,6 +35,8 @@ export const buildXIntentText = (text: string, skyshareUri: string) => {
  *
  * Input:
  * - `intentText`: intent に渡す投稿文字列
+ * - `preOpenedWindow`: `preOpenPopupWindow`で事前に開いておいたウィンドウ
+ *   （省略時は新規にポップアップを開く。詳細は`openIntentPopup`を参照）
  *
  * Output:
  * - ウィンドウオープンに成功したら `true`
@@ -43,7 +45,10 @@ export const buildXIntentText = (text: string, skyshareUri: string) => {
  * - 入力: `"hello\nhttps://example.com"`
  * - 出力: `true`
  */
-export const openXIntentPopup = (intentText: string) => {
+export const openXIntentPopup = (
+    intentText: string,
+    preOpenedWindow?: Window | null,
+) => {
     if (typeof window === "undefined") {
         return false
     }
@@ -51,5 +56,5 @@ export const openXIntentPopup = (intentText: string) => {
     const intentUrl = new URL("https://x.com/intent/tweet")
     intentUrl.searchParams.set("text", intentText)
 
-    return openIntentPopup(intentUrl.toString())
+    return openIntentPopup(intentUrl.toString(), preOpenedWindow)
 }
