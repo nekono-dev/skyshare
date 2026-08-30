@@ -9,6 +9,7 @@
  *   `did`/`handle`/`avatarUrl` 等の表示用メタデータしか扱わない。
  */
 import { useCallback, useEffect, useState } from "react"
+import Avatar from "@/components/common/Avatar"
 import ComponentList from "@/components/common/ComponentList"
 import {
   getSession,
@@ -71,19 +72,11 @@ const AccountCard = ({
         }
       }}
     >
-      {item.avatarUrl ? (
-        <img
-          className={styles.avatar}
-          src={item.avatarUrl}
-          alt={item.displayName ?? item.handle}
-          width={48}
-          height={48}
-          loading="lazy"
-          decoding="async"
-        />
-      ) : (
-        <div className={styles["avatar-placeholder"]} aria-hidden="true" />
-      )}
+      <Avatar
+        src={item.avatarUrl}
+        alt={item.displayName ?? item.handle}
+        size={48}
+      />
 
       <div className={styles.meta}>
         <div className={styles["name-row"]}>

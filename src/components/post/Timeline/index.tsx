@@ -7,7 +7,7 @@
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { getEntries, getSession } from "@/client/openapi/client"
 import ComponentList from "@/components/common/ComponentList"
 import type {
@@ -23,7 +23,12 @@ import NavigationBar from "@/components/common/NavigationBar"
 import PostCard from "@/components/post/PostCard"
 import PostForm from "@/components/post/PostForm"
 import PostLauncher from "@/components/post/PostLauncher"
+import { countHashtagUsage } from "@/lib/atproto/richtext"
 import type { TimelinePost } from "@/lib/entry/posts"
+import {
+  readHashtagHistory,
+  seedHashtagHistoryFromRankedTags,
+} from "@/lib/settings/hashtagHistorySettings"
 import { readPinnedFormDisabledSetting } from "@/lib/settings/shareSettings"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import { readPageSizeSetting } from "@/lib/settings/timelineSettings"
@@ -200,6 +205,22 @@ const Component = ({ avatarUrl }: Props) => {
   const removeItem = isPaged
     ? pagedController.removeItem
     : infiniteController.removeItem
+
+  // Timeline初回読み込み完了後に一度だけ、ハッシュタグ候補の初回履歴seedを試みる。
+  // 既にハッシュタグ履歴がある場合は seedHashtagHistoryFromRankedTags 側で書き込みが
+  // スキップされるが、その判定を待たず readHashtagHistory で先に確認することで、
+  // 履歴がある場合は countHashtagUsage の集計処理自体も行わないようにする。
+  const hashtagSeedRef = useRef(false)
+  useEffect(() => {
+    if (hashtagSeedRef.current) return
+    if (loading || items.length === 0) return
+    hashtagSeedRef.current = true
+
+    if (readHashtagHistory().length > 0) return
+
+    const ranked = countHashtagUsage(items.map(post => post.text))
+    seedHashtagHistoryFromRankedTags(ranked.map(r => r.tag))
+  }, [items, loading])
 
   return (
     <section>

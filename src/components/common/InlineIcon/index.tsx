@@ -8,19 +8,22 @@
  *   `InlineIconName` で選択するのみとする（呼び出し側で画像をimportする必要がない）。
  */
 import crosspostIcon from "@/images/crosspost.svg"
+import hashtagIcon from "@/images/hashtag.svg"
 import mastodonIcon from "@/images/mastodon.svg"
 import shareIcon from "@/images/share.svg"
 import taittsuuIcon from "@/images/taittsuu.png"
 import styles from "./index.module.css"
 
 /** InlineIconで表示できるアイコンの種類 */
-export type InlineIconName = "share" | "popup" | "taittsuu" | "mastodon"
+export type InlineIconName =
+  "share" | "popup" | "taittsuu" | "mastodon" | "hashtag"
 
 const icons: Record<InlineIconName, ImageMetadata> = {
   share: shareIcon,
   popup: crosspostIcon,
   taittsuu: taittsuuIcon,
   mastodon: mastodonIcon,
+  hashtag: hashtagIcon,
 }
 
 type Props = {

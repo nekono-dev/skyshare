@@ -18,22 +18,12 @@
 }
 
 .avatar {
-  width: 48px;
-  height: 48px;
   flex: 0 0 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  display: inline-block;
-}
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
 }
 
 .input-area {
   flex: 1 1 auto;
+  position: relative;
 }
 
 /* 投稿本文欄は共通の枠付きスタイルを持たず、コンポーザー的な見た目にする */

@@ -45,20 +45,6 @@
   text-decoration: underline;
 }
 
-.avatar,
-.avatar-placeholder {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  flex: 0 0 auto;
-  object-fit: cover;
-  border: 1px solid var(--color-border);
-}
-
-.avatar-placeholder {
-  background: var(--color-card-muted-bg);
-}
-
 .author-meta {
   flex: 1 1 auto;
   min-width: 0;

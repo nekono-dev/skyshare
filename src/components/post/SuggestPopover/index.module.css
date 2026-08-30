@@ -1,0 +1,42 @@
+.popover {
+  padding: var(--space-0);
+  min-width: 220px;
+  max-width: min(320px, 90vw);
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-0);
+  padding: var(--space-0) var(--space-1);
+  cursor: pointer;
+}
+
+.option-active {
+  background: var(--color-gray-hover);
+}
+
+.candidate-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.display-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.handle {
+  font-size: 0.85em;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

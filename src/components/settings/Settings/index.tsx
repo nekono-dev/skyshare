@@ -23,6 +23,12 @@ import {
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
 import {
+  readHashtagSuggestEnabledSetting,
+  readMentionSuggestEnabledSetting,
+  writeHashtagSuggestEnabledSetting,
+  writeMentionSuggestEnabledSetting,
+} from "@/lib/settings/suggestSettings"
+import {
   applyThemeMode,
   readThemeModeSetting,
   type ThemeMode,
@@ -50,6 +56,12 @@ export const Settings = () => {
   const [themeMode, setThemeMode] = useState(() =>
     readThemeModeSetting("system"),
   )
+  const [hashtagSuggestEnabled, setHashtagSuggestEnabled] = useState(() =>
+    readHashtagSuggestEnabledSetting(true),
+  )
+  const [mentionSuggestEnabled, setMentionSuggestEnabled] = useState(() =>
+    readMentionSuggestEnabledSetting(true),
+  )
 
   /**
    * 「投稿フォームを固定表示しない」設定を変更する。
@@ -74,6 +86,28 @@ export const Settings = () => {
     applyThemeMode(next)
   }
 
+  /**
+   * 「ハッシュタグ候補を表示」設定を変更する。
+   *
+   * Input:
+   * - `next`: 変更後の値
+   */
+  const onHashtagSuggestEnabledChange = (next: boolean) => {
+    setHashtagSuggestEnabled(next)
+    writeHashtagSuggestEnabledSetting(next)
+  }
+
+  /**
+   * 「メンション候補を表示」設定を変更する。
+   *
+   * Input:
+   * - `next`: 変更後の値
+   */
+  const onMentionSuggestEnabledChange = (next: boolean) => {
+    setMentionSuggestEnabled(next)
+    writeMentionSuggestEnabledSetting(next)
+  }
+
   // reload実体は毎レンダーで作り直されるため ref 経由で最新版を参照し、
   // イベントリスナーの登録・解除自体は初回マウント時の一度だけに保つ
   // （Overlay.tsx の onCloseRef と同じパターン）。
@@ -82,6 +116,8 @@ export const Settings = () => {
     shareToggles.reload()
     setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
     setThemeMode(readThemeModeSetting("system"))
+    setHashtagSuggestEnabled(readHashtagSuggestEnabledSetting(true))
+    setMentionSuggestEnabled(readMentionSuggestEnabledSetting(true))
   }
 
   useEffect(() => {
@@ -143,6 +179,22 @@ export const Settings = () => {
 
       checked: shareToggles.manualImageAttach,
       onCheckedChange: shareToggles.onManualImageAttachChange,
+    },
+    {
+      key: "hashtagSuggestEnabled",
+      label: "ハッシュタグ候補を表示",
+      description:
+        "オンにすると、投稿本文で「#」を入力した際にハッシュタグの候補一覧を表示します。",
+      checked: hashtagSuggestEnabled,
+      onCheckedChange: onHashtagSuggestEnabledChange,
+    },
+    {
+      key: "mentionSuggestEnabled",
+      label: "メンション候補を表示",
+      description:
+        "オンにすると、投稿本文で「@」を入力した際にメンション候補一覧を表示します。",
+      checked: mentionSuggestEnabled,
+      onCheckedChange: onMentionSuggestEnabledChange,
     },
   ]
 

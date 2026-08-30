@@ -14,12 +14,14 @@ import React, {
   useRef,
   useState,
 } from "react"
+import { RichText } from "@atproto/api"
 import {
   createDraft,
   deleteDraft,
   getDrafts,
   updateDraft,
 } from "@/client/openapi/client"
+import Avatar from "@/components/common/Avatar"
 import Collapsible from "@/components/common/Collapsible/index"
 import CountedTextInput, {
   type CounterSpec,
@@ -42,13 +44,21 @@ import {
 import OgpPreview from "@/components/image/OgpPreview"
 import Overlay from "@/components/common/Overlay"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
+import SuggestPopover from "@/components/post/SuggestPopover"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
+import { useSuggest } from "./useSuggest"
+import { extractTagsFromFacets } from "@/lib/atproto/richtext"
+import { addHashtagsToHistory } from "@/lib/settings/hashtagHistorySettings"
 import { normalizeDraftList } from "@/lib/entry/draftList"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
 import {
   readPinnedFormDisabledSetting,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
+import {
+  readHashtagSuggestEnabledSetting,
+  readMentionSuggestEnabledSetting,
+} from "@/lib/settings/suggestSettings"
 import { openMastodonIntentPopup } from "@/util/share/mastodonIntent"
 import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
 import { openTaittsuuIntentPopup } from "@/util/share/taittsuuIntent"
@@ -113,6 +123,31 @@ const revokeImageEntry = (entry: ImageEntry | null) => {
     } catch (e) {}
   } catch (error) {
     console.warn("Failed to revoke object URL", error)
+  }
+}
+
+/**
+ * 投稿確定後、本文中のハッシュタグをローカル履歴（`hashtagHistorySettings.ts`）へ記録する。
+ *
+ * 処理の趣旨:
+ * - 候補機能（`useSuggest`）のハッシュタグ候補は、Bluesky公開APIのグローバルなトレンドだけでは
+ *   賄えないため、このブラウザで過去に自分が使ったタグを補う目的でここに記録する。
+ * - facet抽出に失敗しても投稿フロー自体は継続させたいため、例外を握りつぶす。
+ *
+ * Input:
+ * - `text`: 投稿本文
+ *
+ * Output:
+ * - なし（localStorageへの副作用のみ）
+ */
+const recordUsedHashtagsToHistory = (text: string) => {
+  try {
+    const rt = new RichText({ text })
+    rt.detectFacetsWithoutResolution()
+    const tags = extractTagsFromFacets(rt.facets)
+    addHashtagsToHistory(tags)
+  } catch (err) {
+    console.warn("PostForm: failed to record hashtag history", err)
   }
 }
 
@@ -185,6 +220,12 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
     readPinnedFormDisabledSetting(false),
   )
+  const [hashtagSuggestEnabled] = useState(() =>
+    readHashtagSuggestEnabledSetting(true),
+  )
+  const [mentionSuggestEnabled] = useState(() =>
+    readMentionSuggestEnabledSetting(true),
+  )
 
   const [selfLabel, setSelfLabel] = useState<
     CreateEntryBodySelfLabels | undefined
@@ -213,6 +254,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const entryFormRef = useRef<HTMLFormElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
   const toolboxRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const suggest = useSuggest({
+    text,
+    onReplaceText: setText,
+    textareaRef,
+    disabled: isSubmitting,
+    hashtagSuggestEnabled,
+    mentionSuggestEnabled,
+  })
 
   const bskyMaxCount = 300
   const xWarnCount = 140
@@ -653,6 +704,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         setLoadedDraft(null)
       }
 
+      recordUsedHashtagsToHistory(text)
+
       const dispatch = await runShareDispatch({
         text,
         skyshareUri: entryResult.skyshareUri,
@@ -887,26 +940,13 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           onSubmit={handleSubmit}
         >
           <div className={styles["body-row"]}>
-            <div className={styles.avatar} aria-hidden>
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  className={styles["avatar-img"]}
-                  alt="avatar"
-                />
-              ) : (
-                <svg viewBox="0 0 36 36" className={styles["avatar-img"]}>
-                  <circle cx="18" cy="18" r="18" fill="#e6eef9" />
-                  <text
-                    x="50%"
-                    y="55%"
-                    textAnchor="middle"
-                    fontSize="14"
-                    fill="#2b6cb0"
-                  ></text>
-                </svg>
-              )}
-            </div>
+            <Avatar
+              src={avatarUrl}
+              alt="avatar"
+              aria-hidden
+              size={48}
+              className={styles.avatar}
+            />
 
             <div className={styles["input-area"]} ref={inputAreaRef}>
               <CountedTextInput
@@ -931,11 +971,27 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 value={text}
                 onChange={setText}
                 onFocus={handleTextareaFocus}
-                onBlur={handleTextareaBlur}
-                onKeyDown={handleTextareaKeyDown}
+                onBlur={() => {
+                  suggest.handleBlur()
+                  handleTextareaBlur()
+                }}
+                onKeyDown={e => {
+                  suggest.handleKeyDown(e)
+                  handleTextareaKeyDown(e)
+                }}
                 disabled={isSubmitting}
                 counters={textCounters}
                 wrapperClassName={styles["text-input-wrapper"]}
+                textareaRef={textareaRef}
+              />
+              <SuggestPopover
+                candidates={suggest.candidates}
+                activeIndex={suggest.activeIndex}
+                position={suggest.position}
+                listboxId={suggest.listboxId}
+                onHoverIndex={suggest.onHoverIndex}
+                onSelect={suggest.onSelect}
+                onDismiss={suggest.close}
               />
             </div>
           </div>

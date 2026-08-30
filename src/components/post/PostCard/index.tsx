@@ -12,6 +12,7 @@
  */
 
 import { useState } from "react"
+import Avatar from "@/components/common/Avatar"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/entry/posts"
@@ -99,22 +100,11 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
       <div className={styles["top-row"]}>
         <div className={styles["content-column"]}>
           <div className={styles["author-block"]}>
-            {item.author.avatar ? (
-              <img
-                className={styles.avatar}
-                src={item.author.avatar}
-                alt={item.author.displayName ?? item.author.handle}
-                width={48}
-                height={48}
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <div
-                className={styles["avatar-placeholder"]}
-                aria-hidden="true"
-              />
-            )}
+            <Avatar
+              src={item.author.avatar}
+              alt={item.author.displayName ?? item.author.handle}
+              size={48}
+            />
 
             <div className={styles["author-meta"]}>
               <div className={styles["author-name-row"]}>

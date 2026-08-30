@@ -51,6 +51,12 @@ type Props = {
   counters?: CounterSpec[]
   /** 外枠divに追加するクラス名。見た目の上書き（枠線なし化など）を呼び出し側に委ねる */
   wrapperClassName?: string
+  /**
+   * multiline時のみ有効。内部で保持しているtextarea DOM要素をそのまま呼び出し側にも公開する。
+   * PostFormのメンション/ハッシュタグ候補機能が、キャレット位置測定・選択範囲の取得・
+   * 候補確定後のカーソル復元に使う。省略時は何も起きない（既存利用箇所への影響なし）。
+   */
+  textareaRef?: React.Ref<HTMLTextAreaElement>
 }
 
 type CounterState = "normal" | "warn" | "error"
@@ -135,6 +141,7 @@ const Component: React.FC<Props> = ({
   disabled,
   counters = [],
   wrapperClassName,
+  textareaRef: textareaRefProp,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
 
@@ -201,7 +208,15 @@ const Component: React.FC<Props> = ({
           id={id}
           name={name}
           rows={rows}
-          ref={textareaRef}
+          ref={node => {
+            textareaRef.current = node
+            if (typeof textareaRefProp === "function") textareaRefProp(node)
+            else if (textareaRefProp) {
+              ;(
+                textareaRefProp as React.RefObject<HTMLTextAreaElement | null>
+              ).current = node
+            }
+          }}
           className={fieldClass}
           placeholder={placeholder}
           value={value}
