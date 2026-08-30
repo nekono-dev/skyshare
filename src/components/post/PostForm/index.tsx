@@ -80,6 +80,8 @@ type Props = {
   onClose?: () => void
   onPosted?: () => void
   avatarUrl?: string | null
+  /** ハッシュタグ履歴（`hashtagHistorySettings.ts`）をアカウント別に分けるための識別子 */
+  accountDid?: string | null
   /**
    * 「投稿フォームを固定表示しない」設定が変更されたときに呼ばれる。
    * タイムライン先頭の常時表示フォームとフローティングボタン側のモーダルフォームが
@@ -135,16 +137,20 @@ const revokeImageEntry = (entry: ImageEntry | null) => {
  *
  * Input:
  * - `text`: 投稿本文
+ * - `accountDid`: 履歴を分離するアカウントの識別子。未解決なら記録しない
  *
  * Output:
  * - なし（localStorageへの副作用のみ）
  */
-const recordUsedHashtagsToHistory = (text: string) => {
+const recordUsedHashtagsToHistory = (
+  text: string,
+  accountDid: string | null | undefined,
+) => {
   try {
     const rt = new RichText({ text })
     rt.detectFacetsWithoutResolution()
     const tags = extractTagsFromFacets(rt.facets)
-    addHashtagsToHistory(tags)
+    addHashtagsToHistory(tags, accountDid)
   } catch (err) {
     console.warn("PostForm: failed to record hashtag history", err)
   }
@@ -198,6 +204,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     onClose,
     onPosted,
     avatarUrl,
+    accountDid,
     onPinnedFormDisabledChange,
   },
   ref,
@@ -262,6 +269,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     disabled: isSubmitting,
     hashtagSuggestEnabled,
     mentionSuggestEnabled,
+    accountDid,
   })
 
   const bskyMaxCount = 300
@@ -701,7 +709,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         setLoadedDraft(null)
       }
 
-      recordUsedHashtagsToHistory(text)
+      recordUsedHashtagsToHistory(text, accountDid)
 
       const dispatch = await runShareDispatch({
         text,

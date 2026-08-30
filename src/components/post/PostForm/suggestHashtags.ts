@@ -24,6 +24,7 @@ const HASHTAG_SUGGEST_LIMIT = 5
  * Input:
  * - `prefix`: 絞り込み対象のプレフィックス文字列（"#"は含まない、空文字可）
  * - `signal`: トレンド取得用の AbortSignal
+ * - `accountDid`: 履歴を分離するアカウントの識別子。未解決なら履歴は空扱い
  *
  * Output:
  * - 候補の配列（最大 `HASHTAG_SUGGEST_LIMIT` 件）
@@ -31,13 +32,15 @@ const HASHTAG_SUGGEST_LIMIT = 5
 export const getHashtagCandidates = async ({
     prefix,
     signal,
+    accountDid,
 }: {
     prefix: string
     signal?: AbortSignal
+    accountDid?: string | null
 }): Promise<HashtagCandidate[]> => {
     const lowerPrefix = prefix.toLowerCase()
 
-    const history = readHashtagHistory()
+    const history = readHashtagHistory(accountDid)
         .filter(e => e.tag.toLowerCase().startsWith(lowerPrefix))
         .map(e => ({ tag: e.tag, source: "history" as const }))
 

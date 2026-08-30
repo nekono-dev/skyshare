@@ -18,6 +18,8 @@ import PostForm from "@/components/post/PostForm"
  */
 const PostPage = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  // ハッシュタグ履歴（hashtagHistorySettings.ts）をアカウント別に分けるための識別子。
+  const [accountDid, setAccountDid] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -38,6 +40,7 @@ const PostPage = () => {
         )
         if (!cancelled) {
           setAvatarUrl(activeAccount?.avatarUrl ?? null)
+          setAccountDid(activeAccount?.did ?? null)
         }
       } catch (err) {
         console.error("PostPage: failed to load session", err)
@@ -53,7 +56,7 @@ const PostPage = () => {
 
   return (
     <>
-      <PostForm variant="page" avatarUrl={avatarUrl} />
+      <PostForm variant="page" avatarUrl={avatarUrl} accountDid={accountDid} />
     </>
   )
 }

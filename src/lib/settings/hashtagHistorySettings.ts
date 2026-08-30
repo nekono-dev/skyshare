@@ -7,27 +7,62 @@
  *   出せない「このブラウザで過去に自分が使ったタグ」を補うために使う。
  * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする
  *   （`src/lib/settings/shareSettings.ts` と同じ方針）。
+ * - 同一ブラウザで複数アカウントを切り替えて使うケースを考慮し、`accountDid` ごとにキーを分けて
+ *   保存する。`accountDid` が未解決（ログインセッション取得前など）の間は履歴なし扱いとし、
+ *   読み書きどちらもスキップする（アカウント間の履歴混在を防ぐため）。
+ * - 保持件数の上限は `PUBLIC_HASHTAG_HISTORY_MAX` 環境変数で調整できる（未設定/不正値なら
+ *   `DEFAULT_HASHTAG_HISTORY_MAX` にフォールバック）。呼び出しごとに動的に解決するため、
+ *   テストからは `vi.stubEnv` で値を差し替えて挙動を検証できる。
  */
 
-const HASHTAG_HISTORY_KEY = "hashtagHistory"
-const HASHTAG_HISTORY_MAX = 100
+const HASHTAG_HISTORY_KEY_PREFIX = "hashtagHistory"
+const DEFAULT_HASHTAG_HISTORY_MAX = 100
 
 export type HashtagHistoryEntry = { tag: string; lastUsedAt: number }
+
+/**
+ * ハッシュタグ履歴の保持件数上限を解決する。
+ *
+ * Input:
+ * - なし（`import.meta.env.PUBLIC_HASHTAG_HISTORY_MAX` を参照する）
+ *
+ * Output:
+ * - 正の整数として解釈できればその値、できなければ `DEFAULT_HASHTAG_HISTORY_MAX`
+ */
+export const getHashtagHistoryMax = (): number => {
+    const raw = import.meta.env.PUBLIC_HASHTAG_HISTORY_MAX
+    const parsed = Number(raw)
+    return Number.isInteger(parsed) && parsed > 0
+        ? parsed
+        : DEFAULT_HASHTAG_HISTORY_MAX
+}
+
+const buildHashtagHistoryKey = (
+    accountDid: string | null | undefined,
+): string | null => {
+    if (!accountDid) return null
+    return `${HASHTAG_HISTORY_KEY_PREFIX}:${accountDid}`
+}
 
 /**
  * localStorageから使用済みハッシュタグ履歴を読み取る。
  *
  * Input:
- * - なし
+ * - `accountDid`: 履歴を分離するアカウントの識別子。未解決なら空配列を返す
  *
  * Output:
  * - 使用時刻が新しい順の履歴配列。未設定/読み取り失敗時は空配列
  */
-export const readHashtagHistory = (): HashtagHistoryEntry[] => {
+export const readHashtagHistory = (
+    accountDid: string | null | undefined,
+): HashtagHistoryEntry[] => {
     if (typeof window === "undefined") return []
 
+    const key = buildHashtagHistoryKey(accountDid)
+    if (!key) return []
+
     try {
-        const raw = window.localStorage.getItem(HASHTAG_HISTORY_KEY)
+        const raw = window.localStorage.getItem(key)
         if (!raw) return []
 
         const parsed = JSON.parse(raw)
@@ -52,21 +87,28 @@ export const readHashtagHistory = (): HashtagHistoryEntry[] => {
  *
  * 処理の趣旨:
  * - 同一タグ(大文字小文字を無視)は最新の表記・時刻で1件にまとめ、新しい順で先頭から
- *   `HASHTAG_HISTORY_MAX` 件までに切り詰める。
+ *   `getHashtagHistoryMax()` 件までに切り詰める。
  * - localStorage書き込み失敗時はUI動作を優先し、例外を握りつぶす。
  *
  * Input:
  * - `tags`: 投稿本文から検出したハッシュタグ配列("#"を含まない)
+ * - `accountDid`: 履歴を分離するアカウントの識別子。未解決なら何もしない
  *
  * Output:
  * - なし
  */
-export const addHashtagsToHistory = (tags: string[]): void => {
+export const addHashtagsToHistory = (
+    tags: string[],
+    accountDid: string | null | undefined,
+): void => {
     if (typeof window === "undefined" || tags.length === 0) return
+
+    const key = buildHashtagHistoryKey(accountDid)
+    if (!key) return
 
     try {
         const now = Date.now()
-        const existing = readHashtagHistory()
+        const existing = readHashtagHistory(accountDid)
         const merged = [
             ...tags.map(tag => ({ tag, lastUsedAt: now })),
             ...existing,
@@ -75,15 +117,15 @@ export const addHashtagsToHistory = (tags: string[]): void => {
         const deduped: HashtagHistoryEntry[] = []
         const seen = new Set<string>()
         for (const entry of merged) {
-            const key = entry.tag.toLowerCase()
-            if (seen.has(key)) continue
-            seen.add(key)
+            const dedupeKey = entry.tag.toLowerCase()
+            if (seen.has(dedupeKey)) continue
+            seen.add(dedupeKey)
             deduped.push(entry)
         }
 
         window.localStorage.setItem(
-            HASHTAG_HISTORY_KEY,
-            JSON.stringify(deduped.slice(0, HASHTAG_HISTORY_MAX)),
+            key,
+            JSON.stringify(deduped.slice(0, getHashtagHistoryMax())),
         )
     } catch {
         // 保存失敗時はUI動作を優先し、例外を握りつぶす
@@ -103,24 +145,28 @@ export const addHashtagsToHistory = (tags: string[]): void => {
  *
  * Input:
  * - `tags`: 使用数降順のタグ配列("#"を含まない)
+ * - `accountDid`: 履歴を分離するアカウントの識別子。未解決なら何もしない
  *
  * Output:
  * - なし
  */
-export const seedHashtagHistoryFromRankedTags = (tags: string[]): void => {
+export const seedHashtagHistoryFromRankedTags = (
+    tags: string[],
+    accountDid: string | null | undefined,
+): void => {
     if (typeof window === "undefined" || tags.length === 0) return
-    if (readHashtagHistory().length > 0) return
+
+    const key = buildHashtagHistoryKey(accountDid)
+    if (!key) return
+    if (readHashtagHistory(accountDid).length > 0) return
 
     try {
         const now = Date.now()
         const entries: HashtagHistoryEntry[] = tags
-            .slice(0, HASHTAG_HISTORY_MAX)
+            .slice(0, getHashtagHistoryMax())
             .map((tag, index) => ({ tag, lastUsedAt: now - index }))
 
-        window.localStorage.setItem(
-            HASHTAG_HISTORY_KEY,
-            JSON.stringify(entries),
-        )
+        window.localStorage.setItem(key, JSON.stringify(entries))
     } catch {
         // 保存失敗時はUI動作を優先し、例外を握りつぶす
     }

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
     addHashtagsToHistory,
+    getHashtagHistoryMax,
     readHashtagHistory,
     seedHashtagHistoryFromRankedTags,
 } from "@/lib/settings/hashtagHistorySettings"
@@ -22,69 +23,121 @@ const createMemoryLocalStorage = () => {
     }
 }
 
+const DID = "did:plc:test"
+const STORAGE_KEY = `hashtagHistory:${DID}`
+
 afterEach(() => {
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+})
+
+describe("getHashtagHistoryMax", () => {
+    it("環境変数が未設定の場合は既定値(100)を返す", () => {
+        expect(getHashtagHistoryMax()).toBe(100)
+    })
+
+    it("環境変数に正の整数が設定されていればその値を返す", () => {
+        vi.stubEnv("PUBLIC_HASHTAG_HISTORY_MAX", "5")
+        expect(getHashtagHistoryMax()).toBe(5)
+    })
+
+    it("環境変数が不正値(0以下・非数値)の場合は既定値にフォールバックする", () => {
+        vi.stubEnv("PUBLIC_HASHTAG_HISTORY_MAX", "0")
+        expect(getHashtagHistoryMax()).toBe(100)
+
+        vi.stubEnv("PUBLIC_HASHTAG_HISTORY_MAX", "not-a-number")
+        expect(getHashtagHistoryMax()).toBe(100)
+    })
 })
 
 describe("readHashtagHistory", () => {
     it("window が未定義の場合は空配列を返す", () => {
-        expect(readHashtagHistory()).toEqual([])
+        expect(readHashtagHistory(DID)).toEqual([])
+    })
+
+    it("accountDidが未解決の場合は空配列を返す", () => {
+        vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
+        expect(readHashtagHistory(null)).toEqual([])
+        expect(readHashtagHistory(undefined)).toEqual([])
     })
 
     it("未設定時は空配列を返す", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        expect(readHashtagHistory()).toEqual([])
+        expect(readHashtagHistory(DID)).toEqual([])
     })
 
     it("不正なJSONの場合は空配列にフォールバックする", () => {
         const localStorage = createMemoryLocalStorage()
-        localStorage.setItem("hashtagHistory", "not json")
+        localStorage.setItem(STORAGE_KEY, "not json")
         vi.stubGlobal("window", { localStorage })
-        expect(readHashtagHistory()).toEqual([])
+        expect(readHashtagHistory(DID)).toEqual([])
     })
 
     it("新しい順に並べ替えて返す", () => {
         const localStorage = createMemoryLocalStorage()
         localStorage.setItem(
-            "hashtagHistory",
+            STORAGE_KEY,
             JSON.stringify([
                 { tag: "old", lastUsedAt: 1 },
                 { tag: "new", lastUsedAt: 2 },
             ]),
         )
         vi.stubGlobal("window", { localStorage })
-        expect(readHashtagHistory().map(e => e.tag)).toEqual(["new", "old"])
+        expect(readHashtagHistory(DID).map(e => e.tag)).toEqual(["new", "old"])
+    })
+
+    it("別アカウントの履歴は混ざらない", () => {
+        const localStorage = createMemoryLocalStorage()
+        vi.stubGlobal("window", { localStorage })
+        addHashtagsToHistory(["猫"], "did:plc:alice")
+        addHashtagsToHistory(["犬"], "did:plc:bob")
+        expect(readHashtagHistory("did:plc:alice").map(e => e.tag)).toEqual([
+            "猫",
+        ])
+        expect(readHashtagHistory("did:plc:bob").map(e => e.tag)).toEqual([
+            "犬",
+        ])
     })
 })
 
 describe("addHashtagsToHistory", () => {
     it("window が未定義でも例外を投げない", () => {
-        expect(() => addHashtagsToHistory(["猫"])).not.toThrow()
+        expect(() => addHashtagsToHistory(["猫"], DID)).not.toThrow()
+    })
+
+    it("accountDidが未解決の場合は何もしない", () => {
+        vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
+        expect(() => addHashtagsToHistory(["猫"], null)).not.toThrow()
+        expect(readHashtagHistory(DID)).toEqual([])
     })
 
     it("追加したタグをreadHashtagHistoryで読み取れる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        addHashtagsToHistory(["猫", "bluesky"])
-        expect(readHashtagHistory().map(e => e.tag)).toEqual(["猫", "bluesky"])
+        addHashtagsToHistory(["猫", "bluesky"], DID)
+        expect(readHashtagHistory(DID).map(e => e.tag)).toEqual([
+            "猫",
+            "bluesky",
+        ])
     })
 
     it("同一タグ(大文字小文字無視)は最新の表記・時刻で1件にまとめる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        addHashtagsToHistory(["Bluesky"])
-        addHashtagsToHistory(["bluesky"])
-        const history = readHashtagHistory()
+        addHashtagsToHistory(["Bluesky"], DID)
+        addHashtagsToHistory(["bluesky"], DID)
+        const history = readHashtagHistory(DID)
         expect(history).toHaveLength(1)
         expect(history[0].tag).toBe("bluesky")
     })
 
-    it("上限50件を超えた古い履歴は切り詰められる", () => {
+    it("上限件数を超えた古い履歴は切り詰められる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        for (let i = 0; i < 55; i++) {
-            addHashtagsToHistory([`tag${i}`])
+        vi.stubEnv("PUBLIC_HASHTAG_HISTORY_MAX", "5")
+        for (let i = 0; i < 10; i++) {
+            addHashtagsToHistory([`tag${i}`], DID)
         }
-        const history = readHashtagHistory()
-        expect(history).toHaveLength(50)
-        expect(history.map(e => e.tag)).toContain("tag54")
+        const history = readHashtagHistory(DID)
+        expect(history).toHaveLength(getHashtagHistoryMax())
+        expect(history.map(e => e.tag)).toContain("tag9")
         expect(history.map(e => e.tag)).not.toContain("tag0")
     })
 })
@@ -92,14 +145,22 @@ describe("addHashtagsToHistory", () => {
 describe("seedHashtagHistoryFromRankedTags", () => {
     it("window が未定義でも例外を投げない", () => {
         expect(() =>
-            seedHashtagHistoryFromRankedTags(["猫", "犬"]),
+            seedHashtagHistoryFromRankedTags(["猫", "犬"], DID),
         ).not.toThrow()
+    })
+
+    it("accountDidが未解決の場合は何もしない", () => {
+        vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
+        expect(() =>
+            seedHashtagHistoryFromRankedTags(["猫", "犬"], null),
+        ).not.toThrow()
+        expect(readHashtagHistory(DID)).toEqual([])
     })
 
     it("履歴が空の場合、渡した順（使用数順）で履歴として書き込む", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        seedHashtagHistoryFromRankedTags(["猫", "犬", "bluesky"])
-        expect(readHashtagHistory().map(e => e.tag)).toEqual([
+        seedHashtagHistoryFromRankedTags(["猫", "犬", "bluesky"], DID)
+        expect(readHashtagHistory(DID).map(e => e.tag)).toEqual([
             "猫",
             "犬",
             "bluesky",
@@ -108,32 +169,33 @@ describe("seedHashtagHistoryFromRankedTags", () => {
 
     it("履歴が既にある場合は何もしない（上書きしない）", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        addHashtagsToHistory(["既存タグ"])
-        seedHashtagHistoryFromRankedTags(["猫", "犬"])
-        expect(readHashtagHistory().map(e => e.tag)).toEqual(["既存タグ"])
+        addHashtagsToHistory(["既存タグ"], DID)
+        seedHashtagHistoryFromRankedTags(["猫", "犬"], DID)
+        expect(readHashtagHistory(DID).map(e => e.tag)).toEqual(["既存タグ"])
     })
 
     it("localStorageのキーはあっても中身が空配列なら集計結果を書き込む", () => {
         const localStorage = createMemoryLocalStorage()
-        localStorage.setItem("hashtagHistory", JSON.stringify([]))
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([]))
         vi.stubGlobal("window", { localStorage })
-        seedHashtagHistoryFromRankedTags(["猫"])
-        expect(readHashtagHistory().map(e => e.tag)).toEqual(["猫"])
+        seedHashtagHistoryFromRankedTags(["猫"], DID)
+        expect(readHashtagHistory(DID).map(e => e.tag)).toEqual(["猫"])
     })
 
-    it("上限50件を超える場合は先頭から切り詰める", () => {
+    it("上限件数を超える場合は先頭から切り詰める", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        const tags = Array.from({ length: 55 }, (_, i) => `tag${i}`)
-        seedHashtagHistoryFromRankedTags(tags)
-        const history = readHashtagHistory()
-        expect(history).toHaveLength(50)
+        vi.stubEnv("PUBLIC_HASHTAG_HISTORY_MAX", "5")
+        const tags = Array.from({ length: 10 }, (_, i) => `tag${i}`)
+        seedHashtagHistoryFromRankedTags(tags, DID)
+        const history = readHashtagHistory(DID)
+        expect(history).toHaveLength(getHashtagHistoryMax())
         expect(history.map(e => e.tag)).toContain("tag0")
-        expect(history.map(e => e.tag)).not.toContain("tag50")
+        expect(history.map(e => e.tag)).not.toContain("tag5")
     })
 
     it("空配列を渡した場合は何もしない", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
-        seedHashtagHistoryFromRankedTags([])
-        expect(readHashtagHistory()).toEqual([])
+        seedHashtagHistoryFromRankedTags([], DID)
+        expect(readHashtagHistory(DID)).toEqual([])
     })
 })

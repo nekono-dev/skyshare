@@ -38,6 +38,8 @@ type UseSuggestParams = {
     hashtagSuggestEnabled?: boolean
     /** falseの場合、"@"トリガーを検出しても候補取得・ポップアップ表示を一切行わない */
     mentionSuggestEnabled?: boolean
+    /** ハッシュタグ履歴（`hashtagHistorySettings.ts`）をアカウント別に分けるための識別子 */
+    accountDid?: string | null
 }
 
 const SUGGEST_DEBOUNCE_MS = 200
@@ -78,6 +80,7 @@ export const useSuggest = ({
     disabled = false,
     hashtagSuggestEnabled = true,
     mentionSuggestEnabled = true,
+    accountDid,
 }: UseSuggestParams): UseSuggestResult => {
     const listboxId = useId()
 
@@ -242,6 +245,7 @@ export const useSuggest = ({
                 const results = await getHashtagCandidates({
                     prefix: t.query,
                     signal: controller.signal,
+                    accountDid,
                 })
                 if (mySeq !== requestSeqRef.current) return
                 setCandidates(

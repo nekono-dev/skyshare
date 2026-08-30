@@ -63,6 +63,9 @@ const Component = ({ avatarUrl }: Props) => {
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     avatarUrl ?? null,
   )
+  // ハッシュタグ履歴（hashtagHistorySettings.ts）をアカウント別に分けるための識別子。
+  // getSession解決前はnullのままとし、その間は履歴の読み書きをスキップさせる。
+  const [resolvedDid, setResolvedDid] = useState<string | null>(null)
 
   useEffect(() => {
     setResolvedAvatarUrl(avatarUrl ?? null)
@@ -81,8 +84,12 @@ const Component = ({ avatarUrl }: Props) => {
         const activeAccount = res.data.accounts.find(
           account => account.isActive,
         )
-        if (!cancelled && activeAccount?.avatarUrl) {
+        if (cancelled) return
+        if (activeAccount?.avatarUrl) {
           setResolvedAvatarUrl(activeAccount.avatarUrl)
+        }
+        if (activeAccount?.did) {
+          setResolvedDid(activeAccount.did)
         }
       } catch (err) {
         console.error("Timeline: failed to load session for avatar", err)
@@ -210,17 +217,21 @@ const Component = ({ avatarUrl }: Props) => {
   // 既にハッシュタグ履歴がある場合は seedHashtagHistoryFromRankedTags 側で書き込みが
   // スキップされるが、その判定を待たず readHashtagHistory で先に確認することで、
   // 履歴がある場合は countHashtagUsage の集計処理自体も行わないようにする。
+  // resolvedDid が未解決のうちは履歴キーを特定できないため待機する。
   const hashtagSeedRef = useRef(false)
   useEffect(() => {
     if (hashtagSeedRef.current) return
-    if (loading || items.length === 0) return
+    if (loading || items.length === 0 || !resolvedDid) return
     hashtagSeedRef.current = true
 
-    if (readHashtagHistory().length > 0) return
+    if (readHashtagHistory(resolvedDid).length > 0) return
 
     const ranked = countHashtagUsage(items.map(post => post.text))
-    seedHashtagHistoryFromRankedTags(ranked.map(r => r.tag))
-  }, [items, loading])
+    seedHashtagHistoryFromRankedTags(
+      ranked.map(r => r.tag),
+      resolvedDid,
+    )
+  }, [items, loading, resolvedDid])
 
   return (
     <section>
@@ -229,6 +240,7 @@ const Component = ({ avatarUrl }: Props) => {
           <PostForm
             variant="page"
             avatarUrl={resolvedAvatarUrl}
+            accountDid={resolvedDid}
             onPosted={handlePosted}
             onPinnedFormDisabledChange={setPinnedFormDisabled}
           />
@@ -236,6 +248,7 @@ const Component = ({ avatarUrl }: Props) => {
       )}
       <PostLauncher
         avatarUrl={resolvedAvatarUrl}
+        accountDid={resolvedDid}
         onPosted={handlePosted}
         onPinnedFormDisabledChange={setPinnedFormDisabled}
       />
