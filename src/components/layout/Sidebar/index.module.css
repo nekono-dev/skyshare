@@ -4,11 +4,11 @@
 }
 
 /* /accounts はアイコン画像自体(アバター)がボタンとして機能するため、他のnavアイコンより
-   大きい lg-button(60px) いっぱいに広がるサイズにする。ミニ/フル両方のサイドバーで
-   共通のルールとして、ブレークポイントの外(このファイル冒頭)に置く。 */
+   大きい lg-avatar(60px, avatar.ui.module.css参照)いっぱいに広がるサイズにする。
+   ミニ/フル両方のサイドバーで共通のルールとして、ブレークポイントの外(このファイル冒頭)に置く。 */
 .item[data-nav-key="accounts"] .item-icon [data-nav-icon-root] {
-  width: var(--size-button-lg);
-  height: var(--size-button-lg);
+  width: var(--size-avatar-lg);
+  height: var(--size-avatar-lg);
 }
 
 /* ボタン形状のリンクのため、ホバー/フォーカス時もブラウザ既定・グローバルa要素の

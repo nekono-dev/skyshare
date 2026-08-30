@@ -2,19 +2,23 @@
  * PostForm本文入力欄における「@メンション/#ハッシュタグ候補」の状態管理フック。
  *
  * 責務と処理概要:
- * - textarea内のカーソル直前のトークンを `detectSuggestTrigger` で判定し、200msデバウンスの上で
- *   Bluesky公開API（メンション: `searchMentionSuggestions`、ハッシュタグ: `getHashtagCandidates`）
- *   を呼び候補を取得する。
+ * - 本文欄(`PostBodyEditor`、contenteditableなdiv)内のカーソル直前のトークンを
+ *   `detectSuggestTrigger` で判定し、200msデバウンスの上でBluesky公開API
+ *   （メンション: `searchMentionSuggestions`、ハッシュタグ: `getHashtagCandidates`）を呼び候補を取得する。
  * - IME変換中は評価・キー操作の横取りを一切行わない（変換候補選択を妨げないため）。
  * - 候補取得の失敗は本文入力・投稿フローに一切影響させない（呼び出し先が既に例外を握りつぶし
  *   空配列を返す設計のため、ここでは候補が0件のままポップアップを開かないだけで済む）。
  */
-import { useEffect, useId, useRef, useState } from "react"
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import {
     detectSuggestTrigger,
     type SuggestTrigger,
 } from "@/util/textarea/suggestTrigger"
-import { measureCaretPixelPosition } from "@/util/textarea/caretPosition"
+import {
+    getPlainTextSelection,
+    measureIndexPixelPosition,
+    setPlainTextCaret,
+} from "@/util/textarea/contentEditableModel"
 import {
     searchMentionSuggestions,
     type MentionSuggestion,
@@ -28,7 +32,7 @@ export type SuggestCandidate =
 type UseSuggestParams = {
     text: string
     onReplaceText: (nextText: string) => void
-    textareaRef: React.RefObject<HTMLTextAreaElement | null>
+    editorRef: React.RefObject<HTMLDivElement | null>
     disabled?: boolean
     /** falseの場合、"#"トリガーを検出しても候補取得・ポップアップ表示を一切行わない */
     hashtagSuggestEnabled?: boolean
@@ -47,8 +51,11 @@ export type UseSuggestResult = {
     listboxId: string
     onHoverIndex: (index: number) => void
     onSelect: (index: number) => void
-    handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void
+    handleKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void
     handleBlur: () => void
+    handleCompositionStart: () => void
+    handleCompositionEnd: () => void
+    handleCaretMove: () => void
     close: () => void
 }
 
@@ -58,7 +65,7 @@ export type UseSuggestResult = {
  * Input:
  * - `text`: 投稿本文（PostFormのstate）
  * - `onReplaceText`: 候補確定時に呼ぶテキスト置換関数（実質 `setText`）
- * - `textareaRef`: キャレット測定・ポップアップ位置計算に使うDOM参照
+ * - `editorRef`: キャレット測定・ポップアップ位置計算に使うDOM参照（`PostBodyEditor`のルート要素）
  * - `disabled`: 投稿送信中など、候補機能自体を無効化したい場合に `true`
  *
  * Output:
@@ -67,7 +74,7 @@ export type UseSuggestResult = {
 export const useSuggest = ({
     text,
     onReplaceText,
-    textareaRef,
+    editorRef,
     disabled = false,
     hashtagSuggestEnabled = true,
     mentionSuggestEnabled = true,
@@ -92,7 +99,6 @@ export const useSuggest = ({
     const mentionSuggestEnabledRef = useRef(mentionSuggestEnabled)
     const requestSeqRef = useRef(0)
     const abortControllerRef = useRef<AbortController | null>(null)
-    const evaluateTriggerRef = useRef<() => void>(() => {})
 
     disabledRef.current = disabled
     hashtagSuggestEnabledRef.current = hashtagSuggestEnabled
@@ -107,19 +113,19 @@ export const useSuggest = ({
     }
 
     const recomputePosition = (startIndex: number) => {
-        const el = textareaRef.current
+        const el = editorRef.current
         if (!el) return
 
-        const textareaRect = el.getBoundingClientRect()
-        const caret = measureCaretPixelPosition(el, startIndex)
+        const editorRect = el.getBoundingClientRect()
+        const caret = measureIndexPixelPosition(el, startIndex)
 
         setPosition({
             top:
-                textareaRect.top +
+                editorRect.top +
                 caret.top +
                 caret.height +
                 POPOVER_VERTICAL_GAP_PX,
-            left: textareaRect.left + caret.left,
+            left: editorRect.left + caret.left,
         })
     }
 
@@ -129,18 +135,16 @@ export const useSuggest = ({
             return
         }
 
-        const el = textareaRef.current
+        const el = editorRef.current
         if (!el || isComposingRef.current) return
 
-        if (
-            el.selectionStart == null ||
-            el.selectionStart !== el.selectionEnd
-        ) {
+        const selection = getPlainTextSelection(el)
+        if (!selection || selection.start !== selection.end) {
             close()
             return
         }
 
-        const nextTrigger = detectSuggestTrigger(el.value, el.selectionStart)
+        const nextTrigger = detectSuggestTrigger(text, selection.start)
         if (!nextTrigger) {
             close()
             return
@@ -161,9 +165,19 @@ export const useSuggest = ({
             !prev ||
             prev.kind !== nextTrigger.kind ||
             prev.startIndex !== nextTrigger.startIndex
+        // クエリまで含めて完全に同一なら、triggerを更新しない（下記の理由で重要）。
+        const triggerChanged = anchorChanged || prev.query !== nextTrigger.query
 
-        triggerRef.current = nextTrigger
-        setTrigger(nextTrigger)
+        // ここでtriggerが完全に同一な場合にsetTrigger(新規オブジェクト参照)を呼んでしまうと、
+        // [trigger]依存のデバウンス再取得effectがキー入力の度（矢印キーでのアクティブ行選択も
+        // 含む）に無条件で再発火し、200ms後に再取得した候補でactiveIndexが0へ巻き戻ってしまう
+        // （矢印キーで選んだ直後に選択が元に戻って見えるバグの原因だった）。textareaを
+        // ArrowDown/Upで動かした場合はcaret位置が変わらずnextTriggerの内容も不変なため、
+        // ここで弾けば候補一覧・選択位置を保持したままにできる。
+        if (triggerChanged) {
+            triggerRef.current = nextTrigger
+            setTrigger(nextTrigger)
+        }
 
         if (anchorChanged) {
             setCandidates([])
@@ -171,7 +185,6 @@ export const useSuggest = ({
             recomputePosition(nextTrigger.startIndex)
         }
     }
-    evaluateTriggerRef.current = evaluateTrigger
 
     // disabledがtrueへ変わったら即座に閉じる（textが変化するまで待たない）。
     useEffect(() => {
@@ -179,43 +192,17 @@ export const useSuggest = ({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [disabled])
 
-    // textarea自身のcompositionstart/compositionend・click・keyupは、CountedTextInputが
-    // イベントpropを公開していないため、公開されたtextareaRef経由でネイティブリスナーを張る。
-    // マウント時の1回だけ登録し、常に最新の判定を行えるようevaluateTriggerRefを経由して呼ぶ。
-    useEffect(() => {
-        const el = textareaRef.current
-        if (!el) return
-
-        const handleCompositionStart = () => {
-            isComposingRef.current = true
-        }
-        const handleCompositionEnd = () => {
-            isComposingRef.current = false
-            evaluateTriggerRef.current()
-        }
-        const handleCaretMove = () => evaluateTriggerRef.current()
-
-        el.addEventListener("compositionstart", handleCompositionStart)
-        el.addEventListener("compositionend", handleCompositionEnd)
-        el.addEventListener("click", handleCaretMove)
-        el.addEventListener("keyup", handleCaretMove)
-
-        return () => {
-            el.removeEventListener("compositionstart", handleCompositionStart)
-            el.removeEventListener("compositionend", handleCompositionEnd)
-            el.removeEventListener("click", handleCaretMove)
-            el.removeEventListener("keyup", handleCaretMove)
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
     // text変化時: 候補確定直後ならキャレット位置を復元するだけに留め、それ以外はトリガーを再評価する。
-    useEffect(() => {
+    // useLayoutEffectにするのは、`PostBodyEditor`側がハイライトspan構造をuseLayoutEffectで
+    // 再構築するため（Reactは子の副作用を親より先に実行するので、この副作用が走る時点では
+    // 既に再構築後のDOMになっている）。ここが先に走ってしまうと、古いDOM構造に対して
+    // キャレット位置を設定してしまいズレる。
+    useLayoutEffect(() => {
         if (pendingCaretIndex !== null) {
-            const el = textareaRef.current
+            const el = editorRef.current
             if (el) {
                 el.focus()
-                el.setSelectionRange(pendingCaretIndex, pendingCaretIndex)
+                setPlainTextCaret(el, pendingCaretIndex)
             }
             setPendingCaretIndex(null)
             return
@@ -288,7 +275,7 @@ export const useSuggest = ({
         close()
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
         if (e.nativeEvent.isComposing || e.keyCode === 229) return
         if (!trigger || candidates.length === 0) return
 
@@ -323,12 +310,27 @@ export const useSuggest = ({
         close()
     }
 
+    const handleCompositionStart = () => {
+        isComposingRef.current = true
+    }
+
+    // ここでevaluateTriggerを同期的に呼ばないのは、この時点ではまだ`PostBodyEditor`側の
+    // onChangeによるReact stateの更新（=このフックの`text`引数の更新）が反映されておらず、
+    // 古いtextを見て誤判定するため。isComposingRef解除後は、`text`変化を検知する
+    // 下記useLayoutEffectが再評価を担う。
+    const handleCompositionEnd = () => {
+        isComposingRef.current = false
+    }
+
+    // クリック/キー操作によるキャレット移動を検知して再評価する（onClick/onKeyUpに接続する）。
+    const handleCaretMove = () => evaluateTrigger()
+
     const isOpen = trigger !== null && candidates.length > 0
 
-    // ポップアップの開閉・ハイライト位置をスクリーンリーダーにも伝える。CountedTextInputの
-    // Props型を汚さないため、公開されたtextareaRef経由でDOM要素へ直接設定する。
+    // ポップアップの開閉・ハイライト位置をスクリーンリーダーにも伝える。`PostBodyEditor`の
+    // Props型を汚さないため、公開された`editorRef`経由でDOM要素へ直接設定する。
     useEffect(() => {
-        const el = textareaRef.current
+        const el = editorRef.current
         if (!el) return
 
         el.setAttribute("role", "combobox")
@@ -357,6 +359,9 @@ export const useSuggest = ({
         onSelect: handleSelect,
         handleKeyDown,
         handleBlur,
+        handleCompositionStart,
+        handleCompositionEnd,
+        handleCaretMove,
         close,
     }
 }

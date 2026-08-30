@@ -10,7 +10,7 @@
  */
 
 const HASHTAG_HISTORY_KEY = "hashtagHistory"
-const HASHTAG_HISTORY_MAX = 50
+const HASHTAG_HISTORY_MAX = 100
 
 export type HashtagHistoryEntry = { tag: string; lastUsedAt: number }
 

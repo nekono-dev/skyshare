@@ -23,9 +23,7 @@ import {
 } from "@/client/openapi/client"
 import Avatar from "@/components/common/Avatar"
 import Collapsible from "@/components/common/Collapsible/index"
-import CountedTextInput, {
-  type CounterSpec,
-} from "@/components/common/CountedTextInput"
+import { type CounterSpec } from "@/components/common/CountedTextInput"
 import DraftListPanel from "@/components/entry/DraftListPanel"
 import DraftSaveConfirmDialog from "@/components/entry/DraftSaveConfirmDialog"
 import ImagePicker, {
@@ -43,6 +41,7 @@ import {
 } from "@/components/image/OgpFetchButton"
 import OgpPreview from "@/components/image/OgpPreview"
 import Overlay from "@/components/common/Overlay"
+import PostBodyEditor from "./PostBodyEditor"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
 import SuggestPopover from "@/components/post/SuggestPopover"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
@@ -254,12 +253,12 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const entryFormRef = useRef<HTMLFormElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
   const toolboxRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const editorRef = useRef<HTMLDivElement>(null)
 
   const suggest = useSuggest({
     text,
     onReplaceText: setText,
-    textareaRef,
+    editorRef,
     disabled: isSubmitting,
     hashtagSuggestEnabled,
     mentionSuggestEnabled,
@@ -596,9 +595,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
    * Output:
    * - なし（フォームの送信をトリガー）
    */
-  const handleTextareaKeyDown = (
-    e: React.KeyboardEvent<HTMLTextAreaElement>,
-  ) => {
+  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return
     e.preventDefault()
     entryFormRef.current?.requestSubmit()
@@ -944,15 +941,12 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               src={avatarUrl}
               alt="avatar"
               aria-hidden
-              size={48}
+              size="md"
               className={styles.avatar}
             />
 
             <div className={styles["input-area"]} ref={inputAreaRef}>
-              <CountedTextInput
-                id="text"
-                name="text"
-                multiline
+              <PostBodyEditor
                 rows={
                   keyboardRows ??
                   (variant === "page"
@@ -979,10 +973,13 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                   suggest.handleKeyDown(e)
                   handleTextareaKeyDown(e)
                 }}
+                onCompositionStart={suggest.handleCompositionStart}
+                onCompositionEnd={suggest.handleCompositionEnd}
+                onCaretMove={suggest.handleCaretMove}
                 disabled={isSubmitting}
                 counters={textCounters}
                 wrapperClassName={styles["text-input-wrapper"]}
-                textareaRef={textareaRef}
+                editorRef={editorRef}
               />
               <SuggestPopover
                 candidates={suggest.candidates}

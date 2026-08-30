@@ -1,5 +1,5 @@
 /**
- * PostForm の本文欄(CountedTextInput)の rows を、ソフトウェアキーボードの
+ * PostForm の本文欄(PostBodyEditor)の rows を、ソフトウェアキーボードの
  * 占有サイズに応じて動的に決めるフック。dialog表示(PostLauncherのモーダル)・
  * page表示(index.astro等の常時表示フォーム)の両方で使う。
  *
@@ -15,7 +15,7 @@
  *   で使い、localStorageは読み書きしない。
  * - `resetOnBlur` が true（page用）の場合、フォーカスを離れるとrowsをフォーカス前の
  *   ベースライン（`computeBaselineRows`）へ戻す。戻した後の実際の表示高さは
- *   CountedTextInput側のautoGrow（scrollHeight基準）が入力中の本文量に合わせて再計算する。
+ *   PostBodyEditor側のautoGrow（scrollHeight基準）が入力中の本文量に合わせて再計算する。
  * - 非モバイル幅（PC等、ソフトウェアキーボードが表示されずvisualViewport計測が発生しない
  *   プラットフォーム）では、キーボード出現によるviewport計測は行わない。代わりに以下の
  *   固定仕様で `rows` を返す（`nonKeyboardFixedRows` として呼び出し側から渡された値、
@@ -52,7 +52,7 @@ const VIEWPORT_SAFETY_MARGIN_PX = 8
 type Params = {
     /** ダイアログ全体（本文欄以外を含む）のルート要素のref */
     formRef: React.RefObject<HTMLElement | null>
-    /** 本文欄(CountedTextInput)を包むラッパー要素のref */
+    /** 本文欄(PostBodyEditor)を包むラッパー要素のref */
     inputAreaRef: React.RefObject<HTMLElement | null>
     /**
      * 画像追加/クロップ操作ボタンのツールボックスのref。
@@ -180,7 +180,9 @@ export const useKeyboardRows = ({
             const formEl = formRef.current
             const inputAreaEl = inputAreaRef.current
             const toolboxEl = toolboxRef.current
-            const textareaEl = inputAreaEl?.querySelector("textarea")
+            const textareaEl = inputAreaEl?.querySelector<HTMLElement>(
+                "[data-post-body-editor]",
+            )
             if (!formEl || !inputAreaEl || !toolboxEl || !textareaEl) return
 
             const computed = getComputedStyle(textareaEl)

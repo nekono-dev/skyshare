@@ -24,6 +24,7 @@ const current = normalizePathname(Astro.url.pathname)
             <a
                 href={item.href}
                 class={styles.item}
+                data-nav-key={item.key}
                 aria-current={isActiveHref(item.href, current) ? "page" : undefined}
                 aria-label={item.ariaLabel}
             >

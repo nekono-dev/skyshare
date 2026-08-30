@@ -71,7 +71,7 @@ const CandidateOptionRow: React.FC<CandidateOptionRowProps> = ({
   >
     {candidate.kind === "mention" ? (
       <>
-        <Avatar src={candidate.item.avatarUrl} alt="" size={24} />
+        <Avatar src={candidate.item.avatarUrl} alt="" size="sm" />
         <span className={styles["candidate-text"]}>
           <span className={styles["display-name"]}>
             {candidate.item.displayName || candidate.item.handle}

@@ -51,6 +51,13 @@
   height: var(--size-icon-md);
 }
 
+/* accounts はアイコン画像自体(アバター)のため、他のnavアイコン(--size-icon-md, 24px)より
+   大きい sm-avatar(36px, avatar.ui.module.css参照)を使う。 */
+.item[data-nav-key="accounts"] .item-icon [data-nav-icon-root] {
+  width: var(--size-avatar-sm);
+  height: var(--size-avatar-sm);
+}
+
 /* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。 */
 .item:hover [data-nav-icon="active"],
 .item:focus [data-nav-icon="active"],

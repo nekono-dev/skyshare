@@ -1,0 +1,57 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.editor {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  word-break: break-word;
+  outline: none;
+  overflow-y: auto;
+  cursor: text;
+}
+
+.editor[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* contenteditableはネイティブのplaceholder属性を持たないため、空の時だけ
+   data-placeholder属性の内容を疑似要素で表示する定番の代替手法を使う */
+.editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+.highlight {
+  color: var(--color-bluesky);
+}
+
+.counters {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-1);
+  border-radius: var(--radius-md);
+  padding: 2px var(--space-2);
+  background: color-mix(in srgb, var(--color-card-bg) 85%, #ffffff 15%);
+  opacity: 0.92;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+.counters-warn {
+  background: var(--color-warning-soft-bg);
+  color: var(--color-warning-soft-text);
+}
+.counters-error {
+  background: var(--color-danger-soft-bg);
+  color: var(--color-danger-soft-text);
+}
+
+.counter-item {
+  white-space: nowrap;
+  text-align: right;
+}

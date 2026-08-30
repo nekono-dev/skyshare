@@ -1,0 +1,34 @@
+/* Avatar styles */
+
+/*
+  アバター
+  本アプリケーションで利用するすべてのアバター(ユーザーアイコン)のサイズを定義する。
+  形状(円形/枠線)は src/components/common/Avatar/index.module.css 側で規定するため、
+  ここではサイズトークンとサイズクラスのみを扱う。
+
+  サイズ
+    .sm-avatar: 小サイズのアバター(メンション/タグ候補一覧、スマホfooterアイコンなど)
+    .md-avatar: 中サイズのアバター(Timeline/PostForm/アカウント一覧)
+    .lg-avatar: 大サイズのアバター(PCアカウント切り替えボタン)
+*/
+
+:root {
+  --size-avatar-sm: 36px;
+  --size-avatar-md: 48px;
+  --size-avatar-lg: 60px;
+}
+
+:local(.sm-avatar) {
+  width: var(--size-avatar-sm);
+  height: var(--size-avatar-sm);
+}
+
+:local(.md-avatar) {
+  width: var(--size-avatar-md);
+  height: var(--size-avatar-md);
+}
+
+:local(.lg-avatar) {
+  width: var(--size-avatar-lg);
+  height: var(--size-avatar-lg);
+}

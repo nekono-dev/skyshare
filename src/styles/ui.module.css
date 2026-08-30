@@ -2,6 +2,7 @@
 @import "./button.ui.module.css";
 @import "./input.ui.module.css";
 @import "./dialog.ui.module.css";
+@import "./avatar.ui.module.css";
 
 /* 初期化 */
 .root {
@@ -185,12 +186,12 @@
 }
 
 :local(.base-padding) {
-  padding: var(--space-0) var(--space-2);
+  padding: var(--space-1) var(--space-2);
 }
 
 @media (max-width: 639px) {
   :local(.base-padding) {
-    padding: var(--space-0);
+    padding: var(--space-1) var(--space-1);
   }
 }
 

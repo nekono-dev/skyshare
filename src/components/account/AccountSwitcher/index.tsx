@@ -75,7 +75,7 @@ const AccountCard = ({
       <Avatar
         src={item.avatarUrl}
         alt={item.displayName ?? item.handle}
-        size={48}
+        size="md"
       />
 
       <div className={styles.meta}>

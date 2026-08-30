@@ -103,7 +103,7 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
             <Avatar
               src={item.author.avatar}
               alt={item.author.displayName ?? item.author.handle}
-              size={48}
+              size="md"
             />
 
             <div className={styles["author-meta"]}>
