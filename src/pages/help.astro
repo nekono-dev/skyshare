@@ -1,0 +1,37 @@
+---
+/**
+ * ヘルプページ。
+ *
+ * 責務と処理概要:
+ * - `Help` コンポーネントを表示し、FAQ/利用案内を一覧表示する。
+ * - 表示内容は静的なリスト(`helpEntries.tsx`)のみに依存するため、静的配信可能。
+ *   prerender を有効化する。
+ * - サイドバー(Sidebar)・フッターナビ(FooterNav)は表示するが、ナビ項目一覧
+ *   (`src/components/layout/nav/navItems.ts`)にはこのページを追加しない
+ *   (ナビ項目一覧はページ非依存の固定リストのため、追加せずとも表示自体は
+ *   従来通り行われる。利用者は既存のナビ項目経由で元の画面に戻れる)。
+ */
+export const prerender = true
+import Help from "@/components/help/Help"
+import Baselayout from "@/layout/Baselayout.astro"
+import FooterNav from "@/components/layout/FooterNav/index.astro"
+import Sidebar from "@/components/layout/Sidebar/index.astro"
+import { serviceName } from "@/vars"
+import ui from "@/styles/ui.module.css"
+import { slide } from "astro:transitions"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`ヘルプ | ${serviceName}`} robots={robots}>
+    <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
+        <div class=`${ui.page} ${ui["width-lg"]} ${ui.center} `>
+            <div class=`${ui["width-lg"]} ${ui["footer-nav-spacing"]}`>
+                <h1 class={ui.subject}>過去にあった問い合わせと対処</h1>
+                <Help client:load />
+            </div>
+        </div>
+    </div>
+    <Sidebar slot="nav" />
+    <FooterNav slot="footer" />
+</Baselayout>

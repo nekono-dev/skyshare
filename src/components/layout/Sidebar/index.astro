@@ -26,7 +26,7 @@ const current = normalizePathname(Astro.url.pathname)
         sidebarNavItems.map(item => (
             <a
                 href={item.href}
-                class={`${styles.item} ${ui.text}`}
+                class={`${styles.item} ${ui["text-muted"]}`}
                 data-nav-key={item.key}
                 aria-current={isActiveHref(item.href, current) ? "page" : undefined}
                 aria-label={item.ariaLabel}

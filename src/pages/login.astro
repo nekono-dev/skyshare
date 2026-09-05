@@ -30,11 +30,11 @@ import ui from "@/styles/ui.module.css"
 
                     <h3>Skyshare生成コンテンツの永続化</h3>
                     <ul class={ui.list}>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             これまでは開発者のバックエンドに画像やテキストデータを配置していました。
                             そのため、開発者がバックエンド費用を負担する都合から、データに賞味期限をつける対処をせざるを得ませんでした。
                         </li>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             v2では、Skyshareで生成したコンテンツはあなたのPDSに配置されます。
                             つまり、あなたがアカウントを消さない限り（BlueskyがPDSを保持する限り）永遠に保持できます<b
                                 >（データの有効期限の撤廃）</b
@@ -43,26 +43,26 @@ import ui from "@/styles/ui.module.css"
                     </ul>
                     <h3>クロスポスト用サムネイル生成の自由度向上</h3>
                     <ul class={ui.list}>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             v1では、ロスポスト用サムネイル（リンクカード画像）をサーバサイド、クラウド上で生成していました。v2ではクライアント側で生成しています。
                         </li>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             これにより、リンクカード画像を柔軟に編集可能になりました。<b
                                 >（リンクカード生成画像の編集機能追加）</b
                             >現時点では、サムネイルにしたい箇所の切り抜き・複数画像配置時の表示位置調整に対応しています。
                         </li>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             需要があればリンクカード用の画像を別で用意する（自動生成しない）・ラベラーの状態に応じた加工処理等を実装していこうと考えています。
                             ...端的には、R-18画像のサムネにモザイクいれるとか。
                         </li>
                     </ul>
                     <h3>その他、使いやすくなる改修いろいろ</h3>
                     <ul class={ui.list}>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             v1ではできなかったことが色々できるようになっています。
                             バックエンドはおおよそできており、あとはレイアウトや機能の調整・追加、ソースコードの整理などを終えたらリリース予定です。
                         </li>
-                        <li class=`${ui["list-item"]} ${ui.text}`>
+                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
                             正式リリースに向けて絶賛開発中なので <a
                                 href="https://bsky.app/intent/compose?text=%23Skyshare%20">#Skyshare</a
                             >

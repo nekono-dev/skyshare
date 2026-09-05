@@ -274,6 +274,11 @@
 
 :local(.text) {
   font-size: var(--font-size-md);
+  /* color: var(--color-muted); */
+}
+
+:local(.text-muted) {
+  font-size: var(--font-size-md);
   color: var(--color-muted);
 }
 
