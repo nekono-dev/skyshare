@@ -57,6 +57,52 @@ imagesMeta:
         type: integer
         minimum: 1
 
+gateSettings:
+  type: object
+  description: >-
+    返信可能ユーザー設定(threadgate)・引用許可設定(postgate)の簡略化されたAPI契約。
+    Bluesky公式lexiconのunion型(allow配列の各要素が#mentionRule等のunion)を
+    クライアント側でboolean+配列に平坦化し、サーバ側でthreadgate/postgateレコードの
+    union形式へ復元する。
+  properties:
+    replyAudience:
+      type: string
+      enum:
+        - everyone
+        - nobody
+        - custom
+      description: >-
+        everyone: 誰でも返信可能(allow未指定、threadgateレコード自体を作らない)。
+        nobody: 誰も返信不可(allow=[])。
+        custom: 以下のフラグ・リストの組み合わせでallowを構築する。
+    allowMentioned:
+      type: boolean
+      description: customの場合のみ意味を持つ。メンションされた人からの返信を許可(#mentionRule)
+    allowFollower:
+      type: boolean
+      description: customの場合のみ意味を持つ。フォロワーからの返信を許可(#followerRule)
+    allowFollowing:
+      type: boolean
+      description: customの場合のみ意味を持つ。フォロー中の人からの返信を許可(#followingRule)
+    listUris:
+      type: array
+      description: >-
+        customの場合のみ意味を持つ。返信を許可するリストのAT-URI配列(#listRule)。
+        allowMentioned/allowFollower/allowFollowingと合計で最大5件(サーバ側でも防御的にclamp)。
+      items:
+        type: string
+      maxItems: 5
+    allowQuote:
+      type: boolean
+      description: 引用/embedを許可するか(postgate)。falseの場合embeddingRulesに#disableRuleを設定。
+  required:
+    - replyAudience
+    - allowMentioned
+    - allowFollower
+    - allowFollowing
+    - listUris
+    - allowQuote
+
 legacyPageEntry:
   type: object
   properties:

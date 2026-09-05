@@ -42,14 +42,23 @@ import {
 import OgpPreview from "@/components/image/OgpPreview"
 import Overlay from "@/components/common/Overlay"
 import PostBodyEditor from "./PostBodyEditor"
+import PostGateDialog from "@/components/post/PostGateDialog"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
 import SuggestPopover from "@/components/post/SuggestPopover"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
 import { useSuggest } from "./useSuggest"
 import { extractTagsFromFacets } from "@/lib/atproto/richtext"
+import { DEFAULT_POST_GATE_VALUE, type PostGateValue } from "@/lib/atproto/gate"
 import { addHashtagsToHistory } from "@/lib/settings/hashtagHistorySettings"
 import { normalizeDraftList } from "@/lib/entry/draftList"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
+import {
+  isDefaultPostGateValue,
+  readPostGateDefaultSetting,
+  readSyncGateDefaultAfterPostSetting,
+  writePostGateDefaultSetting,
+  writeSyncGateDefaultAfterPostSetting,
+} from "@/lib/settings/postGateSettings"
 import {
   readPinnedFormDisabledSetting,
   writePinnedFormDisabledSetting,
@@ -234,6 +243,27 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [selfLabel, setSelfLabel] = useState<
     CreateEntryBodySelfLabels | undefined
   >(undefined)
+  const [postGate, setPostGate] = useState<PostGateValue>(
+    DEFAULT_POST_GATE_VALUE,
+  )
+  const [postGateDialogOpen, setPostGateDialogOpen] = useState(false)
+  const [syncGateDefaultAfterPost, setSyncGateDefaultAfterPost] = useState(() =>
+    readSyncGateDefaultAfterPostSetting(false),
+  )
+  // マウント時、および astro:page-load（View Transitions遷移でDOM/Reactインスタンスが
+  // 再マウントされずに使い回された場合）のたびに、返信・引用設定のデフォルト値・
+  // 同期トグルをlocalStorageから読み直す。「画面を開いた時は常に最後に編集された
+  // デフォルト値」を実現するための再読込であり、`Settings`コンポーネントの
+  // reloadRefパターンと同じ趣旨。
+  useEffect(() => {
+    const reload = () => {
+      setPostGate(readPostGateDefaultSetting())
+      setSyncGateDefaultAfterPost(readSyncGateDefaultAfterPostSetting(false))
+    }
+    reload()
+    document.addEventListener("astro:page-load", reload)
+    return () => document.removeEventListener("astro:page-load", reload)
+  }, [])
   const [status, setStatus] = useState<string | null>(null)
   const [statusColor, setStatusColor] = useState<string | undefined>(undefined)
   const [imageEntry, setImageEntry] = useState<ImageEntry | null>(null)
@@ -305,15 +335,10 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const pageMaxRows = 7
   const pageMinRows = 3
   // モバイル幅で本文欄をフォーカスした際にソフトウェアキーボードの残り領域へ
-  // rowsを合わせるフック。dialog/page両方で使うが、localStorageへの保存/初期値反映は
-  // dialogのみ（page＝常時表示フォームは、フォーカスの度のその場限りの調整とし、
-  // フォーカスを外すと最小行数（rows）はフォーカス前のベースラインへ戻る＝以後は本文量に
-  // autoGrowが追従する）。ただしautoGrowの上限行数（keyboardMaxRows）はフォーカス解除で
-  // リセットしない。ここをリセットすると、十分な文章量がある状態でフォーカスを外した際に
-  // 表示がフォーカス時より縮んでしまう（正しい表示はフォーカス時の大きさを維持すること）。
-  // ソフトウェアキーボードが表示されないプラットフォーム(PC等)では、pageはフォーカス時に
-  // pageMaxRows・フォーカス解除時は本文量に応じたサイズ、dialogは常にpageMaxRowsで固定する
-  // （キーボードが表示される環境向けの上記の挙動は適用しない）。
+  // rowsを合わせるフック。dialog（PostLauncherのモーダル）のみで有効化する
+  // （`enabled: true`）。page（常時表示フォーム）はフォーカス/ブラーに連動した
+  // リサイズを行うとクリック位置とボタン位置のずれ（フォーカスずれ）を招くため無効化し
+  // （`enabled: false`）、サイズ変更は本文量に応じたautoGrowのみに委ねる。
   // defaultRows がテキストボックスのサイズ調整の上限値
   const {
     rows: keyboardRows,
@@ -329,8 +354,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     minRows: pageMinRows,
     nonKeyboardFixedRows: pageMaxRows,
     persistToStorage: variant === "dialog",
-    resetOnBlur: variant === "page",
-    isContentEmpty: !hasTextInput,
+    enabled: variant === "dialog",
   })
   // dialog表示(PostLauncherのモーダル)はOverlay内でダイアログごとスクロールする構造のため、
   // 固定rows（内部スクロール）のままにする。page表示のみ、本文欄の高さ変更を
@@ -694,6 +718,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         imageEntry,
         manualImageAttach: shareToggles.manualImageAttach,
         ogpResult,
+        postGate,
       })
 
       if (!entryResult.ok) {
@@ -701,6 +726,15 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         setStatusColor("#b00")
         setStatus(entryResult.message)
         return
+      }
+
+      // 「投稿後にデフォルト値を更新する」がONなら今回使った設定を新しいデフォルトとして
+      // 永続化し、OFFなら保存済みのデフォルト値へ都度リセットする。トグルをその場で
+      // 操作した直後に投稿しても即座に反映されるよう、都度読み直さずstateを直接参照する。
+      if (syncGateDefaultAfterPost) {
+        writePostGateDefaultSetting(postGate)
+      } else {
+        setPostGate(readPostGateDefaultSetting())
       }
 
       if (loadedDraft) {
@@ -740,8 +774,15 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       } else {
         resetInputFields()
       }
-      setStatus(dispatch.status)
-      setStatusColor(dispatch.statusColor)
+      if (entryResult.gateWarning) {
+        setStatus(
+          `${dispatch.status}(返信・引用設定の反映に失敗した可能性があります)`,
+        )
+        setStatusColor("#b00")
+      } else {
+        setStatus(dispatch.status)
+        setStatusColor(dispatch.statusColor)
+      }
     } catch (err) {
       popupWindow?.close()
       console.error(err)
@@ -1016,11 +1057,21 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           <div
             className={`${ui["base-component"]} ${ui["base-padding"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]} ${styles["label-language-row"]}`}
           >
-            <SelfLabelsSelect
-              value={selfLabel}
-              onChange={setSelfLabel}
+            <button
+              type="button"
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]} ${!isDefaultPostGateValue(postGate) ? styles["gate-button-active"] : ""}`}
               disabled={isSubmitting}
-            />
+              aria-label={
+                isDefaultPostGateValue(postGate)
+                  ? "返信・引用の設定"
+                  : "返信・引用の設定(変更有)"
+              }
+              onClick={() => setPostGateDialogOpen(true)}
+            >
+              {isDefaultPostGateValue(postGate)
+                ? "返信・引用"
+                : "返信・引用(変更済有)"}
+            </button>
             <LanguageSelect
               value={languageCode}
               onChange={setLanguageCode}
@@ -1028,23 +1079,45 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             />
           </div>
 
+          <PostGateDialog
+            open={postGateDialogOpen}
+            onClose={() => setPostGateDialogOpen(false)}
+            value={postGate}
+            accountDid={accountDid}
+            disabled={isSubmitting}
+            onChange={next => {
+              setPostGate(next)
+              setPostGateDialogOpen(false)
+            }}
+          />
+
           <div
             ref={toolboxRef}
-            className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]}`}
+            className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]} ${ui["toolbar-wrap"]}`}
           >
-            <ImagePicker
-              ref={imagePickerRef}
-              value={imageEntry}
-              onChange={entry => {
-                if (entry && ogpResult) {
-                  setOgpResult(null)
-                  ogpFetch.clearOgpStatus()
-                }
-                setImageEntry(entry)
-              }}
+            <div
+              className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]} ${ui["toolbar-wrap"]}`}
+            >
+              <ImagePicker
+                ref={imagePickerRef}
+                value={imageEntry}
+                onChange={entry => {
+                  if (entry && ogpResult) {
+                    setOgpResult(null)
+                    ogpFetch.clearOgpStatus()
+                  }
+                  setImageEntry(entry)
+                }}
+                disabled={isSubmitting}
+              />
+              <OgpFetchButton ogpFetch={ogpFetch} disabled={isSubmitting} />
+            </div>
+
+            <SelfLabelsSelect
+              value={selfLabel}
+              onChange={setSelfLabel}
               disabled={isSubmitting}
             />
-            <OgpFetchButton ogpFetch={ogpFetch} disabled={isSubmitting} />
           </div>
           <div>
             <OgpPreview ogpFetch={ogpFetch} />
@@ -1081,6 +1154,15 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               disabled={isSubmitting}
               label="画像を自分で添付する（URLを発行しない）"
               onCheckedChange={shareToggles.onManualImageAttachChange}
+            />
+            <ToggleSwitch
+              checked={syncGateDefaultAfterPost}
+              disabled={isSubmitting}
+              label="投稿後に返信・引用のデフォルト設定を更新する"
+              onCheckedChange={next => {
+                setSyncGateDefaultAfterPost(next)
+                writeSyncGateDefaultAfterPostSetting(next)
+              }}
             />
           </div>
 

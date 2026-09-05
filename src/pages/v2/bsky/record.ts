@@ -9,6 +9,7 @@ import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
 import { dropEmptyStringField } from "@/util/formData"
 import { bskyPostUrlgen } from "@/lib/entry/url"
 import { uploadBlob } from "@/lib/atproto/blob"
+import { applyPostGate } from "@/lib/atproto/gate"
 import { createBskyPost } from "@/lib/atproto/post"
 import {
     createExternalEmbed,
@@ -46,16 +47,18 @@ import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
  * 7. Embed 作成（images 指定時は画像 embed、ogMeta+ogImage 指定時は外部リンク embed。
  *    両者は Bluesky 上で同時に埋め込めないため images を優先する）
  * 8. bsky 投稿作成
+ * 8.5. 返信/引用設定(threadgate/postgate)の適用（`gate` 指定時のみ。失敗しても
+ *      投稿自体は成功扱いとし、`gateWarning` フラグで呼び出し元へ通知する）
  * 9. 結果返却
  *
  * 入力形状(最小要件):
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
  * - フィールド: text（テキスト投稿）、ogMeta + ogImage（OGPリンク投稿, text併用可）、
- *   または images + imagesMeta（手動画像添付投稿, text併用可）
+ *   または images + imagesMeta（手動画像添付投稿, text併用可）。任意で `gate`。
  *
  * 出力:
- * - 成功時（200）: { url: "https://...", uri: "at://...", cid: "bafy..." }
+ * - 成功時（200）: { url: "https://...", uri: "at://...", cid: "bafy...", gateWarning }
  * - 失敗時: 400/401/500 と エラーメッセージ
  *
  * 例:
@@ -173,12 +176,44 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const rkey = response.uri.split("/").slice(-1)[0]
 
+        // フェーズ 8.5: 返信/引用設定(threadgate/postgate)の適用
+        // app.bsky.feed.post 自体は既に成功済みのため、ここでの失敗は
+        // リクエスト全体を失敗扱いにせず、gateWarning フラグとしてのみ反映する
+        // （500を返してしまうとクライアントがリトライし、投稿が重複作成される実害の方が大きいため）。
+        let gateWarning = false
+        if (body.data.gate) {
+            try {
+                const gateResult = await applyPostGate(
+                    agent,
+                    session.did,
+                    response.uri,
+                    rkey,
+                    body.data.gate,
+                )
+                gateWarning =
+                    gateResult.threadgateFailed || gateResult.postgateFailed
+                if (gateResult.threadgateFailed) {
+                    console.error("createBskyRecord: threadgate create failed")
+                }
+                if (gateResult.postgateFailed) {
+                    console.error("createBskyRecord: postgate create failed")
+                }
+            } catch (err) {
+                console.error(
+                    "createBskyRecord: gate apply unexpected error",
+                    err,
+                )
+                gateWarning = true
+            }
+        }
+
         // フェーズ 9: 結果返却
         return new Response(
             JSON.stringify({
                 url: bskyPostUrlgen(session.handle, rkey),
                 uri: response.uri,
                 cid: response.cid,
+                gateWarning,
             }),
             {
                 status: 200,

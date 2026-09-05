@@ -14,6 +14,7 @@ import {
     type CreatedSkyshareEntry,
 } from "@/lib/entry/skyshareRecord"
 import { uploadBlob } from "@/lib/atproto/blob"
+import { applyPostGate } from "@/lib/atproto/gate"
 import { createBskyPost } from "@/lib/atproto/post"
 import { resolveDisplayName } from "@/lib/atproto/profile"
 import { createImageEmbed, validateImageMetadata } from "@/lib/atproto/embed"
@@ -87,6 +88,8 @@ const serializeSkyshareEntry = (entry: CreatedSkyshareEntry) => ({
  * 8. テキスト facet 検出
  * 9. Embed 作成（画像投稿）
  * 10. bsky 投稿作成
+ * 10.5. 返信/引用設定(threadgate/postgate)の適用（`gate` 指定時のみ。失敗しても
+ *       投稿自体は成功扱いとし、`gateWarning` フラグで呼び出し元へ通知する）
  * 11. skyshare entry 作成
  * 12. 結果返却
  *
@@ -94,10 +97,10 @@ const serializeSkyshareEntry = (entry: CreatedSkyshareEntry) => ({
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
  * - フィールド: uri + ogImage（既存投稿からの発行）、または
- *   images, imagesMeta, ogImage, [text], [langs], [selfLabels]（新規画像投稿）
+ *   images, imagesMeta, ogImage, [text], [langs], [selfLabels], [gate]（新規画像投稿）
  *
  * 出力:
- * - 成功時（200）: { bsky: { url: "https://..." }, skyshare: { uri: "https://...", atUri, cid, ... } }
+ * - 成功時（200）: { bsky: { url: "https://...", gateWarning }, skyshare: { uri: "https://...", atUri, cid, ... } }
  * - 失敗時: 400/401/404/500 と エラーメッセージ
  *
  * 例:
@@ -245,6 +248,34 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const rkey = response.uri.split("/").slice(-1)[0]
         const bskyUrl = bskyPostUrlgen(session.handle, rkey)
 
+        // フェーズ 10.5: 返信/引用設定(threadgate/postgate)の適用
+        // app.bsky.feed.post 自体は既に成功済みのため、ここでの失敗は
+        // リクエスト全体を失敗扱いにせず、gateWarning フラグとしてのみ反映する
+        // （500を返してしまうとクライアントがリトライし、投稿が重複作成される実害の方が大きいため）。
+        let gateWarning = false
+        if (body.data.gate) {
+            try {
+                const gateResult = await applyPostGate(
+                    agent,
+                    session.did,
+                    response.uri,
+                    rkey,
+                    body.data.gate,
+                )
+                gateWarning =
+                    gateResult.threadgateFailed || gateResult.postgateFailed
+                if (gateResult.threadgateFailed) {
+                    console.error("createEntry: threadgate create failed")
+                }
+                if (gateResult.postgateFailed) {
+                    console.error("createEntry: postgate create failed")
+                }
+            } catch (err) {
+                console.error("createEntry: gate apply unexpected error", err)
+                gateWarning = true
+            }
+        }
+
         // フェーズ 11: skyshare entry 作成
         let skyshareEntry: CreatedSkyshareEntry | undefined
         try {
@@ -278,7 +309,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // フェーズ 12: 結果返却
         return new Response(
             JSON.stringify({
-                bsky: { url: bskyUrl },
+                bsky: { url: bskyUrl, gateWarning },
                 skyshare: serializeSkyshareEntry(skyshareEntry),
             }),
             {

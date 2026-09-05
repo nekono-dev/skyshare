@@ -401,7 +401,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
               onClick={handleOpenCrop}
               disabled={disabled}
             >
-              クロップ設定
+              サムネ調整
             </button>
           )}
 
@@ -412,7 +412,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
               onClick={handleRemoveAll}
               disabled={disabled}
             >
-              画像を撤去
+              画像撤去
             </button>
           )}
         </div>

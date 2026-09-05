@@ -14,10 +14,19 @@
  *   localStorageの最新状態を、開かれるたびに確実に反映するため。
  */
 import { useEffect, useRef, useState } from "react"
+import { getSession } from "@/client/openapi/client"
 import InlineIcon from "@/components/common/InlineIcon"
+import PostGateDialog from "@/components/post/PostGateDialog"
 import SettingList, {
   type SettingListItem,
 } from "@/components/settings/SettingList"
+import type { PostGateValue } from "@/lib/atproto/gate"
+import {
+  readPostGateDefaultSetting,
+  readSyncGateDefaultAfterPostSetting,
+  writePostGateDefaultSetting,
+  writeSyncGateDefaultAfterPostSetting,
+} from "@/lib/settings/postGateSettings"
 import {
   readPinnedFormDisabledSetting,
   writePinnedFormDisabledSetting,
@@ -62,6 +71,18 @@ export const Settings = () => {
   const [mentionSuggestEnabled, setMentionSuggestEnabled] = useState(() =>
     readMentionSuggestEnabledSetting(true),
   )
+  const [defaultGate, setDefaultGate] = useState<PostGateValue>(() =>
+    readPostGateDefaultSetting(),
+  )
+  const [syncGateDefaultAfterPost, setSyncGateDefaultAfterPost] = useState(() =>
+    readSyncGateDefaultAfterPostSetting(false),
+  )
+  const [gateDialogOpen, setGateDialogOpen] = useState(false)
+  // 「返信・引用のデフォルト設定」ダイアログの「リストから選択」がBlueskyリストを
+  // 取得する際に必要なdid。Settingsページ自体はアカウント非依存のため保持しておらず、
+  // Timeline（src/components/post/Timeline/index.tsx）と同じgetSessionパターンで
+  // マウント時に解決する。未解決の間はnullのままとし、ダイアログ側でリスト取得を待たせる。
+  const [accountDid, setAccountDid] = useState<string | null>(null)
 
   /**
    * 「投稿フォームを固定表示しない」設定を変更する。
@@ -108,6 +129,17 @@ export const Settings = () => {
     writeMentionSuggestEnabledSetting(next)
   }
 
+  /**
+   * 「投稿後に返信・引用のデフォルト設定を更新するか」設定を変更する。
+   *
+   * Input:
+   * - `next`: 変更後の値
+   */
+  const onSyncGateDefaultAfterPostChange = (next: boolean) => {
+    setSyncGateDefaultAfterPost(next)
+    writeSyncGateDefaultAfterPostSetting(next)
+  }
+
   // reload実体は毎レンダーで作り直されるため ref 経由で最新版を参照し、
   // イベントリスナーの登録・解除自体は初回マウント時の一度だけに保つ
   // （Overlay.tsx の onCloseRef と同じパターン）。
@@ -118,6 +150,8 @@ export const Settings = () => {
     setThemeMode(readThemeModeSetting("system"))
     setHashtagSuggestEnabled(readHashtagSuggestEnabledSetting(true))
     setMentionSuggestEnabled(readMentionSuggestEnabledSetting(true))
+    setDefaultGate(readPostGateDefaultSetting())
+    setSyncGateDefaultAfterPost(readSyncGateDefaultAfterPostSetting(false))
   }
 
   useEffect(() => {
@@ -128,6 +162,30 @@ export const Settings = () => {
     document.addEventListener("astro:page-load", handlePageLoad)
     return () => {
       document.removeEventListener("astro:page-load", handlePageLoad)
+    }
+  }, [])
+
+  // 「返信・引用のデフォルト設定」ダイアログのリスト選択用にdidを解決する。
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAccountDid = async () => {
+      try {
+        const res = await getSession()
+        if (res.status !== 200 || cancelled) return
+
+        const activeAccount = res.data.accounts.find(
+          account => account.isActive,
+        )
+        if (!cancelled && activeAccount) setAccountDid(activeAccount.did)
+      } catch (err) {
+        console.warn("Settings: failed to resolve account did", err)
+      }
+    }
+
+    void loadAccountDid()
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -286,6 +344,46 @@ export const Settings = () => {
         <h2 className={ui.subject}>投稿フォーム</h2>
         <SettingList items={postFormItems} />
       </section>
+      <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
+        <h2 className={ui.subject}>返信・引用のデフォルト設定</h2>
+        <p className={styles["gate-description"]}>
+          新規投稿時の初期値として使われる、返信可能ユーザー・引用許可のデフォルト設定です。
+        </p>
+        <div className={`${ui["right"]}`}>
+          <button
+            type="button"
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+            onClick={() => setGateDialogOpen(true)}
+          >
+            返信・引用のデフォルト設定を編集
+          </button>
+        </div>
+
+        <SettingList
+          items={[
+            {
+              key: "syncGateDefaultAfterPost",
+              label: "投稿後に返信・引用のデフォルト設定を更新する",
+              description:
+                "オンにすると、投稿時に指定した返信・引用の設定が次回以降のデフォルト値になります。オフの場合、投稿後は常に保存済みのデフォルト値に戻ります。",
+              checked: syncGateDefaultAfterPost,
+              onCheckedChange: onSyncGateDefaultAfterPostChange,
+            },
+          ]}
+        />
+      </section>
+
+      <PostGateDialog
+        open={gateDialogOpen}
+        onClose={() => setGateDialogOpen(false)}
+        value={defaultGate}
+        accountDid={accountDid}
+        onChange={next => {
+          setDefaultGate(next)
+          writePostGateDefaultSetting(next)
+          setGateDialogOpen(false)
+        }}
+      />
 
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
         <h2 className={ui.subject}>クロスポスト</h2>

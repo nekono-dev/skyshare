@@ -175,6 +175,11 @@
   width: var(--width-sm);
 }
 
+:local(.width-xs) {
+  max-width: var(--width-xs-max);
+  width: var(--width-xs);
+}
+
 /* Base card / container used as outer frame for forms and panels */
 :local(.base-card) {
   display: block;
@@ -324,6 +329,11 @@
 
 :local(.toolbar-align-center) {
   --toolbar-justify-content: center;
+}
+
+/* toolbar 内での折り返しを許可する修飾クラス */
+:local(.toolbar-wrap) {
+  flex-wrap: wrap;
 }
 
 /* 子要素に左右マージンのみを付与する */

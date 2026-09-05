@@ -8,6 +8,10 @@
     .dialog-card ui.base-cardと併用し、カード内を縦積み(gap)にする。padding/背景/枠線は持たない
     .dialog-body カード内の縦積みグループ（フォーム本体など、ボタン以外の内容）
     .dialog-actions カード内の縦積みグループ（選択肢・操作ボタン列）
+
+  オプション
+    .dialog-actions-row .dialog-actionsと併用し、ボタン列を縦積みではなく左右配置にする。
+      直接の子要素（ボタン）は横幅を均等にする。
 */
 
 :local(.dialog-card) {
@@ -26,4 +30,14 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+/* .dialog-actions と併用し、ボタン列を縦積みではなく左右配置にする（例: キャンセル左・適用右）。 */
+:local(.dialog-actions-row) {
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+:local(.dialog-actions-row) > * {
+  flex: 1 1 0;
 }

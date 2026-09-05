@@ -54,6 +54,8 @@ requestBody:
               - porn
               - spoiler
               - "!warn"
+          gate:
+            $ref: ../../../common.yaml#/gateSettings
 responses:
   "200":
     description: Success post
@@ -70,6 +72,11 @@ responses:
               example: at://did:plc:abc/app.bsky.feed.post/3lxyz
             cid:
               type: string
+            gateWarning:
+              type: boolean
+              description: >-
+                trueの場合、投稿自体は成功したが返信/引用設定(threadgate/postgate)の
+                反映に失敗した可能性があることを示す。
           required:
             - url
             - uri

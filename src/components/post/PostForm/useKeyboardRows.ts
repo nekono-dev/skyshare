@@ -1,29 +1,26 @@
 /**
  * PostForm の本文欄(PostBodyEditor)の rows を、ソフトウェアキーボードの
- * 占有サイズに応じて動的に決めるフック。dialog表示(PostLauncherのモーダル)・
- * page表示(index.astro等の常時表示フォーム)の両方で使う。
+ * 占有サイズに応じて動的に決めるフック。dialog表示(PostLauncherのモーダル)でのみ
+ * フォーカス連動のリサイズを行う。page表示(index.astro等の常時表示フォーム)は
+ * `enabled: false` で使い、フォーカス/ブラーによるリサイズを一切行わず、
+ * 呼び出し側の autoGrow（本文量に応じたサイズ変更）にのみ委ねる。
+ * これは、フォーカス/ブラーに伴うリサイズがクリック位置とボタン位置のずれ
+ * （例: OGPリンクカード取得ボタン等のクリック中にblurが先行してフォームが
+ * リサイズされる）を引き起こすため。
  *
- * 責務と処理概要:
+ * `enabled: true`（dialog用）の場合の責務と処理概要:
  * - キーボード出現に合わせた計測（フォーカス時のvisualViewport計測）はモバイル幅
  *   （`src/styles/tokens.css` のブレークポイント 639px と一致させたJS側判定）でのみ動作する。
  *   `isKeyboardPlatform` としてこの判定結果を呼び出し側にも返す。
  * - モバイル幅では、本文欄がフォーカスされる度（＝キーボードが開き始めるタイミング）に
  *   visualViewportを計測してrowsをキーボードの残り領域に合わせ、stateへ反映する。
- * - `persistToStorage` が true（dialog用）の場合のみ、モバイル幅での計測結果を
+ * - `persistToStorage` が true の場合、モバイル幅での計測結果を
  *   localStorage にも保存し、次回アプリ起動時（モバイル幅の場合のみ）の rows 初期値として使う
- *   （`readTextareaRowsSetting` 参照）。page（常時表示フォーム）側は `persistToStorage: false`
- *   で使い、localStorageは読み書きしない。
- * - `resetOnBlur` が true（page用）の場合、フォーカスを離れるとrowsをフォーカス前の
- *   ベースライン（`computeBaselineRows`）へ戻す。戻した後の実際の表示高さは
- *   PostBodyEditor側のautoGrow（scrollHeight基準）が入力中の本文量に合わせて再計算する。
+ *   （`readTextareaRowsSetting` 参照）。
  * - 非モバイル幅（PC等、ソフトウェアキーボードが表示されずvisualViewport計測が発生しない
- *   プラットフォーム）では、キーボード出現によるviewport計測は行わない。代わりに以下の
- *   固定仕様で `rows` を返す（`nonKeyboardFixedRows` として呼び出し側から渡された値、
- *   通常は page 側の autoGrow 上限行数と同じ値を渡す）。
- *   - dialog（`resetOnBlur: false`）: フォーカス状態に関わらず常に `nonKeyboardFixedRows` で固定。
- *     呼び出し側は autoGrow を無効にし、固定rows表示（内部スクロール）にする。
- *   - page（`resetOnBlur: true`）: 通常は `undefined`（呼び出し側のautoGrowが本文量に追従）、
- *     フォーカス中のみ `nonKeyboardFixedRows` に固定し、フォーカスを外すと `undefined` に戻す。
+ *   プラットフォーム）では、キーボード出現によるviewport計測は行わない。代わりに
+ *   フォーカス状態に関わらず常に `nonKeyboardFixedRows` で固定する
+ *   （呼び出し側は autoGrow を無効にし、固定rows表示（内部スクロール）にする）。
  * - 計測は `window.visualViewport` の resize を1回だけ待つ（キーボードのアニメーションを待つため）。
  *   一定時間内にresizeが来ない場合はタイムアウトでフォールバックする。
  * - キーボード表示中も画面内に収めたい範囲は「フォーム上端 〜 画像追加/クロップ操作ボタンの
@@ -34,7 +31,7 @@
  * - 高さ→行数の変換自体はDOM非依存の純粋関数として `autoGrowHeight.ts` 側に置き、
  *   ここではDOM計測（副作用）のみを担う。
  */
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import {
     computeRowsFromAvailableHeight,
     resolveLineHeightPx,
@@ -64,30 +61,16 @@ type Params = {
     defaultRows: number
     /** 算出結果の下限rows数 */
     minRows: number
-    /**
-     * 非モバイル幅（PC等）で使う固定rows数。
-     * dialogでは常時、pageではフォーカス中のみこの値を返す。
-     */
+    /** 非モバイル幅（PC等）で使う固定rows数。dialogで常時この値を返す。 */
     nonKeyboardFixedRows: number
-    /**
-     * trueならモバイル幅での計測結果をlocalStorageの保存値と同期する（dialog用）。
-     * falseならlocalStorageを一切読み書きしない
-     * （page＝常時表示フォーム用。初期表示は呼び出し側のデフォルト値のまま）。
-     */
+    /** trueならモバイル幅での計測結果をlocalStorageの保存値と同期する（dialog用）。 */
     persistToStorage: boolean
     /**
-     * trueなら本文欄のフォーカスが外れた際にrowsをフォーカス前のベースラインへ戻す（page用）。
-     * falseならフォーカス解除後もサイズを保持する（dialog用）。
+     * trueならフォーカス/ブラーに連動したリサイズを行う（dialog用）。
+     * falseならフォーカス/ブラーでは一切リサイズせず、呼び出し側のautoGrow
+     * （本文量に応じたサイズ変更）にのみ委ねる（page＝常時表示フォーム用）。
      */
-    resetOnBlur: boolean
-    /**
-     * 本文欄の内容が空かどうか。
-     * フォーム内容が入っている状態でのフォーカス解除によるサイズ変更は、
-     * 「OGPリンクカードを取得」ボタン等クリック時にblurが先行してフォームが
-     * リサイズされ、クリック位置とボタン位置がずれて操作を取りこぼす原因になる。
-     * これを避けるため、フォーカス解除時のリサイズは本文が空の場合のみ行う。
-     */
-    isContentEmpty: boolean
+    enabled: boolean
 }
 
 export type UseKeyboardRowsResult = {
@@ -102,9 +85,9 @@ export type UseKeyboardRowsResult = {
      * 表示が一段階縮んでしまう）。
      */
     keyboardMaxRows: number | undefined
-    /** 本文欄のonFocusにそのまま渡すハンドラ */
+    /** 本文欄のonFocusにそのまま渡すハンドラ（`enabled: false`時は何もしない） */
     handleTextareaFocus: () => void
-    /** 本文欄のonBlurにそのまま渡すハンドラ（`resetOnBlur`時のみ意味を持つ） */
+    /** 本文欄のonBlurにそのまま渡すハンドラ（`enabled: false`時は何もしない） */
     handleTextareaBlur: () => void
     /**
      * キーボードによるフォーカス計測が発生するプラットフォーム（モバイル幅）かどうか。
@@ -124,7 +107,9 @@ const detectKeyboardPlatform = (): boolean =>
  * - `formRef` / `inputAreaRef` / `toolboxRef`: 高さ計測対象のDOM ref
  * - `defaultRows` / `minRows`: 算出結果のクランプ範囲
  * - `persistToStorage`: trueならモバイル幅での計測結果をlocalStorageと同期する（dialog用）
- * - `resetOnBlur`: trueならフォーカス解除時にrowsをベースラインへ戻す（page用）
+ * - `enabled`: trueならフォーカス/ブラーに連動したリサイズを行う（dialog用）。falseなら
+ *   フォーカス/ブラーによるリサイズを行わず、rows/keyboardMaxRowsは常にundefined
+ *   （呼び出し側のautoGrowにサイズ変更を委ねる。page用）
  *
  * Output:
  * - `rows`: モバイル幅での保存値・計測値のいずれか、無ければundefined
@@ -140,28 +125,22 @@ export const useKeyboardRows = ({
     minRows,
     nonKeyboardFixedRows,
     persistToStorage,
-    resetOnBlur,
-    isContentEmpty,
+    enabled,
 }: Params): UseKeyboardRowsResult => {
     const [isKeyboardPlatform] = useState(detectKeyboardPlatform)
 
-    // モバイル幅でのフォーカス解除時／初期表示のベースライン。
-    // 非モバイル幅ではキーボード計測が一切発生しないため、モバイル幅で保存された
-    // localStorageの値をベースラインに使わない。
-    const computeBaselineRows = (): number | undefined => {
-        if (!isKeyboardPlatform) return undefined
-        if (persistToStorage) {
-            const stored = readTextareaRowsSetting(undefined)
-            if (stored !== undefined) return stored
-        }
-        return undefined
-    }
-
     // 非モバイル幅（PC等）での初期値。dialogは常にnonKeyboardFixedRowsで固定、
-    // pageは内容依存(autoGrow)に委ねるため未フォーカス時はundefined。
+    // 無効時（page）は内容依存(autoGrow)に委ねるため常にundefined。
     const computeInitialRows = (): number | undefined => {
-        if (isKeyboardPlatform) return computeBaselineRows()
-        return resetOnBlur ? undefined : nonKeyboardFixedRows
+        if (!enabled) return undefined
+        if (isKeyboardPlatform) {
+            if (persistToStorage) {
+                const stored = readTextareaRowsSetting(undefined)
+                if (stored !== undefined) return stored
+            }
+            return undefined
+        }
+        return nonKeyboardFixedRows
     }
 
     const [rows, setRows] = useState<number | undefined>(computeInitialRows)
@@ -169,51 +148,12 @@ export const useKeyboardRows = ({
     const [keyboardMaxRows, setKeyboardMaxRows] = useState<number | undefined>(
         computeInitialRows,
     )
-    // 現在フォーカス中かどうか。投稿完了などフォーカス/ブラーを経由せず
-    // 本文がプログラム的に空になるケースを検知するために保持する
-    // （下記useEffect参照）。
-    const isFocusedRef = useRef(false)
 
-    const resetRowsToBaseline = () => {
-        setRows(isKeyboardPlatform ? computeBaselineRows() : undefined)
-    }
-
-    const handleTextareaBlur = () => {
-        isFocusedRef.current = false
-        if (!resetOnBlur) return
-        // 本文が入力済みの状態でのフォーカス解除によるリサイズは、
-        // 「OGPリンクカードを取得」ボタン等クリック時にblurが先行してフォームが
-        // リサイズされ、クリック位置とボタン位置がずれて操作を取りこぼす原因になるため、
-        // 本文が空の場合のみ実行する。
-        if (!isContentEmpty) return
-        resetRowsToBaseline()
-    }
-
-    // 投稿完了時など、フォーカス解除を経由せず本文が空になるケースでも
-    // フォームを縮小するため、フォーカスが外れている間に本文が空になったら
-    // ベースラインへ戻す。フォーカス中（入力途中で全削除した場合等）は
-    // handleTextareaBlurが担うため、ここでは何もしない。
-    useEffect(() => {
-        if (!resetOnBlur) return
-        if (!isContentEmpty) return
-        if (isFocusedRef.current) return
-        resetRowsToBaseline()
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isContentEmpty, resetOnBlur])
+    const handleTextareaBlur = () => {}
 
     const handleTextareaFocus = () => {
-        isFocusedRef.current = true
-        // handleTextareaBlur同様、本文が入力済みの状態でのフォーカスに伴う
-        // リサイズ（キーボード出現による非同期のvisualViewport計測を含む）は、
-        // 操作中のクリック位置とボタン位置のずれの原因になるため、
-        // 本文が空の場合のみ実行する。
-        if (!isContentEmpty) return
-        if (!isKeyboardPlatform) {
-            // page（resetOnBlur）のみ、フォーカス中はnonKeyboardFixedRowsに固定する。
-            // dialogは常時固定済みのため何もしない。
-            if (resetOnBlur) setRows(nonKeyboardFixedRows)
-            return
-        }
+        if (!enabled) return
+        if (!isKeyboardPlatform) return
         if (typeof window === "undefined" || !window.visualViewport) return
 
         const viewport = window.visualViewport

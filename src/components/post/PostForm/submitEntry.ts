@@ -17,6 +17,7 @@ import type {
 } from "@/client/openapi/model"
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { OgpResult } from "@/components/image/OgpFetchButton"
+import type { PostGateValue } from "@/lib/atproto/gate"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 
 export type SubmitEntryParams = {
@@ -26,10 +27,12 @@ export type SubmitEntryParams = {
     imageEntry: ImageEntry | null
     manualImageAttach: boolean
     ogpResult: OgpResult | null
+    postGate: PostGateValue
 }
 
 export type SubmitEntryResult =
-    { ok: true; skyshareUri: string } | { ok: false; message: string }
+    | { ok: true; skyshareUri: string; gateWarning: boolean }
+    | { ok: false; message: string }
 
 type ImageSizeCandidate = {
     width?: number
@@ -198,6 +201,7 @@ export const submitEntry = async (
         imageEntry,
         manualImageAttach,
         ogpResult,
+        postGate,
     } = params
 
     if (imageEntry && !manualImageAttach) {
@@ -208,6 +212,7 @@ export const submitEntry = async (
             ogImage: imageEntry.thumbnailBlob,
             images: imageEntry.originalBlobs,
             imagesMeta: await resolveImageMetadata(imageEntry),
+            gate: postGate,
         }
 
         const res = await createEntry(payload)
@@ -221,13 +226,18 @@ export const submitEntry = async (
 
         await warmOgpCache(res.data.skyshare.uri)
 
-        return { ok: true, skyshareUri: res.data.skyshare.uri }
+        return {
+            ok: true,
+            skyshareUri: res.data.skyshare.uri,
+            gateWarning: res.data.bsky.gateWarning ?? false,
+        }
     }
 
     const payload: CreateBskyRecordBody = {
         text,
         langs: [languageCode],
         selfLabels: selfLabel,
+        gate: postGate,
     }
 
     if (imageEntry) {
@@ -247,5 +257,9 @@ export const submitEntry = async (
         return { ok: false, message: resolveEntryErrorMessage(errorCode) }
     }
 
-    return { ok: true, skyshareUri: "" }
+    return {
+        ok: true,
+        skyshareUri: "",
+        gateWarning: res.data.gateWarning ?? false,
+    }
 }
