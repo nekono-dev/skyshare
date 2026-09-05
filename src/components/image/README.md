@@ -1,6 +1,6 @@
 # image
 
-画像添付・クロップ・OGPプレビューまわりの部品。`post`カテゴリ(`PostForm`)から利用される。
+画像添付・クロップ・リンクカードプレビューまわりの部品。`post`カテゴリ(`PostForm`)から利用される。
 
 ```mermaid
 graph TD

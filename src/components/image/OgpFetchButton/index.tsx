@@ -163,28 +163,28 @@ export const useOgpFetch = ({
         const errorMessage =
           "error" in res.data && typeof res.data.error === "string"
             ? res.data.error
-            : "OGP取得に失敗しました。"
+            : "リンクカード取得に失敗しました。"
         setOgpStatus(errorMessage)
         onChange(null)
         return
       }
 
       if (!isOgpWithImage(res.data) || !res.data.image) {
-        setOgpStatus("OGP画像が見つかりませんでした。")
+        setOgpStatus("リンクカード画像が見つかりませんでした。")
         onChange(null)
         return
       }
 
       const imageRes = await fetch(res.data.image)
       if (!imageRes.ok) {
-        setOgpStatus("OGP画像の取得に失敗しました。")
+        setOgpStatus("リンクカード画像の取得に失敗しました。")
         onChange(null)
         return
       }
 
       const rawBlob = await imageRes.blob()
       if (!rawBlob.type.startsWith("image/")) {
-        setOgpStatus("OGP画像の形式が不正です。")
+        setOgpStatus("リンクカード画像の形式が不正です。")
         onChange(null)
         return
       }
@@ -193,7 +193,7 @@ export const useOgpFetch = ({
       try {
         imageBlob = await createOgpThumbnailFromBlob(rawBlob)
       } catch {
-        setOgpStatus("OGP画像の変換に失敗しました。")
+        setOgpStatus("リンクカード画像の変換に失敗しました。")
         onChange(null)
         return
       }
@@ -207,11 +207,11 @@ export const useOgpFetch = ({
         sourceUrl: detectedUrl,
       }
 
-      setOgpStatus(`OGPを取得しました: ${detectedUrl}`)
+      setOgpStatus(`リンクカードを取得しました: ${detectedUrl}`)
       onChange(nextResult)
     } catch (err) {
       console.error(err)
-      setOgpStatus("OGP取得中にエラーが発生しました。")
+      setOgpStatus("リンクカード取得中にエラーが発生しました。")
       onChange(null)
     } finally {
       setIsOgpLoading(false)
@@ -270,7 +270,7 @@ export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
       onClick={handleFetchOgp}
       disabled={isOgpLoading || disabled}
     >
-      OGP取得
+      リンクカードを取得
     </button>
   )
 }

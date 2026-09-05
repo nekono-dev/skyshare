@@ -4,7 +4,7 @@
 
 ## Overview
 
-Skyshare aggregates a user’s Bluesky posts into a single OGP image and saves it to the user’s PDS as a Skyshare Entry.
+Skyshare aggregates a user’s Bluesky posts into a single linkcard image and saves it to the user’s PDS as a Skyshare Entry.
 Skyshare generates a web page corresponding to the Skyshare Entry, and users can share their Bluesky posts on other social media platforms by using the link to that web page.
 
 Translated with DeepL.com (free version)
