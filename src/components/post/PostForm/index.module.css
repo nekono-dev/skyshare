@@ -61,12 +61,6 @@
   margin-right: 2px;
 }
 
-/* ラベル設定と言語選択の行。幅が足りない場合は右側（言語選択）を単位ごと折り返す */
-.label-language-row {
-  flex-wrap: wrap;
-  row-gap: var(--space-1);
-}
-
 /* 返信・引用設定ボタン: デフォルト値から変更されている場合、枠色でそれとわかるようにする */
 .gate-button-active {
   border-color: var(--color-bluesky);

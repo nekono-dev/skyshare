@@ -331,9 +331,15 @@
   --toolbar-justify-content: center;
 }
 
-/* toolbar 内での折り返しを許可する修飾クラス */
+/* toolbar 内での折り返しを許可する修飾クラス。折り返し時の行間も確保する */
 :local(.toolbar-wrap) {
   flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+/* 別の toolbar 内にネストするグループ用。幅 100% を打ち消し、内容量に合わせて縮める */
+:local(.toolbar-auto-width) {
+  width: auto;
 }
 
 /* 子要素に左右マージンのみを付与する */
