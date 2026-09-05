@@ -34,7 +34,7 @@
  * - 高さ→行数の変換自体はDOM非依存の純粋関数として `autoGrowHeight.ts` 側に置き、
  *   ここではDOM計測（副作用）のみを担う。
  */
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
     computeRowsFromAvailableHeight,
     resolveLineHeightPx,
@@ -80,6 +80,14 @@ type Params = {
      * falseならフォーカス解除後もサイズを保持する（dialog用）。
      */
     resetOnBlur: boolean
+    /**
+     * 本文欄の内容が空かどうか。
+     * フォーム内容が入っている状態でのフォーカス解除によるサイズ変更は、
+     * 「OGPリンクカードを取得」ボタン等クリック時にblurが先行してフォームが
+     * リサイズされ、クリック位置とボタン位置がずれて操作を取りこぼす原因になる。
+     * これを避けるため、フォーカス解除時のリサイズは本文が空の場合のみ行う。
+     */
+    isContentEmpty: boolean
 }
 
 export type UseKeyboardRowsResult = {
@@ -133,6 +141,7 @@ export const useKeyboardRows = ({
     nonKeyboardFixedRows,
     persistToStorage,
     resetOnBlur,
+    isContentEmpty,
 }: Params): UseKeyboardRowsResult => {
     const [isKeyboardPlatform] = useState(detectKeyboardPlatform)
 
@@ -160,13 +169,45 @@ export const useKeyboardRows = ({
     const [keyboardMaxRows, setKeyboardMaxRows] = useState<number | undefined>(
         computeInitialRows,
     )
+    // 現在フォーカス中かどうか。投稿完了などフォーカス/ブラーを経由せず
+    // 本文がプログラム的に空になるケースを検知するために保持する
+    // （下記useEffect参照）。
+    const isFocusedRef = useRef(false)
 
-    const handleTextareaBlur = () => {
-        if (!resetOnBlur) return
+    const resetRowsToBaseline = () => {
         setRows(isKeyboardPlatform ? computeBaselineRows() : undefined)
     }
 
+    const handleTextareaBlur = () => {
+        isFocusedRef.current = false
+        if (!resetOnBlur) return
+        // 本文が入力済みの状態でのフォーカス解除によるリサイズは、
+        // 「OGPリンクカードを取得」ボタン等クリック時にblurが先行してフォームが
+        // リサイズされ、クリック位置とボタン位置がずれて操作を取りこぼす原因になるため、
+        // 本文が空の場合のみ実行する。
+        if (!isContentEmpty) return
+        resetRowsToBaseline()
+    }
+
+    // 投稿完了時など、フォーカス解除を経由せず本文が空になるケースでも
+    // フォームを縮小するため、フォーカスが外れている間に本文が空になったら
+    // ベースラインへ戻す。フォーカス中（入力途中で全削除した場合等）は
+    // handleTextareaBlurが担うため、ここでは何もしない。
+    useEffect(() => {
+        if (!resetOnBlur) return
+        if (!isContentEmpty) return
+        if (isFocusedRef.current) return
+        resetRowsToBaseline()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isContentEmpty, resetOnBlur])
+
     const handleTextareaFocus = () => {
+        isFocusedRef.current = true
+        // handleTextareaBlur同様、本文が入力済みの状態でのフォーカスに伴う
+        // リサイズ（キーボード出現による非同期のvisualViewport計測を含む）は、
+        // 操作中のクリック位置とボタン位置のずれの原因になるため、
+        // 本文が空の場合のみ実行する。
+        if (!isContentEmpty) return
         if (!isKeyboardPlatform) {
             // page（resetOnBlur）のみ、フォーカス中はnonKeyboardFixedRowsに固定する。
             // dialogは常時固定済みのため何もしない。

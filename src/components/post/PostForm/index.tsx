@@ -332,6 +332,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     nonKeyboardFixedRows: pageMaxRows,
     persistToStorage: variant === "dialog",
     resetOnBlur: variant === "page",
+    isContentEmpty: !hasTextInput,
   })
   // dialog表示(PostLauncherのモーダル)はOverlay内でダイアログごとスクロールする構造のため、
   // 固定rows（内部スクロール）のままにする。page表示のみ、本文欄の高さ変更を

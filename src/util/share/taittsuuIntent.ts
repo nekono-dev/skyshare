@@ -27,6 +27,9 @@ export const buildTaittsuuIntentText = (text: string, skyshareUri: string) => {
     if (normalizedText.length === 0) {
         return skyshareUri
     }
+    if (skyshareUri.length === 0) {
+        return normalizedText
+    }
     return `${normalizedText}\n${skyshareUri}`
 }
 
