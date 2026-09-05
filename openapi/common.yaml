@@ -32,9 +32,15 @@ ogMeta:
       type: string
       format: uri
       example: "https://example.com/og.png"
+    url:
+      type: string
+      format: uri
+      description: OGP取得元のページURL。app.bsky.embed.externalのuriに使う。
+      example: "https://example.com/article"
   required:
     - title
     - description
+    - url
 
 imagesMeta:
   type: array

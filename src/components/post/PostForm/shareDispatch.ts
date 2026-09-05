@@ -10,23 +10,26 @@
  */
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import {
-    buildMastodonIntentText,
-    openMastodonIntentPopup,
-} from "@/util/share/mastodonIntent"
-import {
-    buildTaittsuuIntentText,
-    openTaittsuuIntentPopup,
-} from "@/util/share/taittsuuIntent"
+    IntentTarget,
+    buildIntentText,
+    openIntentPopupFor,
+} from "@/util/share/intent"
 import {
     canShareWithWebApi,
     shareWithWebApi,
     toShareFile,
 } from "@/util/share/webShare"
-import { buildXIntentText, openXIntentPopup } from "@/util/share/xIntent"
 
 export type ShareDispatchParams = {
     text: string
     skyshareUri: string
+    /**
+     * 投稿に添付されたリンクカードの元URL（無ければ空文字）。
+     * Blueskyはリンクカードを埋め込みとして添付するため本文にURLが無くても
+     * 投稿できるが、他SNSのintentは本文のみで共有するため、本文にこのURLが
+     * 含まれていない場合はintent本文の末尾へ補完する必要がある。
+     */
+    linkCardUrl: string
     imageEntry: ImageEntry | null
     manualImageAttach: boolean
     crosspostToTaittsuu: boolean
@@ -146,6 +149,7 @@ export const runShareDispatch = async (
     const {
         text,
         skyshareUri,
+        linkCardUrl,
         imageEntry,
         manualImageAttach,
         crosspostToTaittsuu,
@@ -159,22 +163,14 @@ export const runShareDispatch = async (
     // 「画像を自分で添付する」有効時は skyshare エントリを作らないため、
     // ポップアップ/テキストボックス/WebShareAPI のいずれにも URL を含めない。
     const effectiveSkyshareUri = manualImageAttach ? "" : skyshareUri
-    const shareText = buildXIntentText(text, effectiveSkyshareUri)
-    const taittsuuIntentText = buildTaittsuuIntentText(
-        text,
-        effectiveSkyshareUri,
-    )
-    const mastodonIntentText = buildMastodonIntentText(
-        text,
-        effectiveSkyshareUri,
-    )
+    const intentText = buildIntentText(text, effectiveSkyshareUri, linkCardUrl)
 
     if (noAutoPopupAfterPost) {
         popupWindow?.close()
         return {
             status: "Blueskyへの投稿に成功しました。クロスポストを行うには他SNS向け投稿ボタンを押してください。",
             statusColor: "green",
-            textToKeep: shareText,
+            textToKeep: intentText,
             forcedNoAutoPopupOn: false,
             forcedShowXIntentButtonOn: false,
             forcedPopupIntentInsteadOfWebshareOn: false,
@@ -184,7 +180,7 @@ export const runShareDispatch = async (
     // 同時にONになることはない（reconcileShareTogglesが両方ONにする際に必ず
     // noAutoPopupAfterPostも強制ONにするため）。ただし将来の変更で不変条件が崩れた場合に
     // 備え、優先順位を明示的に定義しておく: タイッツー > Mastodon > X。
-    const target: "taittsuu" | "mastodon" | "x" = crosspostToTaittsuu
+    const target: IntentTarget = crosspostToTaittsuu
         ? "taittsuu"
         : crosspostToMastodon
           ? "mastodon"
@@ -201,16 +197,10 @@ export const runShareDispatch = async (
         crosspostToMastodon ||
         popupIntentInsteadOfWebshare
     ) {
-        const opened =
-            target === "taittsuu"
-                ? openTaittsuuIntentPopup(taittsuuIntentText, popupWindow)
-                : target === "mastodon"
-                  ? openMastodonIntentPopup(
-                        mastodonInstanceDomain,
-                        mastodonIntentText,
-                        popupWindow,
-                    )
-                  : openXIntentPopup(shareText, popupWindow)
+        const opened = openIntentPopupFor(target, intentText, {
+            instanceDomain: mastodonInstanceDomain,
+            preOpenedWindow: popupWindow,
+        })
 
         if (opened) {
             return {
@@ -226,7 +216,7 @@ export const runShareDispatch = async (
         return {
             status: `Blueskyへの投稿に成功しました。${serviceLabel} 投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
             statusColor: "green",
-            textToKeep: shareText,
+            textToKeep: intentText,
             forcedNoAutoPopupOn: true,
             // Taittsu/Mastodonターゲットの場合は CrosspostToTaittsuu/CrosspostToMastodon が
             // 既にONのため、NoAutoPopupAfterPost連動ルールで対応するボタンが自動的に表示される。
@@ -242,7 +232,7 @@ export const runShareDispatch = async (
     popupWindow?.close()
 
     const webShareData = buildWebShareData({
-        text: shareText,
+        text: intentText,
         imageEntry,
         manualImageAttach,
     })
@@ -287,7 +277,7 @@ export const runShareDispatch = async (
             ? "ブラウザがWebShareAPI非対応のため"
             : "WebShareAPI での共有に失敗したため"
 
-    const opened = openXIntentPopup(shareText)
+    const opened = openIntentPopupFor("x", intentText)
     if (opened) {
         return {
             status: `Blueskyへの投稿に成功し、投稿画面を開きました。${unavailableLabel}、ポップアップを開くオプションをONにしました。`,
@@ -302,7 +292,7 @@ export const runShareDispatch = async (
     return {
         status: "Blueskyへの投稿に成功しましたが、投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。",
         statusColor: "green",
-        textToKeep: shareText,
+        textToKeep: intentText,
         forcedNoAutoPopupOn: true,
         forcedShowXIntentButtonOn: true,
         forcedPopupIntentInsteadOfWebshareOn: true,

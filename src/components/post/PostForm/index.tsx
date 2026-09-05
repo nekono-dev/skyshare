@@ -58,10 +58,8 @@ import {
   readHashtagSuggestEnabledSetting,
   readMentionSuggestEnabledSetting,
 } from "@/lib/settings/suggestSettings"
-import { openMastodonIntentPopup } from "@/util/share/mastodonIntent"
+import { buildIntentText, openIntentPopupFor } from "@/util/share/intent"
 import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
-import { openTaittsuuIntentPopup } from "@/util/share/taittsuuIntent"
-import { openXIntentPopup } from "@/util/share/xIntent"
 import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
 import { runShareDispatch } from "./shareDispatch"
 import { submitEntry } from "./submitEntry"
@@ -715,6 +713,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       const dispatch = await runShareDispatch({
         text,
         skyshareUri: entryResult.skyshareUri,
+        linkCardUrl: ogpResult?.sourceUrl ?? "",
         imageEntry,
         manualImageAttach: shareToggles.manualImageAttach,
         crosspostToTaittsuu: shareToggles.crosspostToTaittsuu,
@@ -862,14 +861,18 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["black-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
-                  const intentText = text.trim()
+                  const intentText = buildIntentText(
+                    text,
+                    "",
+                    ogpResult?.sourceUrl,
+                  )
                   if (!intentText) {
                     setStatus("共有する投稿本文を入力してください。")
                     setStatusColor("#b00")
                     return
                   }
 
-                  const popupOpened = openXIntentPopup(intentText)
+                  const popupOpened = openIntentPopupFor("x", intentText)
                   setStatus(
                     popupOpened
                       ? "x.com 投稿画面を開きました。"
@@ -887,14 +890,18 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
-                  const intentText = text.trim()
+                  const intentText = buildIntentText(
+                    text,
+                    "",
+                    ogpResult?.sourceUrl,
+                  )
                   if (!intentText) {
                     setStatus("共有する投稿本文を入力してください。")
                     setStatusColor("#b00")
                     return
                   }
 
-                  const popupOpened = openTaittsuuIntentPopup(intentText)
+                  const popupOpened = openIntentPopupFor("taittsuu", intentText)
                   setStatus(
                     popupOpened
                       ? "タイッツー投稿画面を開きました。"
@@ -913,16 +920,21 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
-                  const intentText = text.trim()
+                  const intentText = buildIntentText(
+                    text,
+                    "",
+                    ogpResult?.sourceUrl,
+                  )
                   if (!intentText) {
                     setStatus("共有する投稿本文を入力してください。")
                     setStatusColor("#b00")
                     return
                   }
 
-                  const popupOpened = openMastodonIntentPopup(
-                    shareToggles.mastodonInstanceDomain,
+                  const popupOpened = openIntentPopupFor(
+                    "mastodon",
                     intentText,
+                    { instanceDomain: shareToggles.mastodonInstanceDomain },
                   )
                   setStatus(
                     popupOpened

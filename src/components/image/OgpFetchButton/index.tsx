@@ -183,6 +183,11 @@ export const useOgpFetch = ({
       }
 
       const rawBlob = await imageRes.blob()
+      if (rawBlob.size === 0) {
+        setOgpStatus("リンクカード画像の取得に失敗しました。")
+        onChange(null)
+        return
+      }
       if (!rawBlob.type.startsWith("image/")) {
         setOgpStatus("リンクカード画像の形式が不正です。")
         onChange(null)

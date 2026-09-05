@@ -35,7 +35,7 @@ import {
   writeThemeModeSetting,
 } from "@/lib/settings/themeSettings"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
-import { isValidMastodonInstanceDomain } from "@/util/share/mastodonIntent"
+import { isValidMastodonInstanceDomain } from "@/util/share/intent"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

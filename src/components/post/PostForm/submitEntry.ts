@@ -234,7 +234,7 @@ export const submitEntry = async (
         payload.images = imageEntry.originalBlobs
         payload.imagesMeta = await resolveImageMetadata(imageEntry)
     } else if (ogpResult) {
-        payload.ogMeta = ogpResult.meta
+        payload.ogMeta = { ...ogpResult.meta, url: ogpResult.sourceUrl }
         payload.ogImage = ogpResult.imageBlob
     }
 

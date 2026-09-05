@@ -76,20 +76,14 @@ describe("createImageEmbed", () => {
 })
 
 describe("createExternalEmbed", () => {
-    const facets = [
-        {
-            features: [
-                {
-                    $type: "app.bsky.richtext.facet#link",
-                    uri: "https://example.com",
-                },
-            ],
-        },
-    ]
-    const ogMeta = { title: "Example", description: "desc" }
+    const ogMeta = {
+        title: "Example",
+        description: "desc",
+        url: "https://example.com",
+    }
 
-    it("facetsからリンクを抽出しexternal embedを組み立てる", () => {
-        expect(createExternalEmbed(facets, ogMeta, "thumbBlobRef")).toEqual({
+    it("ogMeta.urlからexternal embedを組み立てる", () => {
+        expect(createExternalEmbed(ogMeta, "thumbBlobRef")).toEqual({
             $type: "app.bsky.embed.external",
             external: {
                 uri: "https://example.com",
@@ -100,9 +94,9 @@ describe("createExternalEmbed", () => {
         })
     })
 
-    it("リンクが無ければthrow", () => {
+    it("ogMeta.urlが無ければthrow", () => {
         expect(() =>
-            createExternalEmbed(undefined, ogMeta, undefined),
+            createExternalEmbed({ ...ogMeta, url: "" }, undefined),
         ).toThrow()
     })
 })

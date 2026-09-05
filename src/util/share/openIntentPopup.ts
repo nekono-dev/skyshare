@@ -2,8 +2,8 @@
  * 外部SNSの投稿intentページをポップアップで開く共通処理。
  *
  * 責務と処理概要:
- * - 各SNS向けintentユーティリティ（xIntent/taittsuuIntent/mastodonIntent）から
- *   共通で呼び出す、window.open実行と成功判定・opener切り離しのみを担う。
+ * - 各SNS向けintent機構（`@/util/share/intent`）から共通で呼び出す、
+ *   window.open実行と成功判定・opener切り離しのみを担う。
  * - intent URLの組み立て（テキスト整形・ドメイン検証など）は呼び出し側の責務とする。
  * - 投稿API呼び出しなど非同期処理を挟んでからintent URLが確定するケース向けに、
  *   ユーザー操作の直後（同期的なコールスタック内）で繋ぎページ（`/jump/`）の

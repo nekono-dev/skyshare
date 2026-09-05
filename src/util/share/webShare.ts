@@ -91,8 +91,8 @@ export const toShareFile = (blob: Blob, index: number) => {
  * WebShareAPI へ渡す共有テキストを組み立てる。
  *
  * 処理の趣旨:
- * - `buildXIntentText`（x.com向け）・`buildTaittsuuIntentText`（タイッツー向け）と
- *   同じ「本文 + 改行 + URL」形式をWebShareAPI向けにも踏襲する。
+ * - `@/util/share/intent`の`buildIntentText`と同じ「本文 + 改行 + URL」形式を
+ *   WebShareAPI向けにも踏襲する。
  *
  * Input:
  * - `text`: 元の投稿本文

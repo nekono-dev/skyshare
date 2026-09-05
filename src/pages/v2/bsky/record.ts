@@ -148,11 +148,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             }
 
             try {
-                embed = createExternalEmbed(
-                    rt.facets ?? undefined,
-                    body.data.ogMeta,
-                    uploadedOgImage,
-                )
+                embed = createExternalEmbed(body.data.ogMeta, uploadedOgImage)
             } catch (err) {
                 console.error("createBskyRecord: failed to create embed", err)
                 return errorResponseFromStatus(400)

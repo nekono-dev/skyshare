@@ -6,7 +6,7 @@
  * - 「X に投稿」選択時は intent ポップアップを開いてダイアログを閉じる。
  */
 import ChoiceDialog from "@/components/common/ChoiceDialog"
-import { buildXIntentText, openXIntentPopup } from "@/util/share/xIntent"
+import { buildIntentText, openIntentPopupFor } from "@/util/share/intent"
 
 type Props = {
   open: boolean
@@ -45,7 +45,7 @@ const Component = ({ open, postText, entryUrl, onClose }: Props) => {
           variant: "black",
           onClick: () => {
             if (!entryUrl) return
-            openXIntentPopup(buildXIntentText(postText, entryUrl))
+            openIntentPopupFor("x", buildIntentText(postText, entryUrl))
             onClose()
           },
         },

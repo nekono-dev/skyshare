@@ -9,7 +9,6 @@
  */
 
 import type * as Components from "@/client/openapi/schemas/components"
-import { extractLinkUrisFromFacets } from "@/lib/atproto/richtext"
 
 /**
  * 画像投稿時のメタデータ整合性を検証する。
@@ -100,41 +99,37 @@ export const createImageEmbed = (
  * OGP 投稿の app.bsky.embed.external embed オブジェクトを組み立てる。
  *
  * 処理の趣旨:
- * - facets から テキスト内のリンク URI を抽出し、
- * - OGP メタデータ（title, description）を合成して、
+ * - OGP メタデータ（title, description, url）から、
  * - atproto の external embed 形式に変換する。
+ * - Bluesky はリンクカードを embed として添付するため、本文（facets）に
+ *   URL が含まれているかどうかとは無関係に組み立てられる。
  *
  * Input:
- * - `facets`: RichText より生成された facets（リンク抽出用）
- * - `ogMeta`: { title: string, description: string, ... }
+ * - `ogMeta`: { title: string, description: string, url: string, ... }
  * - `thumbBlob`: サムネイル blob（アップロード済み、未指定可）
  *
  * Output:
  * - { $type: "app.bsky.embed.external", external: { uri, title, description, thumb? } }
  *
  * 失敗時の方針:
- * - リンク URI が見つからない場合は Error を throw。
+ * - `ogMeta.url` が空の場合は Error を throw。
  *
  * 例:
- * - 入力：facets=[...], ogMeta={title:"Example",description:"..."},thumbBlob=blobRef
+ * - 入力：ogMeta={title:"Example",description:"...",url:"https://..."},thumbBlob=blobRef
  * - 出力：{ $type:"app.bsky.embed.external",external:{uri:"https://...",title:"Example",description:"..."，thumb:blobRef} }
  */
 export const createExternalEmbed = (
-    facets: any[] | undefined,
     ogMeta: Components.CommonOgMetaType,
     thumbBlob: any,
 ) => {
-    const linkUris = extractLinkUrisFromFacets(facets)
-    const externalUri = linkUris[0]
-
-    if (!externalUri) {
+    if (!ogMeta.url) {
         throw new Error("ogp post requires a link in the text")
     }
 
     return {
         $type: "app.bsky.embed.external" as const,
         external: {
-            uri: externalUri,
+            uri: ogMeta.url,
             title: ogMeta.title,
             description: ogMeta.description,
             thumb: thumbBlob,

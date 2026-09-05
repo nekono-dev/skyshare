@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { runShareDispatch } from "@/components/post/PostForm/shareDispatch"
 import * as webShare from "@/util/share/webShare"
-import * as xIntent from "@/util/share/xIntent"
+import * as intent from "@/util/share/intent"
 
 vi.mock("@/util/share/webShare", async importOriginal => {
     const actual = await importOriginal<typeof webShare>()
@@ -13,11 +13,11 @@ vi.mock("@/util/share/webShare", async importOriginal => {
     }
 })
 
-vi.mock("@/util/share/xIntent", async importOriginal => {
-    const actual = await importOriginal<typeof xIntent>()
+vi.mock("@/util/share/intent", async importOriginal => {
+    const actual = await importOriginal<typeof intent>()
     return {
         ...actual,
-        openXIntentPopup: vi.fn(),
+        openIntentPopupFor: vi.fn(),
     }
 })
 
@@ -35,6 +35,7 @@ const buildParams = (
 ) => ({
     text: "投稿本文",
     skyshareUri: "at://example",
+    linkCardUrl: "",
     imageEntry: null,
     manualImageAttach: false,
     crosspostToTaittsuu: false,
@@ -50,17 +51,17 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
     beforeEach(() => {
         vi.mocked(webShare.canShareWithWebApi).mockReset()
         vi.mocked(webShare.shareWithWebApi).mockReset()
-        vi.mocked(xIntent.openXIntentPopup).mockReset()
+        vi.mocked(intent.openIntentPopupFor).mockReset()
     })
 
     it("WebShareAPI非対応の場合、即時にXポップアップを試行しPopupIntentInsteadOfWebshareをONにする", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(false)
-        vi.mocked(xIntent.openXIntentPopup).mockReturnValue(true)
+        vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
 
         const result = await runShareDispatch(buildParams())
 
         expect(webShare.shareWithWebApi).not.toHaveBeenCalled()
-        expect(xIntent.openXIntentPopup).toHaveBeenCalledTimes(1)
+        expect(intent.openIntentPopupFor).toHaveBeenCalledTimes(1)
         expect(result.forcedPopupIntentInsteadOfWebshareOn).toBe(true)
         expect(result.forcedNoAutoPopupOn).toBe(false)
         expect(result.forcedShowXIntentButtonOn).toBe(false)
@@ -69,7 +70,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
 
     it("WebShareAPI非対応かつXポップアップも開けない場合、NoAutoPopupAfterPost/ShowXIntentButtonも強制ONにする", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(false)
-        vi.mocked(xIntent.openXIntentPopup).mockReturnValue(false)
+        vi.mocked(intent.openIntentPopupFor).mockReturnValue(false)
 
         const result = await runShareDispatch(buildParams())
 
@@ -85,12 +86,12 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
             ok: false,
             reason: "failed",
         })
-        vi.mocked(xIntent.openXIntentPopup).mockReturnValue(true)
+        vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
 
         const result = await runShareDispatch(buildParams())
 
         expect(webShare.shareWithWebApi).toHaveBeenCalledTimes(1)
-        expect(xIntent.openXIntentPopup).toHaveBeenCalledTimes(1)
+        expect(intent.openIntentPopupFor).toHaveBeenCalledTimes(1)
         expect(result.forcedPopupIntentInsteadOfWebshareOn).toBe(true)
         expect(result.forcedNoAutoPopupOn).toBe(false)
         expect(result.forcedShowXIntentButtonOn).toBe(false)
@@ -103,7 +104,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
             ok: false,
             reason: "failed",
         })
-        vi.mocked(xIntent.openXIntentPopup).mockReturnValue(false)
+        vi.mocked(intent.openIntentPopupFor).mockReturnValue(false)
 
         const result = await runShareDispatch(buildParams())
 
@@ -122,7 +123,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
 
         const result = await runShareDispatch(buildParams())
 
-        expect(xIntent.openXIntentPopup).not.toHaveBeenCalled()
+        expect(intent.openIntentPopupFor).not.toHaveBeenCalled()
         expect(result.forcedPopupIntentInsteadOfWebshareOn).toBe(false)
         expect(result.forcedNoAutoPopupOn).toBe(false)
         expect(result.forcedShowXIntentButtonOn).toBe(false)
@@ -134,7 +135,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
 
         const result = await runShareDispatch(buildParams())
 
-        expect(xIntent.openXIntentPopup).not.toHaveBeenCalled()
+        expect(intent.openIntentPopupFor).not.toHaveBeenCalled()
         expect(result.forcedPopupIntentInsteadOfWebshareOn).toBe(false)
         expect(result.textToKeep).toBeNull()
     })

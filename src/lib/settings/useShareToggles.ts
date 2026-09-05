@@ -40,7 +40,7 @@ import {
     reconcileShareToggles,
     type ShareTogglesState,
 } from "./shareTogglesReducer"
-import { isValidMastodonInstanceDomain } from "@/util/share/mastodonIntent"
+import { isValidMastodonInstanceDomain } from "@/util/share/intent"
 
 /**
  * 5トグルの現在値を localStorage から読み直す。
