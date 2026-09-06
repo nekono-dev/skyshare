@@ -19,6 +19,11 @@ type Props = {
   onCreate: () => void
   onRequestDelete: () => void
   onCrosspost: () => void
+  /**
+   * trueの場合、Bluesky投稿への実際の書き込みを伴う操作（Entry作成・削除）を無効化する。
+   * クロスポスト（Xへの共有intentポップアップ）はatprotoの認証を必要としないため対象外。
+   */
+  disabled?: boolean
 }
 
 /**
@@ -43,6 +48,7 @@ const Component = ({
   onCreate,
   onRequestDelete,
   onCrosspost,
+  disabled = false,
 }: Props) => {
   return (
     <>
@@ -60,7 +66,7 @@ const Component = ({
           <button
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
-            disabled={display.kind === "deleting"}
+            disabled={disabled || display.kind === "deleting"}
             onClick={onRequestDelete}
           >
             投稿を削除
@@ -70,7 +76,7 @@ const Component = ({
         <button
           type="button"
           className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-          disabled={display.kind === "creating"}
+          disabled={disabled || display.kind === "creating"}
           onClick={onCreate}
         >
           {display.kind === "creating" ? "作成中…" : "Skyshare Entryを作成"}

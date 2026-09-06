@@ -33,7 +33,7 @@ graph TD
 外部カテゴリへの依存の内訳:
 
 - `common`: Timeline(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、PostLauncher(Overlay)、PostCard(Loading)、PostForm(Collapsible・CountedTextInput・LanguageSelect・Loading・Overlay・ToggleSwitch)、SkyshareShareDialog(ChoiceDialog)
-- `image`: PostForm(ImagePicker・ImagePreview・OgpFetchButton・OgpPreview)
+- `image`: PostForm(ImagePicker・ImageAltDialog・OgpFetchButton・OgpPreview)
 - `entry`: PostCard(EntryDeleteConfirmDialog)
 
 - `PostEngagementStats` は他コンポーネントへの依存を持たない単体の表示部品。

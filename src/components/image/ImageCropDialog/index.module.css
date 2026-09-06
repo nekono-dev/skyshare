@@ -52,6 +52,24 @@
     "slot2 slot3";
 }
 
+/*
+  ズームスライダー行。クロップビュー群とキャンセル/OKボタンの間に、
+  画像ごとのスライダーを横並び（flex）で配置する。各スライダーの並び順は
+  composite-area 内のスロット順（slot0, slot1, ...）に対応する。
+*/
+.zoom-controls {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 920px;
+  margin-inline: auto;
+}
+
+.zoom-slider {
+  flex: 1;
+  min-width: 0;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;

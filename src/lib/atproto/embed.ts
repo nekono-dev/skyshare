@@ -69,8 +69,8 @@ export const validateImageMetadata = (
  * - { $type: "app.bsky.embed.images", images: [...] }
  *
  * 例:
- * - 入力：uploadedBlobs=[blobRef1, blobRef2], metadata=[{w:100,h:100}, {w:200,h:200}]
- * - 出力：{ $type: "app.bsky.embed.images", images: [{image: blobRef1, alt: "", aspectRatio: {width: 100, height: 100}}, ...] }
+ * - 入力：uploadedBlobs=[blobRef1, blobRef2], metadata=[{w:100,h:100,alt:""}, {w:200,h:200,alt:"猫の写真"}]
+ * - 出力：{ $type: "app.bsky.embed.images", images: [{image: blobRef1, alt: "", aspectRatio: {width: 100, height: 100}}, {image: blobRef2, alt: "猫の写真", ...}] }
  */
 export const createImageEmbed = (
     uploadedBlobs: any[],
@@ -78,12 +78,13 @@ export const createImageEmbed = (
 ) => {
     const widths = metadata?.map(v => v.width) ?? []
     const heights = metadata?.map(v => v.height) ?? []
+    const alts = metadata?.map(v => v.alt ?? "") ?? []
 
     return {
         $type: "app.bsky.embed.images" as const,
         images: uploadedBlobs.map((blob, idx) => ({
             image: blob,
-            alt: "",
+            alt: alts[idx] ?? "",
             aspectRatio:
                 widths[idx] && heights[idx]
                     ? {

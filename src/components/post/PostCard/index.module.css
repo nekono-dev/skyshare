@@ -41,8 +41,16 @@
   text-decoration: none;
 }
 
-.entry-link:hover {
+.entry-link:not([aria-disabled="true"]):hover {
   text-decoration: underline;
+}
+
+.entry-link[aria-disabled="true"],
+.entry-link[aria-disabled="true"]:hover,
+.entry-link[aria-disabled="true"]:focus {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 .author-meta {

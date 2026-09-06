@@ -6,8 +6,12 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type CSSProperties,
+  type RefObject,
 } from "react"
+import { createPortal } from "react-dom"
 import ImageCropDialog from "@/components/image/ImageCropDialog"
+import ImageAltDialog from "@/components/image/ImageAltDialog"
 import Loading from "@/components/common/Loading"
 import type { Area } from "react-easy-crop"
 import {
@@ -18,6 +22,7 @@ import {
   loadImageSize,
 } from "@/lib/image/postImageProcessing"
 import ui from "@/styles/ui.module.css"
+import styles from "./index.module.css"
 import pic from "@/images/image.svg"
 
 /**
@@ -27,6 +32,7 @@ import pic from "@/images/image.svg"
  * - ファイル入力から最大4枚の画像を受け取り、スロット情報を管理する。
  * - 初期クロップを算出して投稿用画像を生成し、親へ `ImageEntry` を通知する。
  * - クロップダイアログで再調整した結果を反映する。
+ * - 各画像を個別サムネイルとして表示し、個別削除・alt編集を提供する。
  */
 
 export type SlotCropState = {
@@ -41,6 +47,7 @@ export type ImageSlot = {
   naturalWidth?: number
   naturalHeight?: number
   cropState: SlotCropState
+  alt: string
   file?: File
 }
 
@@ -50,13 +57,20 @@ export type ImageEntry = {
   originalPreviews: string[]
   thumbnailPreview: string
   sourceFileNames: string[]
-  meta?: { width?: number; height?: number }[]
+  meta?: { width?: number; height?: number; alt: string }[]
 }
 
 type Props = {
   value: ImageEntry | null
   onChange: (entry: ImageEntry | null) => void
   disabled?: boolean
+  /**
+   * 個別画像プレビューのグリッドを描画するポータル先。
+   * 画像追加ボタン列は内容量に合わせて幅を縮める領域に置かれるため、
+   * プレビューグリッドはそこに直接描画せず、フォーム全幅を使えるこの
+   * コンテナへポータルする。
+   */
+  previewContainerRef?: RefObject<HTMLDivElement | null>
 }
 
 /**
@@ -75,19 +89,31 @@ export type ImagePickerHandle = {
  * - `disabled`: 操作可否
  *
  * Output:
- * - 画像追加・クロップ・撤去の操作 UI
+ * - 画像追加・個別サムネイル（削除/alt編集）・クロップ操作 UI
  *
  * 例:
  * - 入力: `{ value: null, disabled: false }`
  * - 出力: 画像追加ボタンとクロップ操作ボタン
  */
 export const Component = forwardRef<ImagePickerHandle, Props>(
-  function ImagePicker({ value, onChange, disabled = false }, ref) {
+  function ImagePicker(
+    { value, onChange, disabled = false, previewContainerRef },
+    ref,
+  ) {
     const [slots, setSlots] = useState<ImageSlot[]>([])
     const [showCropDialog, setShowCropDialog] = useState(false)
+    const [altDialogIndex, setAltDialogIndex] = useState<number | null>(null)
     const [isPreparingPreview, setIsPreparingPreview] = useState(false)
+    const [previewContainer, setPreviewContainer] =
+      useState<HTMLDivElement | null>(null)
     const slotsRef = useRef<ImageSlot[]>([])
     const inputId = useId()
+
+    // previewContainerRef の DOM ノードは PostForm 側の初回コミットで確定するため、
+    // マウント後に一度読み取ってポータル先として state 化する。
+    useEffect(() => {
+      setPreviewContainer(previewContainerRef?.current ?? null)
+    }, [previewContainerRef])
 
     /**
      * 指定スロット群の object URL を解放する。
@@ -157,6 +183,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
         meta: nextSlots.map(slot => ({
           width: slot.naturalWidth,
           height: slot.naturalHeight,
+          alt: slot.alt,
         })),
       })
     }
@@ -261,6 +288,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             naturalWidth: size.width,
             naturalHeight: size.height,
             cropState: { crop: { x: 0, y: 0 }, zoom: 1, cropPixels },
+            alt: "",
             file,
           })
         } catch (err) {
@@ -269,6 +297,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             objectUrl: url,
             fileName: name,
             cropState: { crop: { x: 0, y: 0 }, zoom: 1, cropPixels: null },
+            alt: "",
             file,
           })
         }
@@ -337,19 +366,22 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       newStates: SlotCropState[],
     ) => {
       // 確定したクロップ状態を各スロットへ反映する。
-      setSlots(prev =>
-        prev.map((s, i) => ({ ...s, cropState: newStates[i] ?? s.cropState })),
-      )
+      const nextSlots = slots.map((s, i) => ({
+        ...s,
+        cropState: newStates[i] ?? s.cropState,
+      }))
+      setSlots(nextSlots)
 
       const entry: ImageEntry = {
         originalBlobs,
         thumbnailBlob,
         originalPreviews: originalBlobs.map(b => URL.createObjectURL(b)),
         thumbnailPreview: URL.createObjectURL(thumbnailBlob),
-        sourceFileNames: slots.map(s => s.fileName),
-        meta: slots.map(s => ({
+        sourceFileNames: nextSlots.map(s => s.fileName),
+        meta: nextSlots.map(s => ({
           width: s.naturalWidth,
           height: s.naturalHeight,
+          alt: s.alt,
         })),
       }
 
@@ -358,16 +390,114 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
     }
 
     /**
-     * すべての画像スロットを削除し、プレビュー状態を初期化する。
+     * 指定インデックスの画像を1枚だけ削除する。
+     *
+     * 処理の趣旨:
+     * - 残った画像の枚数に応じてスロットレイアウト（クロップ範囲）を再計算し、
+     *   合成サムネイルも残存画像から作り直す。
+     *
+     * Input:
+     * - `index`: 削除対象スロットの index
      *
      * Output:
-     * - 返り値なし（URL 解放と state 初期化を実行）
+     * - 返り値なし（state 更新と `onChange` 通知を実行）
      */
-    const handleRemoveAll = () => {
-      revokeSlotUrls(slots)
-      setSlots([])
-      setShowCropDialog(false)
-      onChange(null)
+    const removeImage = async (index: number) => {
+      const target = slots[index]
+      if (!target) return
+
+      revokeSlotUrls([target])
+      const remaining = slots.filter((_, i) => i !== index)
+
+      if (remaining.length === 0) {
+        setSlots([])
+        setShowCropDialog(false)
+        onChange(null)
+        return
+      }
+
+      const defs = getSlotDefs(remaining.length)
+      const nextSlots = normalizeSlotsForLayout(remaining, defs)
+      setSlots(nextSlots)
+
+      setIsPreparingPreview(true)
+      try {
+        await createEntryFromSlots(nextSlots)
+      } catch (error) {
+        console.error(error)
+        onChange(null)
+      } finally {
+        setIsPreparingPreview(false)
+      }
+    }
+
+    /**
+     * サムネイル生成時に使われるクロップ範囲を、個別プレビュー画像へ視覚的に反映するための
+     * インラインスタイルを算出する。
+     *
+     * 処理の趣旨:
+     * - Blueskyへ投稿する原本画像自体はクロップしない（`ImageSlot.cropState` は
+     *   合成サムネイル生成専用の情報）ため、ここでは「作成される予定のサムネイル」を
+     *   見せるための表示上のクロップのみを行う。実際の画像切り抜きは行わず、
+     *   `position:absolute` + 拡大率でクロップ範囲がコンテナいっぱいに映るよう配置する
+     *   （`object-fit`では矩形任意位置の切り抜きを表現できないため）。
+     * - クロップ範囲や元画像サイズが未確定な場合は、通常の中央基準カバー表示にフォールバックする。
+     *
+     * Input:
+     * - `slot`: 対象スロット
+     *
+     * Output:
+     * - `<img>` に適用するインラインスタイル
+     */
+    const computeCroppedImageStyle = (slot: ImageSlot): CSSProperties => {
+      const crop = slot.cropState.cropPixels
+      if (!crop || !slot.naturalWidth || !slot.naturalHeight) {
+        return {
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        }
+      }
+
+      return {
+        display: "block",
+        position: "absolute",
+        left: `${(-crop.x / crop.width) * 100}%`,
+        top: `${(-crop.y / crop.height) * 100}%`,
+        width: `${(slot.naturalWidth / crop.width) * 100}%`,
+        height: `${(slot.naturalHeight / crop.height) * 100}%`,
+        maxWidth: "none",
+      }
+    }
+
+    /**
+     * 指定インデックスの画像の alt テキストを更新する。
+     *
+     * 処理の趣旨:
+     * - alt はサーバー送信用メタデータにのみ影響し、画像そのもの（blob/プレビュー）は
+     *   変わらないため、Blob の再生成は行わずスロットと `ImageEntry.meta` だけを更新する。
+     *
+     * Input:
+     * - `index`: 対象スロットの index
+     * - `alt`: 新しい alt テキスト
+     *
+     * Output:
+     * - 返り値なし（state 更新と `onChange` 通知を実行）
+     */
+    const updateAlt = (index: number, alt: string) => {
+      const nextSlots = slots.map((s, i) => (i === index ? { ...s, alt } : s))
+      setSlots(nextSlots)
+
+      if (!value) return
+      onChange({
+        ...value,
+        meta: nextSlots.map(s => ({
+          width: s.naturalWidth,
+          height: s.naturalHeight,
+          alt: s.alt,
+        })),
+      })
     }
 
     return (
@@ -404,18 +534,48 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
               サムネ調整
             </button>
           )}
-
-          {slots.length > 0 && (
-            <button
-              type="button"
-              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-              onClick={handleRemoveAll}
-              disabled={disabled}
-            >
-              画像撤去
-            </button>
-          )}
         </div>
+
+        {slots.length > 0 &&
+          previewContainer &&
+          createPortal(
+            <div
+              className={`${styles["thumb-grid"]} ${styles[`layout${slots.length}`]}`}
+            >
+              {slots.map((slot, index) => (
+                <div
+                  key={slot.objectUrl}
+                  className={styles["thumb-item"]}
+                  style={{ gridArea: `slot${index}` }}
+                >
+                  <img
+                    src={slot.objectUrl}
+                    alt=""
+                    style={computeCroppedImageStyle(slot)}
+                  />
+                  <button
+                    type="button"
+                    className={styles["remove-badge"]}
+                    aria-label={`画像${index + 1}を削除`}
+                    onClick={() => removeImage(index)}
+                    disabled={disabled}
+                  >
+                    ×
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles["alt-badge"]} ${slot.alt ? styles["alt-badge-active"] : ""}`}
+                    aria-label={`画像${index + 1}のaltテキストを編集`}
+                    onClick={() => setAltDialogIndex(index)}
+                    disabled={disabled}
+                  >
+                    alt
+                  </button>
+                </div>
+              ))}
+            </div>,
+            previewContainer,
+          )}
 
         {showCropDialog && (
           <ImageCropDialog
@@ -427,6 +587,16 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             }))}
             onCancel={() => setShowCropDialog(false)}
             onConfirm={handleCropConfirm}
+          />
+        )}
+
+        {altDialogIndex !== null && slots[altDialogIndex] && (
+          <ImageAltDialog
+            open
+            onClose={() => setAltDialogIndex(null)}
+            value={slots[altDialogIndex].alt}
+            onChange={next => updateAlt(altDialogIndex, next)}
+            disabled={disabled}
           />
         )}
       </section>

@@ -163,17 +163,22 @@ const resolveImageMetadata = async (
     const hasCompleteImageSizes =
         imageSizes.length === entry.originalBlobs.length &&
         imageSizes.every(value => hasValidImageSize(value))
+    const alts = entry.originalBlobs.map(
+        (_, index) => imageSizes[index]?.alt ?? "",
+    )
 
     if (hasCompleteImageSizes) {
-        return imageSizes.map(value => ({
+        return imageSizes.map((value, index) => ({
             width: value.width,
             height: value.height,
+            alt: alts[index],
         }))
     }
 
-    return Promise.all(
+    const sizes = await Promise.all(
         entry.originalBlobs.map((blob, index) => loadBlobImageSize(blob)),
     )
+    return sizes.map((size, index) => ({ ...size, alt: alts[index] }))
 }
 
 /**

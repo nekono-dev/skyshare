@@ -24,7 +24,10 @@ import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
 import PageSizeSelect from "@/components/common/PageSizeSelect"
 import EntryCard from "@/components/entry/EntryCard"
+import { isSessionKnownUnauthenticated } from "@/lib/account/activeAccountSession"
+import { GUEST_DUMMY_ENTRIES } from "@/lib/entry/guestDummyPosts"
 import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
+import { isGuestModeRequested } from "@/lib/guestMode"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import {
   readPageSizeSetting,
@@ -43,6 +46,9 @@ const PAGE_SIZE = 20
  */
 const Component = () => {
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
+  // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミーEntryを表示する
+  // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
+  const [guestMode, setGuestMode] = useState(false)
   // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
   // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
   // 到達不能なデッドコードとして残置している。
@@ -68,6 +74,13 @@ const Component = () => {
       CursorPageFetchResult<TimelineSkyshareEntry>
     > => {
       try {
+        // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
+        // 401確定済みの`getSkyshareEntries`をわざわざ叩き直さずゲスト表示へ直行する。
+        if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
+          setGuestMode(true)
+          return { items: GUEST_DUMMY_ENTRIES }
+        }
+
         const params = cursor ? { limit, cursor } : { limit }
         const res = await getSkyshareEntries(params)
 
@@ -79,6 +92,10 @@ const Component = () => {
         }
 
         if (res.status === 401) {
+          if (isGuestModeRequested()) {
+            setGuestMode(true)
+            return { items: GUEST_DUMMY_ENTRIES }
+          }
           if (typeof window !== "undefined") {
             window.location.href = "/login/"
           }
@@ -139,6 +156,13 @@ const Component = () => {
 
   return (
     <section>
+      {guestMode && (
+        <p
+          className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
+        >
+          これはログイン不要のゲスト表示です。実際のEntryの編集・削除はできません。
+        </p>
+      )}
       <div
         className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
       >
@@ -178,6 +202,7 @@ const Component = () => {
                 candidate => candidate.uri === item.uri,
                 candidate => ({ ...candidate, ...next }),
               ),
+            guestMode,
           })}
           className={styles["entry-list"]}
           items={items}

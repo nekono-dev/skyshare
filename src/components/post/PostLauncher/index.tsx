@@ -37,7 +37,14 @@ const PostLauncher: React.FC<{
   accountDid?: string | null
   onPosted?: () => void
   onPinnedFormDisabledChange?: (next: boolean) => void
-}> = ({ avatarUrl, accountDid, onPosted, onPinnedFormDisabledChange }) => {
+  guestMode?: boolean
+}> = ({
+  avatarUrl,
+  accountDid,
+  onPosted,
+  onPinnedFormDisabledChange,
+  guestMode = false,
+}) => {
   const [open, setOpen] = useState(false)
   const postFormRef = useRef<PostFormHandle>(null)
   // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
@@ -97,6 +104,7 @@ const PostLauncher: React.FC<{
           avatarUrl={avatarUrl}
           accountDid={accountDid}
           onPinnedFormDisabledChange={onPinnedFormDisabledChange}
+          guestMode={guestMode}
         />
       </Overlay>
     </>

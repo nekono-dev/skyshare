@@ -21,6 +21,10 @@
  *   OpenAPI の anyOf/min(1) 等のバリデーションを空文字が意図せず壊さないよう、
  *   未指定と同義として扱えるようにする。
  *
+ * `"json"`種別フィールド（例: `text`。生の改行バイトが multipart 上で
+ * 正規化されるのを避けるため JSON 文字列として運ばれる）にも対応するため、
+ * 値が JSON 文字列としてパースできる場合はパース後の値で空文字判定する。
+ *
  * Input:
  * - `formData`: 対象の FormData（同一インスタンスを破壊的更新）
  * - `fieldName`: 空文字判定・削除対象のフィールド名
@@ -31,13 +35,29 @@
  * 例:
  * - 入力: `dropEmptyStringField(formData, "text")`（text="" が設定済み）
  * - 出力: text キーが除去された FormData
+ * - 入力: `dropEmptyStringField(formData, "text")`（text=`"\"\""` が設定済み、json種別）
+ * - 出力: text キーが除去された FormData
  */
 export const dropEmptyStringField = (
     formData: FormData,
     fieldName: string,
 ): FormData => {
     const rawValue = formData.get(fieldName)
-    if (typeof rawValue === "string" && rawValue.trim().length === 0) {
+    if (typeof rawValue !== "string") {
+        return formData
+    }
+
+    let value = rawValue
+    try {
+        const parsed = JSON.parse(rawValue)
+        if (typeof parsed === "string") {
+            value = parsed
+        }
+    } catch {
+        // JSON文字列ではない(生文字列種別のフィールド)場合はrawValueをそのまま使う
+    }
+
+    if (value.trim().length === 0) {
         formData.delete(fieldName)
     }
     return formData

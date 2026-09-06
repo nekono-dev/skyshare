@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react"
+import someone from "@/images/someone.svg"
 import styles from "./index.module.css"
 import sizeStyles from "@/styles/avatar.ui.module.css"
 
@@ -71,11 +72,13 @@ export const Avatar: React.FC<Props> = ({
   }
 
   return (
-    <div
+    <img
+      src={someone.src}
+      alt={alt}
+      aria-hidden={rest["aria-hidden"]}
       className={[styles.placeholder, sizeClassName, className]
         .filter(Boolean)
         .join(" ")}
-      aria-hidden="true"
     />
   )
 }

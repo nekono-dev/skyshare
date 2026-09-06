@@ -130,7 +130,7 @@ export const Settings = () => {
   }
 
   /**
-   * 「投稿後に返信・引用のデフォルト設定を更新するか」設定を変更する。
+   * 「返信・引用オプションを保存する」の設定を変更する。
    *
    * Input:
    * - `next`: 変更後の値
@@ -363,9 +363,9 @@ export const Settings = () => {
           items={[
             {
               key: "syncGateDefaultAfterPost",
-              label: "投稿後に返信・引用のデフォルト設定を更新する",
+              label: "返信・引用オプションを保存する",
               description:
-                "オンにすると、投稿時に指定した返信・引用の設定が次回以降のデフォルト値になります。オフの場合、投稿後は常に保存済みのデフォルト値に戻ります。",
+                "オンにすると、投稿時に指定した返信・引用の設定が次回以降のデフォルト値になります。オフの場合、投稿後は本オプションで保存されたデフォルト値に戻ります。",
               checked: syncGateDefaultAfterPost,
               onCheckedChange: onSyncGateDefaultAfterPostChange,
             },

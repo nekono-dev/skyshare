@@ -13,7 +13,11 @@ import ui from "@/styles/ui.module.css"
  * 複数画像クロップをまとめて確定するダイアログコンポーネント。
  *
  * 責務と処理概要:
- * - 画像枚数に応じたスロット定義で `CropSlot` を並べる。
+ * - 画像枚数に応じたスロット定義で `CropSlot` を並べる。合成後のサムネイル
+ *   （実際にリンクカードとして使われる画像）の視覚表示に徹するため、
+ *   画像ごとのラベル文字は表示しない。
+ * - ズームスライダーはクロップビューと重ねず、ビュー群と確定ボタンの間に
+ *   画像ごとに横並び（flex）で配置する。
  * - 全スロットのクロップ完了を確認してから画像処理を実行する。
  * - 処理中は閉じ操作を抑止し、オーバーレイで進行状態を示す。
  */
@@ -63,6 +67,9 @@ export const Component: React.FC<Props> = ({
         },
     ),
   )
+  const [minZooms, setMinZooms] = useState<number[]>(() =>
+    Array.from({ length: count }).map(() => 1),
+  )
   const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
@@ -76,6 +83,7 @@ export const Component: React.FC<Props> = ({
           },
       ),
     )
+    setMinZooms(Array.from({ length: count }).map(() => 1))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrls.length])
 
@@ -93,6 +101,42 @@ export const Component: React.FC<Props> = ({
     setCropStates(prev => {
       const next = prev.slice()
       next[idx] = state
+      return next
+    })
+  }
+
+  /**
+   * 指定インデックスの最小ズームを更新する（ズームスライダーの `min` 値に使う）。
+   *
+   * Input:
+   * - `idx`: 対象スロット index
+   * - `value`: 算出された最小ズーム
+   *
+   * Output:
+   * - 返り値なし（`minZooms` を更新）
+   */
+  const handleMinZoomChange = (idx: number, value: number) => {
+    setMinZooms(prev => {
+      const next = prev.slice()
+      next[idx] = value
+      return next
+    })
+  }
+
+  /**
+   * ズームスライダー操作を該当スロットのクロップ状態へ反映する。
+   *
+   * Input:
+   * - `idx`: 対象スロット index
+   * - `zoom`: スライダーの新しい値
+   *
+   * Output:
+   * - 返り値なし（`cropStates[idx].zoom` を更新。`CropSlot` へ外部ズームとして伝播する）
+   */
+  const handleZoomSliderChange = (idx: number, zoom: number) => {
+    setCropStates(prev => {
+      const next = prev.slice()
+      next[idx] = { ...next[idx], zoom }
       return next
     })
   }
@@ -151,10 +195,26 @@ export const Component: React.FC<Props> = ({
                 imageUrl={imageUrls[i]}
                 aspect={def.w / def.h}
                 initialCropPixels={cropStates[i]?.cropPixels ?? null}
-                label={`画像 ${i + 1}`}
+                externalZoom={cropStates[i]?.zoom}
                 onChange={s => handleSlotChange(i, s)}
+                onMinZoomChange={value => handleMinZoomChange(i, value)}
               />
             </div>
+          ))}
+        </div>
+
+        <div className={styles["zoom-controls"]}>
+          {slotDefs.map((_, i) => (
+            <input
+              key={i}
+              type="range"
+              className={styles["zoom-slider"]}
+              min={minZooms[i] ?? 1}
+              max={8}
+              step={0.01}
+              value={cropStates[i]?.zoom ?? 1}
+              onChange={e => handleZoomSliderChange(i, Number(e.target.value))}
+            />
           ))}
         </div>
 

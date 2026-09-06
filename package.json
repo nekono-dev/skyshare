@@ -1,7 +1,7 @@
 {
   "name": "skyshare",
   "type": "module",
-  "version": "2.0.0-preview.r07",
+  "version": "2.0.0-preview.r08",
   "scripts": {
     "lexgen": "./hack/gen-client.sh ./src/client/atproto",
     "apigen:doc": "tsx ./hack/build-openapi-document.ts",

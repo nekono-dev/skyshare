@@ -22,7 +22,7 @@ describe("validateImageMetadata", () => {
         expect(() =>
             validateImageMetadata(
                 [new Blob(["a"]), new Blob(["b"])],
-                [{ width: 100, height: 100 }],
+                [{ width: 100, height: 100, alt: "" }],
             ),
         ).toThrow()
     })
@@ -32,8 +32,8 @@ describe("validateImageMetadata", () => {
             validateImageMetadata(
                 [new Blob(["a"]), new Blob(["b"])],
                 [
-                    { width: 100, height: 100 },
-                    { width: 200, height: 200 },
+                    { width: 100, height: 100, alt: "" },
+                    { width: 200, height: 200, alt: "" },
                 ],
             ),
         ).not.toThrow()
@@ -46,8 +46,8 @@ describe("createImageEmbed", () => {
             createImageEmbed(
                 ["blobRef1", "blobRef2"],
                 [
-                    { width: 100, height: 100 },
-                    { width: 200, height: 200 },
+                    { width: 100, height: 100, alt: "" },
+                    { width: 200, height: 200, alt: "猫の写真" },
                 ],
             ),
         ).toEqual({
@@ -60,7 +60,7 @@ describe("createImageEmbed", () => {
                 },
                 {
                     image: "blobRef2",
-                    alt: "",
+                    alt: "猫の写真",
                     aspectRatio: { width: 200, height: 200 },
                 },
             ],

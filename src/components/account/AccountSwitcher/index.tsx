@@ -17,6 +17,7 @@ import {
   deleteSession,
 } from "@/client/openapi/client"
 import type { GetSession200AccountsItem } from "@/client/openapi/model"
+import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -205,6 +206,7 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
         setActionError("アカウントの切り替えに失敗しました。")
         return
       }
+      clearKnownUnauthenticated()
       window.location.href = "/"
     } catch (err) {
       console.error(err)

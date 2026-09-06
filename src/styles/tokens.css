@@ -54,8 +54,16 @@
   --color-bluesky: hsl(209, 100%, 50%);
   --color-bluesky-hover: hsl(209, 100%, 40%);
 
+  /* Mastodonブランドカラー用。彩度・明度は--color-blueskyと揃え、色相のみ紫系に変える。 */
+  --color-mastodon: hsl(286, 58%, 58%);
+  --color-mastodon-hover: hsl(288, 55%, 41%);
+
   --color-gray: rgb(239, 242, 246);
   --color-gray-hover: rgb(220, 226, 234);
+
+  /* タイッツーボタン用。--color-grayより少し濃いグレー。 */
+  --color-taittsuu: rgb(207, 210, 213);
+  --color-taittsuu-hover: rgb(167, 173, 180);
 
   --color-red: rgb(255, 190, 204);
   --color-red-hover: rgb(255, 81, 121);

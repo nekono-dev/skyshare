@@ -10,6 +10,7 @@
 import React, {
   forwardRef,
   useEffect,
+  useId,
   useImperativeHandle,
   useRef,
   useState,
@@ -30,7 +31,6 @@ import ImagePicker, {
   type ImageEntry,
   type ImagePickerHandle,
 } from "@/components/image/ImagePicker"
-import ImagePreview from "@/components/image/ImagePreview"
 import InlineIcon from "@/components/common/InlineIcon"
 import LanguageSelect from "@/components/common/LanguageSelect"
 import Loading from "@/components/common/Loading"
@@ -95,6 +95,13 @@ type Props = {
    * 同一ページに同時に存在しうるため、片方での変更をもう片方の表示制御へ即時反映する用途。
    */
   onPinnedFormDisabledChange?: (next: boolean) => void
+  /**
+   * ログイン不要のゲスト用デモ表示。Bluesky認証セッションに依存する下書き機能は
+   * 無効化する一方、投稿ボタンはBlueskyへの実投稿（submitEntry）だけをスキップし、
+   * その後の自動ポップアップ・WebShareAPI・X/タイッツー/Mastodon投稿ボタン等の
+   * 後続処理は通常時と同じフローで実行して見た目を体験してもらう用途。
+   */
+  guestMode?: boolean
 }
 
 /**
@@ -213,9 +220,17 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     avatarUrl,
     accountDid,
     onPinnedFormDisabledChange,
+    guestMode = false,
   },
   ref,
 ) {
+  // PostFormは常時表示のpinned form（Timeline）とPostLauncherのモーダルとで
+  // 同一ページに複数インスタンスが同時にマウントされうる。id="entry-form"を
+  // 固定文字列のままにすると、投稿ボタン(`form`属性で外部のform要素を参照)が
+  // DOM上で先に出現する別インスタンスのform要素に誤って結びつき、
+  // クリックしたのとは別インスタンスのtext state（空文字のことが多い）で
+  // 投稿されてしまう。インスタンスごとに一意なidにすることでこれを防ぐ。
+  const entryFormId = useId()
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
   const shareToggles = useShareToggles()
@@ -230,9 +245,13 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   useEffect(() => {
     setShareTogglesReady(true)
   }, [])
-  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
-    readPinnedFormDisabledSetting(false),
-  )
+  // SSRは常にfalseでレンダリングするため、初期stateもfalse固定にし、実際の設定値は
+  // マウント後のuseEffectで反映する（shareTogglesReadyと同じ理由によるhydration
+  // mismatch対策）。
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+  useEffect(() => {
+    setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+  }, [])
   const [hashtagSuggestEnabled] = useState(() =>
     readHashtagSuggestEnabledSetting(true),
   )
@@ -284,6 +303,11 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
+  // ImagePickerの画像追加ボタン列は幅を内容量に合わせて縮めるトグルボックス内に置かれるため、
+  // 個別画像プレビューのグリッドをその場に描画すると横幅がボタン列の幅に押し縮められてしまう。
+  // フォーム全幅を使えるこの位置にポータル先を用意し、ImagePicker側の状態はそのままに
+  // 見た目だけをここへ描画する。
+  const imagePreviewContainerRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
   const entryFormRef = useRef<HTMLFormElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
@@ -362,7 +386,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const autoGrowText = variant === "page"
   const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
     optionsList: [
-      shareToggles.popupIntentInsteadOfWebshare,
+      pinnedFormDisabled,
       shareToggles.crosspostToTaittsuu,
       shareToggles.showXWhenCrosspost,
       shareToggles.crosspostToMastodon,
@@ -707,46 +731,57 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     const popupWindow = willAutoPopup ? preOpenPopupWindow() : null
 
     setIsSubmitting(true)
-    setStatus("送信中…")
+    setStatus(guestMode ? "処理中…" : "送信中…")
     setStatusColor(undefined)
 
     try {
-      const entryResult = await submitEntry({
-        text,
-        languageCode,
-        selfLabel,
-        imageEntry,
-        manualImageAttach: shareToggles.manualImageAttach,
-        ogpResult,
-        postGate,
-      })
+      // ゲスト表示ではBluesky認証セッションが無いため、実際の投稿(submitEntry)は
+      // 行わずスキップする。ただしポップアップ/WebShareAPI等の後続処理は通常時と
+      // 同じフローで実行し、見た目を体験できるようにする。
+      let skyshareUri = ""
+      let gateWarning = false
 
-      if (!entryResult.ok) {
-        popupWindow?.close()
-        setStatusColor("#b00")
-        setStatus(entryResult.message)
-        return
-      }
+      if (!guestMode) {
+        const entryResult = await submitEntry({
+          text,
+          languageCode,
+          selfLabel,
+          imageEntry,
+          manualImageAttach: shareToggles.manualImageAttach,
+          ogpResult,
+          postGate,
+        })
 
-      // 「投稿後にデフォルト値を更新する」がONなら今回使った設定を新しいデフォルトとして
-      // 永続化し、OFFなら保存済みのデフォルト値へ都度リセットする。トグルをその場で
-      // 操作した直後に投稿しても即座に反映されるよう、都度読み直さずstateを直接参照する。
-      if (syncGateDefaultAfterPost) {
-        writePostGateDefaultSetting(postGate)
-      } else {
-        setPostGate(readPostGateDefaultSetting())
-      }
+        if (!entryResult.ok) {
+          popupWindow?.close()
+          setStatusColor("#b00")
+          setStatus(entryResult.message)
+          return
+        }
 
-      if (loadedDraft) {
-        void deleteDraftSilently(loadedDraft.id)
-        setLoadedDraft(null)
+        skyshareUri = entryResult.skyshareUri
+        gateWarning = entryResult.gateWarning
+
+        // 「投稿後にデフォルト値を更新する」がONなら今回使った設定を新しいデフォルトとして
+        // 永続化し、OFFなら保存済みのデフォルト値へ都度リセットする。トグルをその場で
+        // 操作した直後に投稿しても即座に反映されるよう、都度読み直さずstateを直接参照する。
+        if (syncGateDefaultAfterPost) {
+          writePostGateDefaultSetting(postGate)
+        } else {
+          setPostGate(readPostGateDefaultSetting())
+        }
+
+        if (loadedDraft) {
+          void deleteDraftSilently(loadedDraft.id)
+          setLoadedDraft(null)
+        }
       }
 
       recordUsedHashtagsToHistory(text, accountDid)
 
       const dispatch = await runShareDispatch({
         text,
-        skyshareUri: entryResult.skyshareUri,
+        skyshareUri,
         linkCardUrl: ogpResult?.sourceUrl ?? "",
         imageEntry,
         manualImageAttach: shareToggles.manualImageAttach,
@@ -756,6 +791,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         popupIntentInsteadOfWebshare: shareToggles.popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
         popupWindow,
+        guestMode,
       })
 
       onPosted?.()
@@ -774,7 +810,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       } else {
         resetInputFields()
       }
-      if (entryResult.gateWarning) {
+      if (gateWarning) {
         setStatus(
           `${dispatch.status}(返信・引用設定の反映に失敗した可能性があります)`,
         )
@@ -880,7 +916,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             <button
               type="button"
               className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || guestMode}
+              title={guestMode ? "ゲスト表示のため利用できません" : undefined}
               onClick={() => {
                 void openDraftPicker()
               }}
@@ -888,10 +925,15 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               下書き
             </button>
             <button
-              form="entry-form"
+              form={entryFormId}
               className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
               type="submit"
               disabled={isSubmitting}
+              title={
+                guestMode
+                  ? "ゲスト表示のためBlueskyへの投稿はスキップされます"
+                  : undefined
+              }
             >
               投稿
             </button>
@@ -928,7 +970,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             {showTaittsuuIntentButton && (
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["taittsuu-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
                   const intentText = buildIntentText(
@@ -958,7 +1000,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             {showMastodonIntentButton && (
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["mastodon-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
                   const intentText = buildIntentText(
@@ -993,7 +1035,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         </div>
 
         <form
-          id="entry-form"
+          id={entryFormId}
           ref={entryFormRef}
           className={ui["dialog-body"]}
           onSubmit={handleSubmit}
@@ -1063,14 +1105,14 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               disabled={isSubmitting}
               aria-label={
                 isDefaultPostGateValue(postGate)
-                  ? "返信・引用の設定"
-                  : "返信・引用の設定(変更有)"
+                  ? "誰でも反応可能"
+                  : "反応を制限しています"
               }
               onClick={() => setPostGateDialogOpen(true)}
             >
               {isDefaultPostGateValue(postGate)
-                ? "返信・引用"
-                : "返信・引用(変更済有)"}
+                ? "誰でも反応可能"
+                : "反応を制限しています"}
             </button>
             <LanguageSelect
               value={languageCode}
@@ -1109,6 +1151,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                   setImageEntry(entry)
                 }}
                 disabled={isSubmitting}
+                previewContainerRef={imagePreviewContainerRef}
               />
               <OgpFetchButton ogpFetch={ogpFetch} disabled={isSubmitting} />
             </div>
@@ -1121,19 +1164,9 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           </div>
           <div>
             <OgpPreview ogpFetch={ogpFetch} />
-            <ImagePreview value={imageEntry} />
+            <div ref={imagePreviewContainerRef} />
           </div>
           <div className={`${ui["base-padding"]} ${ui["toggle-box"]}`}>
-            <ToggleSwitch
-              checked={pinnedFormDisabled}
-              disabled={isSubmitting}
-              label="投稿フォームを固定表示しない"
-              onCheckedChange={next => {
-                setPinnedFormDisabled(next)
-                writePinnedFormDisabledSetting(next)
-                onPinnedFormDisabledChange?.(next)
-              }}
-            />
             <ToggleSwitch
               checked={shareToggles.popupIntentInsteadOfWebshare}
               disabled={isSubmitting}
@@ -1158,7 +1191,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             <ToggleSwitch
               checked={syncGateDefaultAfterPost}
               disabled={isSubmitting}
-              label="投稿後に返信・引用のデフォルト設定を更新する"
+              label="返信・引用オプションを保存する"
               onCheckedChange={next => {
                 setSyncGateDefaultAfterPost(next)
                 writeSyncGateDefaultAfterPostSetting(next)
@@ -1173,6 +1206,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               defaultOpen={defaultOpenShareOptions}
             >
               <div className={ui["toggle-box"]}>
+                <ToggleSwitch
+                  checked={pinnedFormDisabled}
+                  disabled={isSubmitting}
+                  label="投稿フォームを固定表示しない"
+                  onCheckedChange={next => {
+                    setPinnedFormDisabled(next)
+                    writePinnedFormDisabledSetting(next)
+                    onPinnedFormDisabledChange?.(next)
+                  }}
+                />
                 <ToggleSwitch
                   checked={shareToggles.showXWhenCrosspost}
                   disabled={isSubmitting}

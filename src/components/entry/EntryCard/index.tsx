@@ -29,6 +29,11 @@ type Props = {
   item: TimelineSkyshareEntry
   onDeleted?: () => void
   onSaved?: (next: { heading: string; caption: string }) => void
+  /**
+   * ログイン不要のゲスト表示。Bluesky投稿への実際の書き込みを伴う操作（編集・削除）
+   * のみ無効化する。「Entryを開く」はサンプルEntryページ（`item.webUrl`）へ遷移できる。
+   */
+  guestMode?: boolean
 }
 
 /**
@@ -45,7 +50,7 @@ type Props = {
  * - 入力: `item.caption = "旅行の写真"`
  * - 出力: caption・作成日時・visual画像を持つカード
  */
-const Component = ({ item, onDeleted, onSaved }: Props) => {
+const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
   const isOrphaned = item.orphaned === true
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -60,11 +65,17 @@ const Component = ({ item, onDeleted, onSaved }: Props) => {
   })
 
   // ページ内リンクは entry 自身の AT URI から直接パスを組み立てる（常に相対パス）。
-  // PostCard の「Entryを開く」リンクと同じ方針。
+  // PostCard の「Entryを開く」リンクと同じ方針。ゲストモードのダミーEntryは
+  // PDS上に実レコードを持たないため、実際に閲覧できるサンプルEntryページの
+  // パス（`item.webUrl`、`@/lib/entry/guestDummyPosts`で用意）をそのまま使う。
+  // このページは `entries/[slug].astro` と同様ログイン不要の公開ページのため、
+  // `?guest`は引き継がない。
   const parsedEntryUri = parseAtUri(item.uri)
-  const entryPath = parsedEntryUri
-    ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
-    : undefined
+  const entryPath = guestMode
+    ? item.webUrl
+    : parsedEntryUri
+      ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
+      : undefined
 
   /**
    * 削除を確定し、entry を削除する。
@@ -135,6 +146,7 @@ const Component = ({ item, onDeleted, onSaved }: Props) => {
           <button
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+            disabled={guestMode}
             onClick={() => setIsEditDialogOpen(true)}
           >
             編集
@@ -142,6 +154,7 @@ const Component = ({ item, onDeleted, onSaved }: Props) => {
           <button
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]}  ${ui["red-button"]}`}
+            disabled={guestMode}
             onClick={() => setIsDialogOpen(true)}
           >
             削除

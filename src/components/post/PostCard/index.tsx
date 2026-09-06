@@ -29,6 +29,13 @@ import shareIcon from "@/images/share.svg"
 type PostCardProps = {
   item: TimelinePost
   onPostDeleted?: () => void
+  /**
+   * ログイン不要のゲスト用デモ表示。Bluesky投稿への実際の書き込みを伴う操作
+   * （Entry作成・削除・元投稿へのリンク）のみ無効化する。クロスポスト（Xへの
+   * 共有intentポップアップ）とWebShare共有はatproto認証を必要としないため
+   * 通常通り操作でき、「Entryを開く」もサンプルEntryページへ遷移できる。
+   */
+  guestMode?: boolean
 }
 
 /**
@@ -44,7 +51,11 @@ type PostCardProps = {
  * - 入力: `item.text = "hello"`
  * - 出力: 投稿本文と作者情報を持つカード
  */
-const Component = ({ item, onPostDeleted }: PostCardProps) => {
+const Component = ({
+  item,
+  onPostDeleted,
+  guestMode = false,
+}: PostCardProps) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   const {
@@ -77,15 +88,22 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
     isSharing: isWebSharing,
     shareError,
     shareViaWebApi,
-  } = useWebShareCrosspost(item, entryWebUrl ?? null)
+  } = useWebShareCrosspost(item, entryWebUrl ?? null, guestMode)
 
   // ページ内リンクは entry 自身の AT URI から直接パスを組み立てる（常に相対パス）。
   // X共有（SkyshareShareDialog）は外部サービスへの絶対URLが必要なため、
   // そちらは本番ドメイン固定で生成された entryWebUrl をそのまま渡す。
+  // ゲストモードのダミーEntryはPDS上に実レコードを持たないため、AT URIから
+  // 算出するパスの代わりに、実際に閲覧できるサンプルEntryページのパス
+  // （`activeEntry.webUrl`、`@/lib/entry/guestDummyPosts`で用意）をそのまま使う。
+  // このページは `entries/[slug].astro` と同様ログイン不要の公開ページのため、
+  // `?guest`は引き継がない。
   const parsedEntryUri = activeEntry ? parseAtUri(activeEntry.uri) : undefined
-  const entryPath = parsedEntryUri
-    ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
-    : undefined
+  const entryPath = guestMode
+    ? activeEntry?.webUrl
+    : parsedEntryUri
+      ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
+      : undefined
   // サムネイルは skyshare の view 画像を優先する。無い場合、複数画像投稿は全画像を縦に分割して表示する。
   const thumbnailImages = activeEntry?.visualUrl
     ? [activeEntry.visualUrl]
@@ -150,11 +168,17 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
       >
         <a
           className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-          href={item.url}
+          href={guestMode ? undefined : item.url}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Bluesky で開く"
-          title="Bluesky で開く"
+          aria-disabled={guestMode}
+          title={
+            guestMode ? "ゲスト表示のため利用できません" : "Bluesky で開く"
+          }
+          onClick={e => {
+            if (guestMode) e.preventDefault()
+          }}
         >
           <img src={blueskyIcon.src} width={20} height={20} alt="" />
         </a>
@@ -179,6 +203,7 @@ const Component = ({ item, onPostDeleted }: PostCardProps) => {
           onCreate={createEntryFromPost}
           onRequestDelete={requestDeleteEntry}
           onCrosspost={() => setShareDialogOpen(true)}
+          disabled={guestMode}
         />
 
         {shareError ? (

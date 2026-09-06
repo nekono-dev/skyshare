@@ -1,6 +1,7 @@
 import React, { useState } from "react"
 import { createSession } from "@/client/openapi/client"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
+import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -76,6 +77,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
         return
       }
 
+      clearKnownUnauthenticated()
       setColor("green")
       setMessage("ログイン成功。リダイレクトします…")
       setTimeout(() => {

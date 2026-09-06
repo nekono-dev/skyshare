@@ -1,0 +1,100 @@
+/**
+ * ImagePicker のスタイル定義。
+ *
+ * 設計方針:
+ * - 色・サイズ・余白は src/styles/tokens.css のトークンのみを使い、直接値を避ける。
+ */
+
+/*
+  リンクカード用画像（1200x630）と同じ比率・配置で個別画像を並べるグリッド。
+  枚数ごとの分割パターンは src/lib/image/postImageProcessing.ts の getSlotDefs と同一にし、
+  実際にBlueskyへ投稿されるリンクカード画像の見た目と一致させる。
+*/
+.thumb-grid {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.layout1 {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  grid-template-areas: "slot0";
+}
+
+.layout2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+  grid-template-areas: "slot0 slot1";
+}
+
+.layout3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot0 slot2";
+}
+
+.layout4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot2 slot3";
+}
+
+.thumb-item {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-muted);
+}
+
+.remove-badge,
+.alt-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  line-height: 1;
+}
+
+.remove-badge:disabled,
+.alt-badge:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.remove-badge {
+  top: var(--space-1);
+  right: var(--space-1);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-md);
+}
+
+.alt-badge {
+  bottom: var(--space-1);
+  right: var(--space-1);
+  height: 18px;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+}
+
+.alt-badge-active {
+  background: var(--color-bluesky-hover);
+}
