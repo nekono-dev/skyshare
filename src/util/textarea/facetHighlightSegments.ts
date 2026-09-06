@@ -1,14 +1,19 @@
+import TLDs from "tlds"
+
 /**
  * 投稿本文からハッシュタグ/メンション/URL部分を抽出し、色付け対象のセグメントに分割する。
  *
  * 責務と処理概要:
- * - 独自の正規表現でハッシュタグ(#/＃)・メンション(@)・URL(http(s)://)を検出する。
+ * - 独自の正規表現でハッシュタグ(#/＃)・メンション(@)・URL(http(s)://ありまたは
+ *   ドメインのみ)を検出する。
  *   `@atproto/api` の `RichText` は使わない: `isMention()` はハンドルが既知TLDで終わる
  *   （ドメインらしい形になる）までtrueを返さない実装のため、「#/@/httpの直後に文字列が
  *   入力された時点で即座に色を付けたい」という要件に合わない。
  * - 各パターンは行頭・空白・開き括弧の直後からのみ始まる（メール内の"@"やC#のような
  *   "#"を誤って拾わないため）。トリガー文字の直後に1文字以上のトークン文字が続けば
- *   即座にマッチする。
+ *   即座にマッチする。ただしURLはスキームなしの場合、`RichText.detectFacets` の
+ *   `isValidDomain` 相当のTLD検証（`tlds`パッケージ）を通過するまでマッチしない
+ *   （実際の投稿時にリンク化される範囲とハイライト範囲を一致させるため）。
  * - 複数パターンの一致範囲が重なる場合（通常はURL内の"#"がハッシュタグと誤認される
  *   ケースだが、境界条件により発生しない設計。念のための安全策として）は、開始位置が
  *   早いものを優先し、後続の重なる一致は破棄する。
@@ -25,9 +30,35 @@ export type HighlightSegment = {
 // "#"を誤って拾わないため）。
 const HASHTAG_PATTERN = /(?<=^|[\s(])[#＃][\p{L}\p{N}\p{M}_]+/gu
 const MENTION_PATTERN = /(?<=^|[\s(])@[a-zA-Z0-9.-]+/g
-const URL_PATTERN = /(?<=^|[\s(])https?:\/\/[^\s]+/g
+// スキームあり(https?://...)、またはスキームなしのドメインらしき文字列
+// (`example.com/path` のような形)にマッチする。ドメイン部分が既知TLDかどうかは
+// 呼び出し側で `isValidDomain` により別途検証する。
+const URL_PATTERN =
+    /(?<=^|[\s(])(?:https?:\/\/[^\s]+|(?<domain>[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)+)[^\s]*)/g
 
 type Range = { start: number; end: number }
+
+// `RichText.detectFacets` の `isValidDomain` と同等の判定。
+const isValidDomain = (domain: string): boolean =>
+    TLDs.some(tld => {
+        const i = domain.toLowerCase().lastIndexOf(tld)
+        if (i === -1) return false
+        return domain.charAt(i - 1) === "." && i === domain.length - tld.length
+    })
+
+const collectUrlMatches = (text: string): Range[] => {
+    const matches: Range[] = []
+    URL_PATTERN.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = URL_PATTERN.exec(text))) {
+        const domain = m.groups?.domain
+        // スキームなしの場合は既知TLDで終わるドメインでなければ除外する
+        // （メールアドレスの一部や"1.0.0"のようなバージョン表記の誤検出を防ぐ）。
+        if (domain && !isValidDomain(domain)) continue
+        matches.push({ start: m.index, end: m.index + m[0].length })
+    }
+    return matches
+}
 
 const collectMatches = (text: string, pattern: RegExp): Range[] => {
     const matches: Range[] = []
@@ -58,7 +89,7 @@ export const computeHighlightSegments = (text: string): HighlightSegment[] => {
     const allMatches = [
         ...collectMatches(text, HASHTAG_PATTERN),
         ...collectMatches(text, MENTION_PATTERN),
-        ...collectMatches(text, URL_PATTERN),
+        ...collectUrlMatches(text),
     ].sort((a, b) => a.start - b.start)
 
     const accepted: Range[] = []

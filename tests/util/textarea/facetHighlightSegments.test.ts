@@ -97,6 +97,38 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
+    it("スキーム(https://)が無いドメインのみのURLもハイライトされる", () => {
+        expect(computeHighlightSegments("example.com を見て")).toEqual([
+            { text: "example.com", highlighted: true },
+            { text: " を見て", highlighted: false },
+        ])
+    })
+
+    it("スキームなしURLでもパス部分まで含めてハイライトされる", () => {
+        expect(computeHighlightSegments("example.com/path?q=1 参照")).toEqual([
+            { text: "example.com/path?q=1", highlighted: true },
+            { text: " 参照", highlighted: false },
+        ])
+    })
+
+    it("既知TLDでない文字列はドメインとしてハイライトしない", () => {
+        expect(computeHighlightSegments("index.html を編集")).toEqual([
+            { text: "index.html を編集", highlighted: false },
+        ])
+    })
+
+    it("バージョン表記のような数字の並びは誤ってハイライトしない", () => {
+        expect(computeHighlightSegments("v1.0.0 をリリース")).toEqual([
+            { text: "v1.0.0 をリリース", highlighted: false },
+        ])
+    })
+
+    it("メールアドレスのドメイン部分だけを誤ってドメインURLとしてハイライトしない", () => {
+        expect(computeHighlightSegments("mail@example.com 宛に")).toEqual([
+            { text: "mail@example.com 宛に", highlighted: false },
+        ])
+    })
+
     it("セグメントを連結すると元のテキストに一致する", () => {
         const text =
             "今日も #猫 と @alice がかわいい、本当に https://example.com へ"
