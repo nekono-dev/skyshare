@@ -25,6 +25,7 @@ const authHeaders = { cookie: "sid=abc123" }
 /** 新規画像投稿としてPOSTするための最小限のFormDataを組み立てる。 */
 const buildNewImagePostFormData = (opts?: {
     text?: string
+    facets?: object[]
     imagesCount?: number
     metaCount?: number
     gate?: object
@@ -46,6 +47,7 @@ const buildNewImagePostFormData = (opts?: {
     )
     formData.set("ogImage", new Blob(["thumb"], { type: "image/jpeg" }))
     if (opts?.text) formData.set("text", opts.text)
+    if (opts?.facets) formData.set("facets", JSON.stringify(opts.facets))
     if (opts?.gate) formData.set("gate", JSON.stringify(opts.gate))
     return formData
 }
@@ -201,6 +203,72 @@ describe("POST /v2/entry", () => {
                     body: buildNewImagePostFormData({
                         imagesCount: 2,
                         metaCount: 1,
+                    }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+        })
+
+        it("facets付き投稿はagent.postへfacetsをそのまま渡す(サーバは検出しない)", async () => {
+            const postMock = vi.fn().mockResolvedValue({
+                uri: "at://did:plc:author/app.bsky.feed.post/3lpost",
+                cid: "bafypostcid",
+            })
+            const facets = [
+                {
+                    index: { byteStart: 4, byteEnd: 7 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+            ]
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({
+                        text: "foo bar",
+                        facets,
+                    }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({ post: postMock }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            expect(postMock).toHaveBeenCalledWith(
+                expect.objectContaining({ text: "foo bar", facets }),
+            )
+        })
+
+        it("facetsのbyteEndが本文のバイト長を超える場合は400を返す", async () => {
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({
+                        text: "foo",
+                        facets: [
+                            {
+                                index: { byteStart: 0, byteEnd: 100 },
+                                features: [
+                                    {
+                                        $type: "app.bsky.richtext.facet#link",
+                                        uri: "https://example.com",
+                                    },
+                                ],
+                            },
+                        ],
                     }),
                 },
             )

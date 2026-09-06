@@ -48,4 +48,58 @@ describe("v2/entry POST RequestBodySchema", () => {
         const result = PostSchema.RequestBodySchema.safeParse(raw)
         expect(result.success).toBe(false)
     })
+
+    it("新規画像投稿分岐でfacets付きテキストを受理する", () => {
+        const formData = new FormData()
+        formData.append("images", new Blob(["a"], { type: "image/png" }))
+        formData.set("imagesMeta", JSON.stringify([{ width: 1, height: 1 }]))
+        formData.set("ogImage", new Blob(["x"], { type: "image/png" }))
+        formData.set("text", "foo bar")
+        formData.set(
+            "facets",
+            JSON.stringify([
+                {
+                    index: { byteStart: 0, byteEnd: 3 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+            ]),
+        )
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const result = PostSchema.RequestBodySchema.safeParse(raw)
+        expect(result.success).toBe(true)
+    })
+
+    it("facetオブジェクト自体に$type(app.bsky.richtext.facet)を含む形も受理する(RichText.detectFacets()の実際の出力形)", () => {
+        // `@atproto/api`のRichText.detectFacets()は、facetオブジェクトのトップレベルに
+        // lexicon通り$type: "app.bsky.richtext.facet"を付与する。これを未知キーとして
+        // 拒否してしまう回帰を防ぐためのテスト。
+        const formData = new FormData()
+        formData.append("images", new Blob(["a"], { type: "image/png" }))
+        formData.set("imagesMeta", JSON.stringify([{ width: 1, height: 1 }]))
+        formData.set("ogImage", new Blob(["x"], { type: "image/png" }))
+        formData.set("text", "foo bar")
+        formData.set(
+            "facets",
+            JSON.stringify([
+                {
+                    $type: "app.bsky.richtext.facet",
+                    index: { byteStart: 0, byteEnd: 3 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+            ]),
+        )
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const result = PostSchema.RequestBodySchema.safeParse(raw)
+        expect(result.success).toBe(true)
+    })
 })

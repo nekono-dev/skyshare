@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro"
 
-import { RichText } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
@@ -11,6 +10,7 @@ import { bskyPostUrlgen } from "@/lib/entry/url"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { applyPostGate } from "@/lib/atproto/gate"
 import { createBskyPost } from "@/lib/atproto/post"
+import { validateFacets } from "@/lib/atproto/facet"
 import {
     createExternalEmbed,
     createImageEmbed,
@@ -43,7 +43,9 @@ import * as PostSchema from "@/lib/api/schema/v2/bsky/record/post"
  * 3. FormData 解析と構造化オブジェクト生成
  * 4. OpenAPI スキーマバリデーション（`text` のみ、`ogMeta`+`ogImage`、または `images`+`imagesMeta`）
  * 5. 手動画像添付のメタデータ検証（images 指定時）
- * 6. テキスト facet 検出
+ * 6. facets の境界防御バリデーション（クライアントが組み立て済みの facets を、
+ *    本文のバイト長に収まっているかのみ検証する。facets の意味的な組み立て
+ *    ―― URL/メンション/ハッシュタグの検出、mention の did 解決 ―― はクライアントの責務）
  * 7. Embed 作成（images 指定時は画像 embed、ogMeta+ogImage 指定時は外部リンク embed。
  *    両者は Bluesky 上で同時に埋め込めないため images を優先する）
  * 8. bsky 投稿作成
@@ -55,7 +57,7 @@ import * as PostSchema from "@/lib/api/schema/v2/bsky/record/post"
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
  * - フィールド: text（テキスト投稿）、ogMeta + ogImage（OGPリンク投稿, text併用可）、
- *   または images + imagesMeta（手動画像添付投稿, text併用可）。任意で `gate`。
+ *   または images + imagesMeta（手動画像添付投稿, text併用可）。任意で `facets`, `gate`。
  *
  * 出力:
  * - 成功時（200）: { url: "https://...", uri: "at://...", cid: "bafy...", gateWarning }
@@ -123,10 +125,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        // フェーズ 6: テキスト facet 検出
+        // フェーズ 6: facets の境界防御バリデーション
+        // facetsの組み立て(URL/メンション/ハッシュタグ検出、mentionのdid解決)は
+        // クライアント側の責務。ここではindexが本文のバイト長に収まっているかのみ検証する。
         const postText = body.data.text ?? ""
-        const rt = new RichText({ text: postText })
-        await rt.detectFacets(agent)
+        try {
+            validateFacets(postText, body.data.facets)
+        } catch (err) {
+            console.warn("createBskyRecord: invalid facets", err)
+            return errorResponseFromStatus(400)
+        }
 
         // フェーズ 7: Embed 作成
         // 画像（手動添付）と OGP リンクカードは Bluesky 上で同時に埋め込めないため、
@@ -165,8 +173,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         try {
             response = await createBskyPost(
                 agent,
-                rt.text,
-                rt.facets ?? undefined,
+                postText,
+                body.data.facets,
                 body.data.langs,
                 embed,
                 body.data.selfLabels,

@@ -1,4 +1,6 @@
 import { RichText } from "@atproto/api"
+import type * as Components from "@/lib/api/schema/common"
+import { publicAtpAgent } from "./publicAgent"
 
 /**
  * RichText の facets / features からリンク URI を抽出するユーティリティ。
@@ -211,4 +213,45 @@ function countHashtagUsage(texts: string[]): { tag: string; count: number }[] {
     return Array.from(counts.values()).sort((a, b) => b.count - a.count)
 }
 
-export { extractLinkUrisFromFacets, extractTagsFromFacets, countHashtagUsage }
+/**
+ * 投稿本文からfacets(URL/メンション/ハッシュタグ)をブラウザ側で検出する。
+ *
+ * 責務と処理概要:
+ * - バックエンドAPIはfacetsの自動検出を行わなくなった(クライアントが組み立てた
+ *   facetsをそのままBluesky APIへ中継する薄いプロキシへ設計変更済み)。
+ *   PostFormなど、まだ手動でのfacet編集UIを持たないクライアントの互換動作として、
+ *   旧サーバ実装(`RichText.detectFacets(agent)`)と同じ検出ロジックを、
+ *   認証不要の公開AppView(`publicAtpAgent`)経由でブラウザから行う。
+ * - メンション(`@handle`)の did 解決に失敗した場合でも `RichText.detectFacets` 自体は
+ *   例外を投げず対象featureの `did` を空文字にフォールバックする
+ *   (`@atproto/api` の既定挙動)ため、ここでも同様に投稿フロー全体はブロックしない。
+ *
+ * Input:
+ * - `text`: 投稿本文
+ *
+ * Output:
+ * - 検出されたfacets配列(該当なしの場合は空配列またはundefined)
+ *
+ * 例:
+ * - 入力: `"https://example.com を見て @alice.bsky.social #猫"`
+ * - 出力: `[{index:{byteStart,byteEnd}, features:[{$type:"app.bsky.richtext.facet#link", uri:"https://example.com"}]}, ...]`
+ */
+const detectFacetsForSubmission = async (
+    text: string,
+): Promise<Components.CommonFacetsType | undefined> => {
+    const rt = new RichText({ text })
+    await rt.detectFacets(publicAtpAgent)
+    // `RichText.detectFacets`が実際に生成するfeatureはmention/link/tagの3種のみ
+    // (`@atproto/api`の型定義上は将来拡張用の`{$type: string}`も許容されているが、
+    // 検出ロジック(`detection.js`)がそれ以外を生成することはない)。
+    // バックエンドのfacetsスキーマ(`src/lib/api/schema/common.ts`)もこの3種のみを
+    // 受理するため、ここで契約を確定させる。
+    return rt.facets as Components.CommonFacetsType | undefined
+}
+
+export {
+    extractLinkUrisFromFacets,
+    extractTagsFromFacets,
+    countHashtagUsage,
+    detectFacetsForSubmission,
+}

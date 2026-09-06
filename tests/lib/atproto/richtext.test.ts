@@ -1,7 +1,22 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
+
+const { resolveHandleMock } = vi.hoisted(() => ({
+    resolveHandleMock: vi
+        .fn()
+        .mockResolvedValue({ data: { did: "did:plc:resolved" } }),
+}))
+
+vi.mock("@/lib/atproto/publicAgent", () => ({
+    publicAtpAgent: {
+        com: {
+            atproto: { identity: { resolveHandle: resolveHandleMock } },
+        },
+    },
+}))
 
 import {
     countHashtagUsage,
+    detectFacetsForSubmission,
     extractLinkUrisFromFacets,
     extractTagsFromFacets,
 } from "@/lib/atproto/richtext"
@@ -184,5 +199,41 @@ describe("countHashtagUsage", () => {
     it("ハッシュタグを含まない投稿・空配列は無視する", () => {
         expect(countHashtagUsage(["ハッシュタグなし", ""])).toEqual([])
         expect(countHashtagUsage([])).toEqual([])
+    })
+})
+
+describe("detectFacetsForSubmission", () => {
+    it("URLとハッシュタグを検出する(メンションを含まないためネットワーク未使用)", async () => {
+        const facets = await detectFacetsForSubmission(
+            "https://example.com を見て #猫",
+        )
+
+        const linkFeatures = facets?.flatMap(f => f.features) ?? []
+        expect(linkFeatures).toContainEqual({
+            $type: "app.bsky.richtext.facet#link",
+            uri: "https://example.com",
+        })
+        expect(linkFeatures).toContainEqual({
+            $type: "app.bsky.richtext.facet#tag",
+            tag: "猫",
+        })
+    })
+
+    it("メンションは公開AppView(publicAtpAgent)経由でdidを解決する", async () => {
+        const facets = await detectFacetsForSubmission("@alice.bsky.social")
+
+        expect(resolveHandleMock).toHaveBeenCalledWith({
+            handle: "alice.bsky.social",
+        })
+        const features = facets?.flatMap(f => f.features) ?? []
+        expect(features).toContainEqual({
+            $type: "app.bsky.richtext.facet#mention",
+            did: "did:plc:resolved",
+        })
+    })
+
+    it("facetを含まない本文はundefinedまたは空配列を返す", async () => {
+        const facets = await detectFacetsForSubmission("ただのテキスト")
+        expect(facets ?? []).toEqual([])
     })
 })

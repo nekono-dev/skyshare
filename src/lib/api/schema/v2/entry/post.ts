@@ -23,9 +23,12 @@ const selfLabelsField = z
 
 export const RequestBodySchema = z.union([
     // 既存投稿からskyshare entryを発行(from-post): uri + ogImage が必須
+    // text/facetsは新規投稿を作らないため未使用(既存レコードの本文をそのまま使う)だが、
+    // 型上z.unionの両アームで共通プロパティとしてアクセスできるようここにも定義する。
     z
         .object({
             text: textField.optional(),
+            facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField,
             uri: z.string(),
             images: z.array(imageField).optional(),
@@ -39,6 +42,7 @@ export const RequestBodySchema = z.union([
     z
         .object({
             text: textField.optional(),
+            facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField,
             uri: z.string().optional(),
             images: z.array(imageField),
@@ -57,6 +61,7 @@ export type RequestBodyType = z.infer<typeof RequestBodySchema>
  */
 export const RequestBodyFieldKinds: Record<string, FormDataFieldKind> = {
     text: "text",
+    facets: "json",
     ogImage: "file",
     uri: "text",
     images: "files",

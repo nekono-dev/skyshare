@@ -25,6 +25,7 @@ export const RequestBodySchema = z.union([
     z
         .object({
             text: textField,
+            facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField.optional(),
             ogMeta: Common.CommonOgMetaSchema.optional(),
             images: z.array(imageField).optional(),
@@ -38,6 +39,7 @@ export const RequestBodySchema = z.union([
     z
         .object({
             text: textField.optional(),
+            facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField,
             ogMeta: Common.CommonOgMetaSchema,
             images: z.array(imageField).optional(),
@@ -51,6 +53,7 @@ export const RequestBodySchema = z.union([
     z
         .object({
             text: textField.optional(),
+            facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField.optional(),
             ogMeta: Common.CommonOgMetaSchema.optional(),
             images: z.array(imageField),
@@ -69,6 +72,7 @@ export type RequestBodyType = z.infer<typeof RequestBodySchema>
  */
 export const RequestBodyFieldKinds: Record<string, FormDataFieldKind> = {
     text: "text",
+    facets: "json",
     ogImage: "file",
     ogMeta: "json",
     images: "files",

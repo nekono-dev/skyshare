@@ -51,4 +51,91 @@ describe("v2/bsky/record POST RequestBodySchema", () => {
         const result = PostSchema.RequestBodySchema.safeParse(raw)
         expect(result.success).toBe(false)
     })
+
+    it("facets(link/mention/tag)付きのテキスト投稿を受理する", () => {
+        const formData = new FormData()
+        formData.set("text", "foo bar #baz")
+        formData.set(
+            "facets",
+            JSON.stringify([
+                {
+                    index: { byteStart: 0, byteEnd: 3 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+                {
+                    index: { byteStart: 4, byteEnd: 7 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#mention",
+                            did: "did:plc:examplefake000000000",
+                        },
+                    ],
+                },
+                {
+                    index: { byteStart: 8, byteEnd: 12 },
+                    features: [
+                        { $type: "app.bsky.richtext.facet#tag", tag: "baz" },
+                    ],
+                },
+            ]),
+        )
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const result = PostSchema.RequestBodySchema.safeParse(raw)
+        expect(result.success).toBe(true)
+    })
+
+    it("facetオブジェクト自体に$type(app.bsky.richtext.facet)を含む形も受理する(RichText.detectFacets()の実際の出力形)", () => {
+        // `@atproto/api`のRichText.detectFacets()は、facetオブジェクトのトップレベルに
+        // lexicon通り$type: "app.bsky.richtext.facet"を付与する。これを未知キーとして
+        // 拒否してしまう回帰を防ぐためのテスト。
+        const formData = new FormData()
+        formData.set("text", "foo #baz")
+        formData.set(
+            "facets",
+            JSON.stringify([
+                {
+                    $type: "app.bsky.richtext.facet",
+                    index: { byteStart: 0, byteEnd: 3 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+                {
+                    $type: "app.bsky.richtext.facet",
+                    index: { byteStart: 4, byteEnd: 8 },
+                    features: [
+                        { $type: "app.bsky.richtext.facet#tag", tag: "baz" },
+                    ],
+                },
+            ]),
+        )
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const result = PostSchema.RequestBodySchema.safeParse(raw)
+        expect(result.success).toBe(true)
+    })
+
+    it("features内の$typeが未知の値のfacetsは拒否する", () => {
+        const formData = new FormData()
+        formData.set("text", "hello")
+        formData.set(
+            "facets",
+            JSON.stringify([
+                {
+                    index: { byteStart: 0, byteEnd: 5 },
+                    features: [{ $type: "app.bsky.richtext.facet#bold" }],
+                },
+            ]),
+        )
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const result = PostSchema.RequestBodySchema.safeParse(raw)
+        expect(result.success).toBe(false)
+    })
 })

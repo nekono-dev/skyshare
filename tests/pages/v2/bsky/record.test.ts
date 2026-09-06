@@ -160,6 +160,65 @@ describe("POST /v2/bsky/record", () => {
         expect(json.uri).toBeDefined()
     })
 
+    it("facets付きテキスト投稿はagent.postへfacetsをそのまま渡す(サーバは検出しない)", async () => {
+        const postMock = vi.fn().mockResolvedValue({
+            uri: "at://did:plc:author/app.bsky.feed.post/3lpost",
+            cid: "bafypostcid",
+        })
+        const facets = [
+            {
+                index: { byteStart: 4, byteEnd: 7 },
+                features: [
+                    {
+                        $type: "app.bsky.richtext.facet#link",
+                        uri: "https://example.com",
+                    },
+                ],
+            },
+        ]
+        const formData = buildTextOnlyFormData("foo bar")
+        formData.set("facets", JSON.stringify(facets))
+        const request = new Request(
+            "https://skyshare.nekono.dev/v2/bsky/record/",
+            { method: "POST", headers: authHeaders, body: formData },
+        )
+        const res = await callRoute(request, {
+            agent: createFakeAgent({ post: postMock }),
+            session: fakeSession,
+        })
+        expect(res.status).toBe(200)
+        expect(postMock).toHaveBeenCalledWith(
+            expect.objectContaining({ text: "foo bar", facets }),
+        )
+    })
+
+    it("facetsのbyteEndが本文のバイト長を超える場合は400を返す", async () => {
+        const formData = buildTextOnlyFormData("foo")
+        formData.set(
+            "facets",
+            JSON.stringify([
+                {
+                    index: { byteStart: 0, byteEnd: 100 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+            ]),
+        )
+        const request = new Request(
+            "https://skyshare.nekono.dev/v2/bsky/record/",
+            { method: "POST", headers: authHeaders, body: formData },
+        )
+        const res = await callRoute(request, {
+            agent: createFakeAgent(),
+            session: fakeSession,
+        })
+        expect(res.status).toBe(400)
+    })
+
     it("画像アップロード失敗時は500を返す", async () => {
         const agent = createFakeAgent({
             uploadBlob: vi.fn().mockRejectedValue(new Error("upload failed")),

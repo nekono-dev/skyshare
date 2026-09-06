@@ -1,6 +1,5 @@
 import type { APIRoute } from "astro"
 
-import { RichText } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
@@ -16,6 +15,7 @@ import {
 import { uploadBlob } from "@/lib/atproto/blob"
 import { applyPostGate } from "@/lib/atproto/gate"
 import { createBskyPost } from "@/lib/atproto/post"
+import { validateFacets } from "@/lib/atproto/facet"
 import { resolveDisplayName } from "@/lib/atproto/profile"
 import { createImageEmbed, validateImageMetadata } from "@/lib/atproto/embed"
 import { createEntryFromExistingPost } from "@/lib/entry/fromPost"
@@ -42,7 +42,7 @@ import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
  *
  * 実装上の制約:
  * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
- * - 画像アップロード・facet 検出・外部 API 呼び出しを含む副作用が複数発生する。
+ * - 画像アップロード・facets 検証・外部 API 呼び出しを含む副作用が複数発生する。
  */
 
 /**
@@ -85,7 +85,9 @@ const serializeSkyshareEntry = (entry: CreatedSkyshareEntry) => ({
  * 6. 画像メタデータ検証
  * 7. 画像アップロード（複数並列）
  * 7.1. manifest.visual 用サムネイルのアップロード
- * 8. テキスト facet 検出
+ * 8. facets の境界防御バリデーション（クライアントが組み立て済みの facets を、
+ *    本文のバイト長に収まっているかのみ検証する。facets の意味的な組み立て
+ *    ―― URL/メンション/ハッシュタグの検出、mention の did 解決 ―― はクライアントの責務）
  * 9. Embed 作成（画像投稿）
  * 10. bsky 投稿作成
  * 10.5. 返信/引用設定(threadgate/postgate)の適用（`gate` 指定時のみ。失敗しても
@@ -97,7 +99,7 @@ const serializeSkyshareEntry = (entry: CreatedSkyshareEntry) => ({
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
  * - フィールド: uri + ogImage（既存投稿からの発行）、または
- *   images, imagesMeta, ogImage, [text], [langs], [selfLabels], [gate]（新規画像投稿）
+ *   images, imagesMeta, ogImage, [text], [facets], [langs], [selfLabels], [gate]（新規画像投稿）
  *
  * 出力:
  * - 成功時（200）: { bsky: { url: "https://...", gateWarning }, skyshare: { uri: "https://...", atUri, cid, ... } }
@@ -223,10 +225,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(500)
         }
 
-        // フェーズ 8: テキスト facet 検出
+        // フェーズ 8: facets の境界防御バリデーション
+        // facetsの組み立て(URL/メンション/ハッシュタグ検出、mentionのdid解決)は
+        // クライアント側の責務。ここではindexが本文のバイト長に収まっているかのみ検証する。
         const postText = body.data.text ?? ""
-        const rt = new RichText({ text: postText })
-        await rt.detectFacets(agent)
+        try {
+            validateFacets(postText, body.data.facets)
+        } catch (err) {
+            console.warn("createEntry: invalid facets", err)
+            return errorResponseFromStatus(400)
+        }
 
         // フェーズ 9: Embed 作成（画像投稿）
         const embed = createImageEmbed(uploadedImages, body.data.imagesMeta)
@@ -236,8 +244,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         try {
             response = await createBskyPost(
                 agent,
-                rt.text,
-                rt.facets ?? undefined,
+                postText,
+                body.data.facets,
                 body.data.langs,
                 embed,
                 body.data.selfLabels,

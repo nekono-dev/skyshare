@@ -85,6 +85,68 @@ export const CommonGateSettingsSchema = z
     .strict()
 export type CommonGateSettingsType = z.infer<typeof CommonGateSettingsSchema>
 
+/**
+ * AT Protocol公式lexicon(`app.bsky.richtext.facet`)のbyteSlice(`index`)。
+ * UTF-8バイト単位のオフセットで、`byteStart`は含む・`byteEnd`は含まない半開区間。
+ */
+export const CommonFacetByteSliceSchema = z
+    .object({
+        byteStart: z.number().int().min(0),
+        byteEnd: z.number().int().min(0),
+    })
+    .strict()
+export type CommonFacetByteSliceType = z.infer<
+    typeof CommonFacetByteSliceSchema
+>
+
+/**
+ * facetの`features`要素。`@atproto/api`のlexicon型定義上、現状存在するのは
+ * mention(メンション)・link(リンク)・tag(ハッシュタグ)の3種のみ
+ * (太字/斜体等の文字装飾に相当するfeatureはBluesky公式APIに存在しない)。
+ */
+export const CommonFacetFeatureSchema = z.discriminatedUnion("$type", [
+    z
+        .object({
+            $type: z.literal("app.bsky.richtext.facet#mention"),
+            did: z.string().meta({ example: "did:plc:examplefake000000000" }),
+        })
+        .strict(),
+    z
+        .object({
+            $type: z.literal("app.bsky.richtext.facet#link"),
+            uri: z.string().meta({ example: "https://example.com" }),
+        })
+        .strict(),
+    z
+        .object({
+            $type: z.literal("app.bsky.richtext.facet#tag"),
+            tag: z.string().meta({ example: "skyshare" }),
+        })
+        .strict(),
+])
+export type CommonFacetFeatureType = z.infer<typeof CommonFacetFeatureSchema>
+
+export const CommonFacetSchema = z
+    .object({
+        // `@atproto/api`のRichText.detectFacets()等が生成するfacetオブジェクトには
+        // lexicon(`app.bsky.richtext.facet#main`)通りトップレベルに$typeが付与される。
+        // index/featuresのみを許容する.strict()ではこれを未知キーとして拒否してしまうため、
+        // optionalとして明示的に許可する。
+        $type: z.literal("app.bsky.richtext.facet").optional(),
+        index: CommonFacetByteSliceSchema,
+        features: z.array(CommonFacetFeatureSchema).min(1),
+    })
+    .strict()
+export type CommonFacetType = z.infer<typeof CommonFacetSchema>
+
+export const CommonFacetsSchema = z.array(CommonFacetSchema).meta({
+    description:
+        "app.bsky.feed.postのfacets(リッチテキスト注釈)。クライアント側で" +
+        "組み立て済みのものをそのまま渡す(サーバはURL/メンション/ハッシュタグの" +
+        "自動検出を行わない)。",
+})
+export type CommonFacetsType = z.infer<typeof CommonFacetsSchema>
+
 export const CommonCookieSchema = z
     .string()
     .meta({ example: "sid=abc123; Path=/; HttpOnly" })

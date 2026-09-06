@@ -7,6 +7,10 @@
  *   （skyshare entry を伴わない）を呼び出す。手動画像添付投稿でも Bluesky への
  *   画像添付自体は行う。
  * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
+ * - バックエンドはfacetsの自動検出を行わない設計になったため、送信直前に
+ *   `detectFacetsForSubmission`（クライアント側でのURL/メンション/ハッシュタグ検出、
+ *   `src/lib/atproto/richtext.ts`）でfacetsを組み立てて併せて送信する
+ *   （PostFormがまだ手動でのfacet編集UIを持たないための互換動作）。
  * - API エラーコードをユーザー向け文言へ変換する。
  */
 import { createBskyRecord, createEntry } from "@/client/openapi/client"
@@ -18,6 +22,7 @@ import type {
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { OgpResult } from "@/components/image/OgpFetchButton"
 import type { PostGateValue } from "@/lib/atproto/gate"
+import { detectFacetsForSubmission } from "@/lib/atproto/richtext"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 
 export type SubmitEntryParams = {
@@ -204,9 +209,12 @@ export const submitEntry = async (
         postGate,
     } = params
 
+    const facets = await detectFacetsForSubmission(text)
+
     if (imageEntry && !manualImageAttach) {
         const payload: CreateEntryBody = {
             text,
+            facets,
             langs: [languageCode],
             selfLabels: selfLabel,
             ogImage: imageEntry.thumbnailBlob,
@@ -235,6 +243,7 @@ export const submitEntry = async (
 
     const payload: CreateBskyRecordBody = {
         text,
+        facets,
         langs: [languageCode],
         selfLabels: selfLabel,
         gate: postGate,

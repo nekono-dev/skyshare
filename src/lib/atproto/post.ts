@@ -9,6 +9,7 @@
  */
 
 import type { AtpAgent } from "@atproto/api"
+import type * as Components from "@/lib/api/schema/common"
 
 type PostAgent = Pick<AtpAgent, "post">
 
@@ -23,7 +24,7 @@ type PostAgent = Pick<AtpAgent, "post">
  * Input:
  * - `agent`: `post` を持つ認証済み AtpAgent（または同等の最小インターフェース）
  * - `text`: 投稿本文テキスト
- * - `facets`: 検出済みの facets 配列（リンク・mention 情報）
+ * - `facets`: クライアント側で組み立て済みの facets 配列（リンク・mention・tag 情報）
  * - `langs`: 言語タグ配列
  * - `embed`: 埋め込みオブジェクト
  * - `selfLabel`: 自己ラベル値（未指定時は undefined）
@@ -41,7 +42,7 @@ type PostAgent = Pick<AtpAgent, "post">
 export const createBskyPost = async (
     agent: PostAgent,
     text: string,
-    facets: any[] | undefined,
+    facets: Components.CommonFacetsType | undefined,
     langs: string[] | undefined,
     embed: any,
     selfLabel: string | undefined,
