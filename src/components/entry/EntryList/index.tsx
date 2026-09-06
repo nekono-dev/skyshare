@@ -24,6 +24,7 @@ import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
 import PageSizeSelect from "@/components/common/PageSizeSelect"
 import EntryCard from "@/components/entry/EntryCard"
+import { isSessionKnownUnauthenticated } from "@/lib/account/activeAccountSession"
 import { GUEST_DUMMY_ENTRIES } from "@/lib/entry/guestDummyPosts"
 import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"
@@ -73,6 +74,13 @@ const Component = () => {
       CursorPageFetchResult<TimelineSkyshareEntry>
     > => {
       try {
+        // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
+        // 401確定済みの`getSkyshareEntries`をわざわざ叩き直さずゲスト表示へ直行する。
+        if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
+          setGuestMode(true)
+          return { items: GUEST_DUMMY_ENTRIES }
+        }
+
         const params = cursor ? { limit, cursor } : { limit }
         const res = await getSkyshareEntries(params)
 

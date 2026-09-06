@@ -24,7 +24,12 @@ let inflight: Promise<getSessionResponse> | null = null
 
 const UNAUTHENTICATED_STORAGE_KEY = "skyshare:session-unauthenticated"
 
-const isKnownUnauthenticated = (): boolean => {
+/**
+ * 直近の`getSessionOnce`で未ログイン（401）と判明済みかどうか。
+ * Timeline/EntryListが、`getEntries`/`getSkyshareEntries`自体の401すら
+ * 避けてゲスト表示へ直行するために参照する。
+ */
+export const isSessionKnownUnauthenticated = (): boolean => {
     if (typeof window === "undefined") return false
     try {
         return (
@@ -64,7 +69,7 @@ export const clearKnownUnauthenticated = (): void => {
  */
 export const getSessionOnce = (): Promise<getSessionResponse> => {
     if (!inflight) {
-        if (isKnownUnauthenticated()) {
+        if (isSessionKnownUnauthenticated()) {
             return Promise.resolve({
                 status: 401,
                 data: { error: "unauthenticated" },

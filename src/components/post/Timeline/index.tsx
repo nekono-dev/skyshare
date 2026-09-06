@@ -23,7 +23,10 @@ import NavigationBar from "@/components/common/NavigationBar"
 import PostCard from "@/components/post/PostCard"
 import PostForm from "@/components/post/PostForm"
 import PostLauncher from "@/components/post/PostLauncher"
-import { getActiveAccountInfo } from "@/lib/account/activeAccountSession"
+import {
+  getActiveAccountInfo,
+  isSessionKnownUnauthenticated,
+} from "@/lib/account/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
 import { GUEST_DUMMY_POSTS } from "@/lib/entry/guestDummyPosts"
 import type { TimelinePost } from "@/lib/entry/posts"
@@ -134,6 +137,13 @@ const Component = ({ avatarUrl }: Props) => {
       limit,
     }: CursorPageFetchInput): Promise<CursorPageFetchResult<TimelinePost>> => {
       try {
+        // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
+        // 401確定済みの`getEntries`をわざわざ叩き直さずゲスト表示へ直行する。
+        if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
+          setGuestMode(true)
+          return { items: GUEST_DUMMY_POSTS }
+        }
+
         const params = cursor ? { limit, cursor } : { limit }
         const res = await getEntries(params)
 
