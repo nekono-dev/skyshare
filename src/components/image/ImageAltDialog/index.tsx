@@ -80,11 +80,11 @@ export const ImageAltDialog = ({
         role="dialog"
         aria-label="画像のaltテキスト編集"
       >
-        <h2 className={ui.subject}>altテキスト</h2>
-
         <div className={ui["dialog-body"]}>
           <label className={styles["field-label"]} htmlFor={inputId}>
-            画像の代替テキスト
+            <div className={`${ui["text"]}`}>
+              Bluesky向けの代替テキストを設定
+            </div>
             <CountedTextInput
               id={inputId}
               multiline
@@ -95,7 +95,7 @@ export const ImageAltDialog = ({
               onChange={setDraft}
               disabled={disabled}
               counters={altCounters}
-              placeholder="画像の内容を説明するテキストを入力"
+              placeholder="altテキストを入力"
             />
           </label>
         </div>
