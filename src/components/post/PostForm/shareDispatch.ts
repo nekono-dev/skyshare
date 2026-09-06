@@ -44,6 +44,12 @@ export type ShareDispatchParams = {
      * 終わった場合はこの関数側で閉じる。
      */
     popupWindow: Window | null
+    /**
+     * ログイン不要のゲスト表示。Blueskyへの投稿自体は行っていないため、
+     * ステータス文言を「投稿に成功しました」ではなく「投稿はスキップしました」に
+     * 差し替える。ポップアップ/WebShareAPIの分岐ロジック自体は通常時と同じ。
+     */
+    guestMode?: boolean
 }
 
 export type ShareDispatchResult = {
@@ -158,17 +164,21 @@ export const runShareDispatch = async (
         popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost,
         popupWindow,
+        guestMode = false,
     } = params
 
     // 「画像を自分で添付する」有効時は skyshare エントリを作らないため、
     // ポップアップ/テキストボックス/WebShareAPI のいずれにも URL を含めない。
     const effectiveSkyshareUri = manualImageAttach ? "" : skyshareUri
     const intentText = buildIntentText(text, effectiveSkyshareUri, linkCardUrl)
+    const successPrefix = guestMode
+        ? "ゲスト表示のためBlueskyへの投稿はスキップしました"
+        : "Blueskyへの投稿に成功しました"
 
     if (noAutoPopupAfterPost) {
         popupWindow?.close()
         return {
-            status: "Blueskyへの投稿に成功しました。クロスポストを行うには他SNS向け投稿ボタンを押してください。",
+            status: `${successPrefix}。クロスポストを行うには他SNS向け投稿ボタンを押してください。`,
             statusColor: "green",
             textToKeep: intentText,
             forcedNoAutoPopupOn: false,
@@ -204,7 +214,7 @@ export const runShareDispatch = async (
 
         if (opened) {
             return {
-                status: `Blueskyへの投稿に成功しました。${serviceLabel} 投稿画面を開きました。`,
+                status: `${successPrefix}。${serviceLabel} 投稿画面を開きました。`,
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
@@ -214,7 +224,7 @@ export const runShareDispatch = async (
         }
 
         return {
-            status: `Blueskyへの投稿に成功しました。${serviceLabel} 投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
+            status: `${successPrefix}。${serviceLabel} 投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
             statusColor: "green",
             textToKeep: intentText,
             forcedNoAutoPopupOn: true,
@@ -243,7 +253,7 @@ export const runShareDispatch = async (
         const shareResult = await shareWithWebApi(webShareData)
         if (shareResult.ok) {
             return {
-                status: "Blueskyへの投稿に成功しました。WebShareAPIに投稿内容を転送しました。",
+                status: `${successPrefix}。WebShareAPIに投稿内容を転送しました。`,
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
@@ -253,7 +263,7 @@ export const runShareDispatch = async (
         }
         if (shareResult.reason === "aborted") {
             return {
-                status: "Blueskyへの投稿に成功しました。WebShareAPIでの共有操作はキャンセルされました。",
+                status: `${successPrefix}。WebShareAPIでの共有操作はキャンセルされました。`,
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
@@ -280,7 +290,7 @@ export const runShareDispatch = async (
     const opened = openIntentPopupFor("x", intentText)
     if (opened) {
         return {
-            status: `Blueskyへの投稿に成功し、投稿画面を開きました。${unavailableLabel}、ポップアップを開くオプションをONにしました。`,
+            status: `${successPrefix}。投稿画面を開きました。${unavailableLabel}、ポップアップを開くオプションをONにしました。`,
             statusColor: "green",
             textToKeep: null,
             forcedNoAutoPopupOn: false,
@@ -290,7 +300,7 @@ export const runShareDispatch = async (
     }
 
     return {
-        status: "Blueskyへの投稿に成功しましたが、投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。",
+        status: `${successPrefix}が、投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
         statusColor: "green",
         textToKeep: intentText,
         forcedNoAutoPopupOn: true,

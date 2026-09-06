@@ -11,7 +11,8 @@ import Loading from "@/components/common/Loading"
 import Overlay from "@/components/common/Overlay"
 import ui from "@/styles/ui.module.css"
 
-export type DialogButtonVariant = "blue" | "gray" | "red" | "black"
+export type DialogButtonVariant =
+  "blue" | "gray" | "red" | "black" | "taittsuu" | "mastodon"
 
 export type DialogButton = {
   key: string
@@ -34,6 +35,8 @@ const variantClassName: Record<DialogButtonVariant, string> = {
   gray: ui["gray-button"],
   red: ui["red-button"],
   black: ui["black-button"],
+  taittsuu: ui["taittsuu-button"],
+  mastodon: ui["mastodon-button"],
 }
 
 /**

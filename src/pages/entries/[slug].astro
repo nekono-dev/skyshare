@@ -15,9 +15,8 @@ export const prerender = false
 
 import { AtpAgent, AppBskyFeedPost } from "@atproto/api"
 import Baselayout from "@/layout/Baselayout.astro"
-import PostEngagementStats from "@/components/post/PostEngagementStats"
+import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
 import { serviceName } from "@/vars"
-import styles from "./[slug].module.css"
 import { atpService } from "@/env"
 import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
 import { resolvePdsServiceForDid } from "@/lib/atproto/did"
@@ -180,76 +179,18 @@ Astro.response.status = statusCode
     pageCaption={manifestCaption}
     robots={robots}
 >
-    {
-        statusCode === 200 ? (
-            <article class={styles.container}>
-                <header>
-                    <h1 class={styles.heading}>{manifestHeading}</h1>
-                </header>
-
-                {!sourcePostAvailable ? (
-                    <p class={styles["empty-message"]}>
-                        元の投稿は削除されているため、保存された内容のみを表示しています。
-                    </p>
-                ) : null}
-
-                {manifestCaption ? <p class={styles["body-text"]}>{manifestCaption}</p> : null}
-
-                <dl class={styles["meta-list"]}>
-                    <div>
-                        {sourcePostAvailable ? (
-                            <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
-                                Blueskyの投稿を見る
-                            </a>
-                        ) : (
-                            "Blueskyの投稿は見つかりませんでした"
-                        )}
-                    </div>
-                    <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
-                </dl>
-
-                {sourcePostAvailable ? (
-                    <PostEngagementStats
-                        client:visible
-                        likeCount={likeCount}
-                        repostCount={repostCount}
-                        replyCount={replyCount}
-                        quoteCount={quoteCount}
-                    />
-                ) : null}
-
-                {sourcePostAvailable ? (
-                    sourceImages.length > 0 ? (
-                        <section class={styles["image-grid"]} aria-label="source images">
-                            {sourceImages.map(image => (
-                                <figure class={styles["image-card"]}>
-                                    <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
-                                    {image.alt ? <figcaption>{image.alt}</figcaption> : null}
-                                </figure>
-                            ))}
-                        </section>
-                    ) : (
-                        <p class={styles["empty-message"]}>画像はありません。</p>
-                    )
-                ) : null}
-            </article>
-        ) : (
-            <section class={styles["error-pane"]}>
-                <h1>
-                    {statusCode === 404
-                        ? "Entry Not Found"
-                        : statusCode === 503
-                          ? "Service Temporarily Unavailable"
-                          : "Internal Server Error"}
-                </h1>
-                <p>
-                    {statusCode === 404
-                        ? notFoundReason
-                        : statusCode === 503
-                          ? "データ取得が混み合っています。しばらくして再度お試しください。"
-                          : "ページの生成中にエラーが発生しました。"}
-                </p>
-            </section>
-        )
-    }
+    <EntryDetailView
+        statusCode={statusCode}
+        notFoundReason={notFoundReason}
+        manifestHeading={manifestHeading}
+        manifestCaption={manifestCaption}
+        sourcePostAvailable={sourcePostAvailable}
+        sourceWebUrl={sourceWebUrl}
+        createdAtText={createdAtText}
+        likeCount={likeCount}
+        repostCount={repostCount}
+        replyCount={replyCount}
+        quoteCount={quoteCount}
+        sourceImages={sourceImages}
+    />
 </Baselayout>

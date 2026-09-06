@@ -1,0 +1,56 @@
+---
+/**
+ * ゲストモード（`?guest`、`@/lib/guestMode`参照）の「Entryを開く」からアクセスできる
+ * サンプルEntry詳細ページ（元投稿が残っている場合）。
+ *
+ * 責務と処理概要:
+ * - 見た目・マークアップは`entries/[slug].astro`と共通の`EntryDetailView`に委譲し、
+ *   ここでは実際のPDSレコードの代わりに`@/lib/entry/guestDummyPosts`の固定データを
+ *   propsへ詰め替えるだけに徹する（二重メンテナンス防止）。
+ * - `entries/[slug].astro`と同様ログイン不要の公開ページのため、`?guest`は
+ *   必要ない（このページへのリンクにも付与しない）。
+ * - 「元投稿が削除済み（orphaned）の場合」の見た目は、クエリパラメータでの
+ *   分岐ではなく専用ページ`entries/sample-orphaned.astro`として分離している。
+ */
+export const prerender = true
+
+import Baselayout from "@/layout/Baselayout.astro"
+import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
+import { GUEST_DUMMY_ENTRIES, GUEST_DUMMY_POSTS } from "@/lib/entry/guestDummyPosts"
+import { serviceName } from "@/vars"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+
+const entry = GUEST_DUMMY_ENTRIES[0]
+// 対応する元投稿（guest2）の本文・画像を持つダミー投稿から補う。
+const sourcePost = GUEST_DUMMY_POSTS[1]
+
+const createdAtText = new Date(entry.createdAt).toLocaleString("ja-JP", {
+    dateStyle: "medium",
+    timeStyle: "short",
+})
+
+const pageTitle = `${entry.heading ?? "サンプルEntry"} | ${serviceName}`
+---
+
+<Baselayout
+    cardPath={entry.visualUrl ?? ""}
+    pageTitle={pageTitle}
+    pageHeading={entry.heading}
+    pageCaption={entry.caption}
+    robots={robots}
+>
+    <EntryDetailView
+        statusCode={200}
+        manifestHeading={entry.heading ?? ""}
+        manifestCaption={entry.caption ?? ""}
+        sourcePostAvailable={sourcePost !== null}
+        sourceWebUrl={sourcePost?.url ?? ""}
+        createdAtText={createdAtText}
+        likeCount={12}
+        repostCount={3}
+        replyCount={1}
+        quoteCount={0}
+        sourceImages={sourcePost?.images ?? []}
+    />
+</Baselayout>

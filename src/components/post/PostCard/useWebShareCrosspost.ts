@@ -8,6 +8,9 @@
  *   - entry なし・画像あり: 元投稿の画像を取り込み files として共有（URLは含めない）。
  *   - entry なし・画像なし: Bluesky投稿本文と同じ内容を text として共有する。
  * - entry の作成・削除状態そのものは `useSkyshareEntryStatus` の責務であり、ここでは扱わない。
+ * - `guestMode` 指定時は、認証が必要な `GET /v2/bsky/images` の代わりに `item.images[].url`
+ *   （ゲスト表示ではdata URI）を直接 `fetch` してBlob化する。ゲスト表示中は
+ *   `AtpAgent`によるBluesky認証セッションを必要としないため。
  */
 import { useEffect, useRef, useState } from "react"
 import { getBskyImage } from "@/client/openapi/client"
@@ -42,6 +45,7 @@ export type UseWebShareCrosspostResult = {
 export const useWebShareCrosspost = (
     item: TimelinePost,
     entryUrl: string | null,
+    guestMode = false,
 ): UseWebShareCrosspostResult => {
     const [isSupported, setIsSupported] = useState(false)
     const [isSharing, setIsSharing] = useState(false)
@@ -85,6 +89,12 @@ export const useWebShareCrosspost = (
                             text: item.text,
                             files: await Promise.all(
                                 item.images.map(async (image, index) => {
+                                    if (guestMode) {
+                                        const blob = await fetch(
+                                            image.url,
+                                        ).then(r => r.blob())
+                                        return toShareFile(blob, index)
+                                    }
                                     const res = await getBskyImage({
                                         cid: image.cid,
                                     })

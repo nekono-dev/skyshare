@@ -20,6 +20,18 @@
   --color-gray-button-border: var(--border-color-muted);
   --color-gray-button-color: var(--color-black);
 
+  /* Taittsuu button（gray-buttonより少し濃いグレー） */
+  --color-taittsuu-button-bg: var(--color-taittsuu);
+  --color-taittsuu-button-hover: var(--color-taittsuu-hover);
+  --color-taittsuu-button-border: var(--border-color-muted);
+  --color-taittsuu-button-color: var(--color-black);
+
+  /* Mastodon button（blue-buttonと同じ彩度・明度の紫系） */
+  --color-mastodon-button-bg: var(--color-mastodon);
+  --color-mastodon-button-hover: var(--color-mastodon-hover);
+  --color-mastodon-button-border: var(--border-color-muted);
+  --color-mastodon-button-color: var(--color-white);
+
   /* Black button */
   --color-black-button-bg: var(--color-black);
   --color-black-button-hover: var(--color-black-hover);
@@ -31,6 +43,11 @@
   --color-red-button-hover: var(--color-red-hover);
   --color-red-button-border: var(--border-color-muted);
   --color-red-button-color: var(--color-red-text);
+
+  /* 無効化ボタン（disabled属性 / aria-disabled="true" の両方に使う共通配色） */
+  --color-disabled-button-bg: var(--color-gray);
+  --color-disabled-button-border: var(--border-color-muted);
+  --color-disabled-button-color: var(--color-text-muted);
 
   /* Size tokens */
   --size-button-md: 40px;
@@ -76,6 +93,10 @@
   border: var(--border-button);
   cursor: pointer;
 }
+:local(.base-button):disabled,
+:local(.base-button)[aria-disabled="true"] {
+  cursor: not-allowed;
+}
 
 /* テキストボタン */
 :local(.text-button) {
@@ -92,7 +113,7 @@
   color: var(--color-white-button-color);
   border-color: var(--color-white-button-border);
 }
-:local(.white-button):hover {
+:local(.white-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-white-button-hover);
 }
 
@@ -102,7 +123,7 @@
   color: var(--color-blue-button-color);
   border-color: var(--color-blue-button-border);
 }
-:local(.blue-button):hover {
+:local(.blue-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-blue-button-hover);
 }
 
@@ -112,8 +133,28 @@
   color: var(--color-gray-button-color);
   border-color: var(--color-gray-button-border);
 }
-:local(.gray-button):hover {
+:local(.gray-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-gray-button-hover);
+}
+
+/* タイッツー系統ボタン（gray-buttonより少し濃いグレー） */
+:local(.taittsuu-button) {
+  background: var(--color-taittsuu-button-bg);
+  color: var(--color-taittsuu-button-color);
+  border-color: var(--color-taittsuu-button-border);
+}
+:local(.taittsuu-button):not(:disabled):not([aria-disabled="true"]):hover {
+  background: var(--color-taittsuu-button-hover);
+}
+
+/* Mastodon系統ボタン（blue-buttonと同じ彩度・明度の紫系） */
+:local(.mastodon-button) {
+  background: var(--color-mastodon-button-bg);
+  color: var(--color-mastodon-button-color);
+  border-color: var(--color-mastodon-button-border);
+}
+:local(.mastodon-button):not(:disabled):not([aria-disabled="true"]):hover {
+  background: var(--color-mastodon-button-hover);
 }
 
 /* 黒系統ボタン */
@@ -122,7 +163,7 @@
   color: var(--color-black-button-color);
   border-color: var(--color-black-button-border);
 }
-:local(.black-button):hover {
+:local(.black-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-black-button-hover);
 }
 
@@ -132,8 +173,29 @@
   color: var(--color-red-button-color);
   border-color: var(--color-red-button-border);
 }
-:local(.red-button):hover {
+:local(.red-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-red-button-hover);
+}
+
+/* 無効化ボタン（disabled属性 / リンクなど属性を持てない要素向けの aria-disabled="true"）。
+   色系統に関わらずこの配色に統一し、hoverでも変化させない。 */
+:local(.white-button):disabled,
+:local(.white-button)[aria-disabled="true"],
+:local(.blue-button):disabled,
+:local(.blue-button)[aria-disabled="true"],
+:local(.gray-button):disabled,
+:local(.gray-button)[aria-disabled="true"],
+:local(.taittsuu-button):disabled,
+:local(.taittsuu-button)[aria-disabled="true"],
+:local(.mastodon-button):disabled,
+:local(.mastodon-button)[aria-disabled="true"],
+:local(.black-button):disabled,
+:local(.black-button)[aria-disabled="true"],
+:local(.red-button):disabled,
+:local(.red-button)[aria-disabled="true"] {
+  background: var(--color-disabled-button-bg);
+  color: var(--color-disabled-button-color);
+  border-color: var(--color-disabled-button-border);
 }
 
 /* アイコンボタン */

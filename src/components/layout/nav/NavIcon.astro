@@ -20,6 +20,7 @@ import blueskyBluesky from "@/images/bluesky.svg"
 import blueskyMuted from "@/images/bluesky-muted.svg"
 import settingsBluesky from "@/images/settings.svg"
 import settingsMuted from "@/images/settings-muted.svg"
+import someone from "@/images/someone.svg"
 import type { NavItem } from "./navItems"
 
 interface Props {
@@ -38,7 +39,7 @@ const iconSrcByKey = {
 {
     navKey === "accounts" ? (
         <span class={styles["avatar-wrap"]} data-nav-icon-root>
-            <span class={styles["avatar-placeholder"]} aria-hidden="true" />
+            <img class={styles["avatar-placeholder"]} src={someone.src} alt="" aria-hidden="true" />
             <img class={styles["avatar-img"]} data-account-avatar-img alt="" hidden />
         </span>
     ) : (

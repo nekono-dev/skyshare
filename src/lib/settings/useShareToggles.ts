@@ -20,6 +20,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+    DEFAULT_MASTODON_INSTANCE_DOMAIN,
     readCrosspostToMastodonSetting,
     readCrosspostToTaittsuuSetting,
     readManualImageAttachSetting,
@@ -56,9 +57,6 @@ const readShareTogglesState = (): ShareTogglesState => ({
     showXWhenCrosspost: readShowCrosspostXButtonSetting(false),
     noAutoPopupAfterPost: readNoAutoPopupAfterPostSetting(false),
 })
-
-/** CrosspostToMastodonをONにした時点でドメイン未設定の場合に補う既定のインスタンスドメイン。 */
-const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
 
 /**
  * SSR時（`window` 不在）とクライアント初回レンダーで必ず一致させるための固定初期値。

@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { getEntries, getSession } from "@/client/openapi/client"
+import { getEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/common/ComponentList"
 import type {
   CursorPageFetchInput,
@@ -23,8 +23,11 @@ import NavigationBar from "@/components/common/NavigationBar"
 import PostCard from "@/components/post/PostCard"
 import PostForm from "@/components/post/PostForm"
 import PostLauncher from "@/components/post/PostLauncher"
+import { getActiveAccountInfo } from "@/lib/account/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
+import { GUEST_DUMMY_POSTS } from "@/lib/entry/guestDummyPosts"
 import type { TimelinePost } from "@/lib/entry/posts"
+import { isGuestModeRequested } from "@/lib/guestMode"
 import {
   readHashtagHistory,
   seedHashtagHistoryFromRankedTags,
@@ -52,6 +55,9 @@ const PAGE_SIZE = 20
  */
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
+  // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミー投稿を表示する
+  // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
+  const [guestMode, setGuestMode] = useState(false)
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
   // SSRは常にfalse（固定表示あり）でレンダリングするため、初期stateもfalse固定にし、
   // 実際の設定値はマウント後のuseEffectで反映する。ここをuseState(() =>
@@ -79,24 +85,20 @@ const Component = ({ avatarUrl }: Props) => {
   }, [avatarUrl])
 
   // 投稿一覧（getEntries）の取得完了を待たずにアバターを表示するため、
-  // AccountSwitcher/syncAccountAvatar と同じ getSession を並行して叩く。
+  // AccountSwitcher/syncAccountAvatar と同じ取得処理(getActiveAccountInfo)を使い、
+  // タイミングを揃えつつ getSession の二重取得を避ける。
   useEffect(() => {
     let cancelled = false
 
     const loadAvatarFromSession = async () => {
       try {
-        const res = await getSession()
-        if (res.status !== 200) return
-
-        const activeAccount = res.data.accounts.find(
-          account => account.isActive,
-        )
+        const { avatarUrl: activeAvatarUrl, did } = await getActiveAccountInfo()
         if (cancelled) return
-        if (activeAccount?.avatarUrl) {
-          setResolvedAvatarUrl(activeAccount.avatarUrl)
+        if (activeAvatarUrl) {
+          setResolvedAvatarUrl(activeAvatarUrl)
         }
-        if (activeAccount?.did) {
-          setResolvedDid(activeAccount.did)
+        if (did) {
+          setResolvedDid(did)
         }
       } catch (err) {
         console.error("Timeline: failed to load session for avatar", err)
@@ -155,6 +157,10 @@ const Component = ({ avatarUrl }: Props) => {
         }
 
         if (res.status === 401) {
+          if (isGuestModeRequested()) {
+            setGuestMode(true)
+            return { items: GUEST_DUMMY_POSTS }
+          }
           if (typeof window !== "undefined") {
             window.location.href = "/login/"
           }
@@ -242,6 +248,13 @@ const Component = ({ avatarUrl }: Props) => {
 
   return (
     <section>
+      {guestMode && (
+        <p
+          className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
+        >
+          これはゲスト表示です。Blueskyへの投稿以外の動作を確認できます。
+        </p>
+      )}
       {!pinnedFormDisabled && (
         <div>
           <PostForm
@@ -250,6 +263,7 @@ const Component = ({ avatarUrl }: Props) => {
             accountDid={resolvedDid}
             onPosted={handlePosted}
             onPinnedFormDisabledChange={setPinnedFormDisabled}
+            guestMode={guestMode}
           />
         </div>
       )}
@@ -258,30 +272,8 @@ const Component = ({ avatarUrl }: Props) => {
         accountDid={resolvedDid}
         onPosted={handlePosted}
         onPinnedFormDisabledChange={setPinnedFormDisabled}
+        guestMode={guestMode}
       />
-
-      {/* <div
-        className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
-      >
-        {isPaged ? (
-          <PageSizeSelect
-            value={pageSize}
-            onChange={next => {
-              setPageSize(next)
-              writePageSizeSetting(next)
-            }}
-            ariaLabel="表示件数"
-          />
-        ) : (
-          <span aria-hidden="true" />
-        )}
-        {isPaged ? (
-          <NavigationBar
-            pagination={pagedController.pagination}
-            ariaLabel="post timeline pagination"
-          />
-        ) : null}
-      </div> */}
 
       {loading || error || empty ? (
         <p className={error ? styles["error-state"] : styles["empty-state"]}>
@@ -294,6 +286,7 @@ const Component = ({ avatarUrl }: Props) => {
           getItemProps={item => ({
             onPostDeleted: () =>
               removeItem(candidate => candidate.uri === item.uri),
+            guestMode,
           })}
           className={styles["timeline-list"]}
           items={items}

@@ -15,6 +15,9 @@ const MANUAL_IMAGE_ATTACH_KEY = "manualImageAttach"
 const TEXTAREA_ROWS_KEY = "textareaRows"
 const MASTODON_INSTANCE_DOMAIN_KEY = "mastodonInstanceDomain"
 const CROSSPOST_TO_MASTODON_KEY = "crosspostToMastodon"
+
+/** Mastodonインスタンスドメインが未設定の場合に使う既定値。 */
+export const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
 /**
  * 「WebShareAPIの代わりにインテントポップアップを開く」設定を localStorage から読み取る。
  *

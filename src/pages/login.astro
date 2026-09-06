@@ -23,8 +23,11 @@ import ui from "@/styles/ui.module.css"
             <div class=`${ui["width-md"]}`>
                 <div class=`${ui["base-card"]} ${ui["base-padding"]}`>
                     <LoginForm client:load />
-                    <div style="margin-top: 1rem; font-weight: 600;" class=`${ui["subject"]}`>
+                    <div style="margin: 0.5rem 0; font-weight: 600;" class=`${ui["subject"]}`>
                         旧UIはこちら <a href="/legacy/">Skyshare v1.6.3</a>
+                    </div>
+                    <div class=`${ui["text"]}`>
+                        ゲストとして<a href="/?guest=1">画面を確認できます</a>（ログイン中は見れません）
                     </div>
                     <div style="margin-top: 1rem;">★ Skyshare v2を開発中です。以下の違いがあります</div>
 

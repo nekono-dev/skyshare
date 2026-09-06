@@ -95,6 +95,13 @@ type Props = {
    * 同一ページに同時に存在しうるため、片方での変更をもう片方の表示制御へ即時反映する用途。
    */
   onPinnedFormDisabledChange?: (next: boolean) => void
+  /**
+   * ログイン不要のゲスト用デモ表示。Bluesky認証セッションに依存する下書き機能は
+   * 無効化する一方、投稿ボタンはBlueskyへの実投稿（submitEntry）だけをスキップし、
+   * その後の自動ポップアップ・WebShareAPI・X/タイッツー/Mastodon投稿ボタン等の
+   * 後続処理は通常時と同じフローで実行して見た目を体験してもらう用途。
+   */
+  guestMode?: boolean
 }
 
 /**
@@ -213,6 +220,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     avatarUrl,
     accountDid,
     onPinnedFormDisabledChange,
+    guestMode = false,
   },
   ref,
 ) {
@@ -723,46 +731,57 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     const popupWindow = willAutoPopup ? preOpenPopupWindow() : null
 
     setIsSubmitting(true)
-    setStatus("送信中…")
+    setStatus(guestMode ? "処理中…" : "送信中…")
     setStatusColor(undefined)
 
     try {
-      const entryResult = await submitEntry({
-        text,
-        languageCode,
-        selfLabel,
-        imageEntry,
-        manualImageAttach: shareToggles.manualImageAttach,
-        ogpResult,
-        postGate,
-      })
+      // ゲスト表示ではBluesky認証セッションが無いため、実際の投稿(submitEntry)は
+      // 行わずスキップする。ただしポップアップ/WebShareAPI等の後続処理は通常時と
+      // 同じフローで実行し、見た目を体験できるようにする。
+      let skyshareUri = ""
+      let gateWarning = false
 
-      if (!entryResult.ok) {
-        popupWindow?.close()
-        setStatusColor("#b00")
-        setStatus(entryResult.message)
-        return
-      }
+      if (!guestMode) {
+        const entryResult = await submitEntry({
+          text,
+          languageCode,
+          selfLabel,
+          imageEntry,
+          manualImageAttach: shareToggles.manualImageAttach,
+          ogpResult,
+          postGate,
+        })
 
-      // 「投稿後にデフォルト値を更新する」がONなら今回使った設定を新しいデフォルトとして
-      // 永続化し、OFFなら保存済みのデフォルト値へ都度リセットする。トグルをその場で
-      // 操作した直後に投稿しても即座に反映されるよう、都度読み直さずstateを直接参照する。
-      if (syncGateDefaultAfterPost) {
-        writePostGateDefaultSetting(postGate)
-      } else {
-        setPostGate(readPostGateDefaultSetting())
-      }
+        if (!entryResult.ok) {
+          popupWindow?.close()
+          setStatusColor("#b00")
+          setStatus(entryResult.message)
+          return
+        }
 
-      if (loadedDraft) {
-        void deleteDraftSilently(loadedDraft.id)
-        setLoadedDraft(null)
+        skyshareUri = entryResult.skyshareUri
+        gateWarning = entryResult.gateWarning
+
+        // 「投稿後にデフォルト値を更新する」がONなら今回使った設定を新しいデフォルトとして
+        // 永続化し、OFFなら保存済みのデフォルト値へ都度リセットする。トグルをその場で
+        // 操作した直後に投稿しても即座に反映されるよう、都度読み直さずstateを直接参照する。
+        if (syncGateDefaultAfterPost) {
+          writePostGateDefaultSetting(postGate)
+        } else {
+          setPostGate(readPostGateDefaultSetting())
+        }
+
+        if (loadedDraft) {
+          void deleteDraftSilently(loadedDraft.id)
+          setLoadedDraft(null)
+        }
       }
 
       recordUsedHashtagsToHistory(text, accountDid)
 
       const dispatch = await runShareDispatch({
         text,
-        skyshareUri: entryResult.skyshareUri,
+        skyshareUri,
         linkCardUrl: ogpResult?.sourceUrl ?? "",
         imageEntry,
         manualImageAttach: shareToggles.manualImageAttach,
@@ -772,6 +791,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         popupIntentInsteadOfWebshare: shareToggles.popupIntentInsteadOfWebshare,
         noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
         popupWindow,
+        guestMode,
       })
 
       onPosted?.()
@@ -790,7 +810,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
       } else {
         resetInputFields()
       }
-      if (entryResult.gateWarning) {
+      if (gateWarning) {
         setStatus(
           `${dispatch.status}(返信・引用設定の反映に失敗した可能性があります)`,
         )
@@ -896,7 +916,8 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             <button
               type="button"
               className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-              disabled={isSubmitting}
+              disabled={isSubmitting || guestMode}
+              title={guestMode ? "ゲスト表示のため利用できません" : undefined}
               onClick={() => {
                 void openDraftPicker()
               }}
@@ -908,6 +929,11 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
               type="submit"
               disabled={isSubmitting}
+              title={
+                guestMode
+                  ? "ゲスト表示のためBlueskyへの投稿はスキップされます"
+                  : undefined
+              }
             >
               投稿
             </button>
@@ -944,7 +970,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             {showTaittsuuIntentButton && (
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["taittsuu-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
                   const intentText = buildIntentText(
@@ -974,7 +1000,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             {showMastodonIntentButton && (
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["mastodon-button"]}`}
                 disabled={isSubmitting}
                 onClick={() => {
                   const intentText = buildIntentText(
