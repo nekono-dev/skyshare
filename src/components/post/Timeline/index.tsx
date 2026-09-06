@@ -53,9 +53,16 @@ const PAGE_SIZE = 20
 const Component = ({ avatarUrl }: Props) => {
   const [reloadKey, setReloadKey] = useState(0)
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
-  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
-    readPinnedFormDisabledSetting(false),
-  )
+  // SSRは常にfalse（固定表示あり）でレンダリングするため、初期stateもfalse固定にし、
+  // 実際の設定値はマウント後のuseEffectで反映する。ここをuseState(() =>
+  // readPinnedFormDisabledSetting(false))のように初期化関数内でlocalStorageを
+  // 読むと、クライアント初回レンダー（ハイドレーション）時点でSSR結果と異なる
+  // 値になり得て、PostForm(固定表示)とPostLauncherのどちらを描画するかが
+  // サーバー/クライアント間で食い違いhydration mismatchを起こす。
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+  useEffect(() => {
+    setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+  }, [])
   // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
   // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
   // 到達不能なデッドコードとして残置している。

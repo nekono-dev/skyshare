@@ -9,6 +9,9 @@ import styles from "./index.module.css"
  * - `react-easy-crop` を用いて指定アスペクトの切り抜き UI を表示する。
  * - コンテナサイズ変化に追随して `minZoom` と crop フレームを再計算する。
  * - 切り抜き結果を `onChange` で親へ通知する。
+ * - ズームスライダーはこのコンポーネントの外（呼び出し元）に配置される想定のため、
+ *   `zoom` は外部から上書き可能にし（`externalZoom`）、`minZoom` は
+ *   `onMinZoomChange` で外部スライダーの `min` 値算出用に報告する。
  */
 
 export type SlotCropState = {
@@ -20,9 +23,12 @@ export type SlotCropState = {
 type Props = {
   imageUrl: string
   aspect: number
-  label?: string
+  /** 外部（呼び出し元のズームスライダー）から指定されたズーム値。指定時はこの値に同期する。 */
+  externalZoom?: number
   initialCropPixels?: Area | null // natural image pixels
   onChange?: (state: SlotCropState) => void
+  /** 画像読み込み完了時に算出した最小ズームを報告する（外部スライダーの min 値に使う）。 */
+  onMinZoomChange?: (minZoom: number) => void
 }
 
 /**
@@ -31,23 +37,25 @@ type Props = {
  * Input:
  * - `imageUrl`: 編集対象画像 URL
  * - `aspect`: 切り抜きアスペクト比
- * - `label`: スロット表示名
+ * - `externalZoom`: 外部スライダーからの上書きズーム値
  * - `initialCropPixels`: 初期切り抜き領域（自然画像座標）
  * - `onChange`: クロップ状態変化通知
+ * - `onMinZoomChange`: 最小ズーム算出通知
  *
  * Output:
- * - 画像クロップ UI（Cropper + zoom スライダー）
+ * - 画像クロップ UI（Cropper のみ。ズームスライダーは含まない）
  *
  * 例:
  * - 入力: `{ imageUrl: "blob:...", aspect: 1.9 }`
- * - 出力: 1.9 比率のクロップスロット
+ * - 出力: 1.9 比率のクロップビュー
  */
 const CropSlot: React.FC<Props> = ({
   imageUrl,
   aspect,
-  label,
+  externalZoom,
   initialCropPixels = null,
   onChange,
+  onMinZoomChange,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -101,6 +109,14 @@ const CropSlot: React.FC<Props> = ({
     isInitializedRef.current = false
   }, [imageUrl])
 
+  // 外部（呼び出し元のズームスライダー）からズーム値が指定された場合、内部状態へ反映する。
+  useEffect(() => {
+    if (externalZoom !== undefined && externalZoom !== zoom) {
+      setZoom(externalZoom)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalZoom])
+
   /**
    * 画像読み込み完了時に最小ズームと初期位置を計算する。
    *
@@ -133,6 +149,7 @@ const CropSlot: React.FC<Props> = ({
     )
 
     setMinZoom(requiredMinZoom)
+    onMinZoomChange?.(requiredMinZoom)
 
     if (initialCropPixels) {
       const natW = mSize.naturalWidth ?? mSize.width
@@ -195,38 +212,25 @@ const CropSlot: React.FC<Props> = ({
   }
 
   return (
-    <div className={styles["slot-outer"]}>
-      {label && <div className={styles["slot-label"]}>{label}</div>}
-      <div
-        className={styles["crop-wrapper"]}
-        ref={containerRef}
-        style={{ aspectRatio: String(aspect) }}
-      >
-        <Cropper
-          image={imageUrl}
-          crop={crop}
-          zoom={zoom}
-          minZoom={minZoom}
-          maxZoom={8}
-          aspect={aspect}
-          cropSize={cropFrameSize ?? undefined}
-          restrictPosition
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onCropComplete={handleCropComplete}
-          onMediaLoaded={handleMediaLoaded}
-        />
-      </div>
-      <div className={styles["slider-area"]}>
-        <input
-          type="range"
-          min={minZoom}
-          max={8}
-          step={0.01}
-          value={zoom}
-          onChange={e => setZoom(Number(e.target.value))}
-        />
-      </div>
+    <div
+      className={styles["crop-wrapper"]}
+      ref={containerRef}
+      style={{ aspectRatio: String(aspect) }}
+    >
+      <Cropper
+        image={imageUrl}
+        crop={crop}
+        zoom={zoom}
+        minZoom={minZoom}
+        maxZoom={8}
+        aspect={aspect}
+        cropSize={cropFrameSize ?? undefined}
+        restrictPosition
+        onCropChange={setCrop}
+        onZoomChange={setZoom}
+        onCropComplete={handleCropComplete}
+        onMediaLoaded={handleMediaLoaded}
+      />
     </div>
   )
 }

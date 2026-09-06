@@ -38,6 +38,10 @@ export const CommonImagesMetaSchema = z.array(
         .object({
             width: z.number().int().min(1),
             height: z.number().int().min(1),
+            alt: z.string().optional().default("").meta({
+                description:
+                    "app.bsky.embed.imagesの各画像のalt(代替テキスト)。",
+            }),
         })
         .strict(),
 )

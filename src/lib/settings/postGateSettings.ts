@@ -130,7 +130,7 @@ export const isDefaultPostGateValue = (value: PostGateValue): boolean => {
 }
 
 /**
- * 「投稿後に返信・引用のデフォルト設定を更新するか」設定を localStorage から読み取る。
+ * 「返信・引用オプションを保存する」設定を localStorage から読み取る。
  *
  * Input:
  * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
@@ -159,7 +159,7 @@ export const readSyncGateDefaultAfterPostSetting = (
 }
 
 /**
- * 「投稿後に返信・引用のデフォルト設定を更新するか」設定を localStorage に保存する。
+ * 「返信・引用オプションを保存する」設定を localStorage に保存する。
  *
  * Input:
  * - `value`: 保存したい設定値

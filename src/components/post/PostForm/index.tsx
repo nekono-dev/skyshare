@@ -31,7 +31,6 @@ import ImagePicker, {
   type ImageEntry,
   type ImagePickerHandle,
 } from "@/components/image/ImagePicker"
-import ImagePreview from "@/components/image/ImagePreview"
 import InlineIcon from "@/components/common/InlineIcon"
 import LanguageSelect from "@/components/common/LanguageSelect"
 import Loading from "@/components/common/Loading"
@@ -238,9 +237,13 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   useEffect(() => {
     setShareTogglesReady(true)
   }, [])
-  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
-    readPinnedFormDisabledSetting(false),
-  )
+  // SSRは常にfalseでレンダリングするため、初期stateもfalse固定にし、実際の設定値は
+  // マウント後のuseEffectで反映する（shareTogglesReadyと同じ理由によるhydration
+  // mismatch対策）。
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+  useEffect(() => {
+    setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+  }, [])
   const [hashtagSuggestEnabled] = useState(() =>
     readHashtagSuggestEnabledSetting(true),
   )
@@ -292,6 +295,11 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
+  // ImagePickerの画像追加ボタン列は幅を内容量に合わせて縮めるトグルボックス内に置かれるため、
+  // 個別画像プレビューのグリッドをその場に描画すると横幅がボタン列の幅に押し縮められてしまう。
+  // フォーム全幅を使えるこの位置にポータル先を用意し、ImagePicker側の状態はそのままに
+  // 見た目だけをここへ描画する。
+  const imagePreviewContainerRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLDivElement>(null)
   const entryFormRef = useRef<HTMLFormElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
@@ -370,7 +378,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const autoGrowText = variant === "page"
   const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
     optionsList: [
-      shareToggles.popupIntentInsteadOfWebshare,
+      pinnedFormDisabled,
       shareToggles.crosspostToTaittsuu,
       shareToggles.showXWhenCrosspost,
       shareToggles.crosspostToMastodon,
@@ -1071,14 +1079,14 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               disabled={isSubmitting}
               aria-label={
                 isDefaultPostGateValue(postGate)
-                  ? "返信・引用の設定"
-                  : "返信・引用の設定(変更有)"
+                  ? "誰でも反応可能"
+                  : "反応を制限しています"
               }
               onClick={() => setPostGateDialogOpen(true)}
             >
               {isDefaultPostGateValue(postGate)
-                ? "返信・引用"
-                : "返信・引用(変更済有)"}
+                ? "誰でも反応可能"
+                : "反応を制限しています"}
             </button>
             <LanguageSelect
               value={languageCode}
@@ -1117,6 +1125,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
                   setImageEntry(entry)
                 }}
                 disabled={isSubmitting}
+                previewContainerRef={imagePreviewContainerRef}
               />
               <OgpFetchButton ogpFetch={ogpFetch} disabled={isSubmitting} />
             </div>
@@ -1129,19 +1138,9 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
           </div>
           <div>
             <OgpPreview ogpFetch={ogpFetch} />
-            <ImagePreview value={imageEntry} />
+            <div ref={imagePreviewContainerRef} />
           </div>
           <div className={`${ui["base-padding"]} ${ui["toggle-box"]}`}>
-            <ToggleSwitch
-              checked={pinnedFormDisabled}
-              disabled={isSubmitting}
-              label="投稿フォームを固定表示しない"
-              onCheckedChange={next => {
-                setPinnedFormDisabled(next)
-                writePinnedFormDisabledSetting(next)
-                onPinnedFormDisabledChange?.(next)
-              }}
-            />
             <ToggleSwitch
               checked={shareToggles.popupIntentInsteadOfWebshare}
               disabled={isSubmitting}
@@ -1166,7 +1165,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
             <ToggleSwitch
               checked={syncGateDefaultAfterPost}
               disabled={isSubmitting}
-              label="投稿後に返信・引用のデフォルト設定を更新する"
+              label="返信・引用オプションを保存する"
               onCheckedChange={next => {
                 setSyncGateDefaultAfterPost(next)
                 writeSyncGateDefaultAfterPostSetting(next)
@@ -1181,6 +1180,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               defaultOpen={defaultOpenShareOptions}
             >
               <div className={ui["toggle-box"]}>
+                <ToggleSwitch
+                  checked={pinnedFormDisabled}
+                  disabled={isSubmitting}
+                  label="投稿フォームを固定表示しない"
+                  onCheckedChange={next => {
+                    setPinnedFormDisabled(next)
+                    writePinnedFormDisabledSetting(next)
+                    onPinnedFormDisabledChange?.(next)
+                  }}
+                />
                 <ToggleSwitch
                   checked={shareToggles.showXWhenCrosspost}
                   disabled={isSubmitting}

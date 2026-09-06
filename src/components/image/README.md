@@ -5,11 +5,12 @@
 ```mermaid
 graph TD
   ImagePicker --> ImageCropDialog
+  ImagePicker --> ImageAltDialog
   ImageCropDialog --> CropSlot
-  ImagePreview -. type only .-> ImagePicker
   OgpPreview -. type only .-> OgpFetchButton
 
   ImageCropDialog --> commonExt
+  ImageAltDialog --> commonExt
   ImagePicker --> commonExt
 
   commonExt["common (外部)"]
@@ -18,4 +19,4 @@ graph TD
   class commonExt external;
 ```
 
-外部カテゴリへの依存の内訳: `common`: ImageCropDialog(Overlay・Loading)、ImagePicker(Loading)
+外部カテゴリへの依存の内訳: `common`: ImageCropDialog(Overlay・Loading)、ImageAltDialog(Overlay)、ImagePicker(Loading)
