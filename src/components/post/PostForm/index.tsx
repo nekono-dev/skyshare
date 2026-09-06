@@ -10,6 +10,7 @@
 import React, {
   forwardRef,
   useEffect,
+  useId,
   useImperativeHandle,
   useRef,
   useState,
@@ -216,6 +217,13 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   },
   ref,
 ) {
+  // PostFormは常時表示のpinned form（Timeline）とPostLauncherのモーダルとで
+  // 同一ページに複数インスタンスが同時にマウントされうる。id="entry-form"を
+  // 固定文字列のままにすると、投稿ボタン(`form`属性で外部のform要素を参照)が
+  // DOM上で先に出現する別インスタンスのform要素に誤って結びつき、
+  // クリックしたのとは別インスタンスのtext state（空文字のことが多い）で
+  // 投稿されてしまう。インスタンスごとに一意なidにすることでこれを防ぐ。
+  const entryFormId = useId()
   const [text, setText] = useState("")
   const [languageCode, setLanguageCode] = useState("ja")
   const shareToggles = useShareToggles()
@@ -888,7 +896,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
               下書き
             </button>
             <button
-              form="entry-form"
+              form={entryFormId}
               className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
               type="submit"
               disabled={isSubmitting}
@@ -993,7 +1001,7 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
         </div>
 
         <form
-          id="entry-form"
+          id={entryFormId}
           ref={entryFormRef}
           className={ui["dialog-body"]}
           onSubmit={handleSubmit}
