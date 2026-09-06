@@ -5,6 +5,9 @@
  * - ログイン不要の見た目確認用に、`TimelinePost`/`TimelineSkyshareEntry` と同じ形の
  *   固定データを提供する（Timeline/EntryList が未ログイン時の代替表示として使う）。
  * - 実際の Bluesky API を叩かないよう、画像・アバターは data URI の SVG で完結させる。
+ *   ただしEntryのOGP画像（`visualUrl`）はOGP取得ツールがdata URI SVGを画像として
+ *   解釈できずリンクカードが生成されないため、`public/materials/`配下に事前生成した
+ *   PNG（`SAMPLE_OG_IMAGE_PATH`等）へのパスを使う。
  */
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
 
@@ -23,6 +26,12 @@ const placeholderImage = (bg: string, label: string): string => {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${1200}" height="${630}"><rect width="100%" height="100%" fill="${bg}"/><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="sans-serif" font-size="${Math.floor(630 / 3)}" fill="#fff">${label}</text></svg>`
     return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
+
+// sample.astro/sample-orphaned.astroのOGP画像（og:image/twitter:image）用パス。
+// data URI SVGはOGP取得ツールが画像として解釈できずリンクカードが表示されないため、
+// `placeholderImage`と同内容をPNG化して`public/materials/`に配置したものを使う。
+const SAMPLE_OG_IMAGE_PATH = "/materials/sample-og.png"
+const SAMPLE_ORPHANED_OG_IMAGE_PATH = "/materials/sample-orphaned-og.png"
 
 /**
  * ゲストモードの「Entryを開く」から実際に遷移できるサンプルEntry詳細ページ
@@ -76,7 +85,7 @@ export const GUEST_DUMMY_POSTS: TimelinePost[] = [
             sourceCid: "bafyreiguestdemo2",
             heading: "サンプルEntry",
             caption: "ゲスト表示用のダミーEntryです。",
-            visualUrl: placeholderImage("#f97316", "Sample"),
+            visualUrl: SAMPLE_OG_IMAGE_PATH,
             webUrl: GUEST_SAMPLE_ENTRY_PATH,
         },
     },
@@ -111,7 +120,7 @@ export const GUEST_DUMMY_ENTRIES: TimelineSkyshareEntry[] = [
         heading: "サンプルEntry",
         caption:
             "画像投稿で、URL発行を行った際の表示です。（共有ボタンやポップアップボタンで再度他SNSへ投稿可能）",
-        visualUrl: placeholderImage("#f97316", "Sample"),
+        visualUrl: SAMPLE_OG_IMAGE_PATH,
         webUrl: GUEST_SAMPLE_ENTRY_PATH,
     },
     {
@@ -123,7 +132,7 @@ export const GUEST_DUMMY_ENTRIES: TimelineSkyshareEntry[] = [
         heading: "元投稿削除済みのサンプル",
         caption:
             "紐づくBluesky投稿が削除された状態のサンプルです。Skyshare Entryが削除されない限りはURL参照可能です。",
-        visualUrl: placeholderImage("#7c5fa3", "Sample"),
+        visualUrl: SAMPLE_ORPHANED_OG_IMAGE_PATH,
         webUrl: GUEST_SAMPLE_ENTRY_ORPHANED_PATH,
         orphaned: true,
     },

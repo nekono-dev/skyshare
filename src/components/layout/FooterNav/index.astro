@@ -14,19 +14,19 @@
 import styles from "./index.module.css"
 import { footerNavItems, normalizePathname, isActiveHref } from "@/components/layout/nav/navItems"
 import NavIcon from "@/components/layout/nav/NavIcon.astro"
-import { withGuestModeQuery } from "@/lib/guestMode"
 
 const current = normalizePathname(Astro.url.pathname)
 // URLに `?guest` が付いている場合、ナビゲーション遷移後もゲスト表示を維持できるよう
-// 各リンクのhrefにも引き継ぐ（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
-const guestModeActive = Astro.url.searchParams.has("guest")
+// 各リンクのhrefにも引き継ぐ。ただしこのコンポーネントは prerender されるページに
+// 埋め込まれておりビルド時には実際のリクエストURLが分からないため、ここでは付与できない。
+// 実際の付与は `@/components/layout/nav/syncGuestModeQuery`(クライアント実行)が担う。
 ---
 
 <nav class={styles.nav} aria-label="メインナビゲーション" data-nav="footer" transition:persist="footer-nav">
     {
         footerNavItems.map(item => (
             <a
-                href={withGuestModeQuery(item.href, guestModeActive)}
+                href={item.href}
                 class={styles.item}
                 data-nav-key={item.key}
                 aria-current={isActiveHref(item.href, current) ? "page" : undefined}
@@ -44,4 +44,5 @@ const guestModeActive = Astro.url.searchParams.has("guest")
 <script>
     import "@/components/layout/nav/syncActiveState"
     import "@/components/layout/nav/syncAccountAvatar"
+    import "@/components/layout/nav/syncGuestModeQuery"
 </script>
