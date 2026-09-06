@@ -14,7 +14,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
     "PUBLIC_LEGACY_BACKEND_ENDPOINT": "_legacy版UIを動作させていた場合、_legacy版backendのエンドポイントを入力",
     "PUBLIC_DEFAULT_ATP_SERVICE": "ATPサービスを入力",
     "PUBLIC_NODE_ENV": "develop or production　v2.0.X時点ではCookieにSecure属性をつけるかのフラグ",
-    "PUBLIC_OGP_EXTRACTOR_API": "OGP ExtractorのURLを入力、APIのパスに/v1/extractを含まない場合、openapi/index.yamlでパスを修正すること",
+    "PUBLIC_OGP_EXTRACTOR_API": "OGP ExtractorのURLを入力、APIのパスに/v1/extractを含まない場合、src/lib/api/schema/v1/extract/get.tsでパスを修正すること",
     "PUBLIC_PLC_DIRECTORY_BASE_URL": "PLCディレクトリサービスのURL",
   },
 ```

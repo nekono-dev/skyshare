@@ -6,7 +6,7 @@ import {
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
 import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
-import { dropEmptyStringField } from "@/util/formData"
+import { dropEmptyStringField, formDataToObject } from "@/util/formData"
 import { bskyPostUrlgen } from "@/lib/entry/url"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { applyPostGate } from "@/lib/atproto/gate"
@@ -17,7 +17,7 @@ import {
     validateImageMetadata,
 } from "@/lib/atproto/embed"
 
-import * as PostSchema from "@/client/openapi/schemas/v2/bsky/record/post"
+import * as PostSchema from "@/lib/api/schema/v2/bsky/record/post"
 
 /**
  * Skyshare v2 bsky/record API。
@@ -100,8 +100,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         dropEmptyStringField(formData, "text")
 
-        // フェーズ 4: OpenAPI スキーマバリデーション
-        const body = PostSchema.RequestBodySchema.safeParse(formData)
+        // フェーズ 4: OpenAPI スキーマバリデーション(FormData→プレーンオブジェクトへ
+        // デコードしてから検証する。JSON bodyの`request.json()`と同じ形に揃えるため)
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const body = PostSchema.RequestBodySchema.safeParse(raw)
         if (!body.success) {
             console.error(
                 "createBskyRecord: invalid request body: " +

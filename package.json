@@ -4,9 +4,9 @@
   "version": "2.0.0-preview.r07",
   "scripts": {
     "lexgen": "./hack/gen-client.sh ./src/client/atproto",
+    "apigen:doc": "tsx ./hack/build-openapi-document.ts",
     "apigen:client": "orval",
-    "apigen:type": "tsx ./hack/generate-zod-from-openapi.ts --input ./openapi/index.yaml --output src/client/openapi/schemas",
-    "apigen": "npm run apigen:client && npm run apigen:type",
+    "apigen": "npm run apigen:doc && npm run apigen:client",
     "codegen": "npm run lexgen && npm run apigen",
     "build:pripare": "npm run codegen && npm run format",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
@@ -34,7 +34,7 @@
     "react-dom": "^19.2.4",
     "react-easy-crop": "^5.5.6",
     "twitter-text": "*",
-    "zod-form-data": "*"
+    "zod": "*"
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.9.8",
@@ -49,7 +49,7 @@
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wrangler": "^4.122.0",
-    "yaml": "^2.3.1"
+    "zod-openapi": "*"
   },
   "author": "nekono.dev"
 }

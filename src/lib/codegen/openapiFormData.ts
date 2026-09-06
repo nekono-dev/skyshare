@@ -4,7 +4,8 @@
  * 責務と処理概要:
  * - Orval が生成する request body を FormData に変換する。
  * - Blob 配列とプリミティブ配列は複数フィールドへ展開する。
- * - object および object 配列はサーバ側 zod-form-data の契約に合わせて JSON 文字列 1 件へ正規化する。
+ * - object および object 配列はサーバ側 `formDataToObject`(`@/util/formData`)の
+ *   "json" 種別の契約に合わせて JSON 文字列 1 件へ正規化する。
  *
  * 実装上の制約:
  * - Cloudflare Workers 互換のため、Node.js 固有 API は使用しない。

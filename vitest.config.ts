@@ -35,6 +35,7 @@ export default defineConfig({
             include: [
                 "src/lib/**",
                 "src/util/**",
+                "src/pages/v2/**",
                 "src/components/PostForm/shareTogglesReducer.ts",
                 "src/components/CountedTextInput/autoGrowHeight.ts",
             ],

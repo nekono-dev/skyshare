@@ -10,7 +10,10 @@
 
 - 本システムは Cloudflare Workers 環境で動作するため、Nodejs 固有の API は使用できず、バージョンもCloudflareの扱えるNodejsの最新バージョン: 22.16.0に固定される。
 - 特に指示がない場合、作業は `(root)/src/` 配下のコードを対象とする。`_legacy`を対象とする作業の場合は明示的に示す。曖昧な場合は確認すること。
-- APIは OpenAPI 定義を作成し、クライアントを生成して利用すること。クライアントは `npm run codegen` ですべて生成できる。また、OpenAPIのスキーマはhackスクリプトにより`src/client/openapi/schemas`に生成されるため、validation工程に利用する。
+- APIはコードファーストで実装すること。各エンドポイントのZodスキーマ（バリデーション用途と兼用、`src/lib/api/schema/` が単一の真実の源）を同ディレクトリ配下にURLパスと対応するディレクトリ構成で定義し、`src/pages/**` のAPIルートハンドラはそのスキーマを直接importして `.safeParse()` で検証する。`hack/build-openapi-document.ts` がこれらのスキーマからOpenAPI 3.1ドキュメントを組み立て、`orval` がそれを入力にフロントエンド用クライアント（`src/client/openapi/client.ts` 等）を生成する。すべて `npm run codegen` で実行できる。
+  - 1エンドポイントにつきスキーマは1つ。バリデーション用とOpenAPIドキュメント生成用でスキーマを分けないこと（multipart+anyOfのような複雑なケースでも例外にしない）。
+  - 共通のエラーレスポンス（400/401/404/429/500等）は `Common.errorResponses(statuses, schema?)` を `operation.responses` にスプレッドし、`ResponseBody400Schema = Common.CommonErrorSchema` のような重複定義を書かないこと。
+  - スキーマの書き方・ディレクトリ構成・multipart+anyOfの扱い方の詳細は `openapi/README.md` を参照すること。
 
 # lib / util の使い分け
 

@@ -14,7 +14,6 @@
  *   アカウント追加・切り替え・ログアウトという通常と異なるセッション操作を行うため対象外とする
  *   （各エンドポイントが目的に応じて個別にセッションを取り扱う）。
  */
-import { AtpAgent } from "@atproto/api"
 import type { MiddlewareHandler } from "astro"
 import {
     parseSessionFromRequest,
@@ -24,6 +23,7 @@ import {
     errorResponseFromStatus,
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
+import { createAtpAgent } from "@/lib/atproto/agentFactory"
 
 /**
  * このミドルウェアが認証処理の対象とするパスかどうかを判定する。
@@ -69,7 +69,7 @@ export const refreshBskySession: MiddlewareHandler = async (context, next) => {
         return errorResponseFromStatus(401)
     }
 
-    const agent = new AtpAgent({ service })
+    const agent = createAtpAgent(service)
     try {
         await agent.resumeSession({
             refreshJwt: session.refreshJwt,

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
-import { AtpAgent } from "@atproto/api"
 
+import { createAtpAgent } from "@/lib/atproto/agentFactory"
 import {
     makeSessionSetCookie,
     makeAccountsSetCookie,
@@ -10,8 +10,8 @@ import {
     upsertPooledAccount,
     MAX_POOLED_ACCOUNTS,
 } from "@/lib/session/cookies.js"
-import * as PostSchema from "@/client/openapi/schemas/v2/bsky/session/post"
-import * as PutSchema from "@/client/openapi/schemas/v2/bsky/session/put"
+import * as PostSchema from "@/lib/api/schema/v2/bsky/session/post"
+import * as PutSchema from "@/lib/api/schema/v2/bsky/session/put"
 
 import {
     errorResponseFromStatus,
@@ -77,7 +77,7 @@ const fetchProfileMeta = async (
     did: string,
 ): Promise<{ displayName?: string; avatarUrl?: string }> => {
     try {
-        const agent = new AtpAgent({ service: atpService })
+        const agent = createAtpAgent(atpService)
         const profile = await agent.getProfile({ actor: did })
         return {
             displayName: profile.data.displayName,
@@ -195,7 +195,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         const password = body.data.password
         const service = body.data.service || "https://bsky.social"
 
-        const agent = new AtpAgent({ service })
+        const agent = createAtpAgent(service)
         const response = await agent.login({
             identifier,
             password,
@@ -293,7 +293,7 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
         // refreshSession を実行するため、これ自体がトークンの有効性チェックになる。
         // refreshJwt が失効していれば XRPCError（401相当）が投げられ、成功時は
         // ローテーション後の新しいトークン対が agent.session に反映される。
-        const agent = new AtpAgent({ service: target.service })
+        const agent = createAtpAgent(target.service)
         try {
             await agent.resumeSession({
                 refreshJwt: target.session.refreshJwt,

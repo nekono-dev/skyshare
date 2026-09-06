@@ -18,6 +18,7 @@ pnpm-debug.log*
 
 # Gen clients
 src/client/**/
+/openapi/generated.json
 
 # Astro build
 .astro

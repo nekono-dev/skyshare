@@ -4,7 +4,10 @@
     ".astro/types.d.ts",
     "src/**/*",
     "tests/**/*",
-    "./worker-configuration.d.ts"
+    "hack/**/*",
+    "./worker-configuration.d.ts",
+    "./orval.config.ts",
+    "./vitest.config.ts"
   ],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {

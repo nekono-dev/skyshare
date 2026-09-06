@@ -6,7 +6,7 @@ import {
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
 import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
-import { dropEmptyStringField } from "@/util/formData"
+import { dropEmptyStringField, formDataToObject } from "@/util/formData"
 import { ENTRY_COLLECTION } from "@/lib/entry/entry"
 import {
     createSkyshareEntry,
@@ -20,9 +20,9 @@ import { resolveDisplayName } from "@/lib/atproto/profile"
 import { createImageEmbed, validateImageMetadata } from "@/lib/atproto/embed"
 import { createEntryFromExistingPost } from "@/lib/entry/fromPost"
 
-import * as PostSchema from "@/client/openapi/schemas/v2/entry/post"
-import * as PutSchema from "@/client/openapi/schemas/v2/entry/put"
-import * as DeleteSchema from "@/client/openapi/schemas/v2/entry/delete"
+import * as PostSchema from "@/lib/api/schema/v2/entry/post"
+import * as PutSchema from "@/lib/api/schema/v2/entry/put"
+import * as DeleteSchema from "@/lib/api/schema/v2/entry/delete"
 import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
 
 /**
@@ -144,8 +144,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         dropEmptyStringField(formData, "text")
 
-        // フェーズ 4: OpenAPI スキーマバリデーション
-        const body = PostSchema.RequestBodySchema.safeParse(formData)
+        // フェーズ 4: OpenAPI スキーマバリデーション(FormData→プレーンオブジェクトへ
+        // デコードしてから検証する。JSON bodyの`request.json()`と同じ形に揃えるため)
+        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
+        const body = PostSchema.RequestBodySchema.safeParse(raw)
         if (!body.success) {
             console.error(
                 "createEntry: invalid request body: " + JSON.stringify(body),

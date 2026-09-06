@@ -8,7 +8,7 @@
  *   atproto クライアントへの通信自体は行わない（純粋関数）。
  */
 
-import type * as Components from "@/client/openapi/schemas/components"
+import type * as Components from "@/lib/api/schema/common"
 
 /**
  * 画像投稿時のメタデータ整合性を検証する。
