@@ -281,9 +281,16 @@ const Component: React.FC<Props> = ({
 
   const handleBlur = () => {
     // DOM状態が`value`から導出されるべき内容とズレるリスク（想定外のDOM構造の混入等）への
-    // 安全弁として、フォーカスを失う度にDOM全体を`value`基準で強制再構築する。
+    // 安全弁として、フォーカスを失う度にDOM全体を再構築する。ただし基準にする値は必ず
+    // 「blur時点の実DOMから読み取った最新の平文」を使う。IME確定(compositionend)の
+    // Reactへの反映がblurの発火より遅れるWindows/Chrome特有のタイミングであっても、
+    // まだ反映されていない古い`value`でDOMを上書きして入力内容を消してしまわないため。
     const root = editorRef.current
-    if (root) rebuildContentFully(root, value, styles.highlight)
+    if (root) {
+      const currentText = extractPlainText(root)
+      if (currentText !== value) onChange(currentText)
+      rebuildContentFully(root, currentText, styles.highlight)
+    }
     onBlur?.()
   }
 
