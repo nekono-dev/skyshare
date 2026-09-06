@@ -58,9 +58,15 @@ export type RequestBodyType = z.infer<typeof RequestBodySchema>
 /**
  * FormDataの各フィールドをどう解釈してデコードするか(ドメイン知識)。
  * `formDataToObject`(汎用・ドメイン非依存)と組み合わせてルートハンドラ側で使う。
+ *
+ * `text`が`"text"`(生文字列)ではなく`"json"`なのは、multipart/form-dataの
+ * text種別フィールドは`\n`が`\r\n`へブラウザ側で正規化されてしまい、クライアントが
+ * `\n`前提で計算したfacetsのバイトオフセットとズレて投稿が破綻するため
+ * (`src/lib/codegen/openapiFormData.ts`のJSON化と対で、生の改行を含む文字列を
+ * multipartのテキストパートに直接乗せない)。
  */
 export const RequestBodyFieldKinds: Record<string, FormDataFieldKind> = {
-    text: "text",
+    text: "json",
     facets: "json",
     ogImage: "file",
     uri: "text",

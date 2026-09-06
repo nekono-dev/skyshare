@@ -64,6 +64,12 @@ const isBlobValue = (value: unknown): value is Blob => {
  * - Blob はそのまま append する。
  * - Blob 配列と primitive 配列は複数 append する。
  * - object と object 配列はサーバ側 schema に合わせて JSON.stringify した単一フィールドへ正規化する。
+ * - `text` フィールドは常に JSON.stringify する（サーバ側 `RequestBodyFieldKinds` の
+ *   `text: "json"` と対）。multipart/form-data の生文字列パートはブラウザ側で
+ *   `\n` が `\r\n` へ正規化されてしまい、`detectFacetsForSubmission`
+ *   （`src/lib/atproto/richtext.ts`）が `\n` 前提で計算した facets のバイトオフセットと
+ *   実送信テキストがズレて Bluesky 投稿が破綻するため、JSON文字列として
+ *   エスケープした状態で運ぶことで生の改行バイトを multipart パートに乗せない。
  *
  * Input:
  * - `body`: FormData 化する request body
@@ -73,7 +79,7 @@ const isBlobValue = (value: unknown): value is Blob => {
  *
  * 例:
  * - 入力: `{ text: "hello", langs: ["ja"], imagesMeta: [{ width: 1, height: 1 }] }`
- * - 出力: `text=hello`, `langs=ja`, `imagesMeta=[{"width":1,"height":1}]`
+ * - 出力: `text="hello"`, `langs=ja`, `imagesMeta=[{"width":1,"height":1}]`
  */
 export const customFormData = <T extends Record<string, unknown>>(
     body: T,
@@ -82,6 +88,11 @@ export const customFormData = <T extends Record<string, unknown>>(
 
     for (const [key, rawValue] of Object.entries(body)) {
         if (rawValue === undefined || rawValue === null) {
+            continue
+        }
+
+        if (key === "text" && typeof rawValue === "string") {
+            formData.append(key, JSON.stringify(rawValue))
             continue
         }
 
