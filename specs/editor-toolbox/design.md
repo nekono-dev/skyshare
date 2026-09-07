@@ -63,8 +63,7 @@ export type ToolboxState = {
 }
 
 export type ToolboxAction =
-  | { type: "TOGGLE_PANEL"; toolId: string }
-  | { type: "CLOSE" }
+  { type: "TOGGLE_PANEL"; toolId: string } | { type: "CLOSE" }
 
 export const initialToolboxState: ToolboxState = { openToolId: null }
 
@@ -92,20 +91,22 @@ export const toolboxReducer = (
 各パネル型ツールのボタンには `ref` を張り、押下時に `button.getBoundingClientRect()` からパネルのアンカー位置（`{ top: rect.bottom + GAP_PX, left: rect.left }`）を算出する。算出した位置と `openToolId === tool.id` を`open`として、`FloatingBox` にそのまま渡す。
 
 ```tsx
-{tools.map(tool =>
-  tool.kind === "panel" && state.openToolId === tool.id ? (
-    <FloatingBox
-      key={tool.id}
-      open
-      position={panelPositions[tool.id] ?? null}
-      onDismiss={() => dispatch({ type: "CLOSE" })}
-      role="dialog"
-      aria-label={tool.ariaLabel ?? tool.label}
-    >
-      {tool.renderPanel({ close: () => dispatch({ type: "CLOSE" }) })}
-    </FloatingBox>
-  ) : null,
-)}
+{
+  tools.map(tool =>
+    tool.kind === "panel" && state.openToolId === tool.id ? (
+      <FloatingBox
+        key={tool.id}
+        open
+        position={panelPositions[tool.id] ?? null}
+        onDismiss={() => dispatch({ type: "CLOSE" })}
+        role="dialog"
+        aria-label={tool.ariaLabel ?? tool.label}
+      >
+        {tool.renderPanel({ close: () => dispatch({ type: "CLOSE" }) })}
+      </FloatingBox>
+    ) : null,
+  )
+}
 ```
 
 `FloatingBox` がすでに提供する機能（ビューポート内クランプ、スクロール/リサイズでの自動 `onDismiss`、`document.body`へのポータル描画、最前面表示）をそのまま利用するため、EditorToolbox側で位置計算の補正やポータル管理を再実装する必要はない。外側クリックでの消去は `FloatingBox` 自体は提供しない（用途によって意味が異なるため各利用側の責務、と`FloatingBox`自身のコメントに明記されている）ため、EditorToolbox側で以下を追加実装する。
@@ -148,13 +149,13 @@ useEffect(() => {
 
 ## 7. アクセシビリティ属性
 
-| 要素 | 属性 |
-| --- | --- |
-| ボタン列コンテナ | `role="toolbar"` |
-| パネル型ツールのボタン | `aria-expanded={openToolId === tool.id}`, `aria-haspopup="dialog"` |
+| 要素                               | 属性                                                                 |
+| ---------------------------------- | -------------------------------------------------------------------- |
+| ボタン列コンテナ                   | `role="toolbar"`                                                     |
+| パネル型ツールのボタン             | `aria-expanded={openToolId === tool.id}`, `aria-haspopup="dialog"`   |
 | 即時実行型ツールのボタン（トグル） | `aria-pressed={tool.isActive}`（`isActive`未指定の場合は付与しない） |
-| 無効化ツールのボタン | `disabled` |
-| パネル（`FloatingBox`の中身） | `role="dialog"`, `aria-label`（`tool.ariaLabel ?? tool.label`） |
+| 無効化ツールのボタン               | `disabled`                                                           |
+| パネル（`FloatingBox`の中身）      | `role="dialog"`, `aria-label`（`tool.ariaLabel ?? tool.label`）      |
 
 ## 8. テスト方針
 
@@ -164,12 +165,14 @@ useEffect(() => {
 ## 9. 影響範囲
 
 **新規ファイル**
+
 - `src/components/common/EditorToolbox/index.tsx`
 - `src/components/common/EditorToolbox/index.module.css`
 - `src/components/common/EditorToolbox/toolboxReducer.ts`
 - `tests/components/common/EditorToolbox/toolboxReducer.test.ts`
 
 **変更ファイル**
+
 - なし（既存の `FloatingBox` はAPIを変更せずそのまま利用する想定。4節の外側クリック判定用にpanel要素へのref取得方法を確認した結果、`FloatingBox`側に軽微なAPI追加（例: `panelRef`を受け取れるようにする）が必要になった場合のみ、`src/components/common/FloatingBox/index.tsx` を変更対象に追加する）。
 
 ## 10. クリエイターモードからの利用イメージ（参考）
