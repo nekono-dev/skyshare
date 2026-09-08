@@ -143,8 +143,8 @@ export const useSkyshareEntryStatus = (
                     return
                 }
 
-                const { skyshare } = res.data
-                if (!skyshare.atUri) {
+                const skyshare = res.data.posts[0]?.skyshareEntry
+                if (!skyshare?.atUri) {
                     setCreateError("skyshareページの作成に失敗しました。")
                     setState({ phase: "idle", entry: null })
                     return

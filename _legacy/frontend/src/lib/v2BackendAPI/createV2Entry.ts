@@ -4,12 +4,19 @@ import { v2BackendEndpoint } from "./endpoint"
 // Blobアップロード・app.bsky.feed.postレコード作成・facet検出をv2側にまとめて委譲する。
 // 認証は事前にcreateV2Sessionで発行されたCookie(atp_session, 同一オリジン)に依存する。
 //
-// 画像投稿時、v2は ogImage(OGP用サムネイル)を必須とする。呼び出し元(PostButton.tsx)が
-// legacy backend の POST /ogp(複数画像レイアウト合成)で生成した画像をここに渡す。
+// v2側は`/v2/bsky/record`を統合しており、テキストのみの投稿・画像投稿のいずれも
+// このエンドポイントの`posts[0][...]`フィールドとして送る（本ファイルは常に1件のみ送る）。
+// 画像投稿でskyshare entryも作成したい場合は`ogImage`(OGP用サムネイル、legacy backendの
+// POST /ogpで合成した画像)を渡し、`posts[0][createEntry]=true`を付与する。
 
+export type createV2EntryPostResult = {
+    url: string
+    uri: string
+    cid: string
+    skyshareEntry?: { uri: string }
+}
 export type createV2EntrySuccessResult = {
-    bsky: { url: string }
-    skyshare: { uri: string }
+    posts: createV2EntryPostResult[]
 }
 export type createV2EntryErrorResult = {
     error: string
@@ -35,21 +42,27 @@ export const api = async ({
 }): Promise<createV2EntryResult> => {
     try {
         const formData = new FormData()
+        // "posts[0][text]"はJSON文字列として送る(v2バックエンドの`PostItemFieldKinds.text`が
+        // "json"種別のため。生の改行がブラウザ側で`\r\n`へ正規化されるのを避ける)。
         if (typeof text === "string") {
-            formData.set("text", text)
+            formData.set("posts[0][text]", JSON.stringify(text))
         }
-        langs?.forEach(lang => formData.append("langs", lang))
+        langs?.forEach(lang => formData.append("posts[0][langs]", lang))
         if (typeof selfLabels === "string") {
-            formData.set("selfLabels", selfLabels)
+            formData.set("posts[0][selfLabels]", selfLabels)
         }
+        const hasImages = !!images && images.length > 0
         images?.forEach((image, index) => {
-            formData.append("images", image, `image${index}.jpg`)
+            formData.append("posts[0][images]", image, `image${index}.jpg`)
         })
         if (typeof imagesMeta !== "undefined") {
-            formData.set("imagesMeta", JSON.stringify(imagesMeta))
+            formData.set("posts[0][imagesMeta]", JSON.stringify(imagesMeta))
         }
         if (typeof ogImage !== "undefined") {
-            formData.set("ogImage", ogImage, "ogImage.jpg")
+            formData.set("posts[0][ogImage]", ogImage, "ogImage.jpg")
+            if (hasImages) {
+                formData.set("posts[0][createEntry]", "true")
+            }
         }
 
         const response = await fetch(`${v2BackendEndpoint}/v2/entry/`, {
@@ -60,7 +73,7 @@ export const api = async ({
         const body = (await response.json().catch(() => undefined)) as
             createV2EntrySuccessResult | { error?: string } | undefined
 
-        if (!response.ok || !body || !("bsky" in body)) {
+        if (!response.ok || !body || !("posts" in body)) {
             const message =
                 body && "error" in body && typeof body.error === "string"
                     ? body.error

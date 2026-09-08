@@ -38,6 +38,7 @@ export type FakeAgentOverrides = {
                 putRecord?: any
                 deleteRecord?: any
                 listRecords?: any
+                applyWrites?: any
             }
             identity?: {
                 resolveHandle?: any
@@ -113,6 +114,33 @@ const defaultCreateRecord = vi.fn(
             data: {
                 uri: `at://did:plc:author/${collection}/3lpost`,
                 cid: "bafygatecid",
+            },
+        }
+    },
+)
+
+/**
+ * `com.atproto.repo.applyWrites` の既定応答。
+ * `writes`の各create操作(`$type: "...#create"`)ぶんの`CreateResult`を、
+ * 送信された`repo`/`collection`/`rkey`から機械的に組み立てて返す。
+ * `createBskyThread`（`@/lib/entry/createBskyThread`）はこの応答のuri/cidを
+ * 信頼して返り値を組み立てるため、送信内容と整合したuriを返す必要がある。
+ */
+const defaultApplyWrites = vi.fn(
+    async ({
+        repo,
+        writes,
+    }: {
+        repo: string
+        writes: { collection: string; rkey: string }[]
+    }) => {
+        return {
+            data: {
+                results: writes.map((write, index) => ({
+                    $type: "com.atproto.repo.applyWrites#createResult",
+                    uri: `at://${repo}/${write.collection}/${write.rkey}`,
+                    cid: `bafyapplywrites${index}`,
+                })),
             },
         }
     },
@@ -199,6 +227,9 @@ export const createFakeAgent = (overrides: FakeAgentOverrides = {}): any => ({
                     vi.fn().mockResolvedValue({
                         data: { records: [], cursor: undefined },
                     }),
+                applyWrites:
+                    overrides.com?.atproto?.repo?.applyWrites ??
+                    defaultApplyWrites,
             },
             identity: {
                 resolveHandle:

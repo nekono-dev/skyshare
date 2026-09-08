@@ -5,14 +5,20 @@
  * - `/v2/bsky/drafts` エンドポイントが受け取るリクエストボディ・クエリの検証。
  * - `app.bsky.draft.*` から返るレスポンスの最小要件検証。
  * - `com.atproto.label.defs#selfLabels` 形式のラベル値の抽出・組み立て。
+ * - `posts` は1件ならテキストのみの下書き、複数件ならスレッド(reply chain予定)の
+ *   下書きを表す（`app.bsky.draft#draft.posts` にそのまま対応）。
  */
 
 import { isObjectRecord } from "@/util/object"
 
-export type DraftViewPayload = {
-    id: string
+export type DraftPostPayload = {
     text: string
     labels?: string[]
+}
+
+export type DraftViewPayload = {
+    id: string
+    posts: DraftPostPayload[]
     createdAt: string
     updatedAt: string
 }
@@ -47,38 +53,37 @@ export const extractLabelValues = (value: unknown): string[] | undefined => {
 }
 
 /**
- * 下書き本体から一覧表示に必要な最小要件(先頭投稿の text/labels)を取り出す。
+ * 下書き本体（`posts` 配列全体）を一覧表示・フォーム復元に必要な形へ検証する。
  *
  * 処理の趣旨:
  * - 画像等の埋め込みはデバイスローカル参照のためこのアプリでは扱えず、
  *   langs/postgateEmbeddingRules/threadgateAllow も一覧表示や再利用では使わない。
+ * - `posts` が複数件ならスレッド（reply chain予定）の下書きとして扱う。
  *
  * Input:
  * - `value`: draft 候補
  *
  * Output:
- * - 検証済み `{ text, labels? }`。不正時は `undefined`
+ * - 検証済み `DraftPostPayload[]`（1件以上）。不正時は `undefined`
  *
  * 例:
- * - 入力: `{ posts: [{ text: "hello" }] }`
- * - 出力: `{ text: "hello" }`
+ * - 入力: `{ posts: [{ text: "hello" }, { text: "world" }] }`
+ * - 出力: `[{ text: "hello" }, { text: "world" }]`
  */
-export const parseDraft = (
-    value: unknown,
-): { text: string; labels?: string[] } | undefined => {
+export const parseDraft = (value: unknown): DraftPostPayload[] | undefined => {
     if (!isObjectRecord(value) || !Array.isArray(value.posts)) {
         return undefined
     }
 
-    const firstPost = value.posts[0]
-    if (!isObjectRecord(firstPost) || typeof firstPost.text !== "string") {
-        return undefined
+    const posts: DraftPostPayload[] = []
+    for (const post of value.posts) {
+        if (!isObjectRecord(post) || typeof post.text !== "string") {
+            return undefined
+        }
+        posts.push({ text: post.text, labels: extractLabelValues(post.labels) })
     }
 
-    return {
-        text: firstPost.text,
-        labels: extractLabelValues(firstPost.labels),
-    }
+    return posts.length > 0 ? posts : undefined
 }
 
 /**
@@ -104,40 +109,52 @@ export const parseDeleteDraftBody = (
 }
 
 /**
- * 下書き作成・更新で共通の本文(text/labels)を検証する。
+ * 下書き作成・更新で共通の `posts` 配列(1〜100件)を検証する。
  *
  * Input:
  * - `value`: JSON ボディ候補
  *
  * Output:
- * - 検証済み `{ text, labels? }`。不正時は `undefined`
+ * - 検証済み `DraftPostPayload[]`。不正時は `undefined`
  *
  * 例:
- * - 入力: `{ text: "hello", labels: ["sexual"] }`
- * - 出力: 同等オブジェクト
+ * - 入力: `{ posts: [{ text: "hello", labels: ["sexual"] }] }`
+ * - 出力: `[{ text: "hello", labels: ["sexual"] }]`
  */
-export const parseDraftPostInput = (
+export const parseDraftPostsInput = (
     value: unknown,
-): { text: string; labels?: string[] } | undefined => {
-    if (!isObjectRecord(value) || typeof value.text !== "string") {
+): DraftPostPayload[] | undefined => {
+    if (!isObjectRecord(value) || !Array.isArray(value.posts)) {
+        return undefined
+    }
+    if (value.posts.length < 1 || value.posts.length > 100) {
         return undefined
     }
 
-    if (value.labels !== undefined) {
-        if (
-            !Array.isArray(value.labels) ||
-            !value.labels.every(label => typeof label === "string")
-        ) {
+    const posts: DraftPostPayload[] = []
+    for (const post of value.posts) {
+        if (!isObjectRecord(post) || typeof post.text !== "string") {
             return undefined
         }
+
+        if (post.labels !== undefined) {
+            if (
+                !Array.isArray(post.labels) ||
+                !post.labels.every(label => typeof label === "string")
+            ) {
+                return undefined
+            }
+        }
+
+        posts.push({
+            text: post.text,
+            labels: Array.isArray(post.labels)
+                ? (post.labels as string[])
+                : undefined,
+        })
     }
 
-    return {
-        text: value.text,
-        labels: Array.isArray(value.labels)
-            ? (value.labels as string[])
-            : undefined,
-    }
+    return posts
 }
 
 /**
@@ -147,13 +164,19 @@ export const parseDraftPostInput = (
  * - `value`: JSON ボディ候補
  *
  * Output:
- * - 検証済み `{ text, labels? }`。不正時は `undefined`
+ * - 検証済み `{ posts }`。不正時は `undefined`
  *
  * 例:
- * - 入力: `{ text: "hello" }`
+ * - 入力: `{ posts: [{ text: "hello" }] }`
  * - 出力: 同等オブジェクト
  */
-export const parseCreateDraftBody = parseDraftPostInput
+export const parseCreateDraftBody = (
+    value: unknown,
+): { posts: DraftPostPayload[] } | undefined => {
+    const posts = parseDraftPostsInput(value)
+    if (!posts) return undefined
+    return { posts }
+}
 
 /**
  * 下書き更新リクエストを検証する。
@@ -162,25 +185,25 @@ export const parseCreateDraftBody = parseDraftPostInput
  * - `value`: JSON ボディ候補
  *
  * Output:
- * - 検証済み `{ id, text, labels? }`。不正時は `undefined`
+ * - 検証済み `{ id, posts }`。不正時は `undefined`
  *
  * 例:
- * - 入力: `{ id: "3ldrafttid", text: "hello" }`
+ * - 入力: `{ id: "3ldrafttid", posts: [{ text: "hello" }] }`
  * - 出力: 同等オブジェクト
  */
 export const parseUpdateDraftBody = (
     value: unknown,
-): { id: string; text: string; labels?: string[] } | undefined => {
+): { id: string; posts: DraftPostPayload[] } | undefined => {
     if (!isObjectRecord(value) || typeof value.id !== "string") {
         return undefined
     }
 
-    const body = parseDraftPostInput(value)
-    if (!body) {
+    const posts = parseDraftPostsInput(value)
+    if (!posts) {
         return undefined
     }
 
-    return { id: value.id, ...body }
+    return { id: value.id, posts }
 }
 
 /**
@@ -281,15 +304,14 @@ export const parseDraftViewsResponse = (
             return undefined
         }
 
-        const draft = parseDraft(draftView.draft)
-        if (!draft) {
+        const posts = parseDraft(draftView.draft)
+        if (!posts) {
             return undefined
         }
 
         parsedDrafts.push({
             id: draftView.id,
-            text: draft.text,
-            labels: draft.labels,
+            posts,
             createdAt: draftView.createdAt,
             updatedAt: draftView.updatedAt,
         })

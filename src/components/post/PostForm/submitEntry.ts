@@ -2,10 +2,9 @@
  * PostForm の投稿送信（OpenAPI契約への整形とAPI呼び出し）を担うモジュール。
  *
  * 責務と処理概要:
- * - 画像投稿は `createEntry`（skyshare entry を伴う）、テキスト・OGP投稿・
- *   手動画像添付投稿（`manualImageAttach` 有効時の画像投稿）は `createBskyRecord`
- *   （skyshare entry を伴わない）を呼び出す。手動画像添付投稿でも Bluesky への
- *   画像添付自体は行う。
+ * - `createEntry`（`POST /v2/entry`、旧`/v2/bsky/record`を統合した投稿作成エンドポイント）
+ *   を、`posts`配列に1件だけ包んで呼び出す。画像投稿かつ`manualImageAttach`が無効な場合のみ
+ *   `createEntry: true`を指定し、skyshare entryも合わせて作成する。
  * - 画像投稿では不足しうる `imagesMeta` を補完して送信する。
  * - バックエンドはfacetsの自動検出を行わない設計になったため、送信直前に
  *   `detectFacetsForSubmission`（クライアント側でのURL/メンション/ハッシュタグ検出、
@@ -13,9 +12,8 @@
  *   （PostFormがまだ手動でのfacet編集UIを持たないための互換動作）。
  * - API エラーコードをユーザー向け文言へ変換する。
  */
-import { createBskyRecord, createEntry } from "@/client/openapi/client"
+import { createEntry } from "@/client/openapi/client"
 import type {
-    CreateBskyRecordBody,
     CreateEntryBody,
     CreateEntryBodySelfLabels,
 } from "@/client/openapi/model"
@@ -156,9 +154,7 @@ const hasValidImageSize = (
  * - 入力: meta が完全な `ImageEntry`
  * - 出力: 既存 meta をそのまま返す
  */
-const resolveImageMetadata = async (
-    entry: ImageEntry,
-): Promise<NonNullable<CreateEntryBody["imagesMeta"]>> => {
+const resolveImageMetadata = async (entry: ImageEntry) => {
     const imageSizes = entry.meta ?? []
     const hasCompleteImageSizes =
         imageSizes.length === entry.originalBlobs.length &&
@@ -185,11 +181,11 @@ const resolveImageMetadata = async (
  * 投稿フォームの入力内容を OpenAPI 契約へ整形して送信する。
  *
  * 処理の趣旨:
- * - skyshare entry を作成するのは `manualImageAttach` が無効な画像投稿の場合のみ。
+ * - `createEntry`（`POST /v2/entry`）に`posts`配列を1件だけ包んで送る。skyshare entry を
+ *   作成するのは `manualImageAttach` が無効な画像投稿の場合のみ（`createEntry: true`）。
  *   `manualImageAttach` が有効な場合（skyshare entry を作らずBlueskyにのみ画像を
- *   添付したい場合）や、画像が無い投稿（テキスト投稿・OGP投稿）は skyshare entry
- *   を伴わないため、v2/bsky 名前空間の純粋な bypass エンドポイントを使う
- *   （画像添付自体はこの経路でも行う）。
+ *   添付したい場合）や、画像が無い投稿（テキスト投稿・OGP投稿）は`createEntry`を
+ *   指定しない（画像添付自体は`images`があれば行われる）。
  *
  * Input:
  * - `params`: 投稿内容一式
@@ -215,38 +211,9 @@ export const submitEntry = async (
     } = params
 
     const facets = await detectFacetsForSubmission(text)
+    const wantsSkyshareEntry = !!imageEntry && !manualImageAttach
 
-    if (imageEntry && !manualImageAttach) {
-        const payload: CreateEntryBody = {
-            text,
-            facets,
-            langs: [languageCode],
-            selfLabels: selfLabel,
-            ogImage: imageEntry.thumbnailBlob,
-            images: imageEntry.originalBlobs,
-            imagesMeta: await resolveImageMetadata(imageEntry),
-            gate: postGate,
-        }
-
-        const res = await createEntry(payload)
-        if (res.status !== 200) {
-            const errorCode =
-                "error" in res.data && typeof res.data.error === "string"
-                    ? res.data.error
-                    : "投稿に失敗しました。"
-            return { ok: false, message: resolveEntryErrorMessage(errorCode) }
-        }
-
-        await warmOgpCache(res.data.skyshare.uri)
-
-        return {
-            ok: true,
-            skyshareUri: res.data.skyshare.uri,
-            gateWarning: res.data.bsky.gateWarning ?? false,
-        }
-    }
-
-    const payload: CreateBskyRecordBody = {
+    const post: Record<string, unknown> = {
         text,
         facets,
         langs: [languageCode],
@@ -255,14 +222,20 @@ export const submitEntry = async (
     }
 
     if (imageEntry) {
-        payload.images = imageEntry.originalBlobs
-        payload.imagesMeta = await resolveImageMetadata(imageEntry)
-    } else if (ogpResult) {
-        payload.ogMeta = { ...ogpResult.meta, url: ogpResult.sourceUrl }
-        payload.ogImage = ogpResult.imageBlob
+        post.images = imageEntry.originalBlobs
+        post.imagesMeta = await resolveImageMetadata(imageEntry)
     }
 
-    const res = await createBskyRecord(payload)
+    if (wantsSkyshareEntry && imageEntry) {
+        post.ogImage = imageEntry.thumbnailBlob
+        post.createEntry = true
+    } else if (ogpResult) {
+        post.ogMeta = { ...ogpResult.meta, url: ogpResult.sourceUrl }
+        post.ogImage = ogpResult.imageBlob
+    }
+
+    const body = { posts: [post] } as unknown as CreateEntryBody
+    const res = await createEntry(body)
     if (res.status !== 200) {
         const errorCode =
             "error" in res.data && typeof res.data.error === "string"
@@ -271,9 +244,22 @@ export const submitEntry = async (
         return { ok: false, message: resolveEntryErrorMessage(errorCode) }
     }
 
+    const result = res.data.posts[0]
+    if (wantsSkyshareEntry) {
+        if (!result.skyshareEntry) {
+            return {
+                ok: false,
+                message: resolveEntryErrorMessage(
+                    "SKYSHARE_ENTRY_CREATE_FAILED",
+                ),
+            }
+        }
+        await warmOgpCache(result.skyshareEntry.uri)
+    }
+
     return {
         ok: true,
-        skyshareUri: "",
-        gateWarning: res.data.gateWarning ?? false,
+        skyshareUri: result.skyshareEntry?.uri ?? "",
+        gateWarning: false,
     }
 }

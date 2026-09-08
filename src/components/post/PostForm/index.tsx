@@ -479,13 +479,16 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
   const applyDraftToForm = (
     draft: ReturnType<typeof normalizeDraftList>[number],
   ) => {
+    // PostFormはまだスレッド(複数posts)入力UIを持たないため、先頭セグメントのみを
+    // フォームへ反映する(2件目以降を持つ下書きを開いた場合、それらは編集対象外になる)。
+    const firstPost = draft.posts[0]
     const label =
-      draft.labels && draft.labels[0]
-        ? (draft.labels[0] as CreateEntryBodySelfLabels)
+      firstPost?.labels && firstPost.labels[0]
+        ? (firstPost.labels[0] as CreateEntryBodySelfLabels)
         : undefined
-    setText(draft.text ?? "")
+    setText(firstPost?.text ?? "")
     setSelfLabel(label)
-    setLoadedDraft({ id: draft.id, text: draft.text ?? "", label })
+    setLoadedDraft({ id: draft.id, text: firstPost?.text ?? "", label })
     setStatus("下書きを反映しました。")
     setStatusColor("green")
   }
@@ -552,9 +555,10 @@ export const Component = forwardRef<PostFormHandle, Props>(function PostForm(
     setIsSavingDraft(true)
     try {
       const labels = selfLabel ? [selfLabel] : undefined
+      const posts = [{ text, labels }]
       const res = loadedDraft
-        ? await updateDraft({ id: loadedDraft.id, text, labels })
-        : await createDraft({ text, labels })
+        ? await updateDraft({ id: loadedDraft.id, posts })
+        : await createDraft({ posts })
 
       if (res.status !== 200) {
         setStatus("下書きの保存に失敗しました。")

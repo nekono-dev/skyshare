@@ -15,8 +15,10 @@ import type {
 } from "@atproto/api"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { resolveDisplayName } from "@/lib/atproto/profile"
+import { ENTRY_COLLECTION } from "@/lib/entry/entry"
 import {
-    createSkyshareEntry,
+    buildSkyshareEntryRecord,
+    toCreatedSkyshareEntry,
     type CreatedSkyshareEntry,
 } from "@/lib/entry/skyshareRecord"
 import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
@@ -123,26 +125,31 @@ export const createEntryFromExistingPost = async (
         session.handle,
     )
 
-    let skyshareEntry: CreatedSkyshareEntry | undefined
+    let skyshareEntry: CreatedSkyshareEntry
     try {
-        skyshareEntry = await createSkyshareEntry(
-            agent,
-            postUri,
-            postCid,
+        const createdAt = new Date().toISOString()
+        const record = buildSkyshareEntryRecord({
+            sourceUri: postUri,
+            sourceCid: postCid,
             visual,
             postText,
             userName,
-            session,
-        )
+            createdAt,
+        })
+        const createRecordRes = await agent.com.atproto.repo.createRecord({
+            repo: session.did,
+            collection: ENTRY_COLLECTION,
+            record,
+        })
+        skyshareEntry = toCreatedSkyshareEntry(record, session.did, {
+            uri: createRecordRes.data.uri,
+            cid: createRecordRes.data.cid,
+        })
     } catch (err) {
         console.error(
             "createEntry: dev.nekono.skyshare.entry create failed (from-post)",
             err,
         )
-        return { ok: false, status: 500 }
-    }
-
-    if (!skyshareEntry) {
         return { ok: false, status: 500 }
     }
 

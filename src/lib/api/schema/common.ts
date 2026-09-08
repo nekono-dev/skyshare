@@ -151,6 +151,33 @@ export const CommonFacetsSchema = z.array(CommonFacetSchema).meta({
 })
 export type CommonFacetsType = z.infer<typeof CommonFacetsSchema>
 
+/**
+ * AT Protocol公式lexicon(`com.atproto.repo.strongRef`)相当。レコードを一意に指す
+ * uri(at://...)とcid(コンテンツハッシュ)の組。
+ */
+export const CommonStrongRefSchema = z
+    .object({
+        uri: z.string().meta({
+            example:
+                "at://did:plc:examplefake000000000/app.bsky.feed.post/3lxyz",
+        }),
+        cid: z.string().meta({ example: "bafyexamplefakecid000000000" }),
+    })
+    .strict()
+export type CommonStrongRefType = z.infer<typeof CommonStrongRefSchema>
+
+/**
+ * AT Protocol公式lexicon(`app.bsky.feed.post#replyRef`)。スレッド(reply chain)の
+ * 起点(root)と直前の投稿(parent)を指す。
+ */
+export const CommonReplyRefSchema = z
+    .object({
+        root: CommonStrongRefSchema,
+        parent: CommonStrongRefSchema,
+    })
+    .strict()
+export type CommonReplyRefType = z.infer<typeof CommonReplyRefSchema>
+
 export const CommonCookieSchema = z
     .string()
     .meta({ example: "sid=abc123; Path=/; HttpOnly" })

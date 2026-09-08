@@ -6,12 +6,12 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import * as Common from "../../../common"
+import { DraftPostSchema } from "./post"
 
 export const RequestBodySchema = z
     .object({
         id: z.string(),
-        text: z.string(),
-        labels: z.array(z.string()).optional(),
+        posts: z.array(DraftPostSchema).min(1).max(100),
     })
     .strict()
 export type RequestBodyType = z.infer<typeof RequestBodySchema>

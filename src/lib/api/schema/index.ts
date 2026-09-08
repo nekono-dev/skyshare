@@ -26,7 +26,6 @@ import { operation as bskyDraftsPost } from "./v2/bsky/drafts/post"
 import { operation as bskyDraftsPut } from "./v2/bsky/drafts/put"
 import { operation as bskyDraftsDelete } from "./v2/bsky/drafts/delete"
 import { operation as bskyImagesGet } from "./v2/bsky/images/get"
-import { operation as bskyRecordPost } from "./v2/bsky/record/post"
 
 export const paths: ZodOpenApiPathsObject = {
     "/v1/extract/": { get: extractUrlGet },
@@ -48,5 +47,4 @@ export const paths: ZodOpenApiPathsObject = {
         delete: bskyDraftsDelete,
     },
     "/v2/bsky/images/": { get: bskyImagesGet },
-    "/v2/bsky/record/": { post: bskyRecordPost },
 }

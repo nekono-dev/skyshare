@@ -57,32 +57,43 @@ const DraftListRow = ({
 }: {
   item: DraftListItem
   onUse: (draft: DraftListItem) => void | Promise<void>
-}) => (
-  <div
-    role="button"
-    tabIndex={0}
-    className={`${styles.row} ${ui["card-select"]}`}
-    onClick={() => void onUse(item)}
-    onKeyDown={event => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault()
-        void onUse(item)
-      }
-    }}
-  >
-    <p className={styles.text}>{item.text || "（本文なし）"}</p>
-    <div className={styles.meta}>
-      {item.labels?.map(label => (
-        <span key={label} className={styles["label-pill"]}>
-          {LABEL_TEXT_BY_VALUE.get(label) ?? label}
+}) => {
+  // このパネルはまだスレッド(複数posts)の下書きを一覧上で個別表示するUIを持たないため、
+  // 先頭セグメントのみをプレビューとして表示する（2件目以降を持つ下書きも一覧には出る）。
+  const firstPost = item.posts[0]
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      className={`${styles.row} ${ui["card-select"]}`}
+      onClick={() => void onUse(item)}
+      onKeyDown={event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          void onUse(item)
+        }
+      }}
+    >
+      <p className={styles.text}>{firstPost?.text || "（本文なし）"}</p>
+      <div className={styles.meta}>
+        {firstPost?.labels?.map(label => (
+          <span key={label} className={styles["label-pill"]}>
+            {LABEL_TEXT_BY_VALUE.get(label) ?? label}
+          </span>
+        ))}
+        {item.posts.length > 1 && (
+          <span className={styles["label-pill"]}>
+            スレッド({item.posts.length}件)
+          </span>
+        )}
+        <span className={styles["updated-at"]}>
+          {formatUpdatedAt(item.updatedAt)}
         </span>
-      ))}
-      <span className={styles["updated-at"]}>
-        {formatUpdatedAt(item.updatedAt)}
-      </span>
+      </div>
     </div>
-  </div>
-)
+  )
+}
 
 const DraftListPanel = ({
   items,
