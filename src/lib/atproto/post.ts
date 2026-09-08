@@ -13,6 +13,17 @@ import { parseOwnedAtUri } from "@/lib/entry/url"
 export const BSKY_POST_COLLECTION = "app.bsky.feed.post"
 
 /**
+ * 1スレッド（reply chainで連結された投稿群）に含められる投稿の最大数。
+ *
+ * 趣旨:
+ * - `POST /v2/entry`の`posts`配列、`v2/bsky/drafts`の下書き`posts`配列の両方が
+ *   「スレッドの1セグメント」という同じ概念を表しているため、上限値をここに一本化する。
+ *   将来フロントエンドにスレッド作成UIを実装する際も、この定数を参照して
+ *   バックエンドと同じ上限をUI側で表示・制御できるようにする（`specs/threadpost/design.md`参照）。
+ */
+export const MAX_THREAD_POST_COUNT = 100
+
+/**
  * `app.bsky.feed.post` レコードの値を組み立てる（純粋関数、副作用なし）。
  *
  * 処理の趣旨:

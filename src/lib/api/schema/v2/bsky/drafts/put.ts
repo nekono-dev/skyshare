@@ -5,13 +5,14 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 import * as Common from "../../../common"
 import { DraftPostSchema } from "./post"
 
 export const RequestBodySchema = z
     .object({
         id: z.string(),
-        posts: z.array(DraftPostSchema).min(1).max(100),
+        posts: z.array(DraftPostSchema).min(1).max(MAX_THREAD_POST_COUNT),
     })
     .strict()
 export type RequestBodyType = z.infer<typeof RequestBodySchema>

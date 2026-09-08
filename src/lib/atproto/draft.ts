@@ -10,6 +10,7 @@
  */
 
 import { isObjectRecord } from "@/util/object"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 
 export type DraftPostPayload = {
     text: string
@@ -109,7 +110,7 @@ export const parseDeleteDraftBody = (
 }
 
 /**
- * 下書き作成・更新で共通の `posts` 配列(1〜100件)を検証する。
+ * 下書き作成・更新で共通の `posts` 配列(1件〜`MAX_THREAD_POST_COUNT`件)を検証する。
  *
  * Input:
  * - `value`: JSON ボディ候補
@@ -127,7 +128,10 @@ export const parseDraftPostsInput = (
     if (!isObjectRecord(value) || !Array.isArray(value.posts)) {
         return undefined
     }
-    if (value.posts.length < 1 || value.posts.length > 100) {
+    if (
+        value.posts.length < 1 ||
+        value.posts.length > MAX_THREAD_POST_COUNT
+    ) {
         return undefined
     }
 

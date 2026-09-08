@@ -25,6 +25,7 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import type { FormDataFieldKind } from "@/util/formData"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)
@@ -98,7 +99,10 @@ export const RequestBodySchema = z.union([
     // 新規投稿(1件、またはスレッドとして複数件)
     z
         .object({
-            posts: z.array(EntryPostItemSchema).min(1).max(100),
+            posts: z
+                .array(EntryPostItemSchema)
+                .min(1)
+                .max(MAX_THREAD_POST_COUNT),
             reply: Common.CommonReplyRefSchema.optional(),
         })
         .strict(),

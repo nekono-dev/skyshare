@@ -7,6 +7,7 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 import * as Common from "../../../common"
 
 export const DraftPostSchema = z
@@ -15,7 +16,9 @@ export const DraftPostSchema = z
 export type DraftPostType = z.infer<typeof DraftPostSchema>
 
 export const RequestBodySchema = z
-    .object({ posts: z.array(DraftPostSchema).min(1).max(100) })
+    .object({
+        posts: z.array(DraftPostSchema).min(1).max(MAX_THREAD_POST_COUNT),
+    })
     .strict()
 export type RequestBodyType = z.infer<typeof RequestBodySchema>
 
