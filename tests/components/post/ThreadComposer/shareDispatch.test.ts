@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { runShareDispatch } from "@/components/post/PostForm/shareDispatch"
+import { runShareDispatch } from "@/components/post/ThreadComposer/shareDispatch"
 import * as webShare from "@/util/share/webShare"
 import * as intent from "@/util/share/intent"
 

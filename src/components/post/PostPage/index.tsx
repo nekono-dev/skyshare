@@ -4,10 +4,10 @@
  * 責務と処理概要:
  * - `GET /v2/bsky/session` でログイン状態とアバターURLを解決する。
  * - 未ログイン（401）の場合はログインページへリダイレクトする。
- * - PostForm をダイアログではなくページ内容として直接マウントする。
+ * - ThreadComposer をダイアログではなくページ内容として直接マウントする。
  */
 import { useEffect, useState } from "react"
-import PostForm from "@/components/post/PostForm"
+import ThreadComposer from "@/components/post/ThreadComposer"
 import {
   getActiveAccountInfo,
   getSessionOnce,
@@ -78,7 +78,7 @@ const PostPage = () => {
           投稿ボタンはお試しいただけます。
         </p>
       )}
-      <PostForm
+      <ThreadComposer
         variant="page"
         avatarUrl={avatarUrl}
         accountDid={accountDid}

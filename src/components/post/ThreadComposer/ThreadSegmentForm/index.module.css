@@ -1,0 +1,98 @@
+.segment {
+  display: flex;
+  gap: var(--space-2);
+  position: relative;
+  padding: 0 var(--space-1);
+}
+
+.avatar-col {
+  flex: 0 0 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* アバター間を繋ぐ縦線。後続segmentが存在するsegmentのアバター下に表示する
+   （requirements.md §6.3: スレッドとしての連続性を視覚的に示す）。 */
+.connector-line {
+  flex: 1 1 auto;
+  width: 2px;
+  min-height: var(--space-2);
+  margin-top: var(--space-1);
+  background: var(--color-border);
+}
+
+.body {
+  flex: 1 1 auto;
+  position: relative;
+  min-width: 0;
+}
+
+/* 編集中でないsegment: 内容を簡略化しグレーアウト表示する（requirements.md §6.3）。 */
+.summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.summary-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-placeholder {
+  font-style: italic;
+}
+
+/* 編集中でないsegmentに画像がある場合のサムネイルプレビュー
+   （ImagePickerを再マウントしないため、segment.imageEntry.thumbnailPreviewを
+   そのまま読み取り専用で表示する）。 */
+.summary-thumbnail {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.remove-button {
+  flex: 0 0 auto;
+}
+
+.text-input-wrapper {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.drag-over {
+  outline: 2px dashed var(--color-bluesky);
+  outline-offset: -2px;
+}
+
+.drag-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.gate-button-active {
+  border-color: var(--color-bluesky);
+  color: var(--color-bluesky);
+}

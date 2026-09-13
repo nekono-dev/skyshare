@@ -102,6 +102,6 @@ Phase 6実装後、実際にスレッド投稿を試したところ2件の不具
 
 Phase 7で採用した`entrySource: "threadRoot"`方式は、`posts[i]`ごとにentryを個別指定できる汎用性を残したままレスポンスも`posts[i].skyshareEntry`に埋め込んでいたため、スレッド先頭以外のsegmentがvisual元になった場合にレスポンス構造がわかりにくい問題があった。この節で、entry作成をリクエスト全体につき1回（トップレベルの`createEntry`+`visual`）に統一し、レスポンスの`skyshareEntry`もトップレベルへ移す再設計を行う。詳細は各specの該当tasks.mdを参照。
 
-- [ ] `[BE]` `entrySource`フィールドの廃止、`createEntry`/`visual`のトップレベル化（[specs/entry/backend/tasks.md](../entry/backend/tasks.md) Phase 1）。
-- [ ] `[FE]` `submitThread.ts`の送信内容をトップレベル形式へ移行（[specs/entry/frontend/tasks.md](../entry/frontend/tasks.md) Phase 1）。
-- [ ] 上記完了後、本書（requirements.md §5・design.md §2.1・§4.5）の記述と実装が一致していることを確認する。
+- [x] `[BE]` `entrySource`フィールドの廃止、`createEntry`/`visual`のトップレベル化（[specs/entry/backend/tasks.md](../entry/backend/tasks.md) Phase 1）。
+- [x] `[FE]` `submitThread.ts`の送信内容をトップレベル形式へ移行（[specs/entry/frontend/tasks.md](../entry/frontend/tasks.md) Phase 1）。
+- [x] 上記完了後、本書（requirements.md §5・design.md §2.1・§4.5）の記述と実装が一致していることを確認した（`entrySource`関連の記述は残存していないことを確認済み）。

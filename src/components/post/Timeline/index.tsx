@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
- * - PostForm の投稿成功時に再取得トリガーを更新する。
+ * - ThreadComposer の投稿成功時に再取得トリガーを更新する。
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
@@ -21,7 +21,7 @@ import {
 import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
 import PostCard from "@/components/post/PostCard"
-import PostForm from "@/components/post/PostForm"
+import ThreadComposer from "@/components/post/ThreadComposer"
 import PostLauncher from "@/components/post/PostLauncher"
 import {
   getActiveAccountInfo,
@@ -66,7 +66,7 @@ const Component = ({ avatarUrl }: Props) => {
   // 実際の設定値はマウント後のuseEffectで反映する。ここをuseState(() =>
   // readPinnedFormDisabledSetting(false))のように初期化関数内でlocalStorageを
   // 読むと、クライアント初回レンダー（ハイドレーション）時点でSSR結果と異なる
-  // 値になり得て、PostForm(固定表示)とPostLauncherのどちらを描画するかが
+  // 値になり得て、ThreadComposer(固定表示)とPostLauncherのどちらを描画するかが
   // サーバー/クライアント間で食い違いhydration mismatchを起こす。
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
   useEffect(() => {
@@ -267,7 +267,7 @@ const Component = ({ avatarUrl }: Props) => {
       )}
       {!pinnedFormDisabled && (
         <div>
-          <PostForm
+          <ThreadComposer
             variant="page"
             avatarUrl={resolvedAvatarUrl}
             accountDid={resolvedDid}

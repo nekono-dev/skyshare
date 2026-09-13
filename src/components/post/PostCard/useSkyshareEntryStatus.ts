@@ -135,7 +135,7 @@ export const useSkyshareEntryStatus = (
                 const thumbnailBlob = await createDefaultThumbnail(objectUrls)
                 const res = await createEntry({
                     uri: item.uri,
-                    ogImage: thumbnailBlob,
+                    visual: thumbnailBlob,
                 })
                 if (res.status !== 200) {
                     setCreateError("skyshareページの作成に失敗しました。")
@@ -143,7 +143,7 @@ export const useSkyshareEntryStatus = (
                     return
                 }
 
-                const skyshare = res.data.posts[0]?.skyshareEntry
+                const skyshare = res.data.skyshareEntry
                 if (!skyshare?.atUri) {
                     setCreateError("skyshareページの作成に失敗しました。")
                     setState({ phase: "idle", entry: null })

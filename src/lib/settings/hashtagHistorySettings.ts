@@ -2,7 +2,7 @@
  * 投稿時に自分が使ったハッシュタグの履歴を localStorage で管理するユーティリティ。
  *
  * 責務と処理概要:
- * - PostForm のハッシュタグ候補（`src/components/post/PostForm/suggestHashtags.ts`）に、
+ * - PostForm のハッシュタグ候補（`src/components/post/ThreadComposer/suggestHashtags.ts`）に、
  *   Bluesky公開APIのグローバルなトレンド一覧（`app.bsky.unspecced.getTrendingTopics`）だけでは
  *   出せない「このブラウザで過去に自分が使ったタグ」を補うために使う。
  * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする

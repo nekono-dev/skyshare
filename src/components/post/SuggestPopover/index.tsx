@@ -3,15 +3,15 @@ import ComponentList from "@/components/common/ComponentList"
 import FloatingBox from "@/components/common/FloatingBox"
 import Avatar from "@/components/common/Avatar"
 import InlineIcon from "@/components/common/InlineIcon"
-import type { SuggestCandidate } from "@/components/post/PostForm/useSuggest"
+import type { SuggestCandidate } from "@/components/post/ThreadComposer/useSuggest"
 import styles from "./index.module.css"
 
 /**
- * PostFormのメンション/ハッシュタグ候補ポップアップ。
+ * ThreadComposerのメンション/ハッシュタグ候補ポップアップ。
  *
  * 責務と処理概要:
  * - 状態は一切持たないプレゼンテーショナルコンポーネント。開閉・候補内容・ハイライト位置は
- *   すべて `src/components/post/PostForm/useSuggest.ts` が管理する。
+ *   すべて `src/components/post/ThreadComposer/useSuggest.ts` が管理する。
  * - フローティング表示（ポータル・位置決め・常に最前面・スクロール/リサイズでの消去）は
  *   共通コンポーネント `FloatingBox` に委譲し、候補の反復描画は共通コンポーネント
  *   `ComponentList` に委譲する。

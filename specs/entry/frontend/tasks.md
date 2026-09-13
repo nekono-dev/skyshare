@@ -8,10 +8,10 @@
 
 前回セッションで実装された、`posts[i]`ごとの`createEntry`/`entrySource`送信を、トップレベル送信へ置き換える。
 
-- [ ] `src/components/post/ThreadComposer/submitThread.ts`の`buildPostItem`を変更し、`post.ogImage`/`post.createEntry`/`post.entrySource`（`posts[i]`側）への設定をやめる。
-- [ ] `submitThread`本体で、`entryCandidateIndex`（先頭の画像投稿segment、既存ロジックを維持）が見つかった場合にリクエストのトップレベル`createEntry: true`・`visual: <選択segmentのimageEntry.thumbnailBlob>`を設定するよう変更する。
-- [ ] レスポンスの読み取り箇所（`results[i]?.skyshareEntry`）を、トップレベルの`res.data.skyshareEntry`を読むように変更する。
-- [ ] `[TEST]` `tests/components/post/ThreadComposer/submitThread.test.ts`を、トップレベル送信・トップレベルレスポンス読み取りに合わせて全面更新する（画像投稿segment数0件・1件・2件以上の各分岐、単発投稿でのregressionが無いことを含む）。
+- [x] `src/components/post/ThreadComposer/submitThread.ts`の`buildPostItem`を変更し、`post.ogImage`/`post.createEntry`/`post.entrySource`（`posts[i]`側）への設定をやめる。
+- [x] `submitThread`本体で、`entryCandidateIndex`（先頭の画像投稿segment、既存ロジックを維持）が見つかった場合にリクエストのトップレベル`createEntry: true`・`visual: <選択segmentのimageEntry.thumbnailBlob>`を設定するよう変更する。
+- [x] レスポンスの読み取り箇所（`results[i]?.skyshareEntry`）を、トップレベルの`res.data.skyshareEntry`を読むように変更する。
+- [x] `[TEST]` `tests/components/post/ThreadComposer/submitThread.test.ts`を、トップレベル送信・トップレベルレスポンス読み取りに合わせて全面更新する（画像投稿segment数0件・1件・2件以上の各分岐、単発投稿でのregressionが無いことを含む）。
 
 ## Phase 2: entry詳細ページのスレッド表示（design.md §3.3対応）
 

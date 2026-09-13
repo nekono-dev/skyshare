@@ -13,28 +13,28 @@
 
 前回セッションで実装された`entrySource: "self" | "threadRoot"`（`posts[i]`ごとの個別選択）を、本設計へ置き換える。
 
-- [ ] `[BE]` `src/lib/api/schema/v2/entry/post.ts`の`EntryPostItemSchema`（3分岐すべて）から`createEntry`・`entrySource`フィールドを削除する。
-- [ ] `[BE]` `RequestBodySchema`の新規投稿分岐（`posts`を持つ方）に、トップレベルの`createEntry: z.boolean().optional()`・`visual: imageField.optional()`を追加する。
-- [ ] `[BE]` `RequestBodySchema`のfrom-post分岐（`{uri, ogImage}`）から`entrySource`を削除し、`ogImage`を`visual`へリネームする。
-- [ ] `[BE]` `RequestBodyFieldKinds`・`PostItemFieldKinds`（FormData種別マップ）を上記のフィールド移動に合わせて更新する。
-- [ ] `[BE]` `ResponseBody200Schema`を変更する。`posts[i]`から`skyshareEntry`を削除し、トップレベルに`skyshareEntry: SkyshareEntrySchema.optional()`を追加する。
-- [ ] `[BE]` `src/pages/v2/entry.ts`のPOSTハンドラを更新する（design.md §3.3）。トップレベル`createEntry:true`の検証（`posts`に画像投稿が1件以上・`visual`必須）をフェーズ5に追加し、`posts[i]`ごとの`createEntry`判定コードを削除する。
-- [ ] `[BE]` `src/lib/entry/createBskyThread.ts`を更新する（design.md §3.5・§7.2）。entry作成対象の`posts[i]`を選ぶロジックを削除し、`createEntry:true`なら常に`source = posts[0]`・`visual`はリクエストのトップレベル値を使ってentryレコードを1件だけ組み立てるようにする。戻り値の型を`{ posts: [...], skyshareEntry? }`（トップレベル）に変更する。
-- [ ] `[BE]` `src/lib/entry/fromPost.ts`の`resolveFromPostSource`を、`entrySource`引数を受け取らず常に「`reply.root`があり自分自身のrepoならroot、それ以外は自身」を返すように簡略化する。`ogImage`パラメータ名を`visual`に統一する。
-- [ ] `[TEST]` `tests/lib/entry/createBskyThread.test.ts`を新設計に合わせて全面更新する（トップレベル`createEntry`・`visual`、`source`が常に`posts[0]`になること、`entrySource`関連テストの削除）。
-- [ ] `[TEST]` `tests/lib/entry/fromPost.test.ts`を、`entrySource`引数を削除した`resolveFromPostSource`のシグネチャに合わせて更新する。
-- [ ] `[TEST]` `tests/pages/v2/entry.test.ts`を新しいリクエスト/レスポンス形状に合わせて全面更新する（requirements.md §5の該当受け入れ条件）。
-- [ ] `[TEST]` `tests/lib/api/schema/entryPost.test.ts`を新しいスキーマ（トップレベル`createEntry`/`visual`、`posts[i]`から除去されたフィールド）に合わせて更新する。
+- [x] `[BE]` `src/lib/api/schema/v2/entry/post.ts`の`EntryPostItemSchema`（3分岐すべて）から`createEntry`・`entrySource`フィールドを削除する。
+- [x] `[BE]` `RequestBodySchema`の新規投稿分岐（`posts`を持つ方）に、トップレベルの`createEntry: z.boolean().optional()`・`visual: imageField.optional()`を追加する。
+- [x] `[BE]` `RequestBodySchema`のfrom-post分岐（`{uri, ogImage}`）から`entrySource`を削除し、`ogImage`を`visual`へリネームする。
+- [x] `[BE]` `RequestBodyFieldKinds`・`PostItemFieldKinds`（FormData種別マップ）を上記のフィールド移動に合わせて更新する。
+- [x] `[BE]` `ResponseBody200Schema`を変更する。`posts[i]`から`skyshareEntry`を削除し、トップレベルに`skyshareEntry: SkyshareEntrySchema.optional()`を追加する。
+- [x] `[BE]` `src/pages/v2/entry.ts`のPOSTハンドラを更新する（design.md §3.3）。トップレベル`createEntry:true`の検証（`posts`に画像投稿が1件以上・`visual`必須）をフェーズ5に追加し、`posts[i]`ごとの`createEntry`判定コードを削除する。
+- [x] `[BE]` `src/lib/entry/createBskyThread.ts`を更新する（design.md §3.5・§7.2）。entry作成対象の`posts[i]`を選ぶロジックを削除し、`createEntry:true`なら常に`source = posts[0]`・`visual`はリクエストのトップレベル値を使ってentryレコードを1件だけ組み立てるようにする。戻り値の型を`{ posts: [...], skyshareEntry? }`（トップレベル）に変更する。
+- [x] `[BE]` `src/lib/entry/fromPost.ts`の`resolveFromPostSource`を、`entrySource`引数を受け取らず常に「`reply.root`があり自分自身のrepoならroot、それ以外は自身」を返すように簡略化する。`ogImage`パラメータ名を`visual`に統一する。
+- [x] `[TEST]` `tests/lib/entry/createBskyThread.test.ts`を新設計に合わせて全面更新する（トップレベル`createEntry`・`visual`、`source`が常に`posts[0]`になること、`entrySource`関連テストの削除）。
+- [x] `[TEST]` `tests/lib/entry/fromPost.test.ts`を、`entrySource`引数を削除した`resolveFromPostSource`のシグネチャに合わせて更新する。
+- [x] `[TEST]` `tests/pages/v2/entry.test.ts`を新しいリクエスト/レスポンス形状に合わせて全面更新する（requirements.md §5の該当受け入れ条件）。
+- [x] `[TEST]` `tests/lib/api/schema/entryPost.test.ts`を新しいスキーマ（トップレベル`createEntry`/`visual`、`posts[i]`から除去されたフィールド）に合わせて更新する。
 
 ## Phase 2: entry削除時のスレッド全体削除（design.md §7.4対応）
 
-- [ ] `[BE]` `src/lib/api/schema/v2/entry/delete.ts`に`deleteBskyThread: z.boolean().optional()`を追加し、`deleteBskyPost`が`true`でないのに`deleteBskyThread: true`のみが指定された場合を`.strict()`＋`superRefine`等で拒否する。
-- [ ] `[BE]` 削除対象の後続投稿群を`source.uri`から`app.bsky.feed.getPostThread`で辿って導出するロジックを実装する（design.md §7.4.1）。呼び出し者自身が投稿した直線的なreply chainのみを対象とし、各投稿の所有者（DID）を1件ずつ検証してから削除対象に含める。探索件数の上限に`MAX_THREAD_POST_COUNT`を用いる。
-- [ ] `[BE]` `src/pages/v2/entry.ts`のDELETEハンドラに、`deleteBskyThread:true`時の分岐（導出した全投稿を1回の`applyWrites`で削除）を追加する。この削除の失敗はentry削除の成功可否に影響させない（既存の不変条件を維持）。
-- [ ] `[TEST]` 削除対象導出ロジックの単体テストを追加する（自己投稿のみの直線的chain抽出、第三者の返信で分岐した先を含めないこと、所有者検証で弾かれるケース）。
-- [ ] `[TEST]` `tests/pages/v2/entry.test.ts`に、requirements.md §5の該当受け入れ条件（スレッド全体削除関連）を追加する。
+- [x] `[BE]` `src/lib/api/schema/v2/entry/delete.ts`に`deleteBskyThread: z.boolean().optional()`を追加し、`deleteBskyPost`が`true`でないのに`deleteBskyThread: true`のみが指定された場合を`.strict()`＋`superRefine`等で拒否する。
+- [x] `[BE]` 削除対象の後続投稿群を`source.uri`から`app.bsky.feed.getPostThread`で辿って導出するロジックを実装する（design.md §7.4.1）。呼び出し者自身が投稿した直線的なreply chainのみを対象とし、各投稿の所有者（DID）を1件ずつ検証してから削除対象に含める。探索件数の上限に`MAX_THREAD_POST_COUNT`を用いる。
+- [x] `[BE]` `src/pages/v2/entry.ts`のDELETEハンドラに、`deleteBskyThread:true`時の分岐（導出した全投稿を1回の`applyWrites`で削除）を追加する。この削除の失敗はentry削除の成功可否に影響させない（既存の不変条件を維持）。
+- [x] `[TEST]` 削除対象導出ロジックの単体テストを追加する（自己投稿のみの直線的chain抽出、第三者の返信で分岐した先を含めないこと、所有者検証で弾かれるケース）。
+- [x] `[TEST]` `tests/pages/v2/entry.test.ts`に、requirements.md §5の該当受け入れ条件（スレッド全体削除関連）を追加する。
 
 ## Phase 3: 仕上げ
 
-- [ ] `npm run codegen`を実行し、新しいリクエスト/レスポンス形状（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）でOpenAPIドキュメント・フロントエンド用クライアントを再生成する。
-- [ ] `npx vitest run`・`npx tsc --noEmit`が全件成功することを確認する。
+- [x] `npm run codegen`を実行し、新しいリクエスト/レスポンス形状（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）でOpenAPIドキュメント・フロントエンド用クライアントを再生成する。
+- [x] `npx vitest run`・`npx tsc --noEmit`が全件成功することを確認する。

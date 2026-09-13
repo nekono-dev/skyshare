@@ -2,7 +2,7 @@
  * 投稿フォームの @メンション/#ハッシュタグ候補表示のON/OFF設定を localStorage で管理するユーティリティ。
  *
  * 責務と処理概要:
- * - `useSuggest`（`src/components/post/PostForm/useSuggest.ts`）が候補ポップアップ自体を
+ * - `useSuggest`（`src/components/post/ThreadComposer/useSuggest.ts`）が候補ポップアップ自体を
  *   出すかどうかの判定に使う。
  * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする
  *   （`src/lib/settings/shareSettings.ts` と同じ方針）。
