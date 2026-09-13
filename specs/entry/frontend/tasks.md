@@ -27,16 +27,15 @@
 
 ## Phase 3: entry削除時のスレッド全体削除オプション（design.md §3.4対応）
 
-- [ ] entry所有者向けの削除確認UIを共通コンポーネントとして実装し、entry詳細ページ・Timeline（PostCard）の双方から呼び出せるようにする（Timeline側の呼び出し配置自体は[specs/timeline/tasks.md](../../timeline/tasks.md)の対象）。
-- [ ] 削除確認ダイアログを開くタイミングで、「`source`がスレッド先頭かつentry所有者自身の後続投稿が存在するか」を判定するロジックを実装する。詳細ページからの削除ではPhase 2で取得済みのスレッド情報を再利用し、追加のAPI呼び出しを避ける。
-- [ ] 事前にスレッド情報を持たない削除導線で、ダイアログを開いた時点で`getPostThread`を呼び出す分岐を実装する。
-- [ ] 判定結果に応じて「スレッド全体を削除」の選択肢を出し分ける。
-- [ ] 「スレッド全体を削除」選択時に`DELETE /v2/entry`へ`deleteBskyPost: true`・`deleteBskyThread: true`を送信する。
-- [ ] 削除確認ダイアログの文言・レイアウトを実装する（スレッド全体削除時は、後続の自己投稿もすべて削除される旨・元に戻せない旨を明示する）。
-- [ ] `[TEST]` 「スレッド全体を削除」選択肢の出し分け判定ロジックの単体テストを追加する。
-- [ ] `[TEST]` Playwrightで以下のシナリオを検証する:
-  - スレッド由来entry（後続の自己投稿あり）の詳細ページで削除ダイアログを開く → 「entryのみ削除」「entry＋元投稿を削除」に加えて「スレッド全体を削除」が表示されることを確認
-  - 単発投稿由来entryの詳細ページで削除ダイアログを開く → 「スレッド全体を削除」が表示されず2択のままであることを確認
+**スコープ決定（実装時、ユーザー確認済み）**: `entries/[slug].astro`（公開ページ）は現状、所有者判定・インタラクティブUIを一切持たない完全公開SSRページであり、削除UIを追加するには新規のDID判定Reactアイランドが必要になる。実装コスト対効果を踏まえ、今回は既存の所有者限定管理ページ`/entries`（`EntryCard`、`GET /v2/entries/skyshare`がCookie認証済みで所有者制御が自然に効く）のみに「スレッド全体を削除」を追加する。`entries/[slug].astro`・Timeline（PostCard）への追加は将来対応として見送る（`EntryDeleteConfirmDialog`は共通コンポーネントのまま拡張したため、追加時の変更は呼び出し元の配線のみで済む）。
+
+- [x] entry所有者向けの削除確認UI（`EntryDeleteConfirmDialog`）に`showThreadOption`/`onDeleteThread`propsを追加し、共通コンポーネントのまま拡張する。`EntryCard`から利用する。
+- [x] 削除確認ダイアログを開くタイミングで、「`source`がスレッド先頭かつentry所有者自身の後続投稿が存在するか」を判定するロジック（`resolveThreadDeleteOption`、`src/components/entry/EntryCard/resolveThreadDeleteOption.ts`）を実装する。`sourceUri`のrepo（DID）がentry所有者自身であることを利用し、追加のセッション取得なしで`getPostThread`→`extractOwnedLinearReplyChain`（entry/backend Phase2・entry/frontend Phase2と共通）で判定する。
+- [x] 判定結果に応じて「スレッド全体を削除」の選択肢を出し分ける。
+- [x] 「スレッド全体を削除」選択時に`DELETE /v2/entry`へ`deleteBskyPost: true`・`deleteBskyThread: true`を送信する。
+- [x] 削除確認ダイアログの文言を実装する（「リンク・スレッド全体を削除（後続の自己投稿もすべて削除、元に戻せません）」）。
+- [x] `[TEST]` `resolveThreadDeleteOption`の単体テストを追加する（`tests/components/entry/EntryCard/resolveThreadDeleteOption.test.ts`: 不正なsourceUri、後続投稿なし、後続の自己投稿あり、getPostThread失敗の4分岐）。
+- [ ] `[TEST]` Playwrightで削除フロー（「スレッド全体を削除」の出し分け・選択・実行）を検証する。ゲストモード（`/entries/?guest`）は削除ボタン自体が無効化されているため検証不可。実アカウントでの確認が必要（要ログイン、次回セッション以降または利用者による確認が必要）。
   - 「スレッド全体を削除」を選んで削除を実行 → 削除成功後にentryが一覧・詳細ページから消えることを確認
 
 ## Phase 4: entry詳細ページでの視覚的区別（design.md §3.5対応）

@@ -55,7 +55,7 @@
 
 ### 3.4 entry削除時のスレッド全体削除オプション（FR-5対応）
 
-- 削除確認UIは、entry所有者向けの共通コンポーネントとして実装し、entry詳細ページ・Timeline（PostCard）いずれの削除導線からも同じロジックを呼び出す（Timeline側の呼び出し配置は[specs/timeline/design.md](../../timeline/design.md)が定める）。削除対象entryの`source`が実際にスレッド先頭であり、かつentry所有者自身の後続投稿が存在するかどうかを、削除ダイアログを開くタイミングで判定する。この判定には3.3節と同じスレッド取得結果（`getPostThread`によるreply chain取得＋所有者一致フィルタ）を利用できる。詳細ページから削除する場合は3.3節で既に取得済みのスレッド情報を再利用し、追加のAPI呼び出しを避ける。事前にスレッド情報を持たない導線から削除する場合は、削除ダイアログを開いた時点で`getPostThread`を呼び出して同じ判定を行う。
+- 削除確認UI（`EntryDeleteConfirmDialog`）は、entry所有者向けの共通コンポーネントとして実装し、複数の削除導線から同じコンポーネントを呼び出せる（`showThreadOption`/`onDeleteThread` propsで出し分け）。**実装時の決定**: `entries/[slug].astro`（公開ページ、所有者判定を持たない）に新規の所有者判定UIを追加するコストと、既存の所有者限定管理ページ`/entries`（`EntryCard`、Cookie認証済みAPIにより所有者制御が自然に効く）で同機能を提供できることを比較し、今回は`/entries`（`EntryCard`）のみに実装した。`entries/[slug].astro`・Timeline（PostCard）への追加は将来対応として見送る（Timeline側の呼び出し配置は[specs/timeline/design.md](../../timeline/design.md)が定める）。削除対象entryの`source`が実際にスレッド先頭であり、かつentry所有者自身の後続投稿が存在するかどうかは、削除ダイアログを開くタイミングで`getPostThread`（3.3節と同じ抽出ロジック、`extractOwnedLinearReplyChain`）を呼んで判定する。`EntryCard`が持つ`item.sourceUri`のrepo（DID）自体がentry所有者のDIDと一致するため、追加のセッション取得は不要。
 - 判定結果が「後続の自己投稿が2件以上（`source`自身を含む）」の場合のみ、削除ダイアログに「スレッド全体を削除」の選択肢を追加表示する。1件のみ（`source`が単発投稿）の場合は、既存の「entryのみ削除」「entry＋元投稿を削除」の2択のままとする。
 - 「スレッド全体を削除」が選ばれた場合、`DELETE /v2/entry`に`deleteBskyPost: true`と`deleteBskyThread: true`をあわせて送信する（[specs/entry/backend/design.md §5.1](../backend/design.md#51-リクエスト形式)）。フロントエンドは削除対象の投稿一覧を自ら組み立てて送信する必要はない（サーバが`source`から導出する。[specs/entry/backend/design.md §7.4.1](../backend/design.md#741-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)）。
 - 削除確認ダイアログの文言は、「スレッド全体を削除」を選んだ場合、後続の自己投稿もすべて削除される旨・元に戻せない旨を明示する（第三者の返信は削除されず残る点も、必要に応じて注記する）。具体的な文言・レイアウトは実装時に決定する（tasks.md対象）。
