@@ -70,15 +70,38 @@
 - [x] 上記を反映して `specs/threadpost/requirements.md` ・ `design.md` を更新する。
 - [x] `.claude/skills/spec-driven-development/SKILL.md` の仕様書レビューチェックリストに基づき、本ディレクトリの3ファイルをセルフレビューする。
 
-## Phase 6: フロントエンド実装（Phase 5完了後） 【未着手】
+## Phase 6: フロントエンド実装（Phase 5完了後） 【完了】
 
-- [ ] `ThreadComposer`・`ThreadSegmentForm`を実装する（design.md §4.1）。
-- [ ] 既存`PostForm`から共通の入力プリミティブ（`ImagePicker`呼び出し・facetツールバー・gate設定UI等）を切り出し、`ThreadSegmentForm`から利用できるようにする。
-- [ ] セグメントの追加・削除、`activeIndex`の切り替え、非アクティブセグメントのグレーアウト表示を実装する（requirements.md §6.3の受け入れ条件に対応）。
-- [ ] スレッド全体を1回の`POST /v2/entry`にまとめて送信する処理を実装する（design.md §4.3）。
-- [ ] スレッド全体の下書き保存・復元を実装する（design.md §4.4）。
-- [ ] `npm run codegen` を実行し、生成された型でフロントエンドを実装する。
-- [ ] `[TEST]` `ThreadComposer`/`ThreadSegmentForm`のセグメント追加・削除・`posts`配列への変換ロジックの単体テストを追加する。
-- [ ] 手動確認: 3件以上のセグメントを作成し、順に投稿してBluesky上で正しいスレッドとして表示されることを確認する。
-- [ ] 手動確認: 既存の`/`（Timeline）・既存PostFormの投稿導線にregressionがないことを確認する。
-- [ ] `[TEST]` 全体の `npx vitest run` を実行し、既存テストを含めてすべてパスすることを確認する。
+- [x] `ThreadComposer`・`ThreadSegmentForm`を実装する（design.md §4.1）。`src/components/post/PostForm/`を`src/components/post/ThreadComposer/`へリネームし、単発投稿専用だった状態管理を`segments`配列 + `activeIndex`へ一般化した（design.md §4.1に記載の通り、当初想定していた「`PostForm`と`ThreadComposer`の併存」ではなく、`PostForm`を`ThreadComposer`へ一般化する方式に変更した）。
+- [x] 既存の入力プリミティブ（`ImagePicker`・`OgpFetchButton`・`PostGateDialog`・`SelfLabelsSelect`・`LanguageSelect`・`useSuggest`・`useKeyboardRows`・`PostBodyEditor`等）をセグメント単位で個別にインスタンス化する形で`ThreadSegmentForm`から利用できるようにした。
+- [x] セグメントの追加・削除、`activeIndex`の切り替え、非アクティブセグメントのグレーアウト表示を実装する（requirements.md §6.3の受け入れ条件に対応）。削除ルール（先頭segmentは削除不可）を確定・実装した。
+- [x] スレッド全体を1回の`POST /v2/entry`にまとめて送信する処理を実装する（design.md §4.3、`submitThread.ts`）。画像投稿segmentのentry作成方針（先頭を自動選択、requirements.md §5）はPhase 7で仕様確定・実装した。
+- [x] スレッド全体の下書き保存・復元を実装する（design.md §4.4、`segments.ts`の`segmentsToDraftPosts`/`draftPostsToSegments`）。
+- [x] クロスポスト（自動ポップアップ・WebShareAPI）は先頭segmentのみを対象とする方針を決定・実装した（design.md §4.3に追記）。
+- [x] `[TEST]` `ThreadComposer`/`ThreadSegmentForm`のセグメント追加・削除・`posts`配列への変換ロジックの単体テストを追加する（`tests/components/post/ThreadComposer/segments.test.ts`・`submitThread.test.ts`）。
+- [x] `npx tsc --noEmit`・`npx vitest run`（531件）が全件成功することを確認した。
+- [ ] 手動確認: 実際のBlueskyアカウントで3件以上のセグメントを作成し、順に投稿してBluesky上で正しいスレッドとして表示されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
+- [ ] 手動確認: 既存の`/`（Timeline）・投稿フォームの投稿導線にregressionがないことを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
+
+## Phase 7: 実運用で見つかった不具合の修正（entry作成先・画像プレビュー永続化） 【完了】
+
+Phase 6実装後、実際にスレッド投稿を試したところ2件の不具合が見つかり、仕様の見直しとあわせて修正した。
+
+- [x] 画像投稿segmentが複数あるスレッドで、entryのsourceが常にそのsegment自身を指す（スレッド先頭を代表させるthreadRoot方式が未実装だった）問題を調査し、`specs/entry/backend`・`specs/entry/frontend`が既に設計していた`entrySource: "threadRoot"`方式を採用することを確定した（requirements.md §5を更新）。
+- [x] `[BE]` `entrySource`フィールド・source解決ロジックを実装した（`specs/entry/backend/tasks.md` Phase 1）。
+- [x] `[FE]` `submitThread.ts`を、画像投稿segmentが2件以上ある場合は先頭のみを自動選択してentryを作成し、スレッドでは`entrySource: "threadRoot"`を明示送信するよう変更した（`specs/entry/frontend/tasks.md` Phase 1）。
+- [x] UIバグ: `ThreadSegmentForm`が`isActive`でJSXを丸ごと出し分けていたため、非アクティブ化のたびに`ImagePicker`がアンマウントされ、画像プレビューが消えて見える不具合を修正した。フル編集UIブロック・簡略表示ブロックの両方を常時マウントし`hidden`属性で切り替える方式に変更した（design.md §4.1）。
+- [x] 非アクティブなsegmentに画像が添付されている場合、読み取り専用のサムネイルプレビュー（`ImageEntry.thumbnailPreview`）を表示するようにした（requirements.md §6.3）。
+- [x] `[TEST]` `tests/lib/entry/createBskyThread.test.ts`（新規）・`tests/lib/entry/fromPost.test.ts`・`tests/pages/v2/entry.test.ts`に`entrySource`関連のテストを追加した。
+- [x] `[TEST]` `tests/components/post/ThreadComposer/submitThread.test.ts`を先頭自動選択の挙動に合わせて更新した。
+- [x] `[TEST]` Playwrightを導入し（`.claude/skills/spec-driven-development/SKILL.md`のUI実装検証方針に基づく）、`tests/e2e/threadComposer.spec.ts`でセグメント追加・画像添付・非アクティブ化からの再アクティブ化・削除ルールをヘッドレスブラウザで検証した（`npm run test:e2e`）。
+- [x] `npx tsc --noEmit`・`npx vitest run`・`npx playwright test`が全件成功することを確認した。
+- [ ] 手動確認: 実際のBlueskyアカウントで、画像投稿segmentを2件以上含むスレッドを投稿し、entryが1件のみ作成されそのsourceがスレッド先頭を指すことを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
+
+## Phase 8: レスポンス形状の見直し（`entrySource`方式からトップレベル`createEntry`/`visual`方式への置き換え）
+
+Phase 7で採用した`entrySource: "threadRoot"`方式は、`posts[i]`ごとにentryを個別指定できる汎用性を残したままレスポンスも`posts[i].skyshareEntry`に埋め込んでいたため、スレッド先頭以外のsegmentがvisual元になった場合にレスポンス構造がわかりにくい問題があった。この節で、entry作成をリクエスト全体につき1回（トップレベルの`createEntry`+`visual`）に統一し、レスポンスの`skyshareEntry`もトップレベルへ移す再設計を行う。詳細は各specの該当tasks.mdを参照。
+
+- [ ] `[BE]` `entrySource`フィールドの廃止、`createEntry`/`visual`のトップレベル化（[specs/entry/backend/tasks.md](../entry/backend/tasks.md) Phase 1）。
+- [ ] `[FE]` `submitThread.ts`の送信内容をトップレベル形式へ移行（[specs/entry/frontend/tasks.md](../entry/frontend/tasks.md) Phase 1）。
+- [ ] 上記完了後、本書（requirements.md §5・design.md §2.1・§4.5）の記述と実装が一致していることを確認する。

@@ -16,10 +16,10 @@ Skyshareは、Bluesky投稿（`app.bsky.feed.post`）とは別に、独自レコ
 
 lexicon（AT Protocolのスキーマ定義）は逆順FQDN（`dev.nekono.skyshare.*`）で命名され、DNS TXTレコードによる所有権証明（`_lexicon.skyshare.nekono.dev`）とGoATツールによるPDSへの公開を経て運用される（[lexicons/README.md](../../../lexicons/README.md)）。
 
-| NSID | lexiconファイル | 役割 |
-|---|---|---|
-| `dev.nekono.skyshare.entry` | [entry.json](../../../lexicons/dev/nekono/skyshare/entry.json) | レコード本体（`main`、`record`型） |
-| `dev.nekono.skyshare.defs` | [defs.json](../../../lexicons/dev/nekono/skyshare/defs.json) | 共有定義。現状は`manifest`のみを持つ |
+| NSID                        | lexiconファイル                                                | 役割                                 |
+| --------------------------- | -------------------------------------------------------------- | ------------------------------------ |
+| `dev.nekono.skyshare.entry` | [entry.json](../../../lexicons/dev/nekono/skyshare/entry.json) | レコード本体（`main`、`record`型）   |
+| `dev.nekono.skyshare.defs`  | [defs.json](../../../lexicons/dev/nekono/skyshare/defs.json)   | 共有定義。現状は`manifest`のみを持つ |
 
 ## 2. `dev.nekono.skyshare.entry`（レコード本体）
 
@@ -33,11 +33,11 @@ lexicon（AT Protocolのスキーマ定義）は逆順FQDN（`dev.nekono.skyshar
 }
 ```
 
-| フィールド | 型 | 必須 | 説明 |
-|---|---|---|---|
-| `source` | `com.atproto.repo.strongRef`（`{uri, cid}`） | 必須 | このentryの派生元となる、他のATレコードへの参照 |
-| `manifest` | `dev.nekono.skyshare.defs#manifest`への参照 | 必須 | 表示用の固定情報（3節参照） |
-| `createdAt` | ISO 8601 datetime文字列 | 必須 | entry自体の作成日時 |
+| フィールド  | 型                                           | 必須 | 説明                                            |
+| ----------- | -------------------------------------------- | ---- | ----------------------------------------------- |
+| `source`    | `com.atproto.repo.strongRef`（`{uri, cid}`） | 必須 | このentryの派生元となる、他のATレコードへの参照 |
+| `manifest`  | `dev.nekono.skyshare.defs#manifest`への参照  | 必須 | 表示用の固定情報（3節参照）                     |
+| `createdAt` | ISO 8601 datetime文字列                      | 必須 | entry自体の作成日時                             |
 
 `source`は`com.atproto.repo.strongRef`という汎用のuri/cid参照であり、lexicon定義上は参照先のcollection種別を制約しない（`app.bsky.feed.post`に限定する記述はlexicon側には存在しない）。
 
@@ -53,11 +53,11 @@ lexicon（AT Protocolのスキーマ定義）は逆順FQDN（`dev.nekono.skyshar
 }
 ```
 
-| フィールド | 型 | 必須 | 説明 |
-|---|---|---|---|
-| `visual` | blob（`accept: image/png, image/jpeg, image/webp`） | 必須 | entryの代表画像 |
-| `heading` | string（`maxLength: 100`） | 任意 | 見出し |
-| `caption` | string（`maxLength: 300`） | 任意 | 説明文 |
+| フィールド | 型                                                  | 必須 | 説明            |
+| ---------- | --------------------------------------------------- | ---- | --------------- |
+| `visual`   | blob（`accept: image/png, image/jpeg, image/webp`） | 必須 | entryの代表画像 |
+| `heading`  | string（`maxLength: 100`）                          | 任意 | 見出し          |
+| `caption`  | string（`maxLength: 300`）                          | 任意 | 説明文          |
 
 `heading`/`caption`はいずれも`required`配列に含まれておらず、lexicon上は「見出し・説明文の無いentry」も許容するスキーマになっている。
 

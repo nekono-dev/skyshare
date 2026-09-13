@@ -14,9 +14,9 @@
 
 ## 参考: 現在この横断パターンに従っている実装
 
-| パターン | 実装箇所 | 実装作業を管理するtasks.md |
-|---|---|---|
-| 所有権検証（FR-1） | [src/lib/entry/url.ts](../../src/lib/entry/url.ts)の`parseOwnedAtUri` | [specs/entry/backend/tasks.md](../entry/backend/tasks.md) |
-| 原子的な複数レコード書き込み（FR-2） | [src/lib/entry/createBskyThread.ts](../../src/lib/entry/createBskyThread.ts) | [specs/threadpost/tasks.md](../threadpost/tasks.md) |
-| lexicon簡略化（FR-3） | [src/lib/atproto/gate.ts](../../src/lib/atproto/gate.ts)のbuilder関数群 | [specs/entry/backend/tasks.md](../entry/backend/tasks.md) |
-| スレッド上限値の共有（FR-4） | [src/lib/atproto/post.ts](../../src/lib/atproto/post.ts)の`MAX_THREAD_POST_COUNT` | [specs/entry/backend/tasks.md](../entry/backend/tasks.md)（前提条件として実装済み） |
+| パターン                             | 実装箇所                                                                          | 実装作業を管理するtasks.md                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 所有権検証（FR-1）                   | [src/lib/entry/url.ts](../../src/lib/entry/url.ts)の`parseOwnedAtUri`             | [specs/entry/backend/tasks.md](../entry/backend/tasks.md)                           |
+| 原子的な複数レコード書き込み（FR-2） | [src/lib/entry/createBskyThread.ts](../../src/lib/entry/createBskyThread.ts)      | [specs/threadpost/tasks.md](../threadpost/tasks.md)                                 |
+| lexicon簡略化（FR-3）                | [src/lib/atproto/gate.ts](../../src/lib/atproto/gate.ts)のbuilder関数群           | [specs/entry/backend/tasks.md](../entry/backend/tasks.md)                           |
+| スレッド上限値の共有（FR-4）         | [src/lib/atproto/post.ts](../../src/lib/atproto/post.ts)の`MAX_THREAD_POST_COUNT` | [specs/entry/backend/tasks.md](../entry/backend/tasks.md)（前提条件として実装済み） |

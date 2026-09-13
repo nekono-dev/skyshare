@@ -18,25 +18,27 @@
 ```ts
 RequestBodySchema = z.union([
   // 既存投稿からentryを発行（from-post、新規投稿は作らない、スレッド概念なし）
-  z.object({ uri: z.string(), ogImage: imageField }).strict(),
+  z.object({ uri: z.string(), visual: imageField }).strict(),
   // 新規投稿（1件、またはスレッドとして複数件）
   z
     .object({
       posts: z.array(EntryPostItemSchema).min(1).max(100),
       reply: Common.CommonReplyRefSchema.optional(),
+      createEntry: z.boolean().optional(),
+      visual: imageField.optional(),
     })
     .strict(),
 ])
 ```
 
 - `posts`は下書きAPI（`v2/bsky/drafts`）と同じ「配列＝スレッド」のモデルを踏襲する。1件ならテキストのみ/OGPリンク/画像付きの単発投稿、複数件ならBlueskyのスレッド（reply chain）として原子的に作成する。
-- `EntryPostItemSchema`の各要素は、旧`v2/bsky/record`が持っていた3分岐（テキストのみ/OGPリンク付き/画像付き）をそのまま引き継ぎ、`createEntry: z.boolean().optional()`を追加する。`createEntry: true`かつ`images`+`ogImage`が揃っている場合のみ、その投稿にskyshare entryを紐づける（`images`または`ogImage`が欠けている状態で`createEntry: true`を指定すると400を返す）。
+- `EntryPostItemSchema`の各要素は、旧`v2/bsky/record`が持っていた3分岐（テキストのみ/OGPリンク付き/画像付き）をそのまま引き継ぐ。`createEntry`・`visual`は`posts[i]`側には持たず、`posts`と同階層のトップレベルフィールドとして1組だけ持つ（[specs/entry/backend/design.md §3.1](../entry/backend/design.md#31-リクエスト形式)）。トップレベル`createEntry: true`は、`posts`のいずれかが画像投稿（`images`を持つ）であり、かつ`visual`が揃っている場合のみ有効（欠けている状態で`createEntry: true`を指定すると400を返す）。
 - `reply`（スレッド接続用のStrongRef）は`posts`と同階層の**トップレベルフィールド**として1つだけ持つ。用途は「別々の複数リクエストにまたがって同じスレッドを継ぎ足す」こと（例: 今日1〜2件目を投稿し、後日3件目を追加する場合、前回レスポンスの`uri`/`cid`をこの`reply`として渡す）。同一リクエスト内の`posts[1..]`のreply chainはサーバが内部で自動的に組み立てるため、要素ごとに`reply`を持たせる意味が無く、配列の外に出している。
 - レスポンスは、from-post・新規投稿のいずれも同じ形に統一されている:
   ```ts
-  { posts: [{ url, uri, cid, skyshareEntry?: {...} }, ...] }
+  { posts: [{ url, uri, cid }, ...], skyshareEntry?: {...} }
   ```
-  `skyshareEntry`は、その投稿でskyshare entryが実際に作成された場合のみ存在し、作成されなかった場合は`undefined`（レスポンスJSONにキー自体が含まれない）。
+  `skyshareEntry`はレスポンス全体で高々1件のトップレベルフィールドであり、`posts[i]`には存在しない。entryが実際に作成された場合のみ存在し、作成されなかった場合は`undefined`（レスポンスJSONにキー自体が含まれない）。
 
 ### 2.2 原子的な作成（`com.atproto.repo.applyWrites`）
 
@@ -60,7 +62,7 @@ RequestBodySchema = z.union([
 
 `src/lib/atproto/post.ts`の`isReplyRefOwnedBySelf(reply, did)`が、トップレベルの`reply.root`/`reply.parent`のuriが、呼び出しユーザー自身の`app.bsky.feed.post`レコードを指しているかを`parseOwnedAtUri`で検証する（他人の投稿への不正なreply chain構築の防止。**この`reply`機能は自分の既存投稿へスレッドを継ぎ足すためのものであり、他人の投稿への汎用リプライ機能ではない**、というスコープを維持している）。falseの場合は400を返す。同一リクエスト内で自動組み立てされる2件目以降のreply chainは、この検証の対象外（常に自分がこのリクエストで作成する投稿同士のため、所有権は自明）。
 
-### 2.4 影響ファイル一覧（実装済み）
+### 2.4 関連ファイル一覧
 
 - `src/lib/api/schema/v2/entry/post.ts`（統合後のリクエスト/レスポンススキーマ）
 - `src/lib/atproto/post.ts`（`buildBskyPostRecord`、`isReplyRefOwnedBySelf`）
@@ -97,11 +99,11 @@ export const RequestBodySchema = z
 
 ### 3.2 検証ロジック
 
-`src/lib/atproto/draft.ts` に、下書き作成・更新共通の`posts`配列検証（`parseDraftPostsInput`、1〜100件）、及び一覧取得時の`posts`検証（`parseDraft`）を実装済み。
+`src/lib/atproto/draft.ts` に、下書き作成・更新共通の`posts`配列検証（`parseDraftPostsInput`、1〜100件）、及び一覧取得時の`posts`検証（`parseDraft`）を持つ。
 
 ### 3.3 フロントエンド側データアダプタ
 
-`src/lib/entry/draftList.ts`（Reactに依存しない純粋なデータ変換関数）を、新しい`posts`配列形式に合わせて更新済み。
+`src/lib/entry/draftList.ts`（Reactに依存しない純粋なデータ変換関数）は、新しい`posts`配列形式に合わせる。
 
 ```ts
 export type DraftListPost = { text: string; labels?: string[] }
@@ -114,7 +116,7 @@ export type DraftListItem = {
 
 この変換関数自体はUIコンポーネントではなくAPIレスポンスの整形のみを行うため、フロントエンドのアーキテクチャ（第4節）をどう設計しても再利用できる想定で維持している。
 
-### 3.4 影響ファイル一覧（実装済み）
+### 3.4 関連ファイル一覧
 
 - `src/lib/api/schema/v2/bsky/drafts/post.ts` / `put.ts` / `get.ts`（`posts`配列への変更）
 - `src/lib/atproto/draft.ts`（`posts`配列の検証ロジック）
@@ -128,19 +130,22 @@ export type DraftListItem = {
 
 ### 4.1 コンポーネント構成
 
-- 新設の親コンポーネント（`ThreadComposer`）が、セグメント配列（`segments: SegmentState[]`）と「現在編集中のセグメントのindex（`activeIndex`）」を状態として保持する。既存の`PostForm`本体には変更を加えず、`ThreadComposer`が`PostForm`が使う入力ロジックを呼び出す形で拡張する。
-- 各セグメントは新設の軽量コンポーネント（`ThreadSegmentForm`）としてレンダリングする。`PostForm`を配列状に複数インスタンス化する方式は採らない（`PostForm`は単発投稿の送信ロジックに強く結合しているため）。`PostForm`が内部で使っている入力プリミティブ（テキスト入力、`ImagePicker`、facetツールバー、gate設定UI、文字数カウンター等）を、`ThreadSegmentForm`からも共通で呼び出せる形に切り出す。
-- `activeIndex`と一致しないセグメントは、[requirements.md §6.3](requirements.md#63-fr-thread-fe-フロントエンド-スレッド投稿ui)の要件通り、内容を簡略化した上でグレーアウト表示する（入力補助UIは`activeIndex`のセグメントにのみ表示する）。
+- 単発投稿専用コンポーネントだった`PostForm`は、`ThreadComposer`へ一般化された（実装時に決定・確定した方針。以前は「`PostForm`本体には変更を加えず、`ThreadComposer`が`PostForm`の入力ロジックを呼び出す形で拡張する」という、`PostForm`と`ThreadComposer`を併存させる方式を想定していたが、呼び出し元（`PostLauncher`/`Timeline`/`PostPage`）がモード判定に応じて2つのコンポーネントを動的に差し替える構造は、マウント/アンマウントに伴う入力状態（画像・OGP取得結果など）の引き継ぎが複雑になるため採らなかった）。`src/components/post/PostForm/`は`src/components/post/ThreadComposer/`へリネームされ、呼び出し元は常にこのコンポーネントをマウントする。単発投稿はセグメント数1件のケースとして同一コンポーネントが扱う。
+- `ThreadComposer`（旧`PostForm/index.tsx`）が、セグメント配列（`segments: SegmentState[]`、`src/components/post/ThreadComposer/segments.ts`）と「現在編集中のセグメントのindex（`activeIndex`）」を状態として保持する。共有系トグルの永続化・下書き一覧・投稿成功後のポップアップ/WebShareAPI分岐の呼び出しなど、セグメントに依存しないトップレベルの責務を持つ。
+- 各セグメントは新設の軽量コンポーネント（`ThreadSegmentForm`）としてレンダリングする。旧`PostForm`が内部で使っていた入力プリミティブ（`PostBodyEditor`、`ImagePicker`、`OgpFetchButton`、`PostGateDialog`、`SelfLabelsSelect`、`LanguageSelect`、`useSuggest`、`useKeyboardRows`等）は既存のコンポーネント・フックのままセグメント単位で個別にインスタンス化する（各コンポーネント・フックはローカルstate/refに閉じており、複数同時マウントに対応できることを実装時に確認済み。`SelfLabelsSelect`/`LanguageSelect`のみ`id`/`name`のデフォルト値が固定文字列のため、セグメントindexベースの一意な値を明示的に渡す）。
+- `activeIndex`と一致しないセグメントは、[requirements.md §6.3](requirements.md#63-fr-thread-fe-フロントエンド-スレッド投稿ui)の要件通り、内容を簡略化した上でグレーアウト表示する（入力補助UIは`activeIndex`のセグメントにのみ表示する）。表示の出し分けは、フル編集UIブロックと簡略表示ブロックの両方を常時マウントしたまま`hidden`属性で切り替える方式とする（実装時に確定。JSXの条件レンダリングで`ImagePicker`等を丸ごとアンマウントする方式は、アンマウント時に内部state（`ImagePicker`の`slots`等）が失われ、非アクティブから再度アクティブに戻した際に添付済み画像のプレビューが消える不具合を起こしたため採らなかった）。非アクティブでも`segment.imageEntry`が存在する場合は、簡略表示側に読み取り専用のサムネイル（`ImageEntry.thumbnailPreview`）を表示する。
+- セグメントの削除ルール（requirements.md §6.3の受け入れ条件の具体化、実装時に確定）: 先頭（1件目）セグメントはスレッドの起点のため削除できない。2件目以降は編集中かどうかに関わらずいつでも削除できる。スレッド自体を完全に解消したい場合は、既存同様キャンセルボタンでフォームを閉じる。
 
 ### 4.2 起動導線
 
-既存の投稿フォーム（`PostForm`）を拡張する。専用画面・専用モーダルは設けない。「スレッドに追加」導線から`segments`配列に要素を追加し、同一フォーム内に縦に並べて表示する。
+既存の投稿フォーム（`ThreadComposer`、旧`PostForm`）を拡張する。専用画面・専用モーダルは設けない。「スレッドに追加」導線から`segments`配列に要素を追加し、同一フォーム内に縦に並べて表示する。
 
 ### 4.3 送信方式
 
-- スレッド全体を1回の`POST /v2/entry`（`posts`配列）にまとめて送信する。`segments`配列を順に`posts[i]`へマッピングする。
+- スレッド全体を1回の`POST /v2/entry`（`posts`配列）にまとめて送信する。`segments`配列を順に`posts[i]`へマッピングする（`src/components/post/ThreadComposer/submitThread.ts`）。
 - 本機能が対象とするのは新規スレッドの作成のみとし、既存投稿への継ぎ足し（トップレベル`reply`の指定）を行うUI導線は設けない。
 - 送信結果は「送信中」「成功」「失敗」の3状態のみを扱う。バックエンドが原子的に全件成功/全件失敗を保証するため、セグメントごとの個別進捗表示は行わない。
+- クロスポスト（X/タイッツー/Mastodon自動ポップアップ・WebShareAPI、`shareDispatch.ts`）は、先頭（1件目）セグメントのtextと、レスポンスのトップレベル`skyshareEntry`（entry全体で高々1件、[specs/entry/backend/design.md §3.6](../entry/backend/design.md#36-レスポンス200)）のuriのみを対象に1回だけ実行する（実装時に決定。仕様書に記載が無かった事項。2件目以降のセグメントはクロスポスト対象外）。
 
 ### 4.4 下書きとの連携
 
@@ -149,7 +154,7 @@ export type DraftListItem = {
 
 ### 4.5 画像付きセグメントの扱い
 
-各セグメントは独立した`ImagePicker`インスタンスを持ち、画像圧縮・OGP画像合成（`createProcessedImages`/`composeThumbnailBlob`、既存の単発投稿向けパイプライン）をセグメントごとに個別に適用する。スレッド全体をまとめて処理する仕組みは設けない。entryのvisual選択（複数の画像投稿セグメントからどれをentryの代表画像にするか）は[specs/entry/frontend/design.md §3.1](../entry/frontend/design.md#31-visual選択fr-1対応)が定める。
+各セグメントは独立した`ImagePicker`インスタンスを持ち、画像圧縮・OGP画像合成（`createProcessedImages`/`composeThumbnailBlob`、既存の単発投稿向けパイプライン）をセグメントごとに個別に適用する。スレッド全体をまとめて処理する仕組みは設けない。entryのvisual選択（複数の画像投稿セグメントからどれをentryの代表画像にするか、先頭を自動選択する）は[specs/entry/frontend/design.md §3.1](../entry/frontend/design.md#31-visual選択fr-1対応)が、選択結果をリクエストのトップレベル`createEntry`/`visual`として送信する処理・entryの`source`の自動解決は[同§3.2](../entry/frontend/design.md#32-送信内容の決定fr-2-fr-3対応)・[specs/entry/backend/design.md §7](../entry/backend/design.md#7-sourceの解決ロジック)が定める（`submitThread.ts`が実装対象）。
 
 ### 4.6 本書の対象外とする実装詳細
 

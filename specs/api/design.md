@@ -6,17 +6,17 @@
 
 ## 1. 扱っているlexicon一覧
 
-| lexicon (NSID) | 種別 | 用途 | 主な参照箇所 |
-|---|---|---|---|
-| `app.bsky.feed.post` | Bluesky公式 | Bluesky投稿本体 | [src/lib/atproto/post.ts](../../src/lib/atproto/post.ts) |
-| `app.bsky.feed.threadgate` | Bluesky公式 | 返信可能ユーザー設定 | [src/lib/atproto/gate.ts](../../src/lib/atproto/gate.ts) |
-| `app.bsky.feed.postgate` | Bluesky公式 | 引用/embed許可設定 | [src/lib/atproto/gate.ts](../../src/lib/atproto/gate.ts) |
-| `app.bsky.embed.images` / `app.bsky.embed.external` | Bluesky公式 | 投稿への画像・外部リンク埋め込み | [src/lib/atproto/embed.ts](../../src/lib/atproto/embed.ts) |
-| `app.bsky.richtext.facet` | Bluesky公式 | リッチテキスト注釈（リンク・メンション・タグ） | [src/lib/atproto/facet.ts](../../src/lib/atproto/facet.ts)、[common.ts](../../src/lib/api/schema/common.ts) |
-| `app.bsky.draft.*` | Bluesky公式 | 投稿の下書き | [src/lib/atproto/draft.ts](../../src/lib/atproto/draft.ts)、[src/pages/v2/bsky/drafts.ts](../../src/pages/v2/bsky/drafts.ts) |
-| `com.atproto.repo.strongRef` | Bluesky公式（共通） | uri+cidによるレコード参照 | reply chain、entry.source等、複数箇所で使用 |
-| `com.atproto.label.defs#selfLabels` | Bluesky公式（共通） | 自己申告ラベル（センシティブ表示等） | [src/lib/atproto/post.ts](../../src/lib/atproto/post.ts)、[src/lib/atproto/draft.ts](../../src/lib/atproto/draft.ts) |
-| `dev.nekono.skyshare.entry` / `dev.nekono.skyshare.defs` | Skyshare独自 | skyshare entry（画像ギャラリー用メタデータ） | [src/lib/entry/skyshareRecord.ts](../../src/lib/entry/skyshareRecord.ts) |
+| lexicon (NSID)                                           | 種別                | 用途                                           | 主な参照箇所                                                                                                                 |
+| -------------------------------------------------------- | ------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `app.bsky.feed.post`                                     | Bluesky公式         | Bluesky投稿本体                                | [src/lib/atproto/post.ts](../../src/lib/atproto/post.ts)                                                                     |
+| `app.bsky.feed.threadgate`                               | Bluesky公式         | 返信可能ユーザー設定                           | [src/lib/atproto/gate.ts](../../src/lib/atproto/gate.ts)                                                                     |
+| `app.bsky.feed.postgate`                                 | Bluesky公式         | 引用/embed許可設定                             | [src/lib/atproto/gate.ts](../../src/lib/atproto/gate.ts)                                                                     |
+| `app.bsky.embed.images` / `app.bsky.embed.external`      | Bluesky公式         | 投稿への画像・外部リンク埋め込み               | [src/lib/atproto/embed.ts](../../src/lib/atproto/embed.ts)                                                                   |
+| `app.bsky.richtext.facet`                                | Bluesky公式         | リッチテキスト注釈（リンク・メンション・タグ） | [src/lib/atproto/facet.ts](../../src/lib/atproto/facet.ts)、[common.ts](../../src/lib/api/schema/common.ts)                  |
+| `app.bsky.draft.*`                                       | Bluesky公式         | 投稿の下書き                                   | [src/lib/atproto/draft.ts](../../src/lib/atproto/draft.ts)、[src/pages/v2/bsky/drafts.ts](../../src/pages/v2/bsky/drafts.ts) |
+| `com.atproto.repo.strongRef`                             | Bluesky公式（共通） | uri+cidによるレコード参照                      | reply chain、entry.source等、複数箇所で使用                                                                                  |
+| `com.atproto.label.defs#selfLabels`                      | Bluesky公式（共通） | 自己申告ラベル（センシティブ表示等）           | [src/lib/atproto/post.ts](../../src/lib/atproto/post.ts)、[src/lib/atproto/draft.ts](../../src/lib/atproto/draft.ts)         |
+| `dev.nekono.skyshare.entry` / `dev.nekono.skyshare.defs` | Skyshare独自        | skyshare entry（画像ギャラリー用メタデータ）   | [src/lib/entry/skyshareRecord.ts](../../src/lib/entry/skyshareRecord.ts)                                                     |
 
 Bluesky公式lexiconはAPIを経由して読み書きする（`AtpAgent`のメソッド、または`com.atproto.repo.*`の汎用CRUD）。Skyshare独自lexicon（`dev.nekono.skyshare.*`）も、専用のRPCメソッドは持たず、同じ`com.atproto.repo.*`の汎用CRUD（`createRecord`/`getRecord`/`putRecord`/`deleteRecord`/`applyWrites`）でBluesky公式lexiconと同一の扱いを受ける。
 
@@ -54,11 +54,11 @@ Bluesky公式lexiconはAPIを経由して読み書きする（`AtpAgent`のメ�
 
 Bluesky公式lexiconの一部は、フロントエンド・APIリクエストボディでそのまま扱うには複雑すぎる（discriminated unionのネスト等）ため、Skyshare独自の簡略スキーマに変換してから公式lexiconのレコード形へ復元する。
 
-| 公式lexicon | 簡略化されたAPI契約 | 変換元→変換先 |
-|---|---|---|
+| 公式lexicon                                                                | 簡略化されたAPI契約                                                          | 変換元→変換先                                                                                            |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `app.bsky.feed.threadgate#allow` / `app.bsky.feed.postgate#embeddingRules` | `CommonGateSettingsSchema`（`replyAudience: enum` + boolean群 + `listUris`） | [gate.ts](../../src/lib/atproto/gate.ts)の`buildThreadgateRecord`/`buildPostgateRecord`がunion配列へ復元 |
-| `app.bsky.richtext.facet` | `CommonFacetsSchema`（`index`+`features`のdiscriminated union、ほぼ1:1） | サーバは検出のみ行わず、クライアント組み立て済みのものを`validateFacets`で境界検証してから受け取る |
-| `com.atproto.label.defs#selfLabels` | `selfLabels: enum(...).optional()`（単一値） | [post.ts](../../src/lib/atproto/post.ts)の`buildBskyPostRecord`が`{values:[{val}]}`形へ復元 |
+| `app.bsky.richtext.facet`                                                  | `CommonFacetsSchema`（`index`+`features`のdiscriminated union、ほぼ1:1）     | サーバは検出のみ行わず、クライアント組み立て済みのものを`validateFacets`で境界検証してから受け取る       |
+| `com.atproto.label.defs#selfLabels`                                        | `selfLabels: enum(...).optional()`（単一値）                                 | [post.ts](../../src/lib/atproto/post.ts)の`buildBskyPostRecord`が`{values:[{val}]}`形へ復元              |
 
 この方針の意図: クライアント側に公式lexiconのunion型をそのまま実装させると、Bluesky側の仕様変更（union要素の追加等）に密結合してしまう。Skyshare独自の簡略スキーマを挟むことで、フロントエンドの実装コストを下げつつ、lexiconとの対応関係をサーバ側1箇所（`gate.ts`等のbuilder関数）に閉じ込める。
 

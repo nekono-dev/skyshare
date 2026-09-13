@@ -9,15 +9,22 @@
 - スレッド投稿数上限（`MAX_THREAD_POST_COUNT`、[src/lib/atproto/post.ts](../../../src/lib/atproto/post.ts)）を`v2/entry`の`posts`配列・`v2/bsky/drafts`の下書き`posts`配列の双方が参照する構成は実装済み（NFR-7対応）。
 - レート制限をアプリケーション層で独自に持たない方針（NFR-8対応）は、独自実装を追加しないことそのものが対応であり、追加作業は不要。
 
-## Phase 1: `entrySource`によるsource解決（design.md §7.1〜§7.3対応）
+## Phase 1: `entrySource`の廃止・`createEntry`/`visual`のトップレベル化（design.md §3.1〜§3.2・§7対応）
 
-- [ ] `[BE]` `src/lib/api/schema/v2/entry/post.ts`の`EntryPostItemSchema`（3分岐すべて）に`entrySource: z.enum(["self", "threadRoot"]).optional()`を追加する。
-- [ ] `[BE]` `src/lib/api/schema/v2/entry/post.ts`の`{uri, ogImage}`分岐（from-post）に同様の`entrySource`を追加する。
-- [ ] `[BE]` `src/lib/entry/createBskyThread.ts`に、`entrySource`と各投稿の事前計算済み`uri`/`cid`（`posts[0]`含む）から、`createEntry:true`な投稿ごとの`source`を解決するロジックを実装する（design.md §7.2の解決表通り）。
-- [ ] `[BE]` `src/lib/entry/fromPost.ts`のステップ6として、`entrySource`と取得済み`postRecord.reply.root`から`source`を解決するロジックを実装する（design.md §7.3の解決表通り。`root`のrepoが呼び出し者自身と異なる場合は`self`にフォールバック）。
-- [ ] `[TEST]` `tests/lib/entry/createBskyThread.test.ts`に、`entrySource`省略時のデフォルト分岐（単発/スレッド）・`"self"`明示・`"threadRoot"`明示のテストを追加する。
-- [ ] `[TEST]` `tests/lib/entry/fromPost.test.ts`に、`reply.root`あり（自分自身/他人）・なしの各組み合わせと`entrySource`指定の直積をテストする。
-- [ ] `[TEST]` `tests/pages/v2/entry.test.ts`に、requirements.md §5の該当受け入れ条件（`entrySource`関連）を追加する。
+前回セッションで実装された`entrySource: "self" | "threadRoot"`（`posts[i]`ごとの個別選択）を、本設計へ置き換える。
+
+- [ ] `[BE]` `src/lib/api/schema/v2/entry/post.ts`の`EntryPostItemSchema`（3分岐すべて）から`createEntry`・`entrySource`フィールドを削除する。
+- [ ] `[BE]` `RequestBodySchema`の新規投稿分岐（`posts`を持つ方）に、トップレベルの`createEntry: z.boolean().optional()`・`visual: imageField.optional()`を追加する。
+- [ ] `[BE]` `RequestBodySchema`のfrom-post分岐（`{uri, ogImage}`）から`entrySource`を削除し、`ogImage`を`visual`へリネームする。
+- [ ] `[BE]` `RequestBodyFieldKinds`・`PostItemFieldKinds`（FormData種別マップ）を上記のフィールド移動に合わせて更新する。
+- [ ] `[BE]` `ResponseBody200Schema`を変更する。`posts[i]`から`skyshareEntry`を削除し、トップレベルに`skyshareEntry: SkyshareEntrySchema.optional()`を追加する。
+- [ ] `[BE]` `src/pages/v2/entry.ts`のPOSTハンドラを更新する（design.md §3.3）。トップレベル`createEntry:true`の検証（`posts`に画像投稿が1件以上・`visual`必須）をフェーズ5に追加し、`posts[i]`ごとの`createEntry`判定コードを削除する。
+- [ ] `[BE]` `src/lib/entry/createBskyThread.ts`を更新する（design.md §3.5・§7.2）。entry作成対象の`posts[i]`を選ぶロジックを削除し、`createEntry:true`なら常に`source = posts[0]`・`visual`はリクエストのトップレベル値を使ってentryレコードを1件だけ組み立てるようにする。戻り値の型を`{ posts: [...], skyshareEntry? }`（トップレベル）に変更する。
+- [ ] `[BE]` `src/lib/entry/fromPost.ts`の`resolveFromPostSource`を、`entrySource`引数を受け取らず常に「`reply.root`があり自分自身のrepoならroot、それ以外は自身」を返すように簡略化する。`ogImage`パラメータ名を`visual`に統一する。
+- [ ] `[TEST]` `tests/lib/entry/createBskyThread.test.ts`を新設計に合わせて全面更新する（トップレベル`createEntry`・`visual`、`source`が常に`posts[0]`になること、`entrySource`関連テストの削除）。
+- [ ] `[TEST]` `tests/lib/entry/fromPost.test.ts`を、`entrySource`引数を削除した`resolveFromPostSource`のシグネチャに合わせて更新する。
+- [ ] `[TEST]` `tests/pages/v2/entry.test.ts`を新しいリクエスト/レスポンス形状に合わせて全面更新する（requirements.md §5の該当受け入れ条件）。
+- [ ] `[TEST]` `tests/lib/api/schema/entryPost.test.ts`を新しいスキーマ（トップレベル`createEntry`/`visual`、`posts[i]`から除去されたフィールド）に合わせて更新する。
 
 ## Phase 2: entry削除時のスレッド全体削除（design.md §7.4対応）
 
@@ -29,5 +36,5 @@
 
 ## Phase 3: 仕上げ
 
-- [ ] `npm run codegen`を実行し、`entrySource`・`deleteBskyThread`を含む型でOpenAPIドキュメント・フロントエンド用クライアントを再生成する。
+- [ ] `npm run codegen`を実行し、新しいリクエスト/レスポンス形状（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）でOpenAPIドキュメント・フロントエンド用クライアントを再生成する。
 - [ ] `npx vitest run`・`npx tsc --noEmit`が全件成功することを確認する。
