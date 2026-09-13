@@ -47,7 +47,7 @@
 
 ## Phase 5: 仕上げ
 
-- [ ] `npm run codegen`実行後の型（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）にフロントエンドの実装を追従させる。
-- [ ] 手動確認: 画像投稿segmentが2件以上のスレッドを投稿し、選択したsegmentの画像がvisualとして使われ、entryが1件のみ作成されることを確認する。
-- [ ] 手動確認: スレッド由来entryの詳細ページ・削除確認UI・視覚的区別が期待通り表示されることを確認する。
-- [ ] 既存の単発投稿フロー（`ImagePicker`、entry詳細ページ）に regression がないことを確認する。
+- [x] `npm run codegen`実行後の型（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）にフロントエンドの実装を追従させる（`npx tsc --noEmit`エラーゼロを確認済み）。
+- [ ] 手動確認: 実アカウントで画像投稿segmentが2件以上のスレッドを投稿し、選択したsegmentの画像がvisualとして使われ、entryが1件のみ作成されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
+- [ ] 手動確認: 実アカウントでスレッド由来entryの詳細ページ・削除確認UI・視覚的区別が期待通り表示されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。サンプルページ（`entries/sample-thread.astro`）・ゲスト表示（`/entries/?guest`）でのレンダリング自体はPlaywrightで確認済み。
+- [x] 既存の単発投稿フロー（`ImagePicker`、entry詳細ページ）に regression が無いことを確認した（`npx vitest run`556件・`npx playwright test`全件成功、`entries/sample.astro`のフォールバック表示も確認済み）。
