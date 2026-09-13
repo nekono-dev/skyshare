@@ -26,6 +26,9 @@ import {
     type ThreadPostInput,
     type ThreadEntryInput,
 } from "@/lib/entry/createBskyThread"
+import { AppBskyFeedDefs } from "@atproto/api"
+import { extractOwnedLinearReplyChain } from "@/lib/atproto/threadChain"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
 
 import * as PostSchema from "@/lib/api/schema/v2/entry/post"
 import * as PutSchema from "@/lib/api/schema/v2/entry/put"
@@ -429,15 +432,19 @@ export const PUT: APIRoute = async ({ request, locals }) => {
  * 処理フロー:
  * 1. ヘッダ検証（セッション取得はミドルウェアが解決済み）
  * 2. ボディ検証、`uri` が自分自身の dev.nekono.skyshare.entry であることを確認
+ *    （`deleteBskyThread:true`は`deleteBskyPost:true`とあわせてのみ指定可能）
  * 3. `deleteBskyPost` 指定時は、事前に entry レコードを取得して source（元投稿）の
  *    URI を取得する。クライアント指定の URI をそのまま信用せず、レコードに
  *    記録された source から削除対象を導出することで他人の投稿削除を防ぐ。
  * 4. skyshare entry レコードを削除する。
  * 5. `deleteBskyPost` が true かつ source が自分自身の app.bsky.feed.post の場合、
- *    その投稿も削除する。失敗しても entry 削除自体は成功として扱う。
+ *    その投稿を削除する。失敗しても entry 削除自体は成功として扱う。
+ *    `deleteBskyThread:true`の場合は、`getPostThread`でsourceのreply chainを取得し、
+ *    呼び出し者自身が投稿した後続投稿のみを直線的に辿って削除対象を導出した上で、
+ *    1回の`applyWrites`でsource自身を含めて全件削除する。
  *
  * Input:
- * - `request`: cookie と `{ uri, deleteBskyPost? }` を含む HTTP リクエスト
+ * - `request`: cookie と `{ uri, deleteBskyPost?, deleteBskyThread? }` を含む HTTP リクエスト
  *
  * Output:
  * - 200: 本文なし
@@ -517,7 +524,55 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
                 "app.bsky.feed.post",
                 session.did,
             )
-            if (parsedSourceUri) {
+            if (parsedSourceUri && body.data.deleteBskyThread) {
+                // スレッド全体削除: sourceを起点に、呼び出し者自身が投稿した後続投稿のみを
+                // 直線的に辿って削除対象を導出する（specs/entry/backend/design.md §7.4.1）。
+                // クライアントは削除対象の投稿一覧を送信しない。
+                try {
+                    const threadRes = await agent.app.bsky.feed.getPostThread({
+                        uri: sourceUri,
+                        depth: MAX_THREAD_POST_COUNT,
+                    })
+                    if (AppBskyFeedDefs.isThreadViewPost(threadRes.data.thread)) {
+                        const chain = extractOwnedLinearReplyChain(
+                            threadRes.data.thread,
+                            session.did,
+                            MAX_THREAD_POST_COUNT,
+                        )
+                        const deleteWrites = chain
+                            .map(post =>
+                                parseOwnedAtUri(
+                                    post.uri,
+                                    "app.bsky.feed.post",
+                                    session.did,
+                                ),
+                            )
+                            .filter(
+                                (parsed): parsed is NonNullable<
+                                    typeof parsed
+                                > => !!parsed,
+                            )
+                            .map(parsed => ({
+                                $type: "com.atproto.repo.applyWrites#delete",
+                                collection: "app.bsky.feed.post",
+                                rkey: parsed.rkey,
+                            }))
+                        if (deleteWrites.length > 0) {
+                            await agent.com.atproto.repo.applyWrites({
+                                repo: session.did,
+                                writes: deleteWrites as never,
+                            })
+                        }
+                    }
+                } catch (err) {
+                    // entry 自体の削除は既に成功しているため、スレッド削除の失敗で
+                    // リクエスト全体を失敗扱いにはしない。
+                    console.error(
+                        "deleteEntry: failed to delete bsky thread",
+                        err,
+                    )
+                }
+            } else if (parsedSourceUri) {
                 try {
                     await agent.com.atproto.repo.deleteRecord({
                         repo: session.did,

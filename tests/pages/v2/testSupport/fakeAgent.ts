@@ -28,6 +28,9 @@ export type FakeAgentOverrides = {
                 updateDraft?: any
                 deleteDraft?: any
             }
+            feed?: {
+                getPostThread?: any
+            }
         }
     }
     com?: {
@@ -190,6 +193,23 @@ export const createFakeAgent = (overrides: FakeAgentOverrides = {}): any => ({
                 deleteDraft:
                     overrides.app?.bsky?.draft?.deleteDraft ??
                     vi.fn().mockResolvedValue({ data: {} }),
+            },
+            feed: {
+                getPostThread:
+                    overrides.app?.bsky?.feed?.getPostThread ??
+                    vi.fn().mockResolvedValue({
+                        data: {
+                            thread: {
+                                $type: "app.bsky.feed.defs#threadViewPost",
+                                post: {
+                                    uri: "at://did:plc:author/app.bsky.feed.post/3lpost",
+                                    cid: "bafypostcid",
+                                    author: { did: "did:plc:author" },
+                                },
+                                replies: [],
+                            },
+                        },
+                    }),
             },
         },
     },

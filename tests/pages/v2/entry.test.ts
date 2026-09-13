@@ -1480,4 +1480,196 @@ describe("DELETE /v2/entry", () => {
         const res = await callRoute(DELETE, request, authenticatedLocals())
         expect(res.status).toBe(200)
     })
+
+    describe("deleteBskyThread(スレッド全体削除)", () => {
+        const sourceUri = "at://did:plc:author/app.bsky.feed.post/3lpost"
+
+        it("deleteBskyPostがtrueでないのにdeleteBskyThread:trueのみ指定した場合は400を返す", async () => {
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "DELETE",
+                    headers: {
+                        ...authHeaders,
+                        "content-type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        uri: entryUri,
+                        deleteBskyThread: true,
+                    }),
+                },
+            )
+            const res = await callRoute(DELETE, request, authenticatedLocals())
+            expect(res.status).toBe(400)
+        })
+
+        it("後続の自己投稿を辿って1回のapplyWritesで全件削除する", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: {
+                        $type: "app.bsky.feed.defs#threadViewPost",
+                        post: {
+                            uri: sourceUri,
+                            cid: "bafypostcid",
+                            author: { did: "did:plc:author" },
+                        },
+                        replies: [
+                            {
+                                $type: "app.bsky.feed.defs#threadViewPost",
+                                post: {
+                                    uri: "at://did:plc:author/app.bsky.feed.post/3lsecond",
+                                    cid: "bafysecond",
+                                    author: { did: "did:plc:author" },
+                                },
+                                replies: [
+                                    {
+                                        $type: "app.bsky.feed.defs#threadViewPost",
+                                        post: {
+                                            uri: "at://did:plc:author/app.bsky.feed.post/3lthird",
+                                            cid: "bafythird",
+                                            author: { did: "did:plc:author" },
+                                        },
+                                        replies: [],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "DELETE",
+                    headers: {
+                        ...authHeaders,
+                        "content-type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        uri: entryUri,
+                        deleteBskyPost: true,
+                        deleteBskyThread: true,
+                    }),
+                },
+            )
+            const res = await callRoute(DELETE, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            expect(getPostThread).toHaveBeenCalledWith(
+                expect.objectContaining({ uri: sourceUri }),
+            )
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(writesArg).toHaveLength(3)
+            expect(writesArg.map((w: { rkey: string }) => w.rkey)).toEqual([
+                "3lpost",
+                "3lsecond",
+                "3lthird",
+            ])
+            for (const w of writesArg) {
+                expect(w.collection).toBe("app.bsky.feed.post")
+                expect(w.$type).toBe("com.atproto.repo.applyWrites#delete")
+            }
+        })
+
+        it("第三者の返信で分岐した先は削除対象から除外される", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: {
+                        $type: "app.bsky.feed.defs#threadViewPost",
+                        post: {
+                            uri: sourceUri,
+                            cid: "bafypostcid",
+                            author: { did: "did:plc:author" },
+                        },
+                        replies: [
+                            {
+                                $type: "app.bsky.feed.defs#threadViewPost",
+                                post: {
+                                    uri: "at://did:plc:other/app.bsky.feed.post/3lother",
+                                    cid: "bafyother",
+                                    author: { did: "did:plc:other" },
+                                },
+                                replies: [
+                                    {
+                                        $type: "app.bsky.feed.defs#threadViewPost",
+                                        post: {
+                                            uri: "at://did:plc:author/app.bsky.feed.post/3lbranched",
+                                            cid: "bafybranched",
+                                            author: { did: "did:plc:author" },
+                                        },
+                                        replies: [],
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "DELETE",
+                    headers: {
+                        ...authHeaders,
+                        "content-type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        uri: entryUri,
+                        deleteBskyPost: true,
+                        deleteBskyThread: true,
+                    }),
+                },
+            )
+            const res = await callRoute(DELETE, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(writesArg).toHaveLength(1)
+            expect(writesArg[0].rkey).toBe("3lpost")
+        })
+
+        it("スレッド削除(getPostThread)が失敗してもentry削除自体は200を返す", async () => {
+            const getPostThread = vi
+                .fn()
+                .mockRejectedValue(new Error("getPostThread failed"))
+            const agent = createFakeAgent({
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "DELETE",
+                    headers: {
+                        ...authHeaders,
+                        "content-type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        uri: entryUri,
+                        deleteBskyPost: true,
+                        deleteBskyThread: true,
+                    }),
+                },
+            )
+            const res = await callRoute(DELETE, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+        })
+    })
 })
