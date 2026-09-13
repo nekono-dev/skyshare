@@ -50,10 +50,7 @@ const entryInput: ThreadEntryInput = {
 describe("createBskyThread: entry(source)の解決(specs/entry/backend/design.md §7.2)", () => {
     it("entryInput未指定ならskyshareEntryは作成されない", async () => {
         const agent = makeAgent()
-        const posts: ThreadPostInput[] = [
-            { text: "1件目" },
-            { text: "2件目" },
-        ]
+        const posts: ThreadPostInput[] = [{ text: "1件目" }, { text: "2件目" }]
 
         const result = await createBskyThread(agent as any, did, posts)
 

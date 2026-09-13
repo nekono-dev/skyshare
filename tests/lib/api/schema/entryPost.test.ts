@@ -176,7 +176,6 @@ describe("v2/entry POST RequestBodySchema", () => {
         }
     })
 
-
     it("トップレベルのreply(root/parent)を受理する", () => {
         const formData = new FormData()
         formData.set("posts[0][text]", JSON.stringify("hello"))

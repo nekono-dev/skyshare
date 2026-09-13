@@ -68,8 +68,7 @@ describe("submitThread", () => {
 
         expect(result).toEqual({ ok: true, skyshareUri: "" })
         expect(createEntry).toHaveBeenCalledTimes(1)
-        const body = vi.mocked(createEntry).mock
-            .calls[0][0] as SubmitThreadBody
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.posts).toHaveLength(1)
         expect(body.posts[0].text).toBe("hello")
         expect(body.posts[0]).not.toHaveProperty("createEntry")
@@ -77,10 +76,9 @@ describe("submitThread", () => {
     })
 
     it("単一セグメント(画像)では、トップレベルcreateEntry:true+visualを送る(NFR-1)", async () => {
-        mockCreateEntryOk(
-            [{ url: "https://x", uri: "at://1", cid: "c1" }],
-            { uri: "https://skyshare/1" },
-        )
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
 
         const segment = {
             ...createEmptySegment("ja"),
@@ -93,8 +91,7 @@ describe("submitThread", () => {
         })
 
         expect(result).toEqual({ ok: true, skyshareUri: "https://skyshare/1" })
-        const body = vi.mocked(createEntry).mock
-            .calls[0][0] as SubmitThreadBody
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.createEntry).toBe(true)
         expect(body.visual).toBeDefined()
         expect(body.posts[0]).not.toHaveProperty("createEntry")
@@ -117,8 +114,7 @@ describe("submitThread", () => {
         })
 
         expect(result).toEqual({ ok: true, skyshareUri: "" })
-        const body = vi.mocked(createEntry).mock
-            .calls[0][0] as SubmitThreadBody
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.createEntry).toBeUndefined()
         expect(body.visual).toBeUndefined()
         expect(body.posts.every(p => !("createEntry" in p))).toBe(true)
@@ -148,8 +144,7 @@ describe("submitThread", () => {
         })
 
         expect(result).toEqual({ ok: true, skyshareUri: "https://skyshare/2" })
-        const body = vi.mocked(createEntry).mock
-            .calls[0][0] as SubmitThreadBody
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.createEntry).toBe(true)
         expect(body.visual).toBe(imageEntry.thumbnailBlob)
         expect(body.posts[0]).not.toHaveProperty("createEntry")
@@ -186,8 +181,7 @@ describe("submitThread", () => {
         })
 
         expect(result).toEqual({ ok: true, skyshareUri: "https://skyshare/1" })
-        const body = vi.mocked(createEntry).mock
-            .calls[0][0] as SubmitThreadBody
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         // 画像投稿segmentが複数あっても、entryはリクエスト全体につき最大1件（先頭を自動選択）。
         // 2件目自身は独立したentryを作らないが、images自体は通常通り送信される。
         expect(body.createEntry).toBe(true)
@@ -210,8 +204,7 @@ describe("submitThread", () => {
         const result = await submitThread({ segments, manualImageAttach: true })
 
         expect(result).toEqual({ ok: true, skyshareUri: "" })
-        const body = vi.mocked(createEntry).mock
-            .calls[0][0] as SubmitThreadBody
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.createEntry).toBeUndefined()
         expect(body.visual).toBeUndefined()
         expect(body.posts[0].images).toBeDefined()

@@ -969,10 +969,7 @@ describe("POST /v2/entry", () => {
         it("createEntry:trueのスレッドは、画像投稿がposts[0]の場合、sourceがposts[0]を指すskyshareEntryをトップレベルに1件だけ返す", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
-                [
-                    { text: "1件目", imagesCount: 1 },
-                    { text: "2件目" },
-                ],
+                [{ text: "1件目", imagesCount: 1 }, { text: "2件目" }],
                 applyWrites,
                 { createEntry: true },
             )
@@ -988,10 +985,7 @@ describe("POST /v2/entry", () => {
         it("createEntry:trueのスレッドで、画像投稿が中間(posts[1])にあっても、sourceは常にposts[0](スレッド先頭)を指す", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
-                [
-                    { text: "1件目" },
-                    { text: "2件目", imagesCount: 1 },
-                ],
+                [{ text: "1件目" }, { text: "2件目", imagesCount: 1 }],
                 applyWrites,
                 { createEntry: true },
             )

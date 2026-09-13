@@ -61,7 +61,10 @@ describe("extractOwnedLinearReplyChain", () => {
     })
 
     it("NotFoundPost/BlockedPostのようなthreadViewPostでないノードは無視する", () => {
-        const notFound = { $type: "app.bsky.feed.defs#notFoundPost", uri: "at://gone" }
+        const notFound = {
+            $type: "app.bsky.feed.defs#notFoundPost",
+            uri: "at://gone",
+        }
         const second = makeNode("at://second", ownerDid)
         const root = makeNode("at://root", ownerDid, [notFound, second])
 

@@ -1,0 +1,73 @@
+---
+/**
+ * ゲストモード・Playwrightのヘッドレスブラウザ確認用の、スレッド由来entryの
+ * サンプルEntry詳細ページ。
+ *
+ * 責務と処理概要:
+ * - `entries/[slug].astro`が`threadPosts.length > 1`のときに描画する`EntryThreadView`を、
+ *   実際のPDSレコード・ログインに依存せず確認できるようにする（`entries/sample.astro`が
+ *   `EntryDetailView`向けに用意しているのと同じ方針）。
+ * - Playwright e2e（`tests/e2e/entryThreadDetail.spec.ts`）がこのページを使う。
+ */
+export const prerender = true
+
+import Baselayout from "@/layout/Baselayout.astro"
+import EntryThreadView from "@/components/entry/EntryThreadView/index.astro"
+import type { ThreadPostView } from "@/components/entry/EntryThreadView/index.astro"
+import { serviceName } from "@/vars"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+
+const heading = "サンプルスレッドEntry"
+const caption = "3件の投稿からなるスレッドのサンプル表示です。"
+
+const posts: ThreadPostView[] = [
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample1",
+        text: "スレッド1件目（先頭投稿）です。",
+        images: [],
+    },
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample2",
+        text: "スレッド2件目です。画像が付いています。",
+        images: [
+            {
+                url: "/materials/sample-og.png",
+                alt: "サンプル画像",
+                cid: "bafkreisamplethread2",
+            },
+        ],
+    },
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample3",
+        text: "スレッド3件目（末尾投稿）です。",
+        images: [],
+    },
+]
+
+const createdAtText = new Date("2026-09-06T10:00:00.000Z").toLocaleString("ja-JP", {
+    dateStyle: "medium",
+    timeStyle: "short",
+})
+
+const pageTitle = `${heading} | ${serviceName}`
+---
+
+<Baselayout
+    cardPath="/materials/sample-og.png"
+    pageTitle={pageTitle}
+    pageHeading={heading}
+    pageCaption={caption}
+    robots={robots}
+>
+    <EntryThreadView
+        manifestHeading={heading}
+        manifestCaption={caption}
+        createdAtText={createdAtText}
+        likeCount={12}
+        repostCount={3}
+        replyCount={1}
+        quoteCount={0}
+        posts={posts}
+    />
+</Baselayout>

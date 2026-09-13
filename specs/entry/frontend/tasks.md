@@ -15,15 +15,15 @@
 
 ## Phase 2: entry詳細ページのスレッド表示（design.md §3.3対応）
 
-- [ ] `entries/[slug].astro`に、`app.bsky.feed.getPostThread`（`AtpAgent`経由）でreply chainを取得する処理を追加する。
-- [ ] 取得した`ThreadViewPost`から、`source`投稿の`author.did`と一致する後続投稿のみを直線的に辿って時系列順に抽出するロジックを実装する（`specs/entry/backend/design.md §7.4.1`と同一の抽出規則。第三者の返信・その分岐先は除外し、`MAX_THREAD_POST_COUNT`を探索上限とする）。
-- [ ] 抽出結果が1件（後続投稿なし）の場合は既存の`EntryDetailView`にフォールバックする分岐を実装する。
-- [ ] 抽出結果が2件以上の場合に描画する新設コンポーネント（例: `EntryThreadView`、`src/components/entry/`配下）を実装する。各投稿のテキスト・画像を`extractSourceImages`を用いて投稿順に描画する。
-- [ ] `PostEngagementStats`の表示範囲（`source`投稿1件分）を実装する。
-- [ ] `[TEST]` `author.did`一致抽出ロジック（直線的chainの抽出、第三者返信・分岐先の除外、`MAX_THREAD_POST_COUNT`上限）・1件時のフォールバック分岐の単体テストを追加する。
-- [ ] `[TEST]` Playwrightで以下のシナリオを検証する（`tests/e2e/entryThreadDetail.spec.ts`、新規）:
-  - 後続投稿を持つスレッド由来entryの詳細ページを開く → 先頭から後続投稿まで時系列順にすべて表示されることを確認
-  - 単発投稿由来entryの詳細ページを開く → 従来通り単一投稿として表示されることを確認
+- [x] `entries/[slug].astro`に、`app.bsky.feed.getPostThread`（`AtpAgent`経由）でreply chainを取得する処理を追加する。
+- [x] 取得した`ThreadViewPost`から、`source`投稿の`author.did`と一致する後続投稿のみを直線的に辿って時系列順に抽出するロジックを実装する（`specs/entry/backend/design.md §7.4.1`と同一の抽出規則。第三者の返信・その分岐先は除外し、`MAX_THREAD_POST_COUNT`を探索上限とする）。抽出ロジック自体は`src/lib/atproto/threadChain.ts`の`extractOwnedLinearReplyChain`として、entry/backend Phase2のスレッド削除と共通化した。
+- [x] 抽出結果が1件（後続投稿なし）の場合は既存の`EntryDetailView`にフォールバックする分岐を実装する。
+- [x] 抽出結果が2件以上の場合に描画する新設コンポーネント（`EntryThreadView`、`src/components/entry/EntryThreadView/`）を実装する。各投稿のテキスト・画像を`extractSourceImages`を用いて投稿順に描画する。
+- [x] `PostEngagementStats`の表示範囲（`source`投稿1件分）を実装する。
+- [x] `[TEST]` `author.did`一致抽出ロジック（直線的chainの抽出、第三者返信・分岐先の除外、`MAX_THREAD_POST_COUNT`上限）・1件時のフォールバック分岐の単体テストを追加する（`tests/lib/atproto/threadChain.test.ts`、entry/backend Phase2で追加済みのものを共用）。
+- [x] `[TEST]` Playwrightで以下のシナリオを検証する（`tests/e2e/entryThreadDetail.spec.ts`、新規）:
+  - 後続投稿を持つスレッド由来entryの詳細ページを開く → 先頭から後続投稿まで時系列順にすべて表示されることを確認（実PDSレコード・ログインへの依存を避けるため、新設の`entries/sample-thread.astro`サンプルページで`EntryThreadView`のレンダリングを検証。実アカウントでの`[slug].astro`本体の確認は手動確認タスクとして残す）
+  - 単発投稿由来entryの詳細ページを開く → 従来通り単一投稿として表示されることを確認（既存`entries/sample.astro`で確認）
 
 ## Phase 3: entry削除時のスレッド全体削除オプション（design.md §3.4対応）
 

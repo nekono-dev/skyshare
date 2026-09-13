@@ -192,7 +192,6 @@ export const createBskyThread = async (
                 })
             }
         }
-
     }
 
     let entryWriteIndex: number | undefined
@@ -239,7 +238,11 @@ export const createBskyThread = async (
         const entryResult = results[entryWriteIndex] as
             { uri: string; cid: string } | undefined
         if (entryResult) {
-            skyshareEntry = toCreatedSkyshareEntry(entryRecord, did, entryResult)
+            skyshareEntry = toCreatedSkyshareEntry(
+                entryRecord,
+                did,
+                entryResult,
+            )
         }
     }
 

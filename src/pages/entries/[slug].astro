@@ -13,9 +13,11 @@
 
 export const prerender = false
 
-import { AtpAgent, AppBskyFeedPost } from "@atproto/api"
+import { AtpAgent, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
 import Baselayout from "@/layout/Baselayout.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
+import EntryThreadView from "@/components/entry/EntryThreadView/index.astro"
+import type { ThreadPostView } from "@/components/entry/EntryThreadView/index.astro"
 import { serviceName } from "@/vars"
 import { atpService } from "@/env"
 import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
@@ -23,6 +25,8 @@ import { resolvePdsServiceForDid } from "@/lib/atproto/did"
 import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry/entry"
 import type { EntryLike, SourceImage } from "@/lib/entry/entry"
 import { resolveXrpcStatus } from "@/lib/api/response"
+import { extractOwnedLinearReplyChain } from "@/lib/atproto/threadChain"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
 
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 
@@ -39,6 +43,7 @@ let repostCount = 0
 let replyCount = 0
 let quoteCount = 0
 let createdAtText = ""
+let threadPosts: ThreadPostView[] = []
 let manifestHeading = ""
 let manifestCaption = ""
 let notFoundReason = "entry not found"
@@ -143,6 +148,39 @@ if (typeof slug === "undefined") {
                 repostCount = typeof postView.repostCount === "number" ? postView.repostCount : 0
                 replyCount = typeof postView.replyCount === "number" ? postView.replyCount : 0
                 quoteCount = typeof postView.quoteCount === "number" ? postView.quoteCount : 0
+
+                // source投稿を起点に、entry所有者自身が投稿した後続投稿のみを直線的に辿る
+                // （specs/entry/frontend/design.md §3.3）。取得・抽出に失敗しても500にはせず、
+                // 単一投稿表示（EntryDetailView）へフォールバックする。
+                try {
+                    const threadRes = await agent.app.bsky.feed.getPostThread({
+                        uri: sourceUriFromEntry,
+                        depth: MAX_THREAD_POST_COUNT,
+                    })
+                    if (AppBskyFeedDefs.isThreadViewPost(threadRes.data.thread)) {
+                        const chain = extractOwnedLinearReplyChain(
+                            threadRes.data.thread,
+                            entryRepoDid,
+                            MAX_THREAD_POST_COUNT,
+                        )
+                        if (chain.length > 1) {
+                            threadPosts = chain.map(post => {
+                                const parsedPostUri = parseAtUri(post.uri)
+                                const record = post.record as AppBskyFeedPost.Main
+                                return {
+                                    webUrl: parsedPostUri ? bskyPostUrlgen(did, parsedPostUri.rkey) : sourceWebUrl,
+                                    text: record.text,
+                                    images: extractSourceImages(record, entryRepoDid),
+                                }
+                            })
+                        }
+                    }
+                } catch (error) {
+                    console.warn("entries/[slug] SSR: failed to fetch thread", {
+                        reason: error instanceof Error ? error.message : String(error),
+                        slug,
+                    })
+                }
             } else {
                 // 元投稿が削除済み等で AppView から取得できない場合は、500 にはせず
                 // entry に保存された manifest 情報のみで表示する。
@@ -179,18 +217,33 @@ Astro.response.status = statusCode
     pageCaption={manifestCaption}
     robots={robots}
 >
-    <EntryDetailView
-        statusCode={statusCode}
-        notFoundReason={notFoundReason}
-        manifestHeading={manifestHeading}
-        manifestCaption={manifestCaption}
-        sourcePostAvailable={sourcePostAvailable}
-        sourceWebUrl={sourceWebUrl}
-        createdAtText={createdAtText}
-        likeCount={likeCount}
-        repostCount={repostCount}
-        replyCount={replyCount}
-        quoteCount={quoteCount}
-        sourceImages={sourceImages}
-    />
+    {
+        statusCode === 200 && threadPosts.length > 1 ? (
+            <EntryThreadView
+                manifestHeading={manifestHeading}
+                manifestCaption={manifestCaption}
+                createdAtText={createdAtText}
+                likeCount={likeCount}
+                repostCount={repostCount}
+                replyCount={replyCount}
+                quoteCount={quoteCount}
+                posts={threadPosts}
+            />
+        ) : (
+            <EntryDetailView
+                statusCode={statusCode}
+                notFoundReason={notFoundReason}
+                manifestHeading={manifestHeading}
+                manifestCaption={manifestCaption}
+                sourcePostAvailable={sourcePostAvailable}
+                sourceWebUrl={sourceWebUrl}
+                createdAtText={createdAtText}
+                likeCount={likeCount}
+                repostCount={repostCount}
+                replyCount={replyCount}
+                quoteCount={quoteCount}
+                sourceImages={sourceImages}
+            />
+        )
+    }
 </Baselayout>

@@ -533,7 +533,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
                         uri: sourceUri,
                         depth: MAX_THREAD_POST_COUNT,
                     })
-                    if (AppBskyFeedDefs.isThreadViewPost(threadRes.data.thread)) {
+                    if (
+                        AppBskyFeedDefs.isThreadViewPost(threadRes.data.thread)
+                    ) {
                         const chain = extractOwnedLinearReplyChain(
                             threadRes.data.thread,
                             session.did,
@@ -548,9 +550,10 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
                                 ),
                             )
                             .filter(
-                                (parsed): parsed is NonNullable<
-                                    typeof parsed
-                                > => !!parsed,
+                                (
+                                    parsed,
+                                ): parsed is NonNullable<typeof parsed> =>
+                                    !!parsed,
                             )
                             .map(parsed => ({
                                 $type: "com.atproto.repo.applyWrites#delete",
