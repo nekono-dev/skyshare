@@ -108,6 +108,106 @@ export const GUEST_DUMMY_POSTS: TimelinePost[] = [
             },
         ],
     },
+    // 以下、Timelineのスレッドグルーピング表示（specs/timeline）のゲスト確認用。
+    // スレッドA: entry未作成、中間segment(guest-thread-a-mid)にのみ画像があるケース
+    // （事後entry作成ボタンの対象、FR-3）。配列は indexedAt 降順（新しい順）を維持する。
+    {
+        uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-tail",
+        cid: "bafyreiguestthreadatail",
+        url: "https://bsky.app/profile/guest.demo/post/guest-thread-a-tail",
+        indexedAt: "2026-09-04T12:10:00.000Z",
+        author: {
+            did: "did:plc:guestdemo",
+            handle: "guest.demo",
+            displayName: "ゲストユーザー",
+        },
+        text: "スレッドA・3件目です。",
+        images: [],
+        replyParentUri:
+            "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-mid",
+    },
+    {
+        uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-mid",
+        cid: "bafyreiguestthreadamid",
+        url: "https://bsky.app/profile/guest.demo/post/guest-thread-a-mid",
+        indexedAt: "2026-09-04T12:05:00.000Z",
+        author: {
+            did: "did:plc:guestdemo",
+            handle: "guest.demo",
+            displayName: "ゲストユーザー",
+        },
+        text: "スレッドA・2件目です。画像付きでentry未作成です。",
+        images: [
+            {
+                url: placeholderImage("#6366f1", "A2"),
+                alt: "スレッドAサンプル画像",
+                cid: "bafkreiguestthreadaimg",
+            },
+        ],
+        replyParentUri:
+            "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-root",
+    },
+    {
+        uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-root",
+        cid: "bafyreiguestthreadaroot",
+        url: "https://bsky.app/profile/guest.demo/post/guest-thread-a-root",
+        indexedAt: "2026-09-04T12:00:00.000Z",
+        author: {
+            did: "did:plc:guestdemo",
+            handle: "guest.demo",
+            displayName: "ゲストユーザー",
+        },
+        text: "スレッドA・1件目（ルート、画像なし）です。",
+        images: [],
+    },
+    // スレッドB: ルート投稿に既にentryが紐づき、後続投稿があるケース
+    // （一覧上のスレッド由来バッジ表示確認、FR-4）。
+    {
+        uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-tail",
+        cid: "bafyreiguestthreadbtail",
+        url: "https://bsky.app/profile/guest.demo/post/guest-thread-b-tail",
+        indexedAt: "2026-09-03T12:05:00.000Z",
+        author: {
+            did: "did:plc:guestdemo",
+            handle: "guest.demo",
+            displayName: "ゲストユーザー",
+        },
+        text: "スレッドB・2件目です。",
+        images: [],
+        replyParentUri:
+            "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-root",
+    },
+    {
+        uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-root",
+        cid: "bafyreiguestthreadbroot",
+        url: "https://bsky.app/profile/guest.demo/post/guest-thread-b-root",
+        indexedAt: "2026-09-03T12:00:00.000Z",
+        author: {
+            did: "did:plc:guestdemo",
+            handle: "guest.demo",
+            displayName: "ゲストユーザー",
+        },
+        text: "スレッドB・1件目（ルート、entry作成済み）です。",
+        images: [
+            {
+                url: placeholderImage("#ef4444", "B1"),
+                alt: "スレッドBサンプル画像",
+                cid: "bafkreiguestthreadbimg",
+            },
+        ],
+        skyshareEntry: {
+            uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentrythreadb",
+            cid: "bafyreiguestentrythreadb",
+            createdAt: "2026-09-03T12:00:00.000Z",
+            sourceUri:
+                "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-root",
+            sourceCid: "bafyreiguestthreadbroot",
+            heading: "スレッドBサンプルEntry",
+            caption: "ゲスト表示用のスレッド由来ダミーEntryです。",
+            visualUrl: SAMPLE_OG_IMAGE_PATH,
+            webUrl: GUEST_SAMPLE_ENTRY_PATH,
+        },
+    },
 ]
 
 export const GUEST_DUMMY_ENTRIES: TimelineSkyshareEntry[] = [

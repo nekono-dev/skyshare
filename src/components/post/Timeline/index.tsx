@@ -7,7 +7,7 @@
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { getEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/common/ComponentList"
 import type {
@@ -20,7 +20,8 @@ import {
 } from "@/components/common/ComponentList"
 import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
-import PostCard from "@/components/post/PostCard"
+import ThreadCard from "@/components/post/ThreadCard"
+import { groupIntoThreads } from "@/components/post/Timeline/threadGroup"
 import ThreadComposer from "@/components/post/ThreadComposer"
 import PostLauncher from "@/components/post/PostLauncher"
 import {
@@ -236,6 +237,8 @@ const Component = ({ avatarUrl }: Props) => {
     ? pagedController.removeItem
     : infiniteController.removeItem
 
+  const threadGroups = useMemo(() => groupIntoThreads(items), [items])
+
   // Timeline初回読み込み完了後に一度だけ、ハッシュタグ候補の初回履歴seedを試みる。
   // 既にハッシュタグ履歴がある場合は seedHashtagHistoryFromRankedTags 側で書き込みが
   // スキップされるが、その判定を待たず readHashtagHistory で先に確認することで、
@@ -291,15 +294,15 @@ const Component = ({ avatarUrl }: Props) => {
         </p>
       ) : (
         <ComponentList
-          itemComponent={PostCard}
-          getItemKey={item => item.uri}
-          getItemProps={item => ({
-            onPostDeleted: () =>
-              removeItem(candidate => candidate.uri === item.uri),
+          itemComponent={ThreadCard}
+          getItemKey={group => group.id}
+          getItemProps={group => ({
+            group,
+            onPostDeleted: removeItem,
             guestMode,
           })}
           className={styles["timeline-list"]}
-          items={items}
+          items={threadGroups}
         />
       )}
 

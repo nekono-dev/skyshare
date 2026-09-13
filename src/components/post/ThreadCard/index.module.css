@@ -1,0 +1,10 @@
+.thread-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.expand-button {
+  align-self: flex-start;
+  margin-left: var(--space-4);
+}

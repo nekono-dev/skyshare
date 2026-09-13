@@ -7,7 +7,11 @@
  * - 画像 URL は CDN URL に展開し、一覧 UI でそのまま表示できる形にする。
  */
 
-import { AppBskyEmbedImages, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
+import {
+    AppBskyEmbedImages,
+    AppBskyFeedDefs,
+    AppBskyFeedPost,
+} from "@atproto/api"
 import { blobToCdnUrl, toCidString } from "@/lib/entry/entry"
 import {
     bskyPostUrlgen,

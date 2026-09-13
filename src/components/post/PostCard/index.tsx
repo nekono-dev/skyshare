@@ -16,7 +16,10 @@ import Avatar from "@/components/common/Avatar"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/entry/posts"
-import { useSkyshareEntryStatus } from "./useSkyshareEntryStatus"
+import {
+  useSkyshareEntryStatus,
+  type SkyshareEntryDisplayState,
+} from "./useSkyshareEntryStatus"
 import { useWebShareCrosspost } from "./useWebShareCrosspost"
 import { parseAtUri, skyshareEntryPath } from "@/lib/entry/url"
 import Loading from "@/components/common/Loading"
@@ -36,6 +39,19 @@ type PostCardProps = {
    * 通常通り操作でき、「Entryを開く」もサンプルEntryページへ遷移できる。
    */
   guestMode?: boolean
+  /**
+   * trueの場合、スレッド由来であることを示すバッジを表示する
+   * （`ThreadCard`がルート投稿に対してのみ渡す。`specs/timeline/design.md §6`）。
+   */
+  threadBadge?: boolean
+  /**
+   * スレッドの中間投稿向け事後entry作成ボタンの表示制御（`specs/timeline/design.md §5`）。
+   * - `undefined`（既定）: 単独投稿・スレッドルート投稿と同じ、投稿自身の適格性のみで判定する。
+   * - `true`: スレッド内で事後entry作成の対象に選ばれた投稿として明示的に表示する。
+   * - `false`: スレッド内で対象に選ばれなかった画像投稿として、投稿自身が適格でもボタンを
+   *   抑制する（1スレッドにつき事後entry作成ボタンは最大1箇所のみ表示するため）。
+   */
+  postCreateEntryButton?: boolean
 }
 
 /**
@@ -55,6 +71,8 @@ const Component = ({
   item,
   onPostDeleted,
   guestMode = false,
+  threadBadge = false,
+  postCreateEntryButton,
 }: PostCardProps) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
@@ -109,7 +127,17 @@ const Component = ({
     ? [activeEntry.visualUrl]
     : item.images.map(image => image.url)
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
+  // この判定は投稿自身の適格性のみに基づくため、postCreateEntryButtonによる
+  // ボタン抑制（下記actionsDisplay）とは独立して評価する。
   const isSkyshareIneligible = display.kind === "ineligible"
+
+  // postCreateEntryButton===false（スレッド内で事後entry作成の対象に選ばれなかった
+  // 画像投稿）の場合のみ、ボタン表示用のdisplayを「作成対象外」に差し替える。
+  // display自体（isSkyshareIneligible等）は変更しない。
+  const actionsDisplay: SkyshareEntryDisplayState =
+    postCreateEntryButton === false && display.kind === "creatable"
+      ? { kind: "ineligible" }
+      : display
 
   return (
     <article
@@ -130,6 +158,9 @@ const Component = ({
                   <strong>{item.author.displayName}</strong>
                 )}
                 <span className={styles.handle}>@{item.author.handle}</span>
+                {threadBadge ? (
+                  <span className={styles["thread-badge"]}>スレッド</span>
+                ) : null}
               </div>
               <p className={styles["created-at"]}>{createdAtText}</p>
             </div>
@@ -197,7 +228,7 @@ const Component = ({
         ) : null}
 
         <PostCardEntryActions
-          display={display}
+          display={actionsDisplay}
           createError={createError}
           deleteError={deleteError}
           onCreate={createEntryFromPost}
