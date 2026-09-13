@@ -57,21 +57,28 @@
 - [x] 実装済みのバックエンド部分（reply対応・スレッド下書き対応）を「実装済み」として設計書に反映する。
 - [x] 破棄したフロントエンド実装の問題点を、次回設計時の反面教師として設計書に記録する。
 
-## Phase 5: フロントエンド要件確定・設計（次セッション） 【未着手】
+## Phase 5: フロントエンド要件確定・設計 【完了】
 
 依存: Phase 1〜4完了後
 
-- [ ] スレッド投稿の起動導線（既存PostFormの拡張か、専用画面か等）を再検討し要件として確定する。
-- [ ] 各セグメントの視覚的な並べ方（見栄え）を要件定義段階で先に固める。
-- [ ] `PostForm`本体を汚染しないセグメント表現方式を設計する（design.md 4.2の検討課題を参照）。
-- [ ] スレッド投稿とクリエイターモード（EditorToolbox、`specs/creator-mode`）の関係性を整理する。
-- [ ] スレッド下書き（Phase 2で実装済みの`posts`配列API）とフロントエンドの状態管理の対応方法を設計する。
-- [ ] 上記を反映して `specs/threadpost/requirements.md` ・ `design.md` を更新し、本タスク一覧にフロントエンド実装フェーズを追記する。
+- [x] スレッド投稿の起動導線を「既存`PostForm`の拡張（専用画面は設けない）」に確定する。
+- [x] スレッド投稿とクリエイターモード（EditorToolbox、`specs/creator-mode`）の関係性を「独立機能」に確定する。
+- [x] スレッド全体の送信方式を「1リクエストにまとめる」に確定する。
+- [x] `PostForm`本体を汚染しないセグメント表現方式（`ThreadComposer`/`ThreadSegmentForm`、共通入力プリミティブの切り出し）を設計する。
+- [x] スレッド下書き（Phase 2で実装済みの`posts`配列API）とフロントエンドの状態管理の対応方法（`segments`配列を`posts`配列にそのままマッピング）を設計する。
+- [x] 画像付きセグメントの扱い（セグメントごとに既存の画像圧縮・OGP合成パイプラインを独立適用）を設計する。
+- [x] 上記を反映して `specs/threadpost/requirements.md` ・ `design.md` を更新する。
+- [x] `.claude/skills/spec-driven-development/SKILL.md` の仕様書レビューチェックリストに基づき、本ディレクトリの3ファイルをセルフレビューする。
 
-## Phase 6: フロントエンド実装（次セッション以降・Phase 5完了後） 【未着手】
+## Phase 6: フロントエンド実装（Phase 5完了後） 【未着手】
 
-- [ ] Phase 5の設計に基づき、スレッド投稿UIを実装する。
-- [ ] `npm run codegen` を実行し、`reply`を含む型でフロントエンドを実装する。
+- [ ] `ThreadComposer`・`ThreadSegmentForm`を実装する（design.md §4.1）。
+- [ ] 既存`PostForm`から共通の入力プリミティブ（`ImagePicker`呼び出し・facetツールバー・gate設定UI等）を切り出し、`ThreadSegmentForm`から利用できるようにする。
+- [ ] セグメントの追加・削除、`activeIndex`の切り替え、非アクティブセグメントのグレーアウト表示を実装する（requirements.md §6.3の受け入れ条件に対応）。
+- [ ] スレッド全体を1回の`POST /v2/entry`にまとめて送信する処理を実装する（design.md §4.3）。
+- [ ] スレッド全体の下書き保存・復元を実装する（design.md §4.4）。
+- [ ] `npm run codegen` を実行し、生成された型でフロントエンドを実装する。
+- [ ] `[TEST]` `ThreadComposer`/`ThreadSegmentForm`のセグメント追加・削除・`posts`配列への変換ロジックの単体テストを追加する。
 - [ ] 手動確認: 3件以上のセグメントを作成し、順に投稿してBluesky上で正しいスレッドとして表示されることを確認する。
 - [ ] 手動確認: 既存の`/`（Timeline）・既存PostFormの投稿導線にregressionがないことを確認する。
 - [ ] `[TEST]` 全体の `npx vitest run` を実行し、既存テストを含めてすべてパスすることを確認する。
