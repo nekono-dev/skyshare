@@ -50,16 +50,15 @@ const buildNewImagePostFormData = (opts?: {
             })),
         ),
     )
-    formData.set(
-        "posts[0][ogImage]",
-        new Blob(["thumb"], { type: "image/jpeg" }),
-    )
     if (opts?.text) formData.set("posts[0][text]", opts.text)
     if (opts?.facets)
         formData.set("posts[0][facets]", JSON.stringify(opts.facets))
     if (opts?.gate) formData.set("posts[0][gate]", JSON.stringify(opts.gate))
     if (opts?.reply) formData.set("reply", JSON.stringify(opts.reply))
-    if (opts?.createEntry) formData.set("posts[0][createEntry]", "true")
+    if (opts?.createEntry) {
+        formData.set("createEntry", "true")
+        formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+    }
     return formData
 }
 
@@ -75,7 +74,7 @@ const buildTextPostFormData = (opts?: { text?: string; reply?: object }) => {
 const buildFromPostFormData = (uri: string) => {
     const formData = new FormData()
     formData.set("uri", uri)
-    formData.set("ogImage", new Blob(["thumb"], { type: "image/jpeg" }))
+    formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
     return formData
 }
 
@@ -92,13 +91,16 @@ type PostItemOpts = {
     }
     facets?: object[]
     gate?: object
-    createEntry?: boolean
 }
 
-/** 複数件(スレッド)のposts[i][...]フォームフィールドを組み立てる。 */
+/**
+ * 複数件(スレッド)のposts[i][...]フォームフィールドを組み立てる。
+ * `createEntry`/`visual`はリクエスト全体で高々1組のトップレベルフィールドのため
+ * `opts`側に置く(`visual: false`で`createEntry:true`のみ・visual欠落の状態を作れる)。
+ */
 const buildThreadFormData = (
     items: PostItemOpts[],
-    opts?: { reply?: object },
+    opts?: { reply?: object; createEntry?: boolean; visual?: boolean },
 ) => {
     const formData = new FormData()
     items.forEach((item, i) => {
@@ -139,9 +141,12 @@ const buildThreadFormData = (
             formData.set(`posts[${i}][facets]`, JSON.stringify(item.facets))
         if (item.gate)
             formData.set(`posts[${i}][gate]`, JSON.stringify(item.gate))
-        if (item.createEntry) formData.set(`posts[${i}][createEntry]`, "true")
     })
     if (opts?.reply) formData.set("reply", JSON.stringify(opts.reply))
+    if (opts?.createEntry) formData.set("createEntry", "true")
+    if (opts?.createEntry && opts?.visual !== false) {
+        formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+    }
     return formData
 }
 
@@ -289,14 +294,15 @@ describe("POST /v2/entry", () => {
             expect(res.status).toBe(200)
             const json = await res.json()
             expect(json.posts[0].url).toContain(fakeSession.handle)
-            expect(json.posts[0].skyshareEntry.sourceUri).toBe(postUri)
+            expect(json.skyshareEntry.sourceUri).toBe(postUri)
         })
     })
 
     describe("新規投稿(posts)", () => {
-        it("createEntry:trueなのに画像が無い場合は400を返す", async () => {
+        it("createEntry:trueなのに画像投稿を含まない場合は400を返す", async () => {
             const formData = buildTextPostFormData()
-            formData.set("posts[0][createEntry]", "true")
+            formData.set("createEntry", "true")
+            formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
                 {
@@ -332,14 +338,11 @@ describe("POST /v2/entry", () => {
             expect(res.status).toBe(400)
         })
 
-        it("createEntry:trueで画像はあるがogImageが無い場合は400を返す", async () => {
-            const formData = buildThreadFormData([
-                {
-                    text: "hello",
-                    imagesCount: 2,
-                    createEntry: true,
-                },
-            ])
+        it("createEntry:trueで画像投稿はあるがvisualが無い場合は400を返す", async () => {
+            const formData = buildThreadFormData(
+                [{ text: "hello", imagesCount: 2 }],
+                { createEntry: true, visual: false },
+            )
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
                 {
@@ -508,7 +511,7 @@ describe("POST /v2/entry", () => {
             expect(res.status).toBe(500)
         })
 
-        it("ogImageアップロード失敗時は500を返す", async () => {
+        it("visualアップロード失敗時は500を返す", async () => {
             const agent = createFakeAgent({
                 uploadBlob: vi
                     .fn()
@@ -695,10 +698,10 @@ describe("POST /v2/entry", () => {
             expect(res.status).toBe(200)
             const json = await res.json()
             expect(json.posts).toHaveLength(1)
-            expect(json.posts[0].skyshareEntry).toBeUndefined()
+            expect(json.skyshareEntry).toBeUndefined()
         })
 
-        it("成功時(createEntry:true)は200でskyshareEntryを含む結果を返す", async () => {
+        it("成功時(createEntry:true)は200でトップレベルskyshareEntryを含む結果を返す", async () => {
             const agent = createFakeAgent()
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
@@ -717,10 +720,9 @@ describe("POST /v2/entry", () => {
             })
             expect(res.status).toBe(200)
             const json = await res.json()
-            expect(json.posts[0].skyshareEntry).toBeDefined()
-            expect(json.posts[0].skyshareEntry.sourceUri).toBe(
-                json.posts[0].uri,
-            )
+            expect(json.posts[0]).not.toHaveProperty("skyshareEntry")
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
         })
 
         it("複数件のpostsを送るとスレッドとして1回のapplyWritesで作成される", async () => {
@@ -795,27 +797,29 @@ describe("POST /v2/entry", () => {
          * (`fakeAgent.ts`の`defaultApplyWrites`と同じ方針)。
          */
         const mockApplyWrites = () =>
-            vi.fn().mockImplementation(
-                async ({
-                    repo,
-                    writes,
-                }: {
-                    repo: string
-                    writes: { collection: string; rkey: string }[]
-                }) => ({
-                    data: {
-                        results: writes.map((write, index) => ({
-                            uri: `at://${repo}/${write.collection}/${write.rkey}`,
-                            cid: `bafyapplywrites${index}`,
-                        })),
-                    },
-                }),
-            )
+            vi
+                .fn()
+                .mockImplementation(
+                    async ({
+                        repo,
+                        writes,
+                    }: {
+                        repo: string
+                        writes: { collection: string; rkey: string }[]
+                    }) => ({
+                        data: {
+                            results: writes.map((write, index) => ({
+                                uri: `at://${repo}/${write.collection}/${write.rkey}`,
+                                cid: `bafyapplywrites${index}`,
+                            })),
+                        },
+                    }),
+                )
 
         const sendThread = async (
             items: PostItemOpts[],
             applyWrites: ReturnType<typeof vi.fn>,
-            opts?: { reply?: object },
+            opts?: { reply?: object; createEntry?: boolean; visual?: boolean },
         ) => {
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
@@ -841,7 +845,9 @@ describe("POST /v2/entry", () => {
             )
             expect(res.status).toBe(200)
             const writesArg = applyWrites.mock.calls[0][0].writes
-            expect(findPostWrite(writesArg, "1件目").value.embed).toBeUndefined()
+            expect(
+                findPostWrite(writesArg, "1件目").value.embed,
+            ).toBeUndefined()
             expect(findPostWrite(writesArg, "2件目").value.embed).toEqual(
                 expect.objectContaining({ $type: "app.bsky.embed.images" }),
             )
@@ -857,7 +863,11 @@ describe("POST /v2/entry", () => {
             const res = await sendThread(
                 [
                     { text: "1件目", imagesCount: 1 },
-                    { text: "2件目 https://example.com", ogImage: true, ogMeta },
+                    {
+                        text: "2件目 https://example.com",
+                        ogImage: true,
+                        ogMeta,
+                    },
                 ],
                 applyWrites,
             )
@@ -956,28 +966,52 @@ describe("POST /v2/entry", () => {
             )
         })
 
-        it("一部投稿だけcreateEntry:trueのスレッドは該当postのみskyshareEntryを返す", async () => {
+        it("createEntry:trueのスレッドは、画像投稿がposts[0]の場合、sourceがposts[0]を指すskyshareEntryをトップレベルに1件だけ返す", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
                 [
-                    {
-                        text: "1件目",
-                        imagesCount: 1,
-                        ogImage: true,
-                        createEntry: true,
-                    },
+                    { text: "1件目", imagesCount: 1 },
                     { text: "2件目" },
                 ],
                 applyWrites,
+                { createEntry: true },
             )
             expect(res.status).toBe(200)
             const json = await res.json()
             expect(json.posts).toHaveLength(2)
-            expect(json.posts[0].skyshareEntry).toBeDefined()
-            expect(json.posts[0].skyshareEntry.sourceUri).toBe(
-                json.posts[0].uri,
+            expect(json.posts[0]).not.toHaveProperty("skyshareEntry")
+            expect(json.posts[1]).not.toHaveProperty("skyshareEntry")
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
+        it("createEntry:trueのスレッドで、画像投稿が中間(posts[1])にあっても、sourceは常にposts[0](スレッド先頭)を指す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [
+                    { text: "1件目" },
+                    { text: "2件目", imagesCount: 1 },
+                ],
+                applyWrites,
+                { createEntry: true },
             )
-            expect(json.posts[1].skyshareEntry).toBeUndefined()
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+            expect(json.skyshareEntry.sourceUri).not.toBe(json.posts[1].uri)
+        })
+
+        it("単発投稿(posts 1件)でcreateEntry:trueの場合、sourceは自身(posts[0])を指す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目", imagesCount: 1 }],
+                applyWrites,
+                { createEntry: true },
+            )
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
         })
 
         it("トップレベルreplyと複数postsを組み合わせた場合、先頭postは指定replyへ、2件目は先頭post自身へチェーンする", async () => {
@@ -1018,10 +1052,7 @@ describe("POST /v2/entry", () => {
                 allowQuote: true,
             }
             const res = await sendThread(
-                [
-                    { text: "1件目", gate },
-                    { text: "2件目" },
-                ],
+                [{ text: "1件目", gate }, { text: "2件目" }],
                 applyWrites,
             )
             expect(res.status).toBe(200)
@@ -1042,17 +1073,17 @@ describe("POST /v2/entry", () => {
     })
 
     describe("スレッド投稿の異常系", () => {
-        it("2件目でcreateEntry:trueなのに画像が無い場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
+        it("createEntry:trueなのに画像投稿を1件も含まない場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
             const applyWrites = vi.fn()
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
                 {
                     method: "POST",
                     headers: authHeaders,
-                    body: buildThreadFormData([
-                        { text: "1件目" },
-                        { text: "2件目", createEntry: true },
-                    ]),
+                    body: buildThreadFormData(
+                        [{ text: "1件目" }, { text: "2件目" }],
+                        { createEntry: true },
+                    ),
                 },
             )
             const res = await callRoute(POST, request, {

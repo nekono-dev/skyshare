@@ -49,17 +49,26 @@ export type ThreadPostInput = {
     embed?: any
     selfLabel?: string
     gate?: PostGateValue
-    /** 指定時のみ、この投稿に紐づくskyshare entryも同じバッチで作成する */
-    entry?: {
-        visual: any
-        postText: string
-        userName: string
-    }
+}
+
+/**
+ * リクエスト全体で高々1件だけ作成されるskyshare entryの入力。
+ * `source`は常にスレッド先頭（`posts[0]`）の事前計算済みuri/cidになる
+ * （`specs/entry/backend/design.md §7.2`）。
+ */
+export type ThreadEntryInput = {
+    visual: any
+    postText: string
+    userName: string
 }
 
 export type ThreadPostResult = {
     uri: string
     cid: string
+}
+
+export type CreateBskyThreadResult = {
+    posts: ThreadPostResult[]
     skyshareEntry?: CreatedSkyshareEntry
 }
 
@@ -79,9 +88,12 @@ type WriteOp = {
  * - `did`: 投稿者のDID（`applyWrites`の`repo`に使う）
  * - `posts`: 投稿入力の配列（1件以上）
  * - `firstReply`: 先頭の投稿が接続する既存スレッドへのStrongRef（未指定なら通常投稿として開始）
+ * - `entryInput`: 指定時のみ、`source`を常にスレッド先頭（`posts[0]`）とするskyshare entryを
+ *   同じバッチで1件だけ作成する
  *
  * Output:
- * - `posts`と同じ順番の`ThreadPostResult[]`
+ * - `{posts, skyshareEntry?}`。`posts`は入力と同じ順番の`ThreadPostResult[]`、
+ *   `skyshareEntry`は`entryInput`指定時のみ存在するトップレベル1件
  *
  * 失敗時の方針:
  * - `applyWrites`が失敗した場合はErrorをthrowする。呼び出し元でcatchして500を返す
@@ -89,7 +101,7 @@ type WriteOp = {
  *
  * 例:
  * - 入力: `posts=[{text:"1件目"}, {text:"2件目(リプライ)"}]`
- * - 出力: `[{uri:"at://.../post/aaa",cid:"bafy1"}, {uri:"at://.../post/bbb",cid:"bafy2"}]`
+ * - 出力: `{posts:[{uri:"at://.../post/aaa",cid:"bafy1"}, {uri:"at://.../post/bbb",cid:"bafy2"}]}`
  *   （2件目のレコードは内部的に`reply:{root:1件目,parent:1件目}`を持って作成される）
  */
 export const createBskyThread = async (
@@ -97,15 +109,19 @@ export const createBskyThread = async (
     did: string,
     posts: ThreadPostInput[],
     firstReply?: Components.CommonReplyRefType,
-): Promise<ThreadPostResult[]> => {
+    entryInput?: ThreadEntryInput,
+): Promise<CreateBskyThreadResult> => {
     const writes: WriteOp[] = []
     const postWriteIndexes: number[] = []
-    const entryWriteIndexes: (number | undefined)[] = []
-    const entryRecords: (Record<string, unknown> | undefined)[] = []
 
     let prevTid: InstanceType<typeof TID> | undefined
     let rootRef: Components.CommonStrongRefType | undefined
     let prevPostRef: Components.CommonStrongRefType | undefined
+    // スレッド先頭(posts[0])自身のuri/cid。`rootRef`は`reply`で指定された既存スレッドへ
+    // 継ぎ足す場合、その既存投稿(このリクエストの外)を指すことがあるため、
+    // entryの`source`が指す「posts[0]自身」を別途保持する
+    // (specs/entry/backend/design.md §7.2)。
+    let firstPostRef: Components.CommonStrongRefType | undefined
 
     for (const [i, post] of posts.entries()) {
         const tid = TID.next(prevTid)
@@ -144,6 +160,7 @@ export const createBskyThread = async (
 
         if (i === 0) {
             rootRef = reply?.root ?? postRef
+            firstPostRef = postRef
         }
         prevPostRef = postRef
 
@@ -176,28 +193,28 @@ export const createBskyThread = async (
             }
         }
 
-        if (post.entry) {
-            const entryRkey = TID.nextStr()
-            const entryRecord = buildSkyshareEntryRecord({
-                sourceUri: uri,
-                sourceCid: cid,
-                visual: post.entry.visual,
-                postText: post.entry.postText,
-                userName: post.entry.userName,
-                createdAt,
-            })
-            writes.push({
-                $type: "com.atproto.repo.applyWrites#create",
-                collection: "dev.nekono.skyshare.entry",
-                rkey: entryRkey,
-                value: entryRecord,
-            })
-            entryWriteIndexes.push(writes.length - 1)
-            entryRecords.push(entryRecord)
-        } else {
-            entryWriteIndexes.push(undefined)
-            entryRecords.push(undefined)
-        }
+    }
+
+    let entryWriteIndex: number | undefined
+    let entryRecord: Record<string, unknown> | undefined
+    if (entryInput && firstPostRef) {
+        const entryCreatedAt = new Date().toISOString()
+        const entryRkey = TID.nextStr()
+        entryRecord = buildSkyshareEntryRecord({
+            sourceUri: firstPostRef.uri,
+            sourceCid: firstPostRef.cid,
+            visual: entryInput.visual,
+            postText: entryInput.postText,
+            userName: entryInput.userName,
+            createdAt: entryCreatedAt,
+        })
+        writes.push({
+            $type: "com.atproto.repo.applyWrites#create",
+            collection: "dev.nekono.skyshare.entry",
+            rkey: entryRkey,
+            value: entryRecord,
+        })
+        entryWriteIndex = writes.length - 1
     }
 
     const res = await agent.com.atproto.repo.applyWrites({
@@ -206,7 +223,7 @@ export const createBskyThread = async (
     })
     const results = res.data.results ?? []
 
-    return posts.map((_, i) => {
+    const postResults = posts.map((_, i) => {
         const postResult = results[postWriteIndexes[i]] as
             { uri: string; cid: string } | undefined
         if (!postResult) {
@@ -214,26 +231,17 @@ export const createBskyThread = async (
                 `createBskyThread: missing applyWrites result for post index ${i}`,
             )
         }
-
-        const entryIndex = entryWriteIndexes[i]
-        const entryRecord = entryRecords[i]
-        let skyshareEntry: CreatedSkyshareEntry | undefined
-        if (entryIndex !== undefined && entryRecord) {
-            const entryResult = results[entryIndex] as
-                { uri: string; cid: string } | undefined
-            if (entryResult) {
-                skyshareEntry = toCreatedSkyshareEntry(
-                    entryRecord,
-                    did,
-                    entryResult,
-                )
-            }
-        }
-
-        return {
-            uri: postResult.uri,
-            cid: postResult.cid,
-            skyshareEntry,
-        }
+        return { uri: postResult.uri, cid: postResult.cid }
     })
+
+    let skyshareEntry: CreatedSkyshareEntry | undefined
+    if (entryWriteIndex !== undefined && entryRecord) {
+        const entryResult = results[entryWriteIndex] as
+            { uri: string; cid: string } | undefined
+        if (entryResult) {
+            skyshareEntry = toCreatedSkyshareEntry(entryRecord, did, entryResult)
+        }
+    }
+
+    return { posts: postResults, skyshareEntry }
 }

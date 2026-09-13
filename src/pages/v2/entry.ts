@@ -24,6 +24,7 @@ import { createEntryFromExistingPost } from "@/lib/entry/fromPost"
 import {
     createBskyThread,
     type ThreadPostInput,
+    type ThreadEntryInput,
 } from "@/lib/entry/createBskyThread"
 
 import * as PostSchema from "@/lib/api/schema/v2/entry/post"
@@ -62,7 +63,7 @@ import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
  * - `entry`: `createBskyThread`/`createEntryFromExistingPost` が返した詳細情報
  *
  * Output:
- * - レスポンス JSON の `posts[i].skyshareEntry` フィールド値
+ * - レスポンス JSON のトップレベル `skyshareEntry` フィールド値
  */
 const serializeSkyshareEntry = (entry: CreatedSkyshareEntry) => ({
     uri: entry.webUrl,
@@ -90,31 +91,34 @@ const json200 = (body: PostSchema.ResponseBody200Type) =>
  * 1. ヘッダ検証（Content-Type, Authorization）
  * 2. 認証済みセッションの取得（`bskySessionRefresh` ミドルウェアが `locals` へ供給）
  * 3. FormData 解析（トップレベルフィールド＋`posts[i][...]`インデックス付きフィールド）
- * 4. OpenAPI スキーマバリデーション（`{uri, ogImage}` または `{posts, reply}`）
+ * 4. OpenAPI スキーマバリデーション（`{uri, visual}` または `{posts, reply, createEntry?, visual?}`）
  * 4.5. `uri` 指定時は既存投稿からの発行（from-post）に分岐して結果を返却
- * 5. `posts`各要素について: `createEntry`フラグの妥当性検証、画像メタデータ検証、
- *    facets境界検証、embed作成（画像優先、次点でOGP）、画像アップロード、
- *    `createEntry`時はvisualサムネイルアップロード＋表示名解決
+ * 5a. トップレベル`createEntry:true`の妥当性検証（画像投稿が1件以上・`visual`必須）
+ * 5b. `posts`各要素について: 画像メタデータ検証、facets境界検証、
+ *     embed作成（画像優先、次点でOGP）、画像アップロード
+ * 5c. `createEntry:true`ならvisualを1回だけアップロード＋表示名解決
  * 6. トップレベル`reply`の所有権検証
- * 7. `createBskyThread`で全投稿＋gate＋skyshare entryを1回の`applyWrites`で原子的に作成
- * 8. 結果返却（`posts`配列。各要素の`skyshareEntry`は作成された場合のみ存在）
+ * 7. `createBskyThread`で全投稿＋gate＋（高々1件の）skyshare entryを
+ *    1回の`applyWrites`で原子的に作成（`source`は常にposts[0]）
+ * 8. 結果返却（`posts`配列＋トップレベル`skyshareEntry`）
  *
  * 入力形状(最小要件):
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
- * - フィールド: `uri` + `ogImage`（既存投稿からの発行）、または
+ * - フィールド: `uri` + `visual`（既存投稿からの発行）、または
  *   `posts[0][text]`等（新規投稿。1件ならテキストのみ/OGPリンク/画像付きの単発投稿、
- *   複数件ならスレッド）。任意で`reply`（既存スレッドへの接続先）。
+ *   複数件ならスレッド）。任意で`reply`（既存スレッドへの接続先）、
+ *   任意でトップレベル`createEntry`+`visual`（entry作成、リクエスト全体で高々1組）。
  *
  * 出力:
- * - 成功時（200）: `{ posts: [{ url, uri, cid, skyshareEntry? }, ...] }`
+ * - 成功時（200）: `{ posts: [{ url, uri, cid }, ...], skyshareEntry? }`
  * - 失敗時: 400/401/404/500 と エラーメッセージ
  *
  * 例:
  * - 入力: POST /v2/entry + multipart(posts[0][text]="Hello")
  * - 出力: `{ posts: [{ url: "https://bsky.app/...", uri: "at://...", cid: "bafy..." }] }`
- * - 入力: POST /v2/entry + multipart(uri="at://did:plc:abc/app.bsky.feed.post/3lxyz", ogImage=[...])
- * - 出力: `{ posts: [{ url: "https://bsky.app/...", uri: "at://...", cid: "bafy...", skyshareEntry: {...} }] }`
+ * - 入力: POST /v2/entry + multipart(uri="at://did:plc:abc/app.bsky.feed.post/3lxyz", visual=[...])
+ * - 出力: `{ posts: [{ url: "https://bsky.app/...", uri: "at://...", cid: "bafy..." }], skyshareEntry: {...} }`
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
@@ -178,7 +182,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 agent,
                 body.data.uri,
                 session,
-                body.data.ogImage,
+                body.data.visual,
             )
             if (!fromPostResult.ok) {
                 return errorResponseFromStatus(fromPostResult.status)
@@ -190,11 +194,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
                         url: fromPostResult.bskyUrl,
                         uri: fromPostResult.skyshareEntry.sourceUri,
                         cid: fromPostResult.skyshareEntry.sourceCid,
-                        skyshareEntry: serializeSkyshareEntry(
-                            fromPostResult.skyshareEntry,
-                        ),
                     },
                 ],
+                skyshareEntry: serializeSkyshareEntry(
+                    fromPostResult.skyshareEntry,
+                ),
             })
         }
 
@@ -206,18 +210,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
-        // フェーズ 5: 各postsについて検証・embed作成・アップロードを行う
-        const threadPostInputs: ThreadPostInput[] = []
-        for (const item of body.data.posts) {
-            const wantsEntry = item.createEntry === true
-            const hasImages = !!item.images && item.images.length > 0
-
-            if (wantsEntry && (!hasImages || !item.ogImage)) {
+        // フェーズ 5a: トップレベル createEntry:true の検証（posts全体を見て初めて判定できるため、
+        // 個々のposts[i]の検証より先に行う）。
+        const wantsEntry = body.data.createEntry === true
+        if (wantsEntry) {
+            const hasAnyImagePost = body.data.posts.some(
+                item => !!item.images && item.images.length > 0,
+            )
+            if (!hasAnyImagePost || !body.data.visual) {
                 console.warn(
-                    "createEntry: createEntry flag requires images and ogImage",
+                    "createEntry: createEntry flag requires an image post and visual",
                 )
                 return errorResponseFromStatus(400)
             }
+        }
+
+        // フェーズ 5b: 各postsについて検証・embed作成・アップロードを行う
+        const threadPostInputs: ThreadPostInput[] = []
+        for (const item of body.data.posts) {
+            const hasImages = !!item.images && item.images.length > 0
 
             try {
                 validateImageMetadata(item.images, item.imagesMeta)
@@ -267,30 +278,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 }
             }
 
-            let entryInput: ThreadPostInput["entry"] | undefined
-            if (wantsEntry && item.ogImage) {
-                let uploadedVisual: any
-                try {
-                    uploadedVisual = await uploadBlob(agent, item.ogImage)
-                } catch (err) {
-                    console.error(
-                        "createEntry: visual thumbnail upload failed",
-                        err,
-                    )
-                    return errorResponseFromStatus(500)
-                }
-                const userName = await resolveDisplayName(
-                    agent,
-                    session.did,
-                    session.handle,
-                )
-                entryInput = {
-                    visual: uploadedVisual,
-                    postText,
-                    userName,
-                }
-            }
-
             threadPostInputs.push({
                 text: postText,
                 facets: item.facets,
@@ -298,8 +285,33 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 embed,
                 selfLabel: item.selfLabels,
                 gate: item.gate,
-                entry: entryInput,
             })
+        }
+
+        // フェーズ 5c: createEntry:true の場合、visualを1回だけアップロードし
+        // entry作成の入力を組み立てる（`source`は常にposts[0]、design.md §7.2）。
+        let entryInput: ThreadEntryInput | undefined
+        if (wantsEntry && body.data.visual) {
+            let uploadedVisual: any
+            try {
+                uploadedVisual = await uploadBlob(agent, body.data.visual)
+            } catch (err) {
+                console.error(
+                    "createEntry: visual thumbnail upload failed",
+                    err,
+                )
+                return errorResponseFromStatus(500)
+            }
+            const userName = await resolveDisplayName(
+                agent,
+                session.did,
+                session.handle,
+            )
+            entryInput = {
+                visual: uploadedVisual,
+                postText: threadPostInputs[0]?.text ?? "",
+                userName,
+            }
         }
 
         // フェーズ 7: 投稿＋gate＋skyshare entryを1回のapplyWritesで原子的に作成
@@ -310,6 +322,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 session.did,
                 threadPostInputs,
                 body.data.reply,
+                entryInput,
             )
         } catch (err) {
             console.error("createEntry: applyWrites failed", err)
@@ -318,17 +331,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         // フェーズ 8: 結果返却
         return json200({
-            posts: results.map(result => {
+            posts: results.posts.map(result => {
                 const rkey = result.uri.split("/").slice(-1)[0]
                 return {
                     url: bskyPostUrlgen(session.handle, rkey),
                     uri: result.uri,
                     cid: result.cid,
-                    skyshareEntry: result.skyshareEntry
-                        ? serializeSkyshareEntry(result.skyshareEntry)
-                        : undefined,
                 }
             }),
+            skyshareEntry: results.skyshareEntry
+                ? serializeSkyshareEntry(results.skyshareEntry)
+                : undefined,
         })
     } catch (err: unknown) {
         console.error("createEntry: create entry error", err)

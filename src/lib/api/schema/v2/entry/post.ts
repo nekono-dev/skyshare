@@ -7,10 +7,12 @@
  * - 新規投稿(`posts`配列。1件ならテキストのみ/OGPリンク/画像付きの単発投稿、
  *   複数件ならBlueskyのスレッド(reply chain)として原子的に作成する)
  *
- * 各`posts[i]`は`createEntry`フラグにより、その投稿に紐づくskyshare entryを
- * 作成するかどうかをクライアントが指定できる(画像投稿でなければtrueは無効)。
+ * entry作成(`createEntry`/`visual`)は、`posts`と同階層のトップレベルフィールドとして
+ * リクエスト全体で高々1組だけ持つ。作成できるskyshare entryは1リクエストにつき常に
+ * 高々1件であり、その`source`は常にスレッド先頭(`posts[0]`)にサーバが自動解決する
+ * (投稿ごとの個別指定は行わない。詳細は`specs/entry/backend/design.md §3.1・§7`)。
  *
- * `reply`(スレッド接続用のStrongRef)は`posts`と同階層のトップレベルフィールドとして
+ * `reply`(スレッド接続用のStrongRef)も同様に`posts`と同階層のトップレベルフィールドとして
  * 1つだけ持つ。同一リクエスト内の2件目以降のreply chainはサーバが自動的に組み立てるため、
  * クライアントが指定する必要があるのは「このリクエスト全体(posts[0])が既存のどの投稿に
  * 接続するか」だけであり、配列の要素ごとに持たせる意味が無いため。
@@ -25,7 +27,7 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import type { FormDataFieldKind } from "@/util/formData"
-import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
+import { MAX_THREAD_POST_COUNT } from "../../../../atproto/threadLimit"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)
@@ -36,7 +38,9 @@ const selfLabelsField = z
 
 /**
  * `posts`配列の1件分(1セグメント)。現行`/v2/bsky/record`の3分岐
- * (テキストのみ/OGPリンク付き/画像付き)をそのまま引き継ぎ、`createEntry`フラグを追加する。
+ * (テキストのみ/OGPリンク付き/画像付き)をそのまま引き継ぐ。
+ * entry作成の指定(`createEntry`/`visual`)はリクエスト全体でトップレベルに1組だけ持ち、
+ * 投稿ごとの個別指定は行わない(詳細は`specs/entry/backend/design.md §3.1`参照)。
  */
 export const EntryPostItemSchema = z.union([
     // テキストのみの投稿
@@ -51,7 +55,6 @@ export const EntryPostItemSchema = z.union([
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),
             gate: Common.CommonGateSettingsSchema.optional(),
-            createEntry: z.boolean().optional(),
         })
         .strict(),
     // OGPリンク付き投稿(ogImage/ogMetaが必須)
@@ -66,11 +69,9 @@ export const EntryPostItemSchema = z.union([
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),
             gate: Common.CommonGateSettingsSchema.optional(),
-            createEntry: z.boolean().optional(),
         })
         .strict(),
-    // 画像付き投稿(images/imagesMetaが必須。createEntry:trueにはogImageも必須。
-    // ただし異なるunion分岐をまたぐ条件のためZodでは表現せず、ハンドラ側で検証する)
+    // 画像付き投稿(images/imagesMetaが必須)
     z
         .object({
             text: textField.optional(),
@@ -82,7 +83,6 @@ export const EntryPostItemSchema = z.union([
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),
             gate: Common.CommonGateSettingsSchema.optional(),
-            createEntry: z.boolean().optional(),
         })
         .strict(),
 ])
@@ -93,10 +93,11 @@ export const RequestBodySchema = z.union([
     z
         .object({
             uri: z.string(),
-            ogImage: imageField,
+            visual: imageField,
         })
         .strict(),
-    // 新規投稿(1件、またはスレッドとして複数件)
+    // 新規投稿(1件、またはスレッドとして複数件)。`createEntry`/`visual`はリクエスト全体で
+    // 高々1組のみ持つトップレベルフィールド(詳細は`specs/entry/backend/design.md §3.1`)。
     z
         .object({
             posts: z
@@ -104,6 +105,8 @@ export const RequestBodySchema = z.union([
                 .min(1)
                 .max(MAX_THREAD_POST_COUNT),
             reply: Common.CommonReplyRefSchema.optional(),
+            createEntry: z.boolean().optional(),
+            visual: imageField.optional(),
         })
         .strict(),
 ])
@@ -127,20 +130,20 @@ export const PostItemFieldKinds: Record<string, FormDataFieldKind> = {
     langs: "texts",
     selfLabels: "text",
     gate: "json",
-    createEntry: "json",
 }
 
 /**
- * リクエストボディ全体のFormData種別マップ。`uri`/`ogImage`/`reply`はトップレベルの
- * 単一フィールド、`posts`は`{kind:"items"}`種別として宣言し、`posts[i][...]`という
- * インデックス付きフィールドから複数件（スレッド）を復元する。この宣言が、クライアント側
- * （`src/lib/codegen/openapiFormData.ts`の`ITEMS_FIELD_NAMES`）が`posts`を常に
- * インデックス展開する根拠と対になっている。
+ * リクエストボディ全体のFormData種別マップ。`uri`/`visual`/`reply`/`createEntry`は
+ * トップレベルの単一フィールド、`posts`は`{kind:"items"}`種別として宣言し、
+ * `posts[i][...]`というインデックス付きフィールドから複数件（スレッド）を復元する。
+ * この宣言が、クライアント側（`src/lib/codegen/openapiFormData.ts`の
+ * `ITEMS_FIELD_NAMES`）が`posts`を常にインデックス展開する根拠と対になっている。
  */
 export const RequestBodyFieldKinds: Record<string, FormDataFieldKind> = {
     uri: "text",
-    ogImage: "file",
+    visual: "file",
     reply: "json",
+    createEntry: "json",
     posts: { kind: "items", itemFieldKinds: PostItemFieldKinds },
 }
 
@@ -177,11 +180,11 @@ export const ResponseBody200Schema = z
                         url: z.string(),
                         uri: z.string(),
                         cid: z.string(),
-                        skyshareEntry: SkyshareEntrySchema.optional(),
                     })
                     .strict(),
             )
             .min(1),
+        skyshareEntry: SkyshareEntrySchema.optional(),
     })
     .strict()
 export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>

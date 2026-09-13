@@ -2,7 +2,7 @@
  * `src/lib/api/schema/v2/entry/post.ts` の `RequestBodySchema` のテスト。
  *
  * 責務と処理概要:
- * - トップレベルの2分岐（from-post: `{uri, ogImage}` / 新規投稿: `{posts, reply}`）が
+ * - トップレベルの2分岐（from-post: `{uri, visual}` / 新規投稿: `{posts, reply, createEntry?, visual?}`）が
  *   それぞれ正しく検証されることを直接確認する。
  * - `formDataToObject`（`posts`は`{kind:"items"}`種別として自動的にインデックス付き
  *   デコードされる）によるデコードと組み合わせた統合的な検証も兼ねる。
@@ -18,10 +18,10 @@ const parseFormData = (formData: FormData) => {
 }
 
 describe("v2/entry POST RequestBodySchema", () => {
-    it("from-post分岐(uri + ogImage)を受理する", () => {
+    it("from-post分岐(uri + visual)を受理する", () => {
         const formData = new FormData()
         formData.set("uri", "at://did:plc:abc/app.bsky.feed.post/3lxyz")
-        formData.set("ogImage", new Blob(["x"], { type: "image/png" }))
+        formData.set("visual", new Blob(["x"], { type: "image/png" }))
         const result = parseFormData(formData)
         expect(result.success).toBe(true)
     })
@@ -59,7 +59,7 @@ describe("v2/entry POST RequestBodySchema", () => {
         expect(result.success).toBe(true)
     })
 
-    it("どちらの分岐も満たさない場合は拒否する(uriのみ、ogImage欠落)", () => {
+    it("どちらの分岐も満たさない場合は拒否する(uriのみ、visual欠落)", () => {
         const formData = new FormData()
         formData.set("uri", "at://did:plc:abc/app.bsky.feed.post/3lxyz")
         const result = parseFormData(formData)
@@ -156,7 +156,7 @@ describe("v2/entry POST RequestBodySchema", () => {
         expect(result.success).toBe(true)
     })
 
-    it("createEntryフラグを受理する", () => {
+    it("トップレベルのcreateEntry/visualを受理する", () => {
         const formData = new FormData()
         formData.append(
             "posts[0][images]",
@@ -166,17 +166,16 @@ describe("v2/entry POST RequestBodySchema", () => {
             "posts[0][imagesMeta]",
             JSON.stringify([{ width: 1, height: 1 }]),
         )
-        formData.set(
-            "posts[0][ogImage]",
-            new Blob(["x"], { type: "image/png" }),
-        )
-        formData.set("posts[0][createEntry]", "true")
+        formData.set("createEntry", "true")
+        formData.set("visual", new Blob(["x"], { type: "image/png" }))
         const result = parseFormData(formData)
         expect(result.success).toBe(true)
         if (result.success && "posts" in result.data) {
-            expect(result.data.posts[0]).toMatchObject({ createEntry: true })
+            expect(result.data).toMatchObject({ createEntry: true })
+            expect(result.data.posts[0]).not.toHaveProperty("createEntry")
         }
     })
+
 
     it("トップレベルのreply(root/parent)を受理する", () => {
         const formData = new FormData()

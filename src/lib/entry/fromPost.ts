@@ -42,6 +42,43 @@ export type FromPostResult =
     | { ok: false; status: 400 | 404 | 500 }
 
 /**
+ * from-post経路でのentryの`source`を解決する（`specs/entry/backend/design.md §7.3`）。
+ *
+ * 処理の趣旨:
+ * - 対象投稿が自分自身の`reply.root`を持つ場合はそのrootを`source`にする。
+ * - `root`が無い、または`root`のrepoが他人の場合は、対象投稿自身を`source`にする
+ *   （他人が起点のスレッドへのすり替え防止。エラーにはしない）。
+ * - `source`の解決方針はクライアントが選択する余地はなく、常にこの規則で一意に決まる
+ *   （旧`entrySource`フィールドは廃止した）。
+ *
+ * Input:
+ * - `postRecord`: 対象投稿のレコード値（`reply`を含みうる）
+ * - `postUri`/`postCid`: 対象投稿自身のAT URI/CID
+ * - `did`: 呼び出し者自身のDID
+ *
+ * Output:
+ * - 解決された`{ uri, cid }`
+ */
+const resolveFromPostSource = (
+    postRecord: AppBskyFeedPost.Main,
+    postUri: string,
+    postCid: string,
+    did: string,
+): { uri: string; cid: string } => {
+    const root = postRecord.reply?.root
+    const ownedRoot =
+        root && typeof root.uri === "string"
+            ? parseOwnedAtUri(root.uri, "app.bsky.feed.post", did)
+            : null
+
+    if (ownedRoot && root) {
+        return { uri: root.uri, cid: root.cid }
+    }
+
+    return { uri: postUri, cid: postCid }
+}
+
+/**
  * 既存の Bluesky 投稿から skyshare entry を発行する（from-post 相当の処理）。
  *
  * 処理の趣旨:
@@ -55,17 +92,17 @@ export type FromPostResult =
  * - `agent`: 認証済み AtpAgent（または同等の最小インターフェース）
  * - `postUri`: 対象となる自分自身の app.bsky.feed.post の AT URI
  * - `session`: セッション情報（DID・handle 取得用）
- * - `ogImage`: クライアントが合成したサムネイル Blob（必須）
+ * - `visual`: クライアントが合成したサムネイル Blob（必須）
  *
  * Output:
  * - 成功時: `{ ok: true, bskyUrl, skyshareUri }`
- * - 失敗時: `{ ok: false, status }`（400: URI 不正/画像なし/ogImage欠落、404: 投稿が見つからない、500: 発行失敗）
+ * - 失敗時: `{ ok: false, status }`（400: URI 不正/画像なし/visual欠落、404: 投稿が見つからない、500: 発行失敗）
  */
 export const createEntryFromExistingPost = async (
     agent: FromPostAgent,
     postUri: string,
     session: ComAtprotoServerRefreshSession.OutputSchema,
-    ogImage: Blob | undefined,
+    visual: Blob | undefined,
 ): Promise<FromPostResult> => {
     const parsedPostUri = parseOwnedAtUri(
         postUri,
@@ -105,16 +142,16 @@ export const createEntryFromExistingPost = async (
         return { ok: false, status: 400 }
     }
 
-    if (!ogImage) {
-        console.warn("createEntry: ogImage is required (from-post)")
+    if (!visual) {
+        console.warn("createEntry: visual is required (from-post)")
         return { ok: false, status: 400 }
     }
 
-    let visual
+    let uploadedVisual
     try {
-        visual = await uploadBlob(agent, ogImage)
+        uploadedVisual = await uploadBlob(agent, visual)
     } catch (err) {
-        console.error("createEntry: ogImage upload failed (from-post)", err)
+        console.error("createEntry: visual upload failed (from-post)", err)
         return { ok: false, status: 500 }
     }
 
@@ -125,13 +162,20 @@ export const createEntryFromExistingPost = async (
         session.handle,
     )
 
+    const source = resolveFromPostSource(
+        postRecord,
+        postUri,
+        postCid,
+        session.did,
+    )
+
     let skyshareEntry: CreatedSkyshareEntry
     try {
         const createdAt = new Date().toISOString()
         const record = buildSkyshareEntryRecord({
-            sourceUri: postUri,
-            sourceCid: postCid,
-            visual,
+            sourceUri: source.uri,
+            sourceCid: source.cid,
+            visual: uploadedVisual,
             postText,
             userName,
             createdAt,

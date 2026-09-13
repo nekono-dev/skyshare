@@ -157,3 +157,102 @@ describe("createEntryFromExistingPost", () => {
         expect(result).toEqual({ ok: false, status: 500 })
     })
 })
+
+describe("createEntryFromExistingPost: sourceの自動解決(specs/entry/backend/design.md §7.3)", () => {
+    const rootUri = "at://did:plc:abc/app.bsky.feed.post/3lroot"
+    const otherRootUri = "at://did:plc:other/app.bsky.feed.post/3lroot"
+
+    const makeAgentWithReply = (
+        replyRootUri: string | undefined,
+        overrides: Partial<Record<string, any>> = {},
+    ) =>
+        makeAgent({
+            com: {
+                atproto: {
+                    repo: {
+                        getRecord: vi.fn().mockResolvedValue({
+                            data: {
+                                cid: "bafypost",
+                                value: {
+                                    $type: "app.bsky.feed.post",
+                                    text: "hello",
+                                    embed: {
+                                        $type: "app.bsky.embed.images",
+                                        images: [
+                                            {
+                                                image: { ref: "bafkre123" },
+                                                alt: "",
+                                            },
+                                        ],
+                                    },
+                                    ...(replyRootUri
+                                        ? {
+                                              reply: {
+                                                  root: {
+                                                      uri: replyRootUri,
+                                                      cid: "bafyroot",
+                                                  },
+                                                  parent: {
+                                                      uri: replyRootUri,
+                                                      cid: "bafyroot",
+                                                  },
+                                              },
+                                          }
+                                        : {}),
+                                },
+                            },
+                        }),
+                        createRecord: vi.fn().mockResolvedValue({
+                            data: {
+                                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+                                cid: "bafyentry",
+                            },
+                        }),
+                    },
+                },
+            },
+            ...overrides,
+        })
+
+    it("reply.rootが無い場合、対象投稿自身がsourceになる", async () => {
+        const agent = makeAgentWithReply(undefined)
+        const result = await createEntryFromExistingPost(
+            agent as any,
+            postUri,
+            session,
+            ogImage,
+        )
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.skyshareEntry.sourceUri).toBe(postUri)
+        }
+    })
+
+    it("reply.rootが自分自身の場合、rootがsourceになる", async () => {
+        const agent = makeAgentWithReply(rootUri)
+        const result = await createEntryFromExistingPost(
+            agent as any,
+            postUri,
+            session,
+            ogImage,
+        )
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.skyshareEntry.sourceUri).toBe(rootUri)
+        }
+    })
+
+    it("reply.rootが他人の場合、対象投稿自身にフォールバックする", async () => {
+        const agent = makeAgentWithReply(otherRootUri)
+        const result = await createEntryFromExistingPost(
+            agent as any,
+            postUri,
+            session,
+            ogImage,
+        )
+        expect(result.ok).toBe(true)
+        if (result.ok) {
+            expect(result.skyshareEntry.sourceUri).toBe(postUri)
+        }
+    })
+})
