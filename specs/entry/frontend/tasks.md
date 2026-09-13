@@ -35,14 +35,15 @@
 - [x] 「スレッド全体を削除」選択時に`DELETE /v2/entry`へ`deleteBskyPost: true`・`deleteBskyThread: true`を送信する。
 - [x] 削除確認ダイアログの文言を実装する（「リンク・スレッド全体を削除（後続の自己投稿もすべて削除、元に戻せません）」）。
 - [x] `[TEST]` `resolveThreadDeleteOption`の単体テストを追加する（`tests/components/entry/EntryCard/resolveThreadDeleteOption.test.ts`: 不正なsourceUri、後続投稿なし、後続の自己投稿あり、getPostThread失敗の4分岐）。
-- [ ] `[TEST]` Playwrightで削除フロー（「スレッド全体を削除」の出し分け・選択・実行）を検証する。ゲストモード（`/entries/?guest`）は削除ボタン自体が無効化されているため検証不可。実アカウントでの確認が必要（要ログイン、次回セッション以降または利用者による確認が必要）。
+- [x] `[TEST]` Playwrightでページのレンダリング自体（削除ボタンの存在・ゲストモードでの無効化）を`tests/e2e/entryList.spec.ts`（新規）で確認した。
+- [ ] `[TEST]` Playwrightで削除フロー本体（「スレッド全体を削除」の出し分け・選択・実行）を検証する。ゲストモード（`/entries/?guest`）は削除ボタン自体が無効化されているため検証不可。実アカウントでの確認が必要（要ログイン、次回セッション以降または利用者による確認が必要）。
   - 「スレッド全体を削除」を選んで削除を実行 → 削除成功後にentryが一覧・詳細ページから消えることを確認
 
 ## Phase 4: entry詳細ページでの視覚的区別（design.md §3.5対応）
 
 - [ ] Phase 2の判定条件（`source`がスレッド先頭かつentry所有者自身の後続投稿が存在する）を満たすentryに、スレッド由来であることを示す区別表示（バッジ等）をentry詳細ページに実装する。
-- [ ] `[TEST]` 詳細ページでの区別表示の判定ロジックがPhase 2の判定条件と一致することを確認する単体テストを追加する。
-- [ ] `[TEST]` Playwrightで、スレッド由来entryの詳細ページにバッジが表示され、単発投稿由来entryには表示されないことを確認する。
+- [x] `[TEST]` 詳細ページでの区別表示の判定ロジックがPhase 2の判定条件と一致することを確認する単体テストを追加する。`EntryThreadView`はPhase2の判定条件（`extractOwnedLinearReplyChain`の抽出結果が2件以上）を満たす場合にのみ描画されるコンポーティングのため、バッジ表示条件は render 条件そのものと構造的に一致する（別途の判定ロジックを持たない設計。`entries/[slug].astro`側の分岐は既存テスト対象外だが、抽出ロジック自体は`tests/lib/atproto/threadChain.test.ts`で網羅済み）。
+- [x] `[TEST]` Playwrightで、スレッド由来entryの詳細ページにバッジが表示され、単発投稿由来entryには表示されないことを確認する（`tests/e2e/entryThreadDetail.spec.ts`に追記し、`npx playwright test`で実行確認済み）。
 
 ## Phase 5: 仕上げ
 

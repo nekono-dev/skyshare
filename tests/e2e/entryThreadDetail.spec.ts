@@ -38,14 +38,19 @@ test.describe("entry詳細ページのスレッド表示", () => {
             "スレッド2件目です。画像が付いています。",
             "スレッド3件目（末尾投稿）です。",
         ])
+
+        // スレッド由来であることを示す視覚的区別（FR-6）。
+        await expect(page.getByText("スレッド", { exact: true })).toBeVisible()
     })
 
-    test("単発投稿由来entryのサンプルページは、従来通り単一投稿として表示される", async ({
+    test("単発投稿由来entryのサンプルページは、従来通り単一投稿として表示され、スレッド由来バッジも表示されない", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
 
         // スレッド表示専用の要素（投稿順に並ぶリスト）が無いこと。
         await expect(page.locator("ol li")).toHaveCount(0)
+        // FR-6: 単発投稿由来entryにはスレッド由来バッジを表示しない。
+        await expect(page.getByText("スレッド", { exact: true })).toHaveCount(0)
     })
 })
