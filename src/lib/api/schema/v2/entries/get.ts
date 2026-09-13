@@ -45,6 +45,7 @@ export const ResponseBody200Schema = z
                             })
                             .strict(),
                     ),
+                    replyParentUri: z.string().optional(),
                     skyshareEntry: z
                         .object({
                             uri: z.string(),

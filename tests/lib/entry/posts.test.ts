@@ -150,4 +150,56 @@ describe("normalizeTimelinePost", () => {
         expect(normalizeTimelinePost({ post: {} })).toBeUndefined()
         expect(normalizeTimelinePost(undefined)).toBeUndefined()
     })
+
+    it("reply.parentがPostView型の場合、replyParentUriを設定する", () => {
+        const replyFeedItem = {
+            ...feedItem,
+            reply: {
+                parent: {
+                    $type: "app.bsky.feed.defs#postView",
+                    uri: "at://did:plc:abc/app.bsky.feed.post/3lparent",
+                    cid: "bafyparent",
+                    author: feedItem.post.author,
+                    record: { text: "parent" },
+                    indexedAt: "2025-12-31T00:00:00Z",
+                },
+                root: {
+                    $type: "app.bsky.feed.defs#postView",
+                    uri: "at://did:plc:abc/app.bsky.feed.post/3lroot",
+                    cid: "bafyroot",
+                    author: feedItem.post.author,
+                    record: { text: "root" },
+                    indexedAt: "2025-12-30T00:00:00Z",
+                },
+            },
+        }
+        expect(normalizeTimelinePost(replyFeedItem)?.replyParentUri).toBe(
+            "at://did:plc:abc/app.bsky.feed.post/3lparent",
+        )
+    })
+
+    it("reply.parentがNotFoundPost等(PostView型でない)の場合、replyParentUriを設定しない", () => {
+        const replyFeedItem = {
+            ...feedItem,
+            reply: {
+                parent: {
+                    $type: "app.bsky.feed.defs#notFoundPost",
+                    uri: "at://did:plc:abc/app.bsky.feed.post/3lgone",
+                    notFound: true,
+                },
+                root: {
+                    $type: "app.bsky.feed.defs#notFoundPost",
+                    uri: "at://did:plc:abc/app.bsky.feed.post/3lgone",
+                    notFound: true,
+                },
+            },
+        }
+        expect(
+            normalizeTimelinePost(replyFeedItem)?.replyParentUri,
+        ).toBeUndefined()
+    })
+
+    it("replyが無い投稿はreplyParentUriを設定しない", () => {
+        expect(normalizeTimelinePost(feedItem)?.replyParentUri).toBeUndefined()
+    })
 })

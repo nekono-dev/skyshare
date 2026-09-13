@@ -7,7 +7,7 @@
  * - 画像 URL は CDN URL に展開し、一覧 UI でそのまま表示できる形にする。
  */
 
-import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
+import { AppBskyEmbedImages, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
 import { blobToCdnUrl, toCidString } from "@/lib/entry/entry"
 import {
     bskyPostUrlgen,
@@ -46,6 +46,8 @@ export type TimelinePost = {
     text: string
     images: SourceImage[]
     skyshareEntry?: TimelineSkyshareEntry
+    /** 返信先投稿のuri（返信でない場合はundefined）。`specs/timeline/design.md §2`参照。 */
+    replyParentUri?: string
 }
 
 type RawTimelineEntry = {
@@ -231,6 +233,13 @@ export const normalizeTimelinePost = (
         ? extractTimelinePostImages(postRecord, post.author.did)
         : []
 
+    // 返信先のuri。削除済み等でPostView型でない（NotFoundPost/BlockedPost）場合は
+    // グルーピング判定の材料にできないため設定しない（specs/timeline/design.md §2.2）。
+    const replyParent = feedItem?.reply?.parent
+    const replyParentUri = AppBskyFeedDefs.isPostView(replyParent)
+        ? replyParent.uri
+        : undefined
+
     return {
         uri: post.uri,
         cid: post.cid,
@@ -251,5 +260,6 @@ export const normalizeTimelinePost = (
         text,
         images,
         skyshareEntry,
+        replyParentUri,
     }
 }
