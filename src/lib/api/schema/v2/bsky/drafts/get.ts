@@ -5,7 +5,7 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
-import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
+import { MAX_THREAD_POST_COUNT } from "../../../../../atproto/threadLimit"
 import * as Common from "../../../common"
 import { DraftPostSchema } from "./post"
 

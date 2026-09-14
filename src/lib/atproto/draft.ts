@@ -128,10 +128,7 @@ export const parseDraftPostsInput = (
     if (!isObjectRecord(value) || !Array.isArray(value.posts)) {
         return undefined
     }
-    if (
-        value.posts.length < 1 ||
-        value.posts.length > MAX_THREAD_POST_COUNT
-    ) {
+    if (value.posts.length < 1 || value.posts.length > MAX_THREAD_POST_COUNT) {
         return undefined
     }
 

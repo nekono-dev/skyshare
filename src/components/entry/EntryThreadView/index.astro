@@ -1,0 +1,79 @@
+---
+/**
+ * Skyshare Entry詳細ページの本文表示（スレッド由来entry向け）。
+ *
+ * 責務と処理概要:
+ * - `entries/[slug].astro`が、entryの`source`投稿からentry所有者自身の後続投稿を
+ *   直線的に辿った結果（`extractOwnedLinearReplyChain`）が2件以上だった場合にのみ
+ *   このコンポーネントで表示する（1件のみなら`EntryDetailView`にフォールバックする）。
+ * - `PostEngagementStats`（いいね・リポスト等のカウント）は`source`投稿1件分のみを表示し、
+ *   スレッド全体の集計は行わない（`specs/entry/frontend/design.md §3.3`）。
+ */
+import PostEngagementStats from "@/components/post/PostEngagementStats"
+import type { SourceImage } from "@/lib/entry/entry"
+import styles from "./index.module.css"
+
+export type ThreadPostView = {
+    webUrl: string
+    text: string
+    images: SourceImage[]
+}
+
+interface Props {
+    manifestHeading: string
+    manifestCaption: string
+    createdAtText: string
+    likeCount: number
+    repostCount: number
+    replyCount: number
+    quoteCount: number
+    posts: ThreadPostView[]
+}
+
+const { manifestHeading, manifestCaption, createdAtText, likeCount, repostCount, replyCount, quoteCount, posts } =
+    Astro.props
+---
+
+<article class={styles.container}>
+    <header>
+        <h1 class={styles.heading}>{manifestHeading}</h1>
+        <span class={styles["thread-badge"]}>スレッド</span>
+    </header>
+
+    {manifestCaption ? <p class={styles["body-text"]}>{manifestCaption}</p> : null}
+
+    <dl class={styles["meta-list"]}>
+        <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
+    </dl>
+
+    <PostEngagementStats
+        client:visible
+        likeCount={likeCount}
+        repostCount={repostCount}
+        replyCount={replyCount}
+        quoteCount={quoteCount}
+    />
+
+    <ol class={styles["post-list"]}>
+        {
+            posts.map(post => (
+                <li class={styles["post-item"]}>
+                    <p class={styles["post-text"]}>{post.text}</p>
+                    {post.images.length > 0 ? (
+                        <section class={styles["image-grid"]} aria-label="source images">
+                            {post.images.map(image => (
+                                <figure class={styles["image-card"]}>
+                                    <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
+                                    {image.alt ? <figcaption>{image.alt}</figcaption> : null}
+                                </figure>
+                            ))}
+                        </section>
+                    ) : null}
+                    <a class={styles["post-link"]} href={post.webUrl} rel="noopener noreferrer" target="_blank">
+                        Blueskyの投稿を見る
+                    </a>
+                </li>
+            ))
+        }
+    </ol>
+</article>

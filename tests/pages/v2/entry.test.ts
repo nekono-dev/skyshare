@@ -795,22 +795,24 @@ describe("POST /v2/entry", () => {
          * (`fakeAgent.ts`の`defaultApplyWrites`と同じ方針)。
          */
         const mockApplyWrites = () =>
-            vi.fn().mockImplementation(
-                async ({
-                    repo,
-                    writes,
-                }: {
-                    repo: string
-                    writes: { collection: string; rkey: string }[]
-                }) => ({
-                    data: {
-                        results: writes.map((write, index) => ({
-                            uri: `at://${repo}/${write.collection}/${write.rkey}`,
-                            cid: `bafyapplywrites${index}`,
-                        })),
-                    },
-                }),
-            )
+            vi
+                .fn()
+                .mockImplementation(
+                    async ({
+                        repo,
+                        writes,
+                    }: {
+                        repo: string
+                        writes: { collection: string; rkey: string }[]
+                    }) => ({
+                        data: {
+                            results: writes.map((write, index) => ({
+                                uri: `at://${repo}/${write.collection}/${write.rkey}`,
+                                cid: `bafyapplywrites${index}`,
+                            })),
+                        },
+                    }),
+                )
 
         const sendThread = async (
             items: PostItemOpts[],
@@ -841,7 +843,9 @@ describe("POST /v2/entry", () => {
             )
             expect(res.status).toBe(200)
             const writesArg = applyWrites.mock.calls[0][0].writes
-            expect(findPostWrite(writesArg, "1件目").value.embed).toBeUndefined()
+            expect(
+                findPostWrite(writesArg, "1件目").value.embed,
+            ).toBeUndefined()
             expect(findPostWrite(writesArg, "2件目").value.embed).toEqual(
                 expect.objectContaining({ $type: "app.bsky.embed.images" }),
             )
@@ -857,7 +861,11 @@ describe("POST /v2/entry", () => {
             const res = await sendThread(
                 [
                     { text: "1件目", imagesCount: 1 },
-                    { text: "2件目 https://example.com", ogImage: true, ogMeta },
+                    {
+                        text: "2件目 https://example.com",
+                        ogImage: true,
+                        ogMeta,
+                    },
                 ],
                 applyWrites,
             )
@@ -1018,10 +1026,7 @@ describe("POST /v2/entry", () => {
                 allowQuote: true,
             }
             const res = await sendThread(
-                [
-                    { text: "1件目", gate },
-                    { text: "2件目" },
-                ],
+                [{ text: "1件目", gate }, { text: "2件目" }],
                 applyWrites,
             )
             expect(res.status).toBe(200)

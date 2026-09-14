@@ -9,6 +9,7 @@
 
 import type * as Components from "@/lib/api/schema/common"
 import { parseOwnedAtUri } from "@/lib/entry/url"
+import { MAX_THREAD_POST_COUNT } from "./threadLimit"
 
 export const BSKY_POST_COLLECTION = "app.bsky.feed.post"
 
@@ -20,8 +21,14 @@ export const BSKY_POST_COLLECTION = "app.bsky.feed.post"
  *   「スレッドの1セグメント」という同じ概念を表しているため、上限値をここに一本化する。
  *   将来フロントエンドにスレッド作成UIを実装する際も、この定数を参照して
  *   バックエンドと同じ上限をUI側で表示・制御できるようにする（`specs/threadpost/design.md`参照）。
+ * - 実体は依存を持たない`./threadLimit.ts`で定義し、ここでは再エクスポートするだけに
+ *   留める。`src/lib/api/schema/**`配下のスキーマファイル（コード生成ツール`orval`が
+ *   `jiti`経由で読み込む。`jiti`は`@/*`エイリアスを解決しないため相対importのみで
+ *   読み込まれる）が、この定数を得るためだけに本ファイル（atproto SDK呼び出し等、
+ *   `@/`エイリアス依存の重い依存グラフを持つ）を丸ごとimportして`jiti`をクラッシュ
+ *   させないようにするため。
  */
-export const MAX_THREAD_POST_COUNT = 100
+export { MAX_THREAD_POST_COUNT }
 
 /**
  * `app.bsky.feed.post` レコードの値を組み立てる（純粋関数、副作用なし）。
