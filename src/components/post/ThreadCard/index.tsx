@@ -43,12 +43,23 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
   const entryCarrier = findEntryCarrier(group)
   const postCreateEntryTarget = resolvePostCreateEntryTarget(group)
 
+  // グループ内の投稿群（ルート＋返信）いずれかのuriと一致するかを判定する。
+  // スレッド全体削除（deletedThread=true）時、表示上折りたたみ/展開の対象になっていた
+  // 投稿すべてを一覧から除去するために使う（`specs/timeline/requirements.md FR-5`）。
+  const matchesGroup = (candidate: TimelinePost) =>
+    candidate.uri === group.rootPost.uri ||
+    group.replies.some(reply => reply.uri === candidate.uri)
+
   if (group.replies.length === 0) {
     return (
       <PostCard
         item={group.rootPost}
-        onPostDeleted={() =>
-          onPostDeleted(candidate => candidate.uri === group.rootPost.uri)
+        onPostDeleted={deletedThread =>
+          onPostDeleted(
+            deletedThread
+              ? matchesGroup
+              : candidate => candidate.uri === group.rootPost.uri,
+          )
         }
         guestMode={guestMode}
       />
@@ -59,8 +70,12 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
     <div className={styles["thread-card"]}>
       <PostCard
         item={group.rootPost}
-        onPostDeleted={() =>
-          onPostDeleted(candidate => candidate.uri === group.rootPost.uri)
+        onPostDeleted={deletedThread =>
+          onPostDeleted(
+            deletedThread
+              ? matchesGroup
+              : candidate => candidate.uri === group.rootPost.uri,
+          )
         }
         guestMode={guestMode}
         threadBadge={!!entryCarrier}

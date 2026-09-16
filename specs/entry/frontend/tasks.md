@@ -51,3 +51,13 @@
 - [ ] 手動確認: 実アカウントで画像投稿segmentが2件以上のスレッドを投稿し、選択したsegmentの画像がvisualとして使われ、entryが1件のみ作成されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
 - [ ] 手動確認: 実アカウントでスレッド由来entryの詳細ページ・削除確認UI・視覚的区別が期待通り表示されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。サンプルページ（`entries/sample-thread.astro`）・ゲスト表示（`/entries/?guest`）でのレンダリング自体はPlaywrightで確認済み。
 - [x] 既存の単発投稿フロー（`ImagePicker`、entry詳細ページ）に regression が無いことを確認した（`npx vitest run`556件・`npx playwright test`全件成功、`entries/sample.astro`のフォールバック表示も確認済み）。
+
+## Phase 6: スレッド全体削除の最終警告ダイアログ追加（design.md §3.4改訂対応）
+
+- [x] 新規共通コンポーネント`ConfirmDialog`（`src/components/common/ConfirmDialog/`）を実装する。`Overlay`＋`ui.module.css`の`dialog-card`/`dialog-body`/`dialog-actions`/`dialog-actions-row`を直接使い、タイトル・本文メッセージ・確定/キャンセルボタンを描画する。
+- [x] `ChoiceDialog`（`src/components/common/ChoiceDialog/index.tsx`）の`variantClassName`定数を`export`し、`ConfirmDialog`から再利用してボタン配色を揃える。
+- [x] `EntryDeleteConfirmDialog`（`src/components/entry/EntryDeleteConfirmDialog/index.tsx`）に`stage`（`"choice"` | `"confirmThread"`）stateを追加し、「スレッド全体を削除」選択時に即実行せず`ConfirmDialog`による最終確認を挟むよう変更する。`open`がfalseになったら`stage`を`"choice"`にリセットする。
+- [x] `src/components/common/README.md`の部品一覧・依存グラフに`ConfirmDialog`（`ConfirmDialog --> Overlay`）を追加する。
+- [x] `[TEST]` `npx tsc --noEmit`・既存`vitest`一式（`npx vitest run`580件）が壊れていないことを確認した。
+- [x] `[TEST]` Playwright（`tests/e2e/entryList.spec.ts`）でゲスト表示（`/entries/?guest`）のレンダリング回帰を再確認した（既存踏襲。ゲスト表示では削除ボタン自体が無効化されているため、最終確認ダイアログの実際の表示・段階遷移はこの経路では検証できない）。
+- [ ] 手動確認: 実アカウントで「スレッド全体を削除」押下→最終確認ダイアログへの遷移→キャンセルで選択肢表示（`"choice"`）へ戻ること→再度「スレッド全体を削除」→最終確認→確定操作で`DELETE /v2/entry`が`deleteBskyThread: true`で送信され削除が完了することを、`/entries`（`EntryCard`）・Timeline（`PostCard`）両方の導線で確認する（要ログイン、次回セッション以降または利用者による確認が必要）。

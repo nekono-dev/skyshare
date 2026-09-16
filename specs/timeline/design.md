@@ -245,3 +245,31 @@ export const findEntryCarrier = (group: ThreadGroup): TimelinePost | null => {
 - `getItemKey`を`item => item.id`（`ThreadGroup.id`）に変更する。
 - `itemComponent`を`ThreadCard`に差し替える。
 - `getItemProps`は、`onPostDeleted`をグループ内のどの投稿のuriにもマッチしうるよう、`ThreadGroup`単位のコールバックへ変更する（`ThreadCard`内部で個別の`item.uri`へ委譲する）。
+
+## 8. リンク・スレッド全体削除（FR-5対応）
+
+`specs/entry/frontend/design.md §3.4`が定めるEntry削除確認ダイアログ（`EntryDeleteConfirmDialog`、「Skyshareリンクを削除」「リンク・Bluesky投稿を削除」「リンク・スレッド全体を削除」の3〜4択）は、`EntryCard`（entry一覧）で既に実装済みである。本節では、`PostCard`（Timeline一覧）にも同じ削除選択肢を追加する設計を定める。`PostCard`は既に`EntryDeleteConfirmDialog`を使って「リンクを削除」「投稿を削除」の2択を提示しているため、変更は「スレッド全体を削除」選択肢の追加のみである。
+
+### 8.1 判定ロジックの共有化
+
+`EntryCard`の`resolveThreadDeleteOption`（sourceUriを起点に`getPostThread`でreply chainを取得し、entry所有者自身の後続投稿が実在するかを判定する）は、entry固有のロジックではなく`sourceUri: string`のみを入力に取る純粋な判定関数であるため、`src/components/entry/EntryCard/resolveThreadDeleteOption.ts`から`src/lib/entry/resolveThreadDeleteOption.ts`へ移設し、`EntryCard`・`PostCard`の双方から共有利用する。
+
+### 8.2 `useSkyshareEntryStatus`の拡張
+
+- 戻り値に`isResolvingThreadOption: boolean`（判定中フラグ）・`showThreadOption: boolean`（「リンク・スレッド全体を削除」選択肢の表示要否）を追加する。
+- `requestDeleteEntry`を同期関数から非同期処理を内包する関数に変更する。呼び出し時、`resolveThreadDeleteOption(entry.sourceUri)`の結果を待ってから`showThreadOption`を確定し、その後`isDeleteDialogOpen`をtrueにする（`EntryCard`の`openDeleteDialog`と同じ方針）。判定中は`isResolvingThreadOptionRef`で多重実行を防ぐ。
+- `confirmDeleteEntry`の第2引数に`deleteBskyThread?: boolean`を追加し、`deleteEntry` API呼び出しへそのまま渡す。
+- `options.onPostDeleted`のシグネチャを`(deletedThread?: boolean) => void`に変更する。`deleteBskyPost`成功時（`deleteBskyThread`の有無を問わず）呼び出し、`deleteBskyThread`の値をそのまま引数に伝搬する。
+
+### 8.3 `PostCard`の変更
+
+- `useSkyshareEntryStatus`から追加で受け取った`isResolvingThreadOption`・`showThreadOption`を、既存の`display.kind === "deleting"`時と同様の`Loading overlay`表示、および`EntryDeleteConfirmDialog`の`showThreadOption`/`onDeleteThread={() => confirmDeleteEntry(true, true)}`propへそれぞれ渡す。
+- `PostCardEntryActions`の`disabled`propに`isResolvingThreadOption`を追加し（`guestMode || isResolvingThreadOption`）、判定中の連打を防ぐ。
+- `PostCardProps.onPostDeleted`のシグネチャを`(deletedThread?: boolean) => void`に変更し、`useSkyshareEntryStatus`の`onPostDeleted`へそのまま渡す。
+
+### 8.4 `ThreadCard`側の一覧除去範囲の拡張
+
+- `ThreadCard`が`PostCard`へ渡す`onPostDeleted`コールバックを、`deletedThread`引数を受け取れる形に変更する。
+- `deletedThread`が`true`の場合、`Timeline`から渡された`onPostDeleted`（`ComponentList.removeItem`相当の述語ベースコールバック）へ、`group.rootPost`と`group.replies`の全uriにマッチする述語（`matchesGroup`）を渡す。`false`／未指定の場合は従来通り、削除対象となった投稿自身のuriのみにマッチする述語を渡す。
+- entryは常に`group.rootPost`（source）にのみ紐づく（design.md §6.1）ため、実務上`deletedThread=true`は`group.rootPost`の`PostCard`からのみ発生しうる。`group.replies`側の`PostCard`はentryを持たないため削除ボタン自体が表示されず、この分岐に到達しない。
+- 削除対象の導出は、フロントエンドが保持する`ThreadGroup`（クライアント側グルーピング結果）の範囲に閉じる。バックエンド（`DELETE /v2/entry`の`deleteBskyThread`実装、`specs/entry/backend/design.md §7.4`）が実際に削除する後続投稿の集合と、クライアント側の`ThreadGroup.replies`は、いずれも`extractOwnedLinearReplyChain`を用いた同一ロジックで導出されるため、除去範囲は一致する。

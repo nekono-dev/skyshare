@@ -7,7 +7,7 @@ vi.mock("@/lib/atproto/publicAgent", () => ({
 }))
 
 import { publicAtpAgent } from "@/lib/atproto/publicAgent"
-import { resolveThreadDeleteOption } from "@/components/entry/EntryCard/resolveThreadDeleteOption"
+import { resolveThreadDeleteOption } from "@/lib/entry/resolveThreadDeleteOption"
 
 const getPostThread = vi.mocked(publicAtpAgent.app.bsky.feed.getPostThread)
 

@@ -12,6 +12,7 @@ import { useRef, useState } from "react"
 import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
+import { resolveThreadDeleteOption } from "@/lib/entry/resolveThreadDeleteOption"
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
 
 /**
@@ -34,10 +35,17 @@ export type UseSkyshareEntryStatusResult = {
     createError: string | null
     deleteError: string | null
     isDeleteDialogOpen: boolean
+    /** `resolveThreadDeleteOption`によるスレッド削除可否判定の実行中フラグ（`specs/timeline/design.md §8`） */
+    isResolvingThreadOption: boolean
+    /** trueの場合のみ削除確認ダイアログに「リンク・スレッド全体を削除」の選択肢を表示する */
+    showThreadOption: boolean
     createEntryFromPost: () => void
     requestDeleteEntry: () => void
     cancelDeleteEntry: () => void
-    confirmDeleteEntry: (deleteBskyPost: boolean) => void
+    confirmDeleteEntry: (
+        deleteBskyPost: boolean,
+        deleteBskyThread?: boolean,
+    ) => void
 }
 
 type Options = {
@@ -47,8 +55,13 @@ type Options = {
      * Bluesky投稿ごと削除された直後に呼び出す副作用。
      * リンクのみ削除（deleteBskyPost=false）の場合は呼ばれない
      * （元投稿はTimelineに残り続けるため）。
+     *
+     * Input:
+     * - `deletedThread`: trueの場合、スレッド全体削除（`deleteBskyThread=true`）が
+     *   実行されたことを示す。呼び出し元（`ThreadCard`）はこれを見て、一覧から
+     *   除去する対象をこの投稿単体ではなくスレッドグループ全体へ広げる。
      */
-    onPostDeleted?: () => void
+    onPostDeleted?: (deletedThread?: boolean) => void
 }
 
 /**
@@ -75,10 +88,14 @@ export const useSkyshareEntryStatus = (
     const [createError, setCreateError] = useState<string | null>(null)
     const [deleteError, setDeleteError] = useState<string | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [isResolvingThreadOption, setIsResolvingThreadOption] =
+        useState(false)
+    const [showThreadOption, setShowThreadOption] = useState(false)
     // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐため、
     // 同期的に確定する ref で即座にガードする。
     const isCreatingRef = useRef(false)
     const isDeletingRef = useRef(false)
+    const isResolvingThreadOptionRef = useRef(false)
 
     const hasImages = item.images.length > 0
 
@@ -180,14 +197,42 @@ export const useSkyshareEntryStatus = (
     /**
      * Entry削除確認ダイアログを開く。
      *
+     * 処理の趣旨:
+     * - `resolveThreadDeleteOption`（`specs/entry/frontend/design.md §3.4`と共通のロジック）で
+     *   entryの`source`起点の後続自己投稿が実在するかを判定し、「リンク・スレッド全体を削除」
+     *   選択肢の表示要否（`showThreadOption`）を決めてからダイアログを開く
+     *   （`specs/timeline/design.md §8`、`EntryCard`の`openDeleteDialog`と同じ方針）。
+     * - 判定中は`isResolvingThreadOption`をtrueにし、連打による多重判定を防ぐ。
+     *
      * Output:
-     * - なし（`isDeleteDialogOpen` を true にする）
+     * - なし（判定完了後、`isDeleteDialogOpen`をtrueにする）
      */
     const requestDeleteEntry = () => {
-        if (isDeletingRef.current || state.phase !== "idle" || !state.entry) {
+        if (
+            isDeletingRef.current ||
+            isResolvingThreadOptionRef.current ||
+            state.phase !== "idle" ||
+            !state.entry
+        ) {
             return
         }
-        setIsDeleteDialogOpen(true)
+        const entry = state.entry
+
+        isResolvingThreadOptionRef.current = true
+        setIsResolvingThreadOption(true)
+
+        void (async () => {
+            try {
+                const canDeleteThread = await resolveThreadDeleteOption(
+                    entry.sourceUri,
+                )
+                setShowThreadOption(canDeleteThread)
+                setIsDeleteDialogOpen(true)
+            } finally {
+                isResolvingThreadOptionRef.current = false
+                setIsResolvingThreadOption(false)
+            }
+        })()
     }
 
     /**
@@ -202,11 +247,16 @@ export const useSkyshareEntryStatus = (
      *
      * Input:
      * - `deleteBskyPost`: true の場合、紐づく Bluesky 投稿も併せて削除する
+     * - `deleteBskyThread`: true の場合、`deleteBskyPost`とあわせて指定し、sourceを起点に
+     *   entry所有者自身の後続投稿もすべて削除する（`showThreadOption`がtrueの場合のみ選択可能）
      *
      * Output:
      * - なし（成功時は state を entry なしへ遷移する）
      */
-    const confirmDeleteEntry = (deleteBskyPost: boolean) => {
+    const confirmDeleteEntry = (
+        deleteBskyPost: boolean,
+        deleteBskyThread?: boolean,
+    ) => {
         if (isDeletingRef.current || state.phase !== "idle" || !state.entry) {
             return
         }
@@ -222,6 +272,7 @@ export const useSkyshareEntryStatus = (
                 const res = await deleteEntry({
                     uri: entry.uri,
                     deleteBskyPost,
+                    deleteBskyThread,
                 })
                 if (res.status !== 200) {
                     setDeleteError("Entryの削除に失敗しました。")
@@ -234,7 +285,9 @@ export const useSkyshareEntryStatus = (
                     // サーバーはBluesky投稿削除の成否に関わらず200を返す仕様
                     // （src/pages/v2/entry.ts DELETEハンドラ）のため、200が返った時点で
                     // 削除確定とみなしてTimeline側にカード除去を通知する。
-                    options.onPostDeleted?.()
+                    // deleteBskyThreadの場合、呼び出し元（ThreadCard）へその旨を伝え、
+                    // 除去対象をこの投稿単体からスレッドグループ全体へ広げさせる。
+                    options.onPostDeleted?.(deleteBskyThread)
                 }
             } catch (err) {
                 console.error("PostCard: failed to delete skyshare entry", err)
@@ -251,6 +304,8 @@ export const useSkyshareEntryStatus = (
         createError,
         deleteError,
         isDeleteDialogOpen,
+        isResolvingThreadOption,
+        showThreadOption,
         createEntryFromPost,
         requestDeleteEntry,
         cancelDeleteEntry,

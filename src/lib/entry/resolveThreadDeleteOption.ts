@@ -1,6 +1,8 @@
 /**
  * entry所有者向け削除確認ダイアログで「スレッド全体を削除」の選択肢を出し分けるための
  * 判定ロジック（`specs/entry/frontend/design.md §3.4`）。
+ * `EntryCard`（entry一覧）・`PostCard`（Timeline一覧、`specs/timeline/design.md §8`）の
+ * 双方から共有利用するため`src/lib/entry/`に置く。
  *
  * 責務と処理概要:
  * - `sourceUri`を起点に`app.bsky.feed.getPostThread`（公開API、未認証で呼べる）で
@@ -48,7 +50,10 @@ export const resolveThreadDeleteOption = async (
         )
         return chain.length > 1
     } catch (err) {
-        console.error("EntryCard: failed to resolve thread delete option", err)
+        console.error(
+            "resolveThreadDeleteOption: failed to resolve thread delete option",
+            err,
+        )
         return false
     }
 }

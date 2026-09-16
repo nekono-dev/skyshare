@@ -69,6 +69,10 @@
   --color-red-hover: rgb(255, 81, 121);
   --color-red-text: rgb(150, 14, 46);
 
+  /* 濃い赤ボタン用。スレッド全体削除など、より強い警告を示す操作に使う。 */
+  --color-red-strong: rgb(185, 28, 28);
+  --color-red-strong-hover: rgb(108, 14, 14);
+
   --color-black: #000000;
   --color-black-hover: rgb(96, 96, 96);
 

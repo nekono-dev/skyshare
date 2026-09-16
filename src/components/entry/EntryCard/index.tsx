@@ -22,7 +22,7 @@ import { deleteEntry } from "@/client/openapi/client"
 import { parseAtUri, skyshareEntryPath } from "@/lib/entry/url"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import EntryDeleteConfirmDialog from "@/components/entry/EntryDeleteConfirmDialog"
-import { resolveThreadDeleteOption } from "./resolveThreadDeleteOption"
+import { resolveThreadDeleteOption } from "@/lib/entry/resolveThreadDeleteOption"
 import Loading from "@/components/common/Loading"
 import EntryEditForm from "@/components/entry/EntryEditForm"
 

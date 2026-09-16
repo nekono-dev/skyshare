@@ -12,7 +12,7 @@ import Overlay from "@/components/common/Overlay"
 import ui from "@/styles/ui.module.css"
 
 export type DialogButtonVariant =
-  "blue" | "gray" | "red" | "black" | "taittsuu" | "mastodon"
+  "blue" | "gray" | "red" | "red-strong" | "black" | "taittsuu" | "mastodon"
 
 export type DialogButton = {
   key: string
@@ -30,10 +30,12 @@ type Props = {
   loading?: { message: string }
 }
 
-const variantClassName: Record<DialogButtonVariant, string> = {
+/** ボタンのvariantから配色クラスへの変換マップ。`ConfirmDialog`など他の汎用ダイアログでも配色を揃えるために再利用する。 */
+export const variantClassName: Record<DialogButtonVariant, string> = {
   blue: ui["blue-button"],
   gray: ui["gray-button"],
   red: ui["red-button"],
+  "red-strong": ui["red-strong-button"],
   black: ui["black-button"],
   taittsuu: ui["taittsuu-button"],
   mastodon: ui["mastodon-button"],

@@ -7,9 +7,15 @@
  *   「キャンセル」の3択を基本とし、`showThreadOption`が true の場合のみ
  *   「スレッド全体を削除」（source起点でentry所有者自身の後続投稿もすべて削除）を追加する
  *   （`specs/entry/frontend/design.md §3.4`）。
+ * - 「スレッド全体を削除」は他の選択肢より影響範囲が大きく取り消し不能な操作であるため、
+ *   選択と同時に`onDeleteThread`を実行せず、内部stageを`"confirmThread"`へ切り替えて
+ *   `ConfirmDialog`による最終警告を挟む2段階フローにする。`ChoiceDialog`はボタン列挙のみが
+ *   責務でありメッセージ本文を表示できないため、最終警告には`ConfirmDialog`
+ *   （`src/components/common/`）を用いる。
  */
-import React from "react"
+import React, { useEffect, useState } from "react"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
+import ConfirmDialog from "@/components/common/ConfirmDialog"
 
 type Props = {
   open: boolean
@@ -31,12 +37,14 @@ type Props = {
  * - `showThreadOption`: trueの場合のみ「スレッド全体を削除」ボタンを追加表示する
  * - `onDeleteLink`: 「リンクを削除」選択時のコールバック（skyshare entry のみ削除）
  * - `onDeletePost`: 「投稿を削除」選択時のコールバック（Bluesky投稿も併せて削除）
- * - `onDeleteThread`: 「スレッド全体を削除」選択時のコールバック（`showThreadOption`時のみ使用）
- * - `onCancel`: 「キャンセル」選択時、および背景クリック時のコールバック
+ * - `onDeleteThread`: 「スレッド全体を削除」の最終警告で確定した時のコールバック
+ *   （`showThreadOption`時のみ使用。1段階目の選択時点ではまだ呼ばれない）
+ * - `onCancel`: 1段階目の「キャンセル」選択時、および背景クリック時のコールバック
  *
  * Output:
  * - `open=false` の場合は何も描画しない
- * - `open=true` の場合、（`showThreadOption`次第で3〜4択）確認ダイアログ
+ * - `open=true` の場合、通常は（`showThreadOption`次第で3〜4択）選択肢ダイアログ、
+ *   「スレッド全体を削除」選択後は最終警告ダイアログ
  *
  * 例:
  * - 入力: `{ open: true, onDeleteLink, onDeletePost, onCancel }`
@@ -51,6 +59,31 @@ export const Component: React.FC<Props> = ({
   onDeleteThread,
   onCancel,
 }) => {
+  // 「スレッド全体を削除」選択後の最終警告ステージ。取り消し不能な操作のため、
+  // 選択肢提示（"choice"）と最終確認（"confirmThread"）の2段階を必ず経由させる。
+  const [stage, setStage] = useState<"choice" | "confirmThread">("choice")
+
+  // ダイアログが閉じられたら、次回開いたとき必ず選択肢提示から始まるようにリセットする。
+  useEffect(() => {
+    if (!open) setStage("choice")
+  }, [open])
+
+  if (stage === "confirmThread" && onDeleteThread) {
+    return (
+      <ConfirmDialog
+        open={open}
+        onClose={() => setStage("choice")}
+        ariaLabel="スレッド削除の最終確認"
+        title="本当にスレッド全体を削除しますか？"
+        message="source投稿とそれに続くあなた自身の投稿がすべて削除されます。この操作は取り消せません（第三者からの返信は削除されず残ります）。"
+        confirmLabel="取り消せません。スレッド全体を削除する"
+        confirmVariant="red-strong"
+        onConfirm={onDeleteThread}
+        loading={isDeleting ? { message: "削除中..." } : undefined}
+      />
+    )
+  }
+
   return (
     <ChoiceDialog
       open={open}
@@ -76,10 +109,9 @@ export const Component: React.FC<Props> = ({
           ? [
               {
                 key: "delete-thread",
-                label:
-                  "リンク・スレッド全体を削除（後続の自己投稿もすべて削除、元に戻せません）",
-                variant: "red" as const,
-                onClick: onDeleteThread,
+                label: "Blueskyスレッド全体を削除",
+                variant: "red-strong" as const,
+                onClick: () => setStage("confirmThread"),
                 disabled: isDeleting,
               },
             ]

@@ -52,3 +52,12 @@
 - [ ] 手動確認: 実アカウントでスレッド投稿・事後entry作成・視覚的区別が期待通り動作することを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
 - [x] `npx vitest run`・`npx tsc --noEmit`・`npx playwright test`が全件成功することを確認した（`threadComposer.spec.ts`の1件は初回コールドコンパイル起因の既知のflakinessで、本機能追加とは無関係。単独実行では成功）。
 - [x] 既存の単独投稿の表示・entry作成/編集/削除ボタンの挙動に regression が無いことを確認した（ゲストモードの単独投稿・スレッドに無関係な投稿が従来通り表示されることをe2eで確認）。
+
+## Phase 7: リンク・スレッド全体削除（design.md §8対応）
+
+- [x] `[FE]` `src/components/entry/EntryCard/resolveThreadDeleteOption.ts`を`src/lib/entry/resolveThreadDeleteOption.ts`へ移設し、`EntryCard`側のimportを更新する（design.md §8.1）。対応するテスト（`tests/components/entry/EntryCard/resolveThreadDeleteOption.test.ts`）も`tests/lib/entry/resolveThreadDeleteOption.test.ts`へ移設し、import元を更新する。
+- [x] `[FE]` `src/components/post/PostCard/useSkyshareEntryStatus.ts`を拡張する（design.md §8.2）: `isResolvingThreadOption`・`showThreadOption`の追加、`requestDeleteEntry`の非同期化（`resolveThreadDeleteOption`呼び出し）、`confirmDeleteEntry`への`deleteBskyThread`引数追加、`onPostDeleted`への`deletedThread`引数伝搬。
+- [x] `[FE]` `src/components/post/PostCard/index.tsx`を変更し、`EntryDeleteConfirmDialog`へ`showThreadOption`/`onDeleteThread`を渡し、判定中のLoading overlay・ボタンdisabled状態を追加する（design.md §8.3）。
+- [x] `[FE]` `src/components/post/ThreadCard/index.tsx`を変更し、`deletedThread=true`の場合にスレッドグループ全体（`group.rootPost`＋`group.replies`）を一覧除去対象にする（design.md §8.4）。
+- [x] `[TEST]` `npx tsc --noEmit`・`npx vitest run`が全件成功することを確認した（既存`resolveThreadDeleteOption`のテストが移設後も成功することを含む）。
+- [ ] `[TEST]` Playwrightで、entry付きスレッドルート投稿の削除ボタンから「リンク・スレッド全体を削除」の選択肢が表示され、選択すると折りたたみ/展開の対象だった投稿すべてが一覧から消えることを確認する。ゲストモードでは削除ボタン自体が無効化されているため自動検証不可。実アカウントでの確認が必要（要ログイン、次回セッション以降または利用者による確認が必要）。

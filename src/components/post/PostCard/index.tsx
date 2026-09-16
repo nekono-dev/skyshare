@@ -31,7 +31,13 @@ import shareIcon from "@/images/share.svg"
 
 type PostCardProps = {
   item: TimelinePost
-  onPostDeleted?: () => void
+  /**
+   * Bluesky投稿ごと削除された直後に呼び出されるコールバック。
+   * `deletedThread`がtrueの場合、スレッド全体削除（`specs/timeline/design.md §8`）が
+   * 実行されたことを示す。呼び出し元（`ThreadCard`）はこれを見て、一覧から
+   * 除去する対象をこの投稿単体ではなくスレッドグループ全体へ広げる。
+   */
+  onPostDeleted?: (deletedThread?: boolean) => void
   /**
    * ログイン不要のゲスト用デモ表示。Bluesky投稿への実際の書き込みを伴う操作
    * （Entry作成・削除・元投稿へのリンク）のみ無効化する。クロスポスト（Xへの
@@ -81,6 +87,8 @@ const Component = ({
     createError,
     deleteError,
     isDeleteDialogOpen,
+    isResolvingThreadOption,
+    showThreadOption,
     createEntryFromPost,
     requestDeleteEntry,
     cancelDeleteEntry,
@@ -234,7 +242,7 @@ const Component = ({
           onCreate={createEntryFromPost}
           onRequestDelete={requestDeleteEntry}
           onCrosspost={() => setShareDialogOpen(true)}
-          disabled={guestMode}
+          disabled={guestMode || isResolvingThreadOption}
         />
 
         {shareError ? (
@@ -244,6 +252,10 @@ const Component = ({
 
       {display.kind === "deleting" ? (
         <Loading overlay message="Entryを削除中..." />
+      ) : null}
+
+      {isResolvingThreadOption ? (
+        <Loading overlay message="削除内容を確認中..." />
       ) : null}
 
       {isWebSharing && !entryWebUrl && item.images.length > 0 ? (
@@ -260,8 +272,10 @@ const Component = ({
       <EntryDeleteConfirmDialog
         open={isDeleteDialogOpen}
         isDeleting={display.kind === "deleting"}
+        showThreadOption={showThreadOption}
         onDeleteLink={() => confirmDeleteEntry(false)}
         onDeletePost={() => confirmDeleteEntry(true)}
+        onDeleteThread={() => confirmDeleteEntry(true, true)}
         onCancel={cancelDeleteEntry}
       />
     </article>

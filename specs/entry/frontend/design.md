@@ -58,7 +58,13 @@
 - 削除確認UI（`EntryDeleteConfirmDialog`）は、entry所有者向けの共通コンポーネントとして実装し、複数の削除導線から同じコンポーネントを呼び出せる（`showThreadOption`/`onDeleteThread` propsで出し分け）。**実装時の決定**: `entries/[slug].astro`（公開ページ、所有者判定を持たない）に新規の所有者判定UIを追加するコストと、既存の所有者限定管理ページ`/entries`（`EntryCard`、Cookie認証済みAPIにより所有者制御が自然に効く）で同機能を提供できることを比較し、今回は`/entries`（`EntryCard`）のみに実装した。`entries/[slug].astro`・Timeline（PostCard）への追加は将来対応として見送る（Timeline側の呼び出し配置は[specs/timeline/design.md](../../timeline/design.md)が定める）。削除対象entryの`source`が実際にスレッド先頭であり、かつentry所有者自身の後続投稿が存在するかどうかは、削除ダイアログを開くタイミングで`getPostThread`（3.3節と同じ抽出ロジック、`extractOwnedLinearReplyChain`）を呼んで判定する。`EntryCard`が持つ`item.sourceUri`のrepo（DID）自体がentry所有者のDIDと一致するため、追加のセッション取得は不要。
 - 判定結果が「後続の自己投稿が2件以上（`source`自身を含む）」の場合のみ、削除ダイアログに「スレッド全体を削除」の選択肢を追加表示する。1件のみ（`source`が単発投稿）の場合は、既存の「entryのみ削除」「entry＋元投稿を削除」の2択のままとする。
 - 「スレッド全体を削除」が選ばれた場合、`DELETE /v2/entry`に`deleteBskyPost: true`と`deleteBskyThread: true`をあわせて送信する（[specs/entry/backend/design.md §5.1](../backend/design.md#51-リクエスト形式)）。フロントエンドは削除対象の投稿一覧を自ら組み立てて送信する必要はない（サーバが`source`から導出する。[specs/entry/backend/design.md §7.4.1](../backend/design.md#741-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)）。
-- 削除確認ダイアログの文言は、「スレッド全体を削除」を選んだ場合、後続の自己投稿もすべて削除される旨・元に戻せない旨を明示する（第三者の返信は削除されず残る点も、必要に応じて注記する）。具体的な文言・レイアウトは実装時に決定する（tasks.md対象）。
+- 削除確認ダイアログの文言は、「スレッド全体を削除」を選んだ場合、後続の自己投稿もすべて削除される旨・元に戻せない旨を明示する（第三者の返信は削除されず残る点も、必要に応じて注記する）。
+- **最終確認の二段階化**: 「スレッド全体を削除」は他の削除方式より影響範囲が大きく取り消し不能なため、選択と同時に削除を実行せず、`EntryDeleteConfirmDialog`内部にstage（`"choice"` | `"confirmThread"`）を持たせ、選択肢提示→最終確認の2段階を経てから実行する。
+  - `stage === "choice"`: 現行通り「entryのみ削除」「entry＋元投稿を削除」「スレッド全体を削除」（`showThreadOption`時のみ）の選択肢を提示する。「スレッド全体を削除」ボタンの`onClick`は削除APIを呼ばず、`stage`を`"confirmThread"`に切り替えるのみとする。
+  - `stage === "confirmThread"`: 後述の`ConfirmDialog`で最終警告を表示する。確定操作でのみ実際の`onDeleteThread`（削除API呼び出し）を実行する。キャンセル（ボタン・背景クリック・Esc共通）は`stage`を`"choice"`へ戻し、削除自体は実行しない。
+  - `EntryDeleteConfirmDialog`が閉じられた（`open`がfalseになった）場合は、次回開いたとき必ず`"choice"`から始まるよう`stage`をリセットする。
+  - `EntryCard`・`useSkyshareEntryStatus`（`PostCard`が利用）など呼び出し側の`onDeleteThread`配線は変更しない。二段階化は`EntryDeleteConfirmDialog`内部に閉じる。
+- **新規共通コンポーネント`ConfirmDialog`（`src/components/common/`）の導入**: 最終警告には「なぜ危険か」を明示する本文メッセージが必要だが、既存の`ChoiceDialog`（`src/components/common/ChoiceDialog`）はボタン列挙のみを責務とする設計であり、メッセージ本文を表示する仕組みを持たない。そのため`ChoiceDialog`を多段化・継承するのではなく、`Overlay`を直接使いタイトル・本文メッセージ・確定/キャンセルボタンを持つ新規の汎用コンポーネント`ConfirmDialog`を追加し、`stage === "confirmThread"`ではこれを描画する。`ConfirmDialog`はボタン配色を`ChoiceDialog`が定義する`DialogButtonVariant`型・色クラス変換ロジック（`ChoiceDialog`からexportして再利用）で揃え、アプリ全体のボタン配色と一貫させる。
 
 ### 3.5 entry詳細ページでの視覚的区別（FR-6対応）
 
