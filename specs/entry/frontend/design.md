@@ -6,7 +6,7 @@
 
 ## 1. 概要
 
-- スレッド投稿機能により、1回の`POST /v2/entry`で複数の投稿（segment）を原子的に作成できる（[specs/threadpost/design.md §2](../../threadpost/design.md)）。entry作成はリクエスト全体につき1回（トップレベルの`createEntry`+`visual`）のみ指定でき、`source`は常にバックエンドが自動解決する（[specs/entry/backend/requirements.md FR-1・FR-2](../backend/requirements.md#2-機能要件)）。
+- スレッド投稿機能により、1回の`POST /v2/entry`で複数の投稿（segment）を原子的に作成できる（[specs/threadpost/design.md §2](../../threadpost/design.md)）。entry作成はリクエスト全体につき1回（トップレベルの`createEntry`+`visual`）のみ指定できる。この経路（新規投稿・スレッド作成）では`source`は常に`posts[0]`（スレッド先頭）であり、クライアントが選ぶ余地はない（[specs/entry/backend/requirements.md FR-1・FR-2](../backend/requirements.md#2-機能要件)）。Timeline上での事後entry作成（from-post）経路は、対象投稿の`uri`をクライアントが明示的に指定する方式であり、本書ではなく[specs/timeline/design.md §5](../../timeline/design.md#5-事後entry作成ボタンの表示条件とsourceの明示送信fr-3対応)が定める。
 - 本書は、フロントエンドがどのsegmentの画像をvisualとして選び、トップレベルの`createEntry`/`visual`としてどう送信するか（送信内容の決定）と、スレッド由来entryをentry詳細ページでどう表示するかを設計する。
 
 ## 2. 前提とする既存コンポーネントの責務
@@ -42,22 +42,23 @@
 
 - 画像投稿segmentが0件のスレッドでは、リクエストのトップレベルに`createEntry`・`visual`のいずれも設定しない。
 - 画像投稿segmentが1件以上あり、`entryCandidateIndex`（3.1節）が決まっている場合、リクエストのトップレベルに`createEntry: true` + `visual: <選択segmentのthumbnailBlob>`を設定する（[specs/entry/backend/design.md §3.1](../backend/design.md#31-リクエスト形式)）。`posts[i]`側には`createEntry`・`entrySource`いずれも送信しない（バックエンドの`EntryPostItemSchema`から両フィールドが削除されたため）。
-- `source`の解決はバックエンドが自動的に行う（[specs/entry/backend/requirements.md FR-2](../backend/requirements.md#2-機能要件)）。単発投稿（`segments.length === 1`）でもトップレベル送信の形は変わらず、`posts[0]`が投稿自身であるため結果的に自身が`source`になる。これにより既存の単発投稿のリクエスト形状（トップレベルフィールドの有無を除く実質的な内容）は変化しない（NFR-1）。
+- `source`は常に`posts[0]`になる（[specs/entry/backend/requirements.md FR-2](../backend/requirements.md#2-機能要件)）。単発投稿（`segments.length === 1`）でもトップレベル送信の形は変わらず、`posts[0]`が投稿自身であるため結果的に自身が`source`になる。これにより既存の単発投稿のリクエスト形状（トップレベルフィールドの有無を除く実質的な内容）は変化しない（NFR-1）。
 - 投稿segmentごとに個別entryを作る機能は、バックエンドAPIとしても提供されない（[specs/entry/backend/requirements.md FR-1](../backend/requirements.md#2-機能要件)）。
 
 ### 3.3 entry詳細ページのスレッド表示（FR-4対応）
 
 - `entries/[slug].astro`が取得したentryの`source`投稿について、Bluesky公式の`app.bsky.feed.getPostThread`（`AtpAgent`経由、Node.js非依存。パラメータ`depth`は`MAX_THREAD_POST_COUNT`件を上回るスレッドでも取り漏らさない値を指定する）でreply chainを取得する。
-- 取得した`ThreadViewPost`を先頭（`source`）から辿り、各ノードの`replies`のうち`post.author.did === source.author.did`（entry所有者自身）に一致する最初の1件のみを次のノードとして採用し、以降も同じ規則で辿り続ける（`specs/entry/backend/design.md §7.4.1`のスレッド全体削除における抽出規則と同一。第三者の返信、および第三者の返信で分岐した先は破棄する）。探索は`MAX_THREAD_POST_COUNT`件に達するか、次のノードが見つからなくなるまで続ける。
+- 取得した`ThreadViewPost`を先頭（`source`）から辿り、各ノードの`replies`のうち`post.author.did === source.author.did`（entry所有者自身）に一致する投稿を次のノードの候補とする。候補が1件ならそのまま採用し、候補が2件以上（同一投稿への複数の自己返信＝実在する分岐）の場合のみ、直前の投稿との`record.createdAt`の差が最小のものを1件選ぶ（`extractOwnedLinearReplyChain`、`specs/entry/backend/design.md §7.3.1`のスレッド全体削除・`specs/timeline/design.md §2.2`のTimelineグルーピングと共通の抽出規則。第三者の返信、および第三者の返信で分岐した先は破棄する）。探索は`MAX_THREAD_POST_COUNT`件に達するか、次のノードが見つからなくなるまで続ける。
 - 抽出結果が1件（`source`投稿自身のみ、後続投稿なし）の場合は、現行の単一投稿表示（`EntryDetailView`の既存パス）にフォールバックする。
 - 抽出結果が2件以上の場合、新設のスレッド表示コンポーネント（例: `EntryThreadView`、`EntryDetailView`と同じ`src/components/entry/`配下に配置）で、各投稿のテキスト・画像を投稿順に描画する。既存の`sourceImages`抽出ロジック（`extractSourceImages`、[src/lib/entry/entry.ts](../../../src/lib/entry/entry.ts)）を各投稿に対して個別に適用し、どの投稿の画像かが分かる形で並べる。
 - `PostEngagementStats`（いいね・リポスト等のカウント）は、既存実装同様`source`投稿1件分を表示する（スレッド全体の集計は行わない）。スレッド内の他投稿のカウント表示要否・レイアウトは実装時に決定する（tasks.md対象）。
+- `source`は、新規投稿・スレッド作成経路では常に`posts[0]`（プロトコルルート自身）になり、Timeline上の事後entry作成（from-post）経路では、クライアントが明示的に指定したメインスレッドのルート投稿になる（[specs/entry/backend/requirements.md FR-2](../backend/requirements.md#fr-2-entryのsourceの決定)、[specs/timeline/design.md §5](../../timeline/design.md#5-事後entry作成ボタンの表示条件とsourceの明示送信fr-3対応)）。いずれの経路でも`source`はサーバによって再解釈されず、クライアントが指定した投稿そのものである。本節の処理（`source`を起点とした`extractOwnedLinearReplyChain`）は、`source`がどの投稿であっても同一のロジックで正しく機能する（`source`自身が返信でなければ1件のみの結果になり、3.3節の単一投稿表示にフォールバックする）ため、この点による実装上の変更は無い。
 
 ### 3.4 entry削除時のスレッド全体削除オプション（FR-5対応）
 
 - 削除確認UI（`EntryDeleteConfirmDialog`）は、entry所有者向けの共通コンポーネントとして実装し、複数の削除導線から同じコンポーネントを呼び出せる（`showThreadOption`/`onDeleteThread` propsで出し分け）。**実装時の決定**: `entries/[slug].astro`（公開ページ、所有者判定を持たない）に新規の所有者判定UIを追加するコストと、既存の所有者限定管理ページ`/entries`（`EntryCard`、Cookie認証済みAPIにより所有者制御が自然に効く）で同機能を提供できることを比較し、今回は`/entries`（`EntryCard`）のみに実装した。`entries/[slug].astro`・Timeline（PostCard）への追加は将来対応として見送る（Timeline側の呼び出し配置は[specs/timeline/design.md](../../timeline/design.md)が定める）。削除対象entryの`source`が実際にスレッド先頭であり、かつentry所有者自身の後続投稿が存在するかどうかは、削除ダイアログを開くタイミングで`getPostThread`（3.3節と同じ抽出ロジック、`extractOwnedLinearReplyChain`）を呼んで判定する。`EntryCard`が持つ`item.sourceUri`のrepo（DID）自体がentry所有者のDIDと一致するため、追加のセッション取得は不要。
 - 判定結果が「後続の自己投稿が2件以上（`source`自身を含む）」の場合のみ、削除ダイアログに「スレッド全体を削除」の選択肢を追加表示する。1件のみ（`source`が単発投稿）の場合は、既存の「entryのみ削除」「entry＋元投稿を削除」の2択のままとする。
-- 「スレッド全体を削除」が選ばれた場合、`DELETE /v2/entry`に`deleteBskyPost: true`と`deleteBskyThread: true`をあわせて送信する（[specs/entry/backend/design.md §5.1](../backend/design.md#51-リクエスト形式)）。フロントエンドは削除対象の投稿一覧を自ら組み立てて送信する必要はない（サーバが`source`から導出する。[specs/entry/backend/design.md §7.4.1](../backend/design.md#741-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)）。
+- 「スレッド全体を削除」が選ばれた場合、`DELETE /v2/entry`に`deleteBskyPost: true`と`deleteBskyThread: true`をあわせて送信する（[specs/entry/backend/design.md §5.1](../backend/design.md#51-リクエスト形式)）。フロントエンドは削除対象の投稿一覧を自ら組み立てて送信する必要はない（サーバが`source`から導出する。[specs/entry/backend/design.md §7.3.1](../backend/design.md#731-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)）。
 - 削除確認ダイアログの文言は、「スレッド全体を削除」を選んだ場合、後続の自己投稿もすべて削除される旨・元に戻せない旨を明示する（第三者の返信は削除されず残る点も、必要に応じて注記する）。
 - **最終確認の二段階化**: 「スレッド全体を削除」は他の削除方式より影響範囲が大きく取り消し不能なため、選択と同時に削除を実行せず、`EntryDeleteConfirmDialog`内部にstage（`"choice"` | `"confirmThread"`）を持たせ、選択肢提示→最終確認の2段階を経てから実行する。
   - `stage === "choice"`: 現行通り「entryのみ削除」「entry＋元投稿を削除」「スレッド全体を削除」（`showThreadOption`時のみ）の選択肢を提示する。「スレッド全体を削除」ボタンの`onClick`は削除APIを呼ばず、`stage`を`"confirmThread"`に切り替えるのみとする。

@@ -40,7 +40,7 @@ skyshare entry（`dev.nekono.skyshare.entry`）を、本アプリケーション
 ### FR-4: entry詳細ページのスレッド表示
 
 - entry詳細ページ（`entries/[slug].astro`）は、表示するentryの`source`投稿を起点に、後続のBluesky投稿（reply chain）を追加で読み込む。`source`が複数投稿から成るスレッドの先頭投稿であった場合、そのentryはスレッド全体（先頭から後続投稿まで、時系列順）として表示する。
-- スレッドとして扱うのは、`source`から**entry所有者自身が投稿した後続投稿のみを辿った直線的なreply chain**に限る。第三者による返信、および第三者の返信で分岐した先（それが仮にentry所有者自身の投稿であっても）は、スレッド表示に含めない（entryはあくまで投稿者自身のスレッドを再構成するものであり、Blueskyの会話全体を再現するものではない）。この抽出規則は、[specs/entry/backend/design.md §7.4.1](../backend/design.md#741-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)がスレッド全体削除の対象導出に用いる規則と一致させる。
+- スレッドとして扱うのは、`source`から**entry所有者自身が投稿した後続投稿のみを辿った直線的なreply chain**に限る。第三者による返信、および第三者の返信で分岐した先（それが仮にentry所有者自身の投稿であっても）は、スレッド表示に含めない（entryはあくまで投稿者自身のスレッドを再構成するものであり、Blueskyの会話全体を再現するものではない）。この抽出規則は、[specs/entry/backend/design.md §7.3.1](../backend/design.md#731-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)がスレッド全体削除の対象導出に用いる規則と一致させる。
 - `source`投稿が単発投稿（reply chainを持たない、またはentry所有者自身による後続投稿を持たない）である場合は、従来通り単一投稿として表示する（フォールバック）。
 - 後続投稿の探索件数には、投稿作成時と同じ上限（[specs/entry/backend/requirements.md NFR-7](../backend/requirements.md#3-非機能要件)の`MAX_THREAD_POST_COUNT`）を用いる。
 

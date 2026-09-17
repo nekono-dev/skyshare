@@ -38,3 +38,13 @@
 
 - [x] `npm run codegen`を実行し、新しいリクエスト/レスポンス形状（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）でOpenAPIドキュメント・フロントエンド用クライアントを再生成する。
 - [x] `npx vitest run`・`npx tsc --noEmit`が全件成功することを確認する。
+
+## Phase 4: サーバ側の作成可否判定・source自動解決の撤廃（design.md §3.1〜§3.4・§7対応。requirements.md改訂に伴うspec更新）
+
+背景: サーバがentryの作成対象としての妥当性（画像投稿を含むか）やfrom-postの`source`（`reply.root`を辿った自動解決）を判定・決定していたことが、将来クライアント側でentry作成の挙動を拡張する際の障害になるとの指摘を受け、これらの判定・解決をすべてクライアントの責務に切り出す設計に改訂した（requirements.md FR-1・FR-2、[specs/timeline/requirements.md](../../timeline/requirements.md)）。本Phaseはこの設計変更をコードへ反映する。実装は次回セッション以降で行う。
+
+- [ ] `[BE]` `src/pages/v2/entry.ts`のPOSTハンドラ（フェーズ5）から、トップレベル`createEntry:true`時の「`posts`のいずれかが画像投稿であること」の検証を削除する。`visual`必須の検証のみ残す（design.md §3.3）。
+- [ ] `[BE]` `src/lib/entry/fromPost.ts`から、`hasEligibleImage`（対象投稿の画像embed検証）・`resolveFromPostSource`・`isPostOnOwnedRootChain`を削除する。`source`は常に検証済みの`postUri`/`postCid`自身を使う（design.md §3.4・§7.2）。
+- [ ] `[TEST]` `tests/lib/entry/fromPost.test.ts`を更新する: 画像を持たない投稿からのentry作成が成功すること、`reply.root`を持つ投稿から作成しても`source`が対象投稿自身のままになること（自動解決されないこと）を確認する。
+- [ ] `[TEST]` `tests/pages/v2/entry.test.ts`を更新する: 画像投稿を含まないスレッドで`createEntry:true`が成功すること（`visual`は指定）を確認するケースを追加する。
+- [ ] `npx vitest run`・`npx tsc --noEmit`が全件成功することを確認する。
