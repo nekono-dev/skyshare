@@ -390,20 +390,17 @@ export const resolveEntryVisualSourcePost = (
   group: ThreadGroup,
 ): TimelinePost | null => {
   if (group.replies.length === 0) return null
-  const hasAnyEntry =
-    !!group.rootPost.skyshareEntry ||
-    group.replies.some(post => !!post.skyshareEntry)
-  if (hasAnyEntry) return null
+  if (group.rootPost.skyshareEntry) return null
   if (group.rootPost.images.length > 0) return group.rootPost
   return group.replies.find(post => post.images.length > 0) ?? null
 }
 ```
 
-`resolveEntryVisualSourcePost`のロジック・戻り値は変更しない。Timelineが渡す`ThreadGroup`は、2.3節の通りバックエンドが権威的に決定したメインスレッドそのものであり、非表示のサブスレッド・他者起点スレッドがここに紛れ込むことは無いため、本節のロジックが「ルート投稿は常に自分起点スレッドのメインスレッド先頭である」という前提を検証し直す必要はない（[requirements.md FR-3](requirements.md#fr-3-事後entry作成クライアントが作成可否作成範囲を判断する)の3条件のうち条件2・3は、条件1を満たす時点で自動的に満たされる）。
+判定はルート投稿自身が持つ`skyshareEntry`の有無のみで行い、`group.replies`側のentryの有無は見ない（[requirements.md FR-3](requirements.md#fr-3-事後entry作成クライアントが作成可否作成範囲を判断する)）。本機能の実装前に、スレッド中間の投稿を対象にentryが作成されていたケースでは、ルート投稿自身がentryを持たない限りこの関数はrootPost/repliesを返し、ルート投稿を起点とする新規entry作成が許可される。結果として、後続投稿に紐づく既存entryとルート投稿に紐づく新規entryが同一スレッドグループ内に共存しうるが、これは意図した挙動であり、後続投稿側のentryへの操作（編集・削除）はTimelineの対象外（entry一覧側の既存機能で行う）とすることで一貫性を保つ。
+
+Timelineが渡す`ThreadGroup`は、2.3節の通りバックエンドが権威的に決定したメインスレッドそのものであり、非表示のサブスレッド・他者起点スレッドがここに紛れ込むことは無いため、本節のロジックが「ルート投稿は常に自分起点スレッドのメインスレッド先頭である」という前提を検証し直す必要はない（[requirements.md FR-3](requirements.md#fr-3-事後entry作成クライアントが作成可否作成範囲を判断する)の3条件のうち条件2・3は、条件1を満たす時点で自動的に満たされる）。
 
 `ThreadCard`は、rootの`PostCard`に`postCreateEntryButton={!!entryVisualSourcePost}`・`entryVisualSourcePost={entryVisualSourcePost ?? undefined}`・**`entrySourcePost={group.rootPost}`**を渡す。repliesの`PostCard`には常に`postCreateEntryButton={false}`を渡し、ボタンが中間投稿のカードに表示されることはない。
-
-`postCreateEntryButton={!!entryVisualSourcePost}`は、root自身が画像を持ち・entryが無くても、グループ内の別の投稿（replies）に既にentryがある場合（`resolveEntryVisualSourcePost`が`null`を返す）は自動的にrootの作成ボタンも抑制される（root単体の独立判定に任せていた場合に生じていた、1スレッド2entry目を作成できてしまう抜け穴を塞ぐ）。単独投稿（`group.replies.length === 0`）のフォールバックには渡さない。
 
 `entryVisualSourcePost`・`entrySourcePost`はいずれも`src/components/post/PostCard/index.tsx`のprop（`PostCardProps.entryVisualSourcePost?: TimelinePost`・`PostCardProps.entrySourcePost?: TimelinePost`）として受け取り、`useSkyshareEntryStatus(item, { ..., visualSourcePost: entryVisualSourcePost, sourcePost: entrySourcePost })`へそのまま渡す。フック内の役割分担:
 
@@ -424,7 +421,7 @@ export const findEntryCarrier = (group: ThreadGroup): TimelinePost | null => {
 }
 ```
 
-entryは常にメインスレッドの先頭（`rootPost`）に紐づく（`buildTimelineThreads`がメインスレッドの先頭投稿を常に`rootPost`とするため。2.3節）。中間投稿自体に`skyshareEntry`が付与されることは無い。
+本機能（FR-3）によって新規に作成されるentryは常にルート投稿（`rootPost`）に紐づく。一方、本機能の実装前に中間投稿を対象に作成されたentryが残存している場合があるため（§5参照）、`rootPost`・`replies`のどちらにも`skyshareEntry`が付きうる。`findEntryCarrier`は`rootPost`側を優先して返すため、両方に付いている場合はルート投稿側のentryが視覚的区別の対象になる。
 
 ## 7. リンク・スレッド全体削除（FR-5対応）
 

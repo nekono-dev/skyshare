@@ -198,7 +198,15 @@
 - [ ] `[TEST]` `tests/components/post/PostCard/useSkyshareEntryStatus.test.ts`（または相当のテスト）に、`visualSourcePost`がreplyでも`sourcePost`（root）のuriがAPIへ送信されることを確認するケースを追加する。
 - [ ] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
 
-## Phase 21: E2E・仕上げ
+## Phase 21: 事後entry作成ボタンの既存entry判定をルート投稿自身に限定（design.md §5訂正対応、requirements.md FR-3訂正）
+
+背景: Phase 10までの`resolveEntryVisualSourcePost`は、スレッドグループ内のいずれかの投稿（rootまたはreplies）に既にentryがあれば、rootの作成ボタンも一律で抑制していた。しかし、本機能の実装前にスレッド中間の投稿を対象にentryが作成されていたケースでは、この判定によりルート投稿が画像を持っていても永久に事後entry作成ができなくなってしまう。要件を見直し、判定条件をルート投稿自身のentryの有無のみに限定する（requirements.md FR-3）。
+
+- [x] `[FE]` `src/components/post/ThreadCard/entryCandidate.ts`の`resolveEntryVisualSourcePost`から、`group.replies`側の`skyshareEntry`を見る`hasAnyEntry`判定を削除し、`group.rootPost.skyshareEntry`の有無のみで判定するよう変更する（design.md §5）。
+- [x] `[TEST]` `tests/components/post/ThreadCard/entryCandidate.test.ts`を更新する: 「rootにentryが無く、repliesのいずれかに既存entryがある場合でも、rootが画像を持てばVisual生成元が返る」ケースを追加し、「repliesにentryがあればnullを返す」旧ケースを削除する。「rootにentryがあればnullを返す」ケースは維持する。
+- [x] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
+
+## Phase 22: E2E・仕上げ
 
 - [ ] `[FE]` `src/lib/entry/guestDummyPosts.ts`に、他人の投稿への返信から始まる自己スレッド（Timelineに表示されないことを確認するフィクスチャ）・分岐スレッド（採用側のみ表示されることを確認するフィクスチャ）を追加する。
 - [ ] `[TEST]` `tests/e2e/timelineThread.spec.ts`に、上記フィクスチャを用いたPlaywrightシナリオを追加する。
