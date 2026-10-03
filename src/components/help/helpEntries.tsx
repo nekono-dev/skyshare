@@ -2,11 +2,13 @@
  * ヘルプページに表示するFAQ/案内記事の静的データ。
  *
  * 責務と処理概要:
- * - 記事は外部データソースを持たず、この配列に直接追記して管理する。
+ * - 記事は外部データソースを持たず、`buildHelpEntries` に直接追記して管理する。
+ * - 文言は辞書（`lib/i18n/messages`）にあり、表示言語の翻訳関数を受け取って記事を組み立てる。
  * - `description`/`content` は文字列だけでなくJSX(画像・リスト等)も許容し、
  *   コンポーネントをそのまま埋め込める形にしている。
  */
 import type { ReactNode } from "react"
+import type { Translator } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 
 /**
@@ -25,26 +27,39 @@ export type HelpEntry = {
   content?: ReactNode
 }
 
-export const helpEntries: HelpEntry[] = [
+/**
+ * 表示言語に合わせたヘルプ記事一覧を組み立てる。
+ *
+ * Input:
+ * - `t`: 表示言語の翻訳関数
+ *
+ * Output:
+ * - 表示順に並んだ `HelpEntry` の配列
+ *
+ * 例:
+ * - 入力: `createTranslator("en").t`
+ * - 出力: 英語の文言を持つ記事の配列
+ */
+export const buildHelpEntries = (t: Translator["t"]): HelpEntry[] => [
   {
     id: "android-media-permission",
-    title: "画像が選択できない",
-    description:
-      "アクセス権が拒否されたため、メディアを選択できません」と表示される",
+    title: t("page.help.androidMedia.title"),
+    description: t("page.help.androidMedia.description"),
     content: (
       <div className={ui["text-muted"]}>
-        ブラウザに写真・動画へのアクセス権限が許可されていない場合に、
-        このメッセージが表示されます。
+        {t("page.help.androidMedia.intro")}
         <ul className={ui.list}>
-          <li className={`${ui["list-item"]}`}>端末の「設定」アプリを開く</li>
           <li className={`${ui["list-item"]}`}>
-            「アプリ」→ ご利用のブラウザ（Chromeなど）を選択
+            {t("page.help.androidMedia.step1")}
           </li>
           <li className={`${ui["list-item"]}`}>
-            「権限」→「写真と動画」（または「ファイルとメディア」）を許可に変更
+            {t("page.help.androidMedia.step2")}
+          </li>
+          <li className={`${ui["list-item"]}`}>
+            {t("page.help.androidMedia.step3")}
           </li>
         </ul>
-        アプリとしてインストール（PWA化）している場合も、アプリ化を行なったブラウザ上の設定を修正してください。
+        {t("page.help.androidMedia.outro")}
       </div>
     ),
   },

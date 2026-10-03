@@ -18,19 +18,18 @@
 export const prerender = true
 import Loading from "@/components/common/Loading"
 import Baselayout from "@/layout/Baselayout.astro"
-import { serviceName } from "@/vars"
+import { createTranslator } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 
+const { t } = createTranslator(Astro.locals.locale)
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 ---
 
-<Baselayout cardPath="/materials/ogp_main.png" pageTitle={`移動しています... - ${serviceName}`} robots={robots}>
+<Baselayout cardPath="/materials/ogp_main.png" pageTitleKey="pageTitle.jump" robots={robots}>
     <div class={ui.center}>
         <div class={`${ui.page} ${ui["width-sm"]} ${ui.center}`}>
-            <Loading message="投稿画面を開いています…" client:load />
-            <p class={ui.text} id="jump-hint" hidden>
-                しばらく経っても切り替わらない場合は、ポップアップブロックの設定をご確認いただくか、このウィンドウを閉じてください。
-            </p>
+            <Loading messageKey="page.jump.opening" client:load />
+            <p class={ui.text} id="jump-hint" data-i18n="page.jump.hint" hidden>{t("page.jump.hint")}</p>
         </div>
     </div>
 </Baselayout>

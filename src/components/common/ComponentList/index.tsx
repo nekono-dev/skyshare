@@ -6,6 +6,7 @@
  * - ページング状態管理は `useCursorPaginationController` に分離し、親がレイアウトを組み立てる。
  * - 1要素ごとの表示用 props は `getItemProps` で生成し、`item` 本体も併せて渡す。
  */
+import { useT } from "@/lib/i18n/react"
 import {
   useCallback,
   useEffect,
@@ -225,6 +226,12 @@ export const useCursorPaginationController = <TItem,>({
 }: {
   cursorPagination?: CursorPaginationProps<TItem>
 }): CursorPaginationController<TItem> => {
+  // 失敗時の文言を取得コールバック内で使うため、最新の翻訳関数を ref で保持する。
+  // 依存配列に `t` を入れると言語切り替えのたびにコールバックが作り直され、
+  // それを契機とする再取得で一覧・スクロール位置が失われるため。
+  const { t } = useT()
+  const tRef = useRef(t)
+  tRef.current = t
   const [pageItems, setPageItems] = useState<TItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -293,7 +300,7 @@ export const useCursorPaginationController = <TItem,>({
         }
 
         console.error("ComponentList: failed to load cursor page", err)
-        const message = "一覧の取得に失敗しました。"
+        const message = tRef.current("common.listLoadFailed")
         setError(message)
         setPageItems([])
         setCurrentCursor(cursor)
@@ -398,11 +405,11 @@ export const useCursorPaginationController = <TItem,>({
   )
 
   const message = loading
-    ? (loadingText ?? "読み込み中…")
+    ? (loadingText ?? t("common.loading"))
     : error
       ? error
       : items.length === 0
-        ? (emptyText ?? "表示できる項目がありません。")
+        ? (emptyText ?? t("common.listEmpty"))
         : undefined
 
   return {
@@ -486,6 +493,12 @@ export const useInfiniteScrollController = <TItem,>({
 }: {
   infiniteScrollPagination?: InfiniteScrollPaginationProps<TItem>
 }): InfiniteScrollController<TItem> => {
+  // 失敗時の文言を取得コールバック内で使うため、最新の翻訳関数を ref で保持する。
+  // 依存配列に `t` を入れると言語切り替えのたびにコールバックが作り直され、
+  // それを契機とする再取得で一覧・スクロール位置が失われるため。
+  const { t } = useT()
+  const tRef = useRef(t)
+  tRef.current = t
   const [items, setItems] = useState<TItem[]>([])
   const [cursor, setCursor] = useState<string | undefined>(undefined)
   // 初回取得が完了するまでは次ページの有無が不明なため false とし、
@@ -541,7 +554,7 @@ export const useInfiniteScrollController = <TItem,>({
       }
 
       console.error("ComponentList: failed to load infinite scroll page", err)
-      const message = "一覧の取得に失敗しました。"
+      const message = tRef.current("common.listLoadFailed")
       setError(message)
       setItems([])
       setCursor(undefined)
@@ -605,7 +618,7 @@ export const useInfiniteScrollController = <TItem,>({
           "ComponentList: failed to load more infinite scroll items",
           err,
         )
-        const message = "一覧の取得に失敗しました。"
+        const message = tRef.current("common.listLoadFailed")
         setError(message)
         onError?.(message)
       } finally {
@@ -632,11 +645,11 @@ export const useInfiniteScrollController = <TItem,>({
   const activeItems = isActive ? items : []
 
   const message = loading
-    ? (loadingText ?? "読み込み中…")
+    ? (loadingText ?? t("common.loading"))
     : error
       ? error
       : activeItems.length === 0
-        ? (emptyText ?? "表示できる項目がありません。")
+        ? (emptyText ?? t("common.listEmpty"))
         : undefined
 
   return {

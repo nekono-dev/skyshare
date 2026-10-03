@@ -12,6 +12,7 @@
  */
 export const prerender = true
 
+import { formatDateTime } from "@/lib/i18n/format"
 import Baselayout from "@/layout/Baselayout.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
 import type { EntryPostView } from "@/components/entry/EntryDetailView/index.astro"
@@ -71,7 +72,7 @@ const posts: EntryPostView[] = [
     },
 ]
 
-const createdAtText = new Date("2026-09-06T10:00:00.000Z").toLocaleString("ja-JP", {
+const createdAtText = formatDateTime("2026-09-06T10:00:00.000Z", "ja", {
     dateStyle: "medium",
     timeStyle: "short",
 })

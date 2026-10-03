@@ -2,6 +2,10 @@ import React, { useState } from "react"
 import { createSession } from "@/client/openapi/client"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
 import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
+import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
+import { useT } from "@/lib/i18n/react"
+import { renderSlots } from "@/lib/i18n/rich"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -36,9 +40,11 @@ type Props = {
  * - 出力: ハンドル入力・パスワード入力・ログインボタンを持つフォーム
  */
 export const Component = ({ initialHandle }: Props = {}) => {
+  const { t, raw } = useT()
   const [handle, setHandle] = useState(initialHandle ?? "")
   const [password, setPassword] = useState("")
-  const [message, setMessage] = useState("")
+  // 状態メッセージは文言キーで保持し、表示時に翻訳する（言語切り替えに追従させるため）
+  const [messageKey, setMessageKey] = useState<PlainMessageKey | "">("")
   const [color, setColor] = useState("")
 
   /**
@@ -64,7 +70,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
    */
   const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setMessage("ログイン中…")
+    setMessageKey("account.login.progress")
     setColor("")
 
     try {
@@ -76,22 +82,22 @@ export const Component = ({ initialHandle }: Props = {}) => {
       const res = await createSession(body)
 
       if (res.status !== 200) {
-        const err = res.data.error || "ログインに失敗しました。"
+        // サーバーの `error` は表示せず、ステータスから表示言語の文言を選ぶ
         setColor("#b00")
-        setMessage(err)
+        setMessageKey(errorMessageKeyFromStatus(res.status, "login"))
         return
       }
 
       clearKnownUnauthenticated()
       setColor("green")
-      setMessage("ログイン成功。リダイレクトします…")
+      setMessageKey("account.login.success")
       setTimeout(() => {
         window.location.href = "/"
       }, 700)
     } catch (err) {
       console.error(err)
       setColor("#b00")
-      setMessage("サーバへ接続できませんでした。")
+      setMessageKey("error.network")
     }
   }
 
@@ -99,7 +105,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
     <form id="login-form" className={ui["base-card"]} onSubmit={onSubmit}>
       <div className={styles.content}>
         <div>
-          <label htmlFor="username">ハンドル (@以降のhandle)</label>
+          <label htmlFor="username">{t("account.login.handleLabel")}</label>
           <div className={ui["base-input-box"]}>
             <input
               className={ui["base-input-field"]}
@@ -117,8 +123,13 @@ export const Component = ({ initialHandle }: Props = {}) => {
 
         <div>
           <label htmlFor="password">
-            アプリパスワード（
-            <a href="https://bsky.app/settings/app-passwords">作成ページ</a>）
+            {renderSlots(raw("account.login.appPasswordLabel"), {
+              link: (
+                <a href="https://bsky.app/settings/app-passwords">
+                  {t("account.login.appPasswordLink")}
+                </a>
+              ),
+            })}
           </label>
           <div className={ui["base-input-box"]}>
             <input
@@ -138,7 +149,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
           type="submit"
           className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
         >
-          ログイン
+          {t("account.login.submit")}
         </button>
 
         <div
@@ -146,7 +157,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
           aria-live="polite"
           style={{ marginTop: "1rem", color }}
         >
-          {message}
+          {messageKey ? t(messageKey) : ""}
         </div>
       </div>
     </form>

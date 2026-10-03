@@ -8,6 +8,8 @@
  */
 export const prerender = true
 import LoginForm from "@/components/account/LoginForm"
+import LoginIntro from "@/components/account/LoginIntro"
+import LocaleSelect from "@/components/common/LocaleSelect"
 
 import Baselayout from "@/layout/Baselayout.astro"
 import { serviceName, serviceVersion } from "@/vars"
@@ -15,67 +17,20 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 import ui from "@/styles/ui.module.css"
 ---
 
-<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={serviceName} robots={robots}>
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitleKey="pageTitle.login" robots={robots}>
     <div class={ui.center}>
         <div class=`${ui.page} ${ui["width-lg"]} ${ui.center}`>
             <img class={ui["width-lg"]} src="/materials/longlogo.svg" alt={serviceName} />
             <div class=`${ui.left} ${ui["self-end"]} ${ui.subject}`>v{serviceVersion}</div>
             <div class=`${ui["width-md"]}`>
+                <div class={ui.right} style="margin-bottom: 0.5rem;">
+                    <LocaleSelect client:load />
+                </div>
                 {
                     /* LoginForm 自体が base-card のため、入れ子にしない（カードの入れ子だとパスワードマネージャーが入力欄を検出できない） */
                 }
                 <LoginForm client:load />
-                <div class=`${ui["base-card"]} ${ui["base-padding"]}` style="margin-top: 0.5rem;">
-                    <div style="margin: 0.5rem 0; font-weight: 600;" class=`${ui["subject"]}`>
-                        旧UIはこちら <a href="/legacy/">Skyshare v1.6.3</a>
-                    </div>
-                    <div class=`${ui["text"]}`>
-                        ゲストとして<a href="/?guest=1">画面を確認できます</a>（ログイン中は見れません）
-                    </div>
-                    <div style="margin-top: 1rem;">★ Skyshare v2を開発中です。以下の違いがあります</div>
-
-                    <h3>Skyshare生成コンテンツの永続化</h3>
-                    <ul class={ui.list}>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            これまでは開発者のバックエンドに画像やテキストデータを配置していました。
-                            そのため、開発者がバックエンド費用を負担する都合から、データに賞味期限をつける対処をせざるを得ませんでした。
-                        </li>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            v2では、Skyshareで生成したコンテンツはあなたのPDSに配置されます。
-                            つまり、あなたがアカウントを消さない限り（BlueskyがPDSを保持する限り）永遠に保持できます<b
-                                >（データの有効期限の撤廃）</b
-                            >
-                        </li>
-                    </ul>
-                    <h3>クロスポスト用サムネイル生成の自由度向上</h3>
-                    <ul class={ui.list}>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            v1では、ロスポスト用サムネイル（リンクカード画像）をサーバサイド、クラウド上で生成していました。v2ではクライアント側で生成しています。
-                        </li>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            これにより、リンクカード画像を柔軟に編集可能になりました。<b
-                                >（リンクカード生成画像の編集機能追加）</b
-                            >現時点では、サムネイルにしたい箇所の切り抜き・複数画像配置時の表示位置調整に対応しています。
-                        </li>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            需要があればリンクカード用の画像を別で用意する（自動生成しない）・ラベラーの状態に応じた加工処理等を実装していこうと考えています。
-                            ...端的には、R-18画像のサムネにモザイクいれるとか。
-                        </li>
-                    </ul>
-                    <h3>その他、使いやすくなる改修いろいろ</h3>
-                    <ul class={ui.list}>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            v1ではできなかったことが色々できるようになっています。
-                            バックエンドはおおよそできており、あとはレイアウトや機能の調整・追加、ソースコードの整理などを終えたらリリース予定です。
-                        </li>
-                        <li class=`${ui["list-item"]} ${ui["text-muted"]}`>
-                            正式リリースに向けて絶賛開発中なので <a
-                                href="https://bsky.app/intent/compose?text=%23Skyshare%20">#Skyshare</a
-                            >
-                            などで感想や要望を書いておいていただけると活動の励みになります。
-                        </li>
-                    </ul>
-                </div>
+                <LoginIntro client:load />
             </div>
             <div style="margin: 1rem;">2025-2026 © Skyshare</div>
         </div>

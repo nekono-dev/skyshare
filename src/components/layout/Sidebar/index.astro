@@ -17,15 +17,24 @@ import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import { sidebarNavItems, normalizePathname, isActiveHref } from "@/components/layout/nav/navItems"
 import NavIcon from "@/components/layout/nav/NavIcon.astro"
+import { createTranslator } from "@/lib/i18n/translate"
 
 const current = normalizePathname(Astro.url.pathname)
+// 文言は描画時の表示言語で出し、言語変更・ページ遷移後は data-i18n 系属性を目印にクライアントが書き換える。
+const { t } = createTranslator(Astro.locals.locale)
 // URLに `?guest` が付いている場合、ナビゲーション遷移後もゲスト表示を維持できるよう
 // 各リンクのhrefにも引き継ぐ。ただしこのコンポーネントは prerender されるページに
 // 埋め込まれておりビルド時には実際のリクエストURLが分からないため、ここでは付与できない。
 // 実際の付与は `@/components/layout/nav/syncGuestModeQuery`(クライアント実行)が担う。
 ---
 
-<nav class={styles.nav} aria-label="メインナビゲーション" data-nav="sidebar" transition:persist="sidebar-nav">
+<nav
+    class={styles.nav}
+    aria-label={t("nav.main")}
+    data-i18n-aria-label="nav.main"
+    data-nav="sidebar"
+    transition:persist="sidebar-nav"
+>
     {
         sidebarNavItems.map(item => (
             <a
@@ -33,7 +42,8 @@ const current = normalizePathname(Astro.url.pathname)
                 class={`${styles.item} ${ui["text-muted"]}`}
                 data-nav-key={item.key}
                 aria-current={isActiveHref(item.href, current) ? "page" : undefined}
-                aria-label={item.ariaLabel}
+                aria-label={t(item.ariaLabelKey)}
+                data-i18n-aria-label={item.ariaLabelKey}
             >
                 <span
                     class={`${styles["item-icon"]} ${ui["base-button"]} ${ui["nontext-button"]} ${item.key === "accounts" ? ui["lg-button"] : ui["md-button"]}`}
@@ -41,7 +51,9 @@ const current = normalizePathname(Astro.url.pathname)
                 >
                     <NavIcon navKey={item.key} />
                 </span>
-                <span class={styles["item-label"]}>{item.label}</span>
+                <span class={styles["item-label"]} data-i18n={item.labelKey}>
+                    {t(item.labelKey)}
+                </span>
             </a>
         ))
     }

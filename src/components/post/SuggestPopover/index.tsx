@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import React from "react"
 import ComponentList from "@/components/common/ComponentList"
 import FloatingBox from "@/components/common/FloatingBox"
@@ -55,37 +56,40 @@ const CandidateOptionRow: React.FC<CandidateOptionRowProps> = ({
   listboxId,
   onHoverIndex,
   onSelect,
-}) => (
-  <ListboxOption
-    id={`${listboxId}-option-${index}`}
-    isActive={isActive}
-    onHover={() => onHoverIndex(index)}
-    // mousedownで確定するのはListboxOption側の責務（textareaのフォーカスを維持するため）
-    onSelect={() => onSelect(index)}
-  >
-    {candidate.kind === "mention" ? (
-      <>
-        <Avatar src={candidate.item.avatarUrl} alt="" size="sm" />
+}) => {
+  const { t } = useT()
+  return (
+    <ListboxOption
+      id={`${listboxId}-option-${index}`}
+      isActive={isActive}
+      onHover={() => onHoverIndex(index)}
+      // mousedownで確定するのはListboxOption側の責務（textareaのフォーカスを維持するため）
+      onSelect={() => onSelect(index)}
+    >
+      {candidate.kind === "mention" ? (
+        <>
+          <Avatar src={candidate.item.avatarUrl} alt="" size="sm" />
+          <span className={styles["candidate-text"]}>
+            <span className={styles["display-name"]}>
+              {candidate.item.displayName || candidate.item.handle}
+            </span>
+            <span className={styles.handle}>@{candidate.item.handle}</span>
+          </span>
+        </>
+      ) : (
         <span className={styles["candidate-text"]}>
           <span className={styles["display-name"]}>
-            {candidate.item.displayName || candidate.item.handle}
+            <InlineIcon name="hashtag" alt="" />
+            {candidate.item.tag}
           </span>
-          <span className={styles.handle}>@{candidate.item.handle}</span>
+          {candidate.item.source === "trending" && (
+            <span className={styles.handle}>{t("post.suggest.trending")}</span>
+          )}
         </span>
-      </>
-    ) : (
-      <span className={styles["candidate-text"]}>
-        <span className={styles["display-name"]}>
-          <InlineIcon name="hashtag" alt="" />
-          {candidate.item.tag}
-        </span>
-        {candidate.item.source === "trending" && (
-          <span className={styles.handle}>トレンド</span>
-        )}
-      </span>
-    )}
-  </ListboxOption>
-)
+      )}
+    </ListboxOption>
+  )
+}
 
 /**
  * メンション/ハッシュタグ候補一覧をキャレット位置にフローティング表示する。

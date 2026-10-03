@@ -9,7 +9,8 @@
  * - `PostLauncher` に相当する作成 UI は持たない（既存投稿からの発行のみのため）。
  */
 
-import { useCallback, useState } from "react"
+import { useT } from "@/lib/i18n/react"
+import { useCallback, useRef, useState } from "react"
 import { getSkyshareEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/common/ComponentList"
 import type {
@@ -25,7 +26,7 @@ import NavigationBar from "@/components/common/NavigationBar"
 import PageSizeSelect from "@/components/common/PageSizeSelect"
 import EntryCard from "@/components/entry/EntryCard"
 import { isSessionKnownUnauthenticated } from "@/lib/account/activeAccountSession"
-import { GUEST_DUMMY_ENTRIES } from "@/lib/entry/guestDummyPosts"
+import { getGuestDummyData } from "@/lib/entry/guestDummyPosts"
 import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
@@ -45,6 +46,13 @@ const PAGE_SIZE = 20
  * - 一覧表示を含む UI
  */
 const Component = () => {
+  const translator = useT()
+  const { t } = translator
+  // fetchPage は依存配列を空にした useCallback のため、最新の翻訳関数を ref で参照する
+  // （依存に `t` を入れると言語切り替えで再取得が走り、一覧が失われるため）。
+  // 最新の翻訳関数（翻訳器）を保持する。
+  const translatorRef = useRef(translator)
+  translatorRef.current = translator
   const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
   // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミーEntryを表示する
   // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
@@ -78,7 +86,7 @@ const Component = () => {
         // 401確定済みの`getSkyshareEntries`をわざわざ叩き直さずゲスト表示へ直行する。
         if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
           setGuestMode(true)
-          return { items: GUEST_DUMMY_ENTRIES }
+          return { items: getGuestDummyData(translatorRef.current).entries }
         }
 
         const params = cursor ? { limit, cursor } : { limit }
@@ -94,39 +102,43 @@ const Component = () => {
         if (res.status === 401) {
           if (isGuestModeRequested()) {
             setGuestMode(true)
-            return { items: GUEST_DUMMY_ENTRIES }
+            return { items: getGuestDummyData(translatorRef.current).entries }
           }
           if (typeof window !== "undefined") {
             window.location.href = "/login/"
           }
           return {
             items: [],
-            error: "認証が必要です。",
+            error: translatorRef.current.t("error.unauthorized"),
           }
         }
 
         return {
           items: [],
-          error: res.data.error ?? "Entry一覧の取得に失敗しました。",
+          error: translatorRef.current.t("entry.list.loadFailed"),
         }
       } catch (err) {
         console.error("EntryList: failed to load entries", err)
         return {
           items: [],
-          error: "Entry一覧の取得に失敗しました。",
+          error: translatorRef.current.t("entry.list.loadFailed"),
         }
       }
     },
     [],
   )
 
+  // ゲスト表示のダミーデータは表示言語で文言が変わるため、言語が変わったら再取得して差し替える。
+  const guestReloadKey = guestMode ? translator.locale : undefined
+
   const pagedController = useCursorPaginationController<TimelineSkyshareEntry>({
     cursorPagination: {
       pageSize,
       fetchPage,
+      reloadKey: guestReloadKey,
       enabled: paginationMode === "paged",
-      loadingText: "読み込み中...",
-      emptyText: "表示できるEntryはありません。",
+      loadingText: t("common.loadingPlain"),
+      emptyText: t("entry.list.empty"),
     },
   })
 
@@ -134,9 +146,10 @@ const Component = () => {
     {
       infiniteScrollPagination: {
         fetchPage,
+        reloadKey: guestReloadKey,
         enabled: paginationMode === "infinite",
-        loadingText: "読み込み中...",
-        emptyText: "表示できるEntryはありません。",
+        loadingText: t("common.loadingPlain"),
+        emptyText: t("entry.list.empty"),
       },
     },
   )
@@ -160,7 +173,7 @@ const Component = () => {
         <p
           className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
         >
-          これはログイン不要のゲスト表示です。実際のEntryの編集はできません。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。
+          {t("entry.list.guestNotice")}
         </p>
       )}
       <div
@@ -173,7 +186,7 @@ const Component = () => {
               setPageSize(next)
               writePageSizeSetting(next)
             }}
-            ariaLabel="表示件数"
+            ariaLabel={t("common.pageSize")}
           />
         ) : (
           <span aria-hidden="true" />
@@ -181,7 +194,7 @@ const Component = () => {
         {isPaged ? (
           <NavigationBar
             pagination={pagedController.pagination}
-            ariaLabel="entry list pagination"
+            ariaLabel={t("entry.list.paginationAria")}
           />
         ) : null}
       </div>
@@ -212,7 +225,7 @@ const Component = () => {
       {isPaged ? (
         <NavigationBar
           pagination={pagedController.pagination}
-          ariaLabel="entry list pagination"
+          ariaLabel={t("entry.list.paginationAria")}
         />
       ) : (
         <InfiniteScrollSentinel
@@ -220,8 +233,8 @@ const Component = () => {
           loadingMore={infiniteController.loadingMore}
           onLoadMore={infiniteController.loadMore}
           showEndMessage={!error && !empty}
-          endText="最初のEntryに到達しました"
-          ariaLabel="entry list infinite scroll"
+          endText={t("entry.list.end")}
+          ariaLabel={t("entry.list.infiniteAria")}
         />
       )}
     </section>

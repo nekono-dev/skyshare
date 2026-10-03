@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import { useEffect, useRef } from "react"
 import Loading from "@/components/common/Loading"
 import ui from "@/styles/ui.module.css"
@@ -55,6 +56,7 @@ export const Component = ({
   ariaLabel,
   className,
 }: InfiniteScrollSentinelProps) => {
+  const { t } = useT()
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -100,9 +102,9 @@ export const Component = ({
       <div
         className={endContainerClassName}
         role="status"
-        aria-label={ariaLabel ?? "all items loaded"}
+        aria-label={ariaLabel ?? t("common.allItemsLoadedAria")}
       >
-        {endText ?? "最初の投稿に到達しました"}
+        {endText ?? t("common.listEnd")}
       </div>
     )
   }
@@ -120,11 +122,11 @@ export const Component = ({
       ref={sentinelRef}
       className={containerClassName}
       role="status"
-      aria-label={ariaLabel ?? "loading more items"}
+      aria-label={ariaLabel ?? t("common.loadingMoreAria")}
       aria-live="polite"
     >
       {loadingMore ? (
-        <Loading message={loadingText ?? "読み込み中..."} />
+        <Loading message={loadingText ?? t("common.loadingPlain")} />
       ) : null}
     </div>
   )

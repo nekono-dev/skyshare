@@ -68,8 +68,7 @@ export const loadImage = (url: string) =>
     new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image()
         image.onload = () => resolve(image)
-        image.onerror = () =>
-            reject(new Error("画像の読み込みに失敗しました。"))
+        image.onerror = () => reject(new Error("Failed to load the image."))
         image.src = url
     })
 
@@ -310,7 +309,7 @@ const canvasToJpegBlob = (canvas: HTMLCanvasElement, quality: number) =>
         canvas.toBlob(
             blob => {
                 if (!blob) {
-                    reject(new Error("画像の変換に失敗しました。"))
+                    reject(new Error("Failed to convert the image."))
                     return
                 }
                 resolve(blob)
@@ -337,7 +336,7 @@ const canvasToPngBlob = (canvas: HTMLCanvasElement) =>
     new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(blob => {
             if (!blob) {
-                reject(new Error("画像の変換に失敗しました。"))
+                reject(new Error("Failed to convert the image."))
                 return
             }
             resolve(blob)
@@ -507,7 +506,7 @@ const renderImageAtLongSide = (
     const context = canvas.getContext("2d")
 
     if (!context) {
-        throw new Error("キャンバスの初期化に失敗しました。")
+        throw new Error("Failed to initialize the canvas.")
     }
 
     context.imageSmoothingEnabled = true
@@ -577,7 +576,7 @@ export const createOgpThumbnailFromBlob = async (
             const context = canvas.getContext("2d")
 
             if (!context) {
-                throw new Error("キャンバスの初期化に失敗しました。")
+                throw new Error("Failed to initialize the canvas.")
             }
 
             context.imageSmoothingEnabled = true
@@ -644,7 +643,7 @@ const composeThumbnailBlob = async (
     const crops = slotDefs.map((_, index) => {
         const crop = cropStates[index]?.cropPixels
         if (!crop || !images[index]) {
-            throw new Error("画像の切り抜き範囲が不正です。")
+            throw new Error("The image crop area is invalid.")
         }
         return crop
     })
@@ -658,7 +657,7 @@ const composeThumbnailBlob = async (
         const context = canvas.getContext("2d")
 
         if (!context) {
-            throw new Error("キャンバスの初期化に失敗しました。")
+            throw new Error("Failed to initialize the canvas.")
         }
 
         context.imageSmoothingEnabled = true

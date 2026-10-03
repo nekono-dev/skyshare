@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import React, { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Overlay from "@/components/common/Overlay"
@@ -47,6 +48,7 @@ const PostLauncher: React.FC<{
   onPinnedFormDisabledChange,
   guestMode = false,
 }) => {
+  const { t } = useT()
   const [open, setOpen] = useState(false)
   const postFormRef = useRef<ThreadComposerHandle>(null)
   // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
@@ -78,7 +80,7 @@ const PostLauncher: React.FC<{
             type="button"
             onClick={() => setOpen(true)}
             aria-expanded={open}
-            aria-label="新規投稿"
+            aria-label={t("post.launcher.new")}
           >
             <img
               src={pic.src}
@@ -86,7 +88,9 @@ const PostLauncher: React.FC<{
               height={20}
               className={styles["sidebar-action-icon"]}
             />
-            <span className={styles["sidebar-action-label"]}>新規投稿</span>
+            <span className={styles["sidebar-action-label"]}>
+              {t("post.launcher.new")}
+            </span>
           </button>,
           sidebarActionEl,
         )}

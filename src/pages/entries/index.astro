@@ -14,17 +14,20 @@ import EntryList from "@/components/entry/EntryList"
 import Baselayout from "@/layout/Baselayout.astro"
 import FooterNav from "@/components/layout/FooterNav/index.astro"
 import Sidebar from "@/components/layout/Sidebar/index.astro"
-import { serviceName } from "@/vars"
+import { createTranslator } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 import { slide } from "astro:transitions"
 
+const { t } = createTranslator(Astro.locals.locale)
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 ---
 
-<Baselayout cardPath={`/materials/ogp_main.png`} pageTitle={`Entry一覧 | ${serviceName}`} robots={robots}>
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitleKey="pageTitle.entries" robots={robots}>
     <div class={ui.center} transition:name="page-slide" transition:animate={slide()}>
         <div class=`${ui["width-lg"]}`>
-            <h1 class={ui.subject} style="margin-top: 1rem;">Skyshare Entry一覧</h1>
+            <h1 class={ui.subject} style="margin-top: 1rem;" data-i18n="page.entries.heading">
+                {t("page.entries.heading")}
+            </h1>
 
             <EntryList client:load />
         </div>

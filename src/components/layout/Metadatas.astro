@@ -7,22 +7,26 @@
  * - `cardPath` と `Astro.url` から共有カード画像の絶対 URL を組み立てる。
  */
 
+import type { MessageKey } from "@/lib/i18n/translate"
+
 interface Props {
     pageTitle: string
+    /** 指定時、クライアントでの言語切り替え時にこのキーでタイトルを再翻訳する */
+    pageTitleKey?: MessageKey
     cardPath: string
     robots: string[]
     avatarUrl?: string | null
     pageHeading?: string
     pageCaption?: string
 }
-const { cardPath, pageTitle, robots, avatarUrl, pageCaption, pageHeading } = Astro.props
+const { cardPath, pageTitle, pageTitleKey, robots, avatarUrl, pageCaption, pageHeading } = Astro.props
 import { serviceName, serviceDescription } from "@/vars"
 
 const url = Astro.url
 const cardUrl = new URL(cardPath, Astro.url)
 ---
 
-<title>{pageTitle}</title>
+<title data-i18n-title={pageTitleKey}>{pageTitle}</title>
 <link rel="apple-touch-icon" sizes="512x512" href="/materials/icon-512.png" />
 <link rel="apple-touch-icon-precomposed" href="/materials/icon-512.png" />
 <link rel="manifest" href="/materials/manifest.webmanifest" />

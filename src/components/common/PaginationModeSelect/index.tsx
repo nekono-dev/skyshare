@@ -1,3 +1,5 @@
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
 import Dropdown from "@/components/common/Dropdown"
 import styles from "./index.module.css"
@@ -13,9 +15,9 @@ import styles from "./index.module.css"
  *   親コンポーネントが決める。
  */
 
-const MODE_OPTIONS: { value: PaginationMode; label: string }[] = [
-  { value: "infinite", label: "自動読み込み" },
-  { value: "paged", label: "ページ送り" },
+const MODE_OPTIONS: { value: PaginationMode; labelKey: PlainMessageKey }[] = [
+  { value: "infinite", labelKey: "common.paginationMode.infinite" },
+  { value: "paged", labelKey: "common.paginationMode.paged" },
 ]
 
 export type PaginationModeSelectProps = {
@@ -48,8 +50,13 @@ export const Component = ({
   disabled = false,
   className,
   id = "pagination-mode",
-  ariaLabel = "ページネーション方式",
+  ariaLabel,
 }: PaginationModeSelectProps) => {
+  const { t } = useT()
+  const options = MODE_OPTIONS.map(option => ({
+    value: option.value,
+    label: t(option.labelKey),
+  }))
   const handleChange = (next: string) => {
     if (next === "paged" || next === "infinite") {
       onChange(next)
@@ -60,10 +67,10 @@ export const Component = ({
     <Dropdown
       id={id}
       value={value}
-      options={MODE_OPTIONS}
+      options={options}
       onChange={handleChange}
       disabled={disabled}
-      ariaLabel={ariaLabel}
+      ariaLabel={ariaLabel ?? t("common.paginationMode")}
       className={className ? `${styles.select} ${className}` : styles.select}
     />
   )

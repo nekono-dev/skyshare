@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import { useMemo } from "react"
 import Dropdown from "@/components/common/Dropdown"
 import styles from "./index.module.css"
@@ -48,11 +49,16 @@ export const Component = ({
   disabled = false,
   className,
   id = "page-size",
-  ariaLabel = "表示件数",
+  ariaLabel,
 }: PageSizeSelectProps) => {
+  const { t, tn } = useT()
   const dropdownOptions = useMemo(
-    () => options.map(size => ({ value: String(size), label: `${size}件` })),
-    [options],
+    () =>
+      options.map(size => ({
+        value: String(size),
+        label: tn("common.itemCount", size),
+      })),
+    [options, tn],
   )
 
   const handleChange = (next: string) => {
@@ -69,7 +75,7 @@ export const Component = ({
       options={dropdownOptions}
       onChange={handleChange}
       disabled={disabled}
-      ariaLabel={ariaLabel}
+      ariaLabel={ariaLabel ?? t("common.pageSize")}
       className={className ? `${styles.select} ${className}` : styles.select}
     />
   )

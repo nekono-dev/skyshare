@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import React from "react"
 import Dropdown, { type DropdownOption } from "@/components/common/Dropdown"
 import { languageCodeToFlagEmoji } from "@/lib/atproto/languageFlag"
@@ -279,9 +280,10 @@ export const Component: React.FC<Props> = ({
   disabled = false,
   className,
   id = "post-language",
-  ariaLabel = "投稿言語",
+  ariaLabel,
   autoWidth = false,
 }) => {
+  const { t } = useT()
   // Intl を使わない: ラベルはすでに自称（autonym）になっているのでそのまま表示する
   const widthClassName = autoWidth ? styles["select-auto"] : styles.select
   return (
@@ -293,7 +295,7 @@ export const Component: React.FC<Props> = ({
       disabled={disabled}
       searchable
       autoWidth={autoWidth}
-      ariaLabel={ariaLabel}
+      ariaLabel={ariaLabel ?? t("common.postLanguage")}
       className={className ? `${widthClassName} ${className}` : widthClassName}
     />
   )

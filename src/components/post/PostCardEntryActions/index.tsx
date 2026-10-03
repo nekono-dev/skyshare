@@ -7,6 +7,8 @@
  * - ボタン種の切り替え条件（entry の有無・進行中操作・作成対象外判定）は
  *   呼び出し元のフック側に一元化し、ここでは分岐しない。
  */
+import type { PlainMessageKey } from "@/lib/i18n/translate"
+import { useT } from "@/lib/i18n/react"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { SkyshareEntryDisplayState } from "@/components/post/PostCard/useSkyshareEntryStatus"
@@ -14,8 +16,8 @@ import crosspostIcon from "@/images/crosspost.svg"
 
 type Props = {
   display: SkyshareEntryDisplayState
-  createError: string | null
-  deleteError: string | null
+  createError: PlainMessageKey | null
+  deleteError: PlainMessageKey | null
   onCreate: () => void
   onRequestDelete: () => void
   onCrosspost: () => void
@@ -53,6 +55,7 @@ const Component = ({
   disabled = false,
   deleteDisabled = false,
 }: Props) => {
+  const { t } = useT()
   return (
     <>
       {display.kind === "entry" || display.kind === "deleting" ? (
@@ -61,8 +64,8 @@ const Component = ({
             type="button"
             className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
             onClick={onCrosspost}
-            aria-label="クロスポスト"
-            title="クロスポスト"
+            aria-label={t("post.entryActions.crosspost")}
+            title={t("post.entryActions.crosspost")}
           >
             <img src={crosspostIcon.src} width={20} height={20} alt="" />
           </button>
@@ -72,7 +75,7 @@ const Component = ({
             disabled={deleteDisabled || display.kind === "deleting"}
             onClick={onRequestDelete}
           >
-            投稿を削除
+            {t("post.entryActions.deletePost")}
           </button>
         </>
       ) : display.kind === "creatable" || display.kind === "creating" ? (
@@ -82,18 +85,22 @@ const Component = ({
           disabled={disabled || display.kind === "creating"}
           onClick={onCreate}
         >
-          {display.kind === "creating" ? "作成中…" : "Skyshare Entryを作成"}
+          {display.kind === "creating"
+            ? t("post.entryActions.creating")
+            : t("post.entryActions.create")}
         </button>
       ) : (
-        <span className={styles["no-skyshare"]}>Skyshareリンク作成対象外</span>
+        <span className={styles["no-skyshare"]}>
+          {t("post.entryActions.notEligible")}
+        </span>
       )}
 
       {createError ? (
-        <span className={styles["create-entry-error"]}>{createError}</span>
+        <span className={styles["create-entry-error"]}>{t(createError)}</span>
       ) : null}
 
       {deleteError ? (
-        <span className={styles["create-entry-error"]}>{deleteError}</span>
+        <span className={styles["create-entry-error"]}>{t(deleteError)}</span>
       ) : null}
     </>
   )

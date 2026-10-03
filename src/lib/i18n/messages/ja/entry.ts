@@ -1,0 +1,55 @@
+/** Entry（一覧・カード・編集・削除・下書き・詳細）関連の文言（日本語）。 */
+export const entry = {
+    "entry.noText": "（本文なし）",
+    "entry.card.noCaption": "キャプションはありません。",
+    "entry.card.deleteConfirmAria": "Entry削除確認",
+    "entry.edit.aria": "Entry編集",
+    "entry.edit.heading": "見出し",
+    "entry.edit.caption": "キャプション",
+    "entry.edit.updateFailed": "Entryの更新に失敗しました。",
+    "entry.deleteConfirm.legacy":
+        "このEntryは旧仕様で作成されており、Bluesky投稿を含めて削除できません。Skyshareリンクのみ削除するか、Bluesky上で直接投稿を削除してください。",
+    "entry.deleteConfirm.unknown":
+        "Bluesky投稿の状態を確認できないため、投稿を含めた削除は実行できません。時間をおいて再度お試しください。",
+    "entry.deleteConfirm.deleteLink": "Skyshareリンクを削除",
+    "entry.deleteConfirm.deleteLinkAndPost": "リンク・Bluesky投稿を削除",
+    "entry.deletePosts.aria": "Bluesky投稿削除の最終確認",
+    "entry.deletePosts.title": "本当にBluesky投稿を削除しますか？",
+    "entry.deletePosts.summarySingle": "Blueskyの投稿1件を削除します。",
+    "entry.deletePosts.summaryThread_other":
+        "Blueskyのスレッド（{count}件の投稿）を削除します。",
+    "entry.deletePosts.warning":
+        "この操作は取り消せません。第三者からの返信は削除されず残ります。",
+    "entry.deletePosts.listAria": "削除予定のBluesky投稿一覧",
+    "entry.deletePosts.deleteAll": "全て削除",
+    "entry.draft.thread_other": "スレッド({count}件)",
+    "entry.draft.empty": "下書きがありません。",
+    "entry.draft.saveConfirmAria": "下書き保存確認",
+    "entry.draft.saving": "下書きを保存中...",
+    "entry.draft.save": "下書きを保存",
+    "entry.draft.discard": "破棄",
+    "entry.draft.keepEditing": "編集を続ける",
+    "entry.draft.paginationAria": "下書き一覧のページ送り",
+    "entry.list.loadFailed": "Entry一覧の取得に失敗しました。",
+    "entry.list.empty": "表示できるEntryはありません。",
+    "entry.list.end": "最初のEntryに到達しました",
+    "entry.list.paginationAria": "Entry一覧のページ送り",
+    "entry.list.infiniteAria": "Entry一覧の自動読み込み",
+    "entry.list.guestNotice":
+        "これはログイン不要のゲスト表示です。実際のEntryの編集はできません。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。",
+    "entry.legacy.confirm": "この投稿を削除しますか？",
+    "entry.legacy.deleteFailed": "投稿の削除に失敗しました。",
+    "entry.detail.viewSource": "元投稿を見る",
+    "entry.detail.postedAt": "投稿日時:{date}",
+    "entry.detail.noDate": "no data",
+    "entry.detail.sourceDeleted":
+        "元の投稿は削除されているため、保存された内容のみを表示しています。",
+    "entry.detail.error404Title": "Entry Not Found",
+    "entry.detail.error404Body": "Entry is not found",
+    "entry.detail.errorInvalid": "Invalid skyshare entry",
+    "entry.detail.error503Title": "Service Temporarily Unavailable",
+    "entry.detail.error503Body":
+        "データ取得が混み合っています。しばらくして再度お試しください。",
+    "entry.detail.error500Title": "Internal Server Error",
+    "entry.detail.error500Body": "ページの生成中にエラーが発生しました。",
+} as const

@@ -1,3 +1,5 @@
+import { useT } from "@/lib/i18n/react"
+import type { DeferredMessage } from "@/lib/i18n/translate"
 import {
   forwardRef,
   useEffect,
@@ -106,11 +108,14 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
     { value, onChange, disabled = false, previewContainerRef },
     ref,
   ) {
+    const translator = useT()
+    const { t } = translator
     const [slots, setSlots] = useState<ImageSlot[]>([])
     const [showCropDialog, setShowCropDialog] = useState(false)
     const [altDialogIndex, setAltDialogIndex] = useState<number | null>(null)
     const [isPreparingPreview, setIsPreparingPreview] = useState(false)
-    const [overflowNotice, setOverflowNotice] = useState<string | null>(null)
+    const [overflowNotice, setOverflowNotice] =
+      useState<DeferredMessage | null>(null)
     const [previewContainer, setPreviewContainer] =
       useState<HTMLDivElement | null>(null)
     const slotsRef = useRef<ImageSlot[]>([])
@@ -268,7 +273,12 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       const take = newFiles.slice(0, allowed)
       setOverflowNotice(
         newFiles.length > allowed
-          ? `画像は最大${MAX_POST_IMAGES}枚までです。超過分は追加されませんでした`
+          ? {
+              format: translator =>
+                translator.t("image.picker.overflow", {
+                  max: MAX_POST_IMAGES,
+                }),
+            }
           : null,
       )
       if (take.length === 0) return
@@ -555,12 +565,14 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             style={computeCroppedImageStyle(slot)}
           />
           {isExcluded && (
-            <span className={styles["slot-excluded-badge"]}>Visual対象外</span>
+            <span className={styles["slot-excluded-badge"]}>
+              {t("image.picker.excludedFromVisual")}
+            </span>
           )}
           <button
             type="button"
             className={styles["remove-badge"]}
-            aria-label={`画像${index + 1}を削除`}
+            aria-label={t("image.picker.removeAria", { index: index + 1 })}
             onClick={() => removeImage(index)}
             disabled={disabled}
           >
@@ -569,7 +581,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
           <button
             type="button"
             className={`${styles["alt-badge"]} ${slot.alt ? styles["alt-badge-active"] : ""}`}
-            aria-label={`画像${index + 1}のaltテキストを編集`}
+            aria-label={t("image.picker.altAria", { index: index + 1 })}
             onClick={() => setAltDialogIndex(index)}
             disabled={disabled}
           >
@@ -581,12 +593,14 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
 
     return (
       <section>
-        {isPreparingPreview && <Loading message="画像プレビューを生成中..." />}
+        {isPreparingPreview && (
+          <Loading message={t("image.picker.preparing")} />
+        )}
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <label
             htmlFor={inputId}
             className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
-            aria-label="画像追加"
+            aria-label={t("image.picker.addAria")}
             aria-disabled={disabled}
             style={{ cursor: disabled ? "default" : "pointer" }}
           >
@@ -619,14 +633,14 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
               onClick={handleOpenCrop}
               disabled={disabled}
             >
-              サムネ調整
+              {t("image.picker.adjustThumbnail")}
             </button>
           )}
         </div>
 
         {overflowNotice && (
           <p role="status" className={styles["overflow-notice"]}>
-            {overflowNotice}
+            {overflowNotice.format(translator)}
           </p>
         )}
 

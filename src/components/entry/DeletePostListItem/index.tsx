@@ -6,6 +6,7 @@
  * - 本文は最大3行で省略し、空なら「（本文なし）」を表示する。
  * - 画像は先頭4枚までサムネイル表示し、超過分は「+N」で示す。画像が無ければサムネイル欄を描画しない。
  */
+import { useFormat, useT } from "@/lib/i18n/react"
 import React from "react"
 import type { TimelinePost } from "@/lib/entry/posts"
 import styles from "./index.module.css"
@@ -31,10 +32,12 @@ const MAX_THUMBNAILS = 4
  * - 出力: 日時と本文「こんにちは」のみの行
  */
 export const Component: React.FC<Props> = ({ item }) => {
+  const { t } = useT()
+  const { formatDateTime } = useFormat()
   return (
     <article className={styles["post-item"]}>
       <time className={styles["post-date"]} dateTime={item.indexedAt}>
-        {new Date(item.indexedAt).toLocaleString("ja-JP", {
+        {formatDateTime(item.indexedAt, {
           dateStyle: "medium",
           timeStyle: "short",
         })}
@@ -42,7 +45,7 @@ export const Component: React.FC<Props> = ({ item }) => {
       {item.text.length > 0 ? (
         <p className={styles["post-text"]}>{item.text}</p>
       ) : (
-        <p className={styles["post-empty-text"]}>（本文なし）</p>
+        <p className={styles["post-empty-text"]}>{t("entry.noText")}</p>
       )}
       {item.images.length > 0 ? (
         <div className={styles["post-thumbnails"]}>

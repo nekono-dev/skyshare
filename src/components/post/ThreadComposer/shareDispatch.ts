@@ -9,6 +9,7 @@
  *   呼び出し側（`index.tsx`）がその内容に応じて state を更新する。
  */
 import type { ImageEntry } from "@/components/image/ImagePicker"
+import type { MessageFormatter } from "@/lib/i18n/translate"
 import {
     IntentTarget,
     buildIntentText,
@@ -53,7 +54,8 @@ export type ShareDispatchParams = {
 }
 
 export type ShareDispatchResult = {
-    status: string
+    /** 表示するステータス文言。言語は描画時に決まるため、文字列ではなく組み立て関数で返す。 */
+    status: MessageFormatter
     statusColor: string
     /** null なら呼び出し側で resetInputFields() する合図。非nullならこのテキストを textbox に保持する。 */
     textToKeep: string | null
@@ -171,14 +173,16 @@ export const runShareDispatch = async (
     // ポップアップ/テキストボックス/WebShareAPI のいずれにも URL を含めない。
     const effectiveSkyshareUri = manualImageAttach ? "" : skyshareUri
     const intentText = buildIntentText(text, effectiveSkyshareUri, linkCardUrl)
-    const successPrefix = guestMode
-        ? "ゲスト表示のためBlueskyへの投稿はスキップしました"
-        : "Blueskyへの投稿に成功しました"
+    // 各ステータスの先頭に付ける、投稿結果の文（文末の句点は各文言側で付ける）
+    const resultKey = guestMode
+        ? "post.share.resultGuest"
+        : "post.share.resultSuccess"
 
     if (noAutoPopupAfterPost) {
         popupWindow?.close()
         return {
-            status: `${successPrefix}。クロスポストを行うには他SNS向け投稿ボタンを押してください。`,
+            status: tr =>
+                tr.t("post.share.noAutoPopup", { result: tr.t(resultKey) }),
             statusColor: "green",
             textToKeep: intentText,
             forcedNoAutoPopupOn: false,
@@ -195,12 +199,12 @@ export const runShareDispatch = async (
         : crosspostToMastodon
           ? "mastodon"
           : "x"
-    const serviceLabel =
+    const serviceKey =
         target === "taittsuu"
-            ? "タイッツー"
+            ? "post.share.service.taittsuu"
             : target === "mastodon"
-              ? "Mastodon"
-              : "x.com"
+              ? "post.share.service.mastodon"
+              : "post.share.service.x"
 
     if (
         crosspostToTaittsuu ||
@@ -214,7 +218,11 @@ export const runShareDispatch = async (
 
         if (opened) {
             return {
-                status: `${successPrefix}。${serviceLabel} 投稿画面を開きました。`,
+                status: tr =>
+                    tr.t("post.share.popupOpened", {
+                        result: tr.t(resultKey),
+                        service: tr.t(serviceKey),
+                    }),
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
@@ -224,7 +232,11 @@ export const runShareDispatch = async (
         }
 
         return {
-            status: `${successPrefix}。${serviceLabel} 投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
+            status: tr =>
+                tr.t("post.share.popupBlocked", {
+                    result: tr.t(resultKey),
+                    service: tr.t(serviceKey),
+                }),
             statusColor: "green",
             textToKeep: intentText,
             forcedNoAutoPopupOn: true,
@@ -253,7 +265,10 @@ export const runShareDispatch = async (
         const shareResult = await shareWithWebApi(webShareData)
         if (shareResult.ok) {
             return {
-                status: `${successPrefix}。WebShareAPIに投稿内容を転送しました。`,
+                status: tr =>
+                    tr.t("post.share.webShareDone", {
+                        result: tr.t(resultKey),
+                    }),
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
@@ -263,7 +278,10 @@ export const runShareDispatch = async (
         }
         if (shareResult.reason === "aborted") {
             return {
-                status: `${successPrefix}。WebShareAPIでの共有操作はキャンセルされました。`,
+                status: tr =>
+                    tr.t("post.share.webShareCancelled", {
+                        result: tr.t(resultKey),
+                    }),
                 statusColor: "green",
                 textToKeep: null,
                 forcedNoAutoPopupOn: false,
@@ -282,15 +300,19 @@ export const runShareDispatch = async (
     // 使えなかったこと自体が「うまくいかなかった」ケースのため、ポップアップの
     // 開閉の成否に関わらず以後はWebShareAPIを試さずポップアップ経由にするよう
     // PopupIntentInsteadOfWebshareをONへフォールバックする。
-    const unavailableLabel =
+    const unavailableReasonKey =
         webShareUnavailableReason === "unsupported"
-            ? "ブラウザがWebShareAPI非対応のため"
-            : "WebShareAPI での共有に失敗したため"
+            ? "post.share.reason.unsupported"
+            : "post.share.reason.failed"
 
     const opened = openIntentPopupFor("x", intentText)
     if (opened) {
         return {
-            status: `${successPrefix}。投稿画面を開きました。${unavailableLabel}、ポップアップを開くオプションをONにしました。`,
+            status: tr =>
+                tr.t("post.share.fallbackOpened", {
+                    result: tr.t(resultKey),
+                    reason: tr.t(unavailableReasonKey),
+                }),
             statusColor: "green",
             textToKeep: null,
             forcedNoAutoPopupOn: false,
@@ -300,7 +322,8 @@ export const runShareDispatch = async (
     }
 
     return {
-        status: `${successPrefix}が、投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。`,
+        status: tr =>
+            tr.t("post.share.fallbackBlocked", { result: tr.t(resultKey) }),
         statusColor: "green",
         textToKeep: intentText,
         forcedNoAutoPopupOn: true,

@@ -12,6 +12,7 @@
  *   そのものであるため（`specs/timeline/design.md §1`）、削除成功時の一覧除去は常に
  *   スレッドグループ単位で行う（同§4）。
  */
+import { useT } from "@/lib/i18n/react"
 import { useState } from "react"
 import PostCard from "@/components/post/PostCard"
 import type { ThreadGroup } from "@/lib/entry/posts"
@@ -38,6 +39,7 @@ type Props = {
  * - 2件以上: 折りたたみ/展開可能なスレッドカード
  */
 const Component = ({ group, onPostDeleted, guestMode }: Props) => {
+  const { tn, t } = useT()
   const [expanded, setExpanded] = useState(false)
   const entryVisualSourcePost = resolveEntryVisualSourcePost(group)
 
@@ -71,7 +73,7 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
           onClick={() => setExpanded(true)}
         >
           <span className={styles["indicator"]} aria-hidden />
-          スレッドを展開（{group.replies.length}件）
+          {tn("post.threadExpand", group.replies.length)}
         </button>
       ) : (
         <>
@@ -97,7 +99,7 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
               className={`${styles["indicator"]} ${styles["indicator-open"]}`}
               aria-hidden
             />
-            折りたたむ
+            {t("post.threadCollapse")}
           </button>
         </>
       )}

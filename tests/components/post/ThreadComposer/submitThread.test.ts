@@ -227,12 +227,11 @@ describe("submitThread", () => {
 
         expect(result).toEqual({
             ok: false,
-            message:
-                "Blueskyへの投稿は成功しましたが、SkyShareレコード作成に失敗しました。",
+            messageKey: "post.submit.entryCreateFailed",
         })
     })
 
-    it("APIが200以外を返した場合、エラーコードを文言に変換して失敗にする", async () => {
+    it("APIが200以外を返した場合、エラーコードを文言キーに変換して失敗にする", async () => {
         vi.mocked(createEntry).mockResolvedValue({
             status: 400,
             data: { error: "APP_BSKY_POST_FAILED" },
@@ -245,7 +244,7 @@ describe("submitThread", () => {
 
         expect(result).toEqual({
             ok: false,
-            message: "Blueskyへの投稿に失敗しました。",
+            messageKey: "post.submit.postFailed",
         })
     })
 })

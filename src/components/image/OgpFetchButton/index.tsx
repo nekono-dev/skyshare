@@ -1,3 +1,5 @@
+import { useT } from "@/lib/i18n/react"
+import { deferMessage, type DeferredMessage } from "@/lib/i18n/translate"
 import React, { useEffect, useMemo, useState } from "react"
 import { RichText } from "@atproto/api"
 import { extractUrl } from "@/client/openapi/client"
@@ -40,7 +42,7 @@ type UseOgpFetchProps = {
 export type UseOgpFetchResult = {
   detectedUrl: string | null
   isOgpLoading: boolean
-  ogpStatus: string | null
+  ogpStatus: DeferredMessage | null
   previewUrl: string | null
   title?: string
   handleFetchOgp: () => void
@@ -84,7 +86,7 @@ export const useOgpFetch = ({
   onChange,
 }: UseOgpFetchProps): UseOgpFetchResult => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [ogpStatus, setOgpStatus] = useState<string | null>(null)
+  const [ogpStatus, setOgpStatus] = useState<DeferredMessage | null>(null)
   const [isOgpLoading, setIsOgpLoading] = useState(false)
 
   /**
@@ -160,36 +162,32 @@ export const useOgpFetch = ({
     try {
       const res = await extractUrl({ url: detectedUrl })
       if (res.status !== 200) {
-        const errorMessage =
-          "error" in res.data && typeof res.data.error === "string"
-            ? res.data.error
-            : "リンクカード取得に失敗しました。"
-        setOgpStatus(errorMessage)
+        setOgpStatus(deferMessage("image.ogp.fetchFailed"))
         onChange(null)
         return
       }
 
       if (!isOgpWithImage(res.data) || !res.data.image) {
-        setOgpStatus("リンクカード画像が見つかりませんでした。")
+        setOgpStatus(deferMessage("image.ogp.noImage"))
         onChange(null)
         return
       }
 
       const imageRes = await fetch(res.data.image)
       if (!imageRes.ok) {
-        setOgpStatus("リンクカード画像の取得に失敗しました。")
+        setOgpStatus(deferMessage("image.ogp.imageFetchFailed"))
         onChange(null)
         return
       }
 
       const rawBlob = await imageRes.blob()
       if (rawBlob.size === 0) {
-        setOgpStatus("リンクカード画像の取得に失敗しました。")
+        setOgpStatus(deferMessage("image.ogp.imageFetchFailed"))
         onChange(null)
         return
       }
       if (!rawBlob.type.startsWith("image/")) {
-        setOgpStatus("リンクカード画像の形式が不正です。")
+        setOgpStatus(deferMessage("image.ogp.imageInvalidType"))
         onChange(null)
         return
       }
@@ -198,7 +196,7 @@ export const useOgpFetch = ({
       try {
         imageBlob = await createOgpThumbnailFromBlob(rawBlob)
       } catch {
-        setOgpStatus("リンクカード画像の変換に失敗しました。")
+        setOgpStatus(deferMessage("image.ogp.imageConvertFailed"))
         onChange(null)
         return
       }
@@ -212,11 +210,15 @@ export const useOgpFetch = ({
         sourceUrl: detectedUrl,
       }
 
-      setOgpStatus(`リンクカードを取得しました: ${detectedUrl}`)
+      const fetchedUrl = detectedUrl
+      setOgpStatus({
+        format: translator =>
+          translator.t("image.ogp.fetched", { url: fetchedUrl }),
+      })
       onChange(nextResult)
     } catch (err) {
       console.error(err)
-      setOgpStatus("リンクカード取得中にエラーが発生しました。")
+      setOgpStatus(deferMessage("image.ogp.error"))
       onChange(null)
     } finally {
       setIsOgpLoading(false)
@@ -265,6 +267,7 @@ export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
   ogpFetch,
   disabled,
 }) => {
+  const { t } = useT()
   const { detectedUrl, isOgpLoading, handleFetchOgp } = ogpFetch
   if (!detectedUrl) return null
 
@@ -275,7 +278,7 @@ export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
       onClick={handleFetchOgp}
       disabled={isOgpLoading || disabled}
     >
-      リンクカードを取得
+      {t("image.ogp.button")}
     </button>
   )
 }

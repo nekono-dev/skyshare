@@ -12,7 +12,9 @@
  * PostFormと同種の性質を持つが内容が個別具体的なためコンポーネントとしては汎化しない。
  * カード外枠・縦積みレイアウトはdialog.ui.module.cssを通じてPostForm/ChoiceDialogと共通化する。
  */
-import React, { useEffect, useRef, useState } from "react"
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { updateEntry } from "@/client/openapi/client"
 import CountedTextInput, {
   type CounterSpec,
@@ -32,24 +34,35 @@ type Props = {
   onSaved: (next: { heading: string; caption: string }) => void
 }
 
-const headingCounters: CounterSpec[] = [
-  {
-    key: "heading",
-    label: "見出し",
-    count: countGraphemes,
-    maxAssumed: 100,
-    errorAt: 100,
-  },
-]
-const captionCounters: CounterSpec[] = [
-  {
-    key: "caption",
-    label: "キャプション",
-    count: countGraphemes,
-    maxAssumed: 300,
-    errorAt: 300,
-  },
-]
+/**
+ * 見出し・キャプション欄の文字数カウンタ定義を作る。
+ *
+ * Input:
+ * - `labels`: 各欄のカウンタに表示する名称（表示言語で翻訳済み）
+ *
+ * Output:
+ * - 見出し用・キャプション用の `CounterSpec[]`
+ */
+const buildCounters = (labels: { heading: string; caption: string }) => ({
+  headingCounters: [
+    {
+      key: "heading",
+      label: labels.heading,
+      count: countGraphemes,
+      maxAssumed: 100,
+      errorAt: 100,
+    },
+  ] as CounterSpec[],
+  captionCounters: [
+    {
+      key: "caption",
+      label: labels.caption,
+      count: countGraphemes,
+      maxAssumed: 300,
+      errorAt: 300,
+    },
+  ] as CounterSpec[],
+})
 
 /**
  * Entry編集フォームを描画する。
@@ -71,10 +84,19 @@ export const Component: React.FC<Props> = ({
   onClose,
   onSaved,
 }) => {
+  const { t } = useT()
+  const { headingCounters, captionCounters } = useMemo(
+    () =>
+      buildCounters({
+        heading: t("entry.edit.heading"),
+        caption: t("entry.edit.caption"),
+      }),
+    [t],
+  )
   const [heading, setHeading] = useState(initialHeading ?? "")
   const [caption, setCaption] = useState(initialCaption ?? "")
   const [isSaving, setIsSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<PlainMessageKey | null>(null)
   // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐ。
   const isSavingRef = useRef(false)
 
@@ -120,13 +142,13 @@ export const Component: React.FC<Props> = ({
     try {
       const res = await updateEntry({ uri, heading, caption })
       if (res.status !== 200) {
-        setSaveError("Entryの更新に失敗しました。")
+        setSaveError("entry.edit.updateFailed")
         return
       }
       onSaved({ heading, caption })
     } catch (err) {
       console.error("EntryEditForm: failed to update entry", err)
-      setSaveError("Entryの更新に失敗しました。")
+      setSaveError("entry.edit.updateFailed")
     } finally {
       isSavingRef.current = false
       setIsSaving(false)
@@ -143,7 +165,7 @@ export const Component: React.FC<Props> = ({
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]}`}
         role="dialog"
-        aria-label="Entry編集"
+        aria-label={t("entry.edit.aria")}
       >
         <div
           className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
@@ -154,7 +176,7 @@ export const Component: React.FC<Props> = ({
             onClick={onClose}
             disabled={isSaving}
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -162,12 +184,12 @@ export const Component: React.FC<Props> = ({
             onClick={() => void confirmSave()}
             disabled={isSaving || heading.trim().length === 0}
           >
-            保存
+            {t("common.save")}
           </button>
         </div>
         <div className={`${ui["dialog-body"]} ${ui["base-padding"]}`}>
           <label className={styles["field-label"]} htmlFor="entry-edit-heading">
-            見出し
+            {t("entry.edit.heading")}
             <CountedTextInput
               id="entry-edit-heading"
               value={heading}
@@ -176,7 +198,7 @@ export const Component: React.FC<Props> = ({
             />
           </label>
           <label className={styles["field-label"]} htmlFor="entry-edit-caption">
-            キャプション
+            {t("entry.edit.caption")}
             <CountedTextInput
               id="entry-edit-caption"
               multiline
@@ -190,11 +212,11 @@ export const Component: React.FC<Props> = ({
             />
           </label>
           {saveError ? (
-            <p className={styles["error-text"]}>{saveError}</p>
+            <p className={styles["error-text"]}>{t(saveError)}</p>
           ) : null}
         </div>
       </div>
-      {isSaving ? <Loading overlay message="保存中..." /> : null}
+      {isSaving ? <Loading overlay message={t("common.saving")} /> : null}
     </Overlay>
   )
 }
