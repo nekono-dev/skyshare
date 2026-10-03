@@ -299,7 +299,7 @@ describe("POST /v2/entry", () => {
     })
 
     describe("新規投稿(posts)", () => {
-        it("createEntry:trueなのに画像投稿を含まない場合は400を返す", async () => {
+        it("createEntry:trueで画像投稿を含まなくても、visualがあれば200でskyshareEntryを返す（作成可否の判定はクライアントの責務）", async () => {
             const formData = buildTextPostFormData()
             formData.set("createEntry", "true")
             formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
@@ -315,7 +315,10 @@ describe("POST /v2/entry", () => {
                 agent: createFakeAgent(),
                 session: fakeSession,
             })
-            expect(res.status).toBe(400)
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
         })
 
         it("画像枚数とメタデータ件数が不一致なら400を返す", async () => {
@@ -996,6 +999,19 @@ describe("POST /v2/entry", () => {
             expect(json.skyshareEntry.sourceUri).not.toBe(json.posts[1].uri)
         })
 
+        it("createEntry:trueのスレッドが画像投稿を1件も含まなくても、visualがあれば200でsourceがposts[0]のskyshareEntryを返す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目" }, { text: "2件目" }],
+                applyWrites,
+                { createEntry: true },
+            )
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
         it("単発投稿(posts 1件)でcreateEntry:trueの場合、sourceは自身(posts[0])を指す", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
@@ -1067,29 +1083,6 @@ describe("POST /v2/entry", () => {
     })
 
     describe("スレッド投稿の異常系", () => {
-        it("createEntry:trueなのに画像投稿を1件も含まない場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
-            const applyWrites = vi.fn()
-            const request = new Request(
-                "https://skyshare.nekono.dev/v2/entry/",
-                {
-                    method: "POST",
-                    headers: authHeaders,
-                    body: buildThreadFormData(
-                        [{ text: "1件目" }, { text: "2件目" }],
-                        { createEntry: true },
-                    ),
-                },
-            )
-            const res = await callRoute(POST, request, {
-                agent: createFakeAgent({
-                    com: { atproto: { repo: { applyWrites } } },
-                }),
-                session: fakeSession,
-            })
-            expect(res.status).toBe(400)
-            expect(applyWrites).not.toHaveBeenCalled()
-        })
-
         it("2件目でfacetsのbyteEndが本文バイト長を超える場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
             const applyWrites = vi.fn()
             const request = new Request(
@@ -1475,93 +1468,98 @@ describe("DELETE /v2/entry", () => {
         expect(res.status).toBe(200)
     })
 
-    describe("deleteBskyThread(スレッド全体削除)", () => {
+    describe("deleteBskyPost:true(sourceを起点とする自己投稿の削除)", () => {
         const sourceUri = "at://did:plc:author/app.bsky.feed.post/3lpost"
 
-        it("deleteBskyPostがtrueでないのにdeleteBskyThread:trueのみ指定した場合は400を返す", async () => {
-            const request = new Request(
-                "https://skyshare.nekono.dev/v2/entry/",
-                {
-                    method: "DELETE",
-                    headers: {
-                        ...authHeaders,
-                        "content-type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        uri: entryUri,
-                        deleteBskyThread: true,
-                    }),
+        const makeRequest = (body: Record<string, unknown>) =>
+            new Request("https://skyshare.nekono.dev/v2/entry/", {
+                method: "DELETE",
+                headers: {
+                    ...authHeaders,
+                    "content-type": "application/json",
                 },
+                body: JSON.stringify(body),
+            })
+
+        const node = (
+            uri: string,
+            did: string,
+            replies: unknown[] = [],
+            record?: Record<string, unknown>,
+        ) => ({
+            $type: "app.bsky.feed.defs#threadViewPost",
+            post: { uri, cid: "bafy", author: { did }, record },
+            replies,
+        })
+
+        it("廃止されたdeleteBskyThreadを指定した場合は400を返す", async () => {
+            const res = await callRoute(
+                DELETE,
+                makeRequest({
+                    uri: entryUri,
+                    deleteBskyPost: true,
+                    deleteBskyThread: true,
+                }),
+                authenticatedLocals(),
             )
-            const res = await callRoute(DELETE, request, authenticatedLocals())
             expect(res.status).toBe(400)
         })
 
-        it("後続の自己投稿を辿って1回のapplyWritesで全件削除する", async () => {
+        it("単発投稿はdeleteRecordで1件削除し、applyWritesは呼ばない", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord, applyWrites } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(deleteRecord).toHaveBeenCalledTimes(2)
+            expect(deleteRecord).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    collection: "app.bsky.feed.post",
+                    rkey: "3lpost",
+                }),
+            )
+            expect(applyWrites).not.toHaveBeenCalled()
+        })
+
+        it("起点の後続自己投稿を辿って1回のapplyWritesで全件削除する", async () => {
             const applyWrites = vi.fn().mockResolvedValue({ data: {} })
             const getPostThread = vi.fn().mockResolvedValue({
                 data: {
-                    thread: {
-                        $type: "app.bsky.feed.defs#threadViewPost",
-                        post: {
-                            uri: sourceUri,
-                            cid: "bafypostcid",
-                            author: { did: "did:plc:author" },
-                        },
-                        replies: [
-                            {
-                                $type: "app.bsky.feed.defs#threadViewPost",
-                                post: {
-                                    uri: "at://did:plc:author/app.bsky.feed.post/3lsecond",
-                                    cid: "bafysecond",
-                                    author: { did: "did:plc:author" },
-                                },
-                                replies: [
-                                    {
-                                        $type: "app.bsky.feed.defs#threadViewPost",
-                                        post: {
-                                            uri: "at://did:plc:author/app.bsky.feed.post/3lthird",
-                                            cid: "bafythird",
-                                            author: { did: "did:plc:author" },
-                                        },
-                                        replies: [],
-                                    },
-                                ],
-                            },
-                        ],
-                    },
+                    thread: node(sourceUri, "did:plc:author", [
+                        node(
+                            "at://did:plc:author/app.bsky.feed.post/3lsecond",
+                            "did:plc:author",
+                            [
+                                node(
+                                    "at://did:plc:author/app.bsky.feed.post/3lthird",
+                                    "did:plc:author",
+                                ),
+                            ],
+                        ),
+                    ]),
                 },
             })
             const agent = createFakeAgent({
                 com: { atproto: { repo: { applyWrites } } },
                 app: { bsky: { feed: { getPostThread } } },
             })
-            const request = new Request(
-                "https://skyshare.nekono.dev/v2/entry/",
-                {
-                    method: "DELETE",
-                    headers: {
-                        ...authHeaders,
-                        "content-type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        uri: entryUri,
-                        deleteBskyPost: true,
-                        deleteBskyThread: true,
-                    }),
-                },
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
             )
-            const res = await callRoute(DELETE, request, {
-                agent,
-                session: fakeSession,
-            })
             expect(res.status).toBe(200)
             expect(getPostThread).toHaveBeenCalledWith(
-                expect.objectContaining({ uri: sourceUri }),
+                expect.objectContaining({ uri: sourceUri, parentHeight: 0 }),
             )
             expect(applyWrites).toHaveBeenCalledTimes(1)
             const writesArg = applyWrites.mock.calls[0][0].writes
-            expect(writesArg).toHaveLength(3)
             expect(writesArg.map((w: { rkey: string }) => w.rkey)).toEqual([
                 "3lpost",
                 "3lsecond",
@@ -1574,96 +1572,199 @@ describe("DELETE /v2/entry", () => {
         })
 
         it("第三者の返信で分岐した先は削除対象から除外される", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
             const applyWrites = vi.fn().mockResolvedValue({ data: {} })
             const getPostThread = vi.fn().mockResolvedValue({
                 data: {
-                    thread: {
-                        $type: "app.bsky.feed.defs#threadViewPost",
-                        post: {
-                            uri: sourceUri,
-                            cid: "bafypostcid",
-                            author: { did: "did:plc:author" },
-                        },
-                        replies: [
-                            {
-                                $type: "app.bsky.feed.defs#threadViewPost",
-                                post: {
-                                    uri: "at://did:plc:other/app.bsky.feed.post/3lother",
-                                    cid: "bafyother",
-                                    author: { did: "did:plc:other" },
-                                },
-                                replies: [
-                                    {
-                                        $type: "app.bsky.feed.defs#threadViewPost",
-                                        post: {
-                                            uri: "at://did:plc:author/app.bsky.feed.post/3lbranched",
-                                            cid: "bafybranched",
-                                            author: { did: "did:plc:author" },
-                                        },
-                                        replies: [],
-                                    },
-                                ],
-                            },
+                    thread: node(sourceUri, "did:plc:author", [
+                        node(
+                            "at://did:plc:other/app.bsky.feed.post/3lother",
+                            "did:plc:other",
+                            [
+                                node(
+                                    "at://did:plc:author/app.bsky.feed.post/3lbranched",
+                                    "did:plc:author",
+                                ),
+                            ],
+                        ),
+                    ]),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord, applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(applyWrites).not.toHaveBeenCalled()
+            expect(deleteRecord).toHaveBeenLastCalledWith(
+                expect.objectContaining({ rkey: "3lpost" }),
+            )
+        })
+
+        it("分岐時、投稿日時が近い側のみ削除対象になる", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(
+                        sourceUri,
+                        "did:plc:author",
+                        [
+                            node(
+                                "at://did:plc:author/app.bsky.feed.post/3lfar",
+                                "did:plc:author",
+                                [],
+                                { createdAt: "2026-01-05T00:00:00.000Z" },
+                            ),
+                            node(
+                                "at://did:plc:author/app.bsky.feed.post/3lnear",
+                                "did:plc:author",
+                                [],
+                                { createdAt: "2026-01-01T00:00:05.000Z" },
+                            ),
                         ],
-                    },
+                        { createdAt: "2026-01-01T00:00:00.000Z" },
+                    ),
                 },
             })
             const agent = createFakeAgent({
                 com: { atproto: { repo: { applyWrites } } },
                 app: { bsky: { feed: { getPostThread } } },
             })
-            const request = new Request(
-                "https://skyshare.nekono.dev/v2/entry/",
-                {
-                    method: "DELETE",
-                    headers: {
-                        ...authHeaders,
-                        "content-type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        uri: entryUri,
-                        deleteBskyPost: true,
-                        deleteBskyThread: true,
-                    }),
-                },
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
             )
-            const res = await callRoute(DELETE, request, {
-                agent,
-                session: fakeSession,
-            })
             expect(res.status).toBe(200)
             const writesArg = applyWrites.mock.calls[0][0].writes
-            expect(writesArg).toHaveLength(1)
-            expect(writesArg[0].rkey).toBe("3lpost")
+            expect(writesArg.map((w: { rkey: string }) => w.rkey)).toEqual([
+                "3lpost",
+                "3lnear",
+            ])
         })
 
-        it("スレッド削除(getPostThread)が失敗してもentry削除自体は200を返す", async () => {
+        it("sourceが返信投稿(起点でない)の場合は409を返し、何も削除しない", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(sourceUri, "did:plc:author", [], {
+                        $type: "app.bsky.feed.post",
+                        reply: {
+                            root: {
+                                uri: "at://did:plc:author/app.bsky.feed.post/3lroot",
+                                cid: "bafyroot",
+                            },
+                            parent: {
+                                uri: "at://did:plc:author/app.bsky.feed.post/3lroot",
+                                cid: "bafyroot",
+                            },
+                        },
+                    }),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord, applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(409)
+            expect(deleteRecord).not.toHaveBeenCalled()
+            expect(applyWrites).not.toHaveBeenCalled()
+        })
+
+        it("getPostThreadがNotFound以外で失敗した場合は500を返し、何も削除しない", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
             const getPostThread = vi
                 .fn()
                 .mockRejectedValue(new Error("getPostThread failed"))
             const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord } } },
                 app: { bsky: { feed: { getPostThread } } },
             })
-            const request = new Request(
-                "https://skyshare.nekono.dev/v2/entry/",
-                {
-                    method: "DELETE",
-                    headers: {
-                        ...authHeaders,
-                        "content-type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        uri: entryUri,
-                        deleteBskyPost: true,
-                        deleteBskyThread: true,
-                    }),
-                },
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
             )
-            const res = await callRoute(DELETE, request, {
-                agent,
-                session: fakeSession,
+            expect(res.status).toBe(500)
+            expect(deleteRecord).not.toHaveBeenCalled()
+        })
+
+        it("source投稿が既に存在しない場合はentryのみ削除して200を返す", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: {
+                        $type: "app.bsky.feed.defs#notFoundPost",
+                        uri: sourceUri,
+                        notFound: true,
+                    },
+                },
             })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
             expect(res.status).toBe(200)
+            expect(deleteRecord).toHaveBeenCalledTimes(1)
+            expect(deleteRecord).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    collection: "dev.nekono.skyshare.entry",
+                }),
+            )
+        })
+
+        it("applyWritesが失敗してもentry削除自体は200を返す", async () => {
+            const applyWrites = vi.fn().mockRejectedValue(new Error("fail"))
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(sourceUri, "did:plc:author", [
+                        node(
+                            "at://did:plc:author/app.bsky.feed.post/3lsecond",
+                            "did:plc:author",
+                        ),
+                    ]),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+        })
+
+        it("deleteBskyPost未指定時はgetPostThreadを呼ばない", async () => {
+            const getPostThread = vi.fn()
+            const agent = createFakeAgent({
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(getPostThread).not.toHaveBeenCalled()
         })
     })
 })

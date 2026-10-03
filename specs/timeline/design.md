@@ -122,7 +122,10 @@ export const buildTimelineThreads = async (
   //    により権威的にメインスレッド（採用された1系統のみ）を解決する。root同士は
   //    独立なのでPromise.allで並行実行する。1件の失敗が他のrootに影響しないよう
   //    root単位でtry/catchする。
-  type Resolved = { rootPost: TimelinePost; repliesByUri: Map<string, TimelinePost> }
+  type Resolved = {
+    rootPost: TimelinePost
+    repliesByUri: Map<string, TimelinePost>
+  }
   const resolvedThreads = new Map<string, Resolved>()
 
   await Promise.all(
@@ -368,17 +371,17 @@ const fetchPage = useCallback(
 
 ### 3.2 `src/lib/entry/guestDummyPosts.ts`
 
-既存`GUEST_DUMMY_POSTS: TimelinePost[]`（entry詳細ページのサンプル表示等、他の参照箇所があるため維持）に加え、`GUEST_DUMMY_THREADS: ThreadGroup[]`を持つ。既存のスレッドA/B/C用ダミー投稿（`guest-thread-a-*`等）を`{ rootPost, replies }`形にネストして手書きする。`Timeline/index.tsx`のゲストモード分岐は`GUEST_DUMMY_THREADS`を返す。
+既存`GUEST_DUMMY_POSTS: TimelinePost[]`（entry詳細ページのサンプル表示等、他の参照箇所があるため維持）に加え、`GUEST_DUMMY_THREADS: ThreadGroup[]`を持つ。既存のスレッドA/B/C用ダミー投稿（`guest-thread-a-*`等）を`{ rootPost, replies }`形にネストして手書きする。`Timeline/index.tsx`のゲストモード分岐は`GUEST_DUMMY_THREADS`を返す。削除フローの確認用に、旧実装のentryが返信に付くスレッドD・判定不能を再現するentry付き単独投稿も含める（[specs/entry/frontend/design.md §3.4.4](../entry/frontend/design.md#344-ゲスト表示での模擬動作mock)）。
 
 ## 4. 削除操作と一覧除去範囲（NFR-5対応）
 
 `items`（`ComponentList`が保持するページング対象）が`ThreadGroup[]`そのものであるため、「一覧から何を取り除くか」の単位は常に**スレッドグループ全体**になる。
 
-- `useSkyshareEntryStatus.ts`の`options.onPostDeleted`は`() => void`。`deleteBskyPost`成功時（`deleteBskyThread`の有無を問わず）呼び出す。
+- `useSkyshareEntryStatus.ts`の`options.onPostDeleted`は`() => void`。`deleteBskyPost:true`の削除が成功した時のみ呼び出す（「Skyshareリンクを削除」の成功時は呼ばない）。
 - `PostCard`の`onPostDeleted` propも`() => void`。
 - `ThreadCard`の`onPostDeleted`コールバックは常に次の1行: `onPostDeleted={() => onPostDeleted(g => g.rootPost.uri === group.rootPost.uri)}`（root・replies双方の`PostCard`から同一のコールバックを渡せる）。
 
-**表示上の挙動（NFR-5）**: ルート投稿に対するいずれの削除操作（「リンク・Bluesky投稿を削除」「リンク・スレッド全体を削除」）が成功しても、そのスレッドグループ全体（ルート＋現在表示中の全返信）が一覧から除去される。「リンク・スレッド全体を削除」ではなくルート投稿単体を削除した場合、Bluesky上には後続投稿がなお存在しうるが、それらは次回の一覧再取得時に`buildTimelineThreads`が新たな独立したスレッド（新しいroot）として改めて解決し、表示する。現在表示中のページ内で即座に「新しいrootへ昇格して表示し直す」というクライアント側の再構成は行わない（NFR-4「フロントエンドは独自にreply chainを再構築しない」という方針に一致させるための、意図的な単純化）。
+**表示上の挙動（NFR-5）**: ルート投稿に対する「リンク・Bluesky投稿を削除」が成功すると、削除されるのはBluesky上のスレッド全体（単独投稿なら1件）であるため、そのスレッドグループ全体（ルート＋現在表示中の全返信）が一覧から除去される。削除対象のBluesky投稿と一覧上の除去範囲が常に一致するため、「ルートだけが消えて後続投稿が次回取得時に新しい独立スレッドとして再表示される」状態は発生しない。「Skyshareリンクを削除」の成功時は`onPostDeleted`を呼ばず、一覧にはスレッドグループが残る（`useSkyshareEntryStatus`の状態遷移により、そのカードのentry表示のみが取り除かれる）。
 
 ## 5. 事後entry作成ボタンの表示条件とsourceの明示送信（FR-3対応）
 
@@ -390,13 +393,12 @@ export const resolveEntryVisualSourcePost = (
   group: ThreadGroup,
 ): TimelinePost | null => {
   if (group.replies.length === 0) return null
-  if (group.rootPost.skyshareEntry) return null
   if (group.rootPost.images.length > 0) return group.rootPost
   return group.replies.find(post => post.images.length > 0) ?? null
 }
 ```
 
-判定はルート投稿自身が持つ`skyshareEntry`の有無のみで行い、`group.replies`側のentryの有無は見ない（[requirements.md FR-3](requirements.md#fr-3-事後entry作成クライアントが作成可否作成範囲を判断する)）。本機能の実装前に、スレッド中間の投稿を対象にentryが作成されていたケースでは、ルート投稿自身がentryを持たない限りこの関数はrootPost/repliesを返し、ルート投稿を起点とする新規entry作成が許可される。結果として、後続投稿に紐づく既存entryとルート投稿に紐づく新規entryが同一スレッドグループ内に共存しうるが、これは意図した挙動であり、後続投稿側のentryへの操作（編集・削除）はTimelineの対象外（entry一覧側の既存機能で行う）とすることで一貫性を保つ。
+判定はルート投稿・`group.replies`のいずれの`skyshareEntry`の有無も見ない。entryの有無は`useSkyshareEntryStatus`の`display`が単一の情報源であり、`group`由来のprops（entry削除後も更新されない）に依存すると、ルートのentry削除後に作成ボタンが復帰しなくなるためである。ルート投稿が既にentryを持つ場合、`display.kind`が`entry`となりボタンは表示されない（[requirements.md FR-3](requirements.md#fr-3-事後entry作成クライアントが作成可否作成範囲を判断する)）。本機能の実装前に、スレッド中間の投稿を対象にentryが作成されていたケースでは、この関数は常にrootPost/repliesを返し、ルート投稿を起点とする新規entry作成が許可される。結果として、後続投稿に紐づく既存entryとルート投稿に紐づく新規entryが同一スレッドグループ内に共存しうるが、これは意図した挙動であり、後続投稿側のentryへの操作（編集・削除）はTimelineの対象外（entry一覧側の既存機能で行う）とすることで一貫性を保つ。
 
 Timelineが渡す`ThreadGroup`は、2.3節の通りバックエンドが権威的に決定したメインスレッドそのものであり、非表示のサブスレッド・他者起点スレッドがここに紛れ込むことは無いため、本節のロジックが「ルート投稿は常に自分起点スレッドのメインスレッド先頭である」という前提を検証し直す必要はない（[requirements.md FR-3](requirements.md#fr-3-事後entry作成クライアントが作成可否作成範囲を判断する)の3条件のうち条件2・3は、条件1を満たす時点で自動的に満たされる）。
 
@@ -409,9 +411,16 @@ Timelineが渡す`ThreadGroup`は、2.3節の通りバックエンドが権威�
 
 `entryVisualSourcePost`がroot以外（＝あるreply）の場合でも、APIに渡す`uri`（`source`）は常に`entrySourcePost`＝`group.rootPost`のuriになる。backend design.md §7.1・§7.2により、サーバはreply chainを辿った`source`の自動解決を行わないため、この明示送信を欠くとVisual元のreplyがそのまま`source`になってしまう。`state`の初期値（`item.skyshareEntry`）・作成後の`sourceUri`等のフォールバックは、そのカード自身の投稿（`item`＝root）のまま変更しない。
 
-## 6. スレッド由来entryの視覚的区別（FR-4対応）
+## 6. スレッドの視覚的表現（FR-4対応）
 
-（変更なし）
+スレッド由来バッジ（`PostCard`の`threadBadge`prop）は廃止した。代わりに`ThreadCard`が以下で表現する。
+
+- 「スレッドを展開（N件）」「折りたたむ」ボタンに`Collapsible`と同様にCSSで描いた矢印（`indicator`、開いている間は`indicator-open`で上向き）を、ボタンテキストの左側に付ける。アニメーションは行わない。
+- 展開時の返信カードは`reply-list`で囲み、左マージンで幅を縮めて段を示す（連結線は設けない）。
+- 返信カードの`PostCard`には`threadReply`を渡し、作成対象外でもグレーアウト（`card-muted`）しない。
+- 「Entryを開く」リンクは`PostCard`のフッター最右端に配置する。ボタン群（`footer-actions`）の残り幅を占める`entry-link-box`に置き、container queryで残り幅が閾値（4.5rem）未満になった場合は折り返さず非表示にする。
+
+以下の`findEntryCarrier`は現在UIから使用していない。
 
 ```ts
 export const findEntryCarrier = (group: ThreadGroup): TimelinePost | null => {
@@ -423,27 +432,28 @@ export const findEntryCarrier = (group: ThreadGroup): TimelinePost | null => {
 
 本機能（FR-3）によって新規に作成されるentryは常にルート投稿（`rootPost`）に紐づく。一方、本機能の実装前に中間投稿を対象に作成されたentryが残存している場合があるため（§5参照）、`rootPost`・`replies`のどちらにも`skyshareEntry`が付きうる。`findEntryCarrier`は`rootPost`側を優先して返すため、両方に付いている場合はルート投稿側のentryが視覚的区別の対象になる。
 
-## 7. リンク・スレッド全体削除（FR-5対応）
+## 7. リンク・Bluesky投稿削除（FR-5対応）
 
-`EntryDeleteConfirmDialog`（「Skyshareリンクを削除」「リンク・Bluesky投稿を削除」「リンク・スレッド全体を削除」の3〜4択）は`EntryCard`・`PostCard`の双方で既に実装済み。
+`EntryDeleteConfirmDialog`（「Skyshareリンクを削除」「リンク・Bluesky投稿を削除」「キャンセル」）は`EntryCard`・`PostCard`の双方から利用される。ダイアログの構成・文言・無効化の仕様は[specs/entry/frontend/design.md §3.4](../entry/frontend/design.md#34-entry削除時のbluesky投稿削除の範囲確認と無効化fr-5対応)が定め、本節はTimeline側の配線のみを定める。
 
 ### 7.1 判定ロジックの共有化
 
-`resolveThreadDeleteOption`（`src/lib/entry/resolveThreadDeleteOption.ts`、sourceUriを起点に`getPostThread`でreply chainを取得し、entry所有者自身の後続投稿が実在するかを判定する）・entry削除カスケード（`src/pages/v2/entry.ts`のDELETEハンドラ、`deleteBskyThread:true`）は、Timelineのスレッド構造化ロジック（`buildTimelineThreads`）と共通の`extractOwnedLinearReplyChain`（`specs/entry/backend/design.md §7.3.1`、did一致＋時刻近接による分岐選択、2.2節参照）を使う。これにより、「スレッド全体削除」で実際に削除される投稿は、常にそのentryの`source`から続くメインスレッドの投稿のみになり、サブスレッド（分岐で不採用になった側）が誤って削除されることはない。
+`resolveEntryDeleteScope`（`src/lib/entry/resolveEntryDeleteScope.ts`）・entry削除（`src/pages/v2/entry.ts`のDELETEハンドラの`resolveDeleteTargets`）は、Timelineのスレッド構造化ロジック（`buildTimelineThreads`）と共通の`extractOwnedLinearReplyChain`（[specs/entry/backend/design.md §7.3.1](../entry/backend/design.md#731-bluesky投稿削除deletebskyposttrueの削除対象の導出)、did一致＋時刻近接による分岐選択、2.2節参照）を使う。これにより、削除される投稿は常にそのentryの`source`から続くメインスレッドの投稿のみになり、サブスレッド（分岐で不採用になった側）が誤って削除されることはない。
 
-### 7.2 `useSkyshareEntryStatus`の拡張（`isResolvingThreadOption`/`showThreadOption`）
+### 7.2 `useSkyshareEntryStatus`
 
-- 戻り値に`isResolvingThreadOption: boolean`・`showThreadOption: boolean`を持つ。
-- `requestDeleteEntry`は非同期処理を内包し、`resolveThreadDeleteOption(entry.sourceUri)`の結果を待ってから`showThreadOption`を確定し、その後`isDeleteDialogOpen`をtrueにする。
-- `confirmDeleteEntry`の第2引数`deleteBskyThread?: boolean`を`deleteEntry` API呼び出しへそのまま渡す。
+- 戻り値に`isResolvingDeleteScope: boolean`・`deleteScope: EntryDeleteScope | null`を持つ（旧`isResolvingThreadOption`・`showThreadOption`を置き換える）。
+- `requestDeleteEntry`は非同期処理を内包し、`resolveEntryDeleteScope(entry.sourceUri)`の結果を`deleteScope`に確定してから`isDeleteDialogOpen`をtrueにする。
+- `confirmDeleteEntry(deleteBskyPost: boolean)`は`deleteEntry({ uri, deleteBskyPost })`を呼ぶ。`deleteBskyThread`は送信しない。
+- 旧実装のentryが付いた投稿（`deleteScope.kind === "legacy"`）でも`requestDeleteEntry`は通常通りダイアログを開く。「リンク・Bluesky投稿を削除」の無効化はダイアログ側が行う。
 - `options.onPostDeleted`は`() => void`（4節参照）。
 
 ### 7.3 `PostCard`の変更
 
-- `isResolvingThreadOption`・`showThreadOption`を`Loading overlay`表示、および`EntryDeleteConfirmDialog`の`showThreadOption`/`onDeleteThread={() => confirmDeleteEntry(true, true)}`propへ渡す。
-- `PostCardEntryActions`の`disabled`propに`isResolvingThreadOption`を追加する（`guestMode || isResolvingThreadOption`）。
+- `isResolvingDeleteScope`を`Loading overlay`（「削除内容を確認中...」）、および`PostCardEntryActions`の`deleteDisabled`に渡す。`disabled`（作成・共有ボタン用）は従来通り`guestMode || isResolvingDeleteScope`とする。ゲスト表示では削除ボタンを有効にし、削除範囲の判定・削除の実行をアプリ内で模擬する（[specs/entry/frontend/design.md §3.4.4](../entry/frontend/design.md#344-ゲスト表示での模擬動作mock)）。
+- `EntryDeleteConfirmDialog`へ`deleteScope`（`null`の間はダイアログを開かないため`deletable`相当を仮定せず、`isDeleteDialogOpen`がtrueのときのみ描画する）、`onDeleteLink={() => confirmDeleteEntry(false)}`、`onDeletePost={() => confirmDeleteEntry(true)}`を渡す。
 - `PostCardProps.onPostDeleted`は`() => void`（4節参照）。
 
 ### 7.4 `ThreadCard`側の一覧除去（4節に統合済み）
 
-4節の通り、常に`group.rootPost.uri`一致で除去する。
+4節の通り、常に`group.rootPost.uri`一致で除去する。旧実装のentryが付いた返信カード（`replies`側の`PostCard`）で「リンク・Bluesky投稿を削除」は無効化されているため、返信カードからBluesky投稿が削除されて一覧の除去範囲とずれることはない。

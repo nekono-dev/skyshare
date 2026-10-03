@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
     extractTimelinePostImages,
     groupTimelineEntriesBySourceUri,
+    normalizePostViewToTimelinePost,
     normalizeTimelineEntry,
     normalizeTimelinePost,
 } from "@/lib/entry/posts"
@@ -150,56 +151,29 @@ describe("normalizeTimelinePost", () => {
         expect(normalizeTimelinePost({ post: {} })).toBeUndefined()
         expect(normalizeTimelinePost(undefined)).toBeUndefined()
     })
+})
 
-    it("reply.parentがPostView型の場合、replyParentUriを設定する", () => {
-        const replyFeedItem = {
-            ...feedItem,
-            reply: {
-                parent: {
-                    $type: "app.bsky.feed.defs#postView",
-                    uri: "at://did:plc:abc/app.bsky.feed.post/3lparent",
-                    cid: "bafyparent",
-                    author: feedItem.post.author,
-                    record: { text: "parent" },
-                    indexedAt: "2025-12-31T00:00:00Z",
-                },
-                root: {
-                    $type: "app.bsky.feed.defs#postView",
-                    uri: "at://did:plc:abc/app.bsky.feed.post/3lroot",
-                    cid: "bafyroot",
-                    author: feedItem.post.author,
-                    record: { text: "root" },
-                    indexedAt: "2025-12-30T00:00:00Z",
-                },
-            },
-        }
-        expect(normalizeTimelinePost(replyFeedItem)?.replyParentUri).toBe(
-            "at://did:plc:abc/app.bsky.feed.post/3lparent",
-        )
+describe("normalizePostViewToTimelinePost", () => {
+    const author = { did: "did:plc:abc", handle: "alice.bsky.social" }
+
+    it("PostViewをTimelinePostへ変換する（normalizeTimelinePostへの委譲）", () => {
+        const post = {
+            uri: "at://did:plc:abc/app.bsky.feed.post/3lmid",
+            cid: "bafymid",
+            indexedAt: "2026-01-01T00:00:00Z",
+            author,
+            record: { text: "mid" },
+        } as any
+
+        const normalized = normalizePostViewToTimelinePost(post)
+        expect(normalized).toMatchObject({
+            uri: post.uri,
+            cid: "bafymid",
+            text: "mid",
+        })
     })
 
-    it("reply.parentがNotFoundPost等(PostView型でない)の場合、replyParentUriを設定しない", () => {
-        const replyFeedItem = {
-            ...feedItem,
-            reply: {
-                parent: {
-                    $type: "app.bsky.feed.defs#notFoundPost",
-                    uri: "at://did:plc:abc/app.bsky.feed.post/3lgone",
-                    notFound: true,
-                },
-                root: {
-                    $type: "app.bsky.feed.defs#notFoundPost",
-                    uri: "at://did:plc:abc/app.bsky.feed.post/3lgone",
-                    notFound: true,
-                },
-            },
-        }
-        expect(
-            normalizeTimelinePost(replyFeedItem)?.replyParentUri,
-        ).toBeUndefined()
-    })
-
-    it("replyが無い投稿はreplyParentUriを設定しない", () => {
-        expect(normalizeTimelinePost(feedItem)?.replyParentUri).toBeUndefined()
+    it("必須フィールドが欠ける場合は undefined", () => {
+        expect(normalizePostViewToTimelinePost({} as any)).toBeUndefined()
     })
 })

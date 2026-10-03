@@ -3,15 +3,14 @@
  *
  * 責務と処理概要:
  * - POST /v2/entry で `uri` が指定された場合のオーケストレーション処理を担う。
- * - `uri` の所有権検証・対象投稿の画像投稿判定・サムネイルアップロード・
+ * - `uri` の所有権検証・サムネイルアップロード・
  *   skyshare entry 作成という一連の流れを合成する。
  */
 
-import type {
-    AtpAgent,
-    AppBskyEmbedImages,
-    AppBskyFeedPost,
-    ComAtprotoServerRefreshSession,
+import {
+    type AtpAgent,
+    type AppBskyFeedPost,
+    type ComAtprotoServerRefreshSession,
 } from "@atproto/api"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { resolveDisplayName } from "@/lib/atproto/profile"
@@ -42,50 +41,13 @@ export type FromPostResult =
     | { ok: false; status: 400 | 404 | 500 }
 
 /**
- * from-post経路でのentryの`source`を解決する（`specs/entry/backend/design.md §7.3`）。
- *
- * 処理の趣旨:
- * - 対象投稿が自分自身の`reply.root`を持つ場合はそのrootを`source`にする。
- * - `root`が無い、または`root`のrepoが他人の場合は、対象投稿自身を`source`にする
- *   （他人が起点のスレッドへのすり替え防止。エラーにはしない）。
- * - `source`の解決方針はクライアントが選択する余地はなく、常にこの規則で一意に決まる
- *   （旧`entrySource`フィールドは廃止した）。
- *
- * Input:
- * - `postRecord`: 対象投稿のレコード値（`reply`を含みうる）
- * - `postUri`/`postCid`: 対象投稿自身のAT URI/CID
- * - `did`: 呼び出し者自身のDID
- *
- * Output:
- * - 解決された`{ uri, cid }`
- */
-const resolveFromPostSource = (
-    postRecord: AppBskyFeedPost.Main,
-    postUri: string,
-    postCid: string,
-    did: string,
-): { uri: string; cid: string } => {
-    const root = postRecord.reply?.root
-    const ownedRoot =
-        root && typeof root.uri === "string"
-            ? parseOwnedAtUri(root.uri, "app.bsky.feed.post", did)
-            : null
-
-    if (ownedRoot && root) {
-        return { uri: root.uri, cid: root.cid }
-    }
-
-    return { uri: postUri, cid: postCid }
-}
-
-/**
  * 既存の Bluesky 投稿から skyshare entry を発行する（from-post 相当の処理）。
  *
  * 処理の趣旨:
  * - `uri` の repo が session の DID と一致することを確認し、他人の投稿からの発行を防ぐ。
- * - 対象投稿が画像投稿であることを確認した上で、クライアントが元投稿の全画像から
- *   デフォルト配置（クロップ編集なし）で合成した `ogImage` をアップロードし、
- *   その blob 参照を manifest.visual として採用する（先頭画像の直接流用はしない）。
+ * - 対象投稿が画像を持つか等の作成可否判定は行わない（クライアントの責務）。
+ *   クライアントが合成した `visual` をアップロードし、entry の visual として採用する。
+ * - entry の `source` は常に検証済みの対象投稿自身とする（自動解決しない）。
  * - bsky 投稿は新規作成せず、既存投稿の URL をそのまま返す。
  *
  * Input:
@@ -96,7 +58,7 @@ const resolveFromPostSource = (
  *
  * Output:
  * - 成功時: `{ ok: true, bskyUrl, skyshareUri }`
- * - 失敗時: `{ ok: false, status }`（400: URI 不正/画像なし/visual欠落、404: 投稿が見つからない、500: 発行失敗）
+ * - 失敗時: `{ ok: false, status }`（400: URI 不正/visual欠落、404: 投稿が見つからない、500: 発行失敗）
  */
 export const createEntryFromExistingPost = async (
     agent: FromPostAgent,
@@ -131,17 +93,6 @@ export const createEntryFromExistingPost = async (
         return { ok: false, status: 500 }
     }
 
-    const embed = postRecord.embed
-    const hasEligibleImage =
-        embed?.$type === "app.bsky.embed.images" &&
-        ((embed as AppBskyEmbedImages.Main).images?.length ?? 0) > 0
-    if (!hasEligibleImage) {
-        console.warn(
-            "createEntry: source post has no eligible image (from-post)",
-        )
-        return { ok: false, status: 400 }
-    }
-
     if (!visual) {
         console.warn("createEntry: visual is required (from-post)")
         return { ok: false, status: 400 }
@@ -162,12 +113,9 @@ export const createEntryFromExistingPost = async (
         session.handle,
     )
 
-    const source = resolveFromPostSource(
-        postRecord,
-        postUri,
-        postCid,
-        session.did,
-    )
+    // sourceは検証済みの対象投稿自身。reply.rootを辿る自動解決は行わない
+    // （どの投稿をsourceにするかはクライアントの責務、specs/entry/backend/design.md §7.2）。
+    const source = { uri: postUri, cid: postCid }
 
     let skyshareEntry: CreatedSkyshareEntry
     try {

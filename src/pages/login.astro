@@ -21,7 +21,9 @@ import ui from "@/styles/ui.module.css"
             <img class={ui["width-lg"]} src="/materials/longlogo.svg" alt={serviceName} />
             <div class=`${ui.left} ${ui["self-end"]} ${ui.subject}`>v{serviceVersion}</div>
             <div class=`${ui["width-md"]}`>
-                {/* LoginForm 自体が base-card のため、入れ子にしない（カードの入れ子だとパスワードマネージャーが入力欄を検出できない） */}
+                {
+                    /* LoginForm 自体が base-card のため、入れ子にしない（カードの入れ子だとパスワードマネージャーが入力欄を検出できない） */
+                }
                 <LoginForm client:load />
                 <div class=`${ui["base-card"]} ${ui["base-padding"]}` style="margin-top: 0.5rem;">
                     <div style="margin: 0.5rem 0; font-weight: 600;" class=`${ui["subject"]}`>

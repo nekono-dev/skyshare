@@ -28,6 +28,8 @@ type Props = {
   ariaLabel: string
   buttons: DialogButton[]
   loading?: { message: string }
+  /** 指定時、ボタン列の上に説明文（無効化の理由表示等）を表示する */
+  description?: string
 }
 
 /** ボタンのvariantから配色クラスへの変換マップ。`ConfirmDialog`など他の汎用ダイアログでも配色を揃えるために再利用する。 */
@@ -50,6 +52,7 @@ export const variantClassName: Record<DialogButtonVariant, string> = {
  * - `ariaLabel`: ダイアログの `aria-label`
  * - `buttons`: 縦並びで表示する選択肢ボタンの定義一覧
  * - `loading`: 指定時、カード内にローディングオーバーレイを表示する
+ * - `description`: 指定時、ボタン列の上に説明文を表示する
  *
  * Output:
  * - `open=false` の場合は何も描画しない
@@ -65,6 +68,7 @@ export const Component: React.FC<Props> = ({
   ariaLabel,
   buttons,
   loading,
+  description,
 }) => {
   return (
     <Overlay open={open} onClose={onClose} contentClassName={ui["width-xs"]}>
@@ -74,6 +78,11 @@ export const Component: React.FC<Props> = ({
         aria-label={ariaLabel}
       >
         {loading && <Loading overlay message={loading.message} />}
+        {description ? (
+          <div className={ui["dialog-body"]}>
+            <p className={ui.text}>{description}</p>
+          </div>
+        ) : null}
         <div className={ui["dialog-actions"]}>
           {buttons.map(button => (
             <button

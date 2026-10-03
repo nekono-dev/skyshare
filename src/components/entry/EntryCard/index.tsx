@@ -9,7 +9,8 @@
  *   - orphaned: `ChoiceDialog` による単純確認のみ（対応する Bluesky 投稿は既に
  *     存在しないため `deleteBskyPost` は付与しない）。
  *   - 非orphaned: `PostCard` と同じ `EntryDeleteConfirmDialog` を用い、
- *     「リンクのみ削除」「投稿を削除」の2択を提示する。
+ *     「Skyshareリンクを削除」「リンク・Bluesky投稿を削除」（最終確認あり、旧entryは無効化）
+ *     を提示する。
  * - 編集ボタン: `EntryEditForm` を開き heading/caption を編集できる。
  *   保存成功時は `onSaved` を呼び出し、一覧側の表示を更新する。
  */
@@ -22,7 +23,11 @@ import { deleteEntry } from "@/client/openapi/client"
 import { parseAtUri, skyshareEntryPath } from "@/lib/entry/url"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import EntryDeleteConfirmDialog from "@/components/entry/EntryDeleteConfirmDialog"
-import { resolveThreadDeleteOption } from "@/lib/entry/resolveThreadDeleteOption"
+import {
+  resolveEntryDeleteScope,
+  type EntryDeleteScope,
+} from "@/lib/entry/resolveEntryDeleteScope"
+import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
 import Loading from "@/components/common/Loading"
 import EntryEditForm from "@/components/entry/EntryEditForm"
 
@@ -31,8 +36,9 @@ type Props = {
   onDeleted?: () => void
   onSaved?: (next: { heading: string; caption: string }) => void
   /**
-   * ログイン不要のゲスト表示。Bluesky投稿への実際の書き込みを伴う操作（編集・削除）
-   * のみ無効化する。「Entryを開く」はサンプルEntryページ（`item.webUrl`）へ遷移できる。
+   * ログイン不要のゲスト表示。編集は無効化する。削除は有効だが、削除範囲の判定・削除の
+   * 実行はアプリ内で模擬し、通信は行わない（`specs/entry/frontend/design.md §3.4.4`）。
+   * 「Entryを開く」はサンプルEntryページ（`item.webUrl`）へ遷移できる。
    */
   guestMode?: boolean
 }
@@ -56,8 +62,10 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isResolvingThreadOption, setIsResolvingThreadOption] = useState(false)
-  const [showThreadOption, setShowThreadOption] = useState(false)
+  const [isResolvingDeleteScope, setIsResolvingDeleteScope] = useState(false)
+  const [deleteScope, setDeleteScope] = useState<EntryDeleteScope>({
+    kind: "unknown",
+  })
   const [deleteError, setDeleteError] = useState<string | null>(null)
   // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐ。
   const isDeletingRef = useRef(false)
@@ -86,16 +94,12 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
    * Input:
    * - `deleteBskyPost`: true の場合、紐づく Bluesky 投稿も併せて削除する
    *   （orphaned entry には無関係のため未指定のまま呼ぶ）
-   * - `deleteBskyThread`: true の場合、`deleteBskyPost`とあわせて指定し、
-   *   sourceを起点にentry所有者自身の後続投稿もすべて削除する
+   * - ゲスト表示では`deleteEntry`を呼ばず、成功時と同じ状態遷移のみ行う
    *
    * Output:
    * - なし（成功時は `onDeleted` を呼び、失敗時はエラー文言を表示する）
    */
-  const confirmDelete = async (
-    deleteBskyPost?: boolean,
-    deleteBskyThread?: boolean,
-  ) => {
+  const confirmDelete = async (deleteBskyPost?: boolean) => {
     if (isDeletingRef.current) {
       return
     }
@@ -104,14 +108,21 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
     setDeleteError(null)
 
     try {
-      const res = await deleteEntry(
-        deleteBskyPost === undefined
-          ? { uri: item.uri }
-          : { uri: item.uri, deleteBskyPost, deleteBskyThread },
-      )
-      if (res.status !== 200) {
-        setDeleteError("Entryの削除に失敗しました。")
-        return
+      if (!guestMode) {
+        const res = await deleteEntry(
+          deleteBskyPost === undefined
+            ? { uri: item.uri }
+            : { uri: item.uri, deleteBskyPost },
+        )
+        if (res.status === 409) {
+          setDeleteError("このEntryはBluesky投稿を含めて削除できません。")
+          setIsDialogOpen(false)
+          return
+        }
+        if (res.status !== 200) {
+          setDeleteError("Entryの削除に失敗しました。")
+          return
+        }
       }
       setIsDialogOpen(false)
       onDeleted?.()
@@ -128,25 +139,27 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
    * 削除確認ダイアログを開く。
    *
    * 処理の趣旨:
-   * - orphaned entry（元投稿が既に無い）は「スレッド全体を削除」の判定自体が無意味なため、
+   * - orphaned entry（元投稿が既に無い）は削除範囲の判定自体が無意味なため、
    *   即座にダイアログを開く。
-   * - 非orphanedの場合のみ`resolveThreadDeleteOption`でsourceのスレッド判定を行ってから
+   * - 非orphanedの場合のみ`resolveEntryDeleteScope`でsourceの削除範囲を判定してから
    *   ダイアログを開く（判定中は削除ボタンを無効化し、ローディング表示する）。
+   *   ゲスト表示では通信せず`resolveGuestDeleteScope`で判定する。
    *
    * Output:
    * - なし（判定完了後、`isDialogOpen`をtrueにする）
    */
   const openDeleteDialog = async () => {
     if (isOrphaned) {
-      setShowThreadOption(false)
       setIsDialogOpen(true)
       return
     }
 
-    setIsResolvingThreadOption(true)
-    const canDeleteThread = await resolveThreadDeleteOption(item.sourceUri)
-    setIsResolvingThreadOption(false)
-    setShowThreadOption(canDeleteThread)
+    setIsResolvingDeleteScope(true)
+    const scope = await (guestMode
+      ? Promise.resolve(resolveGuestDeleteScope(item.sourceUri))
+      : resolveEntryDeleteScope(item.sourceUri))
+    setIsResolvingDeleteScope(false)
+    setDeleteScope(scope)
     setIsDialogOpen(true)
   }
 
@@ -188,7 +201,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
           <button
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]}  ${ui["red-button"]}`}
-            disabled={guestMode || isResolvingThreadOption}
+            disabled={isResolvingDeleteScope}
             onClick={() => {
               void openDeleteDialog()
             }}
@@ -211,7 +224,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
       )}
 
       {isDeleting ? <Loading overlay message="Entryを削除中..." /> : null}
-      {isResolvingThreadOption ? (
+      {isResolvingDeleteScope ? (
         <Loading overlay message="削除内容を確認中..." />
       ) : null}
 
@@ -244,10 +257,9 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
         <EntryDeleteConfirmDialog
           open={isDialogOpen}
           isDeleting={isDeleting}
-          showThreadOption={showThreadOption}
+          deleteScope={deleteScope}
           onDeleteLink={() => confirmDelete(false)}
           onDeletePost={() => confirmDelete(true)}
-          onDeleteThread={() => confirmDelete(true, true)}
           onCancel={() => setIsDialogOpen(false)}
         />
       )}

@@ -30,11 +30,35 @@
   min-width: 0;
 }
 
+/* フッターのボタン群。幅が足りない場合はこの中で折り返す */
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* 「Entryを開く」の置き場。ボタン群の残り幅だけを占め、リンクが入り切らない幅
+   （container queryの閾値未満）になった場合は折り返さずリンクを非表示にする。
+   投稿を削除の列の最右端に固定する。 */
+.entry-link-box {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  container-type: inline-size;
+}
+
+@container (max-width: 4.5rem) {
+  .entry-link {
+    display: none;
+  }
+}
+
 .entry-link {
   flex: 0 0 auto;
-  align-self: flex-start;
-  margin-left: auto;
-  padding-top: 0.15rem;
   font-size: 0.85rem;
   white-space: nowrap;
   color: var(--color-bluesky);
@@ -72,16 +96,6 @@
 .handle,
 .created-at {
   color: var(--color-text-muted);
-}
-
-.thread-badge {
-  flex-shrink: 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  border: var(--border-card);
-  border-radius: var(--radius-md);
-  padding: 0.05em 0.5em;
-  margin-left: var(--space-1);
 }
 
 .created-at {
@@ -129,7 +143,7 @@
 }
 
 .footer {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.1rem;
   padding-top: 0.6rem;
   border-top: 1px solid var(--color-border);

@@ -7,7 +7,7 @@
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { getEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/common/ComponentList"
 import type {
@@ -21,7 +21,6 @@ import {
 import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
 import ThreadCard from "@/components/post/ThreadCard"
-import { groupIntoThreads } from "@/components/post/Timeline/threadGroup"
 import ThreadComposer from "@/components/post/ThreadComposer"
 import PostLauncher from "@/components/post/PostLauncher"
 import {
@@ -29,8 +28,8 @@ import {
   isSessionKnownUnauthenticated,
 } from "@/lib/account/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
-import { GUEST_DUMMY_POSTS } from "@/lib/entry/guestDummyPosts"
-import type { TimelinePost } from "@/lib/entry/posts"
+import { GUEST_DUMMY_THREADS } from "@/lib/entry/guestDummyPosts"
+import type { ThreadGroup } from "@/lib/entry/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"
 import {
   readHashtagHistory,
@@ -136,33 +135,35 @@ const Component = ({ avatarUrl }: Props) => {
     async ({
       cursor,
       limit,
-    }: CursorPageFetchInput): Promise<CursorPageFetchResult<TimelinePost>> => {
+    }: CursorPageFetchInput): Promise<CursorPageFetchResult<ThreadGroup>> => {
       try {
         // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
         // 401確定済みの`getEntries`をわざわざ叩き直さずゲスト表示へ直行する。
         if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
           setGuestMode(true)
-          return { items: GUEST_DUMMY_POSTS }
+          return { items: GUEST_DUMMY_THREADS }
         }
 
         const params = cursor ? { limit, cursor } : { limit }
         const res = await getEntries(params)
 
         if (res.status === 200) {
-          const posts = res.data.posts ?? []
+          const threads = res.data.threads ?? []
 
           // APIレスポンスに含まれる自分の投稿からアバターURLを補完する。
-          const nextAvatarUrl = posts.find(
-            post =>
-              typeof post.author?.avatar === "string" &&
-              post.author.avatar !== "",
-          )?.author.avatar
+          const nextAvatarUrl = threads
+            .flatMap(thread => [thread.rootPost, ...thread.replies])
+            .find(
+              post =>
+                typeof post.author?.avatar === "string" &&
+                post.author.avatar !== "",
+            )?.author.avatar
           if (nextAvatarUrl) {
             setResolvedAvatarUrl(nextAvatarUrl)
           }
 
           return {
-            items: posts,
+            items: threads,
             nextCursor: res.data.cursor,
           }
         }
@@ -170,7 +171,7 @@ const Component = ({ avatarUrl }: Props) => {
         if (res.status === 401) {
           if (isGuestModeRequested()) {
             setGuestMode(true)
-            return { items: GUEST_DUMMY_POSTS }
+            return { items: GUEST_DUMMY_THREADS }
           }
           if (typeof window !== "undefined") {
             window.location.href = "/login/"
@@ -206,7 +207,7 @@ const Component = ({ avatarUrl }: Props) => {
     setReloadKey(prev => prev + 1)
   }
 
-  const pagedController = useCursorPaginationController<TimelinePost>({
+  const pagedController = useCursorPaginationController<ThreadGroup>({
     cursorPagination: {
       pageSize,
       fetchPage,
@@ -217,7 +218,7 @@ const Component = ({ avatarUrl }: Props) => {
     },
   })
 
-  const infiniteController = useInfiniteScrollController<TimelinePost>({
+  const infiniteController = useInfiniteScrollController<ThreadGroup>({
     infiniteScrollPagination: {
       fetchPage,
       reloadKey,
@@ -237,8 +238,6 @@ const Component = ({ avatarUrl }: Props) => {
     ? pagedController.removeItem
     : infiniteController.removeItem
 
-  const threadGroups = useMemo(() => groupIntoThreads(items), [items])
-
   // Timeline初回読み込み完了後に一度だけ、ハッシュタグ候補の初回履歴seedを試みる。
   // 既にハッシュタグ履歴がある場合は seedHashtagHistoryFromRankedTags 側で書き込みが
   // スキップされるが、その判定を待たず readHashtagHistory で先に確認することで、
@@ -252,7 +251,11 @@ const Component = ({ avatarUrl }: Props) => {
 
     if (readHashtagHistory(resolvedDid).length > 0) return
 
-    const ranked = countHashtagUsage(items.map(post => post.text))
+    const ranked = countHashtagUsage(
+      items
+        .flatMap(thread => [thread.rootPost, ...thread.replies])
+        .map(post => post.text),
+    )
     seedHashtagHistoryFromRankedTags(
       ranked.map(r => r.tag),
       resolvedDid,
@@ -265,7 +268,7 @@ const Component = ({ avatarUrl }: Props) => {
         <p
           className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
         >
-          これはゲスト表示です。Blueskyへの投稿以外の動作を確認できます。
+          これはゲスト表示です。Blueskyへの投稿以外の動作を確認できます。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。
         </p>
       )}
       {!pinnedFormDisabled && (
@@ -295,14 +298,14 @@ const Component = ({ avatarUrl }: Props) => {
       ) : (
         <ComponentList
           itemComponent={ThreadCard}
-          getItemKey={group => group.id}
+          getItemKey={group => group.rootPost.uri}
           getItemProps={group => ({
             group,
             onPostDeleted: removeItem,
             guestMode,
           })}
           className={styles["timeline-list"]}
-          items={threadGroups}
+          items={items}
         />
       )}
 

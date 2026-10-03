@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest"
 import {
     findEntryCarrier,
-    resolvePostCreateEntryTarget,
+    resolveEntryVisualSourcePost,
 } from "@/components/post/ThreadCard/entryCandidate"
-import type { ThreadGroup } from "@/components/post/Timeline/threadGroup"
-import type { TimelinePost } from "@/lib/entry/posts"
+import type { ThreadGroup, TimelinePost } from "@/lib/entry/posts"
 
 const author = { did: "did:plc:abc", handle: "alice.bsky.social" }
 
@@ -32,59 +31,64 @@ const skyshareEntry = {
 
 const image = { url: "https://example.com/a.png", alt: "", cid: "imgcid" }
 
-describe("resolvePostCreateEntryTarget", () => {
+describe("resolveEntryVisualSourcePost", () => {
     it("単独投稿(replies:[])はnullを返す", () => {
         const group: ThreadGroup = {
-            id: "root",
             rootPost: makePost("root", { images: [image] }),
             replies: [],
         }
-        expect(resolvePostCreateEntryTarget(group)).toBeNull()
+        expect(resolveEntryVisualSourcePost(group)).toBeNull()
     })
 
-    it("ルート投稿が画像を持つ場合はnullを返す", () => {
+    it("ルートが画像を持ち、entryが無い場合はルート投稿を返す", () => {
+        const root = makePost("root", { images: [image] })
         const group: ThreadGroup = {
-            id: "root",
-            rootPost: makePost("root", { images: [image] }),
-            replies: [makePost("mid", { images: [image] })],
+            rootPost: root,
+            replies: [makePost("mid")],
         }
-        expect(resolvePostCreateEntryTarget(group)).toBeNull()
+        expect(resolveEntryVisualSourcePost(group)).toBe(root)
     })
 
-    it("グループ内のいずれかにentryが既にある場合はnullを返す", () => {
+    it("ルート投稿自身にentryがあってもルート投稿を返す(entryの有無はフックのdisplayで判定し、削除後に作成ボタンを復帰させるため)", () => {
+        const root = makePost("root", { images: [image], skyshareEntry })
         const group: ThreadGroup = {
-            id: "root",
-            rootPost: makePost("root", { skyshareEntry }),
-            replies: [makePost("mid", { images: [image] })],
+            rootPost: root,
+            replies: [makePost("mid")],
         }
-        expect(resolvePostCreateEntryTarget(group)).toBeNull()
+        expect(resolveEntryVisualSourcePost(group)).toBe(root)
     })
 
-    it("ルート以外に画像投稿が無い場合はnullを返す", () => {
+    it("repliesの投稿に既にentryがあっても、ルート投稿を返す(実装前に中間投稿へentryが作成されていたケース)", () => {
+        const root = makePost("root", { images: [image] })
         const group: ThreadGroup = {
-            id: "root",
+            rootPost: root,
+            replies: [makePost("mid", { skyshareEntry })],
+        }
+        expect(resolveEntryVisualSourcePost(group)).toBe(root)
+    })
+
+    it("ルート・repliesのいずれも画像を持たない場合はnullを返す", () => {
+        const group: ThreadGroup = {
             rootPost: makePost("root"),
             replies: [makePost("mid"), makePost("tail")],
         }
-        expect(resolvePostCreateEntryTarget(group)).toBeNull()
+        expect(resolveEntryVisualSourcePost(group)).toBeNull()
     })
 
-    it("ルート以外に画像投稿が複数ある場合、最も古いもの(repliesの先頭)を返す", () => {
+    it("ルートが画像を持たない場合、repliesのうち時系列上最も古い画像投稿を返す", () => {
         const mid = makePost("mid", { images: [image] })
         const tail = makePost("tail", { images: [image] })
         const group: ThreadGroup = {
-            id: "root",
             rootPost: makePost("root"),
             replies: [mid, tail],
         }
-        expect(resolvePostCreateEntryTarget(group)).toBe(mid)
+        expect(resolveEntryVisualSourcePost(group)).toBe(mid)
     })
 })
 
 describe("findEntryCarrier", () => {
     it("単独投稿(replies:[])はnullを返す", () => {
         const group: ThreadGroup = {
-            id: "root",
             rootPost: makePost("root", { skyshareEntry }),
             replies: [],
         }
@@ -93,7 +97,6 @@ describe("findEntryCarrier", () => {
 
     it("グループ内のどの投稿にもentryが無い場合はnullを返す", () => {
         const group: ThreadGroup = {
-            id: "root",
             rootPost: makePost("root"),
             replies: [makePost("mid")],
         }
@@ -103,7 +106,6 @@ describe("findEntryCarrier", () => {
     it("ルート投稿にentryがある場合、ルート投稿を返す", () => {
         const root = makePost("root", { skyshareEntry })
         const group: ThreadGroup = {
-            id: "root",
             rootPost: root,
             replies: [makePost("mid")],
         }

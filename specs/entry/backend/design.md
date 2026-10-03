@@ -128,12 +128,12 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 
 ### 3.4 from-post（`uri`指定時）の詳細（[fromPost.ts](../../../src/lib/entry/fromPost.ts)）
 
-| ステップ | 内容                                                                                                     | 失敗時 |
-| -------- | ---------------------------------------------------------------------------------------------------------- | ------ |
-| 1        | `uri`が呼び出し者自身の`app.bsky.feed.post`か検証（`parseOwnedAtUri`）                                     | 400    |
-| 2        | 対象投稿を`getRecord`で取得（`postText`・`postCid`の取得のため。画像embedの有無は検証しない）              | 404    |
-| 3        | `visual`（クライアントが合成したサムネイル）が指定されているか検証                                         | 400    |
-| 4        | `visual`をアップロードしentryのvisualとして採用                                                            | 500    |
+| ステップ | 内容                                                                                                                                                                              | 失敗時 |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 1        | `uri`が呼び出し者自身の`app.bsky.feed.post`か検証（`parseOwnedAtUri`）                                                                                                            | 400    |
+| 2        | 対象投稿を`getRecord`で取得（`postText`・`postCid`の取得のため。画像embedの有無は検証しない）                                                                                     | 404    |
+| 3        | `visual`（クライアントが合成したサムネイル）が指定されているか検証                                                                                                                | 400    |
+| 4        | `visual`をアップロードしentryのvisualとして採用                                                                                                                                   | 500    |
 | 5        | `dev.nekono.skyshare.entry`レコードを`createRecord`で作成する。`source`は`uri`（ステップ1で検証済みの対象投稿）自身であり、追加の解決処理は行わない（[§7.2](#72-source決定規則)） | 500    |
 
 成功時はBluesky投稿を新規作成せず、既存投稿のURLとトップレベルの`skyshareEntry`を返す。旧実装が行っていた「対象投稿が画像embedを持つか」の検証、および`postRecord.reply.root`を辿る`source`の自動解決（`resolveFromPostSource`・`isPostOnOwnedRootChain`）は撤廃する（[requirements.md FR-1・FR-2](requirements.md#fr-1-新規bluesky投稿の作成単発スレッド共通)）。
@@ -179,30 +179,30 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 
 ### 3.7 POSTのステータスコード対応表
 
-| 条件                                                                       | ステータス                                                                 |
-| -------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| cookieヘッダ無し                                                           | 400                                                                        |
-| 未認証（agent/session未確立）                                              | 401                                                                        |
-| Content-Typeがmultipartでない                                              | 400                                                                        |
-| FormDataとして解釈不可                                                     | 400                                                                        |
-| スキーマ不正（`uri`も`posts`も条件を満たさない）                           | 400                                                                        |
-| from-post: uriの所有者不一致                                               | 400                                                                        |
-| from-post: 対象投稿が見つからない                                          | 404                                                                        |
-| from-post: visual未指定                                                    | 400                                                                        |
-| from-post: visualアップロード失敗                                          | 500                                                                        |
-| from-post: entry作成失敗                                                   | 500                                                                        |
-| from-post: 成功（対象投稿の画像有無・スレッド上の位置は問わない）          | 200                                                                        |
-| 新規投稿: `createEntry:true`なのに`visual`未指定                          | 400                                                                        |
-| 新規投稿: 画像枚数とimagesMeta件数不一致                                   | 400                                                                        |
-| 新規投稿: facetsのbyteEndが本文バイト長超過                                | 400                                                                        |
-| 新規投稿: 画像アップロード失敗                                             | 500                                                                        |
-| 新規投稿: visualアップロード失敗                                           | 500                                                                        |
-| 新規投稿: external embed構築失敗（`ogMeta.url`欠如等）                     | 400                                                                        |
-| 新規投稿: `reply`の所有者不一致                                            | 400                                                                        |
-| 新規投稿: `applyWrites`失敗（gate作成失敗含む）                            | 500                                                                        |
-| 新規投稿: 成功                                                             | 200                                                                        |
-| スレッド: 途中の1件で検証エラー                                            | 400（`applyWrites`は呼ばれない。全件が事前検証を通過して初めて送信される） |
-| スレッド: 途中の1件でアップロード失敗                                      | 500                                                                        |
+| 条件                                                              | ステータス                                                                 |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| cookieヘッダ無し                                                  | 400                                                                        |
+| 未認証（agent/session未確立）                                     | 401                                                                        |
+| Content-Typeがmultipartでない                                     | 400                                                                        |
+| FormDataとして解釈不可                                            | 400                                                                        |
+| スキーマ不正（`uri`も`posts`も条件を満たさない）                  | 400                                                                        |
+| from-post: uriの所有者不一致                                      | 400                                                                        |
+| from-post: 対象投稿が見つからない                                 | 404                                                                        |
+| from-post: visual未指定                                           | 400                                                                        |
+| from-post: visualアップロード失敗                                 | 500                                                                        |
+| from-post: entry作成失敗                                          | 500                                                                        |
+| from-post: 成功（対象投稿の画像有無・スレッド上の位置は問わない） | 200                                                                        |
+| 新規投稿: `createEntry:true`なのに`visual`未指定                  | 400                                                                        |
+| 新規投稿: 画像枚数とimagesMeta件数不一致                          | 400                                                                        |
+| 新規投稿: facetsのbyteEndが本文バイト長超過                       | 400                                                                        |
+| 新規投稿: 画像アップロード失敗                                    | 500                                                                        |
+| 新規投稿: visualアップロード失敗                                  | 500                                                                        |
+| 新規投稿: external embed構築失敗（`ogMeta.url`欠如等）            | 400                                                                        |
+| 新規投稿: `reply`の所有者不一致                                   | 400                                                                        |
+| 新規投稿: `applyWrites`失敗（gate作成失敗含む）                   | 500                                                                        |
+| 新規投稿: 成功                                                    | 200                                                                        |
+| スレッド: 途中の1件で検証エラー                                   | 400（`applyWrites`は呼ばれない。全件が事前検証を通過して初めて送信される） |
+| スレッド: 途中の1件でアップロード失敗                             | 500                                                                        |
 
 ## 4. PUT /v2/entry
 
@@ -248,50 +248,58 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 `application/json`。
 
 ```
-{ "uri": string, "deleteBskyPost"?: boolean, "deleteBskyThread"?: boolean }
+{ "uri": string, "deleteBskyPost"?: boolean }
 ```
 
-`.strict()`。`deleteBskyThread: true`は`deleteBskyPost: true`とあわせて指定された場合にのみ意味を持つ（`deleteBskyPost`が`true`でないのに`deleteBskyThread: true`のみが指定された場合はスキーマ不正として400）。
+`.strict()`。削除範囲を選択するための`deleteBskyThread`は廃止されており、指定されたリクエストは未知のキーとして400になる（リリース前のため後方互換の受け付けは行わない）。`deleteBskyPost: true`は、`source`から始まる自己後続投稿すべて（単発投稿なら1件のみ）の削除を意味する（[§7.3](#73-entry削除経路delete)）。
 
 ### 5.2 処理フロー
 
 1. ヘッダ検証 → 400
 2. 認証チェック → 401
 3. JSONパース失敗 → 400
-4. `RequestBodySchema.safeParse()`失敗（`deleteBskyThread:true`かつ`deleteBskyPost`が`true`でない場合を含む） → 400
+4. `RequestBodySchema.safeParse()`失敗（`deleteBskyThread`の指定を含む） → 400
 5. `uri`が呼び出し者自身の`dev.nekono.skyshare.entry`か検証 → 不正なら400
 6. `deleteBskyPost:true`指定時のみ、削除前に対象entryレコードを`getRecord`で取得し、`source.uri`/`source.cid`（元投稿のAT URI）を読み出す。取得失敗時は404で終了（entry自体も削除しない）
-7. skyshare entryレコードを`deleteRecord`
-8. `deleteBskyPost:true`かつ`source.uri`が自分自身の`app.bsky.feed.post`を指す場合、Bluesky投稿の削除に進む。**この削除に失敗してもリクエスト全体は成功（200）として扱う**（entry削除自体は既に完了しているため）。
-   - `deleteBskyThread`が未指定または`false`（既定の1対1挙動）: `source.uri`の投稿のみを`deleteRecord`で削除する（従来通り）。
-   - `deleteBskyThread:true`: `source.uri`を起点に、呼び出し者自身が投稿した後続投稿を辿って削除対象を導出し（[§7.3.1](#731-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)参照）、1回の`applyWrites`でsource自身を含めて全件削除する。この`applyWrites`が失敗しても、既にentry削除は完了しているためリクエスト全体は成功（200）として扱う。
-9. 200（本文なし）を返す
+7. `deleteBskyPost:true`かつ`source.uri`が自分自身の`app.bsky.feed.post`を指す場合のみ、**entry削除より前に**削除対象を導出する（`resolveDeleteTargets`、[§7.3.1](#731-bluesky投稿削除deletebskyposttrueの削除対象の導出)）。
+   - `kind: "notThreadRoot"`（`source`が返信投稿） → 409で終了（entryもBluesky投稿も削除しない）
+   - 導出処理が例外を投げた（`getPostThread`が`NotFound`以外で失敗） → 500で終了（entryもBluesky投稿も削除しない）
+   - `kind: "sourceGone"`（`source`投稿が既に存在しない） → Bluesky投稿の削除対象なしとして次へ進む
+   - `kind: "targets"` → 削除対象のrkey一覧を保持して次へ進む
+8. skyshare entryレコードを`deleteRecord`
+9. 手順7で`kind: "targets"`を得ていた場合のみ、Bluesky投稿を削除する。**この削除に失敗してもリクエスト全体は成功（200）として扱う**（entry削除自体は既に完了しているため）。
+   - rkeyが1件: `deleteRecord`
+   - rkeyが2件以上: 1回の`applyWrites`（すべて`com.atproto.repo.applyWrites#delete`）で全件削除
+10. 200（本文なし）を返す
 
 ### 5.3 DELETEのステータスコード対応表
 
-| 条件                                                                                                             | ステータス           |
-| ---------------------------------------------------------------------------------------------------------------- | -------------------- |
-| cookieヘッダ無し                                                                                                 | 400                  |
-| 未認証                                                                                                           | 401                  |
-| JSONとして解釈不可                                                                                               | 400                  |
-| スキーマ不正（`uri`欠落、`deleteBskyPost`が`true`でないのに`deleteBskyThread:true`等）                           | 400                  |
-| `uri`が自分自身の`dev.nekono.skyshare.entry`でない                                                               | 400                  |
-| `deleteBskyPost:true`指定時、entryが見つからない（getRecord失敗）                                                | 404                  |
-| `deleteBskyPost:true`指定時、元投稿（またはスレッド全体削除時のいずれかの投稿）の削除失敗（entry削除は成功済み） | 200                  |
-| `deleteBskyPost:false`（または未指定）                                                                           | 200（entryのみ削除） |
-| 成功                                                                                                             | 200（本文なし）      |
+| 条件                                                                                       | ステータス            |
+| ------------------------------------------------------------------------------------------ | --------------------- |
+| cookieヘッダ無し                                                                           | 400                   |
+| 未認証                                                                                     | 401                   |
+| JSONとして解釈不可                                                                         | 400                   |
+| スキーマ不正（`uri`欠落、廃止された`deleteBskyThread`の指定等）                            | 400                   |
+| `uri`が自分自身の`dev.nekono.skyshare.entry`でない                                         | 400                   |
+| `deleteBskyPost:true`指定時、entryが見つからない（getRecord失敗）                          | 404                   |
+| `deleteBskyPost:true`指定時、`source`が返信投稿（起点でない）                              | 409（何も削除しない） |
+| `deleteBskyPost:true`指定時、削除対象の導出に失敗（`getPostThread`が`NotFound`以外で失敗） | 500（何も削除しない） |
+| `deleteBskyPost:true`指定時、Bluesky投稿の削除実行に失敗（entry削除は成功済み）            | 200                   |
+| `deleteBskyPost:false`（または未指定）                                                     | 200（entryのみ削除）  |
+| 成功                                                                                       | 200（本文なし）       |
 
 ## 6. 設計上の重要な不変条件（テストが担保している性質）
 
-| 不変条件                                                                                          | 根拠                                                                                                                                                           |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POSTの新規投稿は「全件成功か全件失敗」（原子性）                                                  | `createBskyThread`が1回の`applyWrites`で全レコードを送信するため。事前検証（画像枚数・facets範囲等）で1件でも失敗すれば`applyWrites`自体を呼ばない             |
-| reply chainの相手先は必ず呼び出し者自身の投稿                                                     | `isReplyRefOwnedBySelf`（トップレベル`reply`）、`parseOwnedAtUri`（from-postの`uri`、PUT/DELETEの`uri`、DELETEのsource）                                       |
-| 画像とOGPを同時指定した場合は画像embedが優先される                                                | フェーズ5の`if (hasImages...) ... else if (item.ogMeta && item.ogImage)`分岐                                                                                   |
-| `createEntry:true`は`visual`が指定されている場合のみ有効（`posts`が画像投稿を含むかは問わない）   | `createEntry`はトップレベルフィールドのため、ハンドラのフェーズ5は`visual`の有無のみを検証する（[requirements.md FR-1](requirements.md#fr-1-新規bluesky投稿の作成単発スレッド共通)）                                    |
-| PUT/DELETEの`heading`/`caption`更新・削除は、クライアント指定のuriをそのまま信用しない            | `parseOwnedAtUri`によるcollection/repo検証。DELETEの元投稿削除も、entryレコードに記録された`source`から導出し、クライアント指定値を使わない                    |
-| entry削除失敗時、Bluesky投稿削除の失敗は握りつぶす（entry削除の成功を優先）                       | DELETE フェーズ5、テスト「元投稿の削除に失敗してもentry削除自体は200を返す」                                                                                   |
-| スレッド全体削除（`deleteBskyThread:true`）でも、削除対象はすべて呼び出し者自身が所有する投稿のみ | `source`から辿った各投稿についてrepo（DID）を1件ずつ検証してから削除対象に含める（[§7.3.1](#731-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)） |
+| 不変条件                                                                                         | 根拠                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POSTの新規投稿は「全件成功か全件失敗」（原子性）                                                 | `createBskyThread`が1回の`applyWrites`で全レコードを送信するため。事前検証（画像枚数・facets範囲等）で1件でも失敗すれば`applyWrites`自体を呼ばない                                   |
+| reply chainの相手先は必ず呼び出し者自身の投稿                                                    | `isReplyRefOwnedBySelf`（トップレベル`reply`）、`parseOwnedAtUri`（from-postの`uri`、PUT/DELETEの`uri`、DELETEのsource）                                                             |
+| 画像とOGPを同時指定した場合は画像embedが優先される                                               | フェーズ5の`if (hasImages...) ... else if (item.ogMeta && item.ogImage)`分岐                                                                                                         |
+| `createEntry:true`は`visual`が指定されている場合のみ有効（`posts`が画像投稿を含むかは問わない）  | `createEntry`はトップレベルフィールドのため、ハンドラのフェーズ5は`visual`の有無のみを検証する（[requirements.md FR-1](requirements.md#fr-1-新規bluesky投稿の作成単発スレッド共通)） |
+| PUT/DELETEの`heading`/`caption`更新・削除は、クライアント指定のuriをそのまま信用しない           | `parseOwnedAtUri`によるcollection/repo検証。DELETEの元投稿削除も、entryレコードに記録された`source`から導出し、クライアント指定値を使わない                                          |
+| entry削除時、Bluesky投稿削除の実行失敗は握りつぶす（entry削除の成功を優先）                      | DELETE フェーズ9、テスト「元投稿の削除に失敗してもentry削除自体は200を返す」                                                                                                         |
+| Bluesky投稿の削除（`deleteBskyPost:true`）でも、削除対象はすべて呼び出し者自身が所有する投稿のみ | `source`から辿った各投稿についてrepo（DID）を1件ずつ検証してから削除対象に含める（[§7.3.1](#731-bluesky投稿削除deletebskyposttrueの削除対象の導出)）                                 |
+| 削除範囲を確定できない場合は何も削除しない                                                       | 削除対象の導出（フェーズ7）はentry削除（フェーズ8）より前に行い、`notThreadRoot`（409）・導出失敗（500）ではentryにも投稿にも書き込まない                                            |
 
 ## 7. sourceの決定ロジック
 
@@ -306,10 +314,10 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 
 作成できるentryは1リクエストにつき常に高々1件であり、`source`は経路ごとに以下の通り機械的に一意に決まる。
 
-| 経路                                   | `source`                                                                                                                                                |
+| 経路                                   | `source`                                                                                                                                                        |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POST 新規投稿・スレッド（`posts`配列） | 常にスレッド先頭（`posts[0]`）の（事前計算済み）`uri`/`cid`。単発投稿（`posts.length === 1`）では`posts[0]`が投稿自身であるため、結果として自身が`source`になる |
-| POST from-post（`uri`指定）            | 指定された`uri`自身（ステップ1で所有権検証済み）の`uri`/`cid`。対象投稿がスレッドのどの位置にあるかは問わない                                                       |
+| POST from-post（`uri`指定）            | 指定された`uri`自身（ステップ1で所有権検証済み）の`uri`/`cid`。対象投稿がスレッドのどの位置にあるかは問わない                                                   |
 
 新規投稿・スレッド経路では、`reply.root`同様にPDSへの実書き込みを待たずに事前計算済みの`uri`/`cid`を使うため、追加のPDS呼び出しは発生しない。from-post経路でも、`source`を決めるための追加の`getPostThread`呼び出しは発生しない（旧`resolveFromPostSource`・`isPostOnOwnedRootChain`は撤廃）。entryの`source`はスレッド内の他の投稿（root/parent等）への参照を複数持つことはない（`source`はあくまで単一の`strongRef`であり、スレッド全体を復元する手段ではない）。
 
@@ -319,22 +327,64 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 
 ### 7.3 entry削除経路（DELETE）
 
-- `deleteBskyPost:true`指定時、entryレコードの`source.uri`から元投稿を特定する（フェーズ5）。
-- **既定（`deleteBskyThread`未指定またはfalse）**: `source.uri`の投稿1件のみを`deleteRecord`で削除する。削除対象の投稿がスレッドの中間に位置する場合でも、**後続の投稿（その投稿へreplyしている投稿群）に対しては一切操作を行わない**。AT Protocol自体もreply先の削除を検知して後続投稿の`reply.parent`/`reply.root`を書き換える機能を持たないため、後続投稿のreply参照は削除された投稿を指したまま残る（いわゆる「dangling reference」）。これはSkyshare固有の問題ではなく、AT Protocol / Blueskyの一般的な挙動である。Bluesky公式クライアントも、スレッド中間の投稿が削除された場合は「このポストは削除されました」のようなプレースホルダー表示で対応しており、reply chainの構造自体を修復する仕組みは持たない（変更予定なし。理由は[requirements.md §4](requirements.md#4-明示的な非対応意図的な制約)を参照）。
-- **`deleteBskyThread:true`指定時**: `source.uri`を起点に、呼び出し者自身が投稿した後続投稿を辿ってすべて削除する（[§7.3.1](#731-スレッド全体削除deletebskythreadtrue-のときの削除対象の導出)）。`source`が単発投稿（後続の自己投稿が存在しない）の場合でも指定自体は禁止しないが、その場合は実質的に1件のみの削除（既定と同じ結果）になる。
+- `deleteBskyPost:true`指定時、entryレコードの`source.uri`から元投稿を特定し、`source`を起点とする自己後続投稿すべて（単発投稿なら`source`1件のみ）を削除する。削除範囲を選ぶパラメータは存在しない（旧`deleteBskyThread`は廃止）。
+- `source`が返信投稿（`record.reply`を持つ投稿）である場合、Bluesky投稿の削除は行わず409で拒否する（entryも削除しない）。スレッドの途中・末尾の投稿のみを削除すると、後続投稿のreply参照が削除された投稿を指したまま残る（dangling reference）ためである。これは、スレッドの起点のみを`source`とする現行の作成方針（[§7.2](#72-source決定規則)）より前に、中間投稿を対象に作成されたentryが該当する。AT Protocol自体もreply先の削除を検知して後続投稿の`reply.parent`/`reply.root`を書き換える機能を持たず、Bluesky公式クライアントも「このポストは削除されました」のプレースホルダー表示で対応するのみでreply chainの構造を修復しない（変更予定なし。理由は[requirements.md §4](requirements.md#4-明示的な非対応意図的な制約)を参照）。
+- `deleteBskyPost`が未指定または`false`の場合は`source`の位置を問わずentryレコードのみを削除する。この経路ではスレッド情報の取得も行わない。
 - DELETE経路は[§7.1〜§7.2](#71-設計方針)のsource決定規則の対象外であり、削除時に`source`の指す先を再解釈することはない（`source`は常にentryレコードに記録済みの値をそのまま使う）。
 
-#### 7.3.1 スレッド全体削除（`deleteBskyThread:true`）のときの削除対象の導出
+#### 7.3.1 Bluesky投稿削除（`deleteBskyPost:true`）の削除対象の導出
 
-- クライアントは削除対象の投稿一覧を送信しない。サーバが`source.uri`を起点に、`app.bsky.feed.getPostThread`（`AtpAgent`経由）でreply chainを取得し、削除対象を導出する（NFR-1: クライアント指定値を信用しない）。
-- 削除対象に含めるのは、`source`自身、および`source`から**呼び出し者自身が投稿した後続投稿のみをたどった直線的なreply chain**である。具体的には、`source`（または直前に削除対象と判定した投稿）への返信のうち、投稿者（DID）が呼び出し者自身と一致するものすべてを次の削除対象候補とする。候補が1件ならそのまま採用し、候補が2件以上（同一投稿への複数の自己返信＝実在する分岐）の場合のみ、直前の投稿との`record.createdAt`の差が最小のものを1件選ぶ（`extractOwnedLinearReplyChain`、[src/lib/atproto/threadChain.ts](../../../src/lib/atproto/threadChain.ts)）。第三者の返信で分岐した先（その返信へのさらなる返信。仮に呼び出し者自身の投稿であっても）は削除対象に含めない。本ロジックはTimeline一覧のスレッドグルーピング（[specs/timeline/design.md §2.2](../../timeline/design.md#22-srclibatprotothreadchaints)）と共通の`extractOwnedLinearReplyChain`を用いており、これにより「スレッド全体削除」で実際に削除される投稿は常にTimeline上で表示されていた側の投稿のみになる（分岐している場合、採用されなかった側の派生ツリーは削除されない）。entry詳細ページのスレッド表示（[specs/entry/frontend/design.md §3.3](../frontend/design.md#33-entry詳細ページのスレッド表示fr-4対応)）も同じ関数を用いる。
-- 導出した各投稿について、`parseOwnedAtUri`相当の所有者検証（collection種別・repo DIDの一致）を1件ずつ行ってから削除対象に含める。検証に失敗する投稿（＝呼び出し者以外が所有する投稿）が万一混入した場合は、その投稿を削除対象から除外する（サーバ側の導出ロジックが正しければ発生しないはずだが、フェイルセーフとして所有権検証を省略しない）。
-- 削除対象が複数件になる場合、1回の`applyWrites`（すべて`deleteRecord`オペレーション）でまとめて削除する（NFR-2: 全件成功か全件失敗）。1件のみ（`source`が単発投稿、または後続の自己投稿が存在しない）場合は既定の1対1削除と同じ`deleteRecord`呼び出しに帰着してよい。
+導出は`src/lib/entry/resolveDeleteTargets.ts`に置く。DELETEハンドラ（フェーズ7）のみが呼び出す。
+
+```ts
+export type DeleteTargetsResult =
+  | { kind: "targets"; rkeys: string[] } // source自身を先頭とする削除対象（時系列順）
+  | { kind: "sourceGone" } // source投稿が既に存在しない
+  | { kind: "notThreadRoot" } // sourceが返信投稿（起点でない）
+
+export const resolveDeleteTargets = async (
+  agent: AtpAgent,
+  ownerDid: string,
+  sourceUri: string,
+): Promise<DeleteTargetsResult> => {
+  let res
+  try {
+    res = await agent.app.bsky.feed.getPostThread({
+      uri: sourceUri,
+      depth: MAX_THREAD_POST_COUNT,
+      parentHeight: 0, // 起点判定にsourceの親は不要（親チェーンの取得を抑止する）
+    })
+  } catch (err) {
+    if (isNotFoundError(err)) return { kind: "sourceGone" } // XRPCエラー`NotFound`
+    throw err // それ以外は呼び出し側で500
+  }
+  const thread = res.data.thread
+  if (AppBskyFeedDefs.isNotFoundPost(thread)) return { kind: "sourceGone" }
+  if (!AppBskyFeedDefs.isThreadViewPost(thread))
+    throw new Error("unexpected thread view") // blocked等
+  if (!isThreadRootPost(thread.post)) return { kind: "notThreadRoot" }
+
+  const chain = extractOwnedLinearReplyChain(
+    thread,
+    ownerDid,
+    MAX_THREAD_POST_COUNT,
+  )
+  const rkeys = chain
+    .map(post => parseOwnedAtUri(post.uri, "app.bsky.feed.post", ownerDid))
+    .filter((parsed): parsed is NonNullable<typeof parsed> => !!parsed)
+    .map(parsed => parsed.rkey)
+  return { kind: "targets", rkeys }
+}
+```
+
+- `isThreadRootPost(post: AppBskyFeedDefs.PostView): boolean`は`src/lib/atproto/threadChain.ts`に置き、`!AppBskyFeedPost.isRecord(post.record) || !post.record.reply`を返す（`record.reply`を持たない投稿がスレッドの起点）。フロントエンドの削除可否判定（[specs/entry/frontend/design.md §3.4](../frontend/design.md#34-entry削除時のbluesky投稿削除の範囲確認と無効化fr-5対応)）も同じ関数を用い、サーバとクライアントで起点判定の基準を一致させる。
+- クライアントは削除対象の投稿一覧を送信しない。サーバが`source.uri`を起点に`getPostThread`でreply chainを取得し、削除対象を導出する（NFR-1: クライアント指定値を信用しない）。
+- 削除対象は、`source`自身、および`source`から**呼び出し者自身が投稿した後続投稿のみをたどった直線的なreply chain**である。`source`（または直前に削除対象と判定した投稿）への返信のうち、投稿者（DID）が呼び出し者自身と一致するものを次の削除対象候補とする。候補が1件ならそのまま採用し、候補が2件以上（同一投稿への複数の自己返信＝実在する分岐）の場合のみ、直前の投稿との`record.createdAt`の差が最小のものを1件選ぶ（`extractOwnedLinearReplyChain`、[src/lib/atproto/threadChain.ts](../../../src/lib/atproto/threadChain.ts)）。第三者の返信で分岐した先（その返信へのさらなる返信。仮に呼び出し者自身の投稿であっても）は削除対象に含めない。本ロジックはTimeline一覧のスレッドグルーピング（[specs/timeline/design.md §2.2](../../timeline/design.md#22-srclibatprotothreadchaints)）と共通の`extractOwnedLinearReplyChain`を用いており、これにより削除される投稿は常にTimeline上で表示されていた側の投稿のみになる（分岐している場合、採用されなかった側の派生ツリーは削除されない）。entry詳細ページのスレッド表示（[specs/entry/frontend/design.md §3.3](../frontend/design.md#33-entry詳細ページのスレッド表示fr-4対応)）も同じ関数を用いる。
+- 導出した各投稿について、`parseOwnedAtUri`による所有者検証（collection種別・repo DIDの一致）を1件ずつ行ってから削除対象に含める。検証に失敗する投稿は削除対象から除外する（導出ロジックが正しければ発生しないはずだが、フェイルセーフとして所有権検証を省略しない）。
+- 削除対象が複数件になる場合、1回の`applyWrites`でまとめて削除する（NFR-2: 全件成功か全件失敗）。1件のみの場合は`deleteRecord`に帰着する（ハンドラのフェーズ9）。
 - スレッド探索の深さ・件数には`MAX_THREAD_POST_COUNT`（[src/lib/atproto/post.ts](../../../src/lib/atproto/post.ts)）を上限として用い、`applyWrites`の1リクエストあたりの書き込み件数を予測可能な範囲に収める。
 
-`source`は§7.2の規則によりクライアントが指定した投稿そのものであり、それがスレッドのどの位置か（本来の起点であるか）をサーバは検証しない。そのため、クライアントが起点でない投稿（中間・末尾投稿）を`uri`に指定してentryを作成していた場合、本節の削除対象は「その投稿以降の自己投稿」に限られ、それより手前の投稿は削除対象に含まれない。これはクライアント側の運用（[specs/timeline/requirements.md](../../timeline/requirements.md)が定める、常に起点投稿を指定する責務）を前提とした挙動であり、サーバ側の導出ロジック自体は`source`がどの投稿であっても同一に機能する。
-
-関連ファイル: [src/pages/v2/entry.ts](../../../src/pages/v2/entry.ts)（DELETEフェーズ5・6）。削除対象導出ロジックの配置は[tasks.md](tasks.md)で定める。
+関連ファイル: [src/pages/v2/entry.ts](../../../src/pages/v2/entry.ts)（DELETEフェーズ7〜9）、[src/lib/api/schema/v2/entry/delete.ts](../../../src/lib/api/schema/v2/entry/delete.ts)（`409`レスポンスの宣言を含む）。
 
 ### 7.4 一覧表示への影響（`GET /v2/entries/skyshare`）
 

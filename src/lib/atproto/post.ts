@@ -10,6 +10,7 @@
 import type * as Components from "@/lib/api/schema/common"
 import { parseOwnedAtUri } from "@/lib/entry/url"
 import { MAX_THREAD_POST_COUNT } from "./threadLimit"
+import { serviceName } from "@/vars"
 
 export const BSKY_POST_COLLECTION = "app.bsky.feed.post"
 
@@ -82,7 +83,7 @@ export const buildBskyPostRecord = (params: {
         labels,
         reply,
         createdAt,
-        via: "Skyshare",
+        via: serviceName,
     }
 }
 

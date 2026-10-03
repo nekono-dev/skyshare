@@ -26,9 +26,7 @@ import {
     type ThreadPostInput,
     type ThreadEntryInput,
 } from "@/lib/entry/createBskyThread"
-import { AppBskyFeedDefs } from "@atproto/api"
-import { extractOwnedLinearReplyChain } from "@/lib/atproto/threadChain"
-import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
+import { resolveDeleteTargets } from "@/lib/entry/resolveDeleteTargets"
 
 import * as PostSchema from "@/lib/api/schema/v2/entry/post"
 import * as PutSchema from "@/lib/api/schema/v2/entry/put"
@@ -40,7 +38,7 @@ import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
  *
  * 責務と処理概要:
  * - Bluesky投稿（テキスト/OGPリンク/画像。1件、またはスレッドとして複数件）の作成と、
- *   各投稿に紐づく skyshare entry（`createEntry`フラグ指定時、画像投稿のみ）の作成を扱う、
+ *   スレッド全体に紐づく skyshare entry（`createEntry`フラグ指定時）の作成を扱う、
  *   統合エンドポイント（旧`/v2/bsky/record`はこのエンドポイントに統合され廃止された）。
  * - POST: `uri`が指定された場合は既存の自分のBluesky投稿からskyshare entryを発行する
  *   （from-post）。`posts`が指定された場合は新規投稿（1件、またはスレッドとして複数件）を
@@ -96,7 +94,7 @@ const json200 = (body: PostSchema.ResponseBody200Type) =>
  * 3. FormData 解析（トップレベルフィールド＋`posts[i][...]`インデックス付きフィールド）
  * 4. OpenAPI スキーマバリデーション（`{uri, visual}` または `{posts, reply, createEntry?, visual?}`）
  * 4.5. `uri` 指定時は既存投稿からの発行（from-post）に分岐して結果を返却
- * 5a. トップレベル`createEntry:true`の妥当性検証（画像投稿が1件以上・`visual`必須）
+ * 5a. トップレベル`createEntry:true`の妥当性検証（`visual`必須。画像投稿の有無は検証しない）
  * 5b. `posts`各要素について: 画像メタデータ検証、facets境界検証、
  *     embed作成（画像優先、次点でOGP）、画像アップロード
  * 5c. `createEntry:true`ならvisualを1回だけアップロード＋表示名解決
@@ -217,13 +215,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // 個々のposts[i]の検証より先に行う）。
         const wantsEntry = body.data.createEntry === true
         if (wantsEntry) {
-            const hasAnyImagePost = body.data.posts.some(
-                item => !!item.images && item.images.length > 0,
-            )
-            if (!hasAnyImagePost || !body.data.visual) {
-                console.warn(
-                    "createEntry: createEntry flag requires an image post and visual",
-                )
+            if (!body.data.visual) {
+                console.warn("createEntry: createEntry flag requires visual")
                 return errorResponseFromStatus(400)
             }
         }
@@ -432,19 +425,19 @@ export const PUT: APIRoute = async ({ request, locals }) => {
  * 処理フロー:
  * 1. ヘッダ検証（セッション取得はミドルウェアが解決済み）
  * 2. ボディ検証、`uri` が自分自身の dev.nekono.skyshare.entry であることを確認
- *    （`deleteBskyThread:true`は`deleteBskyPost:true`とあわせてのみ指定可能）
  * 3. `deleteBskyPost` 指定時は、事前に entry レコードを取得して source（元投稿）の
  *    URI を取得する。クライアント指定の URI をそのまま信用せず、レコードに
  *    記録された source から削除対象を導出することで他人の投稿削除を防ぐ。
- * 4. skyshare entry レコードを削除する。
- * 5. `deleteBskyPost` が true かつ source が自分自身の app.bsky.feed.post の場合、
- *    その投稿を削除する。失敗しても entry 削除自体は成功として扱う。
- *    `deleteBskyThread:true`の場合は、`getPostThread`でsourceのreply chainを取得し、
- *    呼び出し者自身が投稿した後続投稿のみを直線的に辿って削除対象を導出した上で、
- *    1回の`applyWrites`でsource自身を含めて全件削除する。
+ * 4. `deleteBskyPost` が true かつ source が自分自身の app.bsky.feed.post の場合、
+ *    entry 削除より前に削除対象を導出する（`resolveDeleteTargets`）。source が返信投稿
+ *    （スレッドの起点でない）なら 409、導出失敗なら 500 で、何も削除せず終了する。
+ * 5. skyshare entry レコードを削除する。
+ * 6. 導出した投稿（source 起点の自己後続投稿すべて。単発なら1件）を削除する
+ *    （1件なら deleteRecord、2件以上なら1回の applyWrites）。失敗しても entry 削除
+ *    自体は成功として扱う。
  *
  * Input:
- * - `request`: cookie と `{ uri, deleteBskyPost?, deleteBskyThread? }` を含む HTTP リクエスト
+ * - `request`: cookie と `{ uri, deleteBskyPost? }` を含む HTTP リクエスト
  *
  * Output:
  * - 200: 本文なし
@@ -512,84 +505,66 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
             }
         }
 
-        await agent.com.atproto.repo.deleteRecord({
-            repo: session.did,
-            collection: ENTRY_COLLECTION,
-            rkey: parsedEntryUri.rkey,
-        })
-
+        // 削除範囲を確定できない場合は何も削除しないよう、entry削除より前に導出する。
+        let deleteRkeys: string[] | undefined
         if (body.data.deleteBskyPost && sourceUri) {
             const parsedSourceUri = parseOwnedAtUri(
                 sourceUri,
                 "app.bsky.feed.post",
                 session.did,
             )
-            if (parsedSourceUri && body.data.deleteBskyThread) {
-                // スレッド全体削除: sourceを起点に、呼び出し者自身が投稿した後続投稿のみを
-                // 直線的に辿って削除対象を導出する（specs/entry/backend/design.md §7.4.1）。
-                // クライアントは削除対象の投稿一覧を送信しない。
+            if (parsedSourceUri) {
+                let result
                 try {
-                    const threadRes = await agent.app.bsky.feed.getPostThread({
-                        uri: sourceUri,
-                        depth: MAX_THREAD_POST_COUNT,
-                    })
-                    if (
-                        AppBskyFeedDefs.isThreadViewPost(threadRes.data.thread)
-                    ) {
-                        const chain = extractOwnedLinearReplyChain(
-                            threadRes.data.thread,
-                            session.did,
-                            MAX_THREAD_POST_COUNT,
-                        )
-                        const deleteWrites = chain
-                            .map(post =>
-                                parseOwnedAtUri(
-                                    post.uri,
-                                    "app.bsky.feed.post",
-                                    session.did,
-                                ),
-                            )
-                            .filter(
-                                (
-                                    parsed,
-                                ): parsed is NonNullable<typeof parsed> =>
-                                    !!parsed,
-                            )
-                            .map(parsed => ({
-                                $type: "com.atproto.repo.applyWrites#delete",
-                                collection: "app.bsky.feed.post",
-                                rkey: parsed.rkey,
-                            }))
-                        if (deleteWrites.length > 0) {
-                            await agent.com.atproto.repo.applyWrites({
-                                repo: session.did,
-                                writes: deleteWrites as never,
-                            })
-                        }
-                    }
+                    result = await resolveDeleteTargets(
+                        agent,
+                        session.did,
+                        sourceUri,
+                    )
                 } catch (err) {
-                    // entry 自体の削除は既に成功しているため、スレッド削除の失敗で
-                    // リクエスト全体を失敗扱いにはしない。
                     console.error(
-                        "deleteEntry: failed to delete bsky thread",
+                        "deleteEntry: failed to resolve delete targets",
                         err,
                     )
+                    return errorResponseFromStatus(500)
                 }
-            } else if (parsedSourceUri) {
-                try {
+                if (result.kind === "notThreadRoot") {
+                    return errorResponseFromStatus(409)
+                }
+                if (result.kind === "targets") {
+                    deleteRkeys = result.rkeys
+                }
+            }
+        }
+
+        await agent.com.atproto.repo.deleteRecord({
+            repo: session.did,
+            collection: ENTRY_COLLECTION,
+            rkey: parsedEntryUri.rkey,
+        })
+
+        if (deleteRkeys && deleteRkeys.length > 0) {
+            try {
+                if (deleteRkeys.length === 1) {
                     await agent.com.atproto.repo.deleteRecord({
                         repo: session.did,
                         collection: "app.bsky.feed.post",
-                        rkey: parsedSourceUri.rkey,
+                        rkey: deleteRkeys[0],
                     })
-                } catch (err) {
-                    // entry 自体の削除は既に成功しているため、bsky 投稿削除の失敗で
-                    // リクエスト全体を失敗扱いにはしない。
-                    console.error(
-                        "deleteEntry: failed to delete source bsky post",
-                        err,
-                    )
+                } else {
+                    await agent.com.atproto.repo.applyWrites({
+                        repo: session.did,
+                        writes: deleteRkeys.map(rkey => ({
+                            $type: "com.atproto.repo.applyWrites#delete",
+                            collection: "app.bsky.feed.post",
+                            rkey,
+                        })) as never,
+                    })
                 }
+            } catch (err) {
+                // entry 自体の削除は既に成功しているため、bsky 投稿削除の失敗で
+                // リクエスト全体を失敗扱いにはしない。
+                console.error("deleteEntry: failed to delete bsky posts", err)
             }
         }
 

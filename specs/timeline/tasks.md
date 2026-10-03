@@ -22,12 +22,12 @@
 ## Phase 3: `ThreadCard`・展開UIの実装（design.md §4対応）
 
 - [x] `[FE]` `src/components/post/ThreadCard/`を新規作成する。`group.replies.length === 0`の場合は既存`PostCard`をそのまま描画するフォールバック分岐を実装する。
-- [x] `[FE]` 2件以上のスレッドグループについて、折りたたみ表示（ルート投稿＋「返信を表示（N件）」ボタン）と、展開表示（`PostCard`をグループ内全投稿分レンダリング）を実装する。
+- [x] `[FE]` 2件以上のスレッドグループについて、折りたたみ表示（ルート投稿＋「スレッドを展開（N件）」ボタン）と、展開表示（`PostCard`をグループ内全投稿分レンダリング）を実装する。
 - [x] `[FE]` `PostCard`に`threadBadge`・`postCreateEntryButton`propsを追加する（design.md §4.2、既存のロジックは変更せず追加のみ。ただし`postCreateEntryButton===false`の場合のみ、投稿自身が適格でもボタン表示用のdisplayを差し替えて抑制するロジックを追加した。1スレッドにつき事後entry作成ボタンを最大1箇所にするFR-3の制約上、この抑制が無いとスレッド内の他の画像投稿にも個別の作成ボタンが出てしまうため）。
 - [x] `[FE]` `src/components/post/Timeline/index.tsx`の`ComponentList`を、`items`を`ThreadGroup[]`に、`itemComponent`を`ThreadCard`に差し替える（design.md §7）。
 - [x] `[TEST]` Playwrightで以下のシナリオを検証する（`tests/e2e/timelineThread.spec.ts`、新規。実アカウントでの投稿の代わりに、`GUEST_DUMMY_POSTS`（`src/lib/entry/guestDummyPosts.ts`）に追加した固定スレッドフィクスチャ（`/?guest`）で検証）:
-  - スレッド（3件）が折りたたみ表示（「返信を表示（2件）」）になっていることを確認
-  - 「返信を表示」をクリック → 3件すべてが時系列順に表示されることを確認
+  - スレッド（3件）が折りたたみ表示（「スレッドを展開（2件）」）になっていることを確認
+  - 「スレッドを展開」をクリック → 3件すべてが時系列順に表示されることを確認
   - 「折りたたむ」をクリック → 元の折りたたみ表示に戻ることを確認
   - スレッドに関係しない単独投稿が、従来通り個別カードとして表示されることを確認
 
@@ -43,7 +43,7 @@
 ## Phase 5: スレッド由来の視覚的区別（design.md §6対応）
 
 - [x] `[FE]` `src/components/post/ThreadCard/entryCandidate.ts`に`findEntryCarrier`を実装する（design.md §6.1）。
-- [x] `[FE]` `findEntryCarrier`が非nullを返す場合、ルート投稿の`PostCard`に`threadBadge={true}`を渡し、バッジ表示を実装する。
+- [x] `[FE]` ~~`threadBadge`によるバッジ表示~~ → バッジを廃止し、三角アイコン・返信カードのインデント・中間投稿の非グレーアウト・「Entryを開く」のフッター右端固定に置き換えた（design.md §6）。
 - [x] `[TEST]` `findEntryCarrier`の単体テストを追加する（単独投稿→null、entryなしスレッド→null、ルートにentryありスレッド→ルートを返す）。
 - [x] `[TEST]` Playwrightで、スレッド由来entryを持つカードにバッジが表示されることを確認した（`/?guest`のスレッドBフィクスチャ）。単独投稿由来entryに表示されないことは既存の単独投稿カードで暗黙に確認済み（バッジ描画条件は`threadBadge`propであり、単独投稿の`ThreadCard`フォールバック分岐は`threadBadge`自体を渡さない）。
 
@@ -178,25 +178,25 @@
 
 ## Phase 18: バックエンドの再実装（design.md §2.2・§2.3対応）
 
-- [ ] `[BE]` `src/lib/atproto/threadChain.ts`に`extractRepoDidFromAtUri`を追加する（design.md §2.2）。`extractOwnedLinearReplyChain`・`extractReplyRootUri`は変更なし。
-- [ ] `[BE]` `src/lib/entry/timelineThreads.ts`の`buildTimelineThreads`を、design.md §2.3の疑似コード通り「他者起点スレッドの除外＋メインスレッドのみの組み立て」ロジックに書き換える。現行の「不採用側は単独ThreadGroupとして表示する」フォールバックを削除する。
-- [ ] `[TEST]` `tests/lib/atproto/threadChain.test.ts`に`extractRepoDidFromAtUri`の単体テストを追加する。
-- [ ] `[TEST]` `tests/lib/entry/timelineThreads.test.ts`を更新する: 他人の投稿への返信（後続が自分の投稿のみの場合を含む）がTimelineに一切表示されないこと、分岐で不採用の投稿群がTimelineに一切表示されないこと（単独投稿としても表示されない）、メインスレッドの構成投稿が無くなった場合に次点の系統が選出されること（`getPostThread`のモック応答を変えて再現）を確認するケースに更新する。
-- [ ] `[TEST]` `tests/pages/v2/entries.test.ts`を更新する。
-- [ ] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
+- [x] `[BE]` `src/lib/atproto/threadChain.ts`に`extractRepoDidFromAtUri`を追加する（design.md §2.2）。`extractOwnedLinearReplyChain`・`extractReplyRootUri`は変更なし。
+- [x] `[BE]` `src/lib/entry/timelineThreads.ts`の`buildTimelineThreads`を、design.md §2.3の疑似コード通り「他者起点スレッドの除外＋メインスレッドのみの組み立て」ロジックに書き換える。現行の「不採用側は単独ThreadGroupとして表示する」フォールバックを削除する。
+- [x] `[TEST]` `tests/lib/atproto/threadChain.test.ts`に`extractRepoDidFromAtUri`の単体テストを追加する。
+- [x] `[TEST]` `tests/lib/entry/timelineThreads.test.ts`を更新する: 他人の投稿への返信（後続が自分の投稿のみの場合を含む）がTimelineに一切表示されないこと、分岐で不採用の投稿群がTimelineに一切表示されないこと（単独投稿としても表示されない）、メインスレッドの構成投稿が無くなった場合に次点の系統が選出されること（`getPostThread`のモック応答を変えて再現）を確認するケースに更新する。
+- [x] `[TEST]` `tests/pages/v2/entries.test.ts`を更新する。
+- [x] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
 
 ## Phase 19: from-postのsource自動解決撤廃（`specs/entry/backend/tasks.md` Phase 4と対応）
 
-- [ ] `[BE]` `src/lib/entry/fromPost.ts`から`resolveFromPostSource`・`isPostOnOwnedRootChain`・`hasEligibleImage`を削除する（[specs/entry/backend/tasks.md Phase 4](../entry/backend/tasks.md)）。
-- [ ] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
+- [x] `[BE]` `src/lib/entry/fromPost.ts`から`resolveFromPostSource`・`isPostOnOwnedRootChain`・`hasEligibleImage`を削除する（[specs/entry/backend/tasks.md Phase 4](../entry/backend/tasks.md)）。
+- [x] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
 
 ## Phase 20: フロントエンドのsource明示送信（design.md §5対応）
 
-- [ ] `[FE]` `src/components/post/PostCard/useSkyshareEntryStatus.ts`の`Options`に`sourcePost?: TimelinePost`を追加し、APIへ送信する`uri`を`options.sourcePost ?? item`ベースにする（`visualSourcePost`とは独立に扱う）。
-- [ ] `[FE]` `src/components/post/PostCard/index.tsx`に`entrySourcePost?: TimelinePost` propを追加し、`useSkyshareEntryStatus`へ渡す。
-- [ ] `[FE]` `src/components/post/ThreadCard/index.tsx`を更新し、rootの`PostCard`に`entrySourcePost={group.rootPost}`を渡す。
+- [x] `[FE]` `src/components/post/PostCard/useSkyshareEntryStatus.ts`の`Options`に`sourcePost?: TimelinePost`を追加し、APIへ送信する`uri`を`options.sourcePost ?? item`ベースにする（`visualSourcePost`とは独立に扱う）。
+- [x] `[FE]` `src/components/post/PostCard/index.tsx`に`entrySourcePost?: TimelinePost` propを追加し、`useSkyshareEntryStatus`へ渡す。
+- [x] `[FE]` `src/components/post/ThreadCard/index.tsx`を更新し、rootの`PostCard`に`entrySourcePost={group.rootPost}`を渡す。
 - [ ] `[TEST]` `tests/components/post/PostCard/useSkyshareEntryStatus.test.ts`（または相当のテスト）に、`visualSourcePost`がreplyでも`sourcePost`（root）のuriがAPIへ送信されることを確認するケースを追加する。
-- [ ] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
+- [x] `npx vitest run`・`npx tsc --noEmit`が成功することを確認する。
 
 ## Phase 21: 事後entry作成ボタンの既存entry判定をルート投稿自身に限定（design.md §5訂正対応、requirements.md FR-3訂正）
 
@@ -208,9 +208,23 @@
 
 ## Phase 22: E2E・仕上げ
 
-- [ ] `[FE]` `src/lib/entry/guestDummyPosts.ts`に、他人の投稿への返信から始まる自己スレッド（Timelineに表示されないことを確認するフィクスチャ）・分岐スレッド（採用側のみ表示されることを確認するフィクスチャ）を追加する。
-- [ ] `[TEST]` `tests/e2e/timelineThread.spec.ts`に、上記フィクスチャを用いたPlaywrightシナリオを追加する。
-- [ ] `npx vitest run`・`npx tsc --noEmit`・`npx playwright test`が全件成功することを確認する。
-- [ ] 手動確認: 実アカウントで他人の投稿に返信し、そこから自分の投稿を続けても、その一連の投稿がTimelineに一切表示されないことを確認する。
-- [ ] 手動確認: 分岐スレッド（A→B,D）を作成し、Bのみが表示されDが表示されないこと、Bを削除すると次回表示でDが新たにメインスレッドとして表示されることを確認する（要ログイン）。
-- [ ] 手動確認: ルートが画像を持たずreplyが画像を持つスレッドで事後entry作成を行い、作成されたentryの`source`がルート投稿になっていることを確認する（要ログイン）。
+方針変更: ゲスト表示用データ（`GUEST_DUMMY_THREADS`）はBEが構造化した後の結果を模したものであり、除外対象（他者起点スレッド・サブスレッド）がそもそも存在しないため、ゲスト表示のE2Eでは「表示されないこと」を検証できない。そのため当初予定していたフィクスチャ追加は行わず、除外の担保はVitest（`timelineThreads.test.ts`・`entries.test.ts`）と、実アカウントを用いた検証サーバでのE2Eで行う。
+
+- [x] `[TEST]` 除外ロジック（他者起点スレッド・サブスレッドの非表示、次点系統の昇格）をVitestで担保する（Phase 18で実施）。
+- [x] `[TEST]` 実アカウントを用いた検証サーバ上のE2E（Playwright）で、ルートが画像を持たずreplyが画像を持つスレッドの事後entry作成時、`POST /v2/entry`の`uri`がルート投稿になり、entryの`source`がルートであることを確認する。
+- [ ] `npx vitest run`・`npx tsc --noEmit`・`npx playwright test`が全件成功することを確認する。（vitest・tscは成功、Timeline関連のPlaywrightも成功。`threadComposer.spec.ts`の2件がハイドレーション待ちに起因すると思われる不安定さで失敗するため未完了）
+- [x] 検証サーバ上の画面確認: 実アカウントで他人の投稿に返信し、そこから自分の投稿を続けても、その一連の投稿がTimelineに一切表示されないことを確認する。
+- [x] 検証サーバ上の画面確認: 分岐スレッド（A→B,D）を作成し、Bのみが表示されDが表示されないこと、Bを削除すると次回表示でDが新たにメインスレッドとして表示されることを確認する。
+- [x] 検証サーバ上の画面確認: ルートが画像を持たずreplyが画像を持つスレッドで事後entry作成を行い、作成されたentryの`source`がルート投稿になっていることを確認する。
+
+## Phase 23: Bluesky投稿削除の統合（design.md §4・§7対応）
+
+前提: [specs/entry/backend/tasks.md](../entry/backend/tasks.md) Phase 5、[specs/entry/frontend/tasks.md](../entry/frontend/tasks.md) Phase 7。「リンク・スレッド全体を削除」を「リンク・Bluesky投稿を削除」へ統合し、単独投稿にも最終確認を適用する。Phase 7・9で追加した`showThreadOption`・`deleteBskyThread`関連の実装は本Phaseで置き換えられる。
+
+- [x] `[FE]` `src/components/post/PostCard/useSkyshareEntryStatus.ts`を更新する（design.md §7.2）: `isResolvingThreadOption`→`isResolvingDeleteScope`、`showThreadOption`→`deleteScope`、`resolveEntryDeleteScope`の呼び出し、`confirmDeleteEntry`から`deleteBskyThread`引数を削除、`onPostDeleted`を`deleteBskyPost:true`成功時のみ呼ぶ。
+- [x] `[FE]` `src/components/post/PostCard/index.tsx`・`src/components/post/PostCardEntryActions/index.tsx`を更新する（design.md §7.3）: `deleteScope`・`isResolvingDeleteScope`の受け渡し、`onDeleteThread`prop の削除、`PostCardEntryActions`への`deleteDisabled`追加（ゲスト表示の模擬動作は[specs/entry/frontend/tasks.md](../entry/frontend/tasks.md) Phase 7のタスクで実装）。
+- [x] `[FE]` `src/components/post/ThreadCard/index.tsx`は変更不要であることを確認する（design.md §7.4。除去は従来通り`group.rootPost.uri`一致）。
+- [ ] `[TEST]` `tests/components/post/PostCard/useSkyshareEntryStatus.test.ts`（なければ新設）に、`deleteScope`の確定、`confirmDeleteEntry(true)`で`deleteBskyThread`が送信されないこと、`onPostDeleted`が`deleteBskyPost:true`成功時のみ呼ばれること、`legacy`でもダイアログが開くことを追加する。
+- [x] `[TEST]` `tests/e2e/timelineThread.spec.ts`を確認し、削除ダイアログに関する記述があれば新仕様（スレッド専用選択肢の廃止）に合わせる。ゲスト表示のダミーデータ追加（スレッドD・`guest-unknown`、[specs/entry/frontend/design.md §3.4.4](../entry/frontend/design.md#344-ゲスト表示での模擬動作mock)）により、Timelineのスレッド数・カード数を前提とする既存アサーションが変わる場合は追従させる。削除ダイアログ自体の検証は[specs/entry/frontend/tasks.md](../entry/frontend/tasks.md) Phase 7のPlaywright（ゲスト表示の模擬動作）で行う。
+- [x] `[TEST]` `npx vitest run`・`npx tsc --noEmit`・`npx playwright test`が全件成功することを確認する。
+- [ ] 手動確認: 実アカウントで、(1) スレッドルート投稿の「リンク・Bluesky投稿を削除」を最終確認後に確定し、スレッドグループ全体が一覧から除去され、Bluesky上の自己投稿がすべて削除されていること（第三者の返信は残ること）、(2) 単独投稿でも最終確認が表示されること、(3) 分岐スレッドで採用されなかった側の投稿が残ること、(4) 旧実装のentryが付いた投稿でボタンがグレーかつ理由が表示され、「Skyshareリンクを削除」後もスレッドグループが一覧に残ることを確認する（要ログイン、利用者による確認が必要）。

@@ -43,6 +43,9 @@ export const errorResponseFromStatus = (status: number): Response => {
         case 404:
             message.error = "Not Found"
             break
+        case 409:
+            message.error = "Conflict"
+            break
         case 429:
             message.error = "Too Many Requests"
             break

@@ -38,6 +38,13 @@ const makeAgent = (overrides: Partial<Record<string, any>> = {}) => ({
             },
         },
     },
+    app: {
+        bsky: {
+            feed: {
+                getPostThread: vi.fn(),
+            },
+        },
+    },
     ...overrides,
 })
 
@@ -105,7 +112,7 @@ describe("createEntryFromExistingPost", () => {
         expect(result).toEqual({ ok: false, status: 404 })
     })
 
-    it("対象投稿が画像投稿でなければ400", async () => {
+    it("対象投稿が画像を持たなくても（作成可否の判定はクライアントの責務）entryを作成できる", async () => {
         const agent = makeAgent({
             com: {
                 atproto: {
@@ -119,7 +126,12 @@ describe("createEntryFromExistingPost", () => {
                                 },
                             },
                         }),
-                        createRecord: vi.fn(),
+                        createRecord: vi.fn().mockResolvedValue({
+                            data: {
+                                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+                                cid: "bafyentry",
+                            },
+                        }),
                     },
                 },
             },
@@ -130,7 +142,7 @@ describe("createEntryFromExistingPost", () => {
             session,
             ogImage,
         )
-        expect(result).toEqual({ ok: false, status: 400 })
+        expect(result.ok).toBe(true)
     })
 
     it("ogImage未指定なら400", async () => {
@@ -158,15 +170,14 @@ describe("createEntryFromExistingPost", () => {
     })
 })
 
-describe("createEntryFromExistingPost: sourceの自動解決(specs/entry/backend/design.md §7.3)", () => {
+describe("createEntryFromExistingPost: sourceの決定(specs/entry/backend/design.md §7.2)", () => {
     const rootUri = "at://did:plc:abc/app.bsky.feed.post/3lroot"
     const otherRootUri = "at://did:plc:other/app.bsky.feed.post/3lroot"
 
-    const makeAgentWithReply = (
-        replyRootUri: string | undefined,
-        overrides: Partial<Record<string, any>> = {},
-    ) =>
-        makeAgent({
+    /** `reply.root`を持つ（または持たない）対象投稿を返すagent。getPostThreadは持たせない。 */
+    const makeAgentWithReply = (replyRootUri: string | undefined) => {
+        const getPostThread = vi.fn()
+        const agent = makeAgent({
             com: {
                 atproto: {
                     repo: {
@@ -176,15 +187,6 @@ describe("createEntryFromExistingPost: sourceの自動解決(specs/entry/backend
                                 value: {
                                     $type: "app.bsky.feed.post",
                                     text: "hello",
-                                    embed: {
-                                        $type: "app.bsky.embed.images",
-                                        images: [
-                                            {
-                                                image: { ref: "bafkre123" },
-                                                alt: "",
-                                            },
-                                        ],
-                                    },
                                     ...(replyRootUri
                                         ? {
                                               reply: {
@@ -211,11 +213,13 @@ describe("createEntryFromExistingPost: sourceの自動解決(specs/entry/backend
                     },
                 },
             },
-            ...overrides,
+            app: { bsky: { feed: { getPostThread } } },
         })
+        return { agent, getPostThread }
+    }
 
     it("reply.rootが無い場合、対象投稿自身がsourceになる", async () => {
-        const agent = makeAgentWithReply(undefined)
+        const { agent } = makeAgentWithReply(undefined)
         const result = await createEntryFromExistingPost(
             agent as any,
             postUri,
@@ -228,8 +232,8 @@ describe("createEntryFromExistingPost: sourceの自動解決(specs/entry/backend
         }
     })
 
-    it("reply.rootが自分自身の場合、rootがsourceになる", async () => {
-        const agent = makeAgentWithReply(rootUri)
+    it("reply.rootが自分自身でも自動解決されず、対象投稿自身がsourceのままになる（getPostThreadも呼ばれない）", async () => {
+        const { agent, getPostThread } = makeAgentWithReply(rootUri)
         const result = await createEntryFromExistingPost(
             agent as any,
             postUri,
@@ -238,12 +242,14 @@ describe("createEntryFromExistingPost: sourceの自動解決(specs/entry/backend
         )
         expect(result.ok).toBe(true)
         if (result.ok) {
-            expect(result.skyshareEntry.sourceUri).toBe(rootUri)
+            expect(result.skyshareEntry.sourceUri).toBe(postUri)
+            expect(result.skyshareEntry.sourceCid).toBe("bafypost")
         }
+        expect(getPostThread).not.toHaveBeenCalled()
     })
 
-    it("reply.rootが他人の場合、対象投稿自身にフォールバックする", async () => {
-        const agent = makeAgentWithReply(otherRootUri)
+    it("reply.rootが他人でも、対象投稿自身がsourceになる", async () => {
+        const { agent } = makeAgentWithReply(otherRootUri)
         const result = await createEntryFromExistingPost(
             agent as any,
             postUri,

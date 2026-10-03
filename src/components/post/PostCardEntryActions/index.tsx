@@ -20,10 +20,12 @@ type Props = {
   onRequestDelete: () => void
   onCrosspost: () => void
   /**
-   * trueの場合、Bluesky投稿への実際の書き込みを伴う操作（Entry作成・削除）を無効化する。
+   * trueの場合、Bluesky投稿への実際の書き込みを伴う操作（Entry作成）を無効化する。
    * クロスポスト（Xへの共有intentポップアップ）はatprotoの認証を必要としないため対象外。
    */
   disabled?: boolean
+  /** trueの場合、削除ボタンのみ無効化する（削除範囲の判定中など。ゲスト表示では削除を有効にするため`disabled`と分ける） */
+  deleteDisabled?: boolean
 }
 
 /**
@@ -49,6 +51,7 @@ const Component = ({
   onRequestDelete,
   onCrosspost,
   disabled = false,
+  deleteDisabled = false,
 }: Props) => {
   return (
     <>
@@ -66,7 +69,7 @@ const Component = ({
           <button
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
-            disabled={disabled || display.kind === "deleting"}
+            disabled={deleteDisabled || display.kind === "deleting"}
             onClick={onRequestDelete}
           >
             投稿を削除

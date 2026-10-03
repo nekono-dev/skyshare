@@ -65,7 +65,7 @@ export const Component: React.FC<Props> = ({
   loading,
 }) => {
   return (
-    <Overlay open={open} onClose={onClose} contentClassName={ui["width-xs"]}>
+    <Overlay open={open} onClose={onClose} contentClassName={ui["width-md"]}>
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]}`}
         role="dialog"

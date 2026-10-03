@@ -32,32 +32,49 @@ import shareIcon from "@/images/share.svg"
 type PostCardProps = {
   item: TimelinePost
   /**
-   * Bluesky投稿ごと削除された直後に呼び出されるコールバック。
-   * `deletedThread`がtrueの場合、スレッド全体削除（`specs/timeline/design.md §8`）が
-   * 実行されたことを示す。呼び出し元（`ThreadCard`）はこれを見て、一覧から
-   * 除去する対象をこの投稿単体ではなくスレッドグループ全体へ広げる。
+   * Bluesky投稿ごと削除された直後に呼び出されるコールバック。呼び出し元
+   * （`ThreadCard`）は、Timelineのページング対象アイテムがスレッドグループ単位
+   * であるため（`specs/timeline/design.md §4`）、常にそのスレッドグループ全体を
+   * 一覧から除去する。
    */
-  onPostDeleted?: (deletedThread?: boolean) => void
+  onPostDeleted?: () => void
   /**
    * ログイン不要のゲスト用デモ表示。Bluesky投稿への実際の書き込みを伴う操作
-   * （Entry作成・削除・元投稿へのリンク）のみ無効化する。クロスポスト（Xへの
+   * （Entry作成・元投稿へのリンク）のみ無効化する。Entry削除は有効で、削除範囲の判定・
+   * 削除の実行はアプリ内で模擬する（`specs/entry/frontend/design.md §3.4.4`）。クロスポスト（Xへの
    * 共有intentポップアップ）とWebShare共有はatproto認証を必要としないため
    * 通常通り操作でき、「Entryを開く」もサンプルEntryページへ遷移できる。
    */
   guestMode?: boolean
   /**
-   * trueの場合、スレッド由来であることを示すバッジを表示する
-   * （`ThreadCard`がルート投稿に対してのみ渡す。`specs/timeline/design.md §6`）。
-   */
-  threadBadge?: boolean
-  /**
-   * スレッドの中間投稿向け事後entry作成ボタンの表示制御（`specs/timeline/design.md §5`）。
-   * - `undefined`（既定）: 単独投稿・スレッドルート投稿と同じ、投稿自身の適格性のみで判定する。
-   * - `true`: スレッド内で事後entry作成の対象に選ばれた投稿として明示的に表示する。
-   * - `false`: スレッド内で対象に選ばれなかった画像投稿として、投稿自身が適格でもボタンを
-   *   抑制する（1スレッドにつき事後entry作成ボタンは最大1箇所のみ表示するため）。
+   * 事後entry作成ボタンの表示制御（`specs/timeline/design.md §5`）。
+   * - `undefined`（既定）: 単独投稿と同じ、投稿自身の適格性のみで判定する。
+   * - `true`: スレッドのルート投稿として明示的にボタンを表示する
+   *   （`entryVisualSourcePost`がある場合はそちらの画像を使う）。
+   * - `false`: スレッドの中間投稿として、投稿自身が画像を持っていてもボタンを
+   *   抑制する（ボタンは常にルート投稿のカードにのみ表示するため）。
    */
   postCreateEntryButton?: boolean
+  /**
+   * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿
+   * （`resolveEntryVisualSourcePost`、`specs/timeline/design.md §5`）。
+   * `ThreadCard`がスレッドのルート投稿向けに、ルート自身が画像を持たない場合の
+   * 代わりの画像取得元（ルートに最も近い画像付き投稿）を渡す。未指定時は`item`
+   * 自身が対象になる。
+   */
+  entryVisualSourcePost?: TimelinePost
+  /**
+   * 作成するentryの`source`にする投稿（`specs/timeline/design.md §5`）。
+   * `ThreadCard`がルート投稿のカードに、スレッドのルート投稿を渡す。
+   * 未指定時は`item`自身が`source`になる。
+   */
+  entrySourcePost?: TimelinePost
+  /**
+   * trueの場合、スレッドの中間投稿（ルート以外）として扱い、Entry作成対象外でも
+   * カードをグレーアウトしない。中間投稿はスレッドの一部として表示されるため、
+   * 単独投稿のように「対象外」であることを視覚的に強調しない。
+   */
+  threadReply?: boolean
 }
 
 /**
@@ -77,8 +94,10 @@ const Component = ({
   item,
   onPostDeleted,
   guestMode = false,
-  threadBadge = false,
   postCreateEntryButton,
+  entryVisualSourcePost,
+  entrySourcePost,
+  threadReply = false,
 }: PostCardProps) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
@@ -87,8 +106,8 @@ const Component = ({
     createError,
     deleteError,
     isDeleteDialogOpen,
-    isResolvingThreadOption,
-    showThreadOption,
+    isResolvingDeleteScope,
+    deleteScope,
     createEntryFromPost,
     requestDeleteEntry,
     cancelDeleteEntry,
@@ -96,6 +115,9 @@ const Component = ({
   } = useSkyshareEntryStatus(item, {
     onCreated: () => setShareDialogOpen(true),
     onPostDeleted,
+    visualSourcePost: entryVisualSourcePost,
+    sourcePost: entrySourcePost,
+    guestMode,
   })
 
   const createdAtText = new Date(item.indexedAt).toLocaleString("ja-JP", {
@@ -135,9 +157,10 @@ const Component = ({
     ? [activeEntry.visualUrl]
     : item.images.map(image => image.url)
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
+  // ただしスレッドの中間投稿（`threadReply`）はグレーアウトしない。
   // この判定は投稿自身の適格性のみに基づくため、postCreateEntryButtonによる
   // ボタン抑制（下記actionsDisplay）とは独立して評価する。
-  const isSkyshareIneligible = display.kind === "ineligible"
+  const isSkyshareIneligible = display.kind === "ineligible" && !threadReply
 
   // postCreateEntryButton===false（スレッド内で事後entry作成の対象に選ばれなかった
   // 画像投稿）の場合のみ、ボタン表示用のdisplayを「作成対象外」に差し替える。
@@ -166,23 +189,9 @@ const Component = ({
                   <strong>{item.author.displayName}</strong>
                 )}
                 <span className={styles.handle}>@{item.author.handle}</span>
-                {threadBadge ? (
-                  <span className={styles["thread-badge"]}>スレッド</span>
-                ) : null}
               </div>
               <p className={styles["created-at"]}>{createdAtText}</p>
             </div>
-
-            {entryPath ? (
-              <a
-                className={styles["entry-link"]}
-                href={entryPath}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Entryを開く
-              </a>
-            ) : null}
           </div>
 
           {item.text ? <p className={styles.text}>{item.text}</p> : null}
@@ -205,56 +214,76 @@ const Component = ({
       <footer
         className={`${styles.footer} ${ui["toolbar"]} ${ui["toolbar-align"]}`}
       >
-        <a
-          className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-          href={guestMode ? undefined : item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Bluesky で開く"
-          aria-disabled={guestMode}
-          title={
-            guestMode ? "ゲスト表示のため利用できません" : "Bluesky で開く"
-          }
-          onClick={e => {
-            if (guestMode) e.preventDefault()
-          }}
-        >
-          <img src={blueskyIcon.src} width={20} height={20} alt="" />
-        </a>
-
-        {isWebShareSupported ? (
-          <button
-            type="button"
+        <div className={styles["footer-actions"]}>
+          <a
             className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-            disabled={isWebSharing}
-            onClick={shareViaWebApi}
-            aria-label="Web Share APIで共有"
-            title="Web Share APIで共有"
+            href={guestMode ? undefined : item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Bluesky で開く"
+            aria-disabled={guestMode}
+            title={
+              guestMode ? "ゲスト表示のため利用できません" : "Bluesky で開く"
+            }
+            onClick={e => {
+              if (guestMode) e.preventDefault()
+            }}
           >
-            <img src={shareIcon.src} width={20} height={20} alt="" />
-          </button>
-        ) : null}
+            <img src={blueskyIcon.src} width={20} height={20} alt="" />
+          </a>
 
-        <PostCardEntryActions
-          display={actionsDisplay}
-          createError={createError}
-          deleteError={deleteError}
-          onCreate={createEntryFromPost}
-          onRequestDelete={requestDeleteEntry}
-          onCrosspost={() => setShareDialogOpen(true)}
-          disabled={guestMode || isResolvingThreadOption}
-        />
+          {isWebShareSupported ? (
+            <button
+              type="button"
+              className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
+              disabled={isWebSharing}
+              onClick={shareViaWebApi}
+              aria-label="Web Share APIで共有"
+              title="Web Share APIで共有"
+            >
+              <img src={shareIcon.src} width={20} height={20} alt="" />
+            </button>
+          ) : null}
 
-        {shareError ? (
-          <span className={styles["share-error"]}>{shareError}</span>
+          <PostCardEntryActions
+            display={actionsDisplay}
+            createError={createError}
+            deleteError={deleteError}
+            onCreate={createEntryFromPost}
+            onRequestDelete={requestDeleteEntry}
+            onCrosspost={() => setShareDialogOpen(true)}
+            disabled={guestMode || isResolvingDeleteScope}
+            deleteDisabled={isResolvingDeleteScope}
+          />
+
+          {shareError ? (
+            <span className={styles["share-error"]}>{shareError}</span>
+          ) : null}
+        </div>
+
+        {entryPath ? (
+          <div className={styles["entry-link-box"]}>
+            <a
+              className={styles["entry-link"]}
+              href={entryPath}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Entryを開く
+            </a>
+          </div>
         ) : null}
       </footer>
+
+      {display.kind === "creating" ? (
+        <Loading overlay message="Entryを作成中..." />
+      ) : null}
 
       {display.kind === "deleting" ? (
         <Loading overlay message="Entryを削除中..." />
       ) : null}
 
-      {isResolvingThreadOption ? (
+      {isResolvingDeleteScope ? (
         <Loading overlay message="削除内容を確認中..." />
       ) : null}
 
@@ -272,10 +301,9 @@ const Component = ({
       <EntryDeleteConfirmDialog
         open={isDeleteDialogOpen}
         isDeleting={display.kind === "deleting"}
-        showThreadOption={showThreadOption}
+        deleteScope={deleteScope}
         onDeleteLink={() => confirmDeleteEntry(false)}
         onDeletePost={() => confirmDeleteEntry(true)}
-        onDeleteThread={() => confirmDeleteEntry(true, true)}
         onCancel={cancelDeleteEntry}
       />
     </article>

@@ -160,7 +160,7 @@ const Component = () => {
         <p
           className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
         >
-          これはログイン不要のゲスト表示です。実際のEntryの編集・削除はできません。
+          これはログイン不要のゲスト表示です。実際のEntryの編集はできません。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。
         </p>
       )}
       <div

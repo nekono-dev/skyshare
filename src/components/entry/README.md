@@ -6,12 +6,15 @@ skyshare entry(下書き・保存済みページ)の一覧表示・編集・削�
 graph TD
   EntryList --> EntryCard
   EntryCard --> EntryDeleteConfirmDialog
+  EntryDeleteConfirmDialog --> DeletePostListDialog
+  DeletePostListDialog --> DeletePostListItem
   EntryCard --> EntryEditForm
 
   EntryList --> commonExt
   EntryCard --> commonExt
   EntryEditForm --> commonExt
   EntryDeleteConfirmDialog --> commonExt
+  DeletePostListDialog --> commonExt
   DraftListPanel --> commonExt
   DraftSaveConfirmDialog --> commonExt
   LegacyPageDeleteButton --> commonExt
@@ -26,7 +29,7 @@ graph TD
 
 外部カテゴリへの依存の内訳:
 
-- `common`: EntryList(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、EntryCard(ChoiceDialog・Loading)、EntryEditForm(Overlay・Loading・CountedTextInput)、EntryDeleteConfirmDialog(ChoiceDialog)、DraftListPanel(ComponentList・NavigationBar)、DraftSaveConfirmDialog(ChoiceDialog)、LegacyPageDeleteButton(Loading)
+- `common`: EntryList(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、EntryCard(ChoiceDialog・Loading)、EntryEditForm(Overlay・Loading・CountedTextInput)、EntryDeleteConfirmDialog(ChoiceDialog)、DeletePostListDialog(Overlay・Loading・ComponentList・ChoiceDialogのボタン配色)、DraftListPanel(ComponentList・NavigationBar)、DraftSaveConfirmDialog(ChoiceDialog)、LegacyPageDeleteButton(Loading)
 - `post`: DraftListPanel(SelfLabelsSelect のラベル表示用定数のみ)
 
 - `DraftListPanel` が `post` カテゴリの `SelfLabelsSelect` からラベル表示用の定数のみを参照している([../README.md](../README.md)のカテゴリ間相互参照を参照)。
