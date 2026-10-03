@@ -11,6 +11,11 @@ import ui from "@/styles/ui.module.css"
  * 責務と処理概要:
  * - ハンドルとアプリパスワードを受け取り、セッション作成 API を呼び出す。
  * - 成功/失敗メッセージを表示し、成功時はトップページへ遷移する。
+ *
+ * 利用上の制約:
+ * - 自身が `base-card` のため、別の `base-card` の中に入れ子にしないこと。
+ *   入れ子にすると Proton Pass が入力欄を検出できなくなる（検証で確認済み）。
+ * - 入力欄には `autoComplete`（username / current-password）と label の `htmlFor` を設定している。
  */
 
 type Props = {
@@ -94,12 +99,14 @@ export const Component = ({ initialHandle }: Props = {}) => {
     <form id="login-form" className={ui["base-card"]} onSubmit={onSubmit}>
       <div className={styles.content}>
         <div>
-          <label>ハンドル (@以降のhandle)</label>
+          <label htmlFor="username">ハンドル (@以降のhandle)</label>
           <div className={ui["base-input-box"]}>
             <input
               className={ui["base-input-field"]}
-              id="handle"
-              name="handle"
+              id="username"
+              name="username"
+              type="text"
+              autoComplete="username"
               placeholder="example.bsky.social"
               required
               value={handle}
@@ -109,7 +116,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
         </div>
 
         <div>
-          <label>
+          <label htmlFor="password">
             アプリパスワード（
             <a href="https://bsky.app/settings/app-passwords">作成ページ</a>）
           </label>
@@ -119,6 +126,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
               id="password"
               name="password"
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
