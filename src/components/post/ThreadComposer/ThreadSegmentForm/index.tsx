@@ -384,7 +384,7 @@ const Component: React.FC<Props> = ({
             >
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
+                className={`${ui["base-button"]} ${ui["blue-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
                 aria-label="スレッドに追加"
                 title="スレッドに追加"
                 disabled={disabled || !canAddSegment}
@@ -397,6 +397,8 @@ const Component: React.FC<Props> = ({
                   style={{
                     width: "var(--size-icon-button)",
                     height: "var(--size-icon-button)",
+                    // 青背景上で見えるよう白抜きにする
+                    filter: "brightness(0) invert(1)",
                   }}
                   alt=""
                 />

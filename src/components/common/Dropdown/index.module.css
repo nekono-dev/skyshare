@@ -100,3 +100,12 @@
   font-size: var(--font-size-sm);
   color: var(--color-muted);
 }
+
+/* 可変幅トリガーの幅算出用。複数の文字列を同じセルに重ね、最も広いものの幅になる */
+.sizer-stack {
+  display: inline-grid;
+}
+
+.sizer-stack > * {
+  grid-area: 1 / 1;
+}

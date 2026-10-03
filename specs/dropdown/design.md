@@ -427,7 +427,7 @@ export const filterOptions = (options, query) => {
 ```
 
 - `.trigger` は `ui["base-select"]` の `display:block; width:100%` を前提に、`<select>` と同じ外観（文字色・矢印の余白・省略表示）になるよう `text-align:left; cursor:pointer` を追加するのみとし、矢印は `ui["select-wrapper"]::after` の既存実装をそのまま使う。`input` のときも同じクラスで同じ外観にする（`color` は `ui["base-select"]` の色を継承させ、placeholder は `--color-muted`）。
-- 可変幅（`autoWidth`）は `ui["select-wrapper-auto"]` の「幅は sizer に任せる」方式を踏襲する。sizer には選択中の表示内容（searchable は `inputText ?? label`）を描画して幅を一致させる。`ui["select-wrapper-auto"] > select, > button` に加え `> input` も対象にする。
+- 可変幅（`autoWidth`）は `ui["select-wrapper-auto"]` の「幅は sizer に任せる」方式を踏襲する。sizer には選択中の表示内容（searchable は `inputText ?? label` と `searchPlaceholder` を同じグリッドセルに重ねた `.sizer-stack`。広い方に幅が合い、検索モードで placeholder が見切れない）を描画して幅を一致させる。`ui["select-wrapper-auto"] > select, > button` に加え `> input` も対象にする。
 - フォーカスリング: `.trigger:focus-visible` に `border-color` で既存のフォーカス表現と同系統の枠色を付ける。
 - `DropdownOptionRow` は `ListboxOption` に `content ?? label` を渡す行コンポーネント。`id` は `${listboxId}-option-${index}`。
 

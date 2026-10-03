@@ -377,6 +377,28 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         }).toPass({ timeout: 5_000 })
     })
 
+    test("25. 可変幅のトリガーは placeholder が見切れない", async ({ page }) => {
+        await openList(page)
+        const trigger = languageTrigger(page)
+        // 開いている間は placeholder を表示する。placeholder の文字幅が、入力欄の内側の幅に収まること
+        const clipped = await trigger.evaluate(el => {
+            const input = el as HTMLInputElement
+            const style = getComputedStyle(input)
+            const probe = document.createElement("span")
+            probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${style.font}`
+            probe.textContent = input.placeholder
+            document.body.appendChild(probe)
+            const textWidth = probe.getBoundingClientRect().width
+            probe.remove()
+            const inner =
+                input.clientWidth -
+                parseFloat(style.paddingLeft) -
+                parseFloat(style.paddingRight)
+            return textWidth > inner + 0.5
+        })
+        expect(clipped).toBe(false)
+    })
+
     test("21. パネル外の操作で閉じたとき、入力欄にフォーカスが残らない", async ({
         page,
     }) => {

@@ -588,7 +588,16 @@ export const Dropdown: React.FC<Props> = ({
     >
       {autoWidth && (
         <span className={ui["select-sizer"]} aria-hidden>
-          {searchable ? selectedInputText : triggerContent}
+          {searchable ? (
+            // 現在値と placeholder を同じセルに重ね、広い方に幅を合わせる
+            // （検索モードで placeholder が見切れず、入るときに幅が変わらない）
+            <span className={styles["sizer-stack"]}>
+              <span>{selectedInputText}</span>
+              <span>{searchPlaceholder}</span>
+            </span>
+          ) : (
+            triggerContent
+          )}
         </span>
       )}
       {searchable ? (
