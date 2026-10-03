@@ -7,6 +7,7 @@
 
   種別
     .select-wrapper プルダウンの外枠。擬似要素でドロップダウン矢印を表示する
+    .select-wrapper-auto 可変幅オプション。選択内容に応じて横幅を変える（.select-sizer と併用）
 
 */
 
@@ -24,6 +25,11 @@
   font-family: var(--font-family-sans);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
+  /* 収まらない選択肢名は、右端の矢印に重ならないよう省略表示にする */
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 :local(.base-select):disabled {
@@ -42,19 +48,65 @@
   display: inline-flex;
   align-items: center;
   min-height: 2rem;
-  max-width: 10rem;
+  max-width: 14rem;
 }
 
+/* 矢印はCollapsibleのindicatorと同じ、回転させた枠線のシェブロンを使う */
 :local(.select-wrapper)::after {
-  content: "▼";
+  content: "";
   position: absolute;
   right: var(--space-2);
-  top: 0;
-  bottom: 0;
-  margin-top: auto;
-  margin-bottom: auto;
-  height: fit-content;
-  color: var(--color-muted);
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--color-muted);
+  border-bottom: 2px solid var(--color-muted);
+  /* 下向き。中心がずれないよう translateY と回転を合成する */
+  transform: translateY(-75%) rotate(45deg);
+  transition: transform 0.2s ease;
+  pointer-events: none;
+}
+
+/* 展開中は上向きに回転する。:open 非対応ブラウザでは回転しないだけで動作に影響しない */
+:local(.select-wrapper):has(select:open)::after,
+:local(.select-wrapper):has([aria-expanded="true"])::after {
+  transform: translateY(-25%) rotate(-135deg);
+}
+
+/*
+  可変幅プルダウン（オプション）
+  外枠に .select-wrapper-auto を付け、内部に .select-sizer を置くと、
+  選択中のラベル幅に合わせて select の横幅が変わる。
+  sizer を select と同じグリッドセルに重ね、見えない状態で幅だけを確保する。
+*/
+:local(.select-wrapper-auto) {
+  display: inline-grid;
+}
+
+:local(.select-wrapper-auto) > * {
+  grid-area: 1 / 1;
+}
+
+/* select は最長の選択肢幅を固有幅として持つため、そのままだと幅が縮まない。
+   固有幅を 0 にして、グリッド幅（= sizer の幅）に追従させる */
+:local(.select-wrapper-auto) > select,
+:local(.select-wrapper-auto) > button,
+:local(.select-wrapper-auto) > input {
+  width: 0;
+  min-width: 100%;
+  max-width: none;
+}
+
+:local(.select-sizer) {
+  visibility: hidden;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  padding: var(--space-1) var(--space-5) var(--space-1) var(--space-2);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  white-space: nowrap;
+  overflow: hidden;
   pointer-events: none;
 }
 
@@ -85,26 +137,18 @@
   border-radius: 0;
   background: transparent;
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-input);
   line-height: var(--line-height-normal);
   color: var(--color-text);
 }
 
 :local(.base-input-field)::placeholder {
   color: var(--color-muted);
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-input);
 }
 
-/* 本文テキストエリアのフォントサイズ: PCはmdにする */
-@media (min-width: 640px) {
-  :local(.base-input-field) {
-    font-size: var(--font-size-md);
-  }
-  :local(.base-input-field)::placeholder {
-    font-size: var(--font-size-md);
-  }
-}
-
+/* 本文テキストエリアのフォントサイズ: md。スマホ幅ではトークン側(tokens.css)が20pxになり、
+   iOS Safariの入力時自動ズーム(16px未満で発生)も起きない。 */
 :local(.base-input-field):disabled,
 :local(.base-input-field)[aria-disabled="true"] {
   color: var(--color-muted);

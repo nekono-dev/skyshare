@@ -92,7 +92,7 @@ test.describe("複数画像の投稿フォーム", () => {
 })
 
 test.describe("複数画像のTimeline表示", () => {
-    test("画像6枚の投稿に先頭4枚のサムネイルと+2が表示される", async ({
+    test("画像6枚の投稿に全6枚のサムネイルが横スクロールで表示される", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -100,7 +100,6 @@ test.describe("複数画像のTimeline表示", () => {
             hasText: "画像を6枚添付した投稿の表示です。",
         })
         await expect(card).toBeVisible()
-        await expect(card.locator("img[loading='lazy']")).toHaveCount(4)
-        await expect(card.getByText("+2")).toBeVisible()
+        await expect(card.locator("img[loading='lazy']")).toHaveCount(6)
     })
 })

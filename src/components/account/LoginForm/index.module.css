@@ -5,9 +5,3 @@
   flex-direction: column;
   gap: calc(var(--space-2, 8px));
 }
-/* 小さいスクリーンでの適応 */
-@media (max-width: 420px) {
-  button {
-    padding: 6px 10px;
-  }
-}

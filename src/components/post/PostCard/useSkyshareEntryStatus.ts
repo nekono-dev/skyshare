@@ -13,6 +13,7 @@ import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
 import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
+import { waitForImageLoad } from "@/util/waitForImageLoad"
 import {
     resolveEntryDeleteScope,
     type EntryDeleteScope,
@@ -213,6 +214,8 @@ export const useSkyshareEntryStatus = (
                 }
 
                 await warmOgpCache(skyshare.uri)
+                // 詳細ページのView画像がCDNで配信可能になるまで作成中表示を延長する
+                await waitForImageLoad(skyshare.visualUrl ?? "")
 
                 setState({ phase: "idle", entry })
                 options.onCreated?.(entry)

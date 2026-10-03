@@ -38,6 +38,8 @@ export type SourceImage = {
     url: string
     alt: string
     cid: string
+    /** 画像レコードの `aspectRatio`。未設定・不正値の場合は `undefined` */
+    aspectRatio?: { width: number; height: number }
 }
 
 export const ENTRY_COLLECTION = "dev.nekono.skyshare.entry"
@@ -140,7 +142,11 @@ export const blobToCdnUrl = (
  * - 出力: `[{ url: "https://cdn.bsky.app/...", alt: "猫", cid: "bafk..." }]`
  */
 const toSourceImages = (
-    items: { image: any; alt?: string }[],
+    items: {
+        image: any
+        alt?: string
+        aspectRatio?: { width?: unknown; height?: unknown }
+    }[],
     repoDid: string,
 ): SourceImage[] =>
     items
@@ -148,10 +154,20 @@ const toSourceImages = (
             const url = blobToCdnUrl(repoDid, item.image)
             const cid = toCidString(item.image?.ref)
             if (!url || !cid) return
+            const width = item?.aspectRatio?.width
+            const height = item?.aspectRatio?.height
+            const hasRatio =
+                typeof width === "number" &&
+                typeof height === "number" &&
+                Number.isFinite(width) &&
+                Number.isFinite(height) &&
+                width > 0 &&
+                height > 0
             return {
                 url,
                 alt: typeof item?.alt === "string" ? item.alt : "",
                 cid,
+                ...(hasRatio ? { aspectRatio: { width, height } } : {}),
             }
         })
         .filter((img): img is SourceImage => img !== undefined)

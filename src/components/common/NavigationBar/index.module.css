@@ -2,8 +2,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
-  padding-top: 0.25rem;
+  gap: var(--space-3);
+  padding-top: var(--space-1);
 }
 
 .placeholder {
@@ -14,5 +14,5 @@
   min-width: 6.5rem;
   text-align: center;
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  font-size: var(--font-size-sm);
 }

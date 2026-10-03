@@ -43,8 +43,8 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  width: 2rem; /* 32px */
-  height: 1.125rem; /* 18px */
+  width: var(--size-toggle-width);
+  height: var(--size-toggle-height);
   /* --radius-button-max(100%) は幅≠高さの要素に使うと楕円になるため、
      ピル形を保証する --radius-pill を使用する。 */
   border-radius: var(--radius-pill);
@@ -68,8 +68,8 @@
 .knob {
   position: absolute;
   left: var(--space-0);
-  width: 0.875rem; /* 14px */
-  height: 0.875rem; /* 14px */
+  width: var(--size-toggle-knob);
+  height: var(--size-toggle-knob);
   border-radius: var(--radius-button-max);
   background: var(--color-white);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
@@ -78,8 +78,12 @@
 
 /* ON 状態: ノブを右へスライド */
 .input:checked + .label .knob {
-  /* トラック幅(32px) - ノブ幅(14px) - 左余白(2px) - 右余白(2px) = 14px */
-  transform: translateX(calc(2rem - 0.875rem - 2 * var(--space-0)));
+  /* トラック幅 - ノブ径 - 左右の余白(--space-0 × 2) */
+  transform: translateX(
+    calc(
+      var(--size-toggle-width) - var(--size-toggle-knob) - 2 * var(--space-0)
+    )
+  );
 }
 
 /* ラベルテキスト: 改行させない */

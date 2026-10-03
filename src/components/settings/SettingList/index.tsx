@@ -20,8 +20,8 @@ export type SettingListItem = {
   key: string
   /** 設定値のラベル（文中にInlineIconなどを埋め込む場合はReactNodeを渡す） */
   label: React.ReactNode
-  /** 設定値の説明文（文中にInlineIconなどを埋め込む場合はReactNodeを渡す） */
-  description: React.ReactNode
+  /** 設定値の説明文（文中にInlineIconなどを埋め込む場合はReactNodeを渡す）。省略時は表示しない */
+  description?: React.ReactNode
   /**
    * 行のメインコントロール種別。省略時は `"toggle"`（ON/OFFスイッチ）。
    * `"select"` の場合はテーマ選択のようなプルダウンを表示し、
@@ -105,7 +105,9 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
       <div className={styles["toggle-row"]}>
         <label className={styles.text} htmlFor={inputId}>
           <span className={styles.label}>{item.label}</span>
-          <span className={styles.description}>{item.description}</span>
+          {item.description && (
+            <span className={styles.description}>{item.description}</span>
+          )}
         </label>
         {item.control === "select" ? (
           <ThemeModeSelect

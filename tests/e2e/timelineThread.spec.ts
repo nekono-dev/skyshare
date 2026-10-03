@@ -152,3 +152,85 @@ test.describe("Timeline一覧のスレッド表示", () => {
         ).toHaveCount(0)
     })
 })
+
+test.describe("Timelineの画像表示（specs/postcardlayout FR-5）", () => {
+    test("Entryを持つ投稿は visual を1枚だけ表示し、クリックしても拡大表示が開かない", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const card = page.locator("article", {
+            hasText: "画像投稿で、URL発行を行った際の表示です。",
+        })
+        await expect(card).toBeVisible()
+        await expect(card.locator("img[loading='lazy']")).toHaveCount(1)
+        await expect(card.locator("img[loading='lazy']")).toHaveAttribute(
+            "src",
+            /sample-og\.png/,
+        )
+        await expect(card.getByRole("button", { name: /を拡大/ })).toHaveCount(
+            0,
+        )
+        await card.locator("img[loading='lazy']").click({ force: true })
+        await expect(
+            page.getByRole("dialog", { name: "画像の拡大表示" }),
+        ).toHaveCount(0)
+    })
+
+    test("Entryを持つスレッドのルート投稿も visual のみで拡大できない", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const card = page.locator("article", {
+            hasText: "スレッドB・1件目（ルート、entry作成済み）です。",
+        })
+        await expect(card.locator("img[loading='lazy']")).toHaveCount(1)
+        await expect(card.locator("img[loading='lazy']")).toHaveAttribute(
+            "src",
+            /sample-og\.png/,
+        )
+        await expect(card.getByRole("button", { name: /を拡大/ })).toHaveCount(
+            0,
+        )
+    })
+
+    test("Entryを持たない複数画像投稿はサムネイルから拡大表示を開閉できる", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const card = page.locator("article", {
+            hasText: "画像を6枚添付した投稿の表示です。",
+        })
+        const thumb = card.getByRole("button", { name: "画像1/6を拡大" })
+        await thumb.click()
+        const dialog = page.getByRole("dialog", { name: "画像の拡大表示" })
+        await expect(dialog.getByText("1/6")).toBeVisible()
+        await page.keyboard.press("Escape")
+        await expect(dialog).toHaveCount(0)
+        await expect(thumb).toBeFocused()
+    })
+
+    test("スレッドの返信投稿（Entryなし）の画像は拡大できる", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const rootArticle = page.locator("article", {
+            hasText: "スレッドA・1件目（ルート、画像なし）です。",
+        })
+        await rootArticle.locator("xpath=following-sibling::button[1]").click()
+        const mid = page.locator("article", {
+            hasText: "スレッドA・2件目です。画像付きでentry未作成です。",
+        })
+        await mid.getByRole("button", { name: /を拡大/ }).click()
+        await expect(
+            page.getByRole("dialog", { name: "画像の拡大表示" }),
+        ).toBeVisible()
+    })
+
+    test("画像もEntryも持たない投稿に画像領域が無い", async ({ page }) => {
+        await page.goto("/?guest")
+        const card = page.locator("article", {
+            hasText: "これはゲスト用デモ表示のサンプル投稿です。",
+        })
+        await expect(card.locator("img[loading='lazy']")).toHaveCount(0)
+    })
+})

@@ -590,7 +590,16 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             aria-disabled={disabled}
             style={{ cursor: disabled ? "default" : "pointer" }}
           >
-            <img src={pic.src} width={18} height={18} alt="" />
+            <img
+              src={pic.src}
+              width={18}
+              height={18}
+              style={{
+                width: "var(--size-icon-button)",
+                height: "var(--size-icon-button)",
+              }}
+              alt=""
+            />
           </label>
 
           <input

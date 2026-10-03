@@ -1,16 +1,15 @@
 /**
- * entry詳細ページ（`entries/[slug].astro`）のスレッド表示（`EntryThreadView`）の
+ * entry詳細ページ（`entries/[slug].astro`）のスレッド表示（`EntryDetailView`）の
  * ヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
  * - `entries/[slug].astro`のスレッド表示ロジック自体は、実PDSレコード・ログインに
  *   依存するSSR取得（`app.bsky.feed.getPostThread`）を伴うため、実アカウントが無い
  *   このテスト環境では直接検証できない（実アカウントでの確認は手動確認タスクとして
- *   別途残す）。ここでは`entries/sample.astro`（単発投稿のフォールバック表示、既存）と
- *   `entries/sample-thread.astro`（スレッド表示、`[slug].astro`と同じ`EntryThreadView`を
- *   描画する新設サンプルページ）を用いて、コンポーネント自体の描画を検証する。
+ *   別途残す）。ここでは`entries/sample.astro`（スレッド表示、`[slug].astro`と同じ`EntryDetailView`を
+ *   描画するサンプルページ）を用いて、コンポーネント自体の描画を検証する。
  * - `specs/entry/frontend/requirements.md`の受け入れ条件のうち、「先頭から後続投稿まで
- *   時系列順にすべて表示される」「単発投稿由来entryは従来通り単一投稿として表示される」を
+ *   時系列順にすべて表示される」
  *   実ブラウザでのレンダリング結果として確認する。
  */
 import { expect, test } from "@playwright/test"
@@ -19,38 +18,33 @@ test.describe("entry詳細ページのスレッド表示", () => {
     test("スレッド由来entryのサンプルページで、先頭から末尾まで時系列順にすべて表示される", async ({
         page,
     }) => {
-        await page.goto("/entries/sample-thread/")
+        await page.goto("/entries/sample/")
 
         await expect(page.getByText("サンプルスレッドEntry")).toBeVisible()
         await expect(
-            page.getByText("スレッド1件目（先頭投稿）です。"),
+            page.getByText(
+                "スレッド1件目（先頭投稿）です。画像が1枚付いています。",
+            ),
         ).toBeVisible()
         await expect(
-            page.getByText("スレッド2件目です。画像が付いています。"),
+            page.getByText("スレッド2件目です。画像が3枚付いています。"),
         ).toBeVisible()
         await expect(
-            page.getByText("スレッド3件目（末尾投稿）です。"),
+            page.getByText(
+                "スレッド3件目（末尾投稿）です。画像が5枚付いています。",
+            ),
         ).toBeVisible()
 
-        const texts = await page.locator("ol li p").allTextContents()
-        expect(texts).toEqual([
-            "スレッド1件目（先頭投稿）です。",
-            "スレッド2件目です。画像が付いています。",
-            "スレッド3件目（末尾投稿）です。",
-        ])
+        const items = await page.locator("ol > li").allTextContents()
+        expect(items).toHaveLength(3)
+        expect(items[0]).toContain("スレッド1件目")
+        expect(items[1]).toContain("スレッド2件目")
+        expect(items[2]).toContain("スレッド3件目")
 
-        // スレッド由来であることを示す視覚的区別（FR-6）。
-        await expect(page.getByText("スレッド", { exact: true })).toBeVisible()
-    })
-
-    test("単発投稿由来entryのサンプルページは、従来通り単一投稿として表示され、スレッド由来バッジも表示されない", async ({
-        page,
-    }) => {
-        await page.goto("/entries/sample/")
-
-        // スレッド表示専用の要素（投稿順に並ぶリスト）が無いこと。
-        await expect(page.locator("ol li")).toHaveCount(0)
-        // FR-6: 単発投稿由来entryにはスレッド由来バッジを表示しない。
-        await expect(page.getByText("スレッド", { exact: true })).toHaveCount(0)
+        // スレッドバッジは表示せず、Entryのカード画像（View）が表示される。
+        await expect(
+            page.locator("header").getByText("スレッド", { exact: true }),
+        ).toHaveCount(0)
+        await expect(page.getByTestId("entry-visual")).toBeVisible()
     })
 })

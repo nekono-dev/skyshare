@@ -713,16 +713,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 下書き
               </button>
               <button
-                type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-                disabled={
-                  isSubmitting || segments.length >= MAX_THREAD_POST_COUNT
-                }
-                onClick={handleAddSegment}
-              >
-                スレッドに追加
-              </button>
-              <button
                 form={entryFormId}
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
                 type="submit"
@@ -857,6 +847,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 hashtagSuggestEnabled={hashtagSuggestEnabled}
                 mentionSuggestEnabled={mentionSuggestEnabled}
                 onActivate={() => setActiveIndex(index)}
+                canAddSegment={segments.length < MAX_THREAD_POST_COUNT}
+                onAddSegment={handleAddSegment}
                 onRemove={() => handleRemoveSegment(index)}
                 onChange={next => {
                   setSegments(prev =>

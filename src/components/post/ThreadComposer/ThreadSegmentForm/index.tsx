@@ -34,6 +34,7 @@ import { useSuggest } from "../useSuggest"
 import { revokeImageEntry, type SegmentState } from "../segments"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
+import plusIcon from "@/images/plus.svg"
 
 type Props = {
   segment: SegmentState
@@ -49,6 +50,9 @@ type Props = {
   hashtagSuggestEnabled: boolean
   mentionSuggestEnabled: boolean
   onActivate: () => void
+  /** 末尾へセグメントを追加できるか（上限到達時はfalse） */
+  canAddSegment: boolean
+  onAddSegment: () => void
   onRemove: () => void
   onChange: (next: SegmentState) => void
   onRequestSubmit: () => void
@@ -113,6 +117,8 @@ const Component: React.FC<Props> = ({
   hashtagSuggestEnabled,
   mentionSuggestEnabled,
   onActivate,
+  canAddSegment,
+  onAddSegment,
   onRemove,
   onChange,
   onRequestSubmit,
@@ -226,15 +232,19 @@ const Component: React.FC<Props> = ({
     void imagePickerRef.current?.addFiles(files)
   }
 
+  // アバター列（アバター＋後続segmentへの連結線）。編集表示・簡略表示のそれぞれの
+  // 先頭行に置くため、JSXを使い回す。
+  const avatarCol = (
+    <div className={styles["avatar-col"]}>
+      <Avatar src={avatarUrl} alt="avatar" aria-hidden size="md" />
+      {hasNext && (
+        <div className={styles["connector-line"]} aria-hidden="true" />
+      )}
+    </div>
+  )
+
   return (
     <div className={styles.segment} data-testid={`thread-segment-${index}`}>
-      <div className={styles["avatar-col"]}>
-        <Avatar src={avatarUrl} alt="avatar" aria-hidden size="md" />
-        {hasNext && (
-          <div className={styles["connector-line"]} aria-hidden="true" />
-        )}
-      </div>
-
       <>
         {/* isActiveで丸ごと出し分けず、両ブロックを常時マウントしたままhidden属性で
             表示/非表示を切り替える。ImagePicker等の重い入力コンポーネントをアンマウント
@@ -244,7 +254,7 @@ const Component: React.FC<Props> = ({
         <div
           hidden={!isActive}
           data-testid="segment-editor"
-          className={`${styles.body} ${isDraggingImage ? styles["drag-over"] : ""}`}
+          className={`${styles["editor-area"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
           onPaste={handlePaste}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -256,55 +266,58 @@ const Component: React.FC<Props> = ({
             </div>
           )}
 
-          <div ref={inputAreaRef}>
-            <PostBodyEditor
-              rows={
-                keyboardRows ??
-                (variant === "page"
-                  ? pageMinRows
-                  : isKeyboardPlatform
-                    ? 6
-                    : pageMaxRows)
-              }
-              maxRows={
-                autoGrowText && variant === "page"
-                  ? Math.max(pageMaxRows, keyboardMaxRows ?? pageMaxRows)
-                  : undefined
-              }
-              autoGrow={autoGrowText}
-              placeholder={index === 0 ? "最近どう？" : "スレッドに追加..."}
-              value={segment.text}
-              onChange={text => update({ text })}
-              onFocus={handleTextareaFocus}
-              onBlur={() => {
-                suggest.handleBlur()
-                handleTextareaBlur()
-              }}
-              onKeyDown={e => {
-                suggest.handleKeyDown(e)
-                handleTextareaKeyDown(e)
-              }}
-              onCompositionStart={suggest.handleCompositionStart}
-              onCompositionEnd={suggest.handleCompositionEnd}
-              onCaretMove={suggest.handleCaretMove}
-              disabled={disabled}
-              counters={textCounters}
-              wrapperClassName={styles["text-input-wrapper"]}
-              editorRef={editorRef}
-            />
-            <SuggestPopover
-              candidates={suggest.candidates}
-              activeIndex={suggest.activeIndex}
-              position={suggest.position}
-              listboxId={suggest.listboxId}
-              onHoverIndex={suggest.onHoverIndex}
-              onSelect={suggest.onSelect}
-              onDismiss={suggest.close}
-            />
+          <div className={styles.row}>
+            {avatarCol}
+            <div className={styles.body} ref={inputAreaRef}>
+              <PostBodyEditor
+                rows={
+                  keyboardRows ??
+                  (variant === "page"
+                    ? pageMinRows
+                    : isKeyboardPlatform
+                      ? 6
+                      : pageMaxRows)
+                }
+                maxRows={
+                  autoGrowText && variant === "page"
+                    ? Math.max(pageMaxRows, keyboardMaxRows ?? pageMaxRows)
+                    : undefined
+                }
+                autoGrow={autoGrowText}
+                placeholder={index === 0 ? "最近どう？" : "スレッドに追加..."}
+                value={segment.text}
+                onChange={text => update({ text })}
+                onFocus={handleTextareaFocus}
+                onBlur={() => {
+                  suggest.handleBlur()
+                  handleTextareaBlur()
+                }}
+                onKeyDown={e => {
+                  suggest.handleKeyDown(e)
+                  handleTextareaKeyDown(e)
+                }}
+                onCompositionStart={suggest.handleCompositionStart}
+                onCompositionEnd={suggest.handleCompositionEnd}
+                onCaretMove={suggest.handleCaretMove}
+                disabled={disabled}
+                counters={textCounters}
+                wrapperClassName={styles["text-input-wrapper"]}
+                editorRef={editorRef}
+              />
+              <SuggestPopover
+                candidates={suggest.candidates}
+                activeIndex={suggest.activeIndex}
+                position={suggest.position}
+                listboxId={suggest.listboxId}
+                onHoverIndex={suggest.onHoverIndex}
+                onSelect={suggest.onSelect}
+                onDismiss={suggest.close}
+              />
+            </div>
           </div>
 
           <div
-            className={`${ui["base-component"]} ${ui["base-padding"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]} ${ui["toolbar-wrap"]}`}
+            className={`${ui["base-component"]} ${ui["base-padding"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]} ${ui["toolbar-wrap"]}`}
           >
             <button
               type="button"
@@ -321,12 +334,12 @@ const Component: React.FC<Props> = ({
                 ? "誰でも反応可能"
                 : "反応を制限しています"}
             </button>
-            <LanguageSelect
-              id={`thread-segment-${index}-language`}
-              name={`thread-segment-${index}-language`}
-              value={segment.languageCode}
-              onChange={languageCode => update({ languageCode })}
+            <SelfLabelsSelect
+              id={`thread-segment-${index}-self-label`}
+              value={segment.selfLabel}
+              onChange={selfLabel => update({ selfLabel })}
               disabled={disabled}
+              autoWidth
             />
           </div>
 
@@ -366,13 +379,36 @@ const Component: React.FC<Props> = ({
               <OgpFetchButton ogpFetch={ogpFetch} disabled={disabled} />
             </div>
 
-            <SelfLabelsSelect
-              id={`thread-segment-${index}-self-label`}
-              name={`thread-segment-${index}-self-label`}
-              value={segment.selfLabel}
-              onChange={selfLabel => update({ selfLabel })}
-              disabled={disabled}
-            />
+            <div
+              className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-right"]} ${ui["toolbar-wrap"]} ${ui["toolbar-auto-width"]}`}
+            >
+              <button
+                type="button"
+                className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
+                aria-label="スレッドに追加"
+                title="スレッドに追加"
+                disabled={disabled || !canAddSegment}
+                onClick={onAddSegment}
+              >
+                <img
+                  src={plusIcon.src}
+                  width={18}
+                  height={18}
+                  style={{
+                    width: "var(--size-icon-button)",
+                    height: "var(--size-icon-button)",
+                  }}
+                  alt=""
+                />
+              </button>
+              <LanguageSelect
+                id={`thread-segment-${index}-language`}
+                value={segment.languageCode}
+                onChange={languageCode => update({ languageCode })}
+                disabled={disabled}
+                autoWidth
+              />
+            </div>
           </div>
           <div>
             <OgpPreview ogpFetch={ogpFetch} />
@@ -380,50 +416,52 @@ const Component: React.FC<Props> = ({
           </div>
         </div>
 
-        <div
-          hidden={isActive}
-          data-testid="segment-summary"
-          className={styles.body}
-          role="button"
-          tabIndex={0}
-          onClick={onActivate}
-          onKeyDown={e => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault()
-              onActivate()
-            }
-          }}
-        >
-          <div className={styles.summary}>
-            {segment.imageEntry && (
-              <img
-                className={styles["summary-thumbnail"]}
-                data-testid="segment-thumbnail"
-                src={segment.imageEntry.thumbnailPreview}
-                alt=""
-                aria-hidden
-              />
-            )}
-            <span
-              className={`${styles["summary-text"]} ${!segment.text ? styles["summary-placeholder"] : ""}`}
-            >
-              {segment.text ? summarizeText(segment.text) : "（本文未入力）"}
-            </span>
-            {canRemove && (
-              <button
-                type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["remove-button"]}`}
-                disabled={disabled}
-                aria-label="このセグメントを削除"
-                onClick={e => {
-                  e.stopPropagation()
-                  revokeImageEntry(segment.imageEntry)
-                  onRemove()
-                }}
+        <div hidden={isActive} className={styles.row}>
+          {avatarCol}
+          <div
+            data-testid="segment-summary"
+            className={styles.body}
+            role="button"
+            tabIndex={0}
+            onClick={onActivate}
+            onKeyDown={e => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                onActivate()
+              }
+            }}
+          >
+            <div className={styles.summary}>
+              {segment.imageEntry && (
+                <img
+                  className={styles["summary-thumbnail"]}
+                  data-testid="segment-thumbnail"
+                  src={segment.imageEntry.thumbnailPreview}
+                  alt=""
+                  aria-hidden
+                />
+              )}
+              <span
+                className={`${styles["summary-text"]} ${!segment.text ? styles["summary-placeholder"] : ""}`}
               >
-                削除
-              </button>
-            )}
+                {segment.text ? summarizeText(segment.text) : "（本文未入力）"}
+              </span>
+              {canRemove && (
+                <button
+                  type="button"
+                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["remove-button"]}`}
+                  disabled={disabled}
+                  aria-label="このセグメントを削除"
+                  onClick={e => {
+                    e.stopPropagation()
+                    revokeImageEntry(segment.imageEntry)
+                    onRemove()
+                  }}
+                >
+                  削除
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </>

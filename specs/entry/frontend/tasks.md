@@ -22,8 +22,8 @@
 - [x] `PostEngagementStats`の表示範囲（`source`投稿1件分）を実装する。
 - [x] `[TEST]` `author.did`一致抽出ロジック（直線的chainの抽出、第三者返信・分岐先の除外、`MAX_THREAD_POST_COUNT`上限）・1件時のフォールバック分岐の単体テストを追加する（`tests/lib/atproto/threadChain.test.ts`、entry/backend Phase2で追加済みのものを共用）。
 - [x] `[TEST]` Playwrightで以下のシナリオを検証する（`tests/e2e/entryThreadDetail.spec.ts`、新規）:
-  - 後続投稿を持つスレッド由来entryの詳細ページを開く → 先頭から後続投稿まで時系列順にすべて表示されることを確認（実PDSレコード・ログインへの依存を避けるため、新設の`entries/sample-thread.astro`サンプルページで`EntryThreadView`のレンダリングを検証。実アカウントでの`[slug].astro`本体の確認は手動確認タスクとして残す）
-  - 単発投稿由来entryの詳細ページを開く → 従来通り単一投稿として表示されることを確認（既存`entries/sample.astro`で確認）
+  - 後続投稿を持つスレッド由来entryの詳細ページを開く → 先頭から後続投稿まで時系列順にすべて表示されることを確認（実PDSレコード・ログインへの依存を避けるため、`entries/sample.astro`サンプルページで`EntryDetailView`のレンダリングを検証。実アカウントでの`[slug].astro`本体の確認は手動確認タスクとして残す）
+  - 単発投稿由来entryの詳細ページを開く → 従来通り単一投稿として表示されることを確認
 
 ## Phase 3: entry削除時のスレッド全体削除オプション（design.md §3.4対応）
 
@@ -49,7 +49,7 @@
 
 - [x] `npm run codegen`実行後の型（トップレベル`createEntry`/`visual`/`skyshareEntry`、`deleteBskyThread`）にフロントエンドの実装を追従させる（`npx tsc --noEmit`エラーゼロを確認済み）。
 - [ ] 手動確認: 実アカウントで画像投稿segmentが2件以上のスレッドを投稿し、選択したsegmentの画像がvisualとして使われ、entryが1件のみ作成されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。
-- [ ] 手動確認: 実アカウントでスレッド由来entryの詳細ページ・削除確認UI・視覚的区別が期待通り表示されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。サンプルページ（`entries/sample-thread.astro`）・ゲスト表示（`/entries/?guest`）でのレンダリング自体はPlaywrightで確認済み。
+- [ ] 手動確認: 実アカウントでスレッド由来entryの詳細ページ・削除確認UI・視覚的区別が期待通り表示されることを確認する（要ログイン、次回セッション以降または利用者による確認が必要）。サンプルページ（`entries/sample.astro`）・ゲスト表示（`/entries/?guest`）でのレンダリング自体はPlaywrightで確認済み。
 - [x] 既存の単発投稿フロー（`ImagePicker`、entry詳細ページ）に regression が無いことを確認した（`npx vitest run`556件・`npx playwright test`全件成功、`entries/sample.astro`のフォールバック表示も確認済み）。
 
 ## Phase 6: スレッド全体削除の最終警告ダイアログ追加（design.md §3.4改訂対応）

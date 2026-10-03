@@ -1,5 +1,5 @@
-import type { ChangeEvent } from "react"
-import ui from "@/styles/ui.module.css"
+import { useMemo } from "react"
+import Dropdown from "@/components/common/Dropdown"
 import styles from "./index.module.css"
 
 /**
@@ -22,21 +22,20 @@ export type PageSizeSelectProps = {
   disabled?: boolean
   className?: string
   id?: string
-  name?: string
   ariaLabel?: string
 }
 
 /**
- * 表示件数選択用 `<select>` を描画する。
+ * 表示件数選択用プルダウンを描画する。
  *
  * Input:
  * - `value`: 現在選択中の件数
  * - `onChange`: 選択変更時に呼ぶコールバック
  * - `options`: 選択肢一覧（未指定時は `DEFAULT_PAGE_SIZE_OPTIONS`）
- * - `disabled`/`className`/`id`/`name`/`ariaLabel`: 表示・属性制御
+ * - `disabled`/`className`/`id`/`ariaLabel`: 表示・属性制御
  *
  * Output:
- * - 件数候補を持つ `<select>` 要素
+ * - 件数候補を持つ `Dropdown`
  *
  * 例:
  * - 入力: `{ value: 20, onChange: fn }`
@@ -49,38 +48,30 @@ export const Component = ({
   disabled = false,
   className,
   id = "page-size",
-  name = "pageSize",
   ariaLabel = "表示件数",
 }: PageSizeSelectProps) => {
-  const selectClassName = className
-    ? `${ui["base-select"]} ${styles.select} ${className}`
-    : `${ui["base-select"]} ${styles.select}`
+  const dropdownOptions = useMemo(
+    () => options.map(size => ({ value: String(size), label: `${size}件` })),
+    [options],
+  )
 
-  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const next = Number(event.target.value)
-    if (!Number.isNaN(next)) {
-      onChange(next)
+  const handleChange = (next: string) => {
+    const size = Number(next)
+    if (!Number.isNaN(size)) {
+      onChange(size)
     }
   }
 
   return (
-    <span className={ui["select-wrapper"]}>
-      <select
-        id={id}
-        name={name}
-        className={selectClassName}
-        value={value}
-        onChange={handleChange}
-        disabled={disabled}
-        aria-label={ariaLabel}
-      >
-        {options.map(option => (
-          <option key={option} value={option}>
-            {`${option}件`}
-          </option>
-        ))}
-      </select>
-    </span>
+    <Dropdown
+      id={id}
+      value={String(value)}
+      options={dropdownOptions}
+      onChange={handleChange}
+      disabled={disabled}
+      ariaLabel={ariaLabel}
+      className={className ? `${styles.select} ${className}` : styles.select}
+    />
   )
 }
 

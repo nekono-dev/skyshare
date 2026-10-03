@@ -27,6 +27,9 @@
 ### 2.3 entry詳細ページ
 
 - `entries/[slug].astro`（SSR、`prerender = false`）が、slugからentryレコードを`getRecord`で取得し、`source.uri`（単一のBluesky投稿）を`agent.getPosts`で1件取得して、`EntryDetailView`（[src/components/entry/EntryDetailView/index.astro](../../../src/components/entry/EntryDetailView/index.astro)）に渡す。
+
+> **注記**: Entry詳細ページの表示構成（`EntryDetailView`・`EntryThreadView`・`PostEngagementStats`の扱い）は [specs/postcardlayout/design.md](../../postcardlayout/design.md) §3.5 に置き換えられた。以下は置き換え前の記述である。
+
 - `EntryDetailView`は、1つの`sourceWebUrl`・1つの`sourceText`（未使用）・`sourceImages`配列（1投稿分の画像）・`PostEngagementStats`を描画する。スレッド表示の仕組みは持たない。
 
 ## 3. スレッド投稿時の設計方針

@@ -170,16 +170,6 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
       <div className={styles["main-column"]}>
         <div className={styles["header-row"]}>
           <p className={styles["created-at"]}>{createdAtText}</p>
-          {entryPath ? (
-            <a
-              className={styles["entry-link"]}
-              href={entryPath}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Entryを開く
-            </a>
-          ) : null}
         </div>
         {item.caption ? (
           <p className={styles.caption}>{item.caption}</p>
@@ -208,6 +198,16 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
           >
             削除
           </button>
+          {entryPath ? (
+            <a
+              className={styles["entry-link"]}
+              href={entryPath}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Entryを開く
+            </a>
+          ) : null}
         </div>
 
         {deleteError ? (

@@ -1,0 +1,118 @@
+/**
+ * ImageLightbox のスタイル定義。
+ *
+ * 設計方針:
+ * - Overlay の .content（カード枠・幅上限）を、単一クラスの重ね書きで全画面用に打ち消す。
+ */
+.lightbox-backdrop.lightbox-backdrop {
+  background: rgb(0 0 0 / 90%);
+}
+
+.lightbox-content.lightbox-content {
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  overflow: hidden;
+  color: #fff;
+}
+
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.close-button,
+.nav-button {
+  position: absolute;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: var(--font-size-2xl);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close-button {
+  top: var(--space-2);
+  right: var(--space-2);
+}
+
+.nav-button {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.nav-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.nav-prev {
+  left: var(--space-2);
+}
+
+.nav-next {
+  right: var(--space-2);
+}
+
+.image-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+/* 現在・前・次の画像を横に並べるスライド。transform の遷移が切り替えのスワイプアニメーションになる */
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease-out;
+  /* 余白のクリックを領域側で受けて背景クリック扱いにするため、画像以外は透過する */
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+}
+
+.image {
+  max-width: 100vw;
+  max-height: calc(100dvh - 7rem);
+  object-fit: contain;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.caption {
+  min-height: 5rem;
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
+  font-size: var(--font-size-sm);
+}
+
+.alt,
+.position {
+  margin: 0;
+}
+
+.position {
+  color: rgb(255 255 255 / 70%);
+}

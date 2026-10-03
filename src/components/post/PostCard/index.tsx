@@ -2,17 +2,15 @@
  * 1件の Bluesky 投稿を表示するカード。
  *
  * 責務と処理概要:
- * - 投稿本文、作者情報、画像サムネイルを 1 枚のカードにまとめて描画する。
- * - `skyshareEntry` が付与されている場合はその view 画像を優先表示し、Entry ページへのリンクを出す。
+ * - 投稿の表示部（作者・日時・本文・画像）は `PostBody` に委譲し、ツールバーをその下に配置する。
+ * - `skyshareEntry` が付与されている場合は元画像の代わりにその visual を1枚、拡大なしで表示し、
+ *   Entry ページへのリンクを出す。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
- * - サムネイルはカード右側・author/本文の高さいっぱいに配置し、ツールバーには被らないよう
- *   ツールバーはその下に独立した行として配置する。複数画像がある場合は縦に分割して並べる。
  * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
  *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
  */
 
 import { useState } from "react"
-import Avatar from "@/components/common/Avatar"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import type { TimelinePost } from "@/lib/entry/posts"
@@ -28,7 +26,9 @@ import SkyshareShareDialog from "@/components/post/SkyshareShareDialog"
 import EntryDeleteConfirmDialog from "@/components/entry/EntryDeleteConfirmDialog"
 import blueskyIcon from "@/images/bluesky.svg"
 import shareIcon from "@/images/share.svg"
-import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
+import PostBody from "@/components/post/PostBody"
+import { TARGET_WIDTH, TARGET_HEIGHT } from "@/lib/image/postImageProcessing"
+import type { SourceImage } from "@/lib/entry/entry"
 
 type PostCardProps = {
   item: TimelinePost
@@ -121,11 +121,6 @@ const Component = ({
     guestMode,
   })
 
-  const createdAtText = new Date(item.indexedAt).toLocaleString("ja-JP", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })
-
   const activeEntry =
     display.kind === "entry" || display.kind === "deleting"
       ? display.entry
@@ -153,14 +148,21 @@ const Component = ({
     : parsedEntryUri
       ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
       : undefined
-  // サムネイルは skyshare の view 画像を優先する。無い場合、複数画像投稿は全画像を縦に分割して表示する。
-  // entry が無い場合は先頭 VISUAL_IMAGE_COUNT 枚のみ表示し、残りは「+N」で示す。
-  const thumbnailImages = activeEntry?.visualUrl
-    ? [activeEntry.visualUrl]
-    : item.images.slice(0, VISUAL_IMAGE_COUNT).map(image => image.url)
-  const thumbnailMoreCount = activeEntry?.visualUrl
-    ? 0
-    : Math.max(0, item.images.length - VISUAL_IMAGE_COUNT)
+  // Entry を持つ投稿（スレッドのルート投稿・単独投稿）は元画像の代わりに visual を1枚、
+  // 拡大なしで表示する。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
+  // visual は OGP 仕様（1200x630）で生成されるため、その比率を指定して全体を表示する（クロップしない）。
+  const entryVisualImages: SourceImage[] | undefined = activeEntry?.visualUrl
+    ? [
+        {
+          url: activeEntry.visualUrl,
+          alt: "",
+          cid: activeEntry.visualUrl,
+          aspectRatio: { width: TARGET_WIDTH, height: TARGET_HEIGHT },
+        },
+      ]
+    : undefined
+  const galleryImages = entryVisualImages ?? item.images
+  const imagesInteractive = entryVisualImages === undefined
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
   // ただしスレッドの中間投稿（`threadReply`）はグレーアウトしない。
   // この判定は投稿自身の適格性のみに基づくため、postCreateEntryButtonによる
@@ -179,47 +181,13 @@ const Component = ({
     <article
       className={`${ui["base-card"]} ${styles.card} ${isSkyshareIneligible ? ui["card-muted"] : ""}`}
     >
-      <div className={styles["top-row"]}>
-        <div className={styles["content-column"]}>
-          <div className={styles["author-block"]}>
-            <Avatar
-              src={item.author.avatar}
-              alt={item.author.displayName ?? item.author.handle}
-              size="md"
-            />
-
-            <div className={styles["author-meta"]}>
-              <div className={styles["author-name-row"]}>
-                {item.author.displayName !== "" && (
-                  <strong>{item.author.displayName}</strong>
-                )}
-                <span className={styles.handle}>@{item.author.handle}</span>
-              </div>
-              <p className={styles["created-at"]}>{createdAtText}</p>
-            </div>
-          </div>
-
-          {item.text ? <p className={styles.text}>{item.text}</p> : null}
-        </div>
-
-        {thumbnailImages.length > 0 ? (
-          <div className={styles.thumbnail}>
-            {thumbnailImages.map((url, index) => (
-              <div
-                key={`${url}-${index}`}
-                className={styles["thumbnail-slice"]}
-              >
-                <img src={url} alt="" loading="lazy" decoding="async" />
-              </div>
-            ))}
-            {thumbnailMoreCount > 0 ? (
-              <span className={styles["thumbnail-more"]}>
-                +{thumbnailMoreCount}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
+      <PostBody
+        author={item.author}
+        createdAt={item.indexedAt}
+        text={item.text}
+        images={galleryImages}
+        imagesInteractive={imagesInteractive}
+      />
 
       <footer
         className={`${styles.footer} ${ui["toolbar"]} ${ui["toolbar-align"]}`}

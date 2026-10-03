@@ -63,6 +63,15 @@
   --btn-padding-y: calc(var(--space-1));
 }
 
+/* スマホ幅(640px未満)は操作領域を一辺44px以上確保する(specs/mobilescale/design.md参照)。
+   上のブロックより後ろに書くことで上書きを有効にする。 */
+@media (max-width: 639px) {
+  :root {
+    --size-button-md: 44px;
+    --size-button-lg: 64px;
+  }
+}
+
 /* グレーボタンの文字色はダークモードでは --color-black 固定だと背景（--color-gray）に
    埋もれて読めなくなるため、テーマに追従する --color-text に差し替える */
 @media (prefers-color-scheme: dark) {

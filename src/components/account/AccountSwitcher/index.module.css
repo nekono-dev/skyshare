@@ -36,7 +36,7 @@
 .active-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.05rem var(--space-1);
+  padding: var(--space-0) var(--space-1);
   border-radius: var(--radius-pill);
   background: var(--color-success-bg);
   color: var(--color-success-text);
@@ -48,7 +48,7 @@
 .reauth-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.05rem var(--space-1);
+  padding: var(--space-0) var(--space-1);
   border-radius: var(--radius-pill);
   background: var(--color-danger-bg);
   color: var(--color-danger-text);

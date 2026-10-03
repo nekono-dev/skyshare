@@ -22,7 +22,15 @@
   gap: var(--space-3);
 }
 
+/* 右端の操作部(プルダウン・トグル)は内容幅を保ち、縮むのは説明文側だけにする。
+   縮めると操作部の中身がカードからはみ出して切れる。 */
+.toggle-row > :last-child {
+  flex: 0 0 auto;
+}
+
 .text {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);

@@ -54,6 +54,11 @@ test.describe("ThreadComposer", () => {
         page,
     }) => {
         await page.goto("/post/?guest")
+        // 全Astroアイランドのハイドレーション完了を待つ（完了すると`ssr`属性が外れる）。
+        // 完了前に本文を入力すると、ハイドレーションで入力内容が失われる。
+        await page.waitForFunction(
+            () => document.querySelector("astro-island[ssr]") === null,
+        )
 
         const segment0 = page.getByTestId("thread-segment-0")
         await expect(segment0).toBeVisible()

@@ -1,12 +1,33 @@
+/* segment全体は縦積み。先頭行(.row: アバター＋本文)の下に、ツールボックス類を
+   アバター列の下まで含めた全幅で置く。 */
 .segment {
   display: flex;
-  gap: var(--space-2);
+  flex-direction: column;
   position: relative;
   padding: 0 var(--space-1);
 }
 
+.row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* display指定が hidden 属性（UAスタイルのdisplay:none）を打ち消さないようにする */
+.row[hidden],
+.editor-area[hidden] {
+  display: none;
+}
+
+/* 編集表示のブロック全体(先頭行＋全幅ツールボックス)。ドラッグ&ドロップ対象。 */
+.editor-area {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+}
+
 .avatar-col {
-  flex: 0 0 48px;
+  flex: 0 0 var(--size-avatar-md);
   display: flex;
   flex-direction: column;
   align-items: center;

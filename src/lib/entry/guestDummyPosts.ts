@@ -32,7 +32,7 @@ const placeholderImage = (bg: string, label: string): string => {
     return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
 
-// sample.astro/sample-orphaned.astroのOGP画像（og:image/twitter:image）用パス。
+// sample.astroのOGP画像（og:image/twitter:image）用パス。
 // data URI SVGはOGP取得ツールが画像として解釈できずリンクカードが表示されないため、
 // `placeholderImage`と同内容をPNG化して`public/materials/`に配置したものを使う。
 const SAMPLE_OG_IMAGE_PATH = "/materials/sample-og.png"
@@ -40,13 +40,12 @@ const SAMPLE_ORPHANED_OG_IMAGE_PATH = "/materials/sample-orphaned-og.png"
 
 /**
  * ゲストモードの「Entryを開く」から実際に遷移できるサンプルEntry詳細ページ
- * （`src/pages/entries/sample.astro`/`sample-orphaned.astro`）へのパス。
+ * （`src/pages/entries/sample.astro`）へのパス。
  * バックエンドの実レコードに依存しない静的ページのため、ダミーEntryのAT URIから
  * 通常経路で算出されるパス（存在しないレコードを指してしまう）の代わりにこちらを使う。
- * 元投稿の有無（orphaned）はクエリパラメータではなく専用ページで表す。
+ * orphanedなダミーEntryも同じページへ遷移させる（サンプルページは1枚に集約している）。
  */
 export const GUEST_SAMPLE_ENTRY_PATH = `${import.meta.env.SITE}/entries/sample/`
-export const GUEST_SAMPLE_ENTRY_ORPHANED_PATH = `${import.meta.env.SITE}/entries/sample-orphaned/`
 
 // SSR/CSRで同じHTMLになる必要があるため（Reactのhydration mismatch回避）、
 // `Date.now()` 等の実行タイミング依存の値ではなく固定値を使う。
@@ -113,7 +112,7 @@ export const GUEST_DUMMY_POSTS: TimelinePost[] = [
             },
         ],
     },
-    // 画像6枚の投稿（entry未作成）。カードには先頭4枚のサムネイルと「+2」が表示され、
+    // 画像6枚の投稿（entry未作成）。カードには全6枚が横スクロールのサムネイルで表示され、
     // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/multiimage FR-3・FR-5）。
     {
         uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-multi-image",
@@ -125,7 +124,7 @@ export const GUEST_DUMMY_POSTS: TimelinePost[] = [
             handle: "guest.demo",
             displayName: "ゲストユーザー",
         },
-        text: "画像を6枚添付した投稿の表示です。（サムネイルは先頭4枚＋残り枚数）",
+        text: "画像を6枚添付した投稿の表示です。（全画像が横スクロールのサムネイルで並ぶ）",
         images: [
             "#ef4444",
             "#f59e0b",
@@ -508,7 +507,7 @@ export const GUEST_DUMMY_ENTRIES: TimelineSkyshareEntry[] = [
         caption:
             "紐づくBluesky投稿が削除された状態のサンプルです。Skyshare Entryが削除されない限りはURL参照可能です。",
         visualUrl: SAMPLE_ORPHANED_OG_IMAGE_PATH,
-        webUrl: GUEST_SAMPLE_ENTRY_ORPHANED_PATH,
+        webUrl: GUEST_SAMPLE_ENTRY_PATH,
         orphaned: true,
     },
 ]

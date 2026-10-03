@@ -6,5 +6,5 @@
 .create-entry-error {
   margin: 0;
   color: var(--color-danger-text);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }

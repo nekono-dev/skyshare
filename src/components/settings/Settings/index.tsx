@@ -326,7 +326,6 @@ export const Settings = () => {
     {
       key: "themeMode",
       label: "表示テーマ",
-      description: "サイト全体の配色（ライト/ダーク）を切り替えます。",
       control: "select",
       selectValue: themeMode,
       onSelectChange: onThemeModeChange,

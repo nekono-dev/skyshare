@@ -1,6 +1,7 @@
 import React from "react"
 import ComponentList from "@/components/common/ComponentList"
 import FloatingBox from "@/components/common/FloatingBox"
+import ListboxOption from "@/components/common/ListboxOption"
 import Avatar from "@/components/common/Avatar"
 import InlineIcon from "@/components/common/InlineIcon"
 import type { SuggestCandidate } from "@/components/post/ThreadComposer/useSuggest"
@@ -13,8 +14,8 @@ import styles from "./index.module.css"
  * - 状態は一切持たないプレゼンテーショナルコンポーネント。開閉・候補内容・ハイライト位置は
  *   すべて `src/components/post/ThreadComposer/useSuggest.ts` が管理する。
  * - フローティング表示（ポータル・位置決め・常に最前面・スクロール/リサイズでの消去）は
- *   共通コンポーネント `FloatingBox` に委譲し、候補の反復描画は共通コンポーネント
- *   `ComponentList` に委譲する。
+ *   共通コンポーネント `FloatingBox` に、候補1行の見た目とハイライト・mousedown確定は
+ *   `ListboxOption` に、候補の反復描画は `ComponentList` にそれぞれ委譲する。
  */
 
 type Props = {
@@ -55,19 +56,12 @@ const CandidateOptionRow: React.FC<CandidateOptionRowProps> = ({
   onHoverIndex,
   onSelect,
 }) => (
-  <div
+  <ListboxOption
     id={`${listboxId}-option-${index}`}
-    role="option"
-    aria-selected={isActive}
-    className={`${styles.option} ${isActive ? styles["option-active"] : ""}`}
-    onMouseEnter={() => onHoverIndex(index)}
-    onMouseDown={e => {
-      // mousedownはblurより先に発火するため、preventDefault()しておけばtextareaの
-      // フォーカス・選択範囲を失わずに候補を確定できる
-      // （onClickだと先にblurが走り、確定処理側で正しいカーソル位置が取れなくなる）。
-      e.preventDefault()
-      onSelect(index)
-    }}
+    isActive={isActive}
+    onHover={() => onHoverIndex(index)}
+    // mousedownで確定するのはListboxOption側の責務（textareaのフォーカスを維持するため）
+    onSelect={() => onSelect(index)}
   >
     {candidate.kind === "mention" ? (
       <>
@@ -90,7 +84,7 @@ const CandidateOptionRow: React.FC<CandidateOptionRowProps> = ({
         )}
       </span>
     )}
-  </div>
+  </ListboxOption>
 )
 
 /**

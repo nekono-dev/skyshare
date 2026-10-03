@@ -1,0 +1,102 @@
+/* トリガー: <select> と同じ外観（base-select）に、ボタンとしての最小限の調整のみ加える */
+.trigger {
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger::placeholder {
+  color: var(--color-muted);
+}
+
+.trigger:focus-visible {
+  border-color: var(--color-muted);
+}
+
+/*
+ * パネル。トリガーと同じ外枠（.select-wrapper）の中に absolute で置く。座標はJSで持たず、
+ * スクロール・ソフトウェアキーボードへの追従はブラウザ任せにする。
+ * 向きは data-vertical / data-horizontal（開いたときに一度だけ決める）で切り替える。
+ */
+.panel {
+  position: absolute;
+  /*
+   * PostFormはPostLauncherのモーダル(Overlay, z-index: var(--overlay-z)=60)内にも
+   * 直接(page変体)にも描画される。FooterNav(50)・PostLauncherのFAB(55)・Overlay(60)より上、
+   * Loading(70, 全画面ローディング)より下に固定する。
+   */
+  z-index: calc(var(--overlay-z, 60) + 5);
+  box-sizing: border-box;
+  /* 幅は .sizer（全選択肢のうち最も広いもの）で決まる。トリガーより狭くしない */
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+  max-width: min(24rem, calc(100vw - 16px));
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.panel[data-vertical="bottom"] {
+  top: calc(100% + 4px);
+}
+
+/* 上向きは下端基準。絞り込みで一覧が縮んでもトリガーとの間隔が変わらない */
+.panel[data-vertical="top"] {
+  bottom: calc(100% + 4px);
+}
+
+.panel[data-horizontal="right"] {
+  right: 0;
+}
+
+.panel[data-horizontal="left"] {
+  left: 0;
+}
+
+/* 全選択肢の幅を確保するための不可視要素。list と同じグリッドセルに重ねる */
+.sizer,
+.list {
+  grid-area: 1 / 1;
+}
+
+.sizer {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 一覧の行と同じ余白・太字（選択中）で測る。縦スクロールバー分の余白も足す */
+.sizer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) calc(var(--space-2) + 16px) var(--space-1)
+    var(--space-2);
+  font-weight: 600;
+}
+
+/* スクロール領域。offsetTopの基準にするためpositionを持つ */
+.list {
+  position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* 長いラベルは省略表示にし、行の高さを崩さない */
+.option-body {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}

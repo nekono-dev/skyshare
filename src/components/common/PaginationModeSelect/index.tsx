@@ -1,6 +1,5 @@
-import type { ChangeEvent } from "react"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
-import ui from "@/styles/ui.module.css"
+import Dropdown from "@/components/common/Dropdown"
 import styles from "./index.module.css"
 
 /**
@@ -14,10 +13,10 @@ import styles from "./index.module.css"
  *   親コンポーネントが決める。
  */
 
-const MODE_LABELS: Record<PaginationMode, string> = {
-  infinite: "自動読み込み",
-  paged: "ページ送り",
-}
+const MODE_OPTIONS: { value: PaginationMode; label: string }[] = [
+  { value: "infinite", label: "自動読み込み" },
+  { value: "paged", label: "ページ送り" },
+]
 
 export type PaginationModeSelectProps = {
   value: PaginationMode
@@ -25,20 +24,19 @@ export type PaginationModeSelectProps = {
   disabled?: boolean
   className?: string
   id?: string
-  name?: string
   ariaLabel?: string
 }
 
 /**
- * ページネーション方式選択用 `<select>` を描画する。
+ * ページネーション方式選択用プルダウンを描画する。
  *
  * Input:
  * - `value`: 現在選択中の方式
  * - `onChange`: 選択変更時に呼ぶコールバック
- * - `disabled`/`className`/`id`/`name`/`ariaLabel`: 表示・属性制御
+ * - `disabled`/`className`/`id`/`ariaLabel`: 表示・属性制御
  *
  * Output:
- * - 方式候補を持つ `<select>` 要素
+ * - 方式候補を持つ `Dropdown`
  *
  * 例:
  * - 入力: `{ value: "paged", onChange: fn }`
@@ -50,40 +48,24 @@ export const Component = ({
   disabled = false,
   className,
   id = "pagination-mode",
-  name = "paginationMode",
   ariaLabel = "ページネーション方式",
 }: PaginationModeSelectProps) => {
-  const selectClassName = className
-    ? `${ui["base-select"]} ${styles.select} ${className}`
-    : `${ui["base-select"]} ${styles.select}`
-
-  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const next = event.target.value
+  const handleChange = (next: string) => {
     if (next === "paged" || next === "infinite") {
       onChange(next)
     }
   }
 
   return (
-    <span className={ui["select-wrapper"]}>
-      <select
-        id={id}
-        name={name}
-        className={selectClassName}
-        value={value}
-        onChange={handleChange}
-        disabled={disabled}
-        aria-label={ariaLabel}
-      >
-        {(Object.entries(MODE_LABELS) as [PaginationMode, string][]).map(
-          ([mode, label]) => (
-            <option key={mode} value={mode}>
-              {label}
-            </option>
-          ),
-        )}
-      </select>
-    </span>
+    <Dropdown
+      id={id}
+      value={value}
+      options={MODE_OPTIONS}
+      onChange={handleChange}
+      disabled={disabled}
+      ariaLabel={ariaLabel}
+      className={className ? `${styles.select} ${className}` : styles.select}
+    />
   )
 }
 

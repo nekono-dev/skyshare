@@ -50,6 +50,16 @@
      --size-button-* とは別に、アイコン画像そのもののサイズを規定する)。 */
   --size-icon-sm: 20px;
   --size-icon-md: 24px;
+  /* ボタン内・文中に置くアイコン画像(InlineIcon、画像追加ボタン等)の一辺。 */
+  --size-icon-inline: 18px;
+  /* 画像追加ボタンなど、ボタンの中身として置くアイコン画像の一辺。文中アイコン
+     (--size-icon-inline)とは別に、スマホ幅でのみ拡大する。 */
+  --size-icon-button: 18px;
+
+  /* ToggleSwitch のトラック幅・高さ・ノブ径。 */
+  --size-toggle-width: 2rem; /* 32px */
+  --size-toggle-height: 1.125rem; /* 18px */
+  --size-toggle-knob: 0.875rem; /* 14px */
 
   --color-bluesky: hsl(209, 100%, 50%);
   --color-bluesky-hover: hsl(209, 100%, 40%);
@@ -125,10 +135,47 @@
   --font-size-3xl: 1.875rem; /* 30px */
   --font-size-4xl: 2.25rem; /* 36px */
 
+  /* 本文入力フォーム(投稿文章)の文字サイズ。スマホ幅では入力が主操作のため一段上げる。 */
+  --font-size-input: var(--font-size-md);
+
   /* Line-height tokens (recommended with font sizes) */
   --line-height-tight: 1.2;
   --line-height-normal: 1.4;
   --line-height-loose: 1.6;
+}
+
+/*
+  スマホ幅（640px未満。FooterNav/Sidebarの切替境界と同じ）のみ、フォント・余白・
+  ボタン・アイコン・トグルの各トークンを一段大きな値に上書きする。
+  各コンポーネントは var() 参照のため個別編集なしで追従する。値の根拠は
+  specs/mobilescale/design.md 参照。色・横幅・アバター寸法は対象外。
+  ボタン寸法(--size-button-*)は定義側の button.ui.module.css で上書きする
+  （import順で後勝ちになるため、こちらに書くと打ち消される）。
+*/
+@media (max-width: 639px) {
+  :root {
+    --space-0: 0.1875rem; /* 3px */
+    --space-1: 0.375rem; /* 6px */
+    --space-2: 0.625rem; /* 10px */
+    --space-3: 1rem; /* 16px */
+    --space-4: 1.25rem; /* 20px */
+    --space-5: 1.75rem; /* 28px */
+    --space-6: 2.25rem; /* 36px */
+
+    --font-size-xs: 0.875rem; /* 14px */
+    --font-size-sm: 1rem; /* 16px */
+    --font-size-md: 1.125rem; /* 18px */
+    --font-size-lg: 1.25rem; /* 20px */
+    --font-size-xl: 1.375rem; /* 22px */
+    --font-size-2xl: 1.625rem; /* 26px */
+
+    --size-icon-button: 26px;
+    --font-size-input: var(--font-size-lg);
+
+    --size-toggle-width: 3rem; /* 48px */
+    --size-toggle-height: 1.625rem; /* 26px */
+    --size-toggle-knob: 1.25rem; /* 20px */
+  }
 }
 
 /*

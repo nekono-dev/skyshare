@@ -41,7 +41,7 @@
   gap: var(--space-2);
   align-items: center;
   border-radius: var(--radius-md);
-  padding: 2px var(--space-2);
+  padding: var(--space-0) var(--space-2);
   background: color-mix(in srgb, var(--color-card-bg) 85%, #ffffff 15%);
   opacity: 0.92;
   color: var(--color-muted);

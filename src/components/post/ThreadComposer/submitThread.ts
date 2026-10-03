@@ -25,6 +25,7 @@ import { createEntry } from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
 import { detectFacetsForSubmission } from "@/lib/atproto/richtext"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
+import { waitForImageLoad } from "@/util/waitForImageLoad"
 import type { SegmentState } from "./segments"
 
 export type SubmitThreadParams = {
@@ -234,6 +235,8 @@ export const submitThread = async (
             }
         }
         await warmOgpCache(skyshareEntry.uri)
+        // 詳細ページのView画像がCDNで配信可能になるまで待機アニメーションを延長する
+        await waitForImageLoad(skyshareEntry.visualUrl ?? "")
     }
 
     return {

@@ -457,3 +457,5 @@ export const findEntryCarrier = (group: ThreadGroup): TimelinePost | null => {
 ### 7.4 `ThreadCard`側の一覧除去（4節に統合済み）
 
 4節の通り、常に`group.rootPost.uri`一致で除去する。旧実装のentryが付いた返信カード（`replies`側の`PostCard`）で「リンク・Bluesky投稿を削除」は無効化されているため、返信カードからBluesky投稿が削除されて一覧の除去範囲とずれることはない。
+
+> **注記**: `PostCard` の画像表示（右側サムネイル、Entry を持つ投稿は visual 1枚・拡大なし、持たない投稿は拡大可能なサムネイル）は [specs/postcardlayout/design.md](../postcardlayout/design.md) §3.4 に従う。
