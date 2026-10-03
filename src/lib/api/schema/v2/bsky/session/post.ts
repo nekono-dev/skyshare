@@ -33,6 +33,7 @@ export const operation: ZodOpenApiOperationObject = {
             description: "Success",
             headers: ResponseHeaders200Schema,
         },
-        ...Common.errorResponses(["400", "401", "429", "500"]),
+        // 409: 連携できるアカウント数の上限に達している
+        ...Common.errorResponses(["400", "401", "409", "429", "500"]),
     },
 }

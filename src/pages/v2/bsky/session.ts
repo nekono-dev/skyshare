@@ -39,22 +39,6 @@ import { atpService } from "@/env.js"
  */
 
 /**
- * 汎用のエラーレスポンスを生成する（`errorResponseFromStatus` では表現できない具体的な文言用）。
- *
- * Input:
- * - `status`: HTTP ステータス
- * - `message`: エラーメッセージ
- *
- * Output:
- * - `{ error: message }` を持つ `Response`
- */
-const errorResponse = (status: number, message: string): Response =>
-    new Response(JSON.stringify({ error: message }), {
-        status,
-        headers: { "content-type": "application/json" },
-    })
-
-/**
  * アカウントの表示用メタデータ(displayName/avatarUrl)を取得する。
  *
  * 処理の趣旨:
@@ -216,10 +200,9 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             currentSession.did !== session.did
         ) {
             if (pool.length >= MAX_POOLED_ACCOUNTS) {
-                return errorResponse(
-                    400,
-                    "連携できるアカウント数の上限に達しています。先に他のアカウントをログアウトしてください。",
-                )
+                // アカウント数の上限到達。利用者向けの文言はサーバーでは返さず、
+                // 状態の競合を表す 409 をクライアントが表示言語の文言へ対応づける。
+                return errorResponseFromStatus(409)
             }
             pool = upsertPooledAccount(
                 pool,
