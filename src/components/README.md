@@ -28,3 +28,7 @@ graph TD
 
 - `post` と `entry` は相互参照している(`PostCard` が `EntryDeleteConfirmDialog` を、`DraftListPanel` が `SelfLabelsSelect` の定数を、`EntryDetailView` が `PostBody` をそれぞれ参照)。カテゴリ間循環にはなっているが、いずれもUIパーツの再利用であり実装上の問題はない。
 - `layout` は他カテゴリに依存しない独立したカテゴリ。
+
+## 文言の多言語対応
+
+コンポーネントに日本語・英語の文言を直書きしない。文言は `src/lib/i18n/messages/` の辞書に定義し、React では `useT()`、`.astro` では `createTranslator(Astro.locals.locale)` で取得する。直書きは `tests/lib/i18n/noHardcodedText.test.ts` が検出する。手順の詳細は `DEVELOP.md` の「多言語対応（i18n）」を参照。
