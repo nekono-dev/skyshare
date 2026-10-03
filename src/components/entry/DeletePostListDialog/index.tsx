@@ -89,7 +89,7 @@ export const Component: React.FC<Props> = ({
             <ComponentList
               items={posts}
               itemComponent={DeletePostListItem}
-              getItemKey={(post) => post.uri}
+              getItemKey={post => post.uri}
             />
           </div>
         </div>

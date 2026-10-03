@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
     canUsePostImageAsIs,
     computeCropAroundCenter,
     computeInitialCrop,
+    createProcessedImages,
     getSlotDefs,
     TARGET_HEIGHT,
     TARGET_WIDTH,
@@ -89,5 +90,75 @@ describe("canUsePostImageAsIs", () => {
             type: "image/jpeg",
         })
         expect(canUsePostImageAsIs(blob)).toBe(false)
+    })
+})
+
+describe("createProcessedImages", () => {
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    /** Image / canvas / fetch をスタブ化し、visual合成で実際に描画された画像srcを記録する。 */
+    const stubBrowserApis = () => {
+        const drawnSrcs: string[] = []
+        class FakeImage {
+            naturalWidth = 2000
+            naturalHeight = 1000
+            onload: (() => void) | null = null
+            onerror: (() => void) | null = null
+            private currentSrc = ""
+            set src(value: string) {
+                this.currentSrc = value
+                queueMicrotask(() => this.onload?.())
+            }
+            get src() {
+                return this.currentSrc
+            }
+        }
+        vi.stubGlobal("Image", FakeImage)
+        vi.stubGlobal("document", {
+            createElement: () => ({
+                width: 0,
+                height: 0,
+                getContext: () => ({
+                    drawImage: (image: FakeImage, ...args: number[]) => {
+                        // 合成サムネイルへの描画（9引数形式）のみ記録する
+                        if (args.length === 8) drawnSrcs.push(image.src)
+                    },
+                }),
+                toBlob: (cb: (blob: Blob) => void, type: string) =>
+                    cb(new Blob(["x"], { type })),
+            }),
+        })
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async () => ({
+                blob: async () => new Blob(["src"], { type: "image/jpeg" }),
+            })),
+        )
+        return drawnSrcs
+    }
+
+    const buildCropStates = (count: number) =>
+        Array.from({ length: count }, () => ({
+            crop: { x: 0, y: 0 },
+            zoom: 1,
+            cropPixels: { x: 0, y: 0, width: 100, height: 50 },
+        }))
+
+    it("5枚入力でoriginalBlobsは5件、visualの素材は先頭4枚のみ", async () => {
+        const drawnSrcs = stubBrowserApis()
+        const urls = ["u0", "u1", "u2", "u3", "u4"]
+        const result = await createProcessedImages(urls, buildCropStates(5))
+        expect(result.originalBlobs).toHaveLength(5)
+        expect(result.thumbnailBlob).toBeInstanceOf(Blob)
+        expect(drawnSrcs).toEqual(["u0", "u1", "u2", "u3"])
+    })
+
+    it("5枚目以降のcropStateが無くても合成できる", async () => {
+        stubBrowserApis()
+        const urls = Array.from({ length: 10 }, (_, i) => `u${i}`)
+        const result = await createProcessedImages(urls, buildCropStates(4))
+        expect(result.originalBlobs).toHaveLength(10)
     })
 })

@@ -68,7 +68,7 @@ describe("resolveEntryDeleteScope", () => {
                                 uri: `at://${ownerDid}/app.bsky.feed.post/3lsecond`,
                                 cid: "c2",
                                 author: { did: ownerDid, handle: "a.test" },
-                        indexedAt: "2026-01-01T00:00:00.000Z",
+                                indexedAt: "2026-01-01T00:00:00.000Z",
                             },
                             replies: [],
                         },
@@ -106,7 +106,7 @@ describe("resolveEntryDeleteScope", () => {
                                 uri: `at://${ownerDid}/app.bsky.feed.post/3lfar`,
                                 cid: "c2",
                                 author: { did: ownerDid, handle: "a.test" },
-                        indexedAt: "2026-01-01T00:00:00.000Z",
+                                indexedAt: "2026-01-01T00:00:00.000Z",
                                 record: {
                                     createdAt: "2026-01-05T00:00:00.000Z",
                                 },
@@ -119,7 +119,7 @@ describe("resolveEntryDeleteScope", () => {
                                 uri: `at://${ownerDid}/app.bsky.feed.post/3lnear`,
                                 cid: "c3",
                                 author: { did: ownerDid, handle: "a.test" },
-                        indexedAt: "2026-01-01T00:00:00.000Z",
+                                indexedAt: "2026-01-01T00:00:00.000Z",
                                 record: {
                                     createdAt: "2026-01-01T00:00:05.000Z",
                                 },

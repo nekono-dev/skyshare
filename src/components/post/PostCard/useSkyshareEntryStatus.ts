@@ -10,6 +10,7 @@
  */
 import { useRef, useState } from "react"
 import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
+import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 import {
@@ -136,7 +137,8 @@ export const useSkyshareEntryStatus = (
      *
      * 処理の趣旨:
      * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）の
-     *   全画像を `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
+     *   先頭`VISUAL_IMAGE_COUNT`枚の画像のみを（5枚目以降はvisualに使わないため取得もしない）
+     *   `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
      *   回避するためのBluesky APIバイパスAPI）経由で取得し、投稿フォームでクロップ編集
      *   しなかった場合と同じデフォルト配置（`createDefaultThumbnail`）でユーザから見えない
      *   Canvas上に合成してから送信する。
@@ -161,16 +163,22 @@ export const useSkyshareEntryStatus = (
             try {
                 objectUrls.push(
                     ...(await Promise.all(
-                        visualSource.images.map(async image => {
-                            const res = await getBskyImage({ cid: image.cid })
-                            if (
-                                res.status !== 200 ||
-                                !(res.data instanceof Blob)
-                            ) {
-                                throw new Error("元画像の取得に失敗しました。")
-                            }
-                            return URL.createObjectURL(res.data)
-                        }),
+                        visualSource.images
+                            .slice(0, VISUAL_IMAGE_COUNT)
+                            .map(async image => {
+                                const res = await getBskyImage({
+                                    cid: image.cid,
+                                })
+                                if (
+                                    res.status !== 200 ||
+                                    !(res.data instanceof Blob)
+                                ) {
+                                    throw new Error(
+                                        "元画像の取得に失敗しました。",
+                                    )
+                                }
+                                return URL.createObjectURL(res.data)
+                            }),
                     )),
                 )
 

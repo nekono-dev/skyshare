@@ -25,7 +25,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "14.1.4",
     "@astrojs/react": "6.0.1",
-    "@atproto/api": "^0.20.30",
+    "@atproto/api": "^0.23.0",
     "@atproto/common-web": "^0.5.9",
     "@atproto/lex-cbor": "^0.1.6",
     "@atproto/xrpc": "^0.7.7",

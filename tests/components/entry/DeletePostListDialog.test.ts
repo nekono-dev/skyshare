@@ -8,7 +8,10 @@ import { describe, expect, it, vi } from "vitest"
 import DeletePostListDialog from "@/components/entry/DeletePostListDialog"
 import type { TimelinePost } from "@/lib/entry/posts"
 
-const makePost = (id: string, overrides: Partial<TimelinePost> = {}): TimelinePost => ({
+const makePost = (
+    id: string,
+    overrides: Partial<TimelinePost> = {},
+): TimelinePost => ({
     uri: `at://did:plc:a/app.bsky.feed.post/${id}`,
     cid: `cid-${id}`,
     url: `https://bsky.app/profile/a.test/post/${id}`,
@@ -26,7 +29,9 @@ const images = (n: number) =>
         cid: `img${i}`,
     }))
 
-const render = (props: Partial<React.ComponentProps<typeof DeletePostListDialog>>) =>
+const render = (
+    props: Partial<React.ComponentProps<typeof DeletePostListDialog>>,
+) =>
     renderToStaticMarkup(
         React.createElement(DeletePostListDialog, {
             open: true,
@@ -52,7 +57,9 @@ describe("DeletePostListDialog", () => {
     })
 
     it("本文が空なら「（本文なし）」を表示する", () => {
-        expect(render({ posts: [makePost("1", { text: "" })] })).toContain("（本文なし）")
+        expect(render({ posts: [makePost("1", { text: "" })] })).toContain(
+            "（本文なし）",
+        )
     })
 
     it("画像は最大4枚で、超過分は「+N」を表示する", () => {

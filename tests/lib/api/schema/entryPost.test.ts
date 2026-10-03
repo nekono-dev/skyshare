@@ -44,6 +44,26 @@ describe("v2/entry POST RequestBodySchema", () => {
         expect(result.success).toBe(true)
     })
 
+    it.each([
+        [10, true],
+        [11, false],
+    ])("画像%d枚の投稿は success=%s", (count, expected) => {
+        const formData = new FormData()
+        for (let i = 0; i < count; i++) {
+            formData.append(
+                "posts[0][images]",
+                new Blob([`a${i}`], { type: "image/png" }),
+            )
+        }
+        formData.set(
+            "posts[0][imagesMeta]",
+            JSON.stringify(
+                Array.from({ length: count }, () => ({ width: 1, height: 1 })),
+            ),
+        )
+        expect(parseFormData(formData).success).toBe(expected)
+    })
+
     it("テキストのみの投稿分岐(posts[0][text])を受理する", () => {
         const formData = new FormData()
         formData.set("posts[0][text]", JSON.stringify("hello"))

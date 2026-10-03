@@ -15,7 +15,7 @@
 
 ### 2.1 単発投稿時のvisual作成
 
-- `ImagePicker`（[src/components/image/ImagePicker/index.tsx](../../../src/components/image/ImagePicker/index.tsx)）が、1投稿分の画像（最大4枚）から`ImageEntry`を生成する。`ImageEntry.thumbnailBlob`（visual）は`createProcessedImages`/`composeThumbnailBlob`（[src/lib/image/postImageProcessing.ts](../../../src/lib/image/postImageProcessing.ts)）が、各画像のクロップ状態から1枚に合成して作る。
+- `ImagePicker`（[src/components/image/ImagePicker/index.tsx](../../../src/components/image/ImagePicker/index.tsx)）が、1投稿分の画像（最大10枚、[specs/multiimage](../../multiimage/design.md)）から`ImageEntry`を生成する。`ImageEntry.thumbnailBlob`（visual）は`createProcessedImages`/`composeThumbnailBlob`（[src/lib/image/postImageProcessing.ts](../../../src/lib/image/postImageProcessing.ts)）が、先頭4枚のクロップ状態から1枚に合成して作る（5枚目以降はvisualに使わない）。
 - `submitThread.ts`（[src/components/post/ThreadComposer/submitThread.ts](../../../src/components/post/ThreadComposer/submitThread.ts)、[specs/threadpost/design.md §4.1](../../threadpost/design.md#41-コンポーネント構成)によりリネーム・一般化された旧`PostForm/submitEntry.ts`）が、`segments`配列を`posts`配列（1件なら単発投稿、複数件ならスレッド）へマッピングして`POST /v2/entry`（`createEntry`関数、OpenAPI生成クライアント）を呼び出す。画像投稿かつ`manualImageAttach`が無効なsegment（entry候補）のうち、先頭（最小index）のsegmentが見つかった場合、そのsegmentの`imageEntry.thumbnailBlob`をリクエストのトップレベル`visual`に、`createEntry: true`もトップレベルに設定する（3.1節の自動選択ロジック）。
 - 既存投稿への事後付与（from-post相当）は`useSkyshareEntryStatus.ts`（[src/components/post/PostCard/useSkyshareEntryStatus.ts](../../../src/components/post/PostCard/useSkyshareEntryStatus.ts)）が担い、`ThreadComposer`由来のthumbnailを持たない投稿に対しては`createDefaultThumbnail`（`postImageProcessing.ts`の別関数）でvisualを生成する。
 
@@ -89,8 +89,8 @@ export const resolveEntryDeleteScope = async (
     )
     // 一覧表示用に変換する。変換不能な投稿（最小要件不足）があれば、サーバの削除対象と
     // 一覧がずれるため、安全側で判定不能にする。
-    const posts = chain.map((post) => normalizePostViewToTimelinePost(post))
-    if (posts.some((post) => post === undefined)) return { kind: "unknown" }
+    const posts = chain.map(post => normalizePostViewToTimelinePost(post))
+    if (posts.some(post => post === undefined)) return { kind: "unknown" }
     return { kind: "deletable", posts: posts as TimelinePost[] }
   } catch (err) {
     console.error("resolveEntryDeleteScope: failed", err)
@@ -156,7 +156,10 @@ type Props = {
     },
     "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-root": {
       kind: "deletable",
-      posts: [guestPost("guest-thread-b-root"), guestPost("guest-thread-b-tail")],
+      posts: [
+        guestPost("guest-thread-b-root"),
+        guestPost("guest-thread-b-tail"),
+      ],
     },
     "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-d-mid": {
       kind: "legacy",

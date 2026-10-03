@@ -60,9 +60,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
 
         // 再度選んで確定するとカードが消える。
         await deletePostButton(page).click()
-        await dialog(page)
-            .getByRole("button", { name: "全て削除" })
-            .click()
+        await dialog(page).getByRole("button", { name: "全て削除" }).click()
         await expect(card).toHaveCount(0)
 
         expect(hits).toEqual([])
@@ -109,9 +107,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         await expect(dialog(page)).toContainText(
             "第三者からの返信は削除されず残ります",
         )
-        await dialog(page)
-            .getByRole("button", { name: "全て削除" })
-            .click()
+        await dialog(page).getByRole("button", { name: "全て削除" }).click()
 
         await expect(
             page.getByText("スレッドB・1件目（ルート、entry作成済み）です。"),
@@ -240,9 +236,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         await expect(confirm).toBeInViewport()
         await confirm.click()
 
-        await expect(
-            page.getByText("スレッドB・2件目です。"),
-        ).toHaveCount(0)
+        await expect(page.getByText("スレッドB・2件目です。")).toHaveCount(0)
         expect(hits).toEqual([])
     })
 })

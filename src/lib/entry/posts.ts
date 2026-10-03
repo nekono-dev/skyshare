@@ -7,12 +7,8 @@
  * - 画像 URL は CDN URL に展開し、一覧 UI でそのまま表示できる形にする。
  */
 
-import {
-    AppBskyEmbedImages,
-    AppBskyFeedDefs,
-    AppBskyFeedPost,
-} from "@atproto/api"
-import { blobToCdnUrl, toCidString } from "@/lib/entry/entry"
+import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
+import { blobToCdnUrl, extractEmbedImages } from "@/lib/entry/entry"
 import {
     bskyPostUrlgen,
     parseAtUri,
@@ -98,34 +94,7 @@ type RawTimelineEntry = {
 export const extractTimelinePostImages = (
     postRecord: AppBskyFeedPost.Main,
     sourceRepoDid: string,
-): SourceImage[] => {
-    const embedded = postRecord.embed
-
-    if (embedded?.$type !== "app.bsky.embed.images") {
-        return []
-    }
-
-    const imagesRecord = embedded as AppBskyEmbedImages.Main
-    if (!Array.isArray(imagesRecord.images)) {
-        return []
-    }
-
-    return imagesRecord.images
-        .map(image => {
-            const url = blobToCdnUrl(sourceRepoDid, image.image)
-            const cid = toCidString(image.image?.ref)
-            if (!url || !cid) {
-                return undefined
-            }
-
-            return {
-                url,
-                alt: typeof image.alt === "string" ? image.alt : "",
-                cid,
-            }
-        })
-        .filter((image): image is SourceImage => image !== undefined)
-}
+): SourceImage[] => extractEmbedImages(postRecord.embed, sourceRepoDid)
 
 /**
  * Skyshare entry を投稿一覧用の表示データへ変換する。

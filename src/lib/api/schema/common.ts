@@ -8,6 +8,7 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiResponsesObject } from "zod-openapi"
+import { MAX_POST_IMAGES } from "../../image/postImageLimits"
 
 export const CommonOgMetaSchema = z
     .object({
@@ -33,18 +34,20 @@ export const CommonErrorSchema = z
     .strict()
 export type CommonErrorType = z.infer<typeof CommonErrorSchema>
 
-export const CommonImagesMetaSchema = z.array(
-    z
-        .object({
-            width: z.number().int().min(1),
-            height: z.number().int().min(1),
-            alt: z.string().optional().default("").meta({
-                description:
-                    "app.bsky.embed.imagesの各画像のalt(代替テキスト)。",
-            }),
-        })
-        .strict(),
-)
+export const CommonImagesMetaSchema = z
+    .array(
+        z
+            .object({
+                width: z.number().int().min(1),
+                height: z.number().int().min(1),
+                alt: z.string().optional().default("").meta({
+                    description:
+                        "app.bsky.embed.images/galleryの各画像のalt(代替テキスト)。",
+                }),
+            })
+            .strict(),
+    )
+    .max(MAX_POST_IMAGES)
 export type CommonImagesMetaType = z.infer<typeof CommonImagesMetaSchema>
 
 /**

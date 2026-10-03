@@ -29,6 +29,36 @@ describe("extractTimelinePostImages", () => {
         ])
     })
 
+    it("gallery embedから画像一覧を抽出し、未知の$typeは除外する", () => {
+        const postRecord = {
+            $type: "app.bsky.feed.post",
+            text: "",
+            createdAt: "2026-01-01T00:00:00Z",
+            embed: {
+                $type: "app.bsky.embed.gallery",
+                items: [
+                    {
+                        $type: "app.bsky.embed.gallery#image",
+                        image: { ref: "bafkre1" },
+                        alt: "a",
+                    },
+                    { $type: "app.bsky.embed.gallery#unknown" },
+                    {
+                        $type: "app.bsky.embed.gallery#image",
+                        image: { ref: "bafkre2" },
+                        alt: "b",
+                    },
+                ],
+            },
+        } as any
+
+        expect(
+            extractTimelinePostImages(postRecord, "did:plc:abc").map(
+                image => image.cid,
+            ),
+        ).toEqual(["bafkre1", "bafkre2"])
+    })
+
     it("画像embedでなければ空配列", () => {
         const postRecord = {
             $type: "app.bsky.feed.post",

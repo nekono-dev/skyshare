@@ -28,6 +28,7 @@ import SkyshareShareDialog from "@/components/post/SkyshareShareDialog"
 import EntryDeleteConfirmDialog from "@/components/entry/EntryDeleteConfirmDialog"
 import blueskyIcon from "@/images/bluesky.svg"
 import shareIcon from "@/images/share.svg"
+import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 
 type PostCardProps = {
   item: TimelinePost
@@ -153,9 +154,13 @@ const Component = ({
       ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
       : undefined
   // サムネイルは skyshare の view 画像を優先する。無い場合、複数画像投稿は全画像を縦に分割して表示する。
+  // entry が無い場合は先頭 VISUAL_IMAGE_COUNT 枚のみ表示し、残りは「+N」で示す。
   const thumbnailImages = activeEntry?.visualUrl
     ? [activeEntry.visualUrl]
-    : item.images.map(image => image.url)
+    : item.images.slice(0, VISUAL_IMAGE_COUNT).map(image => image.url)
+  const thumbnailMoreCount = activeEntry?.visualUrl
+    ? 0
+    : Math.max(0, item.images.length - VISUAL_IMAGE_COUNT)
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
   // ただしスレッドの中間投稿（`threadReply`）はグレーアウトしない。
   // この判定は投稿自身の適格性のみに基づくため、postCreateEntryButtonによる
@@ -207,6 +212,11 @@ const Component = ({
                 <img src={url} alt="" loading="lazy" decoding="async" />
               </div>
             ))}
+            {thumbnailMoreCount > 0 ? (
+              <span className={styles["thumbnail-more"]}>
+                +{thumbnailMoreCount}
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>

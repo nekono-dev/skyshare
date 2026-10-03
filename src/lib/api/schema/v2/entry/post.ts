@@ -28,6 +28,7 @@ import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import type { FormDataFieldKind } from "@/util/formData"
 import { MAX_THREAD_POST_COUNT } from "../../../../atproto/threadLimit"
+import { MAX_POST_IMAGES } from "../../../../image/postImageLimits"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)
@@ -50,7 +51,7 @@ export const EntryPostItemSchema = z.union([
             facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField.optional(),
             ogMeta: Common.CommonOgMetaSchema.optional(),
-            images: z.array(imageField).optional(),
+            images: z.array(imageField).max(MAX_POST_IMAGES).optional(),
             imagesMeta: Common.CommonImagesMetaSchema.optional(),
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),
@@ -64,7 +65,7 @@ export const EntryPostItemSchema = z.union([
             facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField,
             ogMeta: Common.CommonOgMetaSchema,
-            images: z.array(imageField).optional(),
+            images: z.array(imageField).max(MAX_POST_IMAGES).optional(),
             imagesMeta: Common.CommonImagesMetaSchema.optional(),
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),
@@ -78,7 +79,7 @@ export const EntryPostItemSchema = z.union([
             facets: Common.CommonFacetsSchema.optional(),
             ogImage: imageField.optional(),
             ogMeta: Common.CommonOgMetaSchema.optional(),
-            images: z.array(imageField),
+            images: z.array(imageField).max(MAX_POST_IMAGES),
             imagesMeta: Common.CommonImagesMetaSchema,
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),

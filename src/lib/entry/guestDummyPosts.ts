@@ -113,6 +113,32 @@ export const GUEST_DUMMY_POSTS: TimelinePost[] = [
             },
         ],
     },
+    // 画像6枚の投稿（entry未作成）。カードには先頭4枚のサムネイルと「+2」が表示され、
+    // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/multiimage FR-3・FR-5）。
+    {
+        uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-multi-image",
+        cid: "bafyreiguestmultiimage",
+        url: "https://bsky.app/profile/guest.demo/post/guest-multi-image",
+        indexedAt: "2026-09-05T08:00:00.000Z",
+        author: {
+            did: "did:plc:guestdemo",
+            handle: "guest.demo",
+            displayName: "ゲストユーザー",
+        },
+        text: "画像を6枚添付した投稿の表示です。（サムネイルは先頭4枚＋残り枚数）",
+        images: [
+            "#ef4444",
+            "#f59e0b",
+            "#84cc16",
+            "#06b6d4",
+            "#6366f1",
+            "#d946ef",
+        ].map((color, index) => ({
+            url: placeholderImage(color, `${index + 1}`),
+            alt: `サンプル画像${index + 1}`,
+            cid: `bafkreiguestmulti${index + 1}`,
+        })),
+    },
     // 以下、Timelineのスレッドグルーピング表示（specs/timeline）のゲスト確認用。
     // スレッドA: entry未作成、ルート投稿(guest-thread-a-root)は画像を持たないが
     // 中間segment(guest-thread-a-mid)が画像を持つケース。事後entry作成ボタンは
@@ -356,6 +382,12 @@ export const GUEST_DUMMY_THREADS: ThreadGroup[] = [
     {
         rootPost: findGuestPost(
             "at://did:plc:guestdemo/app.bsky.feed.post/guest3",
+        ),
+        replies: [],
+    },
+    {
+        rootPost: findGuestPost(
+            "at://did:plc:guestdemo/app.bsky.feed.post/guest-multi-image",
         ),
         replies: [],
     },

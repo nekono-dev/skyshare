@@ -85,6 +85,35 @@ describe("blobToCdnUrl", () => {
     })
 })
 
+describe("extractSourceImages (gallery)", () => {
+    it("app.bsky.embed.gallery から画像一覧を抽出し、未知の$typeは除外する", () => {
+        const postRecord = {
+            $type: "app.bsky.feed.post",
+            text: "",
+            createdAt: "2026-01-01T00:00:00Z",
+            embed: {
+                $type: "app.bsky.embed.gallery",
+                items: [
+                    {
+                        $type: "app.bsky.embed.gallery#image",
+                        image: { ref: "bafkre1" },
+                        alt: "one",
+                    },
+                    { $type: "app.bsky.embed.gallery#other" },
+                ],
+            },
+        } as any
+
+        expect(extractSourceImages(postRecord, "did:plc:abc")).toEqual([
+            {
+                url: "https://cdn.bsky.app/img/feed_fullsize/plain/did%3Aplc%3Aabc/bafkre1",
+                alt: "one",
+                cid: "bafkre1",
+            },
+        ])
+    })
+})
+
 describe("extractSourceImages", () => {
     it("app.bsky.embed.images から画像一覧を抽出する", () => {
         const postRecord = {

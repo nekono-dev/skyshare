@@ -116,6 +116,7 @@
    contentColumn（author/本文列）の高さいっぱいに広げる。ツールバーには被らない。
    複数画像がある場合は内部を縦に分割し、各画像を等分の帯として並べる。 */
 .thumbnail {
+  position: relative;
   flex: 0 0 auto;
   align-self: stretch;
   display: flex;
@@ -140,6 +141,19 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* 5枚以上の画像を持つ投稿で、表示しきれない残り枚数をサムネイル右下に重ねる。 */
+.thumbnail-more {
+  position: absolute;
+  right: var(--space-1);
+  bottom: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  line-height: 18px;
 }
 
 .footer {

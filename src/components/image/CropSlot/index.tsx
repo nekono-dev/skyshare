@@ -214,6 +214,7 @@ const CropSlot: React.FC<Props> = ({
   return (
     <div
       className={styles["crop-wrapper"]}
+      data-testid="crop-slot"
       ref={containerRef}
       style={{ aspectRatio: String(aspect) }}
     >

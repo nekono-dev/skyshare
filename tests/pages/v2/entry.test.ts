@@ -856,6 +856,33 @@ describe("POST /v2/entry", () => {
             )
         })
 
+        it("画像4枚はimages型、5枚はgallery型のembedになる", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [
+                    { text: "4枚", imagesCount: 4 },
+                    { text: "5枚", imagesCount: 5 },
+                ],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(findPostWrite(writesArg, "4枚").value.embed.$type).toBe(
+                "app.bsky.embed.images",
+            )
+            const gallery = findPostWrite(writesArg, "5枚").value.embed
+            expect(gallery.$type).toBe("app.bsky.embed.gallery")
+            expect(gallery.items).toHaveLength(5)
+        })
+
+        it("画像11枚の投稿は400を返す", async () => {
+            const res = await sendThread(
+                [{ text: "11枚", imagesCount: 11 }],
+                mockApplyWrites(),
+            )
+            expect(res.status).toBe(400)
+        })
+
         it("画像のみ投稿とOGPカードのみ投稿が混在するスレッドは200でそれぞれ異なるembedになる", async () => {
             const applyWrites = mockApplyWrites()
             const ogMeta = {
