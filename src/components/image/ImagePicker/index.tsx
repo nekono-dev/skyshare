@@ -585,7 +585,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           <label
             htmlFor={inputId}
-            className={`${ui["base-button"]} ${ui["blue-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
+            className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
             aria-label="画像追加"
             aria-disabled={disabled}
             style={{ cursor: disabled ? "default" : "pointer" }}
@@ -597,8 +597,6 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
               style={{
                 width: "var(--size-icon-button)",
                 height: "var(--size-icon-button)",
-                // 青背景上で見えるよう白抜きにする
-                filter: "brightness(0) invert(1)",
               }}
               alt=""
             />
