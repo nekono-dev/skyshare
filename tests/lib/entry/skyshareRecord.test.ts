@@ -13,8 +13,8 @@ describe("buildSkyshareEntryRecord", () => {
             sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
             sourceCid: "bafypost",
             visual: { ref: "bafkre123" },
-            postText: "Hello world",
-            userName: "Alice",
+            heading: "Alice 's Post",
+            caption: "Hello world",
             createdAt: "2026-01-01T00:00:00.000Z",
         })
 
@@ -34,17 +34,17 @@ describe("buildSkyshareEntryRecord", () => {
         })
     })
 
-    it("本文が空白のみならcaptionは空文字になる", () => {
+    it("heading/captionが未指定ならmanifestに含めない", () => {
         const record = buildSkyshareEntryRecord({
             sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
             sourceCid: "bafypost",
             visual: undefined,
-            postText: "   ",
-            userName: "Alice",
             createdAt: "2026-01-01T00:00:00.000Z",
         })
 
-        expect((record.manifest as { caption: string }).caption).toBe("")
+        const manifest = record.manifest as Record<string, unknown>
+        expect("heading" in manifest).toBe(false)
+        expect("caption" in manifest).toBe(false)
     })
 })
 
@@ -54,8 +54,8 @@ describe("toCreatedSkyshareEntry", () => {
             sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
             sourceCid: "bafypost",
             visual: { ref: "bafkre123" },
-            postText: "Hello world",
-            userName: "Alice",
+            heading: "Alice 's Post",
+            caption: "Hello world",
             createdAt: "2026-01-01T00:00:00.000Z",
         })
 

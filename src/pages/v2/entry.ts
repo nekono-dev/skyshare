@@ -14,7 +14,6 @@ import {
 import { uploadBlob } from "@/lib/atproto/blob"
 import { isReplyRefOwnedBySelf } from "@/lib/atproto/post"
 import { validateFacets } from "@/lib/atproto/facet"
-import { resolveDisplayName } from "@/lib/atproto/profile"
 import {
     createExternalEmbed,
     createImageEmbed,
@@ -185,6 +184,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 body.data.uri,
                 session,
                 body.data.visual,
+                body.data.heading,
+                body.data.caption,
             )
             if (!fromPostResult.ok) {
                 return errorResponseFromStatus(fromPostResult.status)
@@ -309,15 +310,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 )
                 return errorResponseFromStatus(500)
             }
-            const userName = await resolveDisplayName(
-                agent,
-                session.did,
-                session.handle,
-            )
             entryInput = {
                 visual: uploadedVisual,
-                postText: threadPostInputs[0]?.text ?? "",
-                userName,
+                heading: body.data.heading,
+                caption: body.data.caption,
             }
         }
 

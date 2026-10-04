@@ -43,6 +43,11 @@
   line-height: var(--line-height-loose);
 }
 
+/* headingが無い場合、captionがカード先頭になるため上マージンを付けない */
+.body-text:first-child {
+  margin-top: 0;
+}
+
 .empty-message {
   margin: var(--space-3) 0 0;
   color: var(--color-muted);

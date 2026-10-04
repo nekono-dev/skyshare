@@ -34,8 +34,8 @@ export type CreatedSkyshareEntry = {
     createdAt: string
     sourceUri: string
     sourceCid: string
-    heading: string
-    caption: string
+    heading?: string
+    caption?: string
     visualUrl?: string
     webUrl: string
 }
@@ -50,8 +50,7 @@ export type CreatedSkyshareEntry = {
  * Input:
  * - `sourceUri`/`sourceCid`: 紐づく bsky 投稿の AT URI・CID
  * - `visual`: skyshare entry の manifest.visual に使う blob 参照
- * - `postText`: 投稿本文（caption として使用）
- * - `userName`: 投稿者表示名
+ * - `heading`/`caption`: クライアントが決めた見出し・キャプション。未指定なら manifest に含めない
  * - `createdAt`: ISO 8601 の作成日時
  *
  * Output:
@@ -61,13 +60,11 @@ export const buildSkyshareEntryRecord = (params: {
     sourceUri: string
     sourceCid: string
     visual: any
-    postText: string
-    userName: string
+    heading?: string
+    caption?: string
     createdAt: string
 }): Record<string, unknown> => {
-    const { sourceUri, sourceCid, visual, postText, userName, createdAt } =
-        params
-    const headingText = postText.trim()
+    const { sourceUri, sourceCid, visual, heading, caption, createdAt } = params
 
     return {
         $type: ENTRY_COLLECTION,
@@ -78,8 +75,8 @@ export const buildSkyshareEntryRecord = (params: {
         manifest: {
             $type: MANIFEST_TYPE,
             visual,
-            heading: `${userName} 's Post`,
-            caption: headingText.length > 0 ? headingText : "",
+            ...(heading !== undefined ? { heading } : {}),
+            ...(caption !== undefined ? { caption } : {}),
         },
         createdAt,
     }
@@ -105,8 +102,8 @@ export const toCreatedSkyshareEntry = (
 ): CreatedSkyshareEntry => {
     const manifest = record.manifest as {
         visual?: { ref?: unknown; mimeType?: string }
-        heading: string
-        caption: string
+        heading?: string
+        caption?: string
     }
     const source = record.source as { uri: string; cid: string }
     const rkey = result.uri.split("/").slice(-1)[0]

@@ -61,10 +61,10 @@ atproto呼び出しの例外は `resolveXrpcStatus` でHTTPステータスへ変
 
 `multipart/form-data`。ボディは2択の `anyOf`（Zod `union`）。
 
-| 分岐         | 必須フィールド                                                                                          | 用途                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| A: from-post | `uri`（string）, `visual`（file）                                                                       | 既存の自分のBluesky投稿からskyshare entryを発行する（新規投稿は作らない） |
-| B: 新規投稿  | `posts`（1〜100件の配列）, `reply`（任意）, `createEntry`（任意）, `visual`（`createEntry:true`時必須） | 新規投稿を1件、またはスレッドとして複数件、原子的に作成する               |
+| 分岐         | 必須フィールド                                                                                                                                | 用途                                                                      |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| A: from-post | `uri`（string）, `visual`（file）, `heading`（任意）, `caption`（任意）                                                                       | 既存の自分のBluesky投稿からskyshare entryを発行する（新規投稿は作らない） |
+| B: 新規投稿  | `posts`（1〜100件の配列）, `reply`（任意）, `createEntry`（任意）, `visual`（`createEntry:true`時必須）, `heading`（任意）, `caption`（任意） | 新規投稿を1件、またはスレッドとして複数件、原子的に作成する               |
 
 `RequestBodySchema.safeParse()` に失敗した場合（`uri`も`posts`も条件を満たさない等）は400。
 
@@ -105,6 +105,8 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 | `createEntry` | boolean | このリクエスト（1件またはスレッド全体）にskyshare entryを1件紐づけるか                                               |
 | `visual`      | Blob    | `createEntry:true`時に必須。entryの代表画像素材。リクエスト中のどの`posts[i].images`と一致するかはサーバは検証しない |
 
+`heading`（最大100文字）・`caption`（最大300文字）はクライアントが決めて送る任意フィールドで、サーバは生成・補完しない（未指定ならentryレコードのmanifestに含めない）。既定値の組み立て（画像: `<表示名> 's Post`＋本文、動画: headingなし）は[entryText.ts](../../../src/lib/entry/entryText.ts)が担う。
+
 注記: `createEntry:true`ならリクエスト全体につき`visual`必須、という制約のみをハンドラ側（フェーズ5）で検証する。旧仕様にあった「`posts`のいずれかが画像投稿であること」という追加検証は行わない（[requirements.md FR-1](requirements.md#fr-1-新規bluesky投稿の作成単発スレッド共通)、サーバはentryの作成対象としての妥当性を判定しない）。
 
 ### 3.3 POST 処理フロー
@@ -122,7 +124,7 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
      - `validateFacets`（facetsのbyteEndが本文バイト長以内）失敗なら400
      - embed組み立て: 画像が優先、次点でOGP（画像とOGP両方指定時は画像embedが優先されOGPは無視される）
      - 画像アップロード失敗、OGサムネイルアップロード失敗、embed構築失敗はそれぞれ500/500/400
-   - `createEntry:true`時はvisual画像を追加アップロードし、表示名解決（`resolveDisplayName`）
+   - `createEntry:true`時はvisual画像を追加アップロードする（heading/captionはクライアントが送った値をそのまま使う）
    - `createBskyThread`で全投稿＋gate＋（`createEntry:true`なら）skyshare entryを1回の`applyWrites`により原子的に作成（3.5節）。失敗時は500
 7. 結果を200で返却
 

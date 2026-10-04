@@ -79,12 +79,14 @@ const bodyKey =
     statusCode === 200 ? (
         <article class={styles.container}>
             <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
-                <header class={styles["header-row"]}>
-                    <h1 class={styles.heading}>{heading}</h1>
-                </header>
+                {heading ? (
+                    <header class={styles["header-row"]}>
+                        <h1 class={styles.heading}>{heading}</h1>
+                    </header>
+                ) : null}
                 {caption ? <p class={styles["body-text"]}>{caption}</p> : null}
                 {visualUrl ? (
-                    <img class={styles.visual} src={visualUrl} alt={heading} data-testid="entry-visual" />
+                    <img class={styles.visual} src={visualUrl} alt={heading || caption} data-testid="entry-visual" />
                 ) : null}
                 <dl class={styles["meta-list"]}>
                     {sourceUrl && sourcePostAvailable ? (

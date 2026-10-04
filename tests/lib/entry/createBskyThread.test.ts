@@ -43,8 +43,8 @@ const makeAgent = () => ({
 
 const entryInput: ThreadEntryInput = {
     visual: { $type: "blob", ref: "visual" },
-    postText: "hello",
-    userName: "Alice",
+    heading: "Alice 's Post",
+    caption: "hello",
 }
 
 describe("createBskyThread: entry(source)の解決(specs/entry/backend/design.md §7.2)", () => {

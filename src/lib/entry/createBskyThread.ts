@@ -59,8 +59,9 @@ export type ThreadPostInput = {
  */
 export type ThreadEntryInput = {
     visual: any
-    postText: string
-    userName: string
+    /** クライアントが決めたentryの見出し・キャプション（未指定ならレコードに含めない） */
+    heading?: string
+    caption?: string
 }
 
 export type ThreadPostResult = {
@@ -204,8 +205,8 @@ export const createBskyThread = async (
             sourceUri: firstPostRef.uri,
             sourceCid: firstPostRef.cid,
             visual: entryInput.visual,
-            postText: entryInput.postText,
-            userName: entryInput.userName,
+            heading: entryInput.heading,
+            caption: entryInput.caption,
             createdAt: entryCreatedAt,
         })
         writes.push({

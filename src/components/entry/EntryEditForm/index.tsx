@@ -100,6 +100,10 @@ export const Component: React.FC<Props> = ({
   // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐ。
   const isSavingRef = useRef(false)
 
+  // 空文字も有効な値として許可し、保存ボタンは「内容が変わっていない時」のみ無効にする。
+  const isUnchanged =
+    heading === (initialHeading ?? "") && caption === (initialCaption ?? "")
+
   useEffect(() => {
     if (!open) return
     setHeading(initialHeading ?? "")
@@ -121,7 +125,7 @@ export const Component: React.FC<Props> = ({
   ) => {
     if (e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return
     e.preventDefault()
-    if (isSaving || heading.trim().length === 0) return
+    if (isSaving || isUnchanged) return
     void confirmSave()
   }
 
@@ -182,7 +186,7 @@ export const Component: React.FC<Props> = ({
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
             onClick={() => void confirmSave()}
-            disabled={isSaving || heading.trim().length === 0}
+            disabled={isSaving || isUnchanged}
           >
             {t("common.save")}
           </button>

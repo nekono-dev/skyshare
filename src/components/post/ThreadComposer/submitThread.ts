@@ -25,6 +25,8 @@ import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { createEntry } from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
 import { detectFacetsForSubmission } from "@/lib/atproto/richtext"
+import { getActiveAccountDisplayName } from "@/lib/account/activeAccountSession"
+import { buildEntryText } from "@/lib/entry/entryText"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 import { waitForImageLoad } from "@/util/waitForImageLoad"
 import type { SegmentState } from "./segments"
@@ -223,11 +225,32 @@ export const submitThread = async (
 
     const posts = await Promise.all(segments.map(buildPostItem))
 
+    // entryのheading/captionはサーバが生成しないため、ここで決めて送る。
+    // sourceはスレッド先頭（posts[0]）なので、captionも先頭segmentの本文を使う。
+    let entryText: ReturnType<typeof buildEntryText> | undefined
+    if (wantsSkyshareEntry) {
+        const userName = await getActiveAccountDisplayName()
+        if (userName === null) {
+            return {
+                ok: false,
+                messageKey: resolveEntryErrorMessage(
+                    "SKYSHARE_ENTRY_CREATE_FAILED",
+                ),
+            }
+        }
+        entryText = buildEntryText({
+            userName,
+            postText: segments[0].text,
+            isVideo: !!segments[entryCandidateIndex].videoEntry,
+        })
+    }
+
     const body = {
         posts,
         ...(wantsSkyshareEntry
             ? {
                   createEntry: true,
+                  ...entryText,
                   visual: (
                       segments[entryCandidateIndex].imageEntry ??
                       segments[entryCandidateIndex].videoEntry!

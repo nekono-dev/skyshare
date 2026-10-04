@@ -12,6 +12,8 @@ import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
 import { createEntry, deleteEntry } from "@/client/openapi/client"
 import { createPostVisualBlob } from "@/lib/entry/createPostVisual"
+import { getActiveAccountDisplayName } from "@/lib/account/activeAccountSession"
+import { buildEntryText } from "@/lib/entry/entryText"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 import { waitForImageLoad } from "@/util/waitForImageLoad"
 import {
@@ -167,9 +169,22 @@ export const useSkyshareEntryStatus = (
         void (async () => {
             try {
                 const thumbnailBlob = await createPostVisualBlob(visualSource)
+                const userName = await getActiveAccountDisplayName()
+                if (userName === null) {
+                    setCreateError("post.entry.createFailed")
+                    setState({ phase: "idle", entry: null })
+                    return
+                }
+                // heading/captionはサーバが生成しないため、sourceにする投稿から決めて送る
+                const entryText = buildEntryText({
+                    userName,
+                    postText: sourcePost.text,
+                    isVideo: !!visualSource.video,
+                })
                 const res = await createEntry({
                     uri: sourcePost.uri,
                     visual: thumbnailBlob,
+                    ...entryText,
                 })
                 if (res.status !== 200) {
                     setCreateError("post.entry.createFailed")

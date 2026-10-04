@@ -110,6 +110,18 @@ export const getActiveAccountInfo = async (): Promise<ActiveAccountInfo> => {
 }
 
 /**
+ * アクティブアカウントの表示名（未設定ならhandle）を返す。取得できなければ null。
+ * skyshare entryの既定heading組み立て用。getSessionOnce のキャッシュを共有する。
+ */
+export const getActiveAccountDisplayName = async (): Promise<string | null> => {
+    const res = await getSessionOnce()
+    if (res.status !== 200) return null
+
+    const active = res.data.accounts.find(account => account.isActive)
+    return active ? active.displayName || active.handle : null
+}
+
+/**
  * キャッシュを破棄する。ページ遷移（astro:page-load）等、セッション状態が
  * 変わり得るタイミングで呼び出し、次回取得を再度ネットワークから行わせる。
  */

@@ -29,6 +29,13 @@
  */
 export const ITEMS_FIELD_NAMES = new Set(["posts"])
 
+/**
+ * 値が文字列でも常にJSON.stringifyして積むフィールド名（サーバ側`"json"`種別の
+ * 文字列フィールドと対）。ユーザー入力由来で改行を含み得る`text`と、
+ * entryの`heading`/`caption`が該当する。
+ */
+const JSON_STRING_FIELD_NAMES = new Set(["text", "heading", "caption"])
+
 type FormDataPrimitive = string | number | boolean
 
 /**
@@ -102,7 +109,7 @@ const isPlainObjectValue = (
  *   期待する命名規則と対になっている。`imagesMeta`/`facets`等、`ITEMS_FIELD_NAMES`に
  *   含まれない「プレーンオブジェクトの配列」フィールドは、`posts`の入れ子であっても
  *   常に配列全体をJSON.stringifyして1フィールドに積む（サーバ側`"json"`種別の契約と対）。
- * - `text`という名前のフィールドは、トップレベルでも入れ子内でも常に
+ * - `text`/`heading`/`caption`という名前のフィールドは、トップレベルでも入れ子内でも常に
  *   JSON.stringifyしてから積む（改行のmultipart正規化対策、サーバ側`"json"`種別と対）。
  *
  * Input:
@@ -122,7 +129,7 @@ const appendFormDataValue = (
         return
     }
 
-    if (fieldName === "text" && typeof value === "string") {
+    if (JSON_STRING_FIELD_NAMES.has(fieldName) && typeof value === "string") {
         formData.append(key, JSON.stringify(value))
         return
     }

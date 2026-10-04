@@ -9,6 +9,10 @@ vi.mock("@/client/openapi/client", () => ({
     createEntry: vi.fn(),
 }))
 
+vi.mock("@/lib/account/activeAccountSession", () => ({
+    getActiveAccountDisplayName: vi.fn().mockResolvedValue("Alice"),
+}))
+
 vi.mock("@/lib/entry/warmOgpCache", () => ({
     warmOgpCache: vi.fn().mockResolvedValue(undefined),
 }))
@@ -50,6 +54,8 @@ type SubmitThreadBody = {
     posts: Record<string, unknown>[]
     createEntry?: boolean
     visual?: unknown
+    heading?: string
+    caption?: string
 }
 
 beforeEach(() => {
@@ -307,6 +313,35 @@ describe("submitThread（動画）", () => {
         const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.createEntry).toBe(true)
         expect(body.visual).toBe(segment.videoEntry.thumbnailBlob)
+    })
+
+    it("動画 entry は heading を送らず、画像 entry は heading/caption を送る", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+        await submitThread({
+            segments: [videoSegment({ text: "動画です" })],
+            manualImageAttach: false,
+        })
+        const videoBody = vi.mocked(createEntry).mock
+            .calls[0][0] as SubmitThreadBody
+        expect("heading" in videoBody).toBe(false)
+        expect(videoBody.caption).toBe("動画です")
+
+        await submitThread({
+            segments: [
+                {
+                    ...createEmptySegment("ja"),
+                    text: "画像です",
+                    imageEntry: buildImageEntry(),
+                },
+            ],
+            manualImageAttach: false,
+        })
+        const imageBody = vi.mocked(createEntry).mock
+            .calls[1][0] as SubmitThreadBody
+        expect(imageBody.heading).toBe("Alice 's Post")
+        expect(imageBody.caption).toBe("画像です")
     })
 
     it("manualImageAttach が有効なら createEntry を付けない", async () => {

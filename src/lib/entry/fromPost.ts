@@ -13,7 +13,6 @@ import {
     type ComAtprotoServerRefreshSession,
 } from "@atproto/api"
 import { uploadBlob } from "@/lib/atproto/blob"
-import { resolveDisplayName } from "@/lib/atproto/profile"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     buildSkyshareEntryRecord,
@@ -55,6 +54,7 @@ export type FromPostResult =
  * - `postUri`: 対象となる自分自身の app.bsky.feed.post の AT URI
  * - `session`: セッション情報（DID・handle 取得用）
  * - `visual`: クライアントが合成したサムネイル Blob（必須）
+ * - `heading`/`caption`: クライアントが決めた見出し・キャプション（未指定ならレコードに含めない）
  *
  * Output:
  * - 成功時: `{ ok: true, bskyUrl, skyshareUri }`
@@ -65,6 +65,8 @@ export const createEntryFromExistingPost = async (
     postUri: string,
     session: ComAtprotoServerRefreshSession.OutputSchema,
     visual: Blob | undefined,
+    heading?: string,
+    caption?: string,
 ): Promise<FromPostResult> => {
     const parsedPostUri = parseOwnedAtUri(
         postUri,
@@ -106,13 +108,6 @@ export const createEntryFromExistingPost = async (
         return { ok: false, status: 500 }
     }
 
-    const postText = typeof postRecord.text === "string" ? postRecord.text : ""
-    const userName = await resolveDisplayName(
-        agent,
-        session.did,
-        session.handle,
-    )
-
     // sourceは検証済みの対象投稿自身。reply.rootを辿る自動解決は行わない
     // （どの投稿をsourceにするかはクライアントの責務、specs/entry/backend/design.md §7.2）。
     const source = { uri: postUri, cid: postCid }
@@ -124,8 +119,8 @@ export const createEntryFromExistingPost = async (
             sourceUri: source.uri,
             sourceCid: source.cid,
             visual: uploadedVisual,
-            postText,
-            userName,
+            heading,
+            caption,
             createdAt,
         })
         const createRecordRes = await agent.com.atproto.repo.createRecord({

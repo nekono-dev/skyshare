@@ -32,6 +32,10 @@ import { MAX_POST_IMAGES } from "../../../../image/postImageLimits"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)
+// skyshare entryの見出し・キャプション（lexiconの`manifest`の上限に合わせる）。
+// クライアントが決めた値をそのまま保存し、サーバは補完しない。
+const headingField = z.string().max(100)
+const captionField = z.string().max(300)
 const imageField = z.instanceof(Blob).meta({ type: "string", format: "binary" })
 const selfLabelsField = z
     .enum(["sexual", "nudity", "porn", "spoiler", "!warn"])
@@ -109,6 +113,8 @@ export const RequestBodySchema = z.union([
         .object({
             uri: z.string(),
             visual: imageField,
+            heading: headingField.optional(),
+            caption: captionField.optional(),
         })
         .strict(),
     // 新規投稿(1件、またはスレッドとして複数件)。`createEntry`/`visual`はリクエスト全体で
@@ -122,6 +128,8 @@ export const RequestBodySchema = z.union([
             reply: Common.CommonReplyRefSchema.optional(),
             createEntry: z.boolean().optional(),
             visual: imageField.optional(),
+            heading: headingField.optional(),
+            caption: captionField.optional(),
         })
         .strict(),
 ])
@@ -159,6 +167,8 @@ export const PostItemFieldKinds: Record<string, FormDataFieldKind> = {
 export const RequestBodyFieldKinds: Record<string, FormDataFieldKind> = {
     uri: "text",
     visual: "file",
+    heading: "json",
+    caption: "json",
     reply: "json",
     createEntry: "json",
     posts: { kind: "items", itemFieldKinds: PostItemFieldKinds },
