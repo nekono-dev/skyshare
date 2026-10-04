@@ -23,7 +23,7 @@ import { serviceName } from "@/vars"
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 
 const heading = "サンプルスレッドEntry"
-const caption = "3件の投稿からなるスレッドのサンプル表示です。"
+const caption = "5件の投稿からなるスレッドのサンプル表示です。"
 
 const author = { handle: "guest.demo", displayName: "ゲストユーザー" }
 
@@ -61,7 +61,7 @@ const posts: EntryPostView[] = [
         webUrl: "https://bsky.app/profile/guest.demo/post/threadsample3",
         author,
         createdAt: "2026-09-06T10:02:00.000Z",
-        text: "スレッド3件目（末尾投稿）です。画像が5枚付いています。",
+        text: "スレッド3件目です。画像が5枚付いています。",
         images: sampleImages("five", [
             [1200, 630],
             [600, 800],
@@ -70,6 +70,38 @@ const posts: EntryPostView[] = [
             [400, 900],
         ]),
         engagement: { likeCount: 33, repostCount: 6, replyCount: 7, quoteCount: 2 },
+    },
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample4",
+        author,
+        createdAt: "2026-09-06T10:03:00.000Z",
+        text: "スレッド4件目です。動画が付いています。",
+        images: [],
+        video: {
+            cid: "bafkreisamplevideo",
+            // 実在しない再生URL（再生に失敗しても、ページは壊れずエラー表示になる）
+            playlistUrl: "https://video.bsky.app/watch/did%3Aplc%3Aguestdemo/bafkreisamplevideo/playlist.m3u8",
+            thumbnailUrl: "/materials/sample-video-poster.png",
+            alt: "サンプル動画",
+            aspectRatio: { width: 16, height: 9 },
+        },
+        engagement: { likeCount: 44, repostCount: 8, replyCount: 9, quoteCount: 3 },
+    },
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample5",
+        author,
+        createdAt: "2026-09-06T10:04:00.000Z",
+        text: "スレッド5件目（末尾投稿）です。引用投稿に添付された、再生できない動画が付いています。",
+        images: [],
+        unsupportedVideo: {
+            cid: "bafkreisampleunsupportedvideo",
+            playlistUrl:
+                "https://video.bsky.app/watch/did%3Aplc%3Aguestdemo/bafkreisampleunsupportedvideo/playlist.m3u8",
+            thumbnailUrl: "/materials/sample-video-poster.png",
+            alt: "サンプル動画",
+            aspectRatio: { width: 16, height: 9 },
+        },
+        engagement: { likeCount: 55, repostCount: 10, replyCount: 11, quoteCount: 4 },
     },
 ]
 

@@ -1,0 +1,46 @@
+/* Skyshare では再生できない動画（引用投稿に添付された動画等）の表示。 */
+.frame {
+  position: relative;
+  width: 100%;
+  max-height: 70vh;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: #000;
+}
+
+.poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0.35);
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: #fff;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+}
+
+.link {
+  color: #fff;
+  text-decoration: underline;
+}

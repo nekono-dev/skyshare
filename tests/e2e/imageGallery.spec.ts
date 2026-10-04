@@ -2,15 +2,13 @@
  * 画像サムネイル（`ImageGallery`）と拡大表示（`ImageLightbox`）のヘッドレスブラウザによる動作確認
  * （specs/postcardlayout FR-3・FR-4・NFR-2）。
  *
- * - `entries/sample/` の3投稿（画像1・3・5枚）を使う。
+ * - `entries/sample/` の投稿のうち、画像付きの3投稿（画像1・3・5枚）を使う。
  */
 import { expect, test, type Page } from "@playwright/test"
 
 const gotoThread = async (page: Page) => {
     await page.goto("/entries/sample/")
-    await expect(
-        page.getByText("スレッド3件目（末尾投稿）です。"),
-    ).toBeVisible()
+    await expect(page.getByText("スレッド3件目です。")).toBeVisible()
 }
 
 const card = (page: Page, text: string) => page.locator("li", { hasText: text })

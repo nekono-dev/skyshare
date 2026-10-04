@@ -10,7 +10,7 @@
 - entry の visual は、動画の最初のフレーム相当の poster 1枚から既存の `createDefaultThumbnail` で生成し、その上に **再生ボタンと再生時間バッジを描画**する（§6.5。X の動画表示を模した、色・透明度・寸法を固定した仕様）。
 - 表示は、投稿レコードの `embed` から再生URL（HLS）と poster URL を組み立てる。AppView の `embed.view` には依存しない（投稿直後に AppView へ未反映の期間があるため）。
 - 引用投稿（`recordWithMedia`）に添付された動画は「利用不可の動画」として、poster を暗くして再生不可を明示する（§7.7）。再生・entry化の対象にはしない。
-- Entry 詳細ページの再生は `hls.js` を再生開始時に動的 import して行い（Safari は ネイティブHLS）、初期バンドルに含めない（NFR-3）。Timeline は poster のサムネイル表示のみとする。
+- Entry 詳細ページの再生は `hls.js` を再生開始時に動的 import して行い（`hls.js` が使えない MSE 非対応の環境、iOS Safari 等はネイティブHLS）、初期バンドルに含めない（NFR-3）。Timeline は poster のサムネイル表示のみとする。
 
 ```
 ブラウザ                       Workers (skyshare)            video.bsky.app        PDS
@@ -601,11 +601,13 @@ props: `{ video: SourceVideo; postUrl?: string }`。
       <button aria-label={t("video.play")}>。キーボード操作は <button> の既定動作。
 クリック時 start():
   videoEl = <video controls playsInline poster=thumbnailUrl>
-  if (videoEl.canPlayType("application/vnd.apple.mpegurl")) videoEl.src = playlistUrl   // Safari
-  else { const { default: Hls } = await import("hls.js")
-         if (!Hls.isSupported()) → error
-         hls = new Hls(); hls.loadSource(playlistUrl); hls.attachMedia(videoEl)
-         hls.on(Hls.Events.ERROR, (_, d) => d.fatal && setError()) }
+  const { default: Hls } = await import("hls.js")
+  if (Hls.isSupported()) {
+      hls = new Hls(); hls.loadSource(playlistUrl); hls.attachMedia(videoEl)
+      hls.on(Hls.Events.ERROR, (_, d) => d.fatal && setError())
+  } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) videoEl.src = playlistUrl   // MSE 非対応環境（iOS Safari 等）
+  else → error
+  videoEl の `error` イベントも setError() に結びつける（ネイティブ再生の失敗用）
   await videoEl.play()（自動再生ブロック時は controls で再生可能）
 unmount: hls?.destroy()
 エラー時: t("video.playError") と postUrl への外部リンクを表示
@@ -688,15 +690,15 @@ props: `{ video: SourceVideo; postUrl?: string }`。利用不可の動画（要�
 
 ## 8. 非機能要件の実現
 
-| 要件  | 実現方法                                                                                                                                    |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| NFR-1 | 動画のバイト列は `video.bsky.app` へのみ送信。`POST /v2/entry` のボディには blob 参照 JSON のみ（AC-9 は E2E でリクエストを検査）。         |
-| NFR-2 | `lxm=com.atproto.repo.uploadBlob` かつ `exp` 30 分のトークン。レスポンスは `no-store`。サーバー・クライアントともトークンをログ出力しない。 |
-| NFR-3 | `hls.js` は `VideoPlayer.start()` 内の動的 import のみ。初期表示は poster `<img>` のみ。                                                    |
-| NFR-4 | 再生開始は `<button aria-label>`、進捗は `role="progressbar"`、再生中は `<video controls>` のネイティブ操作。                               |
-| NFR-5 | `src/lib/i18n/messages/{ja,en}/video.ts` を新設し `index.ts` に登録（§9）。                                                                 |
-| NFR-6 | Chromium/Firefox: hls.js（MSE）、Safari: ネイティブHLS。                                                                                    |
-| NFR-7 | 動画のエラーは `VideoEntry.upload.state="error"` に閉じ、segment の他の入力に触れない。投稿失敗時は既存どおり入力を保持。                   |
+| 要件  | 実現方法                                                                                                                                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| NFR-1 | 動画のバイト列は `video.bsky.app` へのみ送信。`POST /v2/entry` のボディには blob 参照 JSON のみ（AC-9 は E2E でリクエストを検査）。                                            |
+| NFR-2 | `lxm=com.atproto.repo.uploadBlob` かつ `exp` 30 分のトークン。レスポンスは `no-store`。サーバー・クライアントともトークンをログ出力しない。                                    |
+| NFR-3 | `hls.js` は `VideoPlayer.start()` 内の動的 import のみ。初期表示は poster `<img>` のみ。                                                                                       |
+| NFR-4 | 再生開始は `<button aria-label>`、進捗は `role="progressbar"`、再生中は `<video controls>` のネイティブ操作。                                                                  |
+| NFR-5 | `src/lib/i18n/messages/{ja,en}/video.ts` を新設し `index.ts` に登録（§9）。                                                                                                    |
+| NFR-6 | hls.js（MSE）を優先し、MSE が使えない環境（iOS Safari 等）はネイティブHLS。Chromium は近年ネイティブHLSも報告するため、`canPlayType` ではなく `Hls.isSupported()` で分岐する。 |
+| NFR-7 | 動画のエラーは `VideoEntry.upload.state="error"` に閉じ、segment の他の入力に触れない。投稿失敗時は既存どおり入力を保持。                                                      |
 
 ## 9. i18n キー（`src/lib/i18n/messages/{ja,en}/video.ts`）
 

@@ -21,7 +21,27 @@ import {
 } from "@/lib/entry/resolveEntryDeleteScope"
 import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
 import { useT } from "@/lib/i18n/react"
-import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
+import {
+    hasEntryMedia,
+    type TimelinePost,
+    type TimelineSkyshareEntry,
+} from "@/lib/entry/posts"
+import { fetchVideoDurationSec } from "@/lib/video/fetchVideoDuration"
+import { drawVideoOverlay } from "@/lib/video/videoOverlay"
+
+/**
+ * 動画の poster（`thumbnail.jpg`、CORS `*`）を取得する。
+ * 配信側の `content-type` が `application/octet-stream` のため、`<img>` で読めるよう
+ * `image/jpeg` の Blob に作り直す。
+ */
+const fetchVideoPoster = async (thumbnailUrl: string): Promise<Blob> => {
+    const res = await fetch(thumbnailUrl)
+    if (!res.ok) throw new Error("Failed to fetch the video poster.")
+    const blob = await res.blob()
+    return blob.type.startsWith("image/")
+        ? blob
+        : new Blob([blob], { type: "image/jpeg" })
+}
 
 /**
  * PostCard の Entry 関連 UI が参照する、その時点で確定している唯一の表示状態。
@@ -123,7 +143,7 @@ export const useSkyshareEntryStatus = (
 
     const visualSource = options.visualSourcePost ?? item
     const sourcePost = options.sourcePost ?? item
-    const hasImages = visualSource.images.length > 0
+    const hasEntryVisualMedia = hasEntryMedia(visualSource)
 
     const display: SkyshareEntryDisplayState =
         state.phase === "creating"
@@ -132,7 +152,7 @@ export const useSkyshareEntryStatus = (
               ? { kind: "deleting", entry: state.entry }
               : state.entry
                 ? { kind: "entry", entry: state.entry }
-                : hasImages
+                : hasEntryVisualMedia
                   ? { kind: "creatable" }
                   : { kind: "ineligible" }
 
@@ -165,9 +185,21 @@ export const useSkyshareEntryStatus = (
         void (async () => {
             const objectUrls: string[] = []
             try {
+                const video = visualSource.video
+                let overlay: ReturnType<typeof drawVideoOverlay> | undefined
+                if (video) {
+                    // 再生時間（バッジ用）と poster を並行して取得する。どちらかが
+                    // 失敗したら例外となり、entry は作成しない（作成失敗の経路へ）。
+                    const [durationSec, poster] = await Promise.all([
+                        fetchVideoDurationSec(video.playlistUrl),
+                        fetchVideoPoster(video.thumbnailUrl),
+                    ])
+                    overlay = drawVideoOverlay(durationSec)
+                    objectUrls.push(URL.createObjectURL(poster))
+                }
                 objectUrls.push(
                     ...(await Promise.all(
-                        visualSource.images
+                        (video ? [] : visualSource.images)
                             .slice(0, VISUAL_IMAGE_COUNT)
                             .map(async image => {
                                 const res = await getBskyImage({
@@ -186,7 +218,10 @@ export const useSkyshareEntryStatus = (
                     )),
                 )
 
-                const thumbnailBlob = await createDefaultThumbnail(objectUrls)
+                const thumbnailBlob = await createDefaultThumbnail(
+                    objectUrls,
+                    overlay,
+                )
                 const res = await createEntry({
                     uri: sourcePost.uri,
                     visual: thumbnailBlob,

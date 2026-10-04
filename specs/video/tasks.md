@@ -86,11 +86,11 @@
   4. 動画添付済みの segment で画像追加・OGP取得ボタンが無効、画像添付済みの segment で動画追加ボタンが無効。
   5. 動画を取り外す → プレビューが消え、画像・OGP ボタンが有効に戻る。アップロード中の取り外しで `abortUpload` が呼ばれる。
   6. `upload-token` を 400 でモック → 動画の送信が1回も行われず、`unsupportedPds` の文言が表示される。
-  7〜9. （ゲスト表示は実際の投稿を行わないため、`submitThread.test.ts` の単体テストで検証する。投稿内容の `posts[i].video`/`videoMeta`（alt を含む）、2 segment での両方への `video`、`visual` が `thumbnailBlob` になること、動画のバイト列が送られないこと（blob 参照 JSON のみ）を確認する。実アカウントでの確認は手動確認の項に含む。）
-  10. 動画の完了待ち（`getJobStatus` を保留）→ 投稿ボタンが無効で `video.submit.waitUpload` が表示される。完了後に有効になる。
-  11. アップロード失敗（`startUpload` を `DailyLimitExceeded` でモック）→ 投稿ボタンが無効のまま `video.submit.removeFailed` が表示される。取り外すと有効になる。別の動画を選び直した場合も、完了するまで無効のまま。
-  12. アップロード中に取り外す → 完了を待たず投稿ボタンが有効になる。
-  13. ツールバーで動画追加ボタン（`aria-label` が `video.picker.addAria`）が、画像追加ボタンと別個の要素として画像追加ボタンの直後に並ぶ。動画追加ボタンの `<img>` が `video.svg` で、SVGの `fill` が `#0085ff` である。
+     7〜9. （ゲスト表示は実際の投稿を行わないため、`submitThread.test.ts` の単体テストで検証する。投稿内容の `posts[i].video`/`videoMeta`（alt を含む）、2 segment での両方への `video`、`visual` が `thumbnailBlob` になること、動画のバイト列が送られないこと（blob 参照 JSON のみ）を確認する。実アカウントでの確認は手動確認の項に含む。）
+  7. 動画の完了待ち（`getJobStatus` を保留）→ 投稿ボタンが無効で `video.submit.waitUpload` が表示される。完了後に有効になる。
+  8. アップロード失敗（`startUpload` を `DailyLimitExceeded` でモック）→ 投稿ボタンが無効のまま `video.submit.removeFailed` が表示される。取り外すと有効になる。別の動画を選び直した場合も、完了するまで無効のまま。
+  9. アップロード中に取り外す → 完了を待たず投稿ボタンが有効になる。
+  10. ツールバーで動画追加ボタン（`aria-label` が `video.picker.addAria`）が、画像追加ボタンと別個の要素として画像追加ボタンの直後に並ぶ。動画追加ボタンの `<img>` が `video.svg` で、SVGの `fill` が `#0085ff` である。
 - [x] `[TEST]` Playwright（`tests/e2e/videoVisual.spec.ts`。ページ内で本実装の `probeVideo`・`createDefaultThumbnail`・`drawVideoOverlay` を実行して visual を生成する（ゲスト表示は投稿を行わないため、dev サーバーのモジュールを動的 import して呼ぶ）。`createImageBitmap` と canvas で 1200×630 にデコードし画素をサンプリングする。許容誤差は design.md §6.5.1 のとおり色 ±6）:
   1. 画像サイズが 1200×630 である。
   2. 円の内側（`(555, 315)`）が `rgb(69,68,97)`（無地背景 `rgb(97,95,168)` の上の再生ボタンの円。`0.4×背景 + 30`）。
@@ -105,13 +105,13 @@
 
 ## Phase 7: 表示（Timeline・Entry詳細・ゲスト）
 
-- [ ] `[FE]` `src/components/video/VideoPlayButton/`（`VIDEO_OVERLAY_SPEC` を S=1 で使用、design.md §6.5.2）・`VideoPlayer/`・`VideoThumbnail/`・`VideoUnavailable/` を実装する（§7.1・§7.2・§7.7）。
-- [ ] `[FE]` `PostBody` に `video`/`unsupportedVideo`/`unsupportedVideoLinkUrl`/`videoInteractive` を追加し、`EntryDetailView` から `video`・`unsupportedVideo`・`unsupportedVideoLinkUrl` を渡す（§7.3）。
-- [ ] `[FE]` `PostCard` で動画投稿・利用不可の動画のとき `galleryImages=[]` にし、`videoInteractive={false}`・`unsupportedVideoLinkUrl={item.url}` を渡す。`entryCandidate.ts` の判定を `hasEntryMedia` に置き換える（§7.4）。
-- [ ] `[FE]` `guestDummyPosts.ts` と `entries/sample*.astro` に動画投稿と、利用不可の動画（`unsupportedVideo`）を持つ投稿を追加する（§7.6・§7.7）。
-- [ ] `[FE]` `video.play`・`video.playError`・`video.unavailable.*` を ja/en に追加する。
-- [ ] `[TEST]` 既存の `tests/components/post/ThreadCard/entryCandidate.test.ts` に `resolveEntryVisualSourcePost` のケースを追記: ルートが動画投稿ならルート、ルートがメディア無しで reply が動画ならその reply、画像と動画が混在する場合はルートに近い方。
-- [ ] `[TEST]` Playwright（`tests/e2e/videoDisplay.spec.ts`。`video.bsky.app` の playlist・セグメント・サムネイルを `page.route` でモック。サンプルEntryページと `/?guest`）:
+- [x] `[FE]` `src/components/video/VideoPlayButton/`（`VIDEO_OVERLAY_SPEC` を S=1 で使用、design.md §6.5.2）・`VideoPlayer/`・`VideoThumbnail/`・`VideoUnavailable/` を実装する（§7.1・§7.2・§7.7）。
+- [x] `[FE]` `PostBody` に `video`/`unsupportedVideo`/`unsupportedVideoLinkUrl`/`videoInteractive` を追加し、`EntryDetailView` から `video`・`unsupportedVideo`・`unsupportedVideoLinkUrl` を渡す（§7.3）。
+- [x] `[FE]` `PostCard` で動画投稿・利用不可の動画のとき `galleryImages=[]` にし、`videoInteractive={false}`・`unsupportedVideoLinkUrl={item.url}` を渡す。`entryCandidate.ts` の判定を `hasEntryMedia` に置き換える（§7.4）。
+- [x] `[FE]` `guestDummyPosts.ts` と `entries/sample*.astro` に動画投稿と、利用不可の動画（`unsupportedVideo`）を持つ投稿を追加する（§7.6・§7.7）。
+- [x] `[FE]` `video.play`・`video.playError`・`video.unavailable.*` を ja/en に追加する。
+- [x] `[TEST]` 既存の `tests/components/post/ThreadCard/entryCandidate.test.ts` に `resolveEntryVisualSourcePost` のケースを追記: ルートが動画投稿ならルート、ルートがメディア無しで reply が動画ならその reply、画像と動画が混在する場合はルートに近い方。
+- [x] `[TEST]` Playwright（`tests/e2e/videoDisplay.spec.ts`。`video.bsky.app` の playlist・セグメント・サムネイルを `page.route` でモック。サンプルEntryページと `/?guest`）:
   1. ゲストの Timeline: 動画投稿のカードに poster サムネイルと再生マークが表示され、`<video>` 要素が存在せず、グレーアウトされていない。サムネイルをクリックしても再生が始まらない。
   2. サンプルEntryページ: 初期状態で poster 画像と「再生」ボタンのみがあり、`<video>` 要素が無く、`playlist.m3u8`・セグメント・`hls.js` のリクエストが発生していない。
   3. 再生ボタンをクリック → `<video>` が表示され、`hls.js` と `playlist.m3u8` のリクエストが発生し、`<video>` の `readyState >= 2`（モックのセグメントを再生できる場合）またはエラー表示でない状態になる。
@@ -119,10 +119,10 @@
   5. 再生ボタンにキーボード（Tab → Enter）で到達・操作できる。
   6. 再生の前後でコンテナの高さが変わらない（`aspect-ratio` による確保）。
   7. 画像のみの投稿・テキストのみの投稿の表示が変化しない（既存の `multiImage.spec.ts`・`entryPostCards.spec.ts` が通る）。
-  8. 再生ボタンの円が直径 59px（`getBoundingClientRect`）で、背景色が `rgba(47, 47, 47, 0.78)`、内側の `<polygon>` が `fill="#fff"`・`points="0,0 0,25 20,12.5"`。Timeline のサムネイルと Entry 詳細の再生ボタンで同一の値である。
+  8. 再生ボタンの円が直径 59px（`getBoundingClientRect`）で、背景色が `rgba(50, 50, 50, 0.6)`、内側の `<polygon>` が `fill="#fff"`・`points="0,0 0,25 20,12.5"`。Timeline のサムネイルと Entry 詳細の再生ボタンで同一の値である。
   9. ゲストの Timeline の利用不可の動画の投稿: poster が表示され（`filter: brightness` が適用されている）、「Skyshareでは再生できません」の文言と Bluesky へのリンク（`target=_blank`）が表示され、再生ボタンと `<button>` が無く、カードがグレーアウトされ、entry 作成ボタンが無効。
   10. サンプルEntryページの利用不可の動画: 同様に poster の暗表示・文言・リンクが表示され、再生ボタンが無い。
-- [ ] 検証: `tsc`・`vitest`・上記および既存 Playwright が通る。
+- [x] 検証: `tsc`・`vitest`・上記および既存 Playwright が通る。
 
 ## Phase 8: 既存動画投稿からの entry 事後作成
 
@@ -136,5 +136,5 @@
 
 - [ ] `[TEST]` `tests/lib/i18n/messages.test.ts`・`noHardcodedText.test.ts` が `video.*` を含めて通る（ja・en のキー集合の一致、ハードコード文言なし）。
 - [ ] `[TEST]` 全 `vitest`・`tsc`・全 Playwright が通る。
-- [ ] 手動確認（実アカウントが必要なため自動化不可）: 300MB 級の mp4 のアップロード所要時間と、トークン再発行（30分を超える低速回線を模擬するか、`VIDEO_UPLOAD_TOKEN_TTL_SEC` を一時的に短縮して確認）。10分超の動画で `tooLong`、変換失敗時（壊れた mp4）に `processingFailed` が表示されること。Safari（ネイティブHLS）と Firefox での再生。
+- [ ] 手動確認（実アカウントが必要なため自動化不可）: 300MB 級の mp4 のアップロード所要時間と、トークン再発行（30分を超える低速回線を模擬するか、`VIDEO_UPLOAD_TOKEN_TTL_SEC` を一時的に短縮して確認）。10分超の動画で `tooLong`、変換失敗時（壊れた mp4）に `processingFailed` が表示されること。Safari（デスクトップは hls.js、iOS はネイティブHLS）と Firefox での再生。
 - [ ] 積み残し（実装後の微調整）: 基準カード幅 `referenceCardWidth`（現在は仮置きの 506px）を、実装した visual を X のカード上で見比べて微調整する。調整した値は `VIDEO_OVERLAY_SPEC` と design.md §6.5.2 の換算表（S・各換算値）、本ファイルの visual 検証の期待座標へ反映する。

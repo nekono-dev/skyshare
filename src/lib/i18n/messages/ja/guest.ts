@@ -12,6 +12,11 @@ export const guest = {
     "guest.entry1.postCaption": "ゲスト表示用のダミーEntryです。",
     "guest.post3.text":
         "画像投稿で、URL発行をしなかった場合の表示です。（あとからSkyshare Entry作成可能）",
+    "guest.video.text":
+        "動画を添付した投稿の表示です。（サムネイルに再生ボタンが重なり、Timelineでは再生されない）",
+    "guest.video.alt": "サンプル動画",
+    "guest.videoUnsupported.text":
+        "引用投稿に動画が添付された投稿の表示です。（Skyshareでは再生できない旨が表示される）",
     "guest.multi.text":
         "画像を6枚添付した投稿の表示です。（全画像が横スクロールのサムネイルで並ぶ）",
     "guest.threadA.tailText": "スレッドA・3件目です。",

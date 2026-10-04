@@ -2,7 +2,10 @@ import { useFormat } from "@/lib/i18n/react"
 import Avatar from "@/components/common/Avatar"
 import ImageGallery from "@/components/image/ImageGallery"
 import PostEngagementStats from "@/components/post/PostEngagementStats"
-import type { SourceImage } from "@/lib/entry/entry"
+import VideoPlayer from "@/components/video/VideoPlayer"
+import VideoThumbnail from "@/components/video/VideoThumbnail"
+import VideoUnavailable from "@/components/video/VideoUnavailable"
+import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
 import styles from "./index.module.css"
 
 /**
@@ -11,7 +14,8 @@ import styles from "./index.module.css"
  * 責務と処理概要:
  * - Timeline（`PostCard`）と Entry詳細ページの両方で使う、操作ロジックを持たない表示専用部品。
  * - カードの枠・背景は呼び出し側が持つ。
- * - 画像は本文の下に `ImageGallery` で表示し、`engagement` が渡された場合のみ画像の下にリアクション数を表示する。
+ * - 動画（`video`）・利用不可の動画（`unsupportedVideo`）・画像のいずれかを本文の下に表示する。
+ *   画像は `ImageGallery` で表示し、`engagement` が渡された場合のみ画像の下にリアクション数を表示する。
  * - 設計: specs/postcardlayout/design.md §3.3
  */
 
@@ -21,6 +25,14 @@ type Props = {
   createdAt: string
   text: string
   images: SourceImage[]
+  /** 動画投稿の動画。指定時は画像の代わりに表示する */
+  video?: SourceVideo
+  /** 利用不可の動画（再生不可を明示する表示になる） */
+  unsupportedVideo?: SourceVideo
+  /** 利用不可の動画の表示に出す、元の Bluesky 投稿へのリンク先 */
+  unsupportedVideoLinkUrl?: string
+  /** false の場合、動画を再生できない静的なサムネイル表示にする（既定 true） */
+  videoInteractive?: boolean
   /** false の場合、画像を拡大表示できない静的な表示にする（既定 true） */
   imagesInteractive?: boolean
   /** 指定時は日時表示を Bluesky ページへのリンク（target=_blank）にする */
@@ -48,6 +60,10 @@ const PostBody = ({
   createdAt,
   text,
   images,
+  video,
+  unsupportedVideo,
+  unsupportedVideoLinkUrl,
+  videoInteractive = true,
   imagesInteractive = true,
   postUrl,
   engagement,
@@ -91,7 +107,18 @@ const PostBody = ({
 
       {text ? <p className={styles.text}>{text}</p> : null}
 
-      {images.length > 0 ? (
+      {video ? (
+        videoInteractive ? (
+          <VideoPlayer video={video} postUrl={postUrl} />
+        ) : (
+          <VideoThumbnail video={video} />
+        )
+      ) : unsupportedVideo ? (
+        <VideoUnavailable
+          video={unsupportedVideo}
+          postUrl={unsupportedVideoLinkUrl}
+        />
+      ) : images.length > 0 ? (
         <ImageGallery images={images} interactive={imagesInteractive} />
       ) : null}
 

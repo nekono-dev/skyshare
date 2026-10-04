@@ -163,7 +163,11 @@ const Component = ({
         },
       ]
     : undefined
-  const galleryImages = entryVisualImages ?? item.images
+  // 動画投稿・利用不可の動画は、entry の visual ではなく動画のサムネイル（または利用不可表示）を出す。
+  const hasVideoDisplay = !!item.video || !!item.unsupportedVideo
+  const galleryImages = hasVideoDisplay
+    ? []
+    : (entryVisualImages ?? item.images)
   const imagesInteractive = entryVisualImages === undefined
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
   // ただしスレッドの中間投稿（`threadReply`）はグレーアウトしない。
@@ -188,6 +192,10 @@ const Component = ({
         createdAt={item.indexedAt}
         text={item.text}
         images={galleryImages}
+        video={item.video}
+        unsupportedVideo={item.unsupportedVideo}
+        videoInteractive={false}
+        unsupportedVideoLinkUrl={item.url}
         imagesInteractive={imagesInteractive}
       />
 

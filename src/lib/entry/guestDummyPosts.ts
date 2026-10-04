@@ -40,6 +40,11 @@ const placeholderImage = (bg: string, label: string): string => {
 const SAMPLE_OG_IMAGE_PATH = "/materials/sample-og.png"
 const SAMPLE_ORPHANED_OG_IMAGE_PATH = "/materials/sample-orphaned-og.png"
 
+// 動画投稿のダミー。poster は静的画像、再生URLは実在しない（再生するとエラー表示になる）。
+const GUEST_VIDEO_POSTER_PATH = "/materials/sample-video-poster.png"
+const GUEST_VIDEO_PLAYLIST_URL =
+    "https://video.bsky.app/watch/did%3Aplc%3Aguestdemo/bafkreiguestvideo/playlist.m3u8"
+
 /**
  * ゲストモードの「Entryを開く」から実際に遷移できるサンプルEntry詳細ページ
  * （`src/pages/entries/sample.astro`）へのパス。
@@ -132,6 +137,50 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
                     cid: "bafkreiguestimage2",
                 },
             ],
+        },
+        // 動画投稿（entry未作成）。Timelineでは poster サムネイルと再生ボタンを表示し、再生はしない。
+        // 動画は事後entry作成の対象になる（グレーアウトしない）。
+        {
+            uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-video",
+            cid: "bafyreiguestvideo",
+            url: "https://bsky.app/profile/guest.demo/post/guest-video",
+            indexedAt: "2026-09-05T08:30:00.000Z",
+            author: {
+                did: "did:plc:guestdemo",
+                handle: "guest.demo",
+                displayName: t("guest.userName"),
+            },
+            text: t("guest.video.text"),
+            images: [],
+            video: {
+                cid: "bafkreiguestvideo",
+                playlistUrl: GUEST_VIDEO_PLAYLIST_URL,
+                thumbnailUrl: GUEST_VIDEO_POSTER_PATH,
+                alt: t("guest.video.alt"),
+                aspectRatio: { width: 16, height: 9 },
+            },
+        },
+        // 利用不可の動画（引用投稿に添付された動画）。poster を暗くして再生不可を明示し、
+        // entry作成の対象外（グレーアウト）になる。
+        {
+            uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-video-unsupported",
+            cid: "bafyreiguestvideounsupported",
+            url: "https://bsky.app/profile/guest.demo/post/guest-video-unsupported",
+            indexedAt: "2026-09-05T08:15:00.000Z",
+            author: {
+                did: "did:plc:guestdemo",
+                handle: "guest.demo",
+                displayName: t("guest.userName"),
+            },
+            text: t("guest.videoUnsupported.text"),
+            images: [],
+            unsupportedVideo: {
+                cid: "bafkreiguestvideounsupported",
+                playlistUrl: GUEST_VIDEO_PLAYLIST_URL,
+                thumbnailUrl: GUEST_VIDEO_POSTER_PATH,
+                alt: t("guest.video.alt"),
+                aspectRatio: { width: 16, height: 9 },
+            },
         },
         // 画像6枚の投稿（entry未作成）。カードには全6枚が横スクロールのサムネイルで表示され、
         // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/multiimage FR-3・FR-5）。
@@ -402,6 +451,18 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
         {
             rootPost: findGuestPost(
                 "at://did:plc:guestdemo/app.bsky.feed.post/guest3",
+            ),
+            replies: [],
+        },
+        {
+            rootPost: findGuestPost(
+                "at://did:plc:guestdemo/app.bsky.feed.post/guest-video",
+            ),
+            replies: [],
+        },
+        {
+            rootPost: findGuestPost(
+                "at://did:plc:guestdemo/app.bsky.feed.post/guest-video-unsupported",
             ),
             replies: [],
         },
