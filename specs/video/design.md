@@ -33,6 +33,8 @@
 | 分割アップロード         | パートサイズはサーバー指定（5,242,880 バイト）。300MB で 58 パート。各パートは冪等。`startUpload` の応答に `jobId`・`partSizeBytes`・`partCount`。                                            |
 | 変換ジョブ               | `finishUpload` の `completedJobId` を `getJobStatus`（認証不要）でポーリング。`JOB_STATE_COMPLETED` で `blob`（JSON形式の blob 参照）が得られる。                                             |
 | `startUpload` の事前検証 | サイズ 300,000,000 バイト超は `VideoTooLarge`（400）、極端な縦横比は `BadAspectRatio`（400）。長さ・MIME は参考値として受理され、後段の変換で失敗しうる。長さの上限は 10 分（運用上の仕様）。 |
+| 形式変換                 | mp4（H.264）・mov（H.264／HEVC）・webm（VP8+Vorbis）・mpeg（MPEG-2）の各ファイルが `JOB_STATE_COMPLETED` になり、出力 blob の `mimeType` は常に `video/mp4`。`startUpload` の `mimeType` は変換の判定に使われず、MIME を偽った mov も完了する。変換結果の `playlist.m3u8`・`thumbnail.jpg` も取得できる。 |
+| メタデータ省略           | `startUpload` の `durationMs`・`width`・`height` を省略しても HEVC mov・webm は完了する。ただし skyshare は、これらをブラウザの読み取りで必ず得られた動画だけを送る（読み取れない動画は添付しない。FR-2）。 |
 | 再生データ               | 投稿レコードの `video` blob の CID から `https://video.bsky.app/watch/<DID(URLエンコード)>/<CID>/playlist.m3u8` と `.../thumbnail.jpg` が得られる。マスタープレイリストは 360p/720p。         |
 | 再生                     | Chromium で hls.js により再生できた。サムネイルの `content-type` は `application/octet-stream`（`<img>` 表示・`fetch` での取得は可能）。                                                      |
 
@@ -45,8 +47,20 @@
 export const MAX_VIDEO_BYTES = 300_000_000
 /** 動画の最大長（秒） */
 export const MAX_VIDEO_DURATION_SEC = 600
-/** 添付できる動画の MIME タイプ */
-export const VIDEO_MIME_TYPE = "video/mp4"
+/** 投稿に載る動画 blob の MIME タイプ（変換後の出力。常に mp4） */
+export const VIDEO_BLOB_MIME_TYPE = "video/mp4"
+/** 添付できる動画の MIME タイプ（アップロード前の形式）と、MIME が空のときに判定へ使う拡張子 */
+export const VIDEO_SOURCE_FORMATS = [
+  { mimeType: "video/mp4", extensions: ["mp4", "m4v"] },
+  { mimeType: "video/quicktime", extensions: ["mov"] },
+  { mimeType: "video/webm", extensions: ["webm"] },
+  { mimeType: "video/mpeg", extensions: ["mpeg", "mpg"] },
+] as const
+/** `<input type="file">` の `accept` に渡す値（MIME タイプと拡張子の両方） */
+export const VIDEO_ACCEPT = VIDEO_SOURCE_FORMATS.flatMap((f) => [
+  f.mimeType,
+  ...f.extensions.map((e) => `.${e}`),
+]).join(",")
 /** 動画サービスの XRPC ベースURL */
 export const VIDEO_SERVICE_XRPC_URL = "https://video.bsky.app/xrpc/"
 /** 再生URL・サムネイルURLの配信ベースURL */
@@ -134,7 +148,7 @@ export const CommonVideoBlobSchema = z
   .object({
     $type: z.literal("blob"),
     ref: z.object({ $link: z.string().min(1) }).strict(),
-    mimeType: z.literal(VIDEO_MIME_TYPE),
+    mimeType: z.literal(VIDEO_BLOB_MIME_TYPE),
     size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
   })
   .strict()
@@ -264,13 +278,31 @@ export type VideoProbe = {
 }
 
 export type VideoValidationError =
-  "notMp4" | "tooLarge" | "tooLong" | "unreadable"
+  "unsupportedFormat" | "tooLarge" | "tooLong" | "unreadable"
+
+/**
+ * ファイルの動画形式（`VIDEO_SOURCE_FORMATS` の MIME タイプ）を返す。対応外なら undefined。
+ * `file.type` が対応する MIME ならそれを使い、`file.type` が空のとき（OS・ブラウザが MIME を
+ * 付けない場合）に限り、拡張子（小文字化）で判定する。`file.type` が空でなく対応外なら、
+ * 拡張子が対応形式でも対応外とする。
+ */
+export const resolveVideoMimeType = (
+  file: Pick<File, "type" | "name">,
+): string | undefined => {
+  const byType = VIDEO_SOURCE_FORMATS.find((f) => f.mimeType === file.type)
+  if (byType) return byType.mimeType
+  if (file.type !== "") return undefined
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
+  return VIDEO_SOURCE_FORMATS.find((f) =>
+    (f.extensions as readonly string[]).includes(ext),
+  )?.mimeType
+}
 
 /** 同期的に検査できるもの（形式・サイズ）。違反なら理由を返し、問題なければ undefined */
 export const validateVideoFile = (
-  file: File,
+  file: Pick<File, "type" | "name" | "size">,
 ): VideoValidationError | undefined => {
-  if (file.type !== VIDEO_MIME_TYPE) return "notMp4"
+  if (resolveVideoMimeType(file) === undefined) return "unsupportedFormat"
   if (file.size > MAX_VIDEO_BYTES) return "tooLarge"
   return undefined
 }
@@ -281,6 +313,10 @@ export const validateVideoFile = (
  * Safari は `preload="metadata"` だとシーク後もフレームを描画せず黒一色になり、`seeked` の時点でも未デコードのことがあるため、`preload="auto"` とし、`requestVideoFrameCallback`（未対応なら `readyState >= 2`）でフレームの描画可能を待ってから描画する（待機は1秒で打ち切り、超えても描画へ進む）。
  * duration > MAX_VIDEO_DURATION_SEC なら "tooLong"、読み込み不能・寸法0・duration が有限でなければ
  * "unreadable" で reject する。object URL は finally で revoke する。
+ * 対応形式でもブラウザが復号できないコーデック（Chromium 系・Firefox での HEVC の mov 等）は
+ * `loadedmetadata` に至らず、または寸法0になり、この経路で "unreadable" になる。
+ * 読み取れない動画を、長さ・寸法を省略して動画サービスへ送るフォールバックは設けない
+ * （長さ・縦横比のクライアント側検査と poster・visual の生成ができないため。FR-2）。
  */
 export const probeVideo = async (file: File): Promise<VideoProbe> => {
   /* ... */
@@ -323,8 +359,9 @@ getToken = トークンキャッシュ関数（expiresAt - now < VIDEO_TOKEN_REF
 
 1. start = POST {XRPC}app.bsky.video.startUpload
      headers: Authorization: Bearer <getToken()>, Content-Type: application/json
-     body: { sizeBytes: file.size, mimeType: "video/mp4", name: file.name,
+     body: { sizeBytes: file.size, mimeType: resolveVideoMimeType(file)!, name: file.name,
              durationMs: round(durationSec*1000), width, height }
+     `mimeType` は `validateVideoFile` を通過済みのため必ず解決できる（動画サービスは変換の判定に使わないが、実形式を申告する）。
      失敗 → mapStartUploadError(error名)（§5.4）
 2. for partNumber in 1..start.partCount（逐次）:
      chunk = file.slice((n-1)*partSizeBytes, n*partSizeBytes)
@@ -353,7 +390,7 @@ getToken = トークンキャッシュ関数（expiresAt - now < VIDEO_TOKEN_REF
 
 | 発生源                                                   | `VideoUploadErrorCode` / `VideoValidationError` | メッセージキー（`video.error.*`） |
 | -------------------------------------------------------- | ----------------------------------------------- | --------------------------------- |
-| `validateVideoFile`: 形式                                | `notMp4`                                        | `notMp4`                          |
+| `validateVideoFile`: 形式                                | `unsupportedFormat`                             | `unsupportedFormat`               |
 | `validateVideoFile`/`startUpload`: `VideoTooLarge`       | `tooLarge`                                      | `tooLarge`                        |
 | `probeVideo`: 長さ超過                                   | `tooLong`                                       | `tooLong`                         |
 | `probeVideo`: 読み込み不能                               | `unreadable`                                    | `unreadable`                      |
@@ -452,7 +489,7 @@ onSelectFile(file):
   1. サムネイル: `MediaThumb`（§6.2.1）を、画像の `thumb-grid` と同じ `1200 / 630` の領域・枠線・角丸でフォーム全幅に置く。中身は poster の `<img>`（`object-fit: cover`）。右上に「×」（取り外し。`aria-label` は `t("video.picker.remove")`）、右下に「alt」（`aria-label` は `t("video.picker.altAria")`、alt が入力済みなら強調色）を `MediaThumb` のバッジで表示する。
   2. 進捗: サムネイルの直下に、進捗バー（`role="progressbar"`、`aria-valuenow`）と状態文言（アップロード中／変換中／完了／エラー）を縦に並べる。エラー状態では「別の動画を選ぶ」ボタンをその下に出す。
   - alt 入力は、画像と同じ `ImageAltDialog` を `altDialogOpen` state で開く（`onChange` で `VideoEntry.alt` を更新）。インラインの alt 入力欄・「動画を取り外す」テキストボタン・ファイル名表示は持たない。
-- `<input type="file" accept="video/mp4">` を使う。`File` は `onSelectFile` のクロージャでのみ保持し、`VideoEntry` には持たせない（アップロード後は blob 参照だけが必要）。
+- `<input type="file" accept={VIDEO_ACCEPT}>` を使う（§3）。`File` は `onSelectFile` のクロージャでのみ保持し、`VideoEntry` には持たせない（アップロード後は blob 参照だけが必要）。
 - 取り外し: アップロード中なら `abort()`、`revokeVideoEntry`、`onChange(null)`。
 - 全文言は `useT()` の `video.*` キー（§9）。
 
@@ -796,11 +833,11 @@ props: `{ video: SourceVideo; postUrl?: string }`。利用不可の動画（要�
 
 ## 9. i18n キー（`src/lib/i18n/messages/{ja,en}/video.ts`）
 
-`video.picker.add`（動画を追加）、`video.picker.addAria`（動画追加ボタンの `aria-label`）、`video.picker.remove`、`video.picker.reselect`、`video.picker.altLabel`、`video.picker.exclusiveWithImage`、`video.picker.exclusiveWithOgp`、`video.picker.exclusiveWithVideo`、`video.status.uploading`、`video.status.processing`、`video.status.done`、`video.submit.waitUpload`、`video.submit.removeFailed`、`video.play`、`video.playError`、`video.unavailable.title`（「Skyshareでは再生できません」）、`video.unavailable.link`（「Blueskyで見る」）、および `video.error.*`（§5.4 の14種）。`video.thumbnail.badge` は使わない（再生ボタンは装飾のため）。ja・en で同一キー集合とする（`tests/lib/i18n/messages.test.ts` と `noHardcodedText.test.ts` の対象に含める）。
+`video.picker.add`（動画を追加）、`video.picker.addAria`（動画追加ボタンの `aria-label`）、`video.picker.remove`、`video.picker.reselect`、`video.picker.altLabel`、`video.picker.exclusiveWithImage`、`video.picker.exclusiveWithOgp`、`video.picker.exclusiveWithVideo`、`video.status.uploading`、`video.status.processing`、`video.status.done`、`video.submit.waitUpload`、`video.submit.removeFailed`、`video.play`、`video.playError`、`video.unavailable.title`（「Skyshareでは再生できません」）、`video.unavailable.link`（「Blueskyで見る」）、および `video.error.*`（§5.4 の14種。`unsupportedFormat` の文言は対応形式 mp4・mov・webm・mpeg を挙げる）。`video.thumbnail.badge` は使わない（再生ボタンは装飾のため）。ja・en で同一キー集合とする（`tests/lib/i18n/messages.test.ts` と `noHardcodedText.test.ts` の対象に含める）。
 
 ## 10. テスト方針
 
-- 単体（vitest）: `probeVideo`（モックの `HTMLVideoElement`）、`validateVideoFile`、`uploadVideo`（`fetch` のフェイク。正常系・パートの再試行・`startUpload` 各エラー・`FAILED`・timeout・中断時の `abortUpload`・トークン再取得）、`createVideoUploadToken`/`isSupportedVideoPds`、`createVideoEmbed`、スキーマ（動画分岐の成功・画像併用の失敗・サイズ超過の失敗）、`extractEmbedVideo`/`buildVideoUrls`、ルートハンドラ（`/v2/entry` が `app.bsky.embed.video` を載せること、`upload-token` の 200/400/401/500）。
+- 単体（vitest）: `probeVideo`（モックの `HTMLVideoElement`）、`validateVideoFile`・`resolveVideoMimeType`（4形式の MIME、MIME が空のときの拡張子判定、MIME が対応外で拡張子だけ対応形式のとき対応外、大文字拡張子）、`uploadVideo`（`fetch` のフェイク。正常系・パートの再試行・`startUpload` 各エラー・`FAILED`・timeout・中断時の `abortUpload`・トークン再取得）、`createVideoUploadToken`/`isSupportedVideoPds`、`createVideoEmbed`、スキーマ（動画分岐の成功・画像併用の失敗・サイズ超過の失敗）、`extractEmbedVideo`/`buildVideoUrls`、ルートハンドラ（`/v2/entry` が `app.bsky.embed.video` を載せること、`upload-token` の 200/400/401/500）。
 - 単体: `formatVideoDuration`（5→`0:05`、59.6→`1:00`、0→`0:01`、600→`10:00`）、`VIDEO_OVERLAY_SPEC` の値、`fetchVideoDurationSec`（マスター → バリアント → EXTINF 合計、取得失敗・EXTINF なしで throw）、`extractUnsupportedEmbedVideo`、`composeThumbnailBlob` が `overlay` を `scale` 付きで呼ぶこと。
-- E2E（Playwright）: `video.bsky.app` へのリクエスト（`startUpload`/`uploadPart`/`finishUpload`/`getJobStatus`、プレイリスト、セグメント、サムネイル）を `page.route` でモックする。固定の小さな mp4（`tests/fixtures/video-sample.mp4`、約 80KB）を `setInputFiles` で選択する。
-- 手動（実アカウント）: Bluesky 公式アプリでの表示、既存の動画投稿からの entry 事後作成、300MB 級の実ファイルでの所要時間・トークン再発行。
+- E2E（Playwright）: `video.bsky.app` へのリクエスト（`startUpload`/`uploadPart`/`finishUpload`/`getJobStatus`、プレイリスト、セグメント、サムネイル）を `page.route` でモックする。固定の小さな mp4（`tests/fixtures/video-sample.mp4`、約 80KB）に加え、mov（`video-sample.mov`、H.264）・webm（`video-sample.webm`、VP8）を `setInputFiles` で選択する。`startUpload` のリクエストボディの `mimeType` がファイルの実形式であることを検査する。
+- 手動（実アカウント）: Bluesky 公式アプリでの表示（mp4・mov・webm）、iPhone 実機で撮影した動画（HEVC の mov）の Safari での添付と Chromium 系・Firefox での拒否（`unreadable`）、既存の動画投稿からの entry 事後作成、300MB 級の実ファイルでの所要時間・トークン再発行。
