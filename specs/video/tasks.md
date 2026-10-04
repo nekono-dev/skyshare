@@ -126,11 +126,11 @@
 
 ## Phase 8: 既存動画投稿からの entry 事後作成
 
-- [ ] `[FE]` `useSkyshareEntryStatus.ts` の `hasImages` を `hasEntryMedia` に変更し、`visualSource.video` の poster 取得（`fetch(thumbnailUrl)` と `type` 補正）・`fetchVideoDurationSec`（並行）→ `createDefaultThumbnail([url], drawVideoOverlay(durationSec))` の経路を追加する（design.md §7.5）。
-- [ ] `[TEST]` `tests/components/post/PostCard/useSkyshareEntryStatus.test.ts`（新規）: 動画投稿で `display.kind === "creatable"`、`createEntryFromPost` が `thumbnailUrl` と `playlist.m3u8` を `fetch` し `createDefaultThumbnail` に `overlay` が渡され `createEntry({ uri, visual })` を呼ぶ、`fetchVideoDurationSec` が throw したとき `createEntry` を呼ばず `createError="post.entry.createFailed"`、Blob の `type` が空でも `image/jpeg` で `createDefaultThumbnail` に渡る、`fetch` 失敗で `createError="post.entry.createFailed"`。
-- [ ] `[TEST]` Playwright（`tests/e2e/videoDisplay.spec.ts` に追記。`/?guest` ではentry作成ボタンが無効のため、タイムラインAPIと `thumbnail.jpg`・`/v2/entry` をモックしたログイン状態で実施）: 動画投稿のカードに entry 作成ボタンが有効で表示され、押下すると `thumbnail.jpg`・`playlist.m3u8` の取得と `/v2/entry` の `uri`+`visual` 送信が行われる。`playlist.m3u8` を 404 でモックした場合は `/v2/entry` が呼ばれず、作成失敗の通知が表示される。送信された `visual` は `tests/e2e/videoVisual.spec.ts` と同じ方法で再生ボタンとバッジを検査する。
+- [x] `[FE]` visual の作成を `src/lib/entry/createPostVisual.ts`（`createPostVisualBlob`）へ切り出し、`useSkyshareEntryStatus.ts` の `hasImages` を `hasEntryMedia` に変更して同関数を呼ぶ。動画投稿は poster 取得（`fetch(thumbnailUrl)` と `type` 補正）と `fetchVideoDurationSec` を並行して行い、`createDefaultThumbnail([url], drawVideoOverlay(durationSec))` で合成する（design.md §7.5）。
+- [x] `[TEST]` `tests/lib/entry/createPostVisual.test.ts`（新規。vitest は React のフックを描画できないため、フックから切り出した `createPostVisualBlob` を対象にする）: 動画投稿で `thumbnailUrl` と `playlist.m3u8` を `fetch` し `createDefaultThumbnail` に `overlay` が渡る、Blob の `type` が空でも `image/jpeg` で渡る、`fetchVideoDurationSec` が失敗したとき `createDefaultThumbnail` を呼ばず throw する、poster の `fetch` 失敗で throw する、画像投稿は先頭4枚のみ取得し `overlay` なしで合成する。`createPostVisualBlob` が throw したとき `createEntry` を呼ばず `createError="post.entry.createFailed"` になることは、フックの既存の `catch` の経路で処理される。
+- [x] `[TEST]` Playwright（`tests/e2e/videoVisual.spec.ts` に追記。`/?guest` では entry 作成ボタンが無効で、実ログインも使えないため、ページ内で `createPostVisualBlob` を実行する）: `thumbnail.jpg`（`content-type` は `application/octet-stream`）と `playlist.m3u8`（EXTINF 合計 5 秒）をモックすると、1200×630 の visual が作られ、円の内側・再生記号・バッジ余白が design.md §6.5 の色と一致する。`playlist.m3u8` を 404 でモックすると visual は作られず失敗する。entry 作成ボタンの押下から `/v2/entry` の送信までの結線は、下記の手動確認で確認する。
 - [ ] 手動確認（実アカウント）: 既存の自分の動画投稿から entry を作成し、詳細ページで visual が poster 由来であること、動画が再生できること。
-- [ ] 検証: `tsc`・`vitest`・Playwright が通る。
+- [x] 検証: `tsc`・`vitest`・Playwright が通る。
 
 ## Phase 9: 総合検証
 

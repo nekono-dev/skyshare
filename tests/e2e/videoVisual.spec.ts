@@ -155,4 +155,119 @@ test.describe("動画投稿の visual", () => {
         expect(long.badgeRight).toBeGreaterThan(short.badgeRight)
         near(short.pixels[4], long.pixels[4] as Rgb, 2)
     })
+
+    test.describe("既存の動画投稿からの事後作成（createPostVisualBlob）", () => {
+        const THUMBNAIL = "https://video.bsky.app/watch/did/cid/thumbnail.jpg"
+        const PLAYLIST = "https://video.bsky.app/watch/did/cid/playlist.m3u8"
+
+        /** poster と HLS プレイリストをモックし、ページ内で visual を生成して画素を返す。 */
+        const buildFromPost = async (
+            page: Page,
+            options: { playlist404?: boolean } = {},
+        ) => {
+            await page.route("https://video.bsky.app/watch/**", route => {
+                const file = new URL(route.request().url()).pathname
+                    .split("/")
+                    .pop()!
+                const cors = { "access-control-allow-origin": "*" }
+                if (file === "thumbnail.jpg") {
+                    // 配信側と同じく content-type は octet-stream
+                    return route.fulfill({
+                        status: 200,
+                        headers: {
+                            ...cors,
+                            "content-type": "application/octet-stream",
+                        },
+                        body: fs.readFileSync(
+                            path.resolve(
+                                "tests/fixtures/video-solid-poster.jpg",
+                            ),
+                        ),
+                    })
+                }
+                if (options.playlist404 && file === "playlist.m3u8") {
+                    return route.fulfill({ status: 404, headers: cors })
+                }
+                const hlsFile = path.resolve("tests/fixtures/hls", file)
+                if (!fs.existsSync(hlsFile)) {
+                    return route.fulfill({ status: 404, headers: cors })
+                }
+                return route.fulfill({
+                    status: 200,
+                    headers: {
+                        ...cors,
+                        "content-type": "application/vnd.apple.mpegurl",
+                    },
+                    body: fs.readFileSync(hlsFile),
+                })
+            })
+            await page.goto("/post/?guest")
+            return page.evaluate(
+                async ({ playlist, thumbnail, points }) => {
+                    const load = (url: string): Promise<any> =>
+                        import(/* @vite-ignore */ url)
+                    const { createPostVisualBlob } = await load(
+                        "/src/lib/entry/createPostVisual.ts",
+                    )
+                    try {
+                        const blob = await createPostVisualBlob({
+                            images: [],
+                            video: {
+                                cid: "cid",
+                                playlistUrl: playlist,
+                                thumbnailUrl: thumbnail,
+                                alt: "",
+                            },
+                        })
+                        const bitmap = await createImageBitmap(blob)
+                        const canvas = document.createElement("canvas")
+                        canvas.width = bitmap.width
+                        canvas.height = bitmap.height
+                        const context = canvas.getContext("2d", {
+                            willReadFrequently: true,
+                        })!
+                        context.drawImage(bitmap, 0, 0)
+                        return {
+                            ok: true as const,
+                            size: [bitmap.width, bitmap.height],
+                            pixels: points.map(([x, y]: number[]) =>
+                                Array.from(
+                                    context
+                                        .getImageData(x, y, 1, 1)
+                                        .data.slice(0, 3),
+                                ),
+                            ),
+                        }
+                    } catch (error) {
+                        return { ok: false as const, message: String(error) }
+                    }
+                },
+                { playlist: PLAYLIST, thumbnail: THUMBNAIL, points: POINTS },
+            )
+        }
+
+        test("poster と再生時間（EXTINF 合計）から、再生ボタンとバッジ入りの visual が作られる", async ({
+            page,
+        }) => {
+            const result = await buildFromPost(page)
+            expect(result.ok).toBe(true)
+            if (!result.ok) return
+            expect(result.size).toEqual([1200, 630])
+            const [circle, play, left, right, badgePad] = result.pixels
+            near(circle, [69, 68, 97])
+            for (const channel of play) {
+                expect(channel).toBeGreaterThanOrEqual(245)
+            }
+            near(left, BACKGROUND)
+            near(right, BACKGROUND)
+            near(badgePad, [19, 19, 34])
+        })
+
+        test("playlist を取得できなければ visual は作られず失敗になる", async ({
+            page,
+        }) => {
+            const result = await buildFromPost(page, { playlist404: true })
+            expect(result.ok).toBe(false)
+        })
+    })
 })

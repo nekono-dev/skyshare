@@ -10,9 +10,8 @@
  */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
-import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
-import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
-import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
+import { createEntry, deleteEntry } from "@/client/openapi/client"
+import { createPostVisualBlob } from "@/lib/entry/createPostVisual"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 import { waitForImageLoad } from "@/util/waitForImageLoad"
 import {
@@ -26,22 +25,6 @@ import {
     type TimelinePost,
     type TimelineSkyshareEntry,
 } from "@/lib/entry/posts"
-import { fetchVideoDurationSec } from "@/lib/video/fetchVideoDuration"
-import { drawVideoOverlay } from "@/lib/video/videoOverlay"
-
-/**
- * 動画の poster（`thumbnail.jpg`、CORS `*`）を取得する。
- * 配信側の `content-type` が `application/octet-stream` のため、`<img>` で読めるよう
- * `image/jpeg` の Blob に作り直す。
- */
-const fetchVideoPoster = async (thumbnailUrl: string): Promise<Blob> => {
-    const res = await fetch(thumbnailUrl)
-    if (!res.ok) throw new Error("Failed to fetch the video poster.")
-    const blob = await res.blob()
-    return blob.type.startsWith("image/")
-        ? blob
-        : new Blob([blob], { type: "image/jpeg" })
-}
 
 /**
  * PostCard の Entry 関連 UI が参照する、その時点で確定している唯一の表示状態。
@@ -160,12 +143,11 @@ export const useSkyshareEntryStatus = (
      * 既存の Bluesky 投稿から skyshare entry を発行する。
      *
      * 処理の趣旨:
-     * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）の
-     *   先頭`VISUAL_IMAGE_COUNT`枚の画像のみを（5枚目以降はvisualに使わないため取得もしない）
-     *   `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
-     *   回避するためのBluesky APIバイパスAPI）経由で取得し、投稿フォームでクロップ編集
-     *   しなかった場合と同じデフォルト配置（`createDefaultThumbnail`）でユーザから見えない
-     *   Canvas上に合成してから送信する。
+     * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）から
+     *   `createPostVisualBlob`（`@/lib/entry/createPostVisual`）でvisualを作る。
+     *   画像投稿は先頭`VISUAL_IMAGE_COUNT`枚を投稿フォームでクロップ編集しなかった場合と
+     *   同じデフォルト配置で合成し、動画投稿はposterに再生ボタンと再生時間バッジを重ねる。
+     *   素材・再生時間の取得に失敗したら、entryは作成せず作成失敗として扱う。
      * - APIに渡す`uri`（entryの`source`）はVisual取得元とは独立に`sourcePost`
      *   （未指定なら`item`自身）を使う。Visual取得元がスレッドの後続投稿でも、
      *   サーバは`source`を自動解決しないため、entryは常に`sourcePost`に紐づく。
@@ -183,45 +165,8 @@ export const useSkyshareEntryStatus = (
         setCreateError(null)
 
         void (async () => {
-            const objectUrls: string[] = []
             try {
-                const video = visualSource.video
-                let overlay: ReturnType<typeof drawVideoOverlay> | undefined
-                if (video) {
-                    // 再生時間（バッジ用）と poster を並行して取得する。どちらかが
-                    // 失敗したら例外となり、entry は作成しない（作成失敗の経路へ）。
-                    const [durationSec, poster] = await Promise.all([
-                        fetchVideoDurationSec(video.playlistUrl),
-                        fetchVideoPoster(video.thumbnailUrl),
-                    ])
-                    overlay = drawVideoOverlay(durationSec)
-                    objectUrls.push(URL.createObjectURL(poster))
-                }
-                objectUrls.push(
-                    ...(await Promise.all(
-                        (video ? [] : visualSource.images)
-                            .slice(0, VISUAL_IMAGE_COUNT)
-                            .map(async image => {
-                                const res = await getBskyImage({
-                                    cid: image.cid,
-                                })
-                                if (
-                                    res.status !== 200 ||
-                                    !(res.data instanceof Blob)
-                                ) {
-                                    throw new Error(
-                                        "Failed to fetch the source image.",
-                                    )
-                                }
-                                return URL.createObjectURL(res.data)
-                            }),
-                    )),
-                )
-
-                const thumbnailBlob = await createDefaultThumbnail(
-                    objectUrls,
-                    overlay,
-                )
+                const thumbnailBlob = await createPostVisualBlob(visualSource)
                 const res = await createEntry({
                     uri: sourcePost.uri,
                     visual: thumbnailBlob,
@@ -262,7 +207,6 @@ export const useSkyshareEntryStatus = (
                 setCreateError("post.entry.createFailed")
                 setState({ phase: "idle", entry: null })
             } finally {
-                objectUrls.forEach(url => URL.revokeObjectURL(url))
                 isCreatingRef.current = false
             }
         })()
