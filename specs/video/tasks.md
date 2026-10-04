@@ -134,7 +134,7 @@
 
 ## Phase 9: 総合検証
 
-- [ ] `[TEST]` `tests/lib/i18n/messages.test.ts`・`noHardcodedText.test.ts` が `video.*` を含めて通る（ja・en のキー集合の一致、ハードコード文言なし）。
-- [ ] `[TEST]` 全 `vitest`・`tsc`・全 Playwright が通る。
+- [x] `[TEST]` `tests/lib/i18n/messages.test.ts`・`noHardcodedText.test.ts` が `video.*` を含めて通る（ja・en のキー集合の一致、ハードコード文言なし）。
+- [x] `[TEST]` 全 `vitest`・`tsc`・全 Playwright が通る（Playwright は `i18n.spec.ts` の2件が失敗する。いずれも動画機能の着手前から古い期待文言（`View original post`、実際は `View original post on Bluesky`）を持つ既存の失敗で、本機能とは無関係）。
 - [ ] 手動確認（実アカウントが必要なため自動化不可）: 300MB 級の mp4 のアップロード所要時間と、トークン再発行（30分を超える低速回線を模擬するか、`VIDEO_UPLOAD_TOKEN_TTL_SEC` を一時的に短縮して確認）。10分超の動画で `tooLong`、変換失敗時（壊れた mp4）に `processingFailed` が表示されること。Safari（デスクトップは hls.js、iOS はネイティブHLS）と Firefox での再生。
 - [ ] 積み残し（実装後の微調整）: 基準カード幅 `referenceCardWidth`（現在は仮置きの 506px）を、実装した visual を X のカード上で見比べて微調整する。調整した値は `VIDEO_OVERLAY_SPEC` と design.md §6.5.2 の換算表（S・各換算値）、本ファイルの visual 検証の期待座標へ反映する。
