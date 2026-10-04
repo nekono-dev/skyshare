@@ -191,23 +191,24 @@
 
 ## Phase 14: mp4 以外の動画形式（mov・webm・mpeg）への対応
 
-- [ ] `[FE]` `src/lib/video/postVideoLimits.ts`: `VIDEO_MIME_TYPE` を `VIDEO_BLOB_MIME_TYPE`（変換後の出力。`"video/mp4"`）へ改名し、`VIDEO_SOURCE_FORMATS`・`VIDEO_ACCEPT` を追加する（design.md §3）。`src/lib/api/schema/common.ts` と参照箇所を改名に追随させる。
-- [ ] `[FE]` `src/lib/video/probeVideo.ts`: `resolveVideoMimeType` を追加し、`validateVideoFile` を `unsupportedFormat` 判定に変更する（design.md §5.1）。
-- [ ] `[FE]` `src/lib/video/videoErrors.ts`・`src/lib/i18n/messages/{ja,en}/video.ts`: `notMp4` を `unsupportedFormat` へ改名し、文言を対応形式（mp4・mov・webm・mpeg）を挙げるものにする（ja・en で同一キー集合）。
-- [ ] `[FE]` `src/lib/video/videoUploader.ts`: `startUpload` の `mimeType` を `resolveVideoMimeType(file)` にする（design.md §5.2）。
-- [ ] `[FE]` `src/components/video/VideoPicker/index.tsx`: 2か所の `accept` を `VIDEO_ACCEPT` にする（design.md §6）。
-- [ ] `[TEST]` `tests/fixtures/video-sample.mov`（H.264+AAC、3秒、640x360）・`video-sample.webm`（VP8+Vorbis、3秒、640x360）を生成して配置する。
-- [ ] `[TEST]` 単体（vitest）:
+- [x] `[FE]` `src/lib/video/postVideoLimits.ts`: `VIDEO_MIME_TYPE` を `VIDEO_BLOB_MIME_TYPE`（変換後の出力。`"video/mp4"`）へ改名し、`VIDEO_SOURCE_FORMATS`・`VIDEO_ACCEPT` を追加する（design.md §3）。`src/lib/api/schema/common.ts` と参照箇所を改名に追随させる。
+- [x] `[FE]` `src/lib/video/probeVideo.ts`: `resolveVideoMimeType` を追加し、`validateVideoFile` を `unsupportedFormat` 判定に変更する（design.md §5.1）。
+- [x] `[FE]` `src/lib/video/videoErrors.ts`・`src/lib/i18n/messages/{ja,en}/video.ts`: `notMp4` を `unsupportedFormat` へ改名し、文言を対応形式（mp4・mov・webm・mpeg）を挙げるものにする（ja・en で同一キー集合）。
+- [x] `[FE]` `src/lib/video/videoUploader.ts`: `startUpload` の `mimeType` を `resolveVideoMimeType(file)` にする（design.md §5.2）。
+- [x] `[FE]` `src/components/video/VideoPicker/index.tsx`: 2か所の `accept` を `VIDEO_ACCEPT` にする（design.md §6）。`ThreadSegmentForm` のドロップ判定も、MIME が空の対応形式（`resolveVideoMimeType` が解決できるもの）を動画として扱う。
+- [x] `[TEST]` `tests/fixtures/video-sample.mov`（H.264+AAC、3秒、640x360）・`video-sample.webm`（VP8+Vorbis、3秒、640x360）を生成して配置する。
+- [x] `[TEST]` 単体（vitest）:
   1. `tests/lib/video/probeVideo.test.ts`: `resolveVideoMimeType` が mp4・mov（`video/quicktime`）・webm・mpeg の MIME で各 MIME を返す。MIME が空で拡張子 `.MOV`（大文字）なら `video/quicktime`。MIME が `application/pdf` で拡張子 `.mp4` なら `undefined`。`validateVideoFile` が `avi`（`video/x-msvideo`）で `unsupportedFormat`、301MB の mov で `tooLarge`。
   2. `tests/lib/video/probeVideo.test.ts`: 寸法0・`duration` が `NaN`・`loadedmetadata` に至らない（タイムアウト）のいずれも `unreadable` で reject する（対応形式でも）。
   3. `tests/lib/video/videoUploader.test.ts`: mov・webm のファイルで `startUpload` の `mimeType` が実形式（`video/quicktime`・`video/webm`）になる。
   4. `tests/lib/video/videoErrors.test.ts`・`tests/lib/i18n/messages.test.ts`: キー改名後も全 `VideoValidationError` に文言があり、ja・en のキー集合が一致する。
-- [ ] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts` を更新。`video.bsky.app` は従来どおりモック）:
+- [x] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts` を更新。`video.bsky.app` は従来どおりモック）:
   1. `video-sample.mov` を選択 → poster プレビューと進捗バーが表示され、完了後に投稿ボタンが有効になる。`startUpload` のリクエストボディの `mimeType` が `video/quicktime` である。
   2. `video-sample.webm` を選択 → 同様に完了し、`mimeType` が `video/webm` である。
   3. 対応形式以外のファイル（`type: "video/x-msvideo"`）を選択 → 動画は添付されず、`unsupportedFormat` の文言が表示される。
   4. 拡張子は `.mp4` だが中身が動画でないファイル（テキスト）を選択 → 動画は添付されず、`unreadable` の文言が表示される。`startUpload` へのリクエストは発生しない。
   5. `input[type="file"]` の `accept` に `video/quicktime`・`.mov`・`video/webm`・`.webm` が含まれる。
-  6. 既存シナリオ（Phase 6 の「mp4 以外」の `notMp4` 文言の確認）を `unsupportedFormat` に更新する。
+  6. MIME が空の `.mov` をドロップしても動画として添付され、`mimeType` が `video/quicktime` になる。
+  7. 既存シナリオ（Phase 6 の「mp4 以外」の `notMp4` 文言の確認）を `unsupportedFormat` に更新する。
 - [ ] 手動確認（実アカウントが必要なため自動化不可）: mov・webm を実際に投稿し、Bluesky 公式アプリで動画として表示されること（AC-2）。iPhone 実機で撮影した HEVC の mov を、Safari では添付・投稿でき、Chromium 系・Firefox では `unreadable` で添付されないこと（AC-17）。壊れた動画で `unreadable` が表示されること。
-- [ ] 検証: 上記テスト、`tsc`、`vitest`、全 Playwright が通る。
+- [x] 検証: 上記テスト、`tsc`、`vitest`、全 Playwright が通る。

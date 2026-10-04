@@ -7,12 +7,11 @@ import { CommonVideoBlobSchema } from "@/lib/api/schema/common"
 import {
     VIDEO_JOB_POLL_INTERVAL_MS,
     VIDEO_JOB_TIMEOUT_MS,
-    VIDEO_MIME_TYPE,
     VIDEO_PART_MAX_RETRIES,
     VIDEO_SERVICE_XRPC_URL,
     VIDEO_TOKEN_REFRESH_MARGIN_SEC,
 } from "@/lib/video/postVideoLimits"
-import type { VideoProbe } from "@/lib/video/probeVideo"
+import { resolveVideoMimeType, type VideoProbe } from "@/lib/video/probeVideo"
 import type { VideoUploadToken } from "@/lib/video/videoUploadToken"
 import {
     mapServiceErrorName,
@@ -157,7 +156,8 @@ export const uploadVideo = async (
             contentType: "application/json",
             body: JSON.stringify({
                 sizeBytes: file.size,
-                mimeType: VIDEO_MIME_TYPE,
+                // validateVideoFile を通過済みのため必ず解決できる
+                mimeType: resolveVideoMimeType(file) ?? "",
                 name: file.name,
                 durationMs: Math.round(probe.durationSec * 1000),
                 width: probe.width,

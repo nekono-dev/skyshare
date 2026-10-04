@@ -27,6 +27,7 @@ import {
   validateVideoFile,
   VideoProbeError,
 } from "@/lib/video/probeVideo"
+import { VIDEO_ACCEPT } from "@/lib/video/postVideoLimits"
 import { mapVideoError, VideoUploadError } from "@/lib/video/videoErrors"
 import { drawVideoOverlay } from "@/lib/video/videoOverlay"
 import { fetchVideoUploadToken } from "@/lib/video/videoUploadToken"
@@ -330,7 +331,7 @@ export const Component = forwardRef<VideoPickerHandle, Props>(
               <input
                 id={reselectId}
                 type="file"
-                accept="video/mp4"
+                accept={VIDEO_ACCEPT}
                 className={styles["hidden-input"]}
                 onChange={handleFileChange}
                 disabled={disabled || isPreparing}
@@ -384,7 +385,7 @@ export const Component = forwardRef<VideoPickerHandle, Props>(
           <input
             id={inputId}
             type="file"
-            accept="video/mp4"
+            accept={VIDEO_ACCEPT}
             className={styles["hidden-input"]}
             onChange={handleFileChange}
             disabled={pickerDisabled}

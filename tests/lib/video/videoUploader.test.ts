@@ -155,6 +155,24 @@ describe("uploadVideo", () => {
         })
     })
 
+    it.each([
+        ["a.mov", "video/quicktime", "video/quicktime"],
+        ["a.webm", "video/webm", "video/webm"],
+        ["a.MOV", "", "video/quicktime"],
+    ])(
+        "%s（type=%j）の startUpload の mimeType は実形式 %s になる",
+        async (name, type, expected) => {
+            const calls = setupFetch(happy(1))
+            const file = new File([new Uint8Array(100)], name, { type })
+            const promise = uploadVideo(baseParams(file))
+            await vi.runAllTimersAsync()
+            await promise
+            expect(JSON.parse(calls[0].init.body as string).mimeType).toBe(
+                expected,
+            )
+        },
+    )
+
     it("パートが 503 なら再試行して成功する", async () => {
         let n = 0
         const calls = setupFetch({

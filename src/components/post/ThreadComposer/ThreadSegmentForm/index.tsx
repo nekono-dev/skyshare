@@ -42,6 +42,7 @@ import {
   revokeVideoEntry,
   type SegmentState,
 } from "../segments"
+import { resolveVideoMimeType } from "@/lib/video/probeVideo"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import plusIcon from "@/images/plus.svg"
@@ -264,8 +265,13 @@ const Component: React.FC<Props> = ({
       return
     }
 
-    // 動画は1本だけ。形式違い（mp4以外）も VideoPicker 側で検査して通知する。
-    const video = dropped.find(file => file.type.startsWith("video/"))
+    // 動画は1本だけ。対応外の動画形式も VideoPicker 側で検査して通知する。
+    // MIME が空の対応形式（.mov 等）も動画として扱う。
+    const video = dropped.find(
+      file =>
+        file.type.startsWith("video/") ||
+        resolveVideoMimeType(file) !== undefined,
+    )
     if (video) void videoPickerRef.current?.addFile(video)
   }
 

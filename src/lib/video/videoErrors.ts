@@ -5,7 +5,7 @@ import type { PlainMessageKey } from "@/lib/i18n/translate"
 
 /** 添付時に検査するエラー（形式・サイズ・長さ・読み込み） */
 export type VideoValidationError =
-    "notMp4" | "tooLarge" | "tooLong" | "unreadable"
+    "unsupportedFormat" | "tooLarge" | "tooLong" | "unreadable"
 
 /** アップロード・変換で発生しうるエラー */
 export type VideoUploadErrorCode =
@@ -34,7 +34,7 @@ export class VideoUploadError extends Error {
 export type VideoErrorCode = VideoValidationError | VideoUploadErrorCode
 
 const MESSAGE_KEYS = {
-    notMp4: "video.error.notMp4",
+    unsupportedFormat: "video.error.unsupportedFormat",
     tooLarge: "video.error.tooLarge",
     tooLong: "video.error.tooLong",
     unreadable: "video.error.unreadable",

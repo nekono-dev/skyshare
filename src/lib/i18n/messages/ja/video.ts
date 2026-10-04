@@ -21,7 +21,8 @@ export const video = {
     "video.playError": "動画を再生できませんでした。Blueskyで見る",
     "video.unavailable.title": "Skyshareでは再生できません",
     "video.unavailable.link": "Blueskyで見る",
-    "video.error.notMp4": "動画はmp4形式のみ添付できます",
+    "video.error.unsupportedFormat":
+        "対応していない動画形式です（mp4・mov・webm・mpegに対応）",
     "video.error.tooLarge": "動画のサイズは300MB以下にしてください",
     "video.error.tooLong": "動画の長さは10分以下にしてください",
     "video.error.unreadable": "動画を読み込めませんでした",

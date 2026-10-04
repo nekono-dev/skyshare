@@ -9,7 +9,10 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiResponsesObject } from "zod-openapi"
 import { MAX_POST_IMAGES } from "../../image/postImageLimits"
-import { MAX_VIDEO_BYTES, VIDEO_MIME_TYPE } from "../../video/postVideoLimits"
+import {
+    MAX_VIDEO_BYTES,
+    VIDEO_BLOB_MIME_TYPE,
+} from "../../video/postVideoLimits"
 
 export const CommonOgMetaSchema = z
     .object({
@@ -60,7 +63,7 @@ export const CommonVideoBlobSchema = z
     .object({
         $type: z.literal("blob"),
         ref: z.object({ $link: z.string().min(1) }).strict(),
-        mimeType: z.literal(VIDEO_MIME_TYPE),
+        mimeType: z.literal(VIDEO_BLOB_MIME_TYPE),
         size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
     })
     .strict()

@@ -25,18 +25,18 @@
 
 2026-10-04 に検証用アカウントで、スクラッチの検証フォーム（本ブランチと独立）を用いて確認した事実。設計はこれを前提とする。
 
-| 項目                     | 結果                                                                                                                                                                                          |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CORS                     | `video.bsky.app` の API・HLS プレイリスト・セグメント・サムネイルは `access-control-allow-origin: *`。ブラウザから直接アクセスできる。                                                        |
-| サービス認証             | `aud` = 利用者の PDS の `did:web:<PDSホスト>`、`lxm` = `com.atproto.repo.uploadBlob` の組み合わせのみ有効。`aud=did:web:video.bsky.app` や各 procedure 名の `lxm` は 401。                    |
-| トークンの検証単位       | `startUpload`・`uploadPart`・`finishUpload` の各リクエストでトークンが検証される。有効期間（`exp`）を 30 分で発行して動作した。                                                               |
-| 分割アップロード         | パートサイズはサーバー指定（5,242,880 バイト）。300MB で 58 パート。各パートは冪等。`startUpload` の応答に `jobId`・`partSizeBytes`・`partCount`。                                            |
-| 変換ジョブ               | `finishUpload` の `completedJobId` を `getJobStatus`（認証不要）でポーリング。`JOB_STATE_COMPLETED` で `blob`（JSON形式の blob 参照）が得られる。                                             |
-| `startUpload` の事前検証 | サイズ 300,000,000 バイト超は `VideoTooLarge`（400）、極端な縦横比は `BadAspectRatio`（400）。長さ・MIME は参考値として受理され、後段の変換で失敗しうる。長さの上限は 10 分（運用上の仕様）。 |
+| 項目                     | 結果                                                                                                                                                                                                                                                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CORS                     | `video.bsky.app` の API・HLS プレイリスト・セグメント・サムネイルは `access-control-allow-origin: *`。ブラウザから直接アクセスできる。                                                                                                                                                                    |
+| サービス認証             | `aud` = 利用者の PDS の `did:web:<PDSホスト>`、`lxm` = `com.atproto.repo.uploadBlob` の組み合わせのみ有効。`aud=did:web:video.bsky.app` や各 procedure 名の `lxm` は 401。                                                                                                                                |
+| トークンの検証単位       | `startUpload`・`uploadPart`・`finishUpload` の各リクエストでトークンが検証される。有効期間（`exp`）を 30 分で発行して動作した。                                                                                                                                                                           |
+| 分割アップロード         | パートサイズはサーバー指定（5,242,880 バイト）。300MB で 58 パート。各パートは冪等。`startUpload` の応答に `jobId`・`partSizeBytes`・`partCount`。                                                                                                                                                        |
+| 変換ジョブ               | `finishUpload` の `completedJobId` を `getJobStatus`（認証不要）でポーリング。`JOB_STATE_COMPLETED` で `blob`（JSON形式の blob 参照）が得られる。                                                                                                                                                         |
+| `startUpload` の事前検証 | サイズ 300,000,000 バイト超は `VideoTooLarge`（400）、極端な縦横比は `BadAspectRatio`（400）。長さ・MIME は参考値として受理され、後段の変換で失敗しうる。長さの上限は 10 分（運用上の仕様）。                                                                                                             |
 | 形式変換                 | mp4（H.264）・mov（H.264／HEVC）・webm（VP8+Vorbis）・mpeg（MPEG-2）の各ファイルが `JOB_STATE_COMPLETED` になり、出力 blob の `mimeType` は常に `video/mp4`。`startUpload` の `mimeType` は変換の判定に使われず、MIME を偽った mov も完了する。変換結果の `playlist.m3u8`・`thumbnail.jpg` も取得できる。 |
-| メタデータ省略           | `startUpload` の `durationMs`・`width`・`height` を省略しても HEVC mov・webm は完了する。ただし skyshare は、これらをブラウザの読み取りで必ず得られた動画だけを送る（読み取れない動画は添付しない。FR-2）。 |
-| 再生データ               | 投稿レコードの `video` blob の CID から `https://video.bsky.app/watch/<DID(URLエンコード)>/<CID>/playlist.m3u8` と `.../thumbnail.jpg` が得られる。マスタープレイリストは 360p/720p。         |
-| 再生                     | Chromium で hls.js により再生できた。サムネイルの `content-type` は `application/octet-stream`（`<img>` 表示・`fetch` での取得は可能）。                                                      |
+| メタデータ省略           | `startUpload` の `durationMs`・`width`・`height` を省略しても HEVC mov・webm は完了する。ただし skyshare は、これらをブラウザの読み取りで必ず得られた動画だけを送る（読み取れない動画は添付しない。FR-2）。                                                                                               |
+| 再生データ               | 投稿レコードの `video` blob の CID から `https://video.bsky.app/watch/<DID(URLエンコード)>/<CID>/playlist.m3u8` と `.../thumbnail.jpg` が得られる。マスタープレイリストは 360p/720p。                                                                                                                     |
+| 再生                     | Chromium で hls.js により再生できた。サムネイルの `content-type` は `application/octet-stream`（`<img>` 表示・`fetch` での取得は可能）。                                                                                                                                                                  |
 
 ## 3. 定数（`src/lib/video/postVideoLimits.ts`）
 
@@ -57,9 +57,9 @@ export const VIDEO_SOURCE_FORMATS = [
   { mimeType: "video/mpeg", extensions: ["mpeg", "mpg"] },
 ] as const
 /** `<input type="file">` の `accept` に渡す値（MIME タイプと拡張子の両方） */
-export const VIDEO_ACCEPT = VIDEO_SOURCE_FORMATS.flatMap((f) => [
+export const VIDEO_ACCEPT = VIDEO_SOURCE_FORMATS.flatMap(f => [
   f.mimeType,
-  ...f.extensions.map((e) => `.${e}`),
+  ...f.extensions.map(e => `.${e}`),
 ]).join(",")
 /** 動画サービスの XRPC ベースURL */
 export const VIDEO_SERVICE_XRPC_URL = "https://video.bsky.app/xrpc/"
@@ -289,11 +289,11 @@ export type VideoValidationError =
 export const resolveVideoMimeType = (
   file: Pick<File, "type" | "name">,
 ): string | undefined => {
-  const byType = VIDEO_SOURCE_FORMATS.find((f) => f.mimeType === file.type)
+  const byType = VIDEO_SOURCE_FORMATS.find(f => f.mimeType === file.type)
   if (byType) return byType.mimeType
   if (file.type !== "") return undefined
   const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
-  return VIDEO_SOURCE_FORMATS.find((f) =>
+  return VIDEO_SOURCE_FORMATS.find(f =>
     (f.extensions as readonly string[]).includes(ext),
   )?.mimeType
 }

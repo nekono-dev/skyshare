@@ -23,7 +23,8 @@ export const video = {
     "video.playError": "Couldn't play the video. View on Bluesky",
     "video.unavailable.title": "This video can't be played on Skyshare",
     "video.unavailable.link": "View on Bluesky",
-    "video.error.notMp4": "Only mp4 videos can be attached",
+    "video.error.unsupportedFormat":
+        "Unsupported video format (mp4, mov, webm and mpeg are supported)",
     "video.error.tooLarge": "The video must be 300MB or smaller",
     "video.error.tooLong": "The video must be 10 minutes or shorter",
     "video.error.unreadable": "Couldn't read the video",

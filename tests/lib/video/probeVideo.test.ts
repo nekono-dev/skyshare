@@ -2,24 +2,87 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
     probeVideo,
+    resolveVideoMimeType,
     validateVideoFile,
     VideoProbeError,
 } from "@/lib/video/probeVideo"
 
-describe("validateVideoFile", () => {
-    it("mp4 以外は notMp4", () => {
-        expect(validateVideoFile({ type: "video/webm", size: 1 })).toBe(
-            "notMp4",
+describe("resolveVideoMimeType", () => {
+    it.each([
+        ["video/mp4", "a.mp4"],
+        ["video/quicktime", "a.mov"],
+        ["video/webm", "a.webm"],
+        ["video/mpeg", "a.mpg"],
+    ])("MIME %s はそのまま返す", (type, name) => {
+        expect(resolveVideoMimeType({ type, name })).toBe(type)
+    })
+
+    it("MIME が空のときは拡張子（大文字小文字を問わない）で判定する", () => {
+        expect(resolveVideoMimeType({ type: "", name: "a.MOV" })).toBe(
+            "video/quicktime",
         )
-        expect(validateVideoFile({ type: "", size: 1 })).toBe("notMp4")
+        expect(resolveVideoMimeType({ type: "", name: "a.mpeg" })).toBe(
+            "video/mpeg",
+        )
+        expect(
+            resolveVideoMimeType({ type: "", name: "a.avi" }),
+        ).toBeUndefined()
+        expect(
+            resolveVideoMimeType({ type: "", name: "noext" }),
+        ).toBeUndefined()
+    })
+
+    it("MIME が対応外なら、拡張子が対応形式でも対応外", () => {
+        expect(
+            resolveVideoMimeType({ type: "application/pdf", name: "a.mp4" }),
+        ).toBeUndefined()
+    })
+})
+
+describe("validateVideoFile", () => {
+    it("対応形式以外は unsupportedFormat", () => {
+        expect(
+            validateVideoFile({
+                type: "video/x-msvideo",
+                name: "a.avi",
+                size: 1,
+            }),
+        ).toBe("unsupportedFormat")
+        expect(validateVideoFile({ type: "", name: "a", size: 1 })).toBe(
+            "unsupportedFormat",
+        )
+    })
+
+    it("mov・webm・mpeg は可、301MB の mov は tooLarge", () => {
+        for (const [type, name] of [
+            ["video/quicktime", "a.mov"],
+            ["video/webm", "a.webm"],
+            ["video/mpeg", "a.mpg"],
+        ])
+            expect(validateVideoFile({ type, name, size: 1 })).toBeUndefined()
+        expect(
+            validateVideoFile({
+                type: "video/quicktime",
+                name: "a.mov",
+                size: 300_000_001,
+            }),
+        ).toBe("tooLarge")
     })
 
     it("300,000,001 バイトは tooLarge、300,000,000 バイトは可", () => {
         expect(
-            validateVideoFile({ type: "video/mp4", size: 300_000_001 }),
+            validateVideoFile({
+                type: "video/mp4",
+                name: "a.mp4",
+                size: 300_000_001,
+            }),
         ).toBe("tooLarge")
         expect(
-            validateVideoFile({ type: "video/mp4", size: 300_000_000 }),
+            validateVideoFile({
+                type: "video/mp4",
+                name: "a.mp4",
+                size: 300_000_000,
+            }),
         ).toBeUndefined()
     })
 })

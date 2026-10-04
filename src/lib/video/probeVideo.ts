@@ -4,7 +4,7 @@
 import {
     MAX_VIDEO_BYTES,
     MAX_VIDEO_DURATION_SEC,
-    VIDEO_MIME_TYPE,
+    VIDEO_SOURCE_FORMATS,
 } from "@/lib/video/postVideoLimits"
 import type { VideoValidationError } from "@/lib/video/videoErrors"
 
@@ -31,15 +31,38 @@ export class VideoProbeError extends Error {
 }
 
 /**
+ * ファイルの動画形式（`VIDEO_SOURCE_FORMATS` の MIME タイプ）を返す。対応外なら `undefined`。
+ *
+ * `file.type` が対応する MIME ならそれを使い、`file.type` が空のとき（OS・ブラウザが
+ * MIME を付けない場合）に限り拡張子（小文字化）で判定する。`file.type` が空でなく
+ * 対応外なら、拡張子が対応形式でも対応外とする。
+ *
+ * 例:
+ * - 入力: `{ type: "", name: "a.MOV" }` → 出力: `"video/quicktime"`
+ * - 入力: `{ type: "application/pdf", name: "a.mp4" }` → 出力: `undefined`
+ */
+export const resolveVideoMimeType = (
+    file: Pick<File, "type" | "name">,
+): string | undefined => {
+    const byType = VIDEO_SOURCE_FORMATS.find(f => f.mimeType === file.type)
+    if (byType) return byType.mimeType
+    if (file.type !== "") return undefined
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? ""
+    return VIDEO_SOURCE_FORMATS.find(f =>
+        (f.extensions as readonly string[]).includes(ext),
+    )?.mimeType
+}
+
+/**
  * 同期的に検査できるもの（形式・サイズ）を検査する。
  *
  * Output:
  * - 違反があればその理由、問題なければ `undefined`
  */
 export const validateVideoFile = (
-    file: Pick<File, "type" | "size">,
+    file: Pick<File, "type" | "name" | "size">,
 ): VideoValidationError | undefined => {
-    if (file.type !== VIDEO_MIME_TYPE) return "notMp4"
+    if (resolveVideoMimeType(file) === undefined) return "unsupportedFormat"
     if (file.size > MAX_VIDEO_BYTES) return "tooLarge"
     return undefined
 }

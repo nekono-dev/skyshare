@@ -20,6 +20,8 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 
 const SAMPLE = path.resolve("tests/fixtures/video-sample.mp4")
+const SAMPLE_MOV = path.resolve("tests/fixtures/video-sample.mov")
+const SAMPLE_WEBM = path.resolve("tests/fixtures/video-sample.webm")
 const PNG_1X1 = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
     "base64",
@@ -38,6 +40,8 @@ const CORS = {
 
 type Mocks = {
     calls: string[]
+    /** `startUpload` のリクエストボディ（JSON） */
+    startBodies: { mimeType: string }[]
     /** getJobStatus を完了させる（`holdJob: true` のとき必要） */
     releaseJob: () => void
 }
@@ -52,6 +56,7 @@ const mockVideoApis = async (
     } = {},
 ): Promise<Mocks> => {
     const calls: string[] = []
+    const startBodies: { mimeType: string }[] = []
     let release: () => void = () => {}
     const gate = new Promise<void>(resolve => {
         release = resolve
@@ -90,6 +95,7 @@ const mockVideoApis = async (
         calls.push(name)
         switch (name) {
             case "startUpload":
+                startBodies.push(request.postDataJSON())
                 return options.startError
                     ? json(route, { error: options.startError }, 400)
                     : json(route, {
@@ -112,7 +118,7 @@ const mockVideoApis = async (
                 return route.abort()
         }
     })
-    return { calls, releaseJob: release }
+    return { calls, startBodies, releaseJob: release }
 }
 
 const openComposer = async (page: Page) => {
@@ -126,7 +132,7 @@ const openComposer = async (page: Page) => {
 }
 
 const videoInput = (editor: ReturnType<Page["locator"]>) =>
-    editor.locator('input[type="file"][accept="video/mp4"]').first()
+    editor.locator('input[type="file"][accept*="video/quicktime"]').first()
 const imageInput = (editor: ReturnType<Page["locator"]>) =>
     editor.locator('input[type="file"][accept="image/*"]')
 
@@ -411,18 +417,66 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(page.getByTestId("video-submit-reason")).toHaveCount(0)
     })
 
-    test("mp4 以外・301MB の動画は添付されず理由が表示される（シナリオ3）", async ({
+    test("mov・webm の動画も添付でき、startUpload に実形式の mimeType が渡る（Phase 14）", async ({
+        page,
+    }) => {
+        const mocks = await mockVideoApis(page)
+        const editor = await openComposer(page)
+        const input = videoInput(editor)
+        await expect(input).toHaveAttribute("accept", /video\/quicktime/)
+        await expect(input).toHaveAttribute("accept", /\.mov/)
+        await expect(input).toHaveAttribute("accept", /video\/webm/)
+        await expect(input).toHaveAttribute("accept", /\.webm/)
+
+        for (const [file, mimeType] of [
+            [SAMPLE_MOV, "video/quicktime"],
+            [SAMPLE_WEBM, "video/webm"],
+        ]) {
+            await input.setInputFiles(file)
+            const preview = page.getByTestId("video-preview")
+            await expect(preview.locator("img")).toBeVisible()
+            await expect(preview.getByText("アップロード完了")).toBeVisible()
+            await expect(submitButton(page)).toBeEnabled()
+            expect(mocks.startBodies.at(-1)?.mimeType).toBe(mimeType)
+            // 次の形式を選ぶため取り外す
+            await preview
+                .getByRole("button", { name: "動画を取り外す" })
+                .click()
+            await expect(preview).toHaveCount(0)
+        }
+    })
+
+    test("拡張子が mp4 でも中身が動画でないファイルは unreadable で添付されず、アップロードも始まらない（Phase 14）", async ({
+        page,
+    }) => {
+        const mocks = await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await videoInput(editor).setInputFiles({
+            name: "fake.mp4",
+            mimeType: "video/mp4",
+            buffer: Buffer.from("this is not a video"),
+        })
+        await expect(page.getByRole("alert")).toContainText(
+            "動画を読み込めませんでした",
+        )
+        await expect(page.getByTestId("video-preview")).toHaveCount(0)
+        expect(mocks.calls).toEqual([])
+    })
+
+    test("対応形式以外・301MB の動画は添付されず理由が表示される（シナリオ3）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page)
         const editor = await openComposer(page)
 
         await videoInput(editor).setInputFiles({
-            name: "a.webm",
-            mimeType: "video/webm",
+            name: "a.avi",
+            mimeType: "video/x-msvideo",
             buffer: Buffer.from("x"),
         })
-        await expect(page.getByRole("alert")).toContainText("mp4形式のみ")
+        await expect(page.getByRole("alert")).toContainText(
+            "対応していない動画形式",
+        )
         await expect(page.getByTestId("video-preview")).toHaveCount(0)
 
         // サイズの偽装: 301MB の File を作ってプログラム的に選択させる
@@ -595,18 +649,34 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(submitButton(page)).toBeEnabled()
     })
 
-    test("mp4以外の動画をドロップすると形式エラーが表示され添付されない", async ({
+    test("MIME が空の mov をドロップしても、拡張子で動画と判定され添付される（Phase 14）", async ({
+        page,
+    }) => {
+        const mocks = await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await dropFiles(editor, [
+            {
+                name: "video-sample.mov",
+                type: "",
+                base64: readFileSync(SAMPLE_MOV).toString("base64"),
+            },
+        ])
+        await expect(
+            page.getByTestId("video-preview").getByText("アップロード完了"),
+        ).toBeVisible()
+        expect(mocks.startBodies.at(-1)?.mimeType).toBe("video/quicktime")
+    })
+
+    test("対応形式以外の動画をドロップすると形式エラーが表示され添付されない", async ({
         page,
     }) => {
         await mockVideoApis(page)
         const editor = await openComposer(page)
         await dropFiles(editor, [
-            { name: "a.webm", type: "video/webm", base64: "AAAA" },
+            { name: "a.avi", type: "video/x-msvideo", base64: "AAAA" },
         ])
 
-        await expect(
-            page.getByText("動画はmp4形式のみ添付できます"),
-        ).toBeVisible()
+        await expect(page.getByText(/対応していない動画形式/)).toBeVisible()
         await expect(page.getByTestId("video-preview")).toHaveCount(0)
     })
 

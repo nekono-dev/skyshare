@@ -9,7 +9,7 @@ import {
 } from "@/lib/video/videoErrors"
 
 const ALL_CODES: VideoErrorCode[] = [
-    "notMp4",
+    "unsupportedFormat",
     "tooLarge",
     "tooLong",
     "unreadable",
