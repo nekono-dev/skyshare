@@ -14,6 +14,7 @@
  * - 状態（テキスト・画像・OGP・返信/引用設定・自己ラベル・言語）は`segment`として
  *   親（`ThreadComposer`）から受け取り、変更は`onChange`で親へ通知する制御コンポーネント。
  */
+import { useT } from "@/lib/i18n/react"
 import React, { useEffect, useRef, useState } from "react"
 import Avatar from "@/components/common/Avatar"
 import { type CounterSpec } from "@/components/common/CountedTextInput"
@@ -123,6 +124,7 @@ const Component: React.FC<Props> = ({
   onChange,
   onRequestSubmit,
 }) => {
+  const { t } = useT()
   const [postGateDialogOpen, setPostGateDialogOpen] = useState(false)
   const [isDraggingImage, setIsDraggingImage] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
@@ -236,7 +238,7 @@ const Component: React.FC<Props> = ({
   // 先頭行に置くため、JSXを使い回す。
   const avatarCol = (
     <div className={styles["avatar-col"]}>
-      <Avatar src={avatarUrl} alt="avatar" aria-hidden size="md" />
+      <Avatar src={avatarUrl} alt="" aria-hidden size="md" />
       {hasNext && (
         <div className={styles["connector-line"]} aria-hidden="true" />
       )}
@@ -262,7 +264,7 @@ const Component: React.FC<Props> = ({
         >
           {isDraggingImage && (
             <div className={styles["drag-overlay"]} aria-hidden>
-              画像をドロップして添付
+              {t("post.segment.dropImage")}
             </div>
           )}
 
@@ -284,7 +286,11 @@ const Component: React.FC<Props> = ({
                     : undefined
                 }
                 autoGrow={autoGrowText}
-                placeholder={index === 0 ? "最近どう？" : "スレッドに追加..."}
+                placeholder={
+                  index === 0
+                    ? t("post.segment.placeholderFirst")
+                    : t("post.segment.placeholderNext")
+                }
                 value={segment.text}
                 onChange={text => update({ text })}
                 onFocus={handleTextareaFocus}
@@ -325,14 +331,14 @@ const Component: React.FC<Props> = ({
               disabled={disabled}
               aria-label={
                 isDefaultPostGateValue(segment.postGate)
-                  ? "誰でも反応可能"
-                  : "反応を制限しています"
+                  ? t("post.segment.gateOpen")
+                  : t("post.segment.gateRestricted")
               }
               onClick={() => setPostGateDialogOpen(true)}
             >
               {isDefaultPostGateValue(segment.postGate)
-                ? "誰でも反応可能"
-                : "反応を制限しています"}
+                ? t("post.segment.gateOpen")
+                : t("post.segment.gateRestricted")}
             </button>
             <SelfLabelsSelect
               id={`thread-segment-${index}-self-label`}
@@ -385,8 +391,8 @@ const Component: React.FC<Props> = ({
               <button
                 type="button"
                 className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
-                aria-label="スレッドに追加"
-                title="スレッドに追加"
+                aria-label={t("post.segment.addToThread")}
+                title={t("post.segment.addToThread")}
                 disabled={disabled || !canAddSegment}
                 onClick={onAddSegment}
               >
@@ -444,21 +450,23 @@ const Component: React.FC<Props> = ({
               <span
                 className={`${styles["summary-text"]} ${!segment.text ? styles["summary-placeholder"] : ""}`}
               >
-                {segment.text ? summarizeText(segment.text) : "（本文未入力）"}
+                {segment.text
+                  ? summarizeText(segment.text)
+                  : t("post.segment.emptyText")}
               </span>
               {canRemove && (
                 <button
                   type="button"
                   className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["remove-button"]}`}
                   disabled={disabled}
-                  aria-label="このセグメントを削除"
+                  aria-label={t("post.segment.removeAria")}
                   onClick={e => {
                     e.stopPropagation()
                     revokeImageEntry(segment.imageEntry)
                     onRemove()
                   }}
                 >
-                  削除
+                  {t("post.segment.remove")}
                 </button>
               )}
             </div>

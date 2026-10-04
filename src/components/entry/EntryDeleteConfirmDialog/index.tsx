@@ -12,6 +12,7 @@
  * - `deleteScope`が`deletable`以外（旧実装で作成されたentry・判定不能）の場合、
  *   同じ文言のままボタンをグレーにして無効化し、理由を選択肢ダイアログ内に表示する。
  */
+import { useT } from "@/lib/i18n/react"
 import React, { useEffect, useState } from "react"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import DeletePostListDialog from "@/components/entry/DeletePostListDialog"
@@ -28,12 +29,10 @@ type Props = {
   onCancel: () => void
 }
 
-/** `deleteScope`が`deletable`以外のときに「リンク・Bluesky投稿を削除」を無効化する理由文。 */
-const DISABLED_REASONS = {
-  legacy:
-    "このEntryは旧仕様で作成されており、Bluesky投稿を含めて削除できません。Skyshareリンクのみ削除するか、Bluesky上で直接投稿を削除してください。",
-  unknown:
-    "Bluesky投稿の状態を確認できないため、投稿を含めた削除は実行できません。時間をおいて再度お試しください。",
+/** `deleteScope`が`deletable`以外のときに「リンク・Bluesky投稿を削除」を無効化する理由文のキー。 */
+const DISABLED_REASON_KEYS = {
+  legacy: "entry.deleteConfirm.legacy",
+  unknown: "entry.deleteConfirm.unknown",
 } as const
 
 /**
@@ -63,6 +62,7 @@ export const Component: React.FC<Props> = ({
   onDeletePost,
   onCancel,
 }) => {
+  const { t } = useT()
   const [stage, setStage] = useState<"choice" | "confirmPost">("choice")
 
   // ダイアログが閉じられたら、次回開いたとき必ず選択肢提示から始まるようにリセットする。
@@ -88,27 +88,29 @@ export const Component: React.FC<Props> = ({
     <ChoiceDialog
       open={open}
       onClose={onCancel}
-      ariaLabel="Entry削除確認"
-      loading={isDeleting ? { message: "削除中..." } : undefined}
-      description={deletable ? undefined : DISABLED_REASONS[deleteScope.kind]}
+      ariaLabel={t("entry.card.deleteConfirmAria")}
+      loading={isDeleting ? { message: t("common.deleting") } : undefined}
+      description={
+        deletable ? undefined : t(DISABLED_REASON_KEYS[deleteScope.kind])
+      }
       buttons={[
         {
           key: "delete-link",
-          label: "Skyshareリンクを削除",
+          label: t("entry.deleteConfirm.deleteLink"),
           variant: "black",
           onClick: onDeleteLink,
           disabled: isDeleting,
         },
         {
           key: "delete-post",
-          label: "リンク・Bluesky投稿を削除",
+          label: t("entry.deleteConfirm.deleteLinkAndPost"),
           variant: deletable ? "red" : "gray",
           onClick: () => setStage("confirmPost"),
           disabled: isDeleting || !deletable,
         },
         {
           key: "cancel",
-          label: "キャンセル",
+          label: t("common.cancel"),
           variant: "gray",
           onClick: onCancel,
           disabled: isDeleting,

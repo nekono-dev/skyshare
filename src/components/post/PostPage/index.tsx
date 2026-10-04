@@ -6,6 +6,7 @@
  * - 未ログイン（401）の場合はログインページへリダイレクトする。
  * - ThreadComposer をダイアログではなくページ内容として直接マウントする。
  */
+import { useT } from "@/lib/i18n/react"
 import { useEffect, useState } from "react"
 import ThreadComposer from "@/components/post/ThreadComposer"
 import {
@@ -23,6 +24,7 @@ import styles from "./index.module.css"
  * - アバター解決済みの投稿フォーム
  */
 const PostPage = () => {
+  const { t } = useT()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   // ハッシュタグ履歴（hashtagHistorySettings.ts）をアカウント別に分けるための識別子。
   const [accountDid, setAccountDid] = useState<string | null>(null)
@@ -73,9 +75,7 @@ const PostPage = () => {
         <p
           className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
         >
-          これはログイン不要のゲスト表示です。Blueskyへの投稿はスキップされますが、
-          投稿ボタンを押すとポップアップ・共有シートやX・タイッツー・Mastodonへの
-          投稿ボタンはお試しいただけます。
+          {t("post.guestNotice")}
         </p>
       )}
       <ThreadComposer

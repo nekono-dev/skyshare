@@ -12,6 +12,7 @@
  *   （ゲスト表示ではdata URI）を直接 `fetch` してBlob化する。ゲスト表示中は
  *   `AtpAgent`によるBluesky認証セッションを必要としないため。
  */
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useEffect, useRef, useState } from "react"
 import { getBskyImage } from "@/client/openapi/client"
 import {
@@ -25,7 +26,7 @@ import type { TimelinePost } from "@/lib/entry/posts"
 export type UseWebShareCrosspostResult = {
     isSupported: boolean
     isSharing: boolean
-    shareError: string | null
+    shareError: PlainMessageKey | null
     shareViaWebApi: () => void
 }
 
@@ -49,7 +50,7 @@ export const useWebShareCrosspost = (
 ): UseWebShareCrosspostResult => {
     const [isSupported, setIsSupported] = useState(false)
     const [isSharing, setIsSharing] = useState(false)
-    const [shareError, setShareError] = useState<string | null>(null)
+    const [shareError, setShareError] = useState<PlainMessageKey | null>(null)
     // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐため、
     // 同期的に確定する ref で即座にガードする（useSkyshareEntryStatus と同じ方針）。
     const isSharingRef = useRef(false)
@@ -103,7 +104,7 @@ export const useWebShareCrosspost = (
                                         !(res.data instanceof Blob)
                                     ) {
                                         throw new Error(
-                                            "元画像の取得に失敗しました。",
+                                            "Failed to fetch the source image.",
                                         )
                                     }
                                     return toShareFile(res.data, index)
@@ -113,19 +114,17 @@ export const useWebShareCrosspost = (
                       : { text: item.text }
 
                 if (!canShareWithWebApi(shareData)) {
-                    setShareError(
-                        "お使いのブラウザはこの内容の共有に対応していません。",
-                    )
+                    setShareError("post.webShare.unsupported")
                     return
                 }
 
                 const result = await shareWithWebApi(shareData)
                 if (!result.ok && result.reason !== "aborted") {
-                    setShareError("WebShareAPIでの共有に失敗しました。")
+                    setShareError("post.webShare.failed")
                 }
             } catch (err) {
                 console.error("PostCard: failed to share via WebShareAPI", err)
-                setShareError("WebShareAPIでの共有に失敗しました。")
+                setShareError("post.webShare.failed")
             } finally {
                 setIsSharing(false)
                 isSharingRef.current = false

@@ -9,6 +9,8 @@
  * - Bluesky API の呼び出しや値の正規化は行わない（呼び出し元の責務）。
  */
 
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import likeIcon from "@/images/reaction-like.svg"
 import quoteIcon from "@/images/reaction-quote.svg"
 import replyIcon from "@/images/reaction-reply.svg"
@@ -39,7 +41,7 @@ type PostEngagementStatsProps = {
 type StatItem = {
   icon: ImageMetadata
   count: number
-  label: string
+  labelKey: PlainMessageKey
 }
 
 const Component = ({
@@ -48,17 +50,18 @@ const Component = ({
   replyCount,
   quoteCount,
 }: PostEngagementStatsProps) => {
+  const { t } = useT()
   const items: StatItem[] = [
-    { icon: likeIcon, count: likeCount, label: "いいね" },
-    { icon: repostIcon, count: repostCount, label: "リポスト" },
-    { icon: replyIcon, count: replyCount, label: "リプライ" },
-    { icon: quoteIcon, count: quoteCount, label: "引用" },
+    { icon: likeIcon, count: likeCount, labelKey: "post.stats.like" },
+    { icon: repostIcon, count: repostCount, labelKey: "post.stats.repost" },
+    { icon: replyIcon, count: replyCount, labelKey: "post.stats.reply" },
+    { icon: quoteIcon, count: quoteCount, labelKey: "post.stats.quote" },
   ]
   return (
-    <dl className={styles["stats"]} aria-label="Blueskyでのリアクション数">
+    <dl className={styles["stats"]} aria-label={t("post.stats.aria")}>
       {items.map(item => (
         <div
-          key={item.label}
+          key={item.labelKey}
           className={`${styles["stat"]} ${item.count > 0 ? styles["active"] : ""}`}
         >
           <dt
@@ -67,7 +70,7 @@ const Component = ({
             style={{ "--icon-url": `url(${item.icon.src})` } as CSSProperties}
           />
           <dd className={styles["count"]}>{item.count}</dd>
-          <span className={styles["label"]}>{item.label}</span>
+          <span className={styles["label"]}>{t(item.labelKey)}</span>
         </div>
       ))}
     </dl>

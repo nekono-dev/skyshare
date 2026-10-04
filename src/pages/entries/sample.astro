@@ -12,6 +12,8 @@
  */
 export const prerender = true
 
+import ui from "@/styles/ui.module.css"
+import LocaleSelect from "@/components/common/LocaleSelect"
 import Baselayout from "@/layout/Baselayout.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
 import type { EntryPostView } from "@/components/entry/EntryDetailView/index.astro"
@@ -71,10 +73,7 @@ const posts: EntryPostView[] = [
     },
 ]
 
-const createdAtText = new Date("2026-09-06T10:00:00.000Z").toLocaleString("ja-JP", {
-    dateStyle: "medium",
-    timeStyle: "short",
-})
+const createdAt = "2026-09-06T10:00:00.000Z"
 
 const pageTitle = `${heading} | ${serviceName}`
 ---
@@ -86,13 +85,21 @@ const pageTitle = `${heading} | ${serviceName}`
     pageCaption={caption}
     robots={robots}
 >
-    <EntryDetailView
-        statusCode={200}
-        heading={heading}
-        caption={caption}
-        createdAtText={createdAtText}
-        sourcePostAvailable={true}
-        visualUrl="/materials/sample-og.png"
-        posts={posts}
-    />
+    <div class={ui.center}>
+        <div class={`${ui.page} ${ui["width-lg"]}`}>
+            <div class={ui["self-end"]}>
+                <LocaleSelect client:load showLabel />
+            </div>
+            <EntryDetailView
+                statusCode={200}
+                heading={heading}
+                caption={caption}
+                createdAt={createdAt}
+                sourcePostAvailable={true}
+                sourceUrl="https://bsky.app/profile/example.com/post/sample"
+                visualUrl="/materials/sample-og.png"
+                posts={posts}
+            />
+        </div>
+    </div>
 </Baselayout>

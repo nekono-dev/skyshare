@@ -377,7 +377,9 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         }).toPass({ timeout: 5_000 })
     })
 
-    test("25. 可変幅のトリガーは placeholder が見切れない", async ({ page }) => {
+    test("25. 可変幅のトリガーは placeholder が見切れない", async ({
+        page,
+    }) => {
         await openList(page)
         const trigger = languageTrigger(page)
         // 開いている間は placeholder を表示する。placeholder の文字幅が、入力欄の内側の幅に収まること

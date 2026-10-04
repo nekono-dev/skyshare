@@ -7,6 +7,7 @@
  *   intent ポップアップを開いてダイアログを閉じる。
  * - Mastodonの投稿先インスタンスドメインは localStorage の保存値（未設定時は既定値）を使う。
  */
+import { useT } from "@/lib/i18n/react"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import {
   DEFAULT_MASTODON_INSTANCE_DOMAIN,
@@ -39,15 +40,16 @@ type Props = {
  * - 出力: 「skyshareページを作成しました。」ダイアログ
  */
 const Component = ({ open, postText, entryUrl, onClose }: Props) => {
+  const { t } = useT()
   return (
     <ChoiceDialog
       open={open}
       onClose={onClose}
-      ariaLabel="skyshareページを共有"
+      ariaLabel={t("post.shareDialog.aria")}
       buttons={[
         {
           key: "post-x",
-          label: "X に投稿",
+          label: t("post.shareDialog.x"),
           variant: "black",
           onClick: () => {
             if (!entryUrl) return
@@ -57,7 +59,7 @@ const Component = ({ open, postText, entryUrl, onClose }: Props) => {
         },
         {
           key: "post-taittsuu",
-          label: "タイッツーに投稿",
+          label: t("post.shareDialog.taittsuu"),
           variant: "taittsuu",
           onClick: () => {
             if (!entryUrl) return
@@ -67,7 +69,7 @@ const Component = ({ open, postText, entryUrl, onClose }: Props) => {
         },
         {
           key: "post-mastodon",
-          label: "Mastodonに投稿",
+          label: t("post.shareDialog.mastodon"),
           variant: "mastodon",
           onClick: () => {
             if (!entryUrl) return
@@ -84,7 +86,7 @@ const Component = ({ open, postText, entryUrl, onClose }: Props) => {
         },
         {
           key: "close",
-          label: "閉じる",
+          label: t("common.close"),
           variant: "gray",
           onClick: onClose,
         },

@@ -14,6 +14,13 @@
  * - API送信は`submitThread`、投稿成功後のポップアップ/WebShareAPI分岐は`shareDispatch`に
  *   それぞれ委譲する。
  */
+import { useT } from "@/lib/i18n/react"
+import { renderSlots } from "@/lib/i18n/rich"
+import {
+  deferMessage,
+  type DeferredMessage,
+  type PlainMessageKey,
+} from "@/lib/i18n/translate"
 import React, {
   forwardRef,
   useEffect,
@@ -187,6 +194,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // DOM上で先に出現する別インスタンスのform要素に誤って結びつき、
     // クリックしたのとは別インスタンスのsegments state（空のことが多い）で
     // 投稿されてしまう。インスタンスごとに一意なidにすることでこれを防ぐ。
+    const translator = useT()
+    const { t, raw } = translator
     const entryFormId = useId()
     const [languageCode, setLanguageCode] = useState("ja")
     const [segments, setSegments] = useState<SegmentState[]>(() => [
@@ -241,7 +250,9 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       return () => document.removeEventListener("astro:page-load", reload)
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
-    const [status, setStatus] = useState<string | null>(null)
+    // ステータス文言は組み立て関数で保持し、描画時に現在の表示言語で評価する
+    // （表示後に言語を切り替えても追従させるため）。
+    const [status, setStatus] = useState<DeferredMessage | null>(null)
     const [statusColor, setStatusColor] = useState<string | undefined>(
       undefined,
     )
@@ -251,7 +262,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       ReturnType<typeof normalizeDraftList>
     >([])
     const [draftListLoading, setDraftListLoading] = useState(false)
-    const [draftListError, setDraftListError] = useState<string | null>(null)
+    const [draftListError, setDraftListError] =
+      useState<PlainMessageKey | null>(null)
     const [loadedDraft, setLoadedDraft] = useState<LoadedDraft | null>(null)
     const [draftSaveConfirmOpen, setDraftSaveConfirmOpen] = useState(false)
     const [isSavingDraft, setIsSavingDraft] = useState(false)
@@ -325,7 +337,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         const res = await getDrafts({ limit: 100 })
         if (res.status !== 200) {
           setDraftItems([])
-          setDraftListError("下書き一覧の取得に失敗しました。")
+          setDraftListError("post.composer.draftListLoadFailed")
           return
         }
 
@@ -333,7 +345,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       } catch (error) {
         console.error("ThreadComposer: failed to load drafts", error)
         setDraftItems([])
-        setDraftListError("下書き一覧の取得に失敗しました。")
+        setDraftListError("post.composer.draftListLoadFailed")
       } finally {
         setDraftListLoading(false)
       }
@@ -361,7 +373,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         id: draft.id,
         posts: segmentsToDraftPosts(nextSegments),
       })
-      setStatus("下書きを反映しました。")
+      setStatus(deferMessage("post.composer.draftApplied"))
       setStatusColor("green")
     }
 
@@ -422,7 +434,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           : await createDraft({ posts })
 
         if (res.status !== 200) {
-          setStatus("下書きの保存に失敗しました。")
+          setStatus(deferMessage("post.composer.draftSaveFailed"))
           setStatusColor("#b00")
           return
         }
@@ -431,7 +443,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         onClose?.()
       } catch (error) {
         console.error("ThreadComposer: failed to save draft", error)
-        setStatus("下書きの保存に失敗しました。")
+        setStatus(deferMessage("post.composer.draftSaveFailed"))
         setStatusColor("#b00")
       } finally {
         setIsSavingDraft(false)
@@ -521,7 +533,11 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       const popupWindow = willAutoPopup ? preOpenPopupWindow() : null
 
       setIsSubmitting(true)
-      setStatus(guestMode ? "処理中…" : "送信中…")
+      setStatus(
+        deferMessage(
+          guestMode ? "post.composer.guestProcessing" : "post.composer.sending",
+        ),
+      )
       setStatusColor(undefined)
 
       try {
@@ -545,7 +561,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           if (!result.ok) {
             popupWindow?.close()
             setStatusColor("#b00")
-            setStatus(result.message)
+            setStatus(deferMessage(result.messageKey))
             return
           }
 
@@ -610,13 +626,13 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         } else {
           resetInputFields(nextRootPostGate)
         }
-        setStatus(dispatch.status)
+        setStatus({ format: dispatch.status })
         setStatusColor(dispatch.statusColor)
       } catch (err) {
         popupWindow?.close()
         console.error(err)
         setStatusColor("#b00")
-        setStatus("サーバへ接続できませんでした。")
+        setStatus(deferMessage("error.network"))
       } finally {
         setIsSubmitting(false)
       }
@@ -625,7 +641,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     return (
       <>
         {draftListLoading && (
-          <Loading overlay message="下書きを読み込み中..." />
+          <Loading overlay message={t("post.composer.loadingDrafts")} />
         )}
 
         <Overlay
@@ -636,7 +652,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           <div
             className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]}`}
             role="dialog"
-            aria-label="下書き一覧"
+            aria-label={t("post.composer.draftListTitle")}
             style={{ maxHeight: "80vh", overflow: "hidden" }}
           >
             <div
@@ -647,16 +663,16 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["toolbar-item-left"]}`}
                 onClick={() => setDraftModalOpen(false)}
               >
-                閉じる
+                {t("common.close")}
               </button>
-              <div>下書き一覧</div>
+              <div>{t("post.composer.draftListTitle")}</div>
             </div>
 
             <div className={styles["draft-list-body"]}>
               <DraftListPanel
                 items={draftItems}
                 loading={draftListLoading}
-                error={draftListError ?? undefined}
+                error={draftListError ? t(draftListError) : undefined}
                 onSelectDraft={draft => {
                   setDraftModalOpen(false)
                   applyDraftToForm(draft)
@@ -681,10 +697,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           ref={formRef}
           className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]}`}
           {...(variant === "dialog"
-            ? { role: "dialog", "aria-label": "投稿フォーム" }
+            ? { role: "dialog", "aria-label": t("post.composer.formAria") }
             : {})}
         >
-          {isSubmitting && <Loading overlay message="投稿中..." />}
+          {isSubmitting && (
+            <Loading overlay message={t("post.composer.posting")} />
+          )}
           <div
             className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
           >
@@ -692,11 +710,11 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               {variant === "dialog" && (
                 <button
                   className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-                  aria-label="キャンセル"
+                  aria-label={t("common.cancel")}
                   disabled={isSubmitting}
                   onClick={requestClose}
                 >
-                  キャンセル
+                  {t("common.cancel")}
                 </button>
               )}
             </div>
@@ -705,12 +723,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 type="button"
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
                 disabled={isSubmitting || guestMode}
-                title={guestMode ? "ゲスト表示のため利用できません" : undefined}
+                title={guestMode ? t("post.guestUnavailable") : undefined}
                 onClick={() => {
                   void openDraftPicker()
                 }}
               >
-                下書き
+                {t("post.composer.drafts")}
               </button>
               <button
                 form={entryFormId}
@@ -718,12 +736,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 type="submit"
                 disabled={isSubmitting}
                 title={
-                  guestMode
-                    ? "ゲスト表示のためBlueskyへの投稿はスキップされます"
-                    : undefined
+                  guestMode ? t("post.composer.guestSubmitNotice") : undefined
                 }
               >
-                {isThread ? "すべて投稿" : "投稿"}
+                {isThread
+                  ? t("post.composer.submitAll")
+                  : t("post.composer.submit")}
               </button>
 
               {showXIntentButton && (
@@ -738,21 +756,23 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       rootSegment.ogpResult?.sourceUrl,
                     )
                     if (!intentText) {
-                      setStatus("共有する投稿本文を入力してください。")
+                      setStatus(deferMessage("post.composer.needShareText"))
                       setStatusColor("#b00")
                       return
                     }
 
                     const popupOpened = openIntentPopupFor("x", intentText)
                     setStatus(
-                      popupOpened
-                        ? "x.com 投稿画面を開きました。"
-                        : "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                      deferMessage(
+                        popupOpened
+                          ? "post.intent.xOpened"
+                          : "post.intent.xBlocked",
+                      ),
                     )
                     setStatusColor(popupOpened ? "green" : "#b00")
                   }}
                 >
-                  X投稿
+                  {t("post.intent.xButton")}
                 </button>
               )}
               {showTaittsuuIntentButton && (
@@ -767,7 +787,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       rootSegment.ogpResult?.sourceUrl,
                     )
                     if (!intentText) {
-                      setStatus("共有する投稿本文を入力してください。")
+                      setStatus(deferMessage("post.composer.needShareText"))
                       setStatusColor("#b00")
                       return
                     }
@@ -777,15 +797,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       intentText,
                     )
                     setStatus(
-                      popupOpened
-                        ? "タイッツー投稿画面を開きました。"
-                        : "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                      deferMessage(
+                        popupOpened
+                          ? "post.intent.taittsuuOpened"
+                          : "post.intent.taittsuuBlocked",
+                      ),
                     )
                     setStatusColor(popupOpened ? "green" : "#b00")
                   }}
                 >
-                  <InlineIcon name="taittsuu" />
-                  投稿
+                  {renderSlots(raw("post.intent.iconButton"), {
+                    icon: <InlineIcon name="taittsuu" />,
+                  })}
                 </button>
               )}
               {showMastodonIntentButton && (
@@ -800,7 +823,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       rootSegment.ogpResult?.sourceUrl,
                     )
                     if (!intentText) {
-                      setStatus("共有する投稿本文を入力してください。")
+                      setStatus(deferMessage("post.composer.needShareText"))
                       setStatusColor("#b00")
                       return
                     }
@@ -811,15 +834,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       { instanceDomain: shareToggles.mastodonInstanceDomain },
                     )
                     setStatus(
-                      popupOpened
-                        ? "Mastodon投稿画面を開きました。"
-                        : "Mastodon投稿画面を開けませんでした。ポップアップブロックを確認してください。",
+                      deferMessage(
+                        popupOpened
+                          ? "post.intent.mastodonOpened"
+                          : "post.intent.mastodonBlocked",
+                      ),
                     )
                     setStatusColor(popupOpened ? "green" : "#b00")
                   }}
                 >
-                  <InlineIcon name="mastodon" />
-                  投稿
+                  {renderSlots(raw("post.intent.iconButton"), {
+                    icon: <InlineIcon name="mastodon" />,
+                  })}
                 </button>
               )}
             </div>
@@ -864,14 +890,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               <ToggleSwitch
                 checked={shareToggles.popupIntentInsteadOfWebshare}
                 disabled={isSubmitting}
-                label={
-                  <>
-                    <InlineIcon name="share" />
-                    の代わりにポップアップ
-                    <InlineIcon name="popup" />
-                    を開く
-                  </>
-                }
+                label={renderSlots(raw("post.composer.popupInstead"), {
+                  share: <InlineIcon name="share" />,
+                  popup: <InlineIcon name="popup" />,
+                })}
                 onCheckedChange={
                   shareToggles.onPopupIntentInsteadOfWebshareChange
                 }
@@ -879,13 +901,13 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               <ToggleSwitch
                 checked={shareToggles.manualImageAttach}
                 disabled={isSubmitting}
-                label="画像を自分で添付する（URLを発行しない）"
+                label={t("post.composer.manualImageAttach")}
                 onCheckedChange={shareToggles.onManualImageAttachChange}
               />
               <ToggleSwitch
                 checked={syncGateDefaultAfterPost}
                 disabled={isSubmitting}
-                label="返信・引用オプションを保存する"
+                label={t("settings.syncGate.label")}
                 onCheckedChange={next => {
                   setSyncGateDefaultAfterPost(next)
                   writeSyncGateDefaultAfterPostSetting(next)
@@ -896,14 +918,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             <div className={ui["base-component"]}>
               <Collapsible
                 key={shareTogglesReady ? "loaded" : "loading"}
-                label="詳細オプション"
+                label={t("post.composer.moreOptions")}
                 defaultOpen={defaultOpenShareOptions}
               >
                 <div className={ui["toggle-box"]}>
                   <ToggleSwitch
                     checked={pinnedFormDisabled}
                     disabled={isSubmitting}
-                    label="投稿フォームを固定表示しない"
+                    label={t("settings.pinnedFormDisabled.label")}
                     onCheckedChange={next => {
                       setPinnedFormDisabled(next)
                       writePinnedFormDisabledSetting(next)
@@ -913,48 +935,42 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   <ToggleSwitch
                     checked={shareToggles.showXWhenCrosspost}
                     disabled={isSubmitting}
-                    label="X投稿ボタンを表示"
+                    label={t("settings.showX.label")}
                     onCheckedChange={shareToggles.onShowXWhenCrosspostChange}
                   />
                   <ToggleSwitch
                     checked={shareToggles.noAutoPopupAfterPost}
                     disabled={isSubmitting}
-                    label="自動ポップアップをOFFにする"
+                    label={t("settings.noAutoPopup.label")}
                     onCheckedChange={shareToggles.onNoAutoPopupAfterPostChange}
                   />
                   <ToggleSwitch
                     checked={shareToggles.crosspostToTaittsuu}
                     disabled={isSubmitting}
-                    label={
-                      <>
-                        <InlineIcon name="taittsuu" />
-                        にクロスポスト
-                      </>
-                    }
+                    label={renderSlots(raw("settings.taittsuu.label"), {
+                      taittsuu: <InlineIcon name="taittsuu" />,
+                    })}
                     onCheckedChange={shareToggles.onCrosspostToTaittsuuChange}
                   />
                   <ToggleSwitch
                     checked={shareToggles.crosspostToMastodon}
                     disabled={isSubmitting}
-                    label={
-                      <>
-                        <InlineIcon name="mastodon" />
-                        にクロスポスト
-                      </>
-                    }
+                    label={renderSlots(raw("settings.mastodon.label"), {
+                      mastodon: <InlineIcon name="mastodon" />,
+                    })}
                     onCheckedChange={shareToggles.onCrosspostToMastodonChange}
                   />
                 </div>
               </Collapsible>
             </div>
-            {status !== "" && status !== null && (
+            {status !== null && (
               <div
                 id="status"
                 aria-live="polite"
                 className={`${ui["base-component"]} ${ui["toolbar"]}`}
                 style={{ color: statusColor }}
               >
-                {status}
+                {status.format(translator)}
               </div>
             )}
           </form>

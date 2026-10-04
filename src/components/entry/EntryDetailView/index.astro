@@ -12,8 +12,10 @@
  * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
  * - 設計: specs/postcardlayout/design.md §3.5
  */
+import EntryPostedAt from "@/components/entry/EntryPostedAt"
 import PostBody from "@/components/post/PostBody"
 import type { SourceImage } from "@/lib/entry/entry"
+import { createTranslator, type PlainMessageKey } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -29,10 +31,12 @@ export type EntryPostView = {
 
 interface Props {
     statusCode: number
-    notFoundReason?: string
+    /** 404 の本文に表示する理由の文言キー（省略時は「Entryが見つからない」） */
+    notFoundReasonKey?: PlainMessageKey
     heading: string
     caption: string
-    createdAtText: string
+    /** ISO文字列。表示整形は EntryPostedAt が行う（空なら日時なし） */
+    createdAt: string
     sourcePostAvailable: boolean
     /** 元投稿（Bluesky）のWeb URL。空なら元投稿リンクを非表示 */
     sourceUrl?: string
@@ -43,15 +47,28 @@ interface Props {
 
 const {
     statusCode,
-    notFoundReason = "",
+    notFoundReasonKey = "entry.detail.error404Body",
     heading,
     caption,
-    createdAtText,
+    createdAt,
     sourcePostAvailable,
     sourceUrl = "",
     visualUrl = "",
     posts,
 } = Astro.props
+const { t } = createTranslator(Astro.locals.locale)
+const titleKey =
+    statusCode === 404
+        ? "entry.detail.error404Title"
+        : statusCode === 503
+          ? "entry.detail.error503Title"
+          : "entry.detail.error500Title"
+const bodyKey =
+    statusCode === 404
+        ? notFoundReasonKey
+        : statusCode === 503
+          ? "entry.detail.error503Body"
+          : "entry.detail.error500Body"
 ---
 
 {
@@ -74,15 +91,17 @@ const {
                                 rel="noopener noreferrer"
                                 data-testid="entry-source-link"
                             >
-                                元投稿を見る
+                                <span data-i18n="entry.detail.viewSource">{t("entry.detail.viewSource")}</span>
                             </a>
                         </div>
                     ) : null}
-                    <div>投稿日時:{createdAtText ? createdAtText : "no data"}</div>
+                    <div>
+                        <EntryPostedAt client:load createdAt={createdAt} />
+                    </div>
                 </dl>
                 {!sourcePostAvailable ? (
-                    <p class={styles["empty-message"]}>
-                        元の投稿は削除されているため、保存された内容のみを表示しています。
+                    <p class={styles["empty-message"]} data-i18n="entry.detail.sourceDeleted">
+                        {t("entry.detail.sourceDeleted")}
                     </p>
                 ) : null}
             </section>
@@ -109,19 +128,19 @@ const {
         </article>
     ) : (
         <section class={styles["error-pane"]}>
-            <h1>
+            <h1 data-i18n={titleKey}>
                 {statusCode === 404
-                    ? "Entry Not Found"
+                    ? t("entry.detail.error404Title")
                     : statusCode === 503
-                      ? "Service Temporarily Unavailable"
-                      : "Internal Server Error"}
+                      ? t("entry.detail.error503Title")
+                      : t("entry.detail.error500Title")}
             </h1>
-            <p>
+            <p data-i18n={bodyKey}>
                 {statusCode === 404
-                    ? notFoundReason
+                    ? t(notFoundReasonKey)
                     : statusCode === 503
-                      ? "データ取得が混み合っています。しばらくして再度お試しください。"
-                      : "ページの生成中にエラーが発生しました。"}
+                      ? t("entry.detail.error503Body")
+                      : t("entry.detail.error500Body")}
             </p>
         </section>
     )

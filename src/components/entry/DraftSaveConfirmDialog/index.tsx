@@ -5,6 +5,7 @@
  * - 投稿フォームでキャンセル時に未保存の本文がある場合、下書きとして保存するかを確認する。
  * - 「保存」「破棄」「編集を続ける」の3択を提示し、選択結果を呼び出し元へ委譲する。
  */
+import { useT } from "@/lib/i18n/react"
 import React from "react"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 
@@ -41,30 +42,31 @@ export const Component: React.FC<Props> = ({
   onDiscard,
   onContinueEditing,
 }) => {
+  const { t } = useT()
   return (
     <ChoiceDialog
       open={open}
       onClose={onContinueEditing}
-      ariaLabel="下書き保存確認"
-      loading={isSaving ? { message: "下書きを保存中..." } : undefined}
+      ariaLabel={t("entry.draft.saveConfirmAria")}
+      loading={isSaving ? { message: t("entry.draft.saving") } : undefined}
       buttons={[
         {
           key: "save",
-          label: "下書きを保存",
+          label: t("entry.draft.save"),
           variant: "blue",
           onClick: onSave,
           disabled: isSaving,
         },
         {
           key: "discard",
-          label: "破棄",
+          label: t("entry.draft.discard"),
           variant: "red",
           onClick: onDiscard,
           disabled: isSaving,
         },
         {
           key: "continue",
-          label: "編集を続ける",
+          label: t("entry.draft.keepEditing"),
           variant: "gray",
           onClick: onContinueEditing,
           disabled: isSaving,

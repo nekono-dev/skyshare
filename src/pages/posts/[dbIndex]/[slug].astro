@@ -14,6 +14,7 @@
 export const prerender = false
 
 import Baselayout from "@/layout/Baselayout.astro"
+import { createTranslator, type PlainMessageKey } from "@/lib/i18n/translate"
 import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
 import { fetchPageDbEntry, type PageDbImage } from "@/lib/legacy/pagedb"
@@ -22,6 +23,10 @@ import { parseSessionFromRequest } from "@/lib/session/cookies"
 import LegacyPageDeleteButton from "@/components/entry/LegacyPageDeleteButton"
 
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+const { t } = createTranslator(Astro.locals.locale)
+// 見出しは「@handle」のリンクを文中に差し込む文言のため、リンクを置く位置（区切り文字）で前後に分けて描画する。
+const PROFILE_SLOT = "\u0000"
+const [titleBefore, titleAfter] = t("page.legacyPost.title", { profile: PROFILE_SLOT }).split(PROFILE_SLOT)
 
 const { dbIndex, slug } = Astro.params
 
@@ -32,7 +37,7 @@ let handle = ""
 let profileUrl = ""
 let sourceWebUrl = ""
 let images: PageDbImage[] = []
-let notFoundReason = "Post is not found"
+let notFoundReasonKey: PlainMessageKey = "page.legacyPost.notFound"
 let resolvedDbIndex = ""
 let resolvedSlug = ""
 let canDeletePost = false
@@ -54,7 +59,7 @@ if (typeof dbIndex === "undefined" || typeof slug === "undefined") {
 
     if (!did || !rkey) {
         statusCode = 404
-        notFoundReason = "Invalid post identifier"
+        notFoundReasonKey = "page.legacyPost.invalidId"
     } else {
         resolvedDbIndex = dbIndex
         resolvedSlug = slug
@@ -97,23 +102,24 @@ Astro.response.status = statusCode
             <article class={styles.container}>
                 <header>
                     <h1 class={styles.heading}>
+                        {titleBefore}
                         <a href={profileUrl} rel="noopener noreferrer" target="_blank">
                             @{handle}
                         </a>
-                        の投稿
+                        {titleAfter}
                     </h1>
                 </header>
 
                 <dl class={styles["meta-list"]}>
                     <div>
                         <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
-                            Blueskyの投稿を見る
+                            {t("page.legacyPost.viewOnBluesky")}
                         </a>
                     </div>
                 </dl>
 
                 {images.length > 0 ? (
-                    <section class={styles["image-grid"]} aria-label="post images">
+                    <section class={styles["image-grid"]} aria-label={t("page.legacyPost.imagesAria")}>
                         {images.map(image => (
                             <figure class={styles["image-card"]}>
                                 <img src={image.thumb} alt={image.alt} loading="lazy" decoding="async" />
@@ -122,7 +128,7 @@ Astro.response.status = statusCode
                         ))}
                     </section>
                 ) : (
-                    <p class={styles["empty-message"]}>画像はありません。</p>
+                    <p class={styles["empty-message"]}>{t("page.legacyPost.noImages")}</p>
                 )}
 
                 {canDeletePost ? (
@@ -133,17 +139,17 @@ Astro.response.status = statusCode
             <section class={styles["error-pane"]}>
                 <h1>
                     {statusCode === 404
-                        ? "Post Not Found"
+                        ? t("page.legacyPost.error404Title")
                         : statusCode === 503
-                          ? "Service Temporarily Unavailable"
-                          : "Internal Server Error"}
+                          ? t("entry.detail.error503Title")
+                          : t("entry.detail.error500Title")}
                 </h1>
                 <p>
                     {statusCode === 404
-                        ? notFoundReason
+                        ? t(notFoundReasonKey)
                         : statusCode === 503
-                          ? "データ取得が混み合っています。しばらくして再度お試しください。"
-                          : "ページの生成中にエラーが発生しました。"}
+                          ? t("entry.detail.error503Body")
+                          : t("entry.detail.error500Body")}
                 </p>
             </section>
         )

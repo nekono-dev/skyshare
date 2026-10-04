@@ -1,3 +1,5 @@
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useState } from "react"
 import Loading from "@/components/common/Loading"
 import ui from "@/styles/ui.module.css"
@@ -29,12 +31,13 @@ type Props = {
  * - ボタン UI（削除成功後はページを再読み込みする）
  */
 const Component = ({ dbIndex, dbKey }: Props) => {
+  const { t } = useT()
   const [isDeleting, setIsDeleting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<PlainMessageKey | null>(null)
 
   const handleDelete = async () => {
     if (isDeleting) return
-    if (!window.confirm("この投稿を削除しますか？")) return
+    if (!window.confirm(t("entry.legacy.confirm"))) return
 
     setIsDeleting(true)
     setError(null)
@@ -47,7 +50,7 @@ const Component = ({ dbIndex, dbKey }: Props) => {
       })
 
       if (res.status !== 200) {
-        setError("投稿の削除に失敗しました。")
+        setError("entry.legacy.deleteFailed")
         setIsDeleting(false)
         return
       }
@@ -55,7 +58,7 @@ const Component = ({ dbIndex, dbKey }: Props) => {
       window.location.reload()
     } catch (err) {
       console.error("LegacyPageDeleteButton: failed to delete post", err)
-      setError("投稿の削除に失敗しました。")
+      setError("entry.legacy.deleteFailed")
       setIsDeleting(false)
     }
   }
@@ -70,12 +73,12 @@ const Component = ({ dbIndex, dbKey }: Props) => {
           void handleDelete()
         }}
       >
-        投稿を削除
+        {t("post.entryActions.deletePost")}
       </button>
 
-      {error ? <span className={styles.error}>{error}</span> : null}
+      {error ? <span className={styles.error}>{t(error)}</span> : null}
 
-      {isDeleting ? <Loading overlay message="削除中..." /> : null}
+      {isDeleting ? <Loading overlay message={t("common.deleting")} /> : null}
     </div>
   )
 }

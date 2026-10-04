@@ -8,6 +8,8 @@
  * - セッショントークンはサーバー側 HttpOnly cookie 内にのみ存在し、このコンポーネントは
  *   `did`/`handle`/`avatarUrl` 等の表示用メタデータしか扱わない。
  */
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useCallback, useEffect, useState } from "react"
 import Avatar from "@/components/common/Avatar"
 import ComponentList from "@/components/common/ComponentList"
@@ -52,6 +54,7 @@ const AccountCard = ({
   onLogout,
   needsReauth,
 }: AccountCardProps) => {
+  const { t } = useT()
   const canSwitch = !item.isActive
 
   const activate = () => {
@@ -83,10 +86,14 @@ const AccountCard = ({
         <div className={styles["name-row"]}>
           <strong>{item.displayName ?? item.handle}</strong>
           {item.isActive ? (
-            <span className={styles["active-badge"]}>使用中</span>
+            <span className={styles["active-badge"]}>
+              {t("account.switcher.active")}
+            </span>
           ) : null}
           {needsReauth ? (
-            <span className={styles["reauth-badge"]}>要再ログイン</span>
+            <span className={styles["reauth-badge"]}>
+              {t("account.switcher.needsReauth")}
+            </span>
           ) : null}
         </div>
         <span className={styles.handle}>@{item.handle}</span>
@@ -101,7 +108,7 @@ const AccountCard = ({
           void onLogout(item)
         }}
       >
-        ログアウト
+        {t("account.switcher.logout")}
       </button>
     </div>
   )
@@ -125,12 +132,13 @@ type ComponentProps = {
  * - 出力: アカウントカードの一覧（アクティブなカードには「使用中」バッジ）
  */
 export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
+  const { t } = useT()
   const [accounts, setAccounts] = useState<AccountItem[]>([])
   const [loading, setLoading] = useState(true)
   // 初回一覧取得の失敗（一覧全体をエラー表示に置き換える）
-  const [loadError, setLoadError] = useState("")
+  const [loadError, setLoadError] = useState<PlainMessageKey | "">("")
   // 切り替え/ログアウト操作の失敗（一覧は表示したままインライン表示する）
-  const [actionError, setActionError] = useState("")
+  const [actionError, setActionError] = useState<PlainMessageKey | "">("")
   // 直近の切り替えでセッション切れと判定されたアカウントの did（カードへのバッジ表示用）
   const [invalidDid, setInvalidDid] = useState<string | null>(null)
 
@@ -160,14 +168,14 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
       }
       if (res.status !== 200) {
         setAccounts([])
-        setLoadError("アカウント一覧の取得に失敗しました。")
+        setLoadError("account.switcher.loadFailed")
         return undefined
       }
       setAccounts(res.data.accounts)
       return res.data.accounts
     } catch (err) {
       console.error(err)
-      setLoadError("サーバへ接続できませんでした。")
+      setLoadError("error.network")
       return undefined
     } finally {
       setLoading(false)
@@ -203,14 +211,14 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
         return
       }
       if (res.status !== 200) {
-        setActionError("アカウントの切り替えに失敗しました。")
+        setActionError("account.switcher.switchFailed")
         return
       }
       clearKnownUnauthenticated()
       window.location.href = "/"
     } catch (err) {
       console.error(err)
-      setActionError("サーバへ接続できませんでした。")
+      setActionError("error.network")
     }
   }
 
@@ -234,7 +242,7 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
     try {
       const res = await deleteSession(item.did)
       if (res.status !== 200) {
-        setActionError("ログアウトに失敗しました。")
+        setActionError("account.switcher.logoutFailed")
         return
       }
       const remaining = await load()
@@ -243,29 +251,31 @@ export const Component = ({ onReauthRequired }: ComponentProps = {}) => {
       }
     } catch (err) {
       console.error(err)
-      setActionError("サーバへ接続できませんでした。")
+      setActionError("error.network")
     }
   }
 
   if (loading) {
-    return <p className={styles.state}>読み込み中…</p>
+    return <p className={styles.state}>{t("common.loading")}</p>
   }
 
   if (loadError) {
     return (
-      <p className={`${styles.state} ${styles["error-state"]}`}>{loadError}</p>
+      <p className={`${styles.state} ${styles["error-state"]}`}>
+        {t(loadError)}
+      </p>
     )
   }
 
   if (accounts.length === 0) {
-    return <p className={styles.state}>ログイン中のアカウントがありません。</p>
+    return <p className={styles.state}>{t("account.switcher.empty")}</p>
   }
 
   return (
     <>
       {actionError ? (
         <p className={`${styles.state} ${styles["error-state"]}`}>
-          {actionError}
+          {t(actionError)}
         </p>
       ) : null}
       <ComponentList

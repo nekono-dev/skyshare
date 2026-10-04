@@ -34,6 +34,10 @@ export default defineConfig({
     use: {
         baseURL: "https://localhost:4321",
         ignoreHTTPSErrors: true,
+        // 表示言語の自動判定（navigator.languages / Accept-Language）を日本語に固定し、
+        // 日本語表示を前提とする既存E2Eが実行環境のロケールに左右されないようにする。
+        // 英語環境のテストは spec 側で `test.use({ locale: "en-US" })` を指定する。
+        locale: "ja-JP",
         trace: "on-first-retry",
     },
     projects: [

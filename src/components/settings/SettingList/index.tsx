@@ -10,9 +10,7 @@
 import type React from "react"
 import ComponentList from "@/components/common/ComponentList"
 import CountedTextInput from "@/components/common/CountedTextInput"
-import ThemeModeSelect from "@/components/common/ThemeModeSelect"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
-import type { ThemeMode } from "@/lib/settings/themeSettings"
 import styles from "./index.module.css"
 
 export type SettingListItem = {
@@ -23,19 +21,19 @@ export type SettingListItem = {
   /** 設定値の説明文（文中にInlineIconなどを埋め込む場合はReactNodeを渡す）。省略時は表示しない */
   description?: React.ReactNode
   /**
-   * 行のメインコントロール種別。省略時は `"toggle"`（ON/OFFスイッチ）。
-   * `"select"` の場合はテーマ選択のようなプルダウンを表示し、
-   * `checked`/`onCheckedChange` の代わりに `selectValue`/`onSelectChange` を使う。
+   * 行のメインコントロールを描画する関数。省略時は ON/OFF スイッチ（`checked`/`onCheckedChange`）。
+   * プルダウンなど別のコントロールを置く場合に指定し、渡された `id`/`ariaLabel` を
+   * コントロールへ設定すること（ラベルの `htmlFor` と対応させるため）。
    */
-  control?: "toggle" | "select"
-  /** 現在の ON/OFF 値（`control` が `"toggle"`（省略時含む）の場合に使用） */
+  renderControl?: (props: {
+    id: string
+    ariaLabel?: string
+    disabled?: boolean
+  }) => React.ReactNode
+  /** 現在の ON/OFF 値（`renderControl` を使わない場合に使用） */
   checked?: boolean
-  /** 値が変化した後に呼ばれるコールバック（`control` が `"toggle"` の場合に使用） */
+  /** 値が変化した後に呼ばれるコールバック（`renderControl` を使わない場合に使用） */
   onCheckedChange?: (next: boolean) => void
-  /** 現在の選択値（`control` が `"select"` の場合に使用） */
-  selectValue?: ThemeMode
-  /** 選択値が変化した後に呼ばれるコールバック（`control` が `"select"` の場合に使用） */
-  onSelectChange?: (next: ThemeMode) => void
   /** true の場合、コントロールを操作不能にする */
   disabled?: boolean
   /** label が文字列でない場合のアクセシビリティ用ラベル（省略時はlabelが文字列の場合のみそれを使用） */
@@ -101,7 +99,11 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
     : true
 
   return (
-    <div className={styles.row}>
+    <div
+      className={
+        item.description ? styles.row : `${styles.row} ${styles["no-border"]}`
+      }
+    >
       <div className={styles["toggle-row"]}>
         <label className={styles.text} htmlFor={inputId}>
           <span className={styles.label}>{item.label}</span>
@@ -109,14 +111,12 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
             <span className={styles.description}>{item.description}</span>
           )}
         </label>
-        {item.control === "select" ? (
-          <ThemeModeSelect
-            id={inputId}
-            value={item.selectValue ?? "system"}
-            disabled={item.disabled}
-            ariaLabel={ariaLabel}
-            onChange={next => item.onSelectChange?.(next)}
-          />
+        {item.renderControl ? (
+          item.renderControl({
+            id: inputId,
+            ariaLabel,
+            disabled: item.disabled,
+          })
         ) : (
           <ToggleSwitch
             id={inputId}

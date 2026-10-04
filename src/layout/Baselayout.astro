@@ -11,7 +11,10 @@
  */
 
 interface Props {
-    pageTitle: string
+    /** 動的なタイトル（Entry名など）。静的ページは `pageTitleKey` を使う。 */
+    pageTitle?: string
+    /** 静的ページのタイトル文言キー。表示言語で翻訳され、言語切り替え時にも再翻訳される。 */
+    pageTitleKey?: MessageKey
     cardPath: string
     robots: string[]
     avatarUrl?: string | null
@@ -19,7 +22,15 @@ interface Props {
     pageCaption?: string
 }
 import Metadatas from "@/components/layout/Metadatas.astro"
-const { cardPath, pageTitle, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
+import { createTranslator, type MessageKey } from "@/lib/i18n/translate"
+import { serviceName } from "@/vars"
+const { cardPath, pageTitle, pageTitleKey, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
+const locale = Astro.locals.locale
+// pageTitleKey の文言は `{service}` を含みうるためサービス名を渡す（含まない文言では無視される）。
+const resolvedPageTitle =
+    pageTitleKey !== undefined
+        ? createTranslator(locale).t(pageTitleKey, { service: serviceName } as never)
+        : (pageTitle ?? serviceName)
 const favicon = "favicon.svg"
 import ui from "@/styles/ui.module.css"
 import { ClientRouter } from "astro:transitions"
@@ -31,7 +42,7 @@ const hasNav = Astro.slots.has("nav") || Astro.slots.has("footer")
 const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
 ---
 
-<html lang="ja">
+<html lang={locale}>
     <head>
         <script is:inline>
             // ダークモード設定を初回ペイント前に反映する（FOUC防止）。
@@ -56,6 +67,11 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
             // 遷移先ドキュメントへコピーしておくことで、スワップ後も
             // ちらつきなく維持されるようにする。
             document.addEventListener("astro:before-swap", event => {
+                // 表示言語(<html lang>)も data-theme と同様、遷移先がサーバーの返した値で
+                // 置き換えてしまうため、遷移前に確定済みの言語をコピーして維持する。
+                if (document.documentElement.lang) {
+                    event.newDocument.documentElement.lang = document.documentElement.lang
+                }
                 const currentTheme = document.documentElement.dataset.theme
                 if (currentTheme) {
                     event.newDocument.documentElement.dataset.theme = currentTheme
@@ -67,13 +83,18 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
         <link rel="icon" href={favicon} />
         <Metadatas
             cardPath={cardPath}
-            pageTitle={pageTitle}
+            pageTitle={resolvedPageTitle}
+            pageTitleKey={pageTitleKey}
             robots={robots}
             avatarUrl={avatarUrl}
             pageHeading={pageHeading}
             pageCaption={pageCaption}
         />
         <ClientRouter />
+        <script>
+            // 表示言語ストアを読み込む（初回・ページ遷移のたびに言語を確定し、静的DOMを書き換える）。
+            import "@/lib/i18n/store"
+        </script>
         <script>
             /**
              * Entry一覧/ホーム/設定/アカウント切り替えをFooterNavの表示順で横一列

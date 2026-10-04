@@ -5,6 +5,7 @@
  * - 前後ページの表示と移動ボタン描画だけを担当する純粋UIコンポーネント。
  * - cursor や履歴などのデータ状態は保持せず、親から受け取った値で描画する。
  */
+import { useT } from "@/lib/i18n/react"
 import type { CursorPaginationViewModel } from "@/components/common/ComponentList"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -41,6 +42,7 @@ export const Component = ({
   prevLabel,
   nextLabel,
 }: NavigationBarProps) => {
+  const { t } = useT()
   const { hasPrevPage, hasNextPage, currentPage, loading, onPrev, onNext } =
     pagination
 
@@ -55,7 +57,7 @@ export const Component = ({
   return (
     <nav
       className={containerClassName}
-      aria-label={ariaLabel ?? "list pagination"}
+      aria-label={ariaLabel ?? t("common.listPaginationAria")}
     >
       {hasPrevPage ? (
         <button
@@ -75,7 +77,9 @@ export const Component = ({
         </span>
       )}
 
-      <span className={styles["page-status"]}>ページ {currentPage}</span>
+      <span className={styles["page-status"]}>
+        {t("common.pageStatus", { page: currentPage })}
+      </span>
 
       {hasNextPage ? (
         <button

@@ -12,6 +12,7 @@
  *   別 did なら現在のアクティブをプールへ退避するため、追加ログインと再ログインの
  *   両方でそのまま正しい結果になる。
  */
+import { useT } from "@/lib/i18n/react"
 import { useState } from "react"
 import AccountSwitcher, {
   type AccountItem,
@@ -31,6 +32,7 @@ import ui from "@/styles/ui.module.css"
  *   handle 欄に対象アカウントの handle が事前入力される
  */
 export const Component = () => {
+  const { t } = useT()
   const [reauthTarget, setReauthTarget] = useState<AccountItem | null>(null)
 
   return (
@@ -39,18 +41,18 @@ export const Component = () => {
 
       <h2 className={ui.subject} style={{ marginTop: "2rem" }}>
         {reauthTarget
-          ? `@${reauthTarget.handle} に再ログイン`
-          : "別のアカウントを追加"}
+          ? t("account.panel.reauthTitle", { handle: reauthTarget.handle })
+          : t("account.panel.addTitle")}
       </h2>
       {reauthTarget ? (
         <p className={ui.text}>
-          セッションが切れています。パスワードを再入力してください。{" "}
+          {t("account.panel.reauthHint")}{" "}
           <button
             type="button"
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
             onClick={() => setReauthTarget(null)}
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
         </p>
       ) : null}

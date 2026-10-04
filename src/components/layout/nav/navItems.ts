@@ -4,42 +4,45 @@
  * 責務と処理概要:
  * - Sidebar/FooterNav 双方の Astro フロントマター(SSR)と、
  *   syncActiveState.ts(クライアント)の両方から同一の定義を参照できるようにする。
- * - DOM APIに依存しない純粋な値・関数のみを持つ。
+ * - DOM APIに依存しない純粋な値・関数のみを持つ。文言は翻訳済み文字列ではなく文言キーで持つ。
  * - Sidebar と FooterNav とで表示順序が異なるため、共通のitem定義から
  *   `sidebarNavItems`/`footerNavItems` をそれぞれ独立に導出する。
  */
 
+import type { PlainMessageKey } from "@/lib/i18n/translate"
+
 export interface NavItem {
     href: string
-    label: string
-    /** aria-label用のアクセシブルネーム。label は文脈により非表示/hover表示になりうるため、常に表示されるアクセシブルネームをここで独立に持つ。 */
-    ariaLabel: string
+    /** 表示ラベルの文言キー（翻訳は描画側で行う） */
+    labelKey: PlainMessageKey
+    /** aria-label用のアクセシブルネームの文言キー。label は文脈により非表示/hover表示になりうるため、常に表示されるアクセシブルネームをここで独立に持つ。 */
+    ariaLabelKey: PlainMessageKey
     /** NavIcon.astro がアイコン画像を出し分けるための判別子 */
     key: "entries" | "post" | "accounts" | "settings"
 }
 
 const entries: NavItem = {
     href: "/entries/",
-    label: "Entry一覧",
-    ariaLabel: "Entry一覧",
+    labelKey: "nav.entries",
+    ariaLabelKey: "nav.entries",
     key: "entries",
 }
 const post: NavItem = {
     href: "/",
-    label: "Post一覧",
-    ariaLabel: "Post一覧",
+    labelKey: "nav.post",
+    ariaLabelKey: "nav.post",
     key: "post",
 }
 const accounts: NavItem = {
     href: "/accounts/",
-    label: "アカウントの切り替え",
-    ariaLabel: "アカウント切り替え",
+    labelKey: "nav.accounts",
+    ariaLabelKey: "nav.accountsAria",
     key: "accounts",
 }
 const settings: NavItem = {
     href: "/settings/",
-    label: "設定",
-    ariaLabel: "設定",
+    labelKey: "nav.settings",
+    ariaLabelKey: "nav.settings",
     key: "settings",
 }
 

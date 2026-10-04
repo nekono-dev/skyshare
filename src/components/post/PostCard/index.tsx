@@ -10,6 +10,7 @@
  *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
  */
 
+import { useT } from "@/lib/i18n/react"
 import { useState } from "react"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -100,6 +101,7 @@ const Component = ({
   entrySourcePost,
   threadReply = false,
 }: PostCardProps) => {
+  const { t } = useT()
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   const {
@@ -198,10 +200,12 @@ const Component = ({
             href={guestMode ? undefined : item.url}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Bluesky で開く"
+            aria-label={t("post.card.openBluesky")}
             aria-disabled={guestMode}
             title={
-              guestMode ? "ゲスト表示のため利用できません" : "Bluesky で開く"
+              guestMode
+                ? t("post.guestUnavailable")
+                : t("post.card.openBluesky")
             }
             onClick={e => {
               if (guestMode) e.preventDefault()
@@ -216,8 +220,8 @@ const Component = ({
               className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
               disabled={isWebSharing}
               onClick={shareViaWebApi}
-              aria-label="Web Share APIで共有"
-              title="Web Share APIで共有"
+              aria-label={t("post.card.webShare")}
+              title={t("post.card.webShare")}
             >
               <img src={shareIcon.src} width={20} height={20} alt="" />
             </button>
@@ -235,7 +239,7 @@ const Component = ({
           />
 
           {shareError ? (
-            <span className={styles["share-error"]}>{shareError}</span>
+            <span className={styles["share-error"]}>{t(shareError)}</span>
           ) : null}
         </div>
 
@@ -247,26 +251,26 @@ const Component = ({
               target="_blank"
               rel="noopener noreferrer"
             >
-              Entryを開く
+              {t("post.card.openEntry")}
             </a>
           </div>
         ) : null}
       </footer>
 
       {display.kind === "creating" ? (
-        <Loading overlay message="Entryを作成中..." />
+        <Loading overlay message={t("post.card.creatingEntry")} />
       ) : null}
 
       {display.kind === "deleting" ? (
-        <Loading overlay message="Entryを削除中..." />
+        <Loading overlay message={t("post.card.deletingEntry")} />
       ) : null}
 
       {isResolvingDeleteScope ? (
-        <Loading overlay message="削除内容を確認中..." />
+        <Loading overlay message={t("post.card.checkingDeletion")} />
       ) : null}
 
       {isWebSharing && !entryWebUrl && item.images.length > 0 ? (
-        <Loading overlay message="画像を読み込み中..." />
+        <Loading overlay message={t("post.card.loadingImages")} />
       ) : null}
 
       <SkyshareShareDialog

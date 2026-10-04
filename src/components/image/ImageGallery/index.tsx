@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import React, { useRef, useState } from "react"
 import ImageLightbox from "@/components/image/ImageLightbox"
 import type { SourceImage } from "@/lib/entry/entry"
@@ -31,6 +32,7 @@ type Props = {
  * - 画像が0枚の場合 `null`
  */
 const ImageGallery = ({ images: allImages, interactive = true }: Props) => {
+  const { t } = useT()
   const images = allImages.slice(0, MAX_POST_IMAGES)
   const layout = resolveGalleryLayout(images)
   const [openIndex, setOpenIndex] = useState<number | null>(null)
@@ -100,7 +102,10 @@ const ImageGallery = ({ images: allImages, interactive = true }: Props) => {
               type="button"
               className={cellClass}
               style={cellStyle}
-              aria-label={`画像${i + 1}/${images.length}を拡大`}
+              aria-label={t("image.gallery.enlarge", {
+                index: i + 1,
+                total: images.length,
+              })}
               onClick={() => setOpenIndex(i)}
             >
               {img}

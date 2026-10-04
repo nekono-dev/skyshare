@@ -6,6 +6,7 @@
  *   5 件単位に区切って表示する、完全にローカルなページングを行う。
  * - 1件選択時は親へ選択イベントを委譲する。
  */
+import { useFormat, useT } from "@/lib/i18n/react"
 import { useEffect, useState } from "react"
 import ComponentList from "@/components/common/ComponentList"
 import type { CursorPaginationViewModel } from "@/components/common/ComponentList"
@@ -25,31 +26,22 @@ export type DraftListPanelProps = {
 
 const PAGE_SIZE = 5
 
-const LABEL_TEXT_BY_VALUE = new Map(
-  SELF_LABEL_OPTIONS.map(option => [option.value as string, option.label]),
+/** 自己ラベル値 → 表示文言のキー（表示時に現在の表示言語で翻訳する） */
+const LABEL_KEY_BY_VALUE = new Map(
+  SELF_LABEL_OPTIONS.map(option => [option.value as string, option.labelKey]),
 )
 
-/**
- * updatedAt を一覧表示用の日時文字列に整形する。
- *
- * Input:
- * - `updatedAt`: ISO 8601 文字列
- *
- * Output:
- * - `ja-JP` ロケールの日時表記
- *
- * 例:
- * - 入力: `"2026-08-13T09:00:00.000Z"`
- * - 出力: `"2026/08/13 18:00"`
- */
-const formatUpdatedAt = (updatedAt: string): string =>
-  new Date(updatedAt).toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+/** 下書きの更新日時を一覧表示用に整形する際の Intl オプション。 */
+const UPDATED_AT_FORMAT: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+}
+
+/** 自己ラベル値に対応する文言キー。未知の値は `undefined`。 */
+const labelKeyFor = (value: string) => LABEL_KEY_BY_VALUE.get(value)
 
 const DraftListRow = ({
   item,
@@ -58,6 +50,8 @@ const DraftListRow = ({
   item: DraftListItem
   onUse: (draft: DraftListItem) => void | Promise<void>
 }) => {
+  const { t, tn } = useT()
+  const { formatDateTime } = useFormat()
   // このパネルはまだスレッド(複数posts)の下書きを一覧上で個別表示するUIを持たないため、
   // 先頭セグメントのみをプレビューとして表示する（2件目以降を持つ下書きも一覧には出る）。
   const firstPost = item.posts[0]
@@ -75,20 +69,20 @@ const DraftListRow = ({
         }
       }}
     >
-      <p className={styles.text}>{firstPost?.text || "（本文なし）"}</p>
+      <p className={styles.text}>{firstPost?.text || t("entry.noText")}</p>
       <div className={styles.meta}>
         {firstPost?.labels?.map(label => (
           <span key={label} className={styles["label-pill"]}>
-            {LABEL_TEXT_BY_VALUE.get(label) ?? label}
+            {labelKeyFor(label) ? t(labelKeyFor(label)!) : label}
           </span>
         ))}
         {item.posts.length > 1 && (
           <span className={styles["label-pill"]}>
-            スレッド({item.posts.length}件)
+            {tn("entry.draft.thread", item.posts.length)}
           </span>
         )}
         <span className={styles["updated-at"]}>
-          {formatUpdatedAt(item.updatedAt)}
+          {formatDateTime(item.updatedAt, UPDATED_AT_FORMAT)}
         </span>
       </div>
     </div>
@@ -99,9 +93,10 @@ const DraftListPanel = ({
   items,
   loading,
   error,
-  emptyText = "下書きがありません。",
+  emptyText,
   onSelectDraft,
 }: DraftListPanelProps) => {
+  const { t } = useT()
   const [page, setPage] = useState(0)
 
   useEffect(() => {
@@ -128,7 +123,10 @@ const DraftListPanel = ({
     <div>
       {loading || error || empty ? (
         <p className={error ? styles["error-state"] : styles["empty-state"]}>
-          {error ?? (loading ? "読み込み中…" : emptyText)}
+          {error ??
+            (loading
+              ? t("common.loading")
+              : (emptyText ?? t("entry.draft.empty")))}
         </p>
       ) : (
         <ComponentList
@@ -142,7 +140,7 @@ const DraftListPanel = ({
 
       <NavigationBar
         pagination={pagination}
-        ariaLabel="draft list pagination"
+        ariaLabel={t("entry.draft.paginationAria")}
       />
     </div>
   )

@@ -15,6 +15,8 @@
  *   保存成功時は `onSaved` を呼び出し、一覧側の表示を更新する。
  */
 
+import { useFormat, useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -58,6 +60,9 @@ type Props = {
  * - 出力: caption・作成日時・visual画像を持つカード
  */
 const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
+  const translator = useT()
+  const { t } = translator
+  const { formatDateTime } = useFormat()
   const isOrphaned = item.orphaned === true
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -66,11 +71,11 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
   const [deleteScope, setDeleteScope] = useState<EntryDeleteScope>({
     kind: "unknown",
   })
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<PlainMessageKey | null>(null)
   // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐ。
   const isDeletingRef = useRef(false)
 
-  const createdAtText = new Date(item.createdAt).toLocaleString("ja-JP", {
+  const createdAtText = formatDateTime(item.createdAt, {
     dateStyle: "medium",
     timeStyle: "short",
   })
@@ -115,12 +120,12 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
             : { uri: item.uri, deleteBskyPost },
         )
         if (res.status === 409) {
-          setDeleteError("このEntryはBluesky投稿を含めて削除できません。")
+          setDeleteError("post.entry.deleteBlocked")
           setIsDialogOpen(false)
           return
         }
         if (res.status !== 200) {
-          setDeleteError("Entryの削除に失敗しました。")
+          setDeleteError("post.entry.deleteFailed")
           return
         }
       }
@@ -128,7 +133,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
       onDeleted?.()
     } catch (err) {
       console.error("EntryCard: failed to delete entry", err)
-      setDeleteError("Entryの削除に失敗しました。")
+      setDeleteError("post.entry.deleteFailed")
     } finally {
       isDeletingRef.current = false
       setIsDeleting(false)
@@ -156,7 +161,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
 
     setIsResolvingDeleteScope(true)
     const scope = await (guestMode
-      ? Promise.resolve(resolveGuestDeleteScope(item.sourceUri))
+      ? Promise.resolve(resolveGuestDeleteScope(item.sourceUri, translator))
       : resolveEntryDeleteScope(item.sourceUri))
     setIsResolvingDeleteScope(false)
     setDeleteScope(scope)
@@ -174,7 +179,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
         {item.caption ? (
           <p className={styles.caption}>{item.caption}</p>
         ) : (
-          <p className={styles["empty-caption"]}>キャプションはありません。</p>
+          <p className={styles["empty-caption"]}>{t("entry.card.noCaption")}</p>
         )}
 
         <div
@@ -186,7 +191,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
             disabled={guestMode}
             onClick={() => setIsEditDialogOpen(true)}
           >
-            編集
+            {t("common.edit")}
           </button>
           <button
             type="button"
@@ -196,7 +201,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
               void openDeleteDialog()
             }}
           >
-            削除
+            {t("common.delete")}
           </button>
           {entryPath ? (
             <a
@@ -205,13 +210,13 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Entryを開く
+              {t("post.card.openEntry")}
             </a>
           ) : null}
         </div>
 
         {deleteError ? (
-          <p className={styles["error-text"]}>{deleteError}</p>
+          <p className={styles["error-text"]}>{t(deleteError)}</p>
         ) : null}
       </div>
 
@@ -223,21 +228,23 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
         <div className={styles["thumbnail-placeholder"]} aria-hidden="true" />
       )}
 
-      {isDeleting ? <Loading overlay message="Entryを削除中..." /> : null}
+      {isDeleting ? (
+        <Loading overlay message={t("post.card.deletingEntry")} />
+      ) : null}
       {isResolvingDeleteScope ? (
-        <Loading overlay message="削除内容を確認中..." />
+        <Loading overlay message={t("post.card.checkingDeletion")} />
       ) : null}
 
       {isOrphaned ? (
         <ChoiceDialog
           open={isDialogOpen}
           onClose={() => setIsDialogOpen(false)}
-          ariaLabel="Entry削除確認"
-          loading={isDeleting ? { message: "削除中..." } : undefined}
+          ariaLabel={t("entry.card.deleteConfirmAria")}
+          loading={isDeleting ? { message: t("common.deleting") } : undefined}
           buttons={[
             {
               key: "delete",
-              label: "削除",
+              label: t("common.delete"),
               variant: "red",
               onClick: () => {
                 void confirmDelete()
@@ -246,7 +253,7 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
             },
             {
               key: "cancel",
-              label: "キャンセル",
+              label: t("common.cancel"),
               variant: "gray",
               onClick: () => setIsDialogOpen(false),
               disabled: isDeleting,

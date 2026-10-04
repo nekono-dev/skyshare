@@ -3,8 +3,10 @@
   flex-direction: column;
 }
 
-/* 隣接する行の間にのみ区切り線を引く（先頭行には付けない） */
-.list > div + div {
+/* 隣接する行の間にのみ区切り線を引く（先頭行には付けない）。
+   ComponentList が各行をラッパー要素で包むため、線は行(.row)側に引く。
+   description が省略された行(.no-border)には引かない。 */
+.list > div + div > .row:not(.no-border) {
   border-top: 1px solid var(--color-border);
 }
 

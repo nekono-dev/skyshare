@@ -8,6 +8,7 @@
  * - 呼び出し側（PostCardEntryActions）はこのフックが返す `display` の種別だけを見れば
  *   ボタン表示を切り替えられる。
  */
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
 import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
 import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
@@ -19,6 +20,7 @@ import {
     type EntryDeleteScope,
 } from "@/lib/entry/resolveEntryDeleteScope"
 import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
+import { useT } from "@/lib/i18n/react"
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
 
 /**
@@ -38,8 +40,8 @@ type InternalState =
 
 export type UseSkyshareEntryStatusResult = {
     display: SkyshareEntryDisplayState
-    createError: string | null
-    deleteError: string | null
+    createError: PlainMessageKey | null
+    deleteError: PlainMessageKey | null
     isDeleteDialogOpen: boolean
     /** `resolveEntryDeleteScope`による削除範囲判定の実行中フラグ（`specs/timeline/design.md §7`） */
     isResolvingDeleteScope: boolean
@@ -101,12 +103,13 @@ export const useSkyshareEntryStatus = (
     item: TimelinePost,
     options: Options = {},
 ): UseSkyshareEntryStatusResult => {
+    const translator = useT()
     const [state, setState] = useState<InternalState>(() => ({
         phase: "idle",
         entry: item.skyshareEntry ?? null,
     }))
-    const [createError, setCreateError] = useState<string | null>(null)
-    const [deleteError, setDeleteError] = useState<string | null>(null)
+    const [createError, setCreateError] = useState<PlainMessageKey | null>(null)
+    const [deleteError, setDeleteError] = useState<PlainMessageKey | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
     const [isResolvingDeleteScope, setIsResolvingDeleteScope] = useState(false)
     const [deleteScope, setDeleteScope] = useState<EntryDeleteScope>({
@@ -175,7 +178,7 @@ export const useSkyshareEntryStatus = (
                                     !(res.data instanceof Blob)
                                 ) {
                                     throw new Error(
-                                        "元画像の取得に失敗しました。",
+                                        "Failed to fetch the source image.",
                                     )
                                 }
                                 return URL.createObjectURL(res.data)
@@ -189,14 +192,14 @@ export const useSkyshareEntryStatus = (
                     visual: thumbnailBlob,
                 })
                 if (res.status !== 200) {
-                    setCreateError("skyshareページの作成に失敗しました。")
+                    setCreateError("post.entry.createFailed")
                     setState({ phase: "idle", entry: null })
                     return
                 }
 
                 const skyshare = res.data.skyshareEntry
                 if (!skyshare?.atUri) {
-                    setCreateError("skyshareページの作成に失敗しました。")
+                    setCreateError("post.entry.createFailed")
                     setState({ phase: "idle", entry: null })
                     return
                 }
@@ -221,7 +224,7 @@ export const useSkyshareEntryStatus = (
                 options.onCreated?.(entry)
             } catch (err) {
                 console.error("PostCard: failed to create skyshare entry", err)
-                setCreateError("skyshareページの作成に失敗しました。")
+                setCreateError("post.entry.createFailed")
                 setState({ phase: "idle", entry: null })
             } finally {
                 objectUrls.forEach(url => URL.revokeObjectURL(url))
@@ -260,7 +263,9 @@ export const useSkyshareEntryStatus = (
         void (async () => {
             try {
                 const scope = await (options.guestMode
-                    ? Promise.resolve(resolveGuestDeleteScope(entry.sourceUri))
+                    ? Promise.resolve(
+                          resolveGuestDeleteScope(entry.sourceUri, translator),
+                      )
                     : resolveEntryDeleteScope(entry.sourceUri))
                 setDeleteScope(scope)
                 setIsDeleteDialogOpen(true)
@@ -309,8 +314,8 @@ export const useSkyshareEntryStatus = (
                     if (res.status !== 200) {
                         setDeleteError(
                             res.status === 409
-                                ? "このEntryはBluesky投稿を含めて削除できません。"
-                                : "Entryの削除に失敗しました。",
+                                ? "post.entry.deleteBlocked"
+                                : "post.entry.deleteFailed",
                         )
                         setState({ phase: "idle", entry })
                         return
@@ -326,7 +331,7 @@ export const useSkyshareEntryStatus = (
                 }
             } catch (err) {
                 console.error("PostCard: failed to delete skyshare entry", err)
-                setDeleteError("Entryの削除に失敗しました。")
+                setDeleteError("post.entry.deleteFailed")
                 setState({ phase: "idle", entry })
             } finally {
                 isDeletingRef.current = false

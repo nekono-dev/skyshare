@@ -7,6 +7,8 @@
  * - 選択値を親コンポーネントにコールバックで通知する。
  */
 
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import React from "react"
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model/createEntryBodySelfLabels"
 import { CreateEntryBodySelfLabels as SelfLabelValues } from "@/client/openapi/model/createEntryBodySelfLabels"
@@ -22,21 +24,16 @@ import pic from "@/images/warn.svg"
  * - Bluesky 公式ラベル値に対して日本語説明を対応付ける。
  */
 type SelfLabelOption = {
-  label: string
+  labelKey: PlainMessageKey
   value: CreateEntryBodySelfLabels
 }
 
 export const SELF_LABEL_OPTIONS: SelfLabelOption[] = [
-  { label: "きわどい(sexual)", value: SelfLabelValues.sexual },
-  { label: "ヌード(nudity)", value: SelfLabelValues.nudity },
-  { label: "成人向け(porn)", value: SelfLabelValues.porn },
-  { label: "ネタバレ(spoiler)", value: SelfLabelValues.spoiler },
-  { label: "警告(warn)", value: SelfLabelValues["!warn"] },
-]
-
-const SELF_LABEL_DROPDOWN_OPTIONS = [
-  { value: "", label: "ラベルなし" },
-  ...SELF_LABEL_OPTIONS,
+  { labelKey: "post.selfLabel.sexual", value: SelfLabelValues.sexual },
+  { labelKey: "post.selfLabel.nudity", value: SelfLabelValues.nudity },
+  { labelKey: "post.selfLabel.porn", value: SelfLabelValues.porn },
+  { labelKey: "post.selfLabel.spoiler", value: SelfLabelValues.spoiler },
+  { labelKey: "post.selfLabel.warn", value: SelfLabelValues["!warn"] },
 ]
 
 type Props = {
@@ -75,9 +72,17 @@ export const Component: React.FC<Props> = ({
   disabled = false,
   className,
   id = "self-label",
-  ariaLabel = "コンテンツラベル",
+  ariaLabel,
   autoWidth = false,
 }) => {
+  const { t } = useT()
+  const options = [
+    { value: "", label: t("post.selfLabel.none") },
+    ...SELF_LABEL_OPTIONS.map(option => ({
+      value: option.value,
+      label: t(option.labelKey),
+    })),
+  ]
   const widthClassName = autoWidth ? styles["select-auto"] : styles.select
 
   /**
@@ -104,11 +109,11 @@ export const Component: React.FC<Props> = ({
       <Dropdown
         id={id}
         value={value ?? ""}
-        options={SELF_LABEL_DROPDOWN_OPTIONS}
+        options={options}
         onChange={handleChange}
         disabled={disabled}
         autoWidth={autoWidth}
-        ariaLabel={ariaLabel}
+        ariaLabel={ariaLabel ?? t("post.selfLabel.aria")}
         className={
           className ? `${widthClassName} ${className}` : widthClassName
         }

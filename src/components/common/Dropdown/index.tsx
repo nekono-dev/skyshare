@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import React, {
   useEffect,
   useId,
@@ -198,14 +199,20 @@ export const Dropdown: React.FC<Props> = ({
   disabled = false,
   searchable = false,
   placeholder,
-  searchPlaceholder = "入力して検索",
-  searchPromptText = "入力して検索してください",
-  emptyText = "該当する項目がありません",
+  searchPlaceholder,
+  searchPromptText,
+  emptyText,
   autoWidth = false,
   className,
   id,
   ariaLabel,
 }) => {
+  const { t } = useT()
+  const resolvedSearchPlaceholder =
+    searchPlaceholder ?? t("common.dropdown.searchPlaceholder")
+  const resolvedSearchPromptText =
+    searchPromptText ?? t("common.dropdown.searchPrompt")
+  const resolvedEmptyText = emptyText ?? t("common.dropdown.empty")
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>("list")
   const [activeIndex, setActiveIndex] = useState(-1)
@@ -593,7 +600,7 @@ export const Dropdown: React.FC<Props> = ({
             // （検索モードで placeholder が見切れず、入るときに幅が変わらない）
             <span className={styles["sizer-stack"]}>
               <span>{selectedInputText}</span>
-              <span>{searchPlaceholder}</span>
+              <span>{resolvedSearchPlaceholder}</span>
             </span>
           ) : (
             triggerContent
@@ -610,7 +617,7 @@ export const Dropdown: React.FC<Props> = ({
             .join(" ")}
           // 開いている間は一覧モードでも入力待ち（placeholder）を見せる。閉じている間は現在値
           value={open ? query : selectedInputText}
-          placeholder={searchPlaceholder}
+          placeholder={resolvedSearchPlaceholder}
           // 一覧モードでもテキストボックスのまま、キーボードだけ出さない
           // （検索モードに入る再操作で inputMode を "text" にする）
           inputMode={mode === "list" ? "none" : "text"}
@@ -697,8 +704,8 @@ export const Dropdown: React.FC<Props> = ({
             {visibleOptions.length === 0 ? (
               <p role="status" className={styles.empty}>
                 {mode === "search" && query.trim() === ""
-                  ? searchPromptText
-                  : emptyText}
+                  ? resolvedSearchPromptText
+                  : resolvedEmptyText}
               </p>
             ) : (
               <ComponentList

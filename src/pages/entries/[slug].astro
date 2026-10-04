@@ -13,6 +13,9 @@
 
 export const prerender = false
 
+import ui from "@/styles/ui.module.css"
+import LocaleSelect from "@/components/common/LocaleSelect"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { AtpAgent, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
 import Baselayout from "@/layout/Baselayout.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
@@ -60,24 +63,24 @@ let pageTitle = `${serviceName} Entry`
 let cardPath = ""
 let sourceWebUrl = ""
 let sourceText = ""
-let createdAtText = ""
+let createdAt = ""
 let posts: EntryPostView[] = []
 let manifestHeading = ""
 let manifestCaption = ""
 let metaDescription = ""
-let notFoundReason = "entry not found"
+let notFoundReasonKey: PlainMessageKey = "entry.detail.error404Body"
 let sourcePostAvailable = true
 
 // 入力パラメータ検証→レコード取得→表示用整形の順で段階的に失敗点を切り分ける。
 if (typeof slug === "undefined") {
     statusCode = 404
-    notFoundReason = "Entry is not found"
+    notFoundReasonKey = "entry.detail.error404Body"
 } else {
     const locator = parseEntryLocator(slug)
 
     if (!locator) {
         statusCode = 404
-        notFoundReason = "Entry is not found"
+        notFoundReasonKey = "entry.detail.error404Body"
     } else {
         const agent = new AtpAgent({ service: atpService })
         console.debug(`service: ${atpService}, locator: ${JSON.stringify(locator)}`)
@@ -116,7 +119,7 @@ if (typeof slug === "undefined") {
 
             if (!sourceUriFromEntry) {
                 statusCode = 404
-                notFoundReason = "Invalid skyshare entry"
+                notFoundReasonKey = "entry.detail.errorInvalid"
                 return 404
             }
             const parsedSourceUri = parseAtUri(sourceUriFromEntry)
@@ -129,17 +132,11 @@ if (typeof slug === "undefined") {
                     break
                 default:
                     statusCode = 500
-                    notFoundReason = "Invalid skyshare entry"
+                    notFoundReasonKey = "entry.detail.errorInvalid"
                     return 500
             }
 
-            createdAtText =
-                typeof entry.createdAt === "string"
-                    ? new Date(entry.createdAt).toLocaleString("ja-JP", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                      })
-                    : ""
+            createdAt = typeof entry.createdAt === "string" ? entry.createdAt : ""
 
             manifestHeading = typeof entry.manifest?.heading === "string" ? (entry.manifest as any).heading : ""
             manifestCaption = typeof entry.manifest?.caption === "string" ? (entry.manifest as any).caption : ""
@@ -211,7 +208,7 @@ if (typeof slug === "undefined") {
             // sourcePostAvailable = false として処理するため、ここには到達しない。
             statusCode = resolveXrpcStatus(error)
             if (statusCode === 404) {
-                notFoundReason = "Entry is not found"
+                notFoundReasonKey = "entry.detail.error404Body"
             }
             console.warn("entries/[slug] SSR failed", {
                 reason: error instanceof Error ? error.message : String(error),
@@ -232,15 +229,22 @@ Astro.response.status = statusCode
     pageCaption={metaDescription}
     robots={robots}
 >
-    <EntryDetailView
-        statusCode={statusCode}
-        notFoundReason={notFoundReason}
-        heading={manifestHeading}
-        caption={manifestCaption}
-        createdAtText={createdAtText}
-        sourcePostAvailable={sourcePostAvailable}
-        sourceUrl={sourceWebUrl}
-        visualUrl={cardPath}
-        posts={posts}
-    />
+    <div class={ui.center}>
+        <div class={`${ui.page} ${ui["width-lg"]}`}>
+            <div class={ui["self-end"]}>
+                <LocaleSelect client:load showLabel />
+            </div>
+            <EntryDetailView
+                statusCode={statusCode}
+                notFoundReasonKey={notFoundReasonKey}
+                heading={manifestHeading}
+                caption={manifestCaption}
+                createdAt={createdAt}
+                sourcePostAvailable={sourcePostAvailable}
+                sourceUrl={sourceWebUrl}
+                visualUrl={cardPath}
+                posts={posts}
+            />
+        </div>
+    </div>
 </Baselayout>

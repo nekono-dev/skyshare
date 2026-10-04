@@ -1,5 +1,7 @@
 import type { ThemeMode } from "@/lib/settings/themeSettings"
 import Dropdown from "@/components/common/Dropdown"
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import styles from "./index.module.css"
 
 /**
@@ -10,10 +12,10 @@ import styles from "./index.module.css"
  *   永続化やDOMへの反映は呼び出し側の親コンポーネントが決める。
  */
 
-const THEME_MODE_OPTIONS: { value: ThemeMode; label: string }[] = [
-  { value: "system", label: "システム設定に従う" },
-  { value: "light", label: "ライト" },
-  { value: "dark", label: "ダーク" },
+const THEME_MODE_OPTIONS: { value: ThemeMode; labelKey: PlainMessageKey }[] = [
+  { value: "system", labelKey: "settings.theme.system" },
+  { value: "light", labelKey: "settings.theme.light" },
+  { value: "dark", labelKey: "settings.theme.dark" },
 ]
 
 export type ThemeModeSelectProps = {
@@ -46,8 +48,13 @@ export const ThemeModeSelect = ({
   disabled = false,
   className,
   id = "theme-mode",
-  ariaLabel = "表示テーマ",
+  ariaLabel,
 }: ThemeModeSelectProps) => {
+  const { t } = useT()
+  const options = THEME_MODE_OPTIONS.map(option => ({
+    value: option.value,
+    label: t(option.labelKey),
+  }))
   const handleChange = (next: string) => {
     if (THEME_MODE_OPTIONS.some(option => option.value === next)) {
       onChange(next as ThemeMode)
@@ -58,10 +65,10 @@ export const ThemeModeSelect = ({
     <Dropdown
       id={id}
       value={value}
-      options={THEME_MODE_OPTIONS}
+      options={options}
       onChange={handleChange}
       disabled={disabled}
-      ariaLabel={ariaLabel}
+      ariaLabel={ariaLabel ?? t("settings.theme.label")}
       className={className ? `${styles.select} ${className}` : styles.select}
     />
   )

@@ -10,6 +10,7 @@
  * - 一覧は共通の`ComponentList`＋`DeletePostListItem`で描画する。スレッド（2件以上）では一覧の
  *   高さを固定してスクロール領域にし、確定・キャンセルのボタンを常に画面内に残す。
  */
+import { useT } from "@/lib/i18n/react"
 import React from "react"
 import Loading from "@/components/common/Loading"
 import ComponentList from "@/components/common/ComponentList"
@@ -32,17 +33,6 @@ type Props = {
 }
 
 /**
- * 削除件数を示す概要文を返す。
- *
- * Input: `count`: 削除予定の投稿件数（1以上）
- * Output: 単発なら「Blueskyの投稿1件を削除します。」、複数なら「Blueskyのスレッド（N件の投稿）を削除します。」
- */
-const buildSummary = (count: number): string =>
-  count === 1
-    ? "Blueskyの投稿1件を削除します。"
-    : `Blueskyのスレッド（${count}件の投稿）を削除します。`
-
-/**
  * 削除予定投稿の一覧付き最終確認ダイアログを描画する。
  *
  * Input:
@@ -63,6 +53,12 @@ export const Component: React.FC<Props> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t, tn } = useT()
+  // 削除件数を示す概要文。単発は専用文言、複数はスレッドとして件数付きの文言にする。
+  const summary =
+    posts.length === 1
+      ? t("entry.deletePosts.summarySingle")
+      : tn("entry.deletePosts.summaryThread", posts.length)
   // スレッド（2件以上）のみ一覧の高さを固定してスクロールさせる。
   const isThread = posts.length >= 2
 
@@ -71,19 +67,19 @@ export const Component: React.FC<Props> = ({
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]}`}
         role="dialog"
-        aria-label="Bluesky投稿削除の最終確認"
+        aria-label={t("entry.deletePosts.aria")}
       >
-        {isDeleting && <Loading overlay message="削除中..." />}
-        <h2 className={ui.subject}>本当にBluesky投稿を削除しますか？</h2>
+        {isDeleting && <Loading overlay message={t("common.deleting")} />}
+        <h2 className={ui.subject}>{t("entry.deletePosts.title")}</h2>
         <div className={ui["dialog-body"]}>
           <p className={ui.text}>
-            {buildSummary(posts.length)}
-            この操作は取り消せません。第三者からの返信は削除されず残ります。
+            {summary}
+            {t("entry.deletePosts.warning")}
           </p>
           <div
             className={isThread ? styles["post-list-fixed"] : undefined}
             role="region"
-            aria-label="削除予定のBluesky投稿一覧"
+            aria-label={t("entry.deletePosts.listAria")}
             tabIndex={isThread ? 0 : undefined}
           >
             <ComponentList
@@ -100,17 +96,17 @@ export const Component: React.FC<Props> = ({
             disabled={isDeleting}
             onClick={onCancel}
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
           <button
             type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${variantClassName["red-strong"]}`}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
             disabled={isDeleting}
             onClick={() => {
               void onConfirm()
             }}
           >
-            全て削除
+            {t("entry.deletePosts.deleteAll")}
           </button>
         </div>
       </div>

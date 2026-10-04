@@ -9,6 +9,7 @@
  */
 import Overlay from "@/components/common/Overlay"
 import Settings from "@/components/settings/Settings"
+import { useT } from "@/lib/i18n/react"
 import ui from "@/styles/ui.module.css"
 
 type Props = {
@@ -32,12 +33,13 @@ type Props = {
  * - 出力: 「設定」見出し・閉じるボタン付きの設定ダイアログ
  */
 export const SettingsDialog = ({ open, onClose }: Props) => {
+  const { t } = useT()
   return (
     <Overlay open={open} onClose={onClose} contentClassName={ui["width-md"]}>
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]}`}
         role="dialog"
-        aria-label="設定"
+        aria-label={t("nav.settings")}
         style={{ maxHeight: "80vh", overflow: "auto" }}
       >
         <div
@@ -48,9 +50,9 @@ export const SettingsDialog = ({ open, onClose }: Props) => {
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["toolbar-item-left"]}`}
             onClick={onClose}
           >
-            閉じる
+            {t("common.close")}
           </button>
-          <div>設定</div>
+          <div>{t("nav.settings")}</div>
         </div>
 
         <Settings />

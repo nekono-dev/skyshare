@@ -9,6 +9,7 @@
  * - ボタンの配色は`ChoiceDialog`が定義する`DialogButtonVariant`型・`variantClassName`を
  *   再利用し、アプリ全体のボタン配色と一貫させる。
  */
+import { useT } from "@/lib/i18n/react"
 import React from "react"
 import Loading from "@/components/common/Loading"
 import Overlay from "@/components/common/Overlay"
@@ -41,7 +42,7 @@ type Props = {
  * - `title`: 見出し（省略時は表示しない）
  * - `message`: 本文メッセージ（警告文など）
  * - `confirmLabel`/`confirmVariant`/`onConfirm`: 確定ボタンのラベル・配色・押下時のコールバック
- * - `cancelLabel`: キャンセルボタンのラベル（既定値: "キャンセル"）
+ * - `cancelLabel`: キャンセルボタンのラベル（省略時は表示言語の「キャンセル」）
  * - `loading`: 指定時、カード内にローディングオーバーレイを表示し、両ボタンを無効化する
  *
  * Output:
@@ -61,9 +62,10 @@ export const Component: React.FC<Props> = ({
   confirmLabel,
   confirmVariant,
   onConfirm,
-  cancelLabel = "キャンセル",
+  cancelLabel,
   loading,
 }) => {
+  const { t } = useT()
   return (
     <Overlay open={open} onClose={onClose} contentClassName={ui["width-md"]}>
       <div
@@ -83,7 +85,7 @@ export const Component: React.FC<Props> = ({
             disabled={Boolean(loading)}
             onClick={onClose}
           >
-            {cancelLabel}
+            {cancelLabel ?? t("common.cancel")}
           </button>
           <button
             type="button"

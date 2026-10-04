@@ -319,7 +319,7 @@ describe("POST /v2/bsky/session", () => {
         expect(accountsCookie).not.toMatch(`${ACCOUNTS_COOKIE_NAME}=;`)
     })
 
-    it("pool上限に達している場合は400を返す", async () => {
+    it("pool上限に達している場合は409を返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -356,7 +356,8 @@ describe("POST /v2/bsky/session", () => {
             },
         )
         const res = await callRoute(POST, request)
-        expect(res.status).toBe(400)
+        expect(res.status).toBe(409)
+        expect(await res.json()).toEqual({ error: "Conflict" })
     })
 })
 

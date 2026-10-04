@@ -8,6 +8,7 @@
  * - テキスト入力は `CountedTextInput`（Entry編集フォーム・PostFormと共通のコンポーネント）を使い、
  *   複数行入力・文字数カウンタの見た目をアプリ全体で揃える。Blueskyのalt上限は1000文字。
  */
+import { useT } from "@/lib/i18n/react"
 import { useEffect, useId, useState } from "react"
 import CountedTextInput, {
   type CounterSpec,
@@ -60,6 +61,7 @@ export const ImageAltDialog = ({
   onChange,
   disabled = false,
 }: Props) => {
+  const { t } = useT()
   const inputId = useId()
   const [draft, setDraft] = useState(value)
 
@@ -78,13 +80,11 @@ export const ImageAltDialog = ({
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]}`}
         role="dialog"
-        aria-label="画像のaltテキスト編集"
+        aria-label={t("image.alt.dialogAria")}
       >
         <div className={ui["dialog-body"]}>
           <label className={styles["field-label"]} htmlFor={inputId}>
-            <div className={`${ui["text"]}`}>
-              Bluesky向けの代替テキストを設定
-            </div>
+            <div className={`${ui["text"]}`}>{t("image.alt.prompt")}</div>
             <CountedTextInput
               id={inputId}
               multiline
@@ -95,7 +95,7 @@ export const ImageAltDialog = ({
               onChange={setDraft}
               disabled={disabled}
               counters={altCounters}
-              placeholder="altテキストを入力"
+              placeholder={t("image.alt.placeholder")}
             />
           </label>
         </div>
@@ -107,7 +107,7 @@ export const ImageAltDialog = ({
             disabled={disabled}
             onClick={onClose}
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -115,7 +115,7 @@ export const ImageAltDialog = ({
             disabled={disabled}
             onClick={handleApply}
           >
-            適用
+            {t("common.apply")}
           </button>
         </div>
       </div>

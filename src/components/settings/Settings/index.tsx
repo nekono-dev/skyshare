@@ -16,11 +16,15 @@
 import { useEffect, useRef, useState } from "react"
 import { getSession } from "@/client/openapi/client"
 import InlineIcon from "@/components/common/InlineIcon"
+import LocaleSelect from "@/components/common/LocaleSelect"
+import ThemeModeSelect from "@/components/common/ThemeModeSelect"
 import PostGateDialog from "@/components/post/PostGateDialog"
 import SettingList, {
   type SettingListItem,
 } from "@/components/settings/SettingList"
 import type { PostGateValue } from "@/lib/atproto/gate"
+import { useT } from "@/lib/i18n/react"
+import { renderSlots } from "@/lib/i18n/rich"
 import {
   readPostGateDefaultSetting,
   readSyncGateDefaultAfterPostSetting,
@@ -43,6 +47,7 @@ import {
   type ThemeMode,
   writeThemeModeSetting,
 } from "@/lib/settings/themeSettings"
+import type { MessageKey } from "@/lib/i18n/translate"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import { isValidMastodonInstanceDomain } from "@/util/share/intent"
 import ui from "@/styles/ui.module.css"
@@ -58,6 +63,7 @@ import styles from "./index.module.css"
  * - 出力: 投稿フォーム設定3件・クロスポスト設定4件、計7件のトグル付き設定一覧
  */
 export const Settings = () => {
+  const { t, raw } = useT()
   const shareToggles = useShareToggles()
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
     readPinnedFormDisabledSetting(false),
@@ -189,68 +195,48 @@ export const Settings = () => {
     }
   }, [])
 
+  // 文中にアイコンを差し込む文言のスロット（日本語と英語で位置が異なるため文言側で指定する）。
+  const slots = {
+    share: <InlineIcon name="share" />,
+    popup: <InlineIcon name="popup" />,
+    taittsuu: <InlineIcon name="taittsuu" />,
+    mastodon: <InlineIcon name="mastodon" />,
+  }
+  const rich = (key: MessageKey) => renderSlots(raw(key), slots)
+
   const postFormItems: SettingListItem[] = [
     {
       key: "pinnedFormDisabled",
-      label: "投稿フォームを固定表示しない",
-      description: (
-        <>
-          オンにすると、投稿フォームが画面上部に固定表示されなくなります。
-          投稿フォームはサイドバーまたはフローティングの新規投稿ボタンを押して表示してください。
-        </>
-      ),
+      label: t("settings.pinnedFormDisabled.label"),
+      description: t("settings.pinnedFormDisabled.description"),
       checked: pinnedFormDisabled,
       onCheckedChange: onPinnedFormDisabledChange,
     },
     {
       key: "popupIntentInsteadOfWebshare",
-      label: (
-        <>
-          <InlineIcon name="share" />
-          の代わりにポップアップを開く
-        </>
-      ),
-      description: (
-        <>
-          オンにすると、投稿後の共有をWebshareAPI（
-          <InlineIcon name="share" />
-          で表示できる共有メニュー ）を使わず、投稿インテントをポップアップ
-          <InlineIcon name="popup" />
-          します。
-        </>
-      ),
+      label: rich("settings.popupIntent.label"),
+      description: rich("settings.popupIntent.description"),
       checked: shareToggles.popupIntentInsteadOfWebshare,
       onCheckedChange: shareToggles.onPopupIntentInsteadOfWebshareChange,
     },
     {
       key: "manualImageAttach",
-      label: "画像を自分で添付する",
-      description: (
-        <>
-          オンにすると、SkyshareのURLを発行しません。
-          <InlineIcon name="share" />
-          を使用する場合は、共有先へ画像データを共有します。投稿インテント（ポップアップ
-          <InlineIcon name="popup" />）
-          を使う場合は、対象SNSの投稿フォーム側で画像を設定してください。
-        </>
-      ),
-
+      label: t("settings.manualImageAttach.label"),
+      description: rich("settings.manualImageAttach.description"),
       checked: shareToggles.manualImageAttach,
       onCheckedChange: shareToggles.onManualImageAttachChange,
     },
     {
       key: "hashtagSuggestEnabled",
-      label: "ハッシュタグ候補を表示",
-      description:
-        "オンにすると、投稿本文で「#」を入力した際にハッシュタグの候補一覧を表示します。",
+      label: t("settings.hashtagSuggest.label"),
+      description: t("settings.hashtagSuggest.description"),
       checked: hashtagSuggestEnabled,
       onCheckedChange: onHashtagSuggestEnabledChange,
     },
     {
       key: "mentionSuggestEnabled",
-      label: "メンション候補を表示",
-      description:
-        "オンにすると、投稿本文で「@」を入力した際にメンション候補一覧を表示します。",
+      label: t("settings.mentionSuggest.label"),
+      description: t("settings.mentionSuggest.description"),
       checked: mentionSuggestEnabled,
       onCheckedChange: onMentionSuggestEnabledChange,
     },
@@ -259,57 +245,29 @@ export const Settings = () => {
   const crosspostItems: SettingListItem[] = [
     {
       key: "showXWhenCrosspost",
-      label: "X投稿ボタンを表示",
-      description: (
-        <>
-          オンにすると、X投稿ボタンを表示します。自動ポップアップはOFFになります。他SNSのクロスポストオプションを設定している場合、両方のボタンを表示します。
-        </>
-      ),
+      label: t("settings.showX.label"),
+      description: t("settings.showX.description"),
       checked: shareToggles.showXWhenCrosspost,
       onCheckedChange: shareToggles.onShowXWhenCrosspostChange,
     },
     {
       key: "noAutoPopupAfterPost",
-      label: "自動ポップアップをOFFにする",
-      description:
-        "オンにすると、投稿完了時に共有ポップアップを自動的に開きません。X投稿ボタンを表示がOFFの場合はONになります。自動ポップアップを開くことができない場合は、このオプションがONになります。",
+      label: t("settings.noAutoPopup.label"),
+      description: t("settings.noAutoPopup.description"),
       checked: shareToggles.noAutoPopupAfterPost,
       onCheckedChange: shareToggles.onNoAutoPopupAfterPostChange,
     },
     {
       key: "crosspostToTaittsuu",
-      label: (
-        <>
-          <InlineIcon name="taittsuu" />
-          にクロスポスト
-        </>
-      ),
-      description: (
-        <>
-          オンにすると、クロスポスト先をXではなくタイッツー
-          <InlineIcon name="taittsuu" />
-          に変更します。
-        </>
-      ),
+      label: rich("settings.taittsuu.label"),
+      description: rich("settings.taittsuu.description"),
       checked: shareToggles.crosspostToTaittsuu,
       onCheckedChange: shareToggles.onCrosspostToTaittsuuChange,
     },
     {
       key: "crosspostToMastodon",
-      label: (
-        <>
-          <InlineIcon name="mastodon" />
-          にクロスポスト
-        </>
-      ),
-      description: (
-        <>
-          オンにすると、クロスポスト先にMastodon
-          <InlineIcon name="mastodon" />
-          を追加します。ドメイン未設定の場合は mastodon.social
-          が既定値として設定されます。
-        </>
-      ),
+      label: rich("settings.mastodon.label"),
+      description: rich("settings.mastodon.description"),
       checked: shareToggles.crosspostToMastodon,
       onCheckedChange: shareToggles.onCrosspostToMastodonChange,
       textInput: true,
@@ -317,36 +275,48 @@ export const Settings = () => {
       onTextInputChange: shareToggles.onMastodonInstanceDomainChange,
       textInputPlaceholder: "mastodon.social",
       textInputValidate: isValidMastodonInstanceDomain,
-      textInputErrorMessage:
-        "ドメインの形式が正しくありません。スキーム（https://等）やパス（/以降）を含めず、ドメイン名のみを入力してください。",
+      textInputErrorMessage: t("settings.mastodon.domainError"),
     },
   ]
 
   const displayItems: SettingListItem[] = [
     {
       key: "themeMode",
-      label: "表示テーマ",
-      control: "select",
-      selectValue: themeMode,
-      onSelectChange: onThemeModeChange,
+      label: t("settings.theme.label"),
+      renderControl: ({ id, ariaLabel, disabled }) => (
+        <ThemeModeSelect
+          id={id}
+          value={themeMode}
+          disabled={disabled}
+          ariaLabel={ariaLabel}
+          onChange={onThemeModeChange}
+        />
+      ),
+    },
+    {
+      key: "uiLocale",
+      label: t("settings.locale.label"),
+      renderControl: ({ id, ariaLabel, disabled }) => (
+        <LocaleSelect id={id} disabled={disabled} ariaLabel={ariaLabel} />
+      ),
     },
   ]
 
   return (
     <div className={`${styles.groups}`}>
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>表示</h2>
+        <h2 className={ui.subject}>{t("settings.display.title")}</h2>
         <SettingList items={displayItems} />
       </section>
 
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>投稿フォーム</h2>
+        <h2 className={ui.subject}>{t("settings.postForm.title")}</h2>
         <SettingList items={postFormItems} />
       </section>
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>返信・引用のデフォルト設定</h2>
+        <h2 className={ui.subject}>{t("settings.gate.title")}</h2>
         <p className={styles["gate-description"]}>
-          新規投稿時の初期値として使われる、返信可能ユーザー・引用許可のデフォルト設定です。
+          {t("settings.gate.description")}
         </p>
         <div className={`${ui["right"]}`}>
           <button
@@ -354,7 +324,7 @@ export const Settings = () => {
             className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
             onClick={() => setGateDialogOpen(true)}
           >
-            返信・引用のデフォルト設定を編集
+            {t("settings.gate.editButton")}
           </button>
         </div>
 
@@ -362,9 +332,8 @@ export const Settings = () => {
           items={[
             {
               key: "syncGateDefaultAfterPost",
-              label: "返信・引用オプションを保存する",
-              description:
-                "オンにすると、投稿時に指定した返信・引用の設定が次回以降のデフォルト値になります。オフの場合、投稿後は本オプションで保存されたデフォルト値に戻ります。",
+              label: t("settings.syncGate.label"),
+              description: t("settings.syncGate.description"),
               checked: syncGateDefaultAfterPost,
               onCheckedChange: onSyncGateDefaultAfterPostChange,
             },
@@ -385,7 +354,7 @@ export const Settings = () => {
       />
 
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>クロスポスト</h2>
+        <h2 className={ui.subject}>{t("settings.crosspost.title")}</h2>
         <SettingList items={crosspostItems} />
       </section>
     </div>

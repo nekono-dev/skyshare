@@ -21,6 +21,7 @@
  *   segmentのみを対象とするため（本モジュールの利用側で合意済みの方針）、戻り値は
  *   トップレベルskyshareEntryのuriのみを返す。
  */
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { createEntry } from "@/client/openapi/client"
 import type { CreateEntryBody } from "@/client/openapi/model"
 import { detectFacetsForSubmission } from "@/lib/atproto/richtext"
@@ -34,7 +35,8 @@ export type SubmitThreadParams = {
 }
 
 export type SubmitThreadResult =
-    { ok: true; skyshareUri: string } | { ok: false; message: string }
+    | { ok: true; skyshareUri: string }
+    | { ok: false; messageKey: PlainMessageKey }
 
 type ImageSizeCandidate = {
     width?: number
@@ -42,24 +44,24 @@ type ImageSizeCandidate = {
 }
 
 /**
- * API エラーコードを表示文言へ変換する。
+ * API エラーコードを表示文言のキーへ変換する。
  *
  * Input:
  * - `errorCode`: API から返却されたエラーコード
  *
  * Output:
- * - ユーザー向け日本語メッセージ
+ * - ユーザー向け文言のキー（翻訳は表示側が現在の表示言語で行う）。未知のコードは汎用の投稿失敗
  */
-const resolveEntryErrorMessage = (errorCode: string) => {
+const resolveEntryErrorMessage = (errorCode: string): PlainMessageKey => {
     switch (errorCode) {
         case "APP_BSKY_POST_FAILED":
-            return "Blueskyへの投稿に失敗しました。"
+            return "post.submit.postFailed"
         case "SKYSHARE_ENTRY_CREATE_FAILED":
-            return "Blueskyへの投稿は成功しましたが、SkyShareレコード作成に失敗しました。"
+            return "post.submit.entryCreateFailed"
         case "ENTRY_CREATE_UNEXPECTED_ERROR":
-            return "投稿処理中に予期せぬエラーが発生しました。"
+            return "post.submit.unexpected"
         default:
-            return errorCode
+            return "post.submit.failed"
     }
 }
 
@@ -80,12 +82,12 @@ const loadBlobImageSize = async (blob: Blob) => {
             const nextImage = new Image()
             nextImage.onload = () => resolve(nextImage)
             nextImage.onerror = () =>
-                reject(new Error("画像サイズの取得に失敗しました。"))
+                reject(new Error("Failed to read the image size."))
             nextImage.src = objectUrl
         })
 
         if (image.naturalWidth < 1 || image.naturalHeight < 1) {
-            throw new Error("画像サイズが不正です。")
+            throw new Error("Invalid image size.")
         }
 
         return {
@@ -220,8 +222,8 @@ export const submitThread = async (
         const errorCode =
             "error" in res.data && typeof res.data.error === "string"
                 ? res.data.error
-                : "投稿に失敗しました。"
-        return { ok: false, message: resolveEntryErrorMessage(errorCode) }
+                : ""
+        return { ok: false, messageKey: resolveEntryErrorMessage(errorCode) }
     }
 
     const skyshareEntry = res.data.skyshareEntry
@@ -229,7 +231,7 @@ export const submitThread = async (
         if (!skyshareEntry) {
             return {
                 ok: false,
-                message: resolveEntryErrorMessage(
+                messageKey: resolveEntryErrorMessage(
                     "SKYSHARE_ENTRY_CREATE_FAILED",
                 ),
             }

@@ -9,6 +9,10 @@ Skyshare generates a web page corresponding to the Skyshare Entry, and users can
 
 Translated with DeepL.com (free version)
 
+## Display language
+
+Japanese and English are supported. You can switch the display language in the settings screen (by default it follows your browser's language).
+
 ## more info
 
 [for japanese developer: Zenn article(Old archtecture)](https://zenn.dev/nkte8/articles/2024-02-03-r01)

@@ -1,3 +1,4 @@
+import { useFormat } from "@/lib/i18n/react"
 import Avatar from "@/components/common/Avatar"
 import ImageGallery from "@/components/image/ImageGallery"
 import PostEngagementStats from "@/components/post/PostEngagementStats"
@@ -51,7 +52,8 @@ const PostBody = ({
   postUrl,
   engagement,
 }: Props) => {
-  const createdAtText = new Date(createdAt).toLocaleString("ja-JP", {
+  const { formatDateTime } = useFormat()
+  const createdAtText = formatDateTime(createdAt, {
     dateStyle: "medium",
     timeStyle: "short",
   })

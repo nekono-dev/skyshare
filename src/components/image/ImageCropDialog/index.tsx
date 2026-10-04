@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import { useEffect, useState } from "react"
 import CropSlot, { type SlotCropState } from "@/components/image/CropSlot"
 import Overlay from "@/components/common/Overlay"
@@ -56,6 +57,7 @@ export const Component: React.FC<Props> = ({
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useT()
   const count = Math.min(VISUAL_IMAGE_COUNT, Math.max(1, imageUrls.length))
   const slotDefs = getSlotDefs(count)
   const [cropStates, setCropStates] = useState<SlotCropState[]>(() =>
@@ -176,12 +178,10 @@ export const Component: React.FC<Props> = ({
       onClose={isProcessing ? () => {} : onCancel}
       contentClassName={ui["width-xl"]}
     >
-      {isProcessing && <Loading overlay message="画像を処理中..." />}
+      {isProcessing && <Loading overlay message={t("image.crop.processing")} />}
       <div className={`${ui["base-card"]} ${ui["dialog-card"]}`}>
-        <h3 className={styles.title}>画像を調整</h3>
-        <p className={styles.caption}>
-          1200 x 630 の範囲で配置と拡大率を調整します。
-        </p>
+        <h3 className={styles.title}>{t("image.crop.title")}</h3>
+        <p className={styles.caption}>{t("image.crop.caption")}</p>
 
         <div
           className={`${styles["composite-area"]} ${styles[`layout${count}`]}`}
@@ -226,7 +226,7 @@ export const Component: React.FC<Props> = ({
             onClick={onCancel}
             disabled={isProcessing}
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -234,7 +234,7 @@ export const Component: React.FC<Props> = ({
             onClick={handleConfirm}
             disabled={!canConfirm || isProcessing}
           >
-            OK
+            {t("common.ok")}
           </button>
         </div>
       </div>

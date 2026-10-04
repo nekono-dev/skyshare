@@ -1,3 +1,4 @@
+import { useT } from "@/lib/i18n/react"
 import React, { useEffect, useRef, useState } from "react"
 import Overlay from "@/components/common/Overlay"
 import type { SourceImage } from "@/lib/entry/entry"
@@ -42,6 +43,7 @@ const EDGE_RESISTANCE = 0.3
  * - `onClose`: 閉じる操作の通知
  */
 const ImageLightbox = ({ images, index, onIndexChange, onClose }: Props) => {
+  const { t } = useT()
   const rootRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const swipeStartX = useRef<number | null>(null)
@@ -173,14 +175,14 @@ const ImageLightbox = ({ images, index, onIndexChange, onClose }: Props) => {
         className={styles.root}
         role="dialog"
         aria-modal="true"
-        aria-label="画像の拡大表示"
+        aria-label={t("image.lightbox.aria")}
         onClick={handleBlankClick}
       >
         <button
           ref={closeRef}
           type="button"
           className={styles["close-button"]}
-          aria-label="閉じる"
+          aria-label={t("common.close")}
           onClick={onClose}
         >
           ×
@@ -197,7 +199,7 @@ const ImageLightbox = ({ images, index, onIndexChange, onClose }: Props) => {
             <button
               type="button"
               className={`${styles["nav-button"]} ${styles["nav-prev"]}`}
-              aria-label="前の画像"
+              aria-label={t("image.lightbox.prev")}
               disabled={index === 0}
               onClick={() => go(index - 1)}
             >
@@ -232,7 +234,7 @@ const ImageLightbox = ({ images, index, onIndexChange, onClose }: Props) => {
             <button
               type="button"
               className={`${styles["nav-button"]} ${styles["nav-next"]}`}
-              aria-label="次の画像"
+              aria-label={t("image.lightbox.next")}
               disabled={index === images.length - 1}
               onClick={() => go(index + 1)}
             >

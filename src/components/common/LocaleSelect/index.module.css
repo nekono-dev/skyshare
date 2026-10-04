@@ -1,0 +1,10 @@
+.select {
+  min-width: 9rem;
+  max-width: 14rem;
+}
+
+.labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

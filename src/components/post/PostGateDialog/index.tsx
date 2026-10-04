@@ -20,6 +20,8 @@
  * - ダイアログが開かれた時点で、自分自身のBlueskyリスト一覧を`getOwnLists`（ブラウザから
  *   直接Bluesky公開AppViewを叩く、認証不要の読み取り）で読み込んでおく。
  */
+import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useEffect, useId, useRef, useState } from "react"
 import Checkbox from "@/components/common/Checkbox"
 import Collapsible from "@/components/common/Collapsible"
@@ -45,10 +47,10 @@ type Props = {
 type RuleField = "allowMentioned" | "allowFollower" | "allowFollowing"
 
 /** 組み合わせ用チェックボックス（メンション/フォロワー/フォロー中）の一覧定義。 */
-const RULE_ITEMS: { key: RuleField; label: string }[] = [
-  { key: "allowMentioned", label: "メンションされた人" },
-  { key: "allowFollower", label: "フォロワー" },
-  { key: "allowFollowing", label: "フォロー中の人" },
+const RULE_ITEMS: { key: RuleField; labelKey: PlainMessageKey }[] = [
+  { key: "allowMentioned", labelKey: "post.gate.mentioned" },
+  { key: "allowFollower", labelKey: "post.gate.follower" },
+  { key: "allowFollowing", labelKey: "post.gate.following" },
 ]
 
 /**
@@ -131,11 +133,12 @@ export const PostGateDialog = ({
   accountDid,
   disabled = false,
 }: Props) => {
+  const { t } = useT()
   const radioGroupName = useId()
   const [draft, setDraft] = useState<PostGateValue>(value)
   const [lists, setLists] = useState<OwnedList[] | null>(null)
   const [listsLoading, setListsLoading] = useState(false)
-  const [listsError, setListsError] = useState<string | null>(null)
+  const [listsError, setListsError] = useState<PlainMessageKey | null>(null)
   // 一度リスト取得を試みたかどうかをrefで管理する。
   // 取得の成否（lists/listsLoading）をuseEffectの依存配列に含めると、
   // エフェクト内で更新したstateがそのままエフェクトの再実行トリガーとなり、
@@ -167,7 +170,7 @@ export const PostGateDialog = ({
       .catch(err => {
         console.error("PostGateDialog: failed to load lists", err)
         if (!cancelled) {
-          setListsError("リスト一覧の取得に失敗しました。")
+          setListsError("post.gate.listsLoadFailed")
           listsRequestedRef.current = false
         }
       })
@@ -276,24 +279,24 @@ export const PostGateDialog = ({
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]} ${ui["base-padding"]}`}
         role="dialog"
-        aria-label="返信・引用の設定"
+        aria-label={t("post.gate.title")}
         style={{ maxHeight: "80vh", overflow: "auto" }}
       >
-        <h2 className={ui.subject}>返信・引用の設定</h2>
+        <h2 className={ui.subject}>{t("post.gate.title")}</h2>
 
         <div className={ui["dialog-body"]}>
           <div className={styles["radio-row"]}>
             <RadioButton
               checked={draft.replyAudience === "everyone"}
               disabled={disabled}
-              label="誰でも返信可能"
+              label={t("post.gate.everyone")}
               name={radioGroupName}
               onSelect={() => selectReplyAudience("everyone")}
             />
             <RadioButton
               checked={draft.replyAudience === "nobody"}
               disabled={disabled}
-              label="返信不可"
+              label={t("post.gate.nobody")}
               name={radioGroupName}
               onSelect={() => selectReplyAudience("nobody")}
             />
@@ -305,7 +308,7 @@ export const PostGateDialog = ({
               itemComponent={GateCheckboxItem}
               getItemKey={item => item.key}
               getItemProps={item => ({
-                label: item.label,
+                label: t(item.labelKey),
                 checked: draft[item.key],
                 disabled,
                 onCheckedChange: (next: boolean) => toggleRule(item.key, next),
@@ -314,17 +317,17 @@ export const PostGateDialog = ({
             />
 
             <Collapsible
-              label="リストから選択"
+              label={t("post.gate.chooseFromLists")}
               defaultOpen={draft.listUris.length > 0}
               disabled={disabled || !accountDid}
             >
               <div className={styles["list-panel"]}>
-                {listsLoading && <p>リストを読み込み中...</p>}
+                {listsLoading && <p>{t("post.gate.listsLoading")}</p>}
                 {listsError && (
-                  <p className={styles["list-error"]}>{listsError}</p>
+                  <p className={styles["list-error"]}>{t(listsError)}</p>
                 )}
                 {!listsLoading && !listsError && lists?.length === 0 && (
-                  <p className={styles.note}>リストがありません。</p>
+                  <p className={styles.note}>{t("post.gate.listsEmpty")}</p>
                 )}
                 {!listsLoading && !listsError && lists && lists.length > 0 && (
                   <ComponentList
@@ -350,7 +353,7 @@ export const PostGateDialog = ({
 
             {selectedCount >= MAX_REPLY_GATE_RULES && (
               <p className={styles.note}>
-                最大{MAX_REPLY_GATE_RULES}件まで選択できます。
+                {t("post.gate.limit", { max: MAX_REPLY_GATE_RULES })}
               </p>
             )}
           </div>
@@ -358,7 +361,7 @@ export const PostGateDialog = ({
           <ToggleSwitch
             checked={draft.allowQuote}
             disabled={disabled}
-            label="引用を許可する"
+            label={t("post.gate.allowQuote")}
             onCheckedChange={next =>
               setDraft(prev => ({ ...prev, allowQuote: next }))
             }
@@ -372,7 +375,7 @@ export const PostGateDialog = ({
             disabled={disabled}
             onClick={onClose}
           >
-            キャンセル
+            {t("common.cancel")}
           </button>
           <button
             type="button"
@@ -380,7 +383,7 @@ export const PostGateDialog = ({
             disabled={disabled}
             onClick={handleApply}
           >
-            適用
+            {t("common.apply")}
           </button>
         </div>
       </div>

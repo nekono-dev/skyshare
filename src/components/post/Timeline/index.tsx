@@ -7,6 +7,7 @@
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
+import { useT } from "@/lib/i18n/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getEntries } from "@/client/openapi/client"
 import ComponentList from "@/components/common/ComponentList"
@@ -28,7 +29,7 @@ import {
   isSessionKnownUnauthenticated,
 } from "@/lib/account/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
-import { GUEST_DUMMY_THREADS } from "@/lib/entry/guestDummyPosts"
+import { getGuestDummyData } from "@/lib/entry/guestDummyPosts"
 import type { ThreadGroup } from "@/lib/entry/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"
 import {
@@ -57,6 +58,14 @@ const PAGE_SIZE = 20
  * - 投稿ランチャーと一覧表示を含む UI
  */
 const Component = ({ avatarUrl }: Props) => {
+  const translator = useT()
+  const { t } = translator
+  // fetchPage は依存配列を空にした useCallback のため、最新の翻訳関数を ref で参照する。
+  // （依存に `t` を入れると言語切り替えで fetchPage が作り直され、再取得が走って
+  // 一覧・スクロール位置が失われるため。）
+  // 最新の翻訳関数（翻訳器）を保持する。
+  const translatorRef = useRef(translator)
+  translatorRef.current = translator
   const [reloadKey, setReloadKey] = useState(0)
   // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミー投稿を表示する
   // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
@@ -141,7 +150,7 @@ const Component = ({ avatarUrl }: Props) => {
         // 401確定済みの`getEntries`をわざわざ叩き直さずゲスト表示へ直行する。
         if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
           setGuestMode(true)
-          return { items: GUEST_DUMMY_THREADS }
+          return { items: getGuestDummyData(translatorRef.current).threads }
         }
 
         const params = cursor ? { limit, cursor } : { limit }
@@ -171,26 +180,26 @@ const Component = ({ avatarUrl }: Props) => {
         if (res.status === 401) {
           if (isGuestModeRequested()) {
             setGuestMode(true)
-            return { items: GUEST_DUMMY_THREADS }
+            return { items: getGuestDummyData(translatorRef.current).threads }
           }
           if (typeof window !== "undefined") {
             window.location.href = "/login/"
           }
           return {
             items: [],
-            error: "認証が必要です。",
+            error: translatorRef.current.t("error.unauthorized"),
           }
         }
 
         return {
           items: [],
-          error: res.data.error ?? "投稿一覧の取得に失敗しました。",
+          error: translatorRef.current.t("post.timeline.loadFailed"),
         }
       } catch (err) {
         console.error("Timeline: failed to load posts", err)
         return {
           items: [],
-          error: "投稿一覧の取得に失敗しました。",
+          error: translatorRef.current.t("post.timeline.loadFailed"),
         }
       }
     },
@@ -207,24 +216,29 @@ const Component = ({ avatarUrl }: Props) => {
     setReloadKey(prev => prev + 1)
   }
 
+  // ゲスト表示のダミーデータは表示言語で文言が変わるため、言語が変わったら再取得して差し替える。
+  const guestReloadKey = guestMode
+    ? `${reloadKey}:${translator.locale}`
+    : reloadKey
+
   const pagedController = useCursorPaginationController<ThreadGroup>({
     cursorPagination: {
       pageSize,
       fetchPage,
-      reloadKey,
+      reloadKey: guestReloadKey,
       enabled: paginationMode === "paged",
-      loadingText: "読み込み中...",
-      emptyText: "初期化中...",
+      loadingText: t("common.loading"),
+      emptyText: t("post.timeline.initializing"),
     },
   })
 
   const infiniteController = useInfiniteScrollController<ThreadGroup>({
     infiniteScrollPagination: {
       fetchPage,
-      reloadKey,
+      reloadKey: guestReloadKey,
       enabled: paginationMode === "infinite",
-      loadingText: "読み込み中...",
-      emptyText: "初期化中...",
+      loadingText: t("common.loading"),
+      emptyText: t("post.timeline.initializing"),
     },
   })
 
@@ -268,7 +282,7 @@ const Component = ({ avatarUrl }: Props) => {
         <p
           className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
         >
-          これはゲスト表示です。Blueskyへの投稿以外の動作を確認できます。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。
+          {t("post.timeline.guestNotice")}
         </p>
       )}
       {!pinnedFormDisabled && (
@@ -312,7 +326,7 @@ const Component = ({ avatarUrl }: Props) => {
       {isPaged ? (
         <NavigationBar
           pagination={pagedController.pagination}
-          ariaLabel="post timeline pagination"
+          ariaLabel={t("post.timeline.paginationAria")}
         />
       ) : (
         <InfiniteScrollSentinel
@@ -320,8 +334,8 @@ const Component = ({ avatarUrl }: Props) => {
           loadingMore={infiniteController.loadingMore}
           onLoadMore={infiniteController.loadMore}
           showEndMessage={!error && !empty}
-          endText="最初の投稿に到達しました"
-          ariaLabel="post timeline infinite scroll"
+          endText={t("common.listEnd")}
+          ariaLabel={t("post.timeline.infiniteAria")}
         />
       )}
     </section>
