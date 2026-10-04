@@ -47,3 +47,31 @@
   font-size: var(--font-size-sm);
   opacity: 0.7;
 }
+
+/* 動画サムネイル。poster の中央に小さな再生マーク（半透明の円＋白い三角）を重ねる。 */
+.post-video-thumbnail {
+  position: relative;
+  display: inline-flex;
+}
+
+.post-video-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.post-video-mark::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 6px;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent #fff;
+}

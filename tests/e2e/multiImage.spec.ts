@@ -46,11 +46,42 @@ const openComposer = async (page: Page) => {
 }
 
 test.describe("複数画像の投稿フォーム", () => {
+    test("画像サムネイルの「×」「alt」ボタンは大きく縁取りされ、マウスオーバーで色が変わる", async ({
+        page,
+    }) => {
+        const editor = await openComposer(page)
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(1))
+
+        const thumb = page.getByTestId("image-thumb").first()
+        await expect(thumb).toBeVisible()
+        for (const name of [/削除/, /altテキスト/]) {
+            const button = thumb.getByRole("button", { name })
+            expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(
+                36,
+            )
+            // 縁取りがあり、マウスオーバーで背景色が変わる
+            await expect(button).toHaveCSS("border-top-width", "2px")
+            const before = await button.evaluate(
+                el => getComputedStyle(el).backgroundColor,
+            )
+            await button.hover()
+            await expect
+                .poll(() =>
+                    button.evaluate(el => getComputedStyle(el).backgroundColor),
+                )
+                .not.toBe(before)
+        }
+    })
+
     test("11枚選択すると10枚で止まり通知が出る。5枚目以降にVisual対象外ラベルが付く", async ({
         page,
     }) => {
         const editor = await openComposer(page)
-        await editor.locator('input[type="file"]').setInputFiles(pngFiles(11))
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(11))
 
         await expect(page.getByTestId("image-thumb")).toHaveCount(10)
         await expect(page.getByText("画像は最大10枚までです")).toBeVisible()
@@ -70,7 +101,9 @@ test.describe("複数画像の投稿フォーム", () => {
         page,
     }) => {
         const editor = await openComposer(page)
-        await editor.locator('input[type="file"]').setInputFiles(pngFiles(6))
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(6))
         await expect(page.getByTestId("image-thumb")).toHaveCount(6)
 
         await editor.getByRole("button", { name: "サムネ調整" }).click()
@@ -81,7 +114,9 @@ test.describe("複数画像の投稿フォーム", () => {
         page,
     }) => {
         const editor = await openComposer(page)
-        await editor.locator('input[type="file"]').setInputFiles(pngFiles(6))
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(6))
         await expect(page.getByTestId("image-thumb")).toHaveCount(6)
         await expect(page.getByText("Visual対象外")).toHaveCount(2)
 

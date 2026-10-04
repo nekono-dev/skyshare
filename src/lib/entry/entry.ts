@@ -10,6 +10,7 @@
  */
 import { AppBskyFeedPost } from "@atproto/api"
 import { bskyCdnUrlgen } from "@/lib/entry/url"
+import { VIDEO_WATCH_BASE_URL } from "@/lib/video/postVideoLimits"
 
 export type SourceLocator = {
     actor: string
@@ -39,6 +40,21 @@ export type SourceImage = {
     alt: string
     cid: string
     /** 画像レコードの `aspectRatio`。未設定・不正値の場合は `undefined` */
+    aspectRatio?: { width: number; height: number }
+}
+
+/**
+ * 動画投稿の再生・表示に必要な情報。AppView の `embed.view` には依存せず、
+ * 投稿レコードの `video` blob の CID から組み立てる（投稿直後は AppView に未反映のため）。
+ */
+export type SourceVideo = {
+    cid: string
+    /** HLS のマスタープレイリスト URL */
+    playlistUrl: string
+    /** poster（最初のフレーム相当）の URL */
+    thumbnailUrl: string
+    alt: string
+    /** 動画レコードの `aspectRatio`。未設定・不正値の場合は `undefined` */
     aspectRatio?: { width: number; height: number }
 }
 
@@ -237,3 +253,79 @@ export const extractSourceImages = (
     postRecord: AppBskyFeedPost.Main,
     sourceRepoDid: string,
 ): SourceImage[] => extractEmbedImages(postRecord.embed, sourceRepoDid)
+
+/**
+ * blob の CID と repo DID から、動画の再生URL・サムネイルURLを組み立てる。
+ *
+ * 例:
+ * - 入力: `("did:plc:abc", "bafkreix")`
+ * - 出力: `{ playlistUrl: "https://video.bsky.app/watch/did%3Aplc%3Aabc/bafkreix/playlist.m3u8", thumbnailUrl: ".../thumbnail.jpg" }`
+ */
+export const buildVideoUrls = (
+    repoDid: string,
+    cid: string,
+): { playlistUrl: string; thumbnailUrl: string } => {
+    const base = `${VIDEO_WATCH_BASE_URL}${encodeURIComponent(repoDid)}/${cid}`
+    return {
+        playlistUrl: `${base}/playlist.m3u8`,
+        thumbnailUrl: `${base}/thumbnail.jpg`,
+    }
+}
+
+const toSourceVideo = (
+    video: {
+        video?: { ref?: unknown }
+        alt?: unknown
+        aspectRatio?: { width?: unknown; height?: unknown }
+    },
+    repoDid: string,
+): SourceVideo | undefined => {
+    const cid = toCidString(video.video?.ref)
+    if (!cid) return
+    const width = video.aspectRatio?.width
+    const height = video.aspectRatio?.height
+    const hasRatio =
+        typeof width === "number" &&
+        typeof height === "number" &&
+        Number.isFinite(width) &&
+        Number.isFinite(height) &&
+        width > 0 &&
+        height > 0
+    return {
+        cid,
+        ...buildVideoUrls(repoDid, cid),
+        alt: typeof video.alt === "string" ? video.alt : "",
+        ...(hasRatio ? { aspectRatio: { width, height } } : {}),
+    }
+}
+
+/**
+ * embed が `app.bsky.embed.video` のとき `SourceVideo` を返す。
+ * それ以外（`recordWithMedia` 内の動画を含む）や、blob の CID が得られない場合は `undefined`。
+ *
+ * Input:
+ * - `embed`: 投稿レコードの embed
+ * - `repoDid`: 動画 blob が属する repo DID（投稿者の DID）
+ */
+export const extractEmbedVideo = (
+    embed: AppBskyFeedPost.Main["embed"] | undefined,
+    repoDid: string,
+): SourceVideo | undefined => {
+    if (embed?.$type !== "app.bsky.embed.video") return
+    return toSourceVideo(embed as Parameters<typeof toSourceVideo>[0], repoDid)
+}
+
+/**
+ * embed が `app.bsky.embed.recordWithMedia` で、その `media` が動画のとき
+ * `SourceVideo`（poster 表示用。再生URLは使わない）を返す。それ以外は `undefined`。
+ * 動画 blob は投稿レコードと同じ repo にあるため、`repoDid` は投稿者の DID をそのまま使う。
+ */
+export const extractUnsupportedEmbedVideo = (
+    embed: AppBskyFeedPost.Main["embed"] | undefined,
+    repoDid: string,
+): SourceVideo | undefined => {
+    if (embed?.$type !== "app.bsky.embed.recordWithMedia") return
+    const media = (embed as { media?: { $type?: string } }).media
+    if (media?.$type !== "app.bsky.embed.video") return
+    return toSourceVideo(media as Parameters<typeof toSourceVideo>[0], repoDid)
+}

@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest"
 
 import {
     blobToCdnUrl,
+    buildVideoUrls,
+    extractEmbedVideo,
+    extractUnsupportedEmbedVideo,
     extractSourceImages,
     isDidIdentifier,
     parseEntryLocator,
@@ -180,5 +183,105 @@ describe("extractSourceImages (aspectRatio)", () => {
     ])("%s の aspectRatio は設定されない", (_name, ratio) => {
         const [img] = extractSourceImages(build(ratio), "did:plc:abc")
         expect(img).not.toHaveProperty("aspectRatio")
+    })
+})
+
+describe("extractEmbedVideo", () => {
+    const videoEmbed = {
+        $type: "app.bsky.embed.video",
+        video: {
+            $type: "blob",
+            ref: { $link: "bafkreivideo" },
+            mimeType: "video/mp4",
+            size: 10,
+        },
+        alt: "海",
+        aspectRatio: { width: 640, height: 360 },
+    }
+
+    it("動画 embed から URL・alt・aspectRatio を得る", () => {
+        expect(extractEmbedVideo(videoEmbed as any, "did:plc:abc")).toEqual({
+            cid: "bafkreivideo",
+            playlistUrl:
+                "https://video.bsky.app/watch/did%3Aplc%3Aabc/bafkreivideo/playlist.m3u8",
+            thumbnailUrl:
+                "https://video.bsky.app/watch/did%3Aplc%3Aabc/bafkreivideo/thumbnail.jpg",
+            alt: "海",
+            aspectRatio: { width: 640, height: 360 },
+        })
+    })
+
+    it("画像 embed・recordWithMedia・embed なし・CID 不正は undefined", () => {
+        expect(
+            extractEmbedVideo({ $type: "app.bsky.embed.images" } as any, "d"),
+        ).toBeUndefined()
+        expect(
+            extractEmbedVideo(
+                {
+                    $type: "app.bsky.embed.recordWithMedia",
+                    media: videoEmbed,
+                } as any,
+                "d",
+            ),
+        ).toBeUndefined()
+        expect(extractEmbedVideo(undefined, "d")).toBeUndefined()
+        expect(
+            extractEmbedVideo({ ...videoEmbed, video: {} } as any, "d"),
+        ).toBeUndefined()
+    })
+
+    it("aspectRatio が不正なら省略し、alt が無ければ空文字", () => {
+        const result = extractEmbedVideo(
+            {
+                ...videoEmbed,
+                alt: undefined,
+                aspectRatio: { width: 0, height: 1 },
+            } as any,
+            "did:plc:abc",
+        )
+        expect(result?.alt).toBe("")
+        expect(result?.aspectRatio).toBeUndefined()
+    })
+})
+
+describe("buildVideoUrls", () => {
+    it("DID の `:` が %3A にエンコードされる", () => {
+        expect(buildVideoUrls("did:plc:x", "cid").playlistUrl).toContain(
+            "did%3Aplc%3Ax",
+        )
+    })
+})
+
+describe("extractUnsupportedEmbedVideo", () => {
+    const media = {
+        $type: "app.bsky.embed.video",
+        video: { ref: { $link: "bafkreivideo" } },
+    }
+
+    it("recordWithMedia の media が動画のとき poster URL が得られる", () => {
+        const result = extractUnsupportedEmbedVideo(
+            { $type: "app.bsky.embed.recordWithMedia", media } as any,
+            "did:plc:abc",
+        )
+        expect(result?.thumbnailUrl).toContain("/bafkreivideo/thumbnail.jpg")
+    })
+
+    it("media が画像・直接の動画 embed・media なしでは undefined", () => {
+        expect(
+            extractUnsupportedEmbedVideo(
+                {
+                    $type: "app.bsky.embed.recordWithMedia",
+                    media: { $type: "app.bsky.embed.images" },
+                } as any,
+                "d",
+            ),
+        ).toBeUndefined()
+        expect(extractUnsupportedEmbedVideo(media as any, "d")).toBeUndefined()
+        expect(
+            extractUnsupportedEmbedVideo(
+                { $type: "app.bsky.embed.recordWithMedia" } as any,
+                "d",
+            ),
+        ).toBeUndefined()
     })
 })

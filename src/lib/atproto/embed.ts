@@ -1,5 +1,5 @@
 /**
- * Bluesky 投稿の embed（画像 / 外部リンク）組み立てユーティリティ群。
+ * Bluesky 投稿の embed（画像 / 動画 / 外部リンク）組み立てユーティリティ群。
  *
  * 責務と処理概要:
  * - 画像投稿・OGPリンク投稿それぞれの embed 構造（`app.bsky.embed.*`）を組み立てる。
@@ -149,3 +149,24 @@ export const createExternalEmbed = (
         },
     }
 }
+
+/**
+ * 動画投稿の app.bsky.embed.video embed オブジェクトを組み立てる。
+ *
+ * 処理の趣旨:
+ * - 動画の実体はブラウザから動画サービスへアップロード済みのため、blob 参照を載せるだけ。
+ * - 縦横比と alt（未指定は空文字）を保持する。
+ *
+ * 例:
+ * - 入力：video=blobRef, meta={width:640,height:360,alt:""}
+ * - 出力：{ $type:"app.bsky.embed.video", video:blobRef, alt:"", aspectRatio:{width:640,height:360} }
+ */
+export const createVideoEmbed = (
+    video: Components.CommonVideoBlobType,
+    meta: Components.CommonVideoMetaType,
+) => ({
+    $type: "app.bsky.embed.video" as const,
+    video,
+    alt: meta.alt ?? "",
+    aspectRatio: { width: meta.width, height: meta.height },
+})

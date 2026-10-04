@@ -209,7 +209,7 @@ type Props = {
 
 - `summary`: `posts.length === 1`なら「Blueskyの投稿1件を削除します。」、`>= 2`なら`Blueskyのスレッド（${posts.length}件の投稿）を削除します。`。
 - 一覧の描画は共通の`ComponentList`（`@/components/common/ComponentList`）を用い、1行は新設の`DeletePostListItem`（`src/components/entry/DeletePostListItem/`、`index.tsx`・`index.module.css`、`{ item: TimelinePost }`を受ける`article`）が担う。
-- `DeletePostListItem`: 投稿日時は`PostCard`と同じ整形（`new Date(post.indexedAt).toLocaleString("ja-JP", ...)`）。本文は`post.text`をプレーンテキストで表示し（facetsの装飾はしない）、CSSの`-webkit-line-clamp: 3`で省略する。`text`が空なら「（本文なし）」を弱い文字色で表示する。サムネイルは`post.images`の先頭4枚を`<img src={url} alt={alt} loading="lazy">`（一辺56px、`object-fit: cover`）で並べ、5枚以上なら末尾に「+N」を表示する。`images`が空ならサムネイル欄自体を描画しない。
+- `DeletePostListItem`: 投稿日時は`PostCard`と同じ整形（`new Date(post.indexedAt).toLocaleString("ja-JP", ...)`）。本文は`post.text`をプレーンテキストで表示し（facetsの装飾はしない）、CSSの`-webkit-line-clamp: 3`で省略する。`text`が空なら「（本文なし）」を弱い文字色で表示する。サムネイルは`post.images`の先頭4枚を`<img src={url} alt={alt} loading="lazy">`（一辺56px、`object-fit: cover`）で並べ、5枚以上なら末尾に「+N」を表示する。`images`が空ならサムネイル欄自体を描画しない。動画投稿（`video`、利用不可の`unsupportedVideo`も含む）は、画像の代わりに`thumbnailUrl`の poster を同じ一辺56pxで1枚表示し、中央に小さな再生マーク（直径24pxの半透明の円＋白い三角、CSSのみ）を重ねる。
 - 一覧領域のサイズ: `posts.length >= 2`（スレッド）のときだけ、一覧を包む`div`に`.post-list-fixed`（`height: min(40vh, 360px); overflow-y: auto; flex-shrink: 0`）を付け、高さを固定してスクロールさせる。件数が増えても行が潰れず、ボタンが画面内に残る。スクロール領域自体はflexにせず、行の縮みは起こさない（行の`article`に`margin-bottom`で間隔を確保）。1件のときは内容の高さに合わせる。固定高さのときはキーボードでスクロールできるよう`tabIndex=0`を付ける。
 - `isDeleting`中は`Loading overlay`（「削除中...」）を表示し、両ボタンを`disabled`にする。確定ボタン（「全て削除」）は`red-strong`、キャンセルは`gray`。
 

@@ -159,8 +159,15 @@ const resolveImageMetadata = async (
  * - `posts[i]`として送信するプレーンオブジェクト
  */
 const buildPostItem = async (segment: SegmentState) => {
-    const { text, languageCode, selfLabel, postGate, imageEntry, ogpResult } =
-        segment
+    const {
+        text,
+        languageCode,
+        selfLabel,
+        postGate,
+        imageEntry,
+        ogpResult,
+        videoEntry,
+    } = segment
     const facets = await detectFacetsForSubmission(text)
 
     const post: Record<string, unknown> = {
@@ -171,7 +178,15 @@ const buildPostItem = async (segment: SegmentState) => {
         gate: postGate,
     }
 
-    if (imageEntry) {
+    if (videoEntry?.upload.state === "done") {
+        // 動画は先行アップロード済み。blob 参照だけを送り、画像・OGP は付けない（排他）。
+        post.video = videoEntry.upload.blob
+        post.videoMeta = {
+            width: videoEntry.width,
+            height: videoEntry.height,
+            alt: videoEntry.alt,
+        }
+    } else if (imageEntry) {
         post.images = imageEntry.originalBlobs
         post.imagesMeta = await resolveImageMetadata(imageEntry)
     } else if (ogpResult) {
@@ -200,7 +215,9 @@ export const submitThread = async (
     // entry作成候補（画像投稿かつmanualImageAttachが無効）のうち、先頭のsegmentのみを
     // visual元として自動選択する（複数候補があっても、entryはリクエスト全体で最大1件）。
     const entryCandidateIndex = segments.findIndex(
-        segment => !!segment.imageEntry && !manualImageAttach,
+        segment =>
+            (!!segment.imageEntry || !!segment.videoEntry) &&
+            !manualImageAttach,
     )
     const wantsSkyshareEntry = entryCandidateIndex !== -1
 
@@ -211,8 +228,10 @@ export const submitThread = async (
         ...(wantsSkyshareEntry
             ? {
                   createEntry: true,
-                  visual: segments[entryCandidateIndex].imageEntry!
-                      .thumbnailBlob,
+                  visual: (
+                      segments[entryCandidateIndex].imageEntry ??
+                      segments[entryCandidateIndex].videoEntry!
+                  ).thumbnailBlob,
               }
             : {}),
     } as unknown as CreateEntryBody

@@ -30,16 +30,16 @@ test.describe("entry詳細ページのスレッド表示", () => {
             page.getByText("スレッド2件目です。画像が3枚付いています。"),
         ).toBeVisible()
         await expect(
-            page.getByText(
-                "スレッド3件目（末尾投稿）です。画像が5枚付いています。",
-            ),
+            page.getByText("スレッド3件目です。画像が5枚付いています。"),
         ).toBeVisible()
 
         const items = await page.locator("ol > li").allTextContents()
-        expect(items).toHaveLength(3)
+        expect(items).toHaveLength(5)
         expect(items[0]).toContain("スレッド1件目")
         expect(items[1]).toContain("スレッド2件目")
         expect(items[2]).toContain("スレッド3件目")
+        expect(items[3]).toContain("スレッド4件目")
+        expect(items[4]).toContain("スレッド5件目")
 
         // スレッドバッジは表示せず、Entryのカード画像（View）が表示される。
         await expect(

@@ -70,7 +70,7 @@ export const post = {
     "post.gate.limit": "最大{max}件まで選択できます。",
     "post.gate.allowQuote": "引用を許可する",
 
-    "post.segment.dropImage": "画像をドロップして添付",
+    "post.segment.dropMedia": "画像・動画をドロップして添付",
     "post.segment.placeholderFirst": "最近どう？",
     "post.segment.placeholderNext": "スレッドに追加...",
     "post.segment.gateOpen": "誰でも反応可能",

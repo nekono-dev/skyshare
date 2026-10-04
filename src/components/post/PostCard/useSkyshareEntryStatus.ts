@@ -10,9 +10,8 @@
  */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
-import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
-import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
-import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
+import { createEntry, deleteEntry } from "@/client/openapi/client"
+import { createPostVisualBlob } from "@/lib/entry/createPostVisual"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
 import { waitForImageLoad } from "@/util/waitForImageLoad"
 import {
@@ -21,7 +20,11 @@ import {
 } from "@/lib/entry/resolveEntryDeleteScope"
 import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
 import { useT } from "@/lib/i18n/react"
-import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
+import {
+    hasEntryMedia,
+    type TimelinePost,
+    type TimelineSkyshareEntry,
+} from "@/lib/entry/posts"
 
 /**
  * PostCard の Entry 関連 UI が参照する、その時点で確定している唯一の表示状態。
@@ -123,7 +126,7 @@ export const useSkyshareEntryStatus = (
 
     const visualSource = options.visualSourcePost ?? item
     const sourcePost = options.sourcePost ?? item
-    const hasImages = visualSource.images.length > 0
+    const hasEntryVisualMedia = hasEntryMedia(visualSource)
 
     const display: SkyshareEntryDisplayState =
         state.phase === "creating"
@@ -132,7 +135,7 @@ export const useSkyshareEntryStatus = (
               ? { kind: "deleting", entry: state.entry }
               : state.entry
                 ? { kind: "entry", entry: state.entry }
-                : hasImages
+                : hasEntryVisualMedia
                   ? { kind: "creatable" }
                   : { kind: "ineligible" }
 
@@ -140,12 +143,11 @@ export const useSkyshareEntryStatus = (
      * 既存の Bluesky 投稿から skyshare entry を発行する。
      *
      * 処理の趣旨:
-     * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）の
-     *   先頭`VISUAL_IMAGE_COUNT`枚の画像のみを（5枚目以降はvisualに使わないため取得もしない）
-     *   `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
-     *   回避するためのBluesky APIバイパスAPI）経由で取得し、投稿フォームでクロップ編集
-     *   しなかった場合と同じデフォルト配置（`createDefaultThumbnail`）でユーザから見えない
-     *   Canvas上に合成してから送信する。
+     * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）から
+     *   `createPostVisualBlob`（`@/lib/entry/createPostVisual`）でvisualを作る。
+     *   画像投稿は先頭`VISUAL_IMAGE_COUNT`枚を投稿フォームでクロップ編集しなかった場合と
+     *   同じデフォルト配置で合成し、動画投稿はposterに再生ボタンと再生時間バッジを重ねる。
+     *   素材・再生時間の取得に失敗したら、entryは作成せず作成失敗として扱う。
      * - APIに渡す`uri`（entryの`source`）はVisual取得元とは独立に`sourcePost`
      *   （未指定なら`item`自身）を使う。Visual取得元がスレッドの後続投稿でも、
      *   サーバは`source`を自動解決しないため、entryは常に`sourcePost`に紐づく。
@@ -163,30 +165,8 @@ export const useSkyshareEntryStatus = (
         setCreateError(null)
 
         void (async () => {
-            const objectUrls: string[] = []
             try {
-                objectUrls.push(
-                    ...(await Promise.all(
-                        visualSource.images
-                            .slice(0, VISUAL_IMAGE_COUNT)
-                            .map(async image => {
-                                const res = await getBskyImage({
-                                    cid: image.cid,
-                                })
-                                if (
-                                    res.status !== 200 ||
-                                    !(res.data instanceof Blob)
-                                ) {
-                                    throw new Error(
-                                        "Failed to fetch the source image.",
-                                    )
-                                }
-                                return URL.createObjectURL(res.data)
-                            }),
-                    )),
-                )
-
-                const thumbnailBlob = await createDefaultThumbnail(objectUrls)
+                const thumbnailBlob = await createPostVisualBlob(visualSource)
                 const res = await createEntry({
                     uri: sourcePost.uri,
                     visual: thumbnailBlob,
@@ -227,7 +207,6 @@ export const useSkyshareEntryStatus = (
                 setCreateError("post.entry.createFailed")
                 setState({ phase: "idle", entry: null })
             } finally {
-                objectUrls.forEach(url => URL.revokeObjectURL(url))
                 isCreatingRef.current = false
             }
         })()

@@ -4,6 +4,8 @@ import {
     canUsePostImageAsIs,
     computeCropAroundCenter,
     computeInitialCrop,
+    createCroppedThumbnail,
+    createDefaultThumbnail,
     createProcessedImages,
     getSlotDefs,
     TARGET_HEIGHT,
@@ -160,5 +162,112 @@ describe("createProcessedImages", () => {
         const urls = Array.from({ length: 10 }, (_, i) => `u${i}`)
         const result = await createProcessedImages(urls, buildCropStates(4))
         expect(result.originalBlobs).toHaveLength(10)
+    })
+})
+
+describe("createDefaultThumbnail の overlay", () => {
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    const stubCanvas = () => {
+        const context = { drawImage: vi.fn() }
+        class FakeImage {
+            naturalWidth = 2000
+            naturalHeight = 1000
+            onload: (() => void) | null = null
+            onerror: (() => void) | null = null
+            set src(_value: string) {
+                queueMicrotask(() => this.onload?.())
+            }
+        }
+        vi.stubGlobal("Image", FakeImage)
+        vi.stubGlobal("document", {
+            createElement: () => ({
+                width: 0,
+                height: 0,
+                getContext: () => context,
+                toBlob: (cb: (blob: Blob) => void, type: string) =>
+                    cb(new Blob(["x"], { type })),
+            }),
+        })
+        return context
+    }
+
+    it("overlay を渡すと描画のたびに context と scale 付きで呼ばれる", async () => {
+        const context = stubCanvas()
+        const overlay = vi.fn()
+        await createDefaultThumbnail(["u0"], overlay)
+        expect(overlay).toHaveBeenCalled()
+        expect(overlay.mock.calls[0][0]).toBe(context)
+        expect(overlay.mock.calls[0][1]).toBe(1)
+    })
+
+    it("overlay を渡さなければ従来どおり合成できる", async () => {
+        stubCanvas()
+        const blob = await createDefaultThumbnail(["u0"])
+        expect(blob).toBeInstanceOf(Blob)
+    })
+})
+
+describe("createCroppedThumbnail", () => {
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    const stub = () => {
+        const context = { drawImage: vi.fn() }
+        class FakeImage {
+            naturalWidth = 2000
+            naturalHeight = 1000
+            onload: (() => void) | null = null
+            onerror: (() => void) | null = null
+            set src(_value: string) {
+                queueMicrotask(() => this.onload?.())
+            }
+        }
+        vi.stubGlobal("Image", FakeImage)
+        vi.stubGlobal("document", {
+            createElement: () => ({
+                width: 0,
+                height: 0,
+                getContext: () => context,
+                toBlob: (cb: (blob: Blob) => void, type: string) =>
+                    cb(new Blob(["x"], { type })),
+            }),
+        })
+        return context
+    }
+
+    it("指定した cropPixels で描画し、overlay を scale 付きで呼んで Blob だけを返す", async () => {
+        const context = stub()
+        const overlay = vi.fn()
+        const blob = await createCroppedThumbnail(
+            ["u0"],
+            [
+                {
+                    crop: { x: 0, y: 0 },
+                    zoom: 2,
+                    cropPixels: { x: 100, y: 50, width: 600, height: 315 },
+                },
+            ],
+            overlay,
+        )
+        expect(blob).toBeInstanceOf(Blob)
+        // drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh) の切り抜き元が指定どおり
+        expect(context.drawImage.mock.calls[0].slice(1, 5)).toEqual([
+            100, 50, 600, 315,
+        ])
+        expect(overlay.mock.calls[0][1]).toBe(1)
+    })
+
+    it("cropPixels が欠けていると throw する", async () => {
+        stub()
+        await expect(
+            createCroppedThumbnail(
+                ["u0"],
+                [{ crop: { x: 0, y: 0 }, zoom: 1, cropPixels: null }],
+            ),
+        ).rejects.toThrow()
     })
 })

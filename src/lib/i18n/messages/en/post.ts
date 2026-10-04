@@ -69,7 +69,7 @@ export const post = {
     "post.gate.limit": "You can select up to {max}.",
     "post.gate.allowQuote": "Allow quoting",
 
-    "post.segment.dropImage": "Drop an image to attach",
+    "post.segment.dropMedia": "Drop an image or video to attach",
     "post.segment.placeholderFirst": "What's up?",
     "post.segment.placeholderNext": "Add to thread...",
     "post.segment.gateOpen": "Anyone can interact",

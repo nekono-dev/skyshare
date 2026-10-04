@@ -14,6 +14,11 @@ export const guest = {
     "guest.entry1.postCaption": "This is a dummy Entry for guest mode.",
     "guest.post3.text":
         "How an image post looks when no URL is issued. (You can create a Skyshare Entry later.)",
+    "guest.video.text":
+        "A post with an attached video. (A play button is shown over the thumbnail; the video isn't played in the timeline)",
+    "guest.video.alt": "Sample video",
+    "guest.videoUnsupported.text":
+        "A quote post with an attached video. (Shown as unplayable on Skyshare)",
     "guest.multi.text":
         "How a post with 6 images looks. (All images line up as horizontally scrolling thumbnails.)",
     "guest.threadA.tailText": "Thread A, post 3.",

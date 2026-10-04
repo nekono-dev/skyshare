@@ -112,3 +112,47 @@ describe("findEntryCarrier", () => {
         expect(findEntryCarrier(group)).toBe(root)
     })
 })
+
+describe("resolveEntryVisualSourcePost（動画）", () => {
+    const video = {
+        cid: "videocid",
+        playlistUrl: "https://video.bsky.app/watch/d/c/playlist.m3u8",
+        thumbnailUrl: "https://video.bsky.app/watch/d/c/thumbnail.jpg",
+        alt: "",
+    }
+
+    it("ルートが動画投稿ならルートを返す", () => {
+        const root = makePost("root", { video })
+        const group: ThreadGroup = {
+            rootPost: root,
+            replies: [makePost("mid", { images: [image] })],
+        }
+        expect(resolveEntryVisualSourcePost(group)).toBe(root)
+    })
+
+    it("ルートがメディア無しで reply が動画投稿ならその reply を返す", () => {
+        const reply = makePost("mid", { video })
+        const group: ThreadGroup = {
+            rootPost: makePost("root"),
+            replies: [reply],
+        }
+        expect(resolveEntryVisualSourcePost(group)).toBe(reply)
+    })
+
+    it("画像と動画が混在する場合はルートに近い方を返す", () => {
+        const first = makePost("mid1", { video })
+        const group: ThreadGroup = {
+            rootPost: makePost("root"),
+            replies: [first, makePost("mid2", { images: [image] })],
+        }
+        expect(resolveEntryVisualSourcePost(group)).toBe(first)
+    })
+
+    it("利用不可の動画だけの投稿は素材にならない", () => {
+        const group: ThreadGroup = {
+            rootPost: makePost("root", { unsupportedVideo: video }),
+            replies: [makePost("mid")],
+        }
+        expect(resolveEntryVisualSourcePost(group)).toBeNull()
+    })
+})

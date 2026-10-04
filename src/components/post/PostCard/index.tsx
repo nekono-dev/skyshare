@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - 投稿の表示部（作者・日時・本文・画像）は `PostBody` に委譲し、ツールバーをその下に配置する。
- * - `skyshareEntry` が付与されている場合は元画像の代わりにその visual を1枚、拡大なしで表示し、
+ * - `skyshareEntry` が付与されている場合は元画像・動画の代わりにその visual を1枚、拡大なしで表示し、
  *   Entry ページへのリンクを出す。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
  * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
@@ -163,7 +163,15 @@ const Component = ({
         },
       ]
     : undefined
-  const galleryImages = entryVisualImages ?? item.images
+  // Entry の visual がある場合は動画投稿でもそれを表示し、動画のサムネイル・利用不可表示は出さない。
+  // Entry が無い動画投稿・利用不可の動画は、動画のサムネイル（または利用不可表示）を出す。
+  const showEntryVisual = entryVisualImages !== undefined
+  const video = showEntryVisual ? undefined : item.video
+  const unsupportedVideo = showEntryVisual ? undefined : item.unsupportedVideo
+  const hasVideoDisplay = !!video || !!unsupportedVideo
+  const galleryImages = hasVideoDisplay
+    ? []
+    : (entryVisualImages ?? item.images)
   const imagesInteractive = entryVisualImages === undefined
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
   // ただしスレッドの中間投稿（`threadReply`）はグレーアウトしない。
@@ -188,6 +196,10 @@ const Component = ({
         createdAt={item.indexedAt}
         text={item.text}
         images={galleryImages}
+        video={video}
+        unsupportedVideo={unsupportedVideo}
+        videoInteractive={false}
+        unsupportedVideoLinkUrl={item.url}
         imagesInteractive={imagesInteractive}
       />
 

@@ -14,7 +14,7 @@
  */
 import EntryPostedAt from "@/components/entry/EntryPostedAt"
 import PostBody from "@/components/post/PostBody"
-import type { SourceImage } from "@/lib/entry/entry"
+import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
 import { createTranslator, type PlainMessageKey } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -26,6 +26,10 @@ export type EntryPostView = {
     createdAt: string
     text: string
     images: SourceImage[]
+    /** 動画投稿の動画（再生可能） */
+    video?: SourceVideo
+    /** 利用不可の動画（再生不可の表示のみ） */
+    unsupportedVideo?: SourceVideo
     engagement: { likeCount: number; repostCount: number; replyCount: number; quoteCount: number }
 }
 
@@ -117,6 +121,9 @@ const bodyKey =
                                     createdAt={post.createdAt}
                                     text={post.text}
                                     images={post.images}
+                                    video={post.video}
+                                    unsupportedVideo={post.unsupportedVideo}
+                                    unsupportedVideoLinkUrl={post.webUrl}
                                     postUrl={post.webUrl}
                                     engagement={post.engagement}
                                 />

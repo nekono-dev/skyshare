@@ -15,6 +15,7 @@
  *   親（`ThreadComposer`）から受け取り、変更は`onChange`で親へ通知する制御コンポーネント。
  */
 import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import React, { useEffect, useRef, useState } from "react"
 import Avatar from "@/components/common/Avatar"
 import { type CounterSpec } from "@/components/common/CountedTextInput"
@@ -23,6 +24,10 @@ import ImagePicker, {
 } from "@/components/image/ImagePicker"
 import { OgpFetchButton, useOgpFetch } from "@/components/image/OgpFetchButton"
 import OgpPreview from "@/components/image/OgpPreview"
+import VideoPicker, {
+  type VideoPickerHandle,
+} from "@/components/video/VideoPicker"
+import ThumbnailAdjustButton from "@/components/image/ThumbnailAdjustButton"
 import LanguageSelect from "@/components/common/LanguageSelect"
 import PostGateDialog from "@/components/post/PostGateDialog"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
@@ -32,7 +37,12 @@ import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
 import PostBodyEditor from "../PostBodyEditor"
 import { useKeyboardRows } from "../useKeyboardRows"
 import { useSuggest } from "../useSuggest"
-import { revokeImageEntry, type SegmentState } from "../segments"
+import {
+  revokeImageEntry,
+  revokeVideoEntry,
+  type SegmentState,
+} from "../segments"
+import { resolveVideoMimeType } from "@/lib/video/probeVideo"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import plusIcon from "@/images/plus.svg"
@@ -53,6 +63,8 @@ type Props = {
   onActivate: () => void
   /** 末尾へセグメントを追加できるか（上限到達時はfalse） */
   canAddSegment: boolean
+  /** 投稿ボタンが押せない理由（動画のアップロード待ち等）。無ければ null */
+  submitBlockedReason: PlainMessageKey | null
   onAddSegment: () => void
   onRemove: () => void
   onChange: (next: SegmentState) => void
@@ -119,6 +131,7 @@ const Component: React.FC<Props> = ({
   mentionSuggestEnabled,
   onActivate,
   canAddSegment,
+  submitBlockedReason,
   onAddSegment,
   onRemove,
   onChange,
@@ -126,8 +139,9 @@ const Component: React.FC<Props> = ({
 }) => {
   const { t } = useT()
   const [postGateDialogOpen, setPostGateDialogOpen] = useState(false)
-  const [isDraggingImage, setIsDraggingImage] = useState(false)
+  const [isDraggingMedia, setIsDraggingMedia] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
+  const videoPickerRef = useRef<VideoPickerHandle>(null)
   const imagePreviewContainerRef = useRef<HTMLDivElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
   const toolboxRef = useRef<HTMLDivElement>(null)
@@ -142,6 +156,21 @@ const Component: React.FC<Props> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segment.imageEntry])
+
+  // 動画のプレビューURLは進捗更新のたびに `videoEntry` が作り直されても変わらないため、
+  // URL をキーにして解放する（進捗更新のたびに解放しない）。
+  const videoPosterPreview = segment.videoEntry?.posterPreview
+  useEffect(() => {
+    return () => {
+      if (videoPosterPreview) URL.revokeObjectURL(videoPosterPreview)
+    }
+  }, [videoPosterPreview])
+  const videoThumbnailPreview = segment.videoEntry?.thumbnailPreview
+  useEffect(() => {
+    return () => {
+      if (videoThumbnailPreview) URL.revokeObjectURL(videoThumbnailPreview)
+    }
+  }, [videoThumbnailPreview])
 
   const suggest = useSuggest({
     text: segment.text,
@@ -199,6 +228,8 @@ const Component: React.FC<Props> = ({
     if (files.length === 0) return
 
     e.preventDefault()
+    // 動画を添付済みの segment には画像を追加できない（排他）
+    if (segment.videoEntry) return
     void imagePickerRef.current?.addFiles(files)
   }
 
@@ -212,26 +243,36 @@ const Component: React.FC<Props> = ({
     if (disabled) return
     if (!e.dataTransfer.types.includes("Files")) return
     e.preventDefault()
-    setIsDraggingImage(true)
+    setIsDraggingMedia(true)
   }
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
-    setIsDraggingImage(false)
+    setIsDraggingMedia(false)
   }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     if (!e.dataTransfer.types.includes("Files")) return
     e.preventDefault()
-    setIsDraggingImage(false)
+    setIsDraggingMedia(false)
     if (disabled) return
 
-    const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith("image/"),
-    )
-    if (files.length === 0) return
+    const dropped = Array.from(e.dataTransfer.files)
+    const images = dropped.filter(file => file.type.startsWith("image/"))
+    if (images.length > 0) {
+      // 動画を添付済みの segment には画像を追加できない（排他）
+      if (!segment.videoEntry) void imagePickerRef.current?.addFiles(images)
+      return
+    }
 
-    void imagePickerRef.current?.addFiles(files)
+    // 動画は1本だけ。対応外の動画形式も VideoPicker 側で検査して通知する。
+    // MIME が空の対応形式（.mov 等）も動画として扱う。
+    const video = dropped.find(
+      file =>
+        file.type.startsWith("video/") ||
+        resolveVideoMimeType(file) !== undefined,
+    )
+    if (video) void videoPickerRef.current?.addFile(video)
   }
 
   // アバター列（アバター＋後続segmentへの連結線）。編集表示・簡略表示のそれぞれの
@@ -256,15 +297,15 @@ const Component: React.FC<Props> = ({
         <div
           hidden={!isActive}
           data-testid="segment-editor"
-          className={`${styles["editor-area"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
+          className={`${styles["editor-area"]} ${isDraggingMedia ? styles["drag-over"] : ""}`}
           onPaste={handlePaste}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {isDraggingImage && (
+          {isDraggingMedia && (
             <div className={styles["drag-overlay"]} aria-hidden>
-              {t("post.segment.dropImage")}
+              {t("post.segment.dropMedia")}
             </div>
           )}
 
@@ -323,7 +364,7 @@ const Component: React.FC<Props> = ({
           </div>
 
           <div
-            className={`${ui["base-component"]} ${ui["base-padding"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]} ${ui["toolbar-wrap"]}`}
+            className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]} ${ui["toolbar-wrap"]}`}
           >
             <button
               type="button"
@@ -363,7 +404,7 @@ const Component: React.FC<Props> = ({
 
           <div
             ref={toolboxRef}
-            className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]} ${ui["toolbar-wrap"]}`}
+            className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]} ${ui["toolbar-wrap"]}`}
           >
             <div
               className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]} ${ui["toolbar-wrap"]} ${ui["toolbar-auto-width"]}`}
@@ -379,10 +420,48 @@ const Component: React.FC<Props> = ({
                   }
                   update({ imageEntry: entry })
                 }}
-                disabled={disabled}
+                disabled={disabled || !!segment.videoEntry}
                 previewContainerRef={imagePreviewContainerRef}
               />
-              <OgpFetchButton ogpFetch={ogpFetch} disabled={disabled} />
+              <VideoPicker
+                ref={videoPickerRef}
+                value={segment.videoEntry}
+                onChange={entry => update({ videoEntry: entry })}
+                disabled={
+                  disabled || !!segment.imageEntry || !!segment.ogpResult
+                }
+                disabledReason={
+                  segment.imageEntry
+                    ? t("video.picker.exclusiveWithImage")
+                    : segment.ogpResult
+                      ? t("video.picker.exclusiveWithOgp")
+                      : undefined
+                }
+                previewContainerRef={imagePreviewContainerRef}
+              />
+              {(segment.imageEntry || segment.videoEntry) && (
+                <ThumbnailAdjustButton
+                  disabled={disabled}
+                  onClick={() =>
+                    segment.videoEntry
+                      ? videoPickerRef.current?.openCropDialog()
+                      : imagePickerRef.current?.openCropDialog()
+                  }
+                />
+              )}
+              <span
+                title={
+                  segment.videoEntry
+                    ? t("video.picker.exclusiveWithVideo")
+                    : undefined
+                }
+                style={{ display: "inline-flex" }}
+              >
+                <OgpFetchButton
+                  ogpFetch={ogpFetch}
+                  disabled={disabled || !!segment.videoEntry}
+                />
+              </span>
             </div>
 
             <div
@@ -416,6 +495,15 @@ const Component: React.FC<Props> = ({
               />
             </div>
           </div>
+          {submitBlockedReason && (
+            <p
+              role="status"
+              data-testid="video-submit-reason"
+              className={styles["submit-reason"]}
+            >
+              {t(submitBlockedReason)}
+            </p>
+          )}
           <div>
             <OgpPreview ogpFetch={ogpFetch} />
             <div ref={imagePreviewContainerRef} />
@@ -447,6 +535,15 @@ const Component: React.FC<Props> = ({
                   aria-hidden
                 />
               )}
+              {segment.videoEntry && (
+                <img
+                  className={styles["summary-thumbnail"]}
+                  data-testid="segment-thumbnail"
+                  src={segment.videoEntry.thumbnailPreview}
+                  alt=""
+                  aria-hidden
+                />
+              )}
               <span
                 className={`${styles["summary-text"]} ${!segment.text ? styles["summary-placeholder"] : ""}`}
               >
@@ -463,6 +560,7 @@ const Component: React.FC<Props> = ({
                   onClick={e => {
                     e.stopPropagation()
                     revokeImageEntry(segment.imageEntry)
+                    revokeVideoEntry(segment.videoEntry)
                     onRemove()
                   }}
                 >

@@ -4,9 +4,13 @@ import {
     canRemoveSegment,
     createEmptySegment,
     draftPostsToSegments,
+    hasPendingVideo,
+    isSegmentPostable,
+    pendingVideoState,
     removeSegment,
     segmentsToDraftPosts,
     type SegmentState,
+    type VideoEntry,
 } from "@/components/post/ThreadComposer/segments"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 
@@ -18,6 +22,7 @@ describe("createEmptySegment", () => {
         expect(segment.selfLabel).toBeUndefined()
         expect(segment.imageEntry).toBeNull()
         expect(segment.ogpResult).toBeNull()
+        expect(segment.videoEntry).toBeNull()
     })
 
     it("呼び出しごとに一意なidを発行する", () => {
@@ -105,5 +110,88 @@ describe("segmentsToDraftPosts / draftPostsToSegments", () => {
             draftPostsToSegments(original, "ja"),
         )
         expect(roundTripped).toEqual(original)
+    })
+})
+
+const videoEntry = (upload: VideoEntry["upload"]): VideoEntry => ({
+    fileName: "a.mp4",
+    width: 640,
+    height: 360,
+    durationSec: 5,
+    alt: "",
+    posterPreview: "blob:x",
+    thumbnailPreview: "blob:y",
+    posterBlob: new Blob(["p"]),
+    cropState: {
+        crop: { x: 0, y: 0 },
+        zoom: 1,
+        cropPixels: null,
+    },
+    thumbnailBlob: new Blob(["t"]),
+    upload,
+})
+
+const DONE: VideoEntry["upload"] = {
+    state: "done",
+    blob: {
+        $type: "blob",
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4",
+        size: 10,
+    },
+}
+
+describe("動画segmentの投稿条件", () => {
+    const base = createEmptySegment("ja")
+
+    it("完了した動画があればテキストが空でも投稿条件を満たす", () => {
+        expect(
+            isSegmentPostable({ ...base, videoEntry: videoEntry(DONE) }),
+        ).toBe(true)
+    })
+
+    it("アップロード中・失敗の動画だけでは投稿条件を満たさない", () => {
+        const uploading = videoEntry({
+            state: "uploading",
+            progress: { phase: "uploading", percent: 10 },
+        })
+        expect(isSegmentPostable({ ...base, videoEntry: uploading })).toBe(
+            false,
+        )
+    })
+})
+
+describe("pendingVideoState / hasPendingVideo", () => {
+    const withVideo = (entry: VideoEntry | null): SegmentState => ({
+        ...createEmptySegment("ja"),
+        text: "x",
+        videoEntry: entry,
+    })
+    const uploading = videoEntry({
+        state: "uploading",
+        progress: { phase: "processing", percent: 50 },
+    })
+    const failed = videoEntry({
+        state: "error",
+        messageKey: "video.error.dailyLimit",
+    })
+
+    it("動画が無い・完了済みなら未完了なし", () => {
+        expect(pendingVideoState([withVideo(null)])).toBeNull()
+        expect(pendingVideoState([withVideo(videoEntry(DONE))])).toBeNull()
+        expect(hasPendingVideo([withVideo(videoEntry(DONE))])).toBe(false)
+    })
+
+    it("実行中なら uploading、失敗が残っていれば error（失敗を優先）", () => {
+        expect(pendingVideoState([withVideo(uploading)])).toBe("uploading")
+        expect(pendingVideoState([withVideo(failed)])).toBe("error")
+        expect(
+            pendingVideoState([withVideo(uploading), withVideo(failed)]),
+        ).toBe("error")
+        expect(hasPendingVideo([withVideo(uploading)])).toBe(true)
+    })
+
+    it("取り外す（videoEntry が null）と解消する", () => {
+        expect(pendingVideoState([withVideo(null), withVideo(null)])).toBeNull()
     })
 })

@@ -237,3 +237,67 @@ describe("v2/entry POST RequestBodySchema", () => {
         expect(result.success).toBe(false)
     })
 })
+
+describe("v2/entry POST RequestBodySchema（動画）", () => {
+    const videoBlob = {
+        $type: "blob",
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4",
+        size: 1000,
+    }
+    const build = (
+        overrides: { video?: unknown; meta?: unknown; images?: boolean } = {},
+    ) => {
+        const formData = new FormData()
+        if (overrides.video !== null) {
+            formData.set(
+                "posts[0][video]",
+                JSON.stringify(overrides.video ?? videoBlob),
+            )
+        }
+        if (overrides.meta !== null) {
+            formData.set(
+                "posts[0][videoMeta]",
+                JSON.stringify(overrides.meta ?? { width: 640, height: 360 }),
+            )
+        }
+        if (overrides.images) {
+            formData.append(
+                "posts[0][images]",
+                new Blob(["a"], { type: "image/png" }),
+            )
+            formData.set(
+                "posts[0][imagesMeta]",
+                JSON.stringify([{ width: 1, height: 1 }]),
+            )
+        }
+        return parseFormData(formData)
+    }
+
+    it("動画のみの投稿を受理する", () => {
+        expect(build().success).toBe(true)
+    })
+
+    it("動画と画像の併用は失敗", () => {
+        expect(build({ images: true }).success).toBe(false)
+    })
+
+    it("サイズが 300,000,001 バイトなら失敗、300,000,000 なら成功", () => {
+        expect(
+            build({ video: { ...videoBlob, size: 300_000_001 } }).success,
+        ).toBe(false)
+        expect(
+            build({ video: { ...videoBlob, size: 300_000_000 } }).success,
+        ).toBe(true)
+    })
+
+    it("mimeType が video/webm なら失敗", () => {
+        expect(
+            build({ video: { ...videoBlob, mimeType: "video/webm" } }).success,
+        ).toBe(false)
+    })
+
+    it("videoMeta が無ければ失敗", () => {
+        expect(build({ meta: null }).success).toBe(false)
+    })
+})

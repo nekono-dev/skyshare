@@ -39,7 +39,7 @@ const selfLabelsField = z
 
 /**
  * `posts`配列の1件分(1セグメント)。現行`/v2/bsky/record`の3分岐
- * (テキストのみ/OGPリンク付き/画像付き)をそのまま引き継ぐ。
+ * (テキストのみ/OGPリンク付き/画像付き)に、動画付きの分岐を加えたもの。
  * entry作成の指定(`createEntry`/`visual`)はリクエスト全体でトップレベルに1組だけ持ち、
  * 投稿ごとの個別指定は行わない(詳細は`specs/entry/backend/design.md §3.1`参照)。
  */
@@ -81,6 +81,20 @@ export const EntryPostItemSchema = z.union([
             ogMeta: Common.CommonOgMetaSchema.optional(),
             images: z.array(imageField).max(MAX_POST_IMAGES),
             imagesMeta: Common.CommonImagesMetaSchema,
+            langs: z.array(z.string()).optional(),
+            selfLabels: selfLabelsField.optional(),
+            gate: Common.CommonGateSettingsSchema.optional(),
+        })
+        .strict(),
+    // 動画付き投稿(video/videoMetaが必須。画像・OGPリンクとは排他。
+    // 上の3分岐は`.strict()`で`video`を持てず、本分岐は`images`/`ogImage`/`ogMeta`を
+    // 持たないため、排他が構造的に保たれる)
+    z
+        .object({
+            text: textField.optional(),
+            facets: Common.CommonFacetsSchema.optional(),
+            video: Common.CommonVideoBlobSchema,
+            videoMeta: Common.CommonVideoMetaSchema,
             langs: z.array(z.string()).optional(),
             selfLabels: selfLabelsField.optional(),
             gate: Common.CommonGateSettingsSchema.optional(),
@@ -128,6 +142,8 @@ export const PostItemFieldKinds: Record<string, FormDataFieldKind> = {
     ogMeta: "json",
     images: "files",
     imagesMeta: "json",
+    video: "json",
+    videoMeta: "json",
     langs: "texts",
     selfLabels: "text",
     gate: "json",

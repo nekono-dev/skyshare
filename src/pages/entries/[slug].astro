@@ -24,7 +24,14 @@ import { serviceName } from "@/vars"
 import { atpService } from "@/env"
 import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
 import { resolvePdsServiceForDid } from "@/lib/atproto/did"
-import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry/entry"
+import {
+    parseEntryLocator,
+    blobToCdnUrl,
+    extractSourceImages,
+    extractEmbedVideo,
+    extractUnsupportedEmbedVideo,
+    ENTRY_COLLECTION,
+} from "@/lib/entry/entry"
 import type { EntryLike } from "@/lib/entry/entry"
 import { resolveXrpcStatus } from "@/lib/api/response"
 import { extractOwnedLinearReplyChain } from "@/lib/atproto/threadChain"
@@ -49,6 +56,8 @@ const toEntryPostView = (post: AppBskyFeedDefs.PostView, repoDid: string, webUrl
         createdAt: record.createdAt,
         text: record.text,
         images: extractSourceImages(record, repoDid),
+        video: extractEmbedVideo(record.embed, repoDid),
+        unsupportedVideo: extractUnsupportedEmbedVideo(record.embed, repoDid),
         engagement: {
             likeCount: count(post.likeCount),
             repostCount: count(post.repostCount),

@@ -7,7 +7,11 @@
  * - `findEntryCarrier`: `specs/timeline/design.md §6.1`。
  * - いずれも`ThreadGroup`のみを入力に取る純粋関数で、UI（`ThreadCard`）から分離する。
  */
-import type { ThreadGroup, TimelinePost } from "@/lib/entry/posts"
+import {
+    hasEntryMedia,
+    type ThreadGroup,
+    type TimelinePost,
+} from "@/lib/entry/posts"
 
 /**
  * スレッドグループ内で、事後entry作成のVisual（カバー画像）を取得すべき投稿を
@@ -23,7 +27,7 @@ import type { ThreadGroup, TimelinePost } from "@/lib/entry/posts"
  * Output:
  * - Visual取得元の投稿。以下のいずれかに該当する場合は`null`（要件FR-3、ボタン非表示）:
  *   - 単独投稿（`replies.length === 0`。単独投稿は既存の独立ロジックで処理する）
- *   - ルート・repliesのいずれも画像を持たない
+ *   - ルート・repliesのいずれも画像・動画（再生可能な動画。`hasEntryMedia`）を持たない
  * - ルートが画像を持てばルート自身、持たなければrepliesのうちルートに最も近い
  *   （時系列上最も古い）画像投稿を返す。
  *
@@ -39,9 +43,9 @@ export const resolveEntryVisualSourcePost = (
     group: ThreadGroup,
 ): TimelinePost | null => {
     if (group.replies.length === 0) return null
-    if (group.rootPost.images.length > 0) return group.rootPost
+    if (hasEntryMedia(group.rootPost)) return group.rootPost
 
-    return group.replies.find(post => post.images.length > 0) ?? null
+    return group.replies.find(hasEntryMedia) ?? null
 }
 
 /**

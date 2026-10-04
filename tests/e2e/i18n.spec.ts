@@ -44,7 +44,7 @@ test.describe("英語ブラウザ", () => {
         await expect(page.locator("astro-island[ssr]")).toHaveCount(0)
 
         await expect(page.getByTestId("entry-source-link")).toHaveText(
-            "View original post",
+            "View original post on Bluesky",
         )
         await expect(page.locator("dl").getByText(/^Posted: /)).toBeVisible()
     })
@@ -480,7 +480,7 @@ test.describe("Entry詳細の言語切り替え", () => {
         await page.getByRole("option", { name: "English" }).click()
 
         await expect(page.getByTestId("entry-source-link")).toHaveText(
-            "View original post",
+            "View original post on Bluesky",
         )
         await expect(page.locator("dl").getByText(/^Posted: /)).toBeVisible()
     })

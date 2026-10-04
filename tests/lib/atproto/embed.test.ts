@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
     createExternalEmbed,
     createImageEmbed,
+    createVideoEmbed,
     validateImageMetadata,
 } from "@/lib/atproto/embed"
 
@@ -137,5 +138,31 @@ describe("createExternalEmbed", () => {
         expect(() =>
             createExternalEmbed({ ...ogMeta, url: "" }, undefined),
         ).toThrow()
+    })
+})
+
+describe("createVideoEmbed", () => {
+    const blob = {
+        $type: "blob" as const,
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4" as const,
+        size: 10,
+    }
+
+    it("blob参照・alt・縦横比を保持する", () => {
+        expect(
+            createVideoEmbed(blob, { width: 640, height: 360, alt: "海" }),
+        ).toEqual({
+            $type: "app.bsky.embed.video",
+            video: blob,
+            alt: "海",
+            aspectRatio: { width: 640, height: 360 },
+        })
+    })
+
+    it("altが未指定なら空文字", () => {
+        expect(createVideoEmbed(blob, { width: 1, height: 1 } as any).alt).toBe(
+            "",
+        )
     })
 })

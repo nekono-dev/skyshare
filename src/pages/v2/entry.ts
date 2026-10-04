@@ -18,6 +18,7 @@ import { resolveDisplayName } from "@/lib/atproto/profile"
 import {
     createExternalEmbed,
     createImageEmbed,
+    createVideoEmbed,
     validateImageMetadata,
 } from "@/lib/atproto/embed"
 import { createEntryFromExistingPost } from "@/lib/entry/fromPost"
@@ -37,7 +38,7 @@ import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
  * Skyshare v2 entry API。
  *
  * 責務と処理概要:
- * - Bluesky投稿（テキスト/OGPリンク/画像。1件、またはスレッドとして複数件）の作成と、
+ * - Bluesky投稿（テキスト/OGPリンク/画像/動画。1件、またはスレッドとして複数件）の作成と、
  *   スレッド全体に紐づく skyshare entry（`createEntry`フラグ指定時）の作成を扱う、
  *   統合エンドポイント（旧`/v2/bsky/record`はこのエンドポイントに統合され廃止された）。
  * - POST: `uri`が指定された場合は既存の自分のBluesky投稿からskyshare entryを発行する
@@ -96,7 +97,7 @@ const json200 = (body: PostSchema.ResponseBody200Type) =>
  * 4.5. `uri` 指定時は既存投稿からの発行（from-post）に分岐して結果を返却
  * 5a. トップレベル`createEntry:true`の妥当性検証（`visual`必須。画像投稿の有無は検証しない）
  * 5b. `posts`各要素について: 画像メタデータ検証、facets境界検証、
- *     embed作成（画像優先、次点でOGP）、画像アップロード
+ *     embed作成（動画、画像、OGPの順に優先）、画像アップロード
  * 5c. `createEntry:true`ならvisualを1回だけアップロード＋表示名解決
  * 6. トップレベル`reply`の所有権検証
  * 7. `createBskyThread`で全投稿＋gate＋（高々1件の）skyshare entryを
@@ -107,7 +108,7 @@ const json200 = (body: PostSchema.ResponseBody200Type) =>
  * - リクエスト: multipart/form-data
  * - ヘッダ: Content-Type, Authorization
  * - フィールド: `uri` + `visual`（既存投稿からの発行）、または
- *   `posts[0][text]`等（新規投稿。1件ならテキストのみ/OGPリンク/画像付きの単発投稿、
+ *   `posts[0][text]`等（新規投稿。1件ならテキストのみ/OGPリンク/画像/動画付きの単発投稿、
  *   複数件ならスレッド）。任意で`reply`（既存スレッドへの接続先）、
  *   任意でトップレベル`createEntry`+`visual`（entry作成、リクエスト全体で高々1組）。
  *
@@ -224,10 +225,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // フェーズ 5b: 各postsについて検証・embed作成・アップロードを行う
         const threadPostInputs: ThreadPostInput[] = []
         for (const item of body.data.posts) {
-            const hasImages = !!item.images && item.images.length > 0
+            // 動画分岐は images/imagesMeta/ogImage/ogMeta を持たないため、共通の形へ揃える。
+            const images = "images" in item ? item.images : undefined
+            const imagesMeta =
+                "imagesMeta" in item ? item.imagesMeta : undefined
+            const ogImage = "ogImage" in item ? item.ogImage : undefined
+            const ogMeta = "ogMeta" in item ? item.ogMeta : undefined
+            const hasImages = !!images && images.length > 0
 
             try {
-                validateImageMetadata(item.images, item.imagesMeta)
+                validateImageMetadata(images, imagesMeta)
             } catch (err) {
                 console.warn(
                     "createEntry: image metadata validation failed",
@@ -246,28 +253,32 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
             // Embed 作成: 画像（手動添付）と OGP リンクカードは Bluesky 上で同時に
             // 埋め込めないため、画像が指定されている場合はそちらを優先する。
+            // 動画は先行アップロード済みの blob 参照を載せるだけなので、最優先で扱う
+            // （スキーマ上、動画は画像・OGPとは排他）。
             let embed: any = undefined
-            if (hasImages && item.images) {
+            if ("video" in item && item.video) {
+                embed = createVideoEmbed(item.video, item.videoMeta)
+            } else if (hasImages && images) {
                 let uploadedImages: any[]
                 try {
                     uploadedImages = await Promise.all(
-                        item.images.map(image => uploadBlob(agent, image)),
+                        images.map(image => uploadBlob(agent, image)),
                     )
                 } catch (err) {
                     console.error("createEntry: image upload failed", err)
                     return errorResponseFromStatus(500)
                 }
-                embed = createImageEmbed(uploadedImages, item.imagesMeta)
-            } else if (item.ogMeta && item.ogImage) {
+                embed = createImageEmbed(uploadedImages, imagesMeta)
+            } else if (ogMeta && ogImage) {
                 let uploadedOgImage: any
                 try {
-                    uploadedOgImage = await uploadBlob(agent, item.ogImage)
+                    uploadedOgImage = await uploadBlob(agent, ogImage)
                 } catch (err) {
                     console.error("createEntry: ogImage upload failed", err)
                     return errorResponseFromStatus(500)
                 }
                 try {
-                    embed = createExternalEmbed(item.ogMeta, uploadedOgImage)
+                    embed = createExternalEmbed(ogMeta, uploadedOgImage)
                 } catch (err) {
                     console.error("createEntry: failed to create embed", err)
                     return errorResponseFromStatus(400)
