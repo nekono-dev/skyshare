@@ -24,14 +24,14 @@
 
 ## Phase 3: 投稿作成 API（動画 embed）
 
-- [ ] `[BE]` `src/lib/api/schema/common.ts` に `CommonVideoBlobSchema`・`CommonVideoMetaSchema` を追加する（design.md §4.2.1）。
-- [ ] `[BE]` `src/lib/api/schema/v2/entry/post.ts` に動画分岐を追加し、`PostItemFieldKinds` に `video`/`videoMeta` を追加する（§4.2.2）。`npm run codegen` を実行する。
-- [ ] `[BE]` `src/lib/atproto/embed.ts` に `createVideoEmbed` を追加する（§4.2.3）。
-- [ ] `[BE]` `src/pages/v2/entry.ts` の embed 作成を「動画 → 画像 → OGP」の順にし、冒頭ドキュメントコメントを更新する（§4.2.4）。
-- [ ] `[TEST]` `tests/lib/api/schema/entryPost.test.ts`: 動画のみ成功、`video` と `images`/`ogMeta` の併用が失敗、`size` が 300,000,001 で失敗、`mimeType` が `video/webm` で失敗、`videoMeta` 欠落で失敗。
-- [ ] `[TEST]` `tests/lib/atproto/embed.test.ts`: `createVideoEmbed` の `$type`・`video`・`alt`（未指定は `""`）・`aspectRatio`。
-- [ ] `[TEST]` `tests/pages/v2/entry.test.ts`: 動画投稿の multipart（`posts[0][video]`・`posts[0][videoMeta]` が JSON）で `app.bsky.embed.video` が作られ `uploadBlob` が呼ばれないこと、2セグメントのスレッドで各投稿に動画 embed が載ること、`createEntry`+`visual` で entry が作られること、画像併用が 400。
-- [ ] 検証: 上記テストと `npm run codegen` 後の `tsc` が通る。
+- [x] `[BE]` `src/lib/api/schema/common.ts` に `CommonVideoBlobSchema`・`CommonVideoMetaSchema` を追加する（design.md §4.2.1）。
+- [x] `[BE]` `src/lib/api/schema/v2/entry/post.ts` に動画分岐を追加し、`PostItemFieldKinds` に `video`/`videoMeta` を追加する（§4.2.2）。`npm run codegen` を実行する。
+- [x] `[BE]` `src/lib/atproto/embed.ts` に `createVideoEmbed` を追加する（§4.2.3）。
+- [x] `[BE]` `src/pages/v2/entry.ts` の embed 作成を「動画 → 画像 → OGP」の順にし、冒頭ドキュメントコメントを更新する（§4.2.4）。
+- [x] `[TEST]` `tests/lib/api/schema/entryPost.test.ts`: 動画のみ成功、`video` と `images`/`ogMeta` の併用が失敗、`size` が 300,000,001 で失敗、`mimeType` が `video/webm` で失敗、`videoMeta` 欠落で失敗。
+- [x] `[TEST]` `tests/lib/atproto/embed.test.ts`: `createVideoEmbed` の `$type`・`video`・`alt`（未指定は `""`）・`aspectRatio`。
+- [x] `[TEST]` `tests/pages/v2/entry.test.ts`: 動画投稿の multipart（`posts[0][video]`・`posts[0][videoMeta]` が JSON）で `app.bsky.embed.video` が作られ `uploadBlob` が呼ばれないこと、2セグメントのスレッドで各投稿に動画 embed が載ること、`createEntry`+`visual` で entry が作られること、画像併用が 400。
+- [x] 検証: 上記テストと `npm run codegen` 後の `tsc` が通る。
 
 ## Phase 4: 動画投稿の抽出（表示用データ）
 

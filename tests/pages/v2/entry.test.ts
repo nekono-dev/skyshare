@@ -1795,3 +1795,136 @@ describe("DELETE /v2/entry", () => {
         })
     })
 })
+
+describe("POST /v2/entry（動画投稿）", () => {
+    const videoBlob = {
+        $type: "blob",
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4",
+        size: 1234,
+    }
+    const videoMeta = { width: 640, height: 360, alt: "海" }
+
+    const mockApplyWrites = () =>
+        vi
+            .fn()
+            .mockImplementation(
+                async ({
+                    repo,
+                    writes,
+                }: {
+                    repo: string
+                    writes: { collection: string; rkey: string }[]
+                }) => ({
+                    data: {
+                        results: writes.map((write, index) => ({
+                            uri: `at://${repo}/${write.collection}/${write.rkey}`,
+                            cid: `bafyapplywrites${index}`,
+                        })),
+                    },
+                }),
+            )
+
+    const send = async (
+        formData: FormData,
+        applyWrites = mockApplyWrites(),
+        uploadBlob = vi.fn().mockResolvedValue({
+            data: {
+                blob: {
+                    $type: "blob",
+                    ref: { $link: "bafkreuploaded" },
+                    mimeType: "image/jpeg",
+                },
+            },
+        }),
+    ) => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            headers: authHeaders,
+            body: formData,
+        })
+        const res = await callRoute(POST, request, {
+            agent: createFakeAgent({
+                uploadBlob,
+                com: { atproto: { repo: { applyWrites } } },
+            }),
+            session: fakeSession,
+        })
+        return { res, applyWrites, uploadBlob }
+    }
+
+    const setVideo = (formData: FormData, i: number, meta = videoMeta) => {
+        formData.set(`posts[${i}][video]`, JSON.stringify(videoBlob))
+        formData.set(`posts[${i}][videoMeta]`, JSON.stringify(meta))
+    }
+
+    it("動画投稿は app.bsky.embed.video を作り、動画の uploadBlob は呼ばない", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "動画です")
+        setVideo(formData, 0)
+        const { res, applyWrites, uploadBlob } = await send(formData)
+        expect(res.status).toBe(200)
+        expect(uploadBlob).not.toHaveBeenCalled()
+        const post = applyWrites.mock.calls[0][0].writes.find(
+            (w: any) => w.collection === "app.bsky.feed.post",
+        )
+        expect(post.value.embed).toEqual({
+            $type: "app.bsky.embed.video",
+            video: videoBlob,
+            alt: "海",
+            aspectRatio: { width: 640, height: 360 },
+        })
+    })
+
+    it("2セグメントのスレッドで各投稿に動画 embed が載る", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "一つ目")
+        setVideo(formData, 0)
+        formData.set("posts[1][text]", "二つ目")
+        setVideo(formData, 1, { width: 360, height: 640, alt: "" })
+        const { res, applyWrites } = await send(formData)
+        expect(res.status).toBe(200)
+        const posts = applyWrites.mock.calls[0][0].writes.filter(
+            (w: any) => w.collection === "app.bsky.feed.post",
+        )
+        expect(posts).toHaveLength(2)
+        expect(posts[0].value.embed.$type).toBe("app.bsky.embed.video")
+        expect(posts[1].value.embed.aspectRatio).toEqual({
+            width: 360,
+            height: 640,
+        })
+    })
+
+    it("createEntry+visual で動画投稿から entry が作られる", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "動画です")
+        setVideo(formData, 0)
+        formData.set("createEntry", "true")
+        formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+        const { res, applyWrites } = await send(formData)
+        expect(res.status).toBe(200)
+        const json = await res.json()
+        expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        expect(
+            applyWrites.mock.calls[0][0].writes.some(
+                (w: any) => w.collection === "dev.nekono.skyshare.entry",
+            ),
+        ).toBe(true)
+    })
+
+    it("動画と画像の併用は 400", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "x")
+        setVideo(formData, 0)
+        formData.append(
+            "posts[0][images]",
+            new Blob(["a"], { type: "image/png" }),
+        )
+        formData.set(
+            "posts[0][imagesMeta]",
+            JSON.stringify([{ width: 1, height: 1 }]),
+        )
+        const { res } = await send(formData)
+        expect(res.status).toBe(400)
+    })
+})

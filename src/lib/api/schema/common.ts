@@ -9,6 +9,7 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiResponsesObject } from "zod-openapi"
 import { MAX_POST_IMAGES } from "../../image/postImageLimits"
+import { MAX_VIDEO_BYTES, VIDEO_MIME_TYPE } from "../../video/postVideoLimits"
 
 export const CommonOgMetaSchema = z
     .object({
@@ -49,6 +50,33 @@ export const CommonImagesMetaSchema = z
     )
     .max(MAX_POST_IMAGES)
 export type CommonImagesMetaType = z.infer<typeof CommonImagesMetaSchema>
+
+/**
+ * 動画blob参照。動画サービス(getJobStatus)がJSON形式で返すblob参照で、
+ * `app.bsky.embed.video#video`にそのまま使える。動画の実体はブラウザから動画サービスへ
+ * 直接アップロード済みのため、サーバへ送られるのはこの参照だけ。
+ */
+export const CommonVideoBlobSchema = z
+    .object({
+        $type: z.literal("blob"),
+        ref: z.object({ $link: z.string().min(1) }).strict(),
+        mimeType: z.literal(VIDEO_MIME_TYPE),
+        size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
+    })
+    .strict()
+export type CommonVideoBlobType = z.infer<typeof CommonVideoBlobSchema>
+
+/** 動画のメタデータ(縦横比とalt)。 */
+export const CommonVideoMetaSchema = z
+    .object({
+        width: z.number().int().min(1),
+        height: z.number().int().min(1),
+        alt: z.string().optional().default("").meta({
+            description: "app.bsky.embed.videoのalt(代替テキスト)。",
+        }),
+    })
+    .strict()
+export type CommonVideoMetaType = z.infer<typeof CommonVideoMetaSchema>
 
 /**
  * 返信可能ユーザー設定(threadgate)・引用許可設定(postgate)の簡略化されたAPI契約。
