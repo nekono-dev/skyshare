@@ -10,7 +10,7 @@
 .error-text {
   margin: 0;
   color: var(--color-red-text);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }
 
 /* スマホレイアウト時、PostFormと同様にダイアログを画面上部に固定配置し

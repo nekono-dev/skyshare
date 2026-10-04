@@ -7,8 +7,8 @@
  * - 画像 URL は CDN URL に展開し、一覧 UI でそのまま表示できる形にする。
  */
 
-import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
-import { blobToCdnUrl, toCidString } from "@/lib/entry/entry"
+import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
+import { blobToCdnUrl, extractEmbedImages } from "@/lib/entry/entry"
 import {
     bskyPostUrlgen,
     parseAtUri,
@@ -48,6 +48,15 @@ export type TimelinePost = {
     skyshareEntry?: TimelineSkyshareEntry
 }
 
+/**
+ * Timeline一覧上の1スレッドグループ。`buildTimelineThreads`（`@/lib/entry/timelineThreads`）が
+ * バックエンドで権威的に解決・確定させる（`specs/timeline/design.md §1`）。
+ */
+export type ThreadGroup = {
+    rootPost: TimelinePost
+    replies: TimelinePost[] // 古い→新しい順。0件なら単独投稿
+}
+
 type RawTimelineEntry = {
     uri?: string
     cid?: string
@@ -85,34 +94,7 @@ type RawTimelineEntry = {
 export const extractTimelinePostImages = (
     postRecord: AppBskyFeedPost.Main,
     sourceRepoDid: string,
-): SourceImage[] => {
-    const embedded = postRecord.embed
-
-    if (embedded?.$type !== "app.bsky.embed.images") {
-        return []
-    }
-
-    const imagesRecord = embedded as AppBskyEmbedImages.Main
-    if (!Array.isArray(imagesRecord.images)) {
-        return []
-    }
-
-    return imagesRecord.images
-        .map(image => {
-            const url = blobToCdnUrl(sourceRepoDid, image.image)
-            const cid = toCidString(image.image?.ref)
-            if (!url || !cid) {
-                return undefined
-            }
-
-            return {
-                url,
-                alt: typeof image.alt === "string" ? image.alt : "",
-                cid,
-            }
-        })
-        .filter((image): image is SourceImage => image !== undefined)
-}
+): SourceImage[] => extractEmbedImages(postRecord.embed, sourceRepoDid)
 
 /**
  * Skyshare entry を投稿一覧用の表示データへ変換する。
@@ -253,3 +235,25 @@ export const normalizeTimelinePost = (
         skyshareEntry,
     }
 }
+
+/**
+ * `app.bsky.feed.getPostThread`が返す`PostView`を`TimelinePost`へ変換する。
+ * `buildTimelineThreads`（`@/lib/entry/timelineThreads`）が、スレッドのroot・返信
+ * 双方を権威的に解決する際に使う（`specs/timeline/design.md §2.3`）。
+ *
+ * 処理の趣旨:
+ * - `getPostThread`が返す`PostView`には`FeedViewPost.reply`（enriched view）が無いため、
+ *   `{ post }`のみを渡して`normalizeTimelinePost`を呼ぶ。reply chain情報自体は
+ *   `TimelinePost`が持たない（`ThreadGroup`という形で表現するため）。
+ *
+ * Input:
+ * - `post`: `extractOwnedLinearReplyChain`が返す`PostView`
+ * - `skyshareEntry`: 同一`source.uri`に紐づくskyshare entry（あれば）
+ *
+ * Output:
+ * - `TimelinePost`。最小要件不足時は`undefined`（`normalizeTimelinePost`と同じ基準）。
+ */
+export const normalizePostViewToTimelinePost = (
+    post: AppBskyFeedDefs.PostView,
+    skyshareEntry?: TimelineSkyshareEntry,
+): TimelinePost | undefined => normalizeTimelinePost({ post }, skyshareEntry)

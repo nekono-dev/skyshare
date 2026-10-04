@@ -8,6 +8,7 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiResponsesObject } from "zod-openapi"
+import { MAX_POST_IMAGES } from "../../image/postImageLimits"
 
 export const CommonOgMetaSchema = z
     .object({
@@ -33,18 +34,20 @@ export const CommonErrorSchema = z
     .strict()
 export type CommonErrorType = z.infer<typeof CommonErrorSchema>
 
-export const CommonImagesMetaSchema = z.array(
-    z
-        .object({
-            width: z.number().int().min(1),
-            height: z.number().int().min(1),
-            alt: z.string().optional().default("").meta({
-                description:
-                    "app.bsky.embed.imagesの各画像のalt(代替テキスト)。",
-            }),
-        })
-        .strict(),
-)
+export const CommonImagesMetaSchema = z
+    .array(
+        z
+            .object({
+                width: z.number().int().min(1),
+                height: z.number().int().min(1),
+                alt: z.string().optional().default("").meta({
+                    description:
+                        "app.bsky.embed.images/galleryの各画像のalt(代替テキスト)。",
+                }),
+            })
+            .strict(),
+    )
+    .max(MAX_POST_IMAGES)
 export type CommonImagesMetaType = z.infer<typeof CommonImagesMetaSchema>
 
 /**
@@ -151,6 +154,33 @@ export const CommonFacetsSchema = z.array(CommonFacetSchema).meta({
 })
 export type CommonFacetsType = z.infer<typeof CommonFacetsSchema>
 
+/**
+ * AT Protocol公式lexicon(`com.atproto.repo.strongRef`)相当。レコードを一意に指す
+ * uri(at://...)とcid(コンテンツハッシュ)の組。
+ */
+export const CommonStrongRefSchema = z
+    .object({
+        uri: z.string().meta({
+            example:
+                "at://did:plc:examplefake000000000/app.bsky.feed.post/3lxyz",
+        }),
+        cid: z.string().meta({ example: "bafyexamplefakecid000000000" }),
+    })
+    .strict()
+export type CommonStrongRefType = z.infer<typeof CommonStrongRefSchema>
+
+/**
+ * AT Protocol公式lexicon(`app.bsky.feed.post#replyRef`)。スレッド(reply chain)の
+ * 起点(root)と直前の投稿(parent)を指す。
+ */
+export const CommonReplyRefSchema = z
+    .object({
+        root: CommonStrongRefSchema,
+        parent: CommonStrongRefSchema,
+    })
+    .strict()
+export type CommonReplyRefType = z.infer<typeof CommonReplyRefSchema>
+
 export const CommonCookieSchema = z
     .string()
     .meta({ example: "sid=abc123; Path=/; HttpOnly" })
@@ -187,6 +217,7 @@ const ERROR_STATUS_DESCRIPTIONS: Record<string, string> = {
     "401": "Unauthorized",
     "403": "Forbidden",
     "404": "Not Found",
+    "409": "Conflict",
     "429": "Too Many Requests",
     "500": "Internal Server Error",
     "503": "Service Unavailable",

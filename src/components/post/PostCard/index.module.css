@@ -5,37 +5,36 @@
   padding: var(--space-2);
 }
 
-/* avatar/本文とサムネイルを横並びにする行。ツールバーはこの下に独立して配置する */
-.top-row {
+/* フッターのボタン群。幅が足りない場合はこの中で折り返す */
+.footer-actions {
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 1rem;
-}
-
-/* avatar/本文の縦積み列。この列の高さに右側サムネイルを合わせる */
-.content-column {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.6rem;
-}
-
-.author-block {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-0);
+  flex: 0 1 auto;
   min-width: 0;
+}
+
+/* 「Entryを開く」の置き場。ボタン群の残り幅だけを占め、リンクが入り切らない幅
+   （container queryの閾値未満）になった場合は折り返さずリンクを非表示にする。
+   投稿を削除の列の最右端に固定する。 */
+.entry-link-box {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  container-type: inline-size;
+}
+
+@container (max-width: 4.5rem) {
+  .entry-link {
+    display: none;
+  }
 }
 
 .entry-link {
   flex: 0 0 auto;
-  align-self: flex-start;
-  margin-left: auto;
-  padding-top: 0.15rem;
-  font-size: 0.85rem;
+  font-size: var(--font-size-xs);
   white-space: nowrap;
   color: var(--color-bluesky);
   text-decoration: none;
@@ -53,80 +52,15 @@
   text-decoration: none;
 }
 
-.author-meta {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.author-name-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  min-width: 0;
-}
-
-.author-name-row strong {
-  overflow-wrap: anywhere;
-}
-
-.handle,
-.created-at {
-  color: var(--color-text-muted);
-}
-
-.created-at {
-  margin: 0.15rem 0 0;
-  font-size: 0.9rem;
-}
-
-.text {
-  min-width: 0;
-  margin: 0;
-  margin-left: var(--space-2);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.65;
-}
-
-/* サムネイルは top-row 右端に固定幅で配置し、align-self: stretch により
-   contentColumn（author/本文列）の高さいっぱいに広げる。ツールバーには被らない。
-   複数画像がある場合は内部を縦に分割し、各画像を等分の帯として並べる。 */
-.thumbnail {
-  flex: 0 0 auto;
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin: 0;
-  width: 96px;
-  min-height: 96px;
-  overflow: hidden;
-  border-radius: 0.75rem;
-  background: var(--color-card-muted-bg);
-}
-
-.thumbnail-slice {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.thumbnail-slice img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 .footer {
-  flex-wrap: wrap;
-  gap: 0.1rem;
-  padding-top: 0.6rem;
+  flex-wrap: nowrap;
+  gap: var(--space-0);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
 }
 
 .share-error {
   margin: 0;
   color: var(--color-danger-text);
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
 }

@@ -8,7 +8,7 @@
  *
  * Cloudflare Workers 環境制約を遵守すること。
  */
-import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
+import { AppBskyFeedPost } from "@atproto/api"
 import { bskyCdnUrlgen } from "@/lib/entry/url"
 
 export type SourceLocator = {
@@ -38,6 +38,8 @@ export type SourceImage = {
     url: string
     alt: string
     cid: string
+    /** 画像レコードの `aspectRatio`。未設定・不正値の場合は `undefined` */
+    aspectRatio?: { width: number; height: number }
 }
 
 export const ENTRY_COLLECTION = "dev.nekono.skyshare.entry"
@@ -119,33 +121,119 @@ export const blobToCdnUrl = (
     return bskyCdnUrlgen(repoDid, ref)
 }
 
+/**
+ * blob 参照を持つ画像要素の配列から `SourceImage[]` を作る。
+ *
+ * 想定する入力形状(最小要件):
+ * - 各要素が `{ image: BlobRef相当, alt?: string }` を持つ
+ *
+ * 処理の趣旨:
+ * - url または cid が得られない要素は不正とみなして除外する。
+ *
+ * Input:
+ * - `items`: images embed の `images` / gallery embed の画像 items
+ * - `repoDid`: 画像 blob が属する repo DID
+ *
+ * Output:
+ * - CDN URL へ変換済みの画像一覧
+ *
+ * 例:
+ * - 入力: `[{ image: blob, alt: "猫" }]`
+ * - 出力: `[{ url: "https://cdn.bsky.app/...", alt: "猫", cid: "bafk..." }]`
+ */
+const toSourceImages = (
+    items: {
+        image: any
+        alt?: string
+        aspectRatio?: { width?: unknown; height?: unknown }
+    }[],
+    repoDid: string,
+): SourceImage[] =>
+    items
+        .map(item => {
+            const url = blobToCdnUrl(repoDid, item.image)
+            const cid = toCidString(item.image?.ref)
+            if (!url || !cid) return
+            const width = item?.aspectRatio?.width
+            const height = item?.aspectRatio?.height
+            const hasRatio =
+                typeof width === "number" &&
+                typeof height === "number" &&
+                Number.isFinite(width) &&
+                Number.isFinite(height) &&
+                width > 0 &&
+                height > 0
+            return {
+                url,
+                alt: typeof item?.alt === "string" ? item.alt : "",
+                cid,
+                ...(hasRatio ? { aspectRatio: { width, height } } : {}),
+            }
+        })
+        .filter((img): img is SourceImage => img !== undefined)
+
+/**
+ * embed の `$type` に応じて画像一覧を抽出する。
+ *
+ * 想定する入力形状(最小要件):
+ * - `embed` は `$type` を持つ embed オブジェクト（未指定可）
+ *
+ * 処理の趣旨:
+ * - `app.bsky.embed.images`（1〜4枚）と `app.bsky.embed.gallery`（5枚以上）を同一形式に正規化する。
+ * - gallery の items のうち未知の `$type`（将来追加されるメディア種別）は除外する。
+ * - 未対応の `$type` は空配列を返す。
+ *
+ * Input:
+ * - `embed`: 投稿レコードの embed
+ * - `repoDid`: 画像 blob が属する repo DID
+ *
+ * Output:
+ * - CDN URL へ変換済みの画像一覧。画像が無い場合は空配列。
+ *
+ * 例:
+ * - 入力: `{ $type: "app.bsky.embed.gallery", items: [...] }`
+ * - 出力: 各画像の `{ url, alt, cid }` 配列
+ */
+export const extractEmbedImages = (
+    embed: AppBskyFeedPost.Main["embed"] | undefined,
+    repoDid: string,
+): SourceImage[] => {
+    switch (embed?.$type) {
+        case "app.bsky.embed.images": {
+            const images = (embed as { images?: unknown }).images
+            if (!Array.isArray(images)) return []
+            return toSourceImages(images, repoDid)
+        }
+        case "app.bsky.embed.gallery": {
+            const items = (embed as { items?: unknown }).items
+            if (!Array.isArray(items)) return []
+            return toSourceImages(
+                items.filter(
+                    item => item?.$type === "app.bsky.embed.gallery#image",
+                ),
+                repoDid,
+            )
+        }
+        default:
+            return []
+    }
+}
+
+/**
+ * 投稿レコードから元投稿の画像一覧を抽出する（`extractEmbedImages` の薄いラッパー）。
+ *
+ * Input:
+ * - `postRecord`: app.bsky.feed.post のレコード
+ * - `sourceRepoDid`: 画像 blob が属する repo DID
+ *
+ * Output:
+ * - 画像一覧。画像が無い場合は空配列。
+ *
+ * 例:
+ * - 入力: 画像5枚の gallery 投稿
+ * - 出力: 5件の `SourceImage`
+ */
 export const extractSourceImages = (
     postRecord: AppBskyFeedPost.Main,
     sourceRepoDid: string,
-): SourceImage[] => {
-    const embedded = postRecord.embed
-
-    const fromImagesRecord = (
-        imagesRecord: AppBskyEmbedImages.Main,
-    ): SourceImage[] => {
-        if (!imagesRecord || !Array.isArray(imagesRecord.images)) return []
-        return imagesRecord.images
-            .map(img => {
-                const url = blobToCdnUrl(sourceRepoDid, img.image)
-                const cid = toCidString(img.image?.ref)
-                if (!url || !cid) return
-                return {
-                    url,
-                    alt: typeof img?.alt === "string" ? img.alt : "",
-                    cid,
-                }
-            })
-            .filter((img): img is SourceImage => img !== undefined)
-    }
-
-    if (embedded?.$type === "app.bsky.embed.images") {
-        return fromImagesRecord(embedded as AppBskyEmbedImages.Main)
-    }
-
-    return []
-}
+): SourceImage[] => extractEmbedImages(postRecord.embed, sourceRepoDid)

@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
- * - PostForm の投稿成功時に再取得トリガーを更新する。
+ * - ThreadComposer の投稿成功時に再取得トリガーを更新する。
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
@@ -20,16 +20,16 @@ import {
 } from "@/components/common/ComponentList"
 import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
 import NavigationBar from "@/components/common/NavigationBar"
-import PostCard from "@/components/post/PostCard"
-import PostForm from "@/components/post/PostForm"
+import ThreadCard from "@/components/post/ThreadCard"
+import ThreadComposer from "@/components/post/ThreadComposer"
 import PostLauncher from "@/components/post/PostLauncher"
 import {
   getActiveAccountInfo,
   isSessionKnownUnauthenticated,
 } from "@/lib/account/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
-import { GUEST_DUMMY_POSTS } from "@/lib/entry/guestDummyPosts"
-import type { TimelinePost } from "@/lib/entry/posts"
+import { GUEST_DUMMY_THREADS } from "@/lib/entry/guestDummyPosts"
+import type { ThreadGroup } from "@/lib/entry/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"
 import {
   readHashtagHistory,
@@ -66,7 +66,7 @@ const Component = ({ avatarUrl }: Props) => {
   // 実際の設定値はマウント後のuseEffectで反映する。ここをuseState(() =>
   // readPinnedFormDisabledSetting(false))のように初期化関数内でlocalStorageを
   // 読むと、クライアント初回レンダー（ハイドレーション）時点でSSR結果と異なる
-  // 値になり得て、PostForm(固定表示)とPostLauncherのどちらを描画するかが
+  // 値になり得て、ThreadComposer(固定表示)とPostLauncherのどちらを描画するかが
   // サーバー/クライアント間で食い違いhydration mismatchを起こす。
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
   useEffect(() => {
@@ -135,33 +135,35 @@ const Component = ({ avatarUrl }: Props) => {
     async ({
       cursor,
       limit,
-    }: CursorPageFetchInput): Promise<CursorPageFetchResult<TimelinePost>> => {
+    }: CursorPageFetchInput): Promise<CursorPageFetchResult<ThreadGroup>> => {
       try {
         // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
         // 401確定済みの`getEntries`をわざわざ叩き直さずゲスト表示へ直行する。
         if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
           setGuestMode(true)
-          return { items: GUEST_DUMMY_POSTS }
+          return { items: GUEST_DUMMY_THREADS }
         }
 
         const params = cursor ? { limit, cursor } : { limit }
         const res = await getEntries(params)
 
         if (res.status === 200) {
-          const posts = res.data.posts ?? []
+          const threads = res.data.threads ?? []
 
           // APIレスポンスに含まれる自分の投稿からアバターURLを補完する。
-          const nextAvatarUrl = posts.find(
-            post =>
-              typeof post.author?.avatar === "string" &&
-              post.author.avatar !== "",
-          )?.author.avatar
+          const nextAvatarUrl = threads
+            .flatMap(thread => [thread.rootPost, ...thread.replies])
+            .find(
+              post =>
+                typeof post.author?.avatar === "string" &&
+                post.author.avatar !== "",
+            )?.author.avatar
           if (nextAvatarUrl) {
             setResolvedAvatarUrl(nextAvatarUrl)
           }
 
           return {
-            items: posts,
+            items: threads,
             nextCursor: res.data.cursor,
           }
         }
@@ -169,7 +171,7 @@ const Component = ({ avatarUrl }: Props) => {
         if (res.status === 401) {
           if (isGuestModeRequested()) {
             setGuestMode(true)
-            return { items: GUEST_DUMMY_POSTS }
+            return { items: GUEST_DUMMY_THREADS }
           }
           if (typeof window !== "undefined") {
             window.location.href = "/login/"
@@ -205,7 +207,7 @@ const Component = ({ avatarUrl }: Props) => {
     setReloadKey(prev => prev + 1)
   }
 
-  const pagedController = useCursorPaginationController<TimelinePost>({
+  const pagedController = useCursorPaginationController<ThreadGroup>({
     cursorPagination: {
       pageSize,
       fetchPage,
@@ -216,7 +218,7 @@ const Component = ({ avatarUrl }: Props) => {
     },
   })
 
-  const infiniteController = useInfiniteScrollController<TimelinePost>({
+  const infiniteController = useInfiniteScrollController<ThreadGroup>({
     infiniteScrollPagination: {
       fetchPage,
       reloadKey,
@@ -249,7 +251,11 @@ const Component = ({ avatarUrl }: Props) => {
 
     if (readHashtagHistory(resolvedDid).length > 0) return
 
-    const ranked = countHashtagUsage(items.map(post => post.text))
+    const ranked = countHashtagUsage(
+      items
+        .flatMap(thread => [thread.rootPost, ...thread.replies])
+        .map(post => post.text),
+    )
     seedHashtagHistoryFromRankedTags(
       ranked.map(r => r.tag),
       resolvedDid,
@@ -262,12 +268,12 @@ const Component = ({ avatarUrl }: Props) => {
         <p
           className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
         >
-          これはゲスト表示です。Blueskyへの投稿以外の動作を確認できます。
+          これはゲスト表示です。Blueskyへの投稿以外の動作を確認できます。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。
         </p>
       )}
       {!pinnedFormDisabled && (
         <div>
-          <PostForm
+          <ThreadComposer
             variant="page"
             avatarUrl={resolvedAvatarUrl}
             accountDid={resolvedDid}
@@ -291,11 +297,11 @@ const Component = ({ avatarUrl }: Props) => {
         </p>
       ) : (
         <ComponentList
-          itemComponent={PostCard}
-          getItemKey={item => item.uri}
-          getItemProps={item => ({
-            onPostDeleted: () =>
-              removeItem(candidate => candidate.uri === item.uri),
+          itemComponent={ThreadCard}
+          getItemKey={group => group.rootPost.uri}
+          getItemProps={group => ({
+            group,
+            onPostDeleted: removeItem,
             guestMode,
           })}
           className={styles["timeline-list"]}

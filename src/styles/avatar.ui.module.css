@@ -16,6 +16,18 @@
   --size-avatar-sm: 36px;
   --size-avatar-md: 48px;
   --size-avatar-lg: 60px;
+  /* フッターナビのアカウントアイコン。スマホ幅でも拡大しない固定サイズ。 */
+  --size-avatar-footer: 36px;
+}
+
+/* スマホ幅(640px未満)は一段大きくする(specs/mobilescale/design.md参照)。
+   tokens.cssより後にimportされるため、定義側のここで上書きする。 */
+@media (max-width: 639px) {
+  :root {
+    --size-avatar-sm: 42px;
+    --size-avatar-md: 52px;
+    --size-avatar-lg: 70px;
+  }
 }
 
 :local(.sm-avatar) {

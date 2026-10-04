@@ -85,6 +85,35 @@ describe("blobToCdnUrl", () => {
     })
 })
 
+describe("extractSourceImages (gallery)", () => {
+    it("app.bsky.embed.gallery から画像一覧を抽出し、未知の$typeは除外する", () => {
+        const postRecord = {
+            $type: "app.bsky.feed.post",
+            text: "",
+            createdAt: "2026-01-01T00:00:00Z",
+            embed: {
+                $type: "app.bsky.embed.gallery",
+                items: [
+                    {
+                        $type: "app.bsky.embed.gallery#image",
+                        image: { ref: "bafkre1" },
+                        alt: "one",
+                    },
+                    { $type: "app.bsky.embed.gallery#other" },
+                ],
+            },
+        } as any
+
+        expect(extractSourceImages(postRecord, "did:plc:abc")).toEqual([
+            {
+                url: "https://cdn.bsky.app/img/feed_fullsize/plain/did%3Aplc%3Aabc/bafkre1",
+                alt: "one",
+                cid: "bafkre1",
+            },
+        ])
+    })
+})
+
 describe("extractSourceImages", () => {
     it("app.bsky.embed.images から画像一覧を抽出する", () => {
         const postRecord = {
@@ -119,5 +148,37 @@ describe("extractSourceImages", () => {
         } as any
 
         expect(extractSourceImages(postRecord, "did:plc:abc")).toEqual([])
+    })
+})
+
+describe("extractSourceImages (aspectRatio)", () => {
+    const build = (aspectRatio: unknown) =>
+        ({
+            $type: "app.bsky.feed.post",
+            text: "",
+            createdAt: "2026-01-01T00:00:00Z",
+            embed: {
+                $type: "app.bsky.embed.images",
+                images: [{ image: { ref: "bafkre1" }, alt: "a", aspectRatio }],
+            },
+        }) as any
+
+    it("有効な aspectRatio は保持される", () => {
+        const [img] = extractSourceImages(
+            build({ width: 400, height: 300 }),
+            "did:plc:abc",
+        )
+        expect(img.aspectRatio).toEqual({ width: 400, height: 300 })
+    })
+
+    it.each([
+        ["0", { width: 0, height: 300 }],
+        ["負数", { width: 400, height: -1 }],
+        ["非数", { width: "400", height: 300 }],
+        ["Infinity", { width: Infinity, height: 300 }],
+        ["欠落", undefined],
+    ])("%s の aspectRatio は設定されない", (_name, ratio) => {
+        const [img] = extractSourceImages(build(ratio), "did:plc:abc")
+        expect(img).not.toHaveProperty("aspectRatio")
     })
 })

@@ -1,0 +1,12 @@
+.draft-list-overlay {
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.draft-list-body {
+  padding: var(--space-2) var(--space-1);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Use global .base-button / .white-button / .blue-button from src/styles/ui.css */

@@ -1,5 +1,6 @@
 /**
- * GET /v2/entries/ — 自分のBluesky投稿一覧を、紐づくskyshare entryとembedして返す。
+ * GET /v2/entries/ — 自分のBluesky投稿一覧を、紐づくskyshare entryとembedし、
+ * バックエンド側で権威的にスレッド構造化して返す（`specs/timeline/design.md §2.5`）。
  *
  * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
@@ -17,48 +18,55 @@ export const QueryParamsSchema = z
     .strict()
 export type QueryParamsType = z.infer<typeof QueryParamsSchema>
 
+const TimelinePostSchema = z
+    .object({
+        uri: z.string(),
+        cid: z.string(),
+        url: z.string(),
+        indexedAt: z.string(),
+        text: z.string(),
+        author: z
+            .object({
+                did: z.string(),
+                handle: z.string(),
+                displayName: z.string().optional(),
+                avatar: z.string().optional(),
+            })
+            .strict(),
+        images: z.array(
+            z
+                .object({
+                    url: z.string(),
+                    alt: z.string(),
+                    cid: z.string(),
+                })
+                .strict(),
+        ),
+        skyshareEntry: z
+            .object({
+                uri: z.string(),
+                cid: z.string(),
+                createdAt: z.string(),
+                sourceUri: z.string(),
+                sourceCid: z.string(),
+                heading: z.string().optional(),
+                caption: z.string().optional(),
+                visualUrl: z.string().optional(),
+                webUrl: z.string().optional(),
+            })
+            .strict()
+            .optional(),
+    })
+    .strict()
+
 export const ResponseBody200Schema = z
     .object({
         cursor: z.string().optional(),
-        posts: z.array(
+        threads: z.array(
             z
                 .object({
-                    uri: z.string(),
-                    cid: z.string(),
-                    url: z.string(),
-                    indexedAt: z.string(),
-                    text: z.string(),
-                    author: z
-                        .object({
-                            did: z.string(),
-                            handle: z.string(),
-                            displayName: z.string().optional(),
-                            avatar: z.string().optional(),
-                        })
-                        .strict(),
-                    images: z.array(
-                        z
-                            .object({
-                                url: z.string(),
-                                alt: z.string(),
-                                cid: z.string(),
-                            })
-                            .strict(),
-                    ),
-                    skyshareEntry: z
-                        .object({
-                            uri: z.string(),
-                            cid: z.string(),
-                            createdAt: z.string(),
-                            sourceUri: z.string(),
-                            sourceCid: z.string(),
-                            heading: z.string().optional(),
-                            caption: z.string().optional(),
-                            visualUrl: z.string().optional(),
-                            webUrl: z.string().optional(),
-                        })
-                        .strict()
-                        .optional(),
+                    rootPost: TimelinePostSchema,
+                    replies: z.array(TimelinePostSchema),
                 })
                 .strict(),
         ),

@@ -10,8 +10,15 @@
  */
 import { useRef, useState } from "react"
 import { createEntry, deleteEntry, getBskyImage } from "@/client/openapi/client"
+import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
+import { waitForImageLoad } from "@/util/waitForImageLoad"
+import {
+    resolveEntryDeleteScope,
+    type EntryDeleteScope,
+} from "@/lib/entry/resolveEntryDeleteScope"
+import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/entry/posts"
 
 /**
@@ -34,6 +41,10 @@ export type UseSkyshareEntryStatusResult = {
     createError: string | null
     deleteError: string | null
     isDeleteDialogOpen: boolean
+    /** `resolveEntryDeleteScope`による削除範囲判定の実行中フラグ（`specs/timeline/design.md §7`） */
+    isResolvingDeleteScope: boolean
+    /** 削除確認ダイアログに渡す削除範囲の判定結果 */
+    deleteScope: EntryDeleteScope
     createEntryFromPost: () => void
     requestDeleteEntry: () => void
     cancelDeleteEntry: () => void
@@ -47,8 +58,30 @@ type Options = {
      * Bluesky投稿ごと削除された直後に呼び出す副作用。
      * リンクのみ削除（deleteBskyPost=false）の場合は呼ばれない
      * （元投稿はTimelineに残り続けるため）。
+     * Timelineのページング対象アイテムはスレッドグループ単位のため
+     * （`specs/timeline/design.md §4`）、呼び出し元（`ThreadCard`）は常に
+     * そのスレッドグループ全体を一覧から除去する。
      */
     onPostDeleted?: () => void
+    /**
+     * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿。
+     * `ThreadCard`がスレッドのルート投稿向けに、ルートに最も近い画像付き投稿
+     * （`resolveEntryVisualSourcePost`）を渡す用途（`specs/timeline/design.md §5`）。
+     * 未指定時は`item`自身が対象になる（単独投稿・従来通りの挙動）。
+     */
+    visualSourcePost?: TimelinePost
+    /**
+     * 作成するentryの`source`にする投稿。APIへ送信する`uri`に使う
+     * （Visual取得元とは独立。サーバは`source`の自動解決を行わないため、
+     * `ThreadCard`がスレッドのルート投稿を明示的に渡す。`specs/timeline/design.md §5`）。
+     * 未指定時は`item`自身（単独投稿・従来通りの挙動）。
+     */
+    sourcePost?: TimelinePost
+    /**
+     * ゲスト表示。削除範囲の判定・削除の実行をアプリ内で模擬し、通信は行わない
+     * （`specs/entry/frontend/design.md §3.4.4`）。
+     */
+    guestMode?: boolean
 }
 
 /**
@@ -75,12 +108,19 @@ export const useSkyshareEntryStatus = (
     const [createError, setCreateError] = useState<string | null>(null)
     const [deleteError, setDeleteError] = useState<string | null>(null)
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+    const [isResolvingDeleteScope, setIsResolvingDeleteScope] = useState(false)
+    const [deleteScope, setDeleteScope] = useState<EntryDeleteScope>({
+        kind: "unknown",
+    })
     // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐため、
     // 同期的に確定する ref で即座にガードする。
     const isCreatingRef = useRef(false)
     const isDeletingRef = useRef(false)
+    const isResolvingDeleteScopeRef = useRef(false)
 
-    const hasImages = item.images.length > 0
+    const visualSource = options.visualSourcePost ?? item
+    const sourcePost = options.sourcePost ?? item
+    const hasImages = visualSource.images.length > 0
 
     const display: SkyshareEntryDisplayState =
         state.phase === "creating"
@@ -97,10 +137,15 @@ export const useSkyshareEntryStatus = (
      * 既存の Bluesky 投稿から skyshare entry を発行する。
      *
      * 処理の趣旨:
-     * - 元投稿の全画像を `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
+     * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）の
+     *   先頭`VISUAL_IMAGE_COUNT`枚の画像のみを（5枚目以降はvisualに使わないため取得もしない）
+     *   `GET /v2/bsky/images`（同一オリジン、cdn.bsky.appのCORS制約を
      *   回避するためのBluesky APIバイパスAPI）経由で取得し、投稿フォームでクロップ編集
      *   しなかった場合と同じデフォルト配置（`createDefaultThumbnail`）でユーザから見えない
      *   Canvas上に合成してから送信する。
+     * - APIに渡す`uri`（entryの`source`）はVisual取得元とは独立に`sourcePost`
+     *   （未指定なら`item`自身）を使う。Visual取得元がスレッドの後続投稿でも、
+     *   サーバは`source`を自動解決しないため、entryは常に`sourcePost`に紐づく。
      *
      * Output:
      * - なし（成功時は state を entry ありへ遷移し `onCreated` を呼ぶ）
@@ -119,23 +164,29 @@ export const useSkyshareEntryStatus = (
             try {
                 objectUrls.push(
                     ...(await Promise.all(
-                        item.images.map(async image => {
-                            const res = await getBskyImage({ cid: image.cid })
-                            if (
-                                res.status !== 200 ||
-                                !(res.data instanceof Blob)
-                            ) {
-                                throw new Error("元画像の取得に失敗しました。")
-                            }
-                            return URL.createObjectURL(res.data)
-                        }),
+                        visualSource.images
+                            .slice(0, VISUAL_IMAGE_COUNT)
+                            .map(async image => {
+                                const res = await getBskyImage({
+                                    cid: image.cid,
+                                })
+                                if (
+                                    res.status !== 200 ||
+                                    !(res.data instanceof Blob)
+                                ) {
+                                    throw new Error(
+                                        "元画像の取得に失敗しました。",
+                                    )
+                                }
+                                return URL.createObjectURL(res.data)
+                            }),
                     )),
                 )
 
                 const thumbnailBlob = await createDefaultThumbnail(objectUrls)
                 const res = await createEntry({
-                    uri: item.uri,
-                    ogImage: thumbnailBlob,
+                    uri: sourcePost.uri,
+                    visual: thumbnailBlob,
                 })
                 if (res.status !== 200) {
                     setCreateError("skyshareページの作成に失敗しました。")
@@ -143,8 +194,8 @@ export const useSkyshareEntryStatus = (
                     return
                 }
 
-                const { skyshare } = res.data
-                if (!skyshare.atUri) {
+                const skyshare = res.data.skyshareEntry
+                if (!skyshare?.atUri) {
                     setCreateError("skyshareページの作成に失敗しました。")
                     setState({ phase: "idle", entry: null })
                     return
@@ -163,6 +214,8 @@ export const useSkyshareEntryStatus = (
                 }
 
                 await warmOgpCache(skyshare.uri)
+                // 詳細ページのView画像がCDNで配信可能になるまで作成中表示を延長する
+                await waitForImageLoad(skyshare.visualUrl ?? "")
 
                 setState({ phase: "idle", entry })
                 options.onCreated?.(entry)
@@ -180,14 +233,42 @@ export const useSkyshareEntryStatus = (
     /**
      * Entry削除確認ダイアログを開く。
      *
+     * 処理の趣旨:
+     * - `resolveEntryDeleteScope`（`specs/entry/frontend/design.md §3.4`と共通のロジック）で
+     *   「リンク・Bluesky投稿を削除」の可否・削除件数を判定し、`deleteScope`を確定させて
+     *   からダイアログを開く（`specs/timeline/design.md §7`、`EntryCard`の
+     *   `openDeleteDialog`と同じ方針）。ゲスト表示では通信せず`resolveGuestDeleteScope`で判定する。
+     * - 判定中は`isResolvingDeleteScope`をtrueにし、連打による多重判定を防ぐ。
+     *
      * Output:
-     * - なし（`isDeleteDialogOpen` を true にする）
+     * - なし（判定完了後、`isDeleteDialogOpen`をtrueにする）
      */
     const requestDeleteEntry = () => {
-        if (isDeletingRef.current || state.phase !== "idle" || !state.entry) {
+        if (
+            isDeletingRef.current ||
+            isResolvingDeleteScopeRef.current ||
+            state.phase !== "idle" ||
+            !state.entry
+        ) {
             return
         }
-        setIsDeleteDialogOpen(true)
+        const entry = state.entry
+
+        isResolvingDeleteScopeRef.current = true
+        setIsResolvingDeleteScope(true)
+
+        void (async () => {
+            try {
+                const scope = await (options.guestMode
+                    ? Promise.resolve(resolveGuestDeleteScope(entry.sourceUri))
+                    : resolveEntryDeleteScope(entry.sourceUri))
+                setDeleteScope(scope)
+                setIsDeleteDialogOpen(true)
+            } finally {
+                isResolvingDeleteScopeRef.current = false
+                setIsResolvingDeleteScope(false)
+            }
+        })()
     }
 
     /**
@@ -202,6 +283,7 @@ export const useSkyshareEntryStatus = (
      *
      * Input:
      * - `deleteBskyPost`: true の場合、紐づく Bluesky 投稿も併せて削除する
+     * - ゲスト表示では`deleteEntry`を呼ばず、成功時と同じ状態遷移のみ行う
      *
      * Output:
      * - なし（成功時は state を entry なしへ遷移する）
@@ -219,14 +301,20 @@ export const useSkyshareEntryStatus = (
 
         void (async () => {
             try {
-                const res = await deleteEntry({
-                    uri: entry.uri,
-                    deleteBskyPost,
-                })
-                if (res.status !== 200) {
-                    setDeleteError("Entryの削除に失敗しました。")
-                    setState({ phase: "idle", entry })
-                    return
+                if (!options.guestMode) {
+                    const res = await deleteEntry({
+                        uri: entry.uri,
+                        deleteBskyPost,
+                    })
+                    if (res.status !== 200) {
+                        setDeleteError(
+                            res.status === 409
+                                ? "このEntryはBluesky投稿を含めて削除できません。"
+                                : "Entryの削除に失敗しました。",
+                        )
+                        setState({ phase: "idle", entry })
+                        return
+                    }
                 }
 
                 setState({ phase: "idle", entry: null })
@@ -251,6 +339,8 @@ export const useSkyshareEntryStatus = (
         createError,
         deleteError,
         isDeleteDialogOpen,
+        isResolvingDeleteScope,
+        deleteScope,
         createEntryFromPost,
         requestDeleteEntry,
         cancelDeleteEntry,

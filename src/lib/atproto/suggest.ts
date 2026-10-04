@@ -6,7 +6,7 @@
  * - `getTrendingTagSuggestions` は `app.bsky.unspecced.getTrendingTopics` を叩く。このAPIにはクエリパラメータが
  *   存在せず、グローバルなトレンド上位のみを返す（プレフィックス検索は不可）。取得結果をTTLキャッシュし、
  *   複数語のトピック等ハッシュタグとして使えない文字列は除外する。プレフィックス絞込は呼び出し側
- *   （`src/components/post/PostForm/suggestHashtags.ts`）が行う。
+ *   （`src/components/post/ThreadComposer/suggestHashtags.ts`）が行う。
  * - 注記: `app.bsky.feed.searchPosts`（全文検索＋facet抽出）でハッシュタグのプレフィックス検索を
  *   代替する案を検証したが、`searchActorsTypeahead`/`getTrendingTopics` と異なりブラウザからの
  *   CORS が許可されておらず（`curl`では200になるが実ブラウザの `fetch` では

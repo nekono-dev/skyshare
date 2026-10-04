@@ -81,14 +81,15 @@ export const GET: APIRoute = async ({ request, locals }) => {
  * POST /v2/bsky/drafts: 下書きを新規作成する。
  *
  * Input:
- * - `request`: cookie と `{ text, labels? }` を含む HTTP リクエスト
+ * - `request`: cookie と `{ posts: {text, labels?}[] }` を含む HTTP リクエスト
+ *   （`posts` が複数件ならスレッド(reply chain予定)の下書きを表す）
  *
  * Output:
  * - 200: `{ id: string }`
  * - 4xx/5xx: 共通エラー JSON
  *
  * 例:
- * - 入力: `{ "text": "hello" }`
+ * - 入力: `{ "posts": [{ "text": "hello" }] }`
  * - 出力: `{"id":"3ldrafttid"}`
  */
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -105,12 +106,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const response = await agent.app.bsky.draft.createDraft({
             draft: {
-                posts: [
-                    {
-                        text: body.text,
-                        labels: buildSelfLabels(body.labels),
-                    },
-                ],
+                posts: body.posts.map(post => ({
+                    text: post.text,
+                    labels: buildSelfLabels(post.labels),
+                })),
             },
         })
 
@@ -128,14 +127,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
  * PUT /v2/bsky/drafts: 既存の下書きを更新する。
  *
  * Input:
- * - `request`: cookie と `{ id, text, labels? }` を含む HTTP リクエスト
+ * - `request`: cookie と `{ id, posts: {text, labels?}[] }` を含む HTTP リクエスト
  *
  * Output:
  * - 200: 本文なし
  * - 4xx/5xx: 共通エラー JSON
  *
  * 例:
- * - 入力: `{ "id": "3ldrafttid", "text": "hello" }`
+ * - 入力: `{ "id": "3ldrafttid", "posts": [{ "text": "hello" }] }`
  * - 出力: `status 200`
  */
 export const PUT: APIRoute = async ({ request, locals }) => {
@@ -154,12 +153,10 @@ export const PUT: APIRoute = async ({ request, locals }) => {
             draft: {
                 id: body.id,
                 draft: {
-                    posts: [
-                        {
-                            text: body.text,
-                            labels: buildSelfLabels(body.labels),
-                        },
-                    ],
+                    posts: body.posts.map(post => ({
+                        text: post.text,
+                        labels: buildSelfLabels(post.labels),
+                    })),
                 },
             },
         })

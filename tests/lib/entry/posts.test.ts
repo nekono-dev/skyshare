@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
     extractTimelinePostImages,
     groupTimelineEntriesBySourceUri,
+    normalizePostViewToTimelinePost,
     normalizeTimelineEntry,
     normalizeTimelinePost,
 } from "@/lib/entry/posts"
@@ -26,6 +27,36 @@ describe("extractTimelinePostImages", () => {
                 cid: "bafkre123",
             },
         ])
+    })
+
+    it("gallery embedから画像一覧を抽出し、未知の$typeは除外する", () => {
+        const postRecord = {
+            $type: "app.bsky.feed.post",
+            text: "",
+            createdAt: "2026-01-01T00:00:00Z",
+            embed: {
+                $type: "app.bsky.embed.gallery",
+                items: [
+                    {
+                        $type: "app.bsky.embed.gallery#image",
+                        image: { ref: "bafkre1" },
+                        alt: "a",
+                    },
+                    { $type: "app.bsky.embed.gallery#unknown" },
+                    {
+                        $type: "app.bsky.embed.gallery#image",
+                        image: { ref: "bafkre2" },
+                        alt: "b",
+                    },
+                ],
+            },
+        } as any
+
+        expect(
+            extractTimelinePostImages(postRecord, "did:plc:abc").map(
+                image => image.cid,
+            ),
+        ).toEqual(["bafkre1", "bafkre2"])
     })
 
     it("画像embedでなければ空配列", () => {
@@ -149,5 +180,30 @@ describe("normalizeTimelinePost", () => {
     it("必須フィールドが欠ける場合は undefined", () => {
         expect(normalizeTimelinePost({ post: {} })).toBeUndefined()
         expect(normalizeTimelinePost(undefined)).toBeUndefined()
+    })
+})
+
+describe("normalizePostViewToTimelinePost", () => {
+    const author = { did: "did:plc:abc", handle: "alice.bsky.social" }
+
+    it("PostViewをTimelinePostへ変換する（normalizeTimelinePostへの委譲）", () => {
+        const post = {
+            uri: "at://did:plc:abc/app.bsky.feed.post/3lmid",
+            cid: "bafymid",
+            indexedAt: "2026-01-01T00:00:00Z",
+            author,
+            record: { text: "mid" },
+        } as any
+
+        const normalized = normalizePostViewToTimelinePost(post)
+        expect(normalized).toMatchObject({
+            uri: post.uri,
+            cid: "bafymid",
+            text: "mid",
+        })
+    })
+
+    it("必須フィールドが欠ける場合は undefined", () => {
+        expect(normalizePostViewToTimelinePost({} as any)).toBeUndefined()
     })
 })

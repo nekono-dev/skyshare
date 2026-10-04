@@ -21,6 +21,10 @@ import {
   getSlotDefs,
   loadImageSize,
 } from "@/lib/image/postImageProcessing"
+import {
+  MAX_POST_IMAGES,
+  VISUAL_IMAGE_COUNT,
+} from "@/lib/image/postImageLimits"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import pic from "@/images/image.svg"
@@ -29,7 +33,9 @@ import pic from "@/images/image.svg"
  * 投稿画像の選択とクロップ調整を担うコンポーネント。
  *
  * 責務と処理概要:
- * - ファイル入力から最大4枚の画像を受け取り、スロット情報を管理する。
+ * - ファイル入力から最大 `MAX_POST_IMAGES` 枚の画像を受け取り、スロット情報を管理する。
+ * - visual（合成サムネイル）の対象は先頭 `VISUAL_IMAGE_COUNT` 枚のみ。5枚目以降は
+ *   クロップ対象外として扱い、プレビューに「Visual対象外」ラベルを付ける。
  * - 初期クロップを算出して投稿用画像を生成し、親へ `ImageEntry` を通知する。
  * - クロップダイアログで再調整した結果を反映する。
  * - 各画像を個別サムネイルとして表示し、個別削除・alt編集を提供する。
@@ -104,6 +110,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
     const [showCropDialog, setShowCropDialog] = useState(false)
     const [altDialogIndex, setAltDialogIndex] = useState<number | null>(null)
     const [isPreparingPreview, setIsPreparingPreview] = useState(false)
+    const [overflowNotice, setOverflowNotice] = useState<string | null>(null)
     const [previewContainer, setPreviewContainer] =
       useState<HTMLDivElement | null>(null)
     const slotsRef = useRef<ImageSlot[]>([])
@@ -244,7 +251,8 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
      * 処理の趣旨:
      * - ファイル入力の change だけでなく、ペースト/ドロップ由来のファイル追加からも
      *   共通して呼べるようにする。
-     * - 追加可能枚数（最大4）を超える入力を切り詰める。
+     * - 追加可能枚数（最大 `MAX_POST_IMAGES`）を超える入力を切り詰め、超過を通知する。
+     * - 5枚目以降のスロットは visual のクロップ対象外のため、`cropPixels` は null のままにする。
      * - 画像サイズ取得に失敗してもフォールバックでスロットは維持し、全体処理を止めない。
      *
      * Input:
@@ -256,8 +264,14 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
     const addFiles = async (newFiles: File[]) => {
       if (newFiles.length === 0) return
 
-      const allowed = Math.max(0, 4 - slots.length)
+      const allowed = Math.max(0, MAX_POST_IMAGES - slots.length)
       const take = newFiles.slice(0, allowed)
+      setOverflowNotice(
+        newFiles.length > allowed
+          ? `画像は最大${MAX_POST_IMAGES}枚までです。超過分は追加されませんでした`
+          : null,
+      )
+      if (take.length === 0) return
 
       const urls = take.map(f => ({
         url: URL.createObjectURL(f),
@@ -275,13 +289,11 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
         const { url, name, file } = urls[i]
         try {
           const size = await loadImageSize(url)
+          // idx >= VISUAL_IMAGE_COUNT では def が undefined（visual対象外）
           const def = defs[idx]
-          const cropPixels = computeInitialCrop(
-            size.width,
-            size.height,
-            def.w,
-            def.h,
-          )
+          const cropPixels = def
+            ? computeInitialCrop(size.width, size.height, def.w, def.h)
+            : null
           addedSlots.push({
             objectUrl: url,
             fileName: name,
@@ -304,7 +316,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       }
 
       const nextSlots = normalizeSlotsForLayout(
-        slots.concat(addedSlots).slice(0, 4),
+        slots.concat(addedSlots).slice(0, MAX_POST_IMAGES),
         defs,
       )
       setSlots(nextSlots)
@@ -360,19 +372,35 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
      * Output:
      * - 返り値なし（`slots`/`onChange`/ダイアログ状態を更新）
      */
-    const handleCropConfirm = (
+    const handleCropConfirm = async (
       originalBlobs: Blob[],
       thumbnailBlob: Blob,
       newStates: SlotCropState[],
     ) => {
-      // 確定したクロップ状態を各スロットへ反映する。
+      // ダイアログが扱うのは先頭 VISUAL_IMAGE_COUNT 枚のみ。5枚目以降の cropState は変更しない。
       const nextSlots = slots.map((s, i) => ({
         ...s,
-        cropState: newStates[i] ?? s.cropState,
+        cropState:
+          i < VISUAL_IMAGE_COUNT ? (newStates[i] ?? s.cropState) : s.cropState,
       }))
       setSlots(nextSlots)
+      setShowCropDialog(false)
 
-      const entry: ImageEntry = {
+      // ダイアログの originalBlobs は先頭4枚分のみのため、5枚以上のときは全画像分を作り直す。
+      if (nextSlots.length > VISUAL_IMAGE_COUNT) {
+        setIsPreparingPreview(true)
+        try {
+          await createEntryFromSlots(nextSlots)
+        } catch (error) {
+          console.error(error)
+          onChange(null)
+        } finally {
+          setIsPreparingPreview(false)
+        }
+        return
+      }
+
+      onChange({
         originalBlobs,
         thumbnailBlob,
         originalPreviews: originalBlobs.map(b => URL.createObjectURL(b)),
@@ -383,10 +411,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
           height: s.naturalHeight,
           alt: s.alt,
         })),
-      }
-
-      onChange(entry)
-      setShowCropDialog(false)
+      })
     }
 
     /**
@@ -407,6 +432,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       if (!target) return
 
       revokeSlotUrls([target])
+      setOverflowNotice(null)
       const remaining = slots.filter((_, i) => i !== index)
 
       if (remaining.length === 0) {
@@ -500,6 +526,59 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       })
     }
 
+    /**
+     * 個別画像のプレビュー1件分（削除・alt編集ボタン付き）を描画する。
+     *
+     * 処理の趣旨:
+     * - index が `VISUAL_IMAGE_COUNT` 以上の画像は visual に使われないため、
+     *   「Visual対象外」ラベルを重ねて利用者に伝える。
+     *
+     * Input:
+     * - `slot`: 対象スロット
+     * - `index`: 全スロット中の index
+     *
+     * Output:
+     * - プレビュー要素
+     */
+    const renderThumbItem = (slot: ImageSlot, index: number) => {
+      const isExcluded = index >= VISUAL_IMAGE_COUNT
+      return (
+        <div
+          key={slot.objectUrl}
+          className={styles["thumb-item"]}
+          style={isExcluded ? undefined : { gridArea: `slot${index}` }}
+          data-testid="image-thumb"
+        >
+          <img
+            src={slot.objectUrl}
+            alt=""
+            style={computeCroppedImageStyle(slot)}
+          />
+          {isExcluded && (
+            <span className={styles["slot-excluded-badge"]}>Visual対象外</span>
+          )}
+          <button
+            type="button"
+            className={styles["remove-badge"]}
+            aria-label={`画像${index + 1}を削除`}
+            onClick={() => removeImage(index)}
+            disabled={disabled}
+          >
+            ×
+          </button>
+          <button
+            type="button"
+            className={`${styles["alt-badge"]} ${slot.alt ? styles["alt-badge-active"] : ""}`}
+            aria-label={`画像${index + 1}のaltテキストを編集`}
+            onClick={() => setAltDialogIndex(index)}
+            disabled={disabled}
+          >
+            alt
+          </button>
+        </div>
+      )
+    }
+
     return (
       <section>
         {isPreparingPreview && <Loading message="画像プレビューを生成中..." />}
@@ -511,7 +590,16 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             aria-disabled={disabled}
             style={{ cursor: disabled ? "default" : "pointer" }}
           >
-            <img src={pic.src} width={18} height={18} alt="" />
+            <img
+              src={pic.src}
+              width={18}
+              height={18}
+              style={{
+                width: "var(--size-icon-button)",
+                height: "var(--size-icon-button)",
+              }}
+              alt=""
+            />
           </label>
 
           <input
@@ -536,51 +624,40 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
           )}
         </div>
 
+        {overflowNotice && (
+          <p role="status" className={styles["overflow-notice"]}>
+            {overflowNotice}
+          </p>
+        )}
+
         {slots.length > 0 &&
           previewContainer &&
           createPortal(
-            <div
-              className={`${styles["thumb-grid"]} ${styles[`layout${slots.length}`]}`}
-            >
-              {slots.map((slot, index) => (
-                <div
-                  key={slot.objectUrl}
-                  className={styles["thumb-item"]}
-                  style={{ gridArea: `slot${index}` }}
-                >
-                  <img
-                    src={slot.objectUrl}
-                    alt=""
-                    style={computeCroppedImageStyle(slot)}
-                  />
-                  <button
-                    type="button"
-                    className={styles["remove-badge"]}
-                    aria-label={`画像${index + 1}を削除`}
-                    onClick={() => removeImage(index)}
-                    disabled={disabled}
-                  >
-                    ×
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles["alt-badge"]} ${slot.alt ? styles["alt-badge-active"] : ""}`}
-                    aria-label={`画像${index + 1}のaltテキストを編集`}
-                    onClick={() => setAltDialogIndex(index)}
-                    disabled={disabled}
-                  >
-                    alt
-                  </button>
+            <>
+              <div
+                className={`${styles["thumb-grid"]} ${styles[`layout${Math.min(slots.length, VISUAL_IMAGE_COUNT)}`]}`}
+              >
+                {slots
+                  .slice(0, VISUAL_IMAGE_COUNT)
+                  .map((slot, index) => renderThumbItem(slot, index))}
+              </div>
+              {slots.length > VISUAL_IMAGE_COUNT && (
+                <div className={styles["extra-grid"]}>
+                  {slots
+                    .slice(VISUAL_IMAGE_COUNT)
+                    .map((slot, offset) =>
+                      renderThumbItem(slot, VISUAL_IMAGE_COUNT + offset),
+                    )}
                 </div>
-              ))}
-            </div>,
+              )}
+            </>,
             previewContainer,
           )}
 
         {showCropDialog && (
           <ImageCropDialog
-            imageUrls={slots.map(s => s.objectUrl)}
-            initialCropStates={slots.map(s => ({
+            imageUrls={slots.slice(0, VISUAL_IMAGE_COUNT).map(s => s.objectUrl)}
+            initialCropStates={slots.slice(0, VISUAL_IMAGE_COUNT).map(s => ({
               crop: s.cropState.crop,
               zoom: s.cropState.zoom,
               cropPixels: s.cropState.cropPixels ?? null,

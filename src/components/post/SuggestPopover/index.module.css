@@ -7,18 +7,6 @@
   border-radius: 8px;
 }
 
-.option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  cursor: pointer;
-}
-
-.option-active {
-  background: var(--color-gray-hover);
-}
-
 .candidate-text {
   display: flex;
   flex-direction: column;
@@ -34,7 +22,7 @@
 }
 
 .handle {
-  font-size: 0.85em;
+  font-size: var(--font-size-xs);
   color: var(--color-muted);
   white-space: nowrap;
   overflow: hidden;

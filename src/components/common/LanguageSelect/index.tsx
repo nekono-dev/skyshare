@@ -1,13 +1,14 @@
 import React from "react"
+import Dropdown, { type DropdownOption } from "@/components/common/Dropdown"
+import { languageCodeToFlagEmoji } from "@/lib/atproto/languageFlag"
 import styles from "./index.module.css"
-import ui from "@/styles/ui.module.css"
 
 /**
  * 投稿言語選択コンポーネントで利用する言語定義と選択 UI。
  *
  * 責務と処理概要:
  * - Bluesky 投稿言語コード一覧を定数として提供する。
- * - 重複コードを除外した選択肢を `<select>` で描画する。
+ * - 重複コードを除外した選択肢を、国旗絵文字付きの絞り込み可能な `Dropdown` で描画する。
  */
 
 export type LanguageOption = {
@@ -214,31 +215,63 @@ const UNIQUE_BLUESKY_POST_LANGUAGES: LanguageOption[] =
     return list.findIndex(item => item.code === option.code) === index
   })
 
+/**
+ * 言語1件を `Dropdown` の選択肢へ変換する。
+ *
+ * 処理の趣旨:
+ * - 一覧用は国旗スロットを常に持ち、国旗なしでもラベルの左端を揃える。
+ * - トリガー（入力欄）用の `inputText` は国旗がある言語のみ国旗を前置し、空き幅を出さない。
+ * - 言語コードでも絞り込めるよう `searchText` に言語コードを指定する。
+ */
+const toDropdownOption = (language: LanguageOption): DropdownOption => {
+  const flag = languageCodeToFlagEmoji(language.code)
+  return {
+    value: language.code,
+    label: language.label,
+    searchText: language.code,
+    content: (
+      <span className={styles["language-option"]}>
+        <span className={styles.flag} aria-hidden="true">
+          {flag ?? ""}
+        </span>
+        {language.label}
+      </span>
+    ),
+    // 検索トリガー（入力欄）の現在値表示。国旗がある言語のみ国旗を前置し、空き幅を出さない
+    inputText: flag ? `${flag} ${language.label}` : language.label,
+  }
+}
+
+const LANGUAGE_DROPDOWN_OPTIONS: DropdownOption[] =
+  UNIQUE_BLUESKY_POST_LANGUAGES.map(toDropdownOption)
+
 type Props = {
   value: string
   onChange: (code: string) => void
   disabled?: boolean
   className?: string
   id?: string
-  name?: string
   ariaLabel?: string
+  /** true の場合、選択中の言語名に合わせて横幅を可変にする（既定は固定幅） */
+  autoWidth?: boolean
 }
 
 /**
- * 投稿言語選択用 `<select>` を描画する。
+ * 投稿言語選択用プルダウンを描画する。
  *
  * Input:
  * - `value`: 現在選択中の言語コード
  * - `onChange`: 選択変更時に呼ぶコールバック
  * - `disabled`: 入力可否
- * - `className`/`id`/`name`/`ariaLabel`: 表示・属性制御
+ * - `className`/`id`/`ariaLabel`: 表示・属性制御
+ * - `autoWidth`: 選択内容に応じて横幅を可変にするか
  *
  * Output:
- * - 言語候補を持つ `<select>` 要素
+ * - 言語候補を持つ `Dropdown`（絞り込み入力欄つき）
  *
  * 例:
  * - 入力: `{ value: "ja", onChange: fn }`
- * - 出力: 日本語が選択された言語セレクト
+ * - 出力: 「🇯🇵 日本語」が選択された言語プルダウン
  */
 export const Component: React.FC<Props> = ({
   value,
@@ -246,37 +279,23 @@ export const Component: React.FC<Props> = ({
   disabled = false,
   className,
   id = "post-language",
-  name = "language",
   ariaLabel = "投稿言語",
+  autoWidth = false,
 }) => {
   // Intl を使わない: ラベルはすでに自称（autonym）になっているのでそのまま表示する
-  // （以前は動的にIntlで取得していましたが、互換性のため静的ラベルに変更）
-
-  const selectClassName = className
-    ? `${ui["base-select"]} ${styles.select} ${className}`
-    : `${ui["base-select"]} ${styles.select}`
-
+  const widthClassName = autoWidth ? styles["select-auto"] : styles.select
   return (
-    <span className={ui["select-wrapper"]}>
-      <select
-        id={id}
-        name={name}
-        className={selectClassName}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        disabled={disabled}
-        aria-label={ariaLabel}
-      >
-        {UNIQUE_BLUESKY_POST_LANGUAGES.map(option => {
-          const labelText = option.label
-          return (
-            <option key={option.code} value={option.code}>
-              {labelText}
-            </option>
-          )
-        })}
-      </select>
-    </span>
+    <Dropdown
+      id={id}
+      value={value}
+      options={LANGUAGE_DROPDOWN_OPTIONS}
+      onChange={onChange}
+      disabled={disabled}
+      searchable
+      autoWidth={autoWidth}
+      ariaLabel={ariaLabel}
+      className={className ? `${widthClassName} ${className}` : widthClassName}
+    />
   )
 }
 

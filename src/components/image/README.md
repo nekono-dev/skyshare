@@ -1,6 +1,6 @@
 # image
 
-画像添付・クロップ・リンクカードプレビューまわりの部品。`post`カテゴリ(`PostForm`)から利用される。
+画像添付・クロップ・リンクカードプレビュー・サムネイル表示/拡大表示まわりの部品。`post`・`entry`カテゴリから利用される。
 
 ```mermaid
 graph TD
@@ -8,6 +8,8 @@ graph TD
   ImagePicker --> ImageAltDialog
   ImageCropDialog --> CropSlot
   OgpPreview -. type only .-> OgpFetchButton
+  ImageGallery --> ImageLightbox
+  ImageLightbox --> commonExt
 
   ImageCropDialog --> commonExt
   ImageAltDialog --> commonExt
@@ -19,4 +21,4 @@ graph TD
   class commonExt external;
 ```
 
-外部カテゴリへの依存の内訳: `common`: ImageCropDialog(Overlay・Loading)、ImageAltDialog(Overlay)、ImagePicker(Loading)
+外部カテゴリへの依存の内訳: `common`: ImageCropDialog(Overlay・Loading)、ImageAltDialog(Overlay)、ImagePicker(Loading)、ImageLightbox(Overlay)

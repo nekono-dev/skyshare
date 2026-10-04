@@ -9,6 +9,7 @@
  */
 
 import type * as Components from "@/lib/api/schema/common"
+import { MAX_IMAGES_EMBED, MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
 
 /**
  * 画像投稿時のメタデータ整合性を検証する。
@@ -17,6 +18,7 @@ import type * as Components from "@/lib/api/schema/common"
  * - bsky 投稿作成前に、画像投稿として成立する最小条件を確認する。
  * - images が未指定または空配列の場合は画像投稿ではないため、検証をスキップする。
  * - images が存在する場合は imagesMeta が必須であり、件数一致を確認する。
+ * - 枚数が `MAX_POST_IMAGES` を超える場合は拒否する（スキーマを通らない内部呼び出しへの防御）。
  *
  * Input:
  * - `images`: Blob 配列（undefined 可）
@@ -27,7 +29,7 @@ import type * as Components from "@/lib/api/schema/common"
  *
  * 失敗時の方針:
  * - images があるのに imagesMeta がない場合は Error を throw。
- * - カウント不一致は Error を throw し、呼び出し元で catch して 400 を返す。
+ * - 上限超過・カウント不一致は Error を throw し、呼び出し元で catch して 400 を返す。
  *
  * 例:
  * - 入力：images=[BlobA, BlobB], imagesMeta=[{w:100,h:100}] → throw「カウント不一致」
@@ -39,6 +41,10 @@ export const validateImageMetadata = (
 ) => {
     if (!images || images.length === 0) {
         return
+    }
+
+    if (images.length > MAX_POST_IMAGES) {
+        throw new Error(`images must be at most ${MAX_POST_IMAGES}`)
     }
 
     if (!imagesMeta) {
@@ -54,19 +60,22 @@ export const validateImageMetadata = (
 }
 
 /**
- * 画像投稿の app.bsky.embed.images embed オブジェクトを組み立てる。
+ * 画像投稿の embed オブジェクトを、枚数に応じた型で組み立てる。
  *
  * 処理の趣旨:
- * - アップロード済み blob と メタデータ（幅・高さ）から、
- *   atproto の投稿埋め込み形式に適合した embed 構造を生成。
- * - aspetRatio は メタデータが存在する場合のみセット。
+ * - 1〜4枚は従来どおり `app.bsky.embed.images`（互換性維持）、
+ *   5枚以上は `app.bsky.embed.gallery` を使う。
+ * - alt・縦横比・順序はどちらの型でも保持する。
+ * - aspectRatio は メタデータが存在する場合のみセット。gallery は aspectRatio 必須だが、
+ *   imagesMeta は width/height が必須（min 1）のため常に存在する。
  *
  * Input:
  * - `uploadedBlobs`: atproto サーバーで生成された blob 参照配列
- * - `metadata`: { width: number, height: number }[] メタデータ配列
+ * - `metadata`: { width: number, height: number, alt?: string }[] メタデータ配列
  *
  * Output:
- * - { $type: "app.bsky.embed.images", images: [...] }
+ * - 4枚以下: { $type: "app.bsky.embed.images", images: [...] }
+ * - 5枚以上: { $type: "app.bsky.embed.gallery", items: [{ $type: "app.bsky.embed.gallery#image", ... }] }
  *
  * 例:
  * - 入力：uploadedBlobs=[blobRef1, blobRef2], metadata=[{w:100,h:100,alt:""}, {w:200,h:200,alt:"猫の写真"}]
@@ -76,22 +85,25 @@ export const createImageEmbed = (
     uploadedBlobs: any[],
     metadata: Components.CommonImagesMetaType | undefined,
 ) => {
-    const widths = metadata?.map(v => v.width) ?? []
-    const heights = metadata?.map(v => v.height) ?? []
-    const alts = metadata?.map(v => v.alt ?? "") ?? []
+    const entries = uploadedBlobs.map((blob, idx) => {
+        const width = metadata?.[idx]?.width
+        const height = metadata?.[idx]?.height
+        return {
+            image: blob,
+            alt: metadata?.[idx]?.alt ?? "",
+            aspectRatio: width && height ? { width, height } : undefined,
+        }
+    })
+
+    if (entries.length <= MAX_IMAGES_EMBED) {
+        return { $type: "app.bsky.embed.images" as const, images: entries }
+    }
 
     return {
-        $type: "app.bsky.embed.images" as const,
-        images: uploadedBlobs.map((blob, idx) => ({
-            image: blob,
-            alt: alts[idx] ?? "",
-            aspectRatio:
-                widths[idx] && heights[idx]
-                    ? {
-                          width: widths[idx],
-                          height: heights[idx],
-                      }
-                    : undefined,
+        $type: "app.bsky.embed.gallery" as const,
+        items: entries.map(entry => ({
+            $type: "app.bsky.embed.gallery#image" as const,
+            ...entry,
         })),
     }
 }

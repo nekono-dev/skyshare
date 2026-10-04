@@ -1,41 +1,68 @@
 import { describe, expect, it, vi } from "vitest"
 
 import {
-    createSkyshareEntry,
+    buildSkyshareEntryRecord,
+    toCreatedSkyshareEntry,
     updateSkyshareEntry,
 } from "@/lib/entry/skyshareRecord"
 
-const session = {
-    did: "did:plc:abc",
-    handle: "alice.bsky.social",
-} as any
-
-describe("createSkyshareEntry", () => {
-    it("レコードを作成しCreatedSkyshareEntryを返す", async () => {
-        const createRecord = vi.fn().mockResolvedValue({
-            data: {
-                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
-                cid: "bafyentry",
-            },
+describe("buildSkyshareEntryRecord", () => {
+    it("投稿情報とvisualからレコード値を組み立てる", () => {
+        const record = buildSkyshareEntryRecord({
+            sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+            sourceCid: "bafypost",
+            visual: { ref: "bafkre123" },
+            postText: "Hello world",
+            userName: "Alice",
+            createdAt: "2026-01-01T00:00:00.000Z",
         })
-        const agent = { com: { atproto: { repo: { createRecord } } } }
 
-        const result = await createSkyshareEntry(
-            agent as any,
-            "at://did:plc:abc/app.bsky.feed.post/3labc",
-            "bafypost",
-            { ref: "bafkre123" },
-            "Hello world",
-            "Alice",
-            session,
-        )
+        expect(record).toEqual({
+            $type: "dev.nekono.skyshare.entry",
+            source: {
+                uri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+                cid: "bafypost",
+            },
+            manifest: {
+                $type: "dev.nekono.skyshare.defs#manifest",
+                visual: { ref: "bafkre123" },
+                heading: "Alice 's Post",
+                caption: "Hello world",
+            },
+            createdAt: "2026-01-01T00:00:00.000Z",
+        })
+    })
 
-        expect(createRecord).toHaveBeenCalledWith(
-            expect.objectContaining({
-                repo: "did:plc:abc",
-                collection: "dev.nekono.skyshare.entry",
-            }),
-        )
+    it("本文が空白のみならcaptionは空文字になる", () => {
+        const record = buildSkyshareEntryRecord({
+            sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+            sourceCid: "bafypost",
+            visual: undefined,
+            postText: "   ",
+            userName: "Alice",
+            createdAt: "2026-01-01T00:00:00.000Z",
+        })
+
+        expect((record.manifest as { caption: string }).caption).toBe("")
+    })
+})
+
+describe("toCreatedSkyshareEntry", () => {
+    it("レコード値とapplyWrites結果からCreatedSkyshareEntryを組み立てる", () => {
+        const record = buildSkyshareEntryRecord({
+            sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+            sourceCid: "bafypost",
+            visual: { ref: "bafkre123" },
+            postText: "Hello world",
+            userName: "Alice",
+            createdAt: "2026-01-01T00:00:00.000Z",
+        })
+
+        const result = toCreatedSkyshareEntry(record, "did:plc:abc", {
+            uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+            cid: "bafyentry",
+        })
+
         expect(result).toMatchObject({
             atUri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
             cid: "bafyentry",
@@ -44,31 +71,9 @@ describe("createSkyshareEntry", () => {
             heading: "Alice 's Post",
             caption: "Hello world",
         })
-        expect(result?.webUrl).toBe(
+        expect(result.webUrl).toBe(
             "https://skyshare.nekono.dev/entries/did:plc:abc@3lxyz/",
         )
-    })
-
-    it("本文が空白のみならcaptionは空文字になる", async () => {
-        const createRecord = vi.fn().mockResolvedValue({
-            data: {
-                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
-                cid: "bafyentry",
-            },
-        })
-        const agent = { com: { atproto: { repo: { createRecord } } } }
-
-        const result = await createSkyshareEntry(
-            agent as any,
-            "at://did:plc:abc/app.bsky.feed.post/3labc",
-            "bafypost",
-            undefined,
-            "   ",
-            "Alice",
-            session,
-        )
-
-        expect(result?.caption).toBe("")
     })
 })
 

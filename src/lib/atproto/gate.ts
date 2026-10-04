@@ -5,13 +5,10 @@
  * 責務と処理概要:
  * - フロント state・localStorage・OpenAPI リクエストボディで共通して使う、
  *   Bluesky公式lexiconのunion型を平坦化した簡略表現 `PostGateValue` を定義する。
- * - `PostGateValue` から実際の threadgate/postgate レコードを組み立てる純粋関数を提供する。
- * - 投稿確定後にレコードを作成する `applyPostGate` を提供する。
- * - 実際に呼び出すメソッドは `com.atproto.repo.createRecord` のみのため、
- *   `AtpAgent` 全体ではなく最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
+ * - `PostGateValue` から実際の threadgate/postgate レコードの値を組み立てる純粋関数を提供する。
+ *   実際に atproto へ書き込む処理（`com.atproto.repo.applyWrites`での原子的な作成）は
+ *   `src/lib/entry/createBskyThread.ts` が、投稿本体・skyshare entryと合わせて担う。
  */
-
-import type { AtpAgent } from "@atproto/api"
 
 export type ReplyAudience = "everyone" | "nobody" | "custom"
 
@@ -41,16 +38,6 @@ export const DEFAULT_POST_GATE_VALUE: PostGateValue = {
     allowFollowing: false,
     listUris: [],
     allowQuote: true,
-}
-
-type GateAgent = {
-    com: {
-        atproto: {
-            repo: {
-                createRecord: AtpAgent["com"]["atproto"]["repo"]["createRecord"]
-            }
-        }
-    }
 }
 
 /**
@@ -147,66 +134,5 @@ export const buildPostgateRecord = (
         post: postUri,
         createdAt,
         embeddingRules: [{ $type: "app.bsky.feed.postgate#disableRule" }],
-    }
-}
-
-/**
- * 投稿確定後にthreadgate/postgateレコードを作成する。
- *
- * 処理の趣旨:
- * - `app.bsky.feed.post` 自体は既に成功済みのため、ここでの失敗で例外を投げると
- *   呼び出し元がリクエスト全体を失敗扱いにしてしまい、ユーザーのリトライにより
- *   同一内容の投稿が重複作成される実害が生じうる。そのため例外を投げず、
- *   失敗フラグを返すのみに留める（呼び出し元でレスポンスの警告フィールドへ反映する）。
- * - threadgate/postgateは独立したレコードのため、`Promise.allSettled` で
- *   互いに影響を与えずに作成を試みる。
- *
- * Input:
- * - `agent`: `com.atproto.repo.createRecord` を持つ認証済み AtpAgent
- * - `did`: 投稿者のDID（レコードのrepoに使う）
- * - `postUri`: 対象投稿のAT-URI
- * - `rkey`: 対象投稿と同じレコードキー（threadgate/postgateはpostと同じrkeyを持つ必要がある）
- * - `gate`: 簡略化された設定値
- *
- * Output:
- * - `{ threadgateFailed, postgateFailed }`: 各レコード作成が失敗したかどうか
- *
- * 例:
- * - 入力: 完全デフォルト（everyone + allowQuote:true）
- * - 出力: `{ threadgateFailed: false, postgateFailed: false }`（createRecordは一度も呼ばれない）
- */
-export const applyPostGate = async (
-    agent: GateAgent,
-    did: string,
-    postUri: string,
-    rkey: string,
-    gate: PostGateValue,
-): Promise<{ threadgateFailed: boolean; postgateFailed: boolean }> => {
-    const createdAt = new Date().toISOString()
-    const threadgateRecord = buildThreadgateRecord(postUri, gate, createdAt)
-    const postgateRecord = buildPostgateRecord(postUri, gate, createdAt)
-
-    const [threadgateResult, postgateResult] = await Promise.allSettled([
-        threadgateRecord
-            ? agent.com.atproto.repo.createRecord({
-                  repo: did,
-                  collection: "app.bsky.feed.threadgate",
-                  rkey,
-                  record: threadgateRecord,
-              })
-            : Promise.resolve(null),
-        postgateRecord
-            ? agent.com.atproto.repo.createRecord({
-                  repo: did,
-                  collection: "app.bsky.feed.postgate",
-                  rkey,
-                  record: postgateRecord,
-              })
-            : Promise.resolve(null),
-    ])
-
-    return {
-        threadgateFailed: threadgateResult.status === "rejected",
-        postgateFailed: postgateResult.status === "rejected",
     }
 }

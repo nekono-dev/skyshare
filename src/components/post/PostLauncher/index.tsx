@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Overlay from "@/components/common/Overlay"
-import PostForm, { type PostFormHandle } from "@/components/post/PostForm"
+import ThreadComposer, {
+  type ThreadComposerHandle,
+} from "@/components/post/ThreadComposer"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import pic from "@/images/pen.svg"
@@ -11,12 +13,12 @@ import pic from "@/images/pen.svg"
  *
  * 責務と処理概要:
  * - フローティングボタンで投稿フォームを開く。
- * - Overlay 内で PostForm を表示し、閉じ操作を集中管理する。
- * - Overlay 背景クリックでの閉じ操作は PostForm の `requestClose` に委譲し、
+ * - Overlay 内で ThreadComposer を表示し、閉じ操作を集中管理する。
+ * - Overlay 背景クリックでの閉じ操作は ThreadComposer の `requestClose` に委譲し、
  *   キャンセルボタンと同様に未保存の変更があれば下書き保存確認ダイアログを挟む。
- * - スマホレイアウトでは PostForm を画面上部に固定配置する（`backdropClassName`）。
- *   PostForm は画像添付や詳細オプション展開で領域が拡大しうるため、上端を固定し
- *   拡大が下方向にのみ起こるようにしている。
+ * - スマホレイアウトでは ThreadComposer を画面上部に固定配置する（`backdropClassName`）。
+ *   ThreadComposer は画像添付や詳細オプション展開・スレッドセグメント追加で領域が
+ *   拡大しうるため、上端を固定し拡大が下方向にのみ起こるようにしている。
  */
 
 /**
@@ -30,7 +32,7 @@ import pic from "@/images/pen.svg"
  *
  * 例:
  * - 入力: `{ avatarUrl: "https://..." }`
- * - 出力: クリックで PostForm が開く UI
+ * - 出力: クリックで ThreadComposer が開く UI
  */
 const PostLauncher: React.FC<{
   avatarUrl?: string | null
@@ -46,7 +48,7 @@ const PostLauncher: React.FC<{
   guestMode = false,
 }) => {
   const [open, setOpen] = useState(false)
-  const postFormRef = useRef<PostFormHandle>(null)
+  const postFormRef = useRef<ThreadComposerHandle>(null)
   // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
   // Sidebar が用意する #sidebar-action へ Portal で描画することで、フレックス
   // レイアウト任せでナビ項目の直後に自然に並び、フローティングボタンと同じ open
@@ -94,7 +96,7 @@ const PostLauncher: React.FC<{
         onClose={() => postFormRef.current?.requestClose()}
         backdropClassName={styles["postform-backdrop"]}
       >
-        <PostForm
+        <ThreadComposer
           ref={postFormRef}
           onClose={() => setOpen(false)}
           onPosted={() => {

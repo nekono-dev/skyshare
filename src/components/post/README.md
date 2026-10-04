@@ -8,10 +8,14 @@ graph TD
   Timeline --> PostForm
   Timeline --> PostLauncher
   PostLauncher --> PostForm
+  PostCard --> PostBody
+  PostBody --> PostEngagementStats
   PostCard --> PostCardEntryActions
   PostCard --> SkyshareShareDialog
   PostCardEntryActions -. type only .-> PostCard
   PostForm --> SelfLabelsSelect
+  SelfLabelsSelect --> Dropdown
+  SuggestPopover --> ListboxOption
   PostPage --> PostForm
 
   Timeline --> commonExt
@@ -21,6 +25,8 @@ graph TD
   SkyshareShareDialog --> commonExt
   PostForm --> imageExt
   PostCard --> entryExt
+  PostBody --> commonExt
+  PostBody --> imageExt
 
   commonExt["common (外部)"]
   imageExt["image (外部)"]
@@ -32,9 +38,10 @@ graph TD
 
 外部カテゴリへの依存の内訳:
 
-- `common`: Timeline(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、PostLauncher(Overlay)、PostCard(Loading)、PostForm(Collapsible・CountedTextInput・LanguageSelect・Loading・Overlay・ToggleSwitch)、SkyshareShareDialog(ChoiceDialog)
-- `image`: PostForm(ImagePicker・ImageAltDialog・OgpFetchButton・OgpPreview)
+- `common`: Timeline(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、PostLauncher(Overlay)、PostCard(Loading)、PostBody(Avatar)、PostForm(Collapsible・CountedTextInput・LanguageSelect・Loading・Overlay・ToggleSwitch)、SkyshareShareDialog(ChoiceDialog)
+- `image`: PostForm(ImagePicker・ImageAltDialog・OgpFetchButton・OgpPreview)、PostBody(ImageGallery)
 - `entry`: PostCard(EntryDeleteConfirmDialog)
 
 - `PostEngagementStats` は他コンポーネントへの依存を持たない単体の表示部品。
 - `PostCard` が `entry` カテゴリの `EntryDeleteConfirmDialog` を参照している([../README.md](../README.md)のカテゴリ間相互参照を参照)。
+- `PostBody` は作者・日時・本文・画像・リアクション数を描く表示専用部品で、Timeline(`PostCard`)と Entry詳細ページ(`entry`カテゴリの `EntryDetailView`)から共通利用される。

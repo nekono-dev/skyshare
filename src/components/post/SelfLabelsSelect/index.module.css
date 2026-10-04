@@ -20,3 +20,9 @@
   min-width: 10rem;
   max-width: 18rem;
 }
+
+/* 可変幅時は幅を sizer に任せる */
+.select-auto {
+  min-width: 0;
+  max-width: none;
+}

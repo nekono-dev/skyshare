@@ -6,6 +6,7 @@ import {
   createProcessedImages,
   getSlotDefs,
 } from "@/lib/image/postImageProcessing"
+import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -55,7 +56,7 @@ export const Component: React.FC<Props> = ({
   onConfirm,
   onCancel,
 }) => {
-  const count = Math.min(4, Math.max(1, imageUrls.length))
+  const count = Math.min(VISUAL_IMAGE_COUNT, Math.max(1, imageUrls.length))
   const slotDefs = getSlotDefs(count)
   const [cropStates, setCropStates] = useState<SlotCropState[]>(() =>
     Array.from({ length: count }).map(

@@ -7,10 +7,8 @@ import {
 } from "@/lib/api/response.js"
 import { parseLimit } from "@/util/http"
 import { ENTRY_COLLECTION } from "@/lib/entry/entry"
-import {
-    groupTimelineEntriesBySourceUri,
-    normalizeTimelinePost,
-} from "@/lib/entry/posts"
+import { groupTimelineEntriesBySourceUri } from "@/lib/entry/posts"
+import { buildTimelineThreads } from "@/lib/entry/timelineThreads"
 import { listAllRecords } from "@/lib/atproto/repo"
 
 /**
@@ -18,8 +16,10 @@ import { listAllRecords } from "@/lib/atproto/repo"
  *
  * 責務と処理概要:
  * - 自分の Bluesky 投稿一覧（`app.bsky.feed.getAuthorFeed`）を、紐づく
- *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ）と embed して返す、
- *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する。
+ *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ）と embed し、
+ *   バックエンド側で権威的にスレッド構造化（`buildTimelineThreads`）した
+ *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する
+ *   （`specs/timeline/design.md §1-§2`）。
  * - skyshare entry 自体の一覧・作成・削除は `/v2/entry`・`/v2/entries/skyshare` を参照。
  *
  * 実装上の制約:
@@ -93,14 +93,15 @@ const fetchOwnAuthorFeed = async (
 }
 
 /**
- * GET /v2/entries — 自分の Bluesky 投稿一覧を取得する。
+ * GET /v2/entries — 自分の Bluesky 投稿一覧を、スレッド構造化して取得する。
  *
  * Input:
  * - Cookie に `atp_session`
  * - Query に `limit` / `cursor`（任意）
  *
  * Output:
- * - `posts`: 投稿一覧。該当する投稿には `skyshareEntry` を付与する。
+ * - `threads`: スレッドグループ一覧（`buildTimelineThreads`が確定させる、
+ *   `{ rootPost, replies }`の配列）。該当する`rootPost`には `skyshareEntry` を付与する。
  * - `cursor`: 次ページ用 cursor（存在する場合のみ）
  */
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -128,21 +129,17 @@ export const GET: APIRoute = async ({ request, locals }) => {
         ])
 
         const entriesBySourceUri = groupTimelineEntriesBySourceUri(rawEntries)
-        const posts = feedRes.feed
-            .map(feedItem => {
-                const sourceUri = feedItem?.post?.uri
-                const attachedEntry =
-                    typeof sourceUri === "string"
-                        ? entriesBySourceUri.get(sourceUri)
-                        : undefined
-                return normalizeTimelinePost(feedItem, attachedEntry)
-            })
-            .filter(post => post !== undefined)
+        const threads = await buildTimelineThreads(
+            agent,
+            session.did,
+            feedRes.feed,
+            entriesBySourceUri,
+        )
 
         return new Response(
             JSON.stringify({
                 cursor: feedRes.cursor,
-                posts,
+                threads,
             }),
             {
                 status: 200,

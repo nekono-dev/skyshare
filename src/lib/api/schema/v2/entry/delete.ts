@@ -8,8 +8,16 @@ import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import * as Common from "../../common"
 
+/**
+ * `deleteBskyPost:true`は、`source`を起点とする自己後続投稿すべて（単発投稿なら1件）の
+ * 削除を意味する（`specs/entry/backend/design.md §5.1`）。未知のキー（廃止された
+ * `deleteBskyThread`を含む）は400になる。
+ */
 export const RequestBodySchema = z
-    .object({ uri: z.string(), deleteBskyPost: z.boolean().optional() })
+    .object({
+        uri: z.string(),
+        deleteBskyPost: z.boolean().optional(),
+    })
     .strict()
 export type RequestBodyType = z.infer<typeof RequestBodySchema>
 
@@ -29,6 +37,6 @@ export const operation: ZodOpenApiOperationObject = {
     },
     responses: {
         "200": { description: "Success" },
-        ...Common.errorResponses(["400", "401", "404", "429", "500"]),
+        ...Common.errorResponses(["400", "401", "404", "409", "429", "500"]),
     },
 }

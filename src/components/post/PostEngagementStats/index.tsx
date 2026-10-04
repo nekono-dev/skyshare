@@ -4,9 +4,16 @@
  * 責務と処理概要:
  * - 呼び出し元が Bluesky AppView（PostView）から取得済みの各カウントを props で受け取り、
  *   アイコン付きの数値として横並びで描画するだけの表示専用コンポーネント。
+ * - アイコンは images 配下の SVG を CSS mask として描画し、件数が 1 以上の場合のみ
+ *   アイコンと文字列を規定の青色（--color-bluesky）にする。
  * - Bluesky API の呼び出しや値の正規化は行わない（呼び出し元の責務）。
  */
 
+import likeIcon from "@/images/reaction-like.svg"
+import quoteIcon from "@/images/reaction-quote.svg"
+import replyIcon from "@/images/reaction-reply.svg"
+import repostIcon from "@/images/reaction-repost.svg"
+import type { CSSProperties } from "react"
 import styles from "./index.module.css"
 
 type PostEngagementStatsProps = {
@@ -29,71 +36,40 @@ type PostEngagementStatsProps = {
  * - 入力: `{ likeCount: 12, repostCount: 3, replyCount: 1, quoteCount: 0 }`
  * - 出力: ハート/repost/吹き出し/引用符アイコンと数値 4 組を並べた一覧
  */
+type StatItem = {
+  icon: ImageMetadata
+  count: number
+  label: string
+}
+
 const Component = ({
   likeCount,
   repostCount,
   replyCount,
   quoteCount,
 }: PostEngagementStatsProps) => {
+  const items: StatItem[] = [
+    { icon: likeIcon, count: likeCount, label: "いいね" },
+    { icon: repostIcon, count: repostCount, label: "リポスト" },
+    { icon: replyIcon, count: replyCount, label: "リプライ" },
+    { icon: quoteIcon, count: quoteCount, label: "引用" },
+  ]
   return (
-    <dl className={styles.stats} aria-label="Blueskyでのリアクション数">
-      <div className={styles.stat}>
-        <dt className={styles.icon} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 21s-7.5-4.35-10-9.03C.6 8.36 2.4 5 6 5c2.06 0 3.53 1.06 4.5 2.4C11.47 6.06 12.94 5 15 5c3.6 0 5.4 3.36 4 6.97C19.5 16.65 12 21 12 21z" />
-          </svg>
-        </dt>
-        <dd className={styles.count}>{likeCount}</dd>
-        <span className={styles.label}>いいね</span>
-      </div>
-
-      <div className={styles.stat}>
-        <dt className={styles.icon} aria-hidden="true">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              d="M4 7h13l-3-3M20 17H7l3 3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </dt>
-        <dd className={styles.count}>{repostCount}</dd>
-        <span className={styles.label}>リポスト</span>
-      </div>
-
-      <div className={styles.stat}>
-        <dt className={styles.icon} aria-hidden="true">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              d="M4 5h16v11H8l-4 4V5z"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </dt>
-        <dd className={styles.count}>{replyCount}</dd>
-        <span className={styles.label}>リプライ</span>
-      </div>
-
-      <div className={styles.stat}>
-        <dt className={styles.icon} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M7 6c-2.76 0-5 2.24-5 5 0 2.42 1.72 4.44 4 4.9V19l3.5-3H9c-.34 0-.66-.03-.97-.1C9.24 15.14 10 13.66 10 12v-1c0-2.76-1.34-5-3-5zm10 0c-2.76 0-5 2.24-5 5 0 2.42 1.72 4.44 4 4.9V19l3.5-3H19c-.34 0-.66-.03-.97-.1C19.24 15.14 20 13.66 20 12v-1c0-2.76-1.34-5-3-5z" />
-          </svg>
-        </dt>
-        <dd className={styles.count}>{quoteCount}</dd>
-        <span className={styles.label}>引用</span>
-      </div>
+    <dl className={styles["stats"]} aria-label="Blueskyでのリアクション数">
+      {items.map(item => (
+        <div
+          key={item.label}
+          className={`${styles["stat"]} ${item.count > 0 ? styles["active"] : ""}`}
+        >
+          <dt
+            className={styles["icon"]}
+            aria-hidden="true"
+            style={{ "--icon-url": `url(${item.icon.src})` } as CSSProperties}
+          />
+          <dd className={styles["count"]}>{item.count}</dd>
+          <span className={styles["label"]}>{item.label}</span>
+        </div>
+      ))}
     </dl>
   )
 }

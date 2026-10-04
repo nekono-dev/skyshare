@@ -1,4 +1,6 @@
 .icon {
+  width: var(--size-icon-inline);
+  height: var(--size-icon-inline);
   display: inline-block;
   vertical-align: -3px;
   margin: 0 2px;

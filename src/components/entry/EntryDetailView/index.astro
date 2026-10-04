@@ -1,101 +1,110 @@
 ---
 /**
- * Skyshare Entry詳細ページの本文表示（`<article>`/エラーペイン部分）。
+ * Skyshare Entry詳細ページの本文表示（ヘッダーカード・投稿カード・下部余白・エラーペイン）。
  *
  * 責務と処理概要:
  * - `entries/[slug].astro`（PDSから実レコードをSSR取得する本来のEntry詳細ページ）と
- *   `entries/sample.astro`/`entries/sample-orphaned.astro`（ログイン不要のゲストモード
- *   向け固定サンプルページ）から共通で使う。データの取得元（実レコード or 固定ダミー
- *   データ）が異なるだけで
- *   見た目・マークアップ構造は完全に一致させたいため、ここに一本化している。
+ *   `entries/sample*.astro`（ログイン不要のゲストモード・e2e向け固定サンプルページ）から共通で使う。
+ * - 単発投稿由来とスレッド由来を区別せず「ヘッダーカード＋投稿カード配列」の1経路で描画する。
+ *   各投稿カードは Timeline と共通の `PostBody` で、その投稿自身のリアクション数を表示する。
+ * - 最下部に内容を持たない余白（`.page-footer`）を常に置き、Xアプリ内ブラウザ等で
+ *   下部が見切れないようにする（エラーペイン時も含む）。
  * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
+ * - 設計: specs/postcardlayout/design.md §3.5
  */
-import PostEngagementStats from "@/components/post/PostEngagementStats"
+import PostBody from "@/components/post/PostBody"
 import type { SourceImage } from "@/lib/entry/entry"
+import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
+
+export type EntryPostView = {
+    webUrl: string
+    author: { handle: string; displayName?: string; avatar?: string }
+    /** ISO文字列。表示整形は PostBody が行う */
+    createdAt: string
+    text: string
+    images: SourceImage[]
+    engagement: { likeCount: number; repostCount: number; replyCount: number; quoteCount: number }
+}
 
 interface Props {
     statusCode: number
     notFoundReason?: string
-    manifestHeading: string
-    manifestCaption: string
-    sourcePostAvailable: boolean
-    sourceWebUrl: string
+    heading: string
+    caption: string
     createdAtText: string
-    likeCount: number
-    repostCount: number
-    replyCount: number
-    quoteCount: number
-    sourceImages: SourceImage[]
+    sourcePostAvailable: boolean
+    /** 元投稿（Bluesky）のWeb URL。空なら元投稿リンクを非表示 */
+    sourceUrl?: string
+    /** Entryのカード画像（View）のURL。無ければ非表示 */
+    visualUrl?: string
+    posts: EntryPostView[]
 }
 
 const {
     statusCode,
     notFoundReason = "",
-    manifestHeading,
-    manifestCaption,
-    sourcePostAvailable,
-    sourceWebUrl,
+    heading,
+    caption,
     createdAtText,
-    likeCount,
-    repostCount,
-    replyCount,
-    quoteCount,
-    sourceImages,
+    sourcePostAvailable,
+    sourceUrl = "",
+    visualUrl = "",
+    posts,
 } = Astro.props
 ---
 
 {
     statusCode === 200 ? (
         <article class={styles.container}>
-            <header>
-                <h1 class={styles.heading}>{manifestHeading}</h1>
-            </header>
+            <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
+                <header class={styles["header-row"]}>
+                    <h1 class={styles.heading}>{heading}</h1>
+                </header>
+                {caption ? <p class={styles["body-text"]}>{caption}</p> : null}
+                {visualUrl ? (
+                    <img class={styles.visual} src={visualUrl} alt={heading} data-testid="entry-visual" />
+                ) : null}
+                <dl class={styles["meta-list"]}>
+                    {sourceUrl && sourcePostAvailable ? (
+                        <div>
+                            <a
+                                href={sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                data-testid="entry-source-link"
+                            >
+                                元投稿を見る
+                            </a>
+                        </div>
+                    ) : null}
+                    <div>投稿日時:{createdAtText ? createdAtText : "no data"}</div>
+                </dl>
+                {!sourcePostAvailable ? (
+                    <p class={styles["empty-message"]}>
+                        元の投稿は削除されているため、保存された内容のみを表示しています。
+                    </p>
+                ) : null}
+            </section>
 
-            {!sourcePostAvailable ? (
-                <p class={styles["empty-message"]}>
-                    元の投稿は削除されているため、保存された内容のみを表示しています。
-                </p>
-            ) : null}
-
-            {manifestCaption ? <p class={styles["body-text"]}>{manifestCaption}</p> : null}
-
-            <dl class={styles["meta-list"]}>
-                <div>
-                    {sourcePostAvailable ? (
-                        <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
-                            Blueskyの投稿を見る
-                        </a>
-                    ) : (
-                        "Blueskyの投稿は見つかりませんでした"
-                    )}
-                </div>
-                <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
-            </dl>
-
-            {sourcePostAvailable ? (
-                <PostEngagementStats
-                    client:visible
-                    likeCount={likeCount}
-                    repostCount={repostCount}
-                    replyCount={replyCount}
-                    quoteCount={quoteCount}
-                />
-            ) : null}
-
-            {sourcePostAvailable ? (
-                sourceImages.length > 0 ? (
-                    <section class={styles["image-grid"]} aria-label="source images">
-                        {sourceImages.map(image => (
-                            <figure class={styles["image-card"]}>
-                                <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
-                                {image.alt ? <figcaption>{image.alt}</figcaption> : null}
-                            </figure>
-                        ))}
-                    </section>
-                ) : (
-                    <p class={styles["empty-message"]}>画像はありません。</p>
-                )
+            {posts.length > 0 ? (
+                <ol class={styles["post-list"]}>
+                    {posts.map(post => (
+                        <li class={styles["post-item"]}>
+                            <div class={`${ui["base-card"]} ${styles["post-card"]}`}>
+                                <PostBody
+                                    client:load
+                                    author={post.author}
+                                    createdAt={post.createdAt}
+                                    text={post.text}
+                                    images={post.images}
+                                    postUrl={post.webUrl}
+                                    engagement={post.engagement}
+                                />
+                            </div>
+                        </li>
+                    ))}
+                </ol>
             ) : null}
         </article>
     ) : (
@@ -117,3 +126,5 @@ const {
         </section>
     )
 }
+
+<footer class={styles["page-footer"]} aria-hidden="true"></footer>

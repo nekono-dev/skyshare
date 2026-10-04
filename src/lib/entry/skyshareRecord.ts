@@ -1,25 +1,16 @@
 /**
- * dev.nekono.skyshare.entry レコード作成ユーティリティ。
+ * dev.nekono.skyshare.entry レコードのビルダー・更新ユーティリティ。
  *
  * 責務と処理概要:
- * - bsky 投稿情報と visual blob から skyshare entry レコードを組み立て、atproto へ作成する。
- * - `/v2/entry` の新規投稿時、および `uri` 指定時（既存投稿からの発行、from-post 相当）の両方から共有される。
+ * - bsky 投稿情報と visual blob から skyshare entry レコードの値を組み立てる純粋関数
+ *   （`buildSkyshareEntryRecord`）を提供する。実際に atproto へ書き込む処理
+ *   （`com.atproto.repo.applyWrites`での原子的な作成）は `src/lib/entry/createBskyThread.ts` が担う。
+ * - 更新（`updateSkyshareEntry`、PUT /v2/entry用）は単一レコードの読み書きのみのため、
+ *   従来通りこのファイルが直接 atproto を呼び出す。
  */
-import type { AtpAgent, ComAtprotoServerRefreshSession } from "@atproto/api"
-import { blobToCdnUrl } from "@/lib/entry/entry"
-import { parseAtUri, skyshareEntryUrlgen } from "@/lib/entry/url"
-
-/**
- * `createSkyshareEntry`/`updateSkyshareEntry` それぞれが実際に呼ぶメソッドだけへ
- * 絞り込んだ最小インターフェース型（テストで軽量なフェイクを渡せるようにするため）。
- */
-type RepoCreateAgent = {
-    com: {
-        atproto: {
-            repo: Pick<AtpAgent["com"]["atproto"]["repo"], "createRecord">
-        }
-    }
-}
+import type { AtpAgent } from "@atproto/api"
+import { blobToCdnUrl, ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { skyshareEntryUrlgen } from "@/lib/entry/url"
 
 type RepoUpdateAgent = {
     com: {
@@ -49,50 +40,39 @@ export type CreatedSkyshareEntry = {
 }
 
 /**
- * skyshare entry レコードを作成し、その詳細情報を返す。
+ * skyshare entry レコードの値を組み立てる（純粋関数、副作用なし）。
  *
  * 処理の趣旨:
- * - bsky 投稿の URI・CID と、visual blob、テキスト情報を含むレコード構造を生成・作成する。
- * - 副作用: atproto 外部 API を呼び出してレコードを作成。
- * - 呼び出し元（クライアント）がフルリロード無しに削除ボタン等を出し分けられるよう、
- *   一覧取得 API（GET /v2/entry）が返す形と同等の情報を返す。
+ * - bsky 投稿の URI・CID と、visual blob、テキスト情報から
+ *   `dev.nekono.skyshare.entry` レコードの値を組み立てる。
  *
  * Input:
- * - `agent`: 認証済み AtpAgent
- * - `bskyPostUri`: bsky 投稿の AT URI（source）
- * - `bskyPostCid`: bsky 投稿の CID
+ * - `sourceUri`/`sourceCid`: 紐づく bsky 投稿の AT URI・CID
  * - `visual`: skyshare entry の manifest.visual に使う blob 参照
  * - `postText`: 投稿本文（caption として使用）
  * - `userName`: 投稿者表示名
- * - `session`: セッション情報（DID 取得用）
+ * - `createdAt`: ISO 8601 の作成日時
  *
  * Output:
- * - `CreatedSkyshareEntry`（作成失敗時は `undefined`）
- *
- * 失敗時の方針:
- * - atproto API 失敗時は Error を throw。呼び出し元で catch して 500 を返す。
- *
- * 例:
- * - 入力：agent(Auth済み),uri="at://...",cid="bafy...",visual=blobRef,postText="Hello",userName="alice"
- * - 出力：{ atUri: "at://.../dev.nekono.skyshare.entry/xyz", webUrl: "https://skyshare.dev/did/rkey", ... }
+ * - `dev.nekono.skyshare.entry` レコードの値（`$type`込み）
  */
-export const createSkyshareEntry = async (
-    agent: RepoCreateAgent,
-    bskyPostUri: string,
-    bskyPostCid: string,
-    visual: any,
-    postText: string,
-    userName: string,
-    session: ComAtprotoServerRefreshSession.OutputSchema,
-): Promise<CreatedSkyshareEntry | undefined> => {
-    const createdAt = new Date().toISOString()
+export const buildSkyshareEntryRecord = (params: {
+    sourceUri: string
+    sourceCid: string
+    visual: any
+    postText: string
+    userName: string
+    createdAt: string
+}): Record<string, unknown> => {
+    const { sourceUri, sourceCid, visual, postText, userName, createdAt } =
+        params
     const headingText = postText.trim()
 
-    const record = {
-        $type: "dev.nekono.skyshare.entry",
+    return {
+        $type: ENTRY_COLLECTION,
         source: {
-            uri: bskyPostUri,
-            cid: bskyPostCid,
+            uri: sourceUri,
+            cid: sourceCid,
         },
         manifest: {
             $type: "dev.nekono.skyshare.defs#manifest",
@@ -102,33 +82,44 @@ export const createSkyshareEntry = async (
         },
         createdAt,
     }
+}
 
-    console.debug("createSkyshareEntry: record to create", record)
-
-    const createRecordRes = await agent.com.atproto.repo.createRecord({
-        repo: session.did,
-        collection: "dev.nekono.skyshare.entry",
-        record,
-    })
-
-    const parsedSkyshareUri = parseAtUri(createRecordRes.data.uri)
-    if (!parsedSkyshareUri) {
-        return undefined
+/**
+ * `buildSkyshareEntryRecord`で組み立てたレコード値と、実際に作成された結果
+ * （atproto応答のuri/cid）から、レスポンス用の `CreatedSkyshareEntry` を組み立てる。
+ *
+ * Input:
+ * - `record`: `buildSkyshareEntryRecord`が返したレコード値
+ * - `did`: entryレコードのrepo（DID）。CDN URL組み立てに使う
+ * - `result`: 実際に作成された結果（`{ uri, cid }`。`applyWrites`の`CreateResult`、
+ *   または`createRecord`のレスポンス）
+ *
+ * Output:
+ * - `CreatedSkyshareEntry`
+ */
+export const toCreatedSkyshareEntry = (
+    record: Record<string, unknown>,
+    did: string,
+    result: { uri: string; cid: string },
+): CreatedSkyshareEntry => {
+    const manifest = record.manifest as {
+        visual?: { ref?: unknown; mimeType?: string }
+        heading: string
+        caption: string
     }
+    const source = record.source as { uri: string; cid: string }
+    const rkey = result.uri.split("/").slice(-1)[0]
 
     return {
-        atUri: createRecordRes.data.uri,
-        cid: createRecordRes.data.cid,
-        createdAt,
-        sourceUri: bskyPostUri,
-        sourceCid: bskyPostCid,
-        heading: record.manifest.heading,
-        caption: record.manifest.caption,
-        visualUrl: blobToCdnUrl(session.did, visual),
-        webUrl: skyshareEntryUrlgen(
-            parsedSkyshareUri.repo,
-            parsedSkyshareUri.rkey,
-        ),
+        atUri: result.uri,
+        cid: result.cid,
+        createdAt: record.createdAt as string,
+        sourceUri: source.uri,
+        sourceCid: source.cid,
+        heading: manifest.heading,
+        caption: manifest.caption,
+        visualUrl: blobToCdnUrl(did, manifest.visual),
+        webUrl: skyshareEntryUrlgen(did, rkey),
     }
 }
 

@@ -26,3 +26,9 @@ src/client/**/
 .wrangler
 /wrangler.jsonc
 /.memo
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache

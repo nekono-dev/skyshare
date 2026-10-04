@@ -1,56 +1,98 @@
 ---
 /**
- * ゲストモード（`?guest`、`@/lib/guestMode`参照）の「Entryを開く」からアクセスできる
- * サンプルEntry詳細ページ（元投稿が残っている場合）。
+ * ゲストモード（`?guest`、`@/lib/guestMode`参照）の「Entryを開く」からアクセスできる、
+ * Playwrightのヘッドレスブラウザ確認用のサンプルEntry詳細ページ（スレッド由来entry）。
  *
  * 責務と処理概要:
- * - 見た目・マークアップは`entries/[slug].astro`と共通の`EntryDetailView`に委譲し、
- *   ここでは実際のPDSレコードの代わりに`@/lib/entry/guestDummyPosts`の固定データを
- *   propsへ詰め替えるだけに徹する（二重メンテナンス防止）。
- * - `entries/[slug].astro`と同様ログイン不要の公開ページのため、`?guest`は
- *   必要ない（このページへのリンクにも付与しない）。
- * - 「元投稿が削除済み（orphaned）の場合」の見た目は、クエリパラメータでの
- *   分岐ではなく専用ページ`entries/sample-orphaned.astro`として分離している。
+ * - `entries/[slug].astro`が投稿2件以上のスレッドを描画する場合の `EntryDetailView` を、
+ *   実際のPDSレコード・ログインに依存せず確認できるようにする。
+ * - 投稿カードごとに異なるリアクション数・画像枚数（1/3/5枚）を持たせ、
+ *   Playwright e2e（`tests/e2e/entryThreadDetail.spec.ts`・`entryPostCards.spec.ts`・`imageGallery.spec.ts`）が使う。
+ * - サンプルページはこの`entries/sample.astro`1枚に集約している（状態別の追加ページは作らない）。
  */
 export const prerender = true
 
 import Baselayout from "@/layout/Baselayout.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
-import { GUEST_DUMMY_ENTRIES, GUEST_DUMMY_POSTS } from "@/lib/entry/guestDummyPosts"
+import type { EntryPostView } from "@/components/entry/EntryDetailView/index.astro"
+import type { SourceImage } from "@/lib/entry/entry"
 import { serviceName } from "@/vars"
 
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 
-const entry = GUEST_DUMMY_ENTRIES[0]
-// 対応する元投稿（guest2）の本文・画像を持つダミー投稿から補う。
-const sourcePost = GUEST_DUMMY_POSTS[1]
+const heading = "サンプルスレッドEntry"
+const caption = "3件の投稿からなるスレッドのサンプル表示です。"
 
-const createdAtText = new Date(entry.createdAt).toLocaleString("ja-JP", {
+const author = { handle: "guest.demo", displayName: "ゲストユーザー" }
+
+/** サンプル画像を縦横比つきで n 枚（cid は枚数ごとに別）作る */
+const sampleImages = (prefix: string, ratios: [number, number][]): SourceImage[] =>
+    ratios.map(([width, height], i) => ({
+        url: "/materials/sample-og.png",
+        alt: `${prefix}の画像${i + 1}`,
+        cid: `bafkreisample${prefix}${i + 1}`,
+        aspectRatio: { width, height },
+    }))
+
+const posts: EntryPostView[] = [
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample1",
+        author,
+        createdAt: "2026-09-06T10:00:00.000Z",
+        text: "スレッド1件目（先頭投稿）です。画像が1枚付いています。",
+        images: sampleImages("one", [[1200, 630]]),
+        engagement: { likeCount: 11, repostCount: 1, replyCount: 2, quoteCount: 0 },
+    },
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample2",
+        author,
+        createdAt: "2026-09-06T10:01:00.000Z",
+        text: "スレッド2件目です。画像が3枚付いています。",
+        images: sampleImages("three", [
+            [1200, 630],
+            [600, 800],
+            [1000, 1000],
+        ]),
+        engagement: { likeCount: 22, repostCount: 4, replyCount: 5, quoteCount: 1 },
+    },
+    {
+        webUrl: "https://bsky.app/profile/guest.demo/post/threadsample3",
+        author,
+        createdAt: "2026-09-06T10:02:00.000Z",
+        text: "スレッド3件目（末尾投稿）です。画像が5枚付いています。",
+        images: sampleImages("five", [
+            [1200, 630],
+            [600, 800],
+            [1000, 1000],
+            [800, 600],
+            [400, 900],
+        ]),
+        engagement: { likeCount: 33, repostCount: 6, replyCount: 7, quoteCount: 2 },
+    },
+]
+
+const createdAtText = new Date("2026-09-06T10:00:00.000Z").toLocaleString("ja-JP", {
     dateStyle: "medium",
     timeStyle: "short",
 })
 
-const pageTitle = `${entry.heading ?? "サンプルEntry"} | ${serviceName}`
+const pageTitle = `${heading} | ${serviceName}`
 ---
 
 <Baselayout
-    cardPath={entry.visualUrl ?? ""}
+    cardPath="/materials/sample-og.png"
     pageTitle={pageTitle}
-    pageHeading={entry.heading}
-    pageCaption={entry.caption}
+    pageHeading={heading}
+    pageCaption={caption}
     robots={robots}
 >
     <EntryDetailView
         statusCode={200}
-        manifestHeading={entry.heading ?? ""}
-        manifestCaption={entry.caption ?? ""}
-        sourcePostAvailable={sourcePost !== null}
-        sourceWebUrl={sourcePost?.url ?? ""}
+        heading={heading}
+        caption={caption}
         createdAtText={createdAtText}
-        likeCount={12}
-        repostCount={3}
-        replyCount={1}
-        quoteCount={0}
-        sourceImages={sourcePost?.images ?? []}
+        sourcePostAvailable={true}
+        visualUrl="/materials/sample-og.png"
+        posts={posts}
     />
 </Baselayout>

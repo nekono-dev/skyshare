@@ -1,6 +1,5 @@
-import type { ChangeEvent } from "react"
 import type { ThemeMode } from "@/lib/settings/themeSettings"
-import ui from "@/styles/ui.module.css"
+import Dropdown from "@/components/common/Dropdown"
 import styles from "./index.module.css"
 
 /**
@@ -23,20 +22,19 @@ export type ThemeModeSelectProps = {
   disabled?: boolean
   className?: string
   id?: string
-  name?: string
   ariaLabel?: string
 }
 
 /**
- * 表示テーマ選択用 `<select>` を描画する。
+ * 表示テーマ選択用プルダウンを描画する。
  *
  * Input:
  * - `value`: 現在選択中のテーマ
  * - `onChange`: 選択変更時に呼ぶコールバック
- * - `disabled`/`className`/`id`/`name`/`ariaLabel`: 表示・属性制御
+ * - `disabled`/`className`/`id`/`ariaLabel`: 表示・属性制御
  *
  * Output:
- * - テーマ候補を持つ `<select>` 要素
+ * - テーマ候補を持つ `Dropdown`
  *
  * 例:
  * - 入力: `{ value: "system", onChange: fn }`
@@ -48,38 +46,24 @@ export const ThemeModeSelect = ({
   disabled = false,
   className,
   id = "theme-mode",
-  name = "themeMode",
   ariaLabel = "表示テーマ",
 }: ThemeModeSelectProps) => {
-  const selectClassName = className
-    ? `${ui["base-select"]} ${styles.select} ${className}`
-    : `${ui["base-select"]} ${styles.select}`
-
-  const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const next = event.target.value
+  const handleChange = (next: string) => {
     if (THEME_MODE_OPTIONS.some(option => option.value === next)) {
       onChange(next as ThemeMode)
     }
   }
 
   return (
-    <span className={ui["select-wrapper"]}>
-      <select
-        id={id}
-        name={name}
-        className={selectClassName}
-        value={value}
-        onChange={handleChange}
-        disabled={disabled}
-        aria-label={ariaLabel}
-      >
-        {THEME_MODE_OPTIONS.map(option => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </span>
+    <Dropdown
+      id={id}
+      value={value}
+      options={THEME_MODE_OPTIONS}
+      onChange={handleChange}
+      disabled={disabled}
+      ariaLabel={ariaLabel}
+      className={className ? `${styles.select} ${className}` : styles.select}
+    />
   )
 }
 

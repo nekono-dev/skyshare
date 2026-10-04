@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 
 import {
     DEFAULT_POST_GATE_VALUE,
-    applyPostGate,
     buildPostgateRecord,
     buildThreadgateRecord,
     type PostGateValue,
@@ -95,70 +94,6 @@ describe("buildPostgateRecord", () => {
             post: postUri,
             createdAt,
             embeddingRules: [{ $type: "app.bsky.feed.postgate#disableRule" }],
-        })
-    })
-})
-
-describe("applyPostGate", () => {
-    const did = "did:plc:abc"
-    const rkey = "3lxyz"
-
-    it("完全デフォルト(everyone+allowQuote:true)の場合、createRecordは呼ばれない", async () => {
-        const createRecord = vi.fn()
-        const agent = { com: { atproto: { repo: { createRecord } } } }
-
-        const result = await applyPostGate(
-            agent,
-            did,
-            postUri,
-            rkey,
-            DEFAULT_POST_GATE_VALUE,
-        )
-
-        expect(createRecord).not.toHaveBeenCalled()
-        expect(result).toEqual({
-            threadgateFailed: false,
-            postgateFailed: false,
-        })
-    })
-
-    it("両方成功時はfailedフラグがともにfalse", async () => {
-        const createRecord = vi.fn().mockResolvedValue({ uri: "at://x" })
-        const agent = { com: { atproto: { repo: { createRecord } } } }
-        const gate: PostGateValue = {
-            ...DEFAULT_POST_GATE_VALUE,
-            replyAudience: "nobody",
-            allowQuote: false,
-        }
-
-        const result = await applyPostGate(agent, did, postUri, rkey, gate)
-
-        expect(createRecord).toHaveBeenCalledTimes(2)
-        expect(result).toEqual({
-            threadgateFailed: false,
-            postgateFailed: false,
-        })
-    })
-
-    it("threadgate作成のみ失敗した場合、threadgateFailedのみtrueになる", async () => {
-        const createRecord = vi
-            .fn()
-            .mockImplementationOnce(() =>
-                Promise.reject(new Error("threadgate failed")),
-            )
-            .mockImplementationOnce(() => Promise.resolve({ uri: "at://x" }))
-        const agent = { com: { atproto: { repo: { createRecord } } } }
-        const gate: PostGateValue = {
-            ...DEFAULT_POST_GATE_VALUE,
-            replyAudience: "nobody",
-            allowQuote: false,
-        }
-
-        const result = await applyPostGate(agent, did, postUri, rkey, gate)
-
-        expect(result).toEqual({
-            threadgateFailed: true,
-            postgateFailed: false,
         })
     })
 })

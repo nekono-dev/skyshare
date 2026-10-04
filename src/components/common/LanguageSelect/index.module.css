@@ -2,3 +2,22 @@
   min-width: 10rem;
   max-width: 15rem;
 }
+
+/* 可変幅時は幅を sizer に任せる */
+.select-auto {
+  min-width: 0;
+  max-width: none;
+}
+
+/* 一覧内の言語名。国旗スロットを固定幅にして、国旗なしの言語とラベルの左端を揃える */
+.language-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.flag {
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+}

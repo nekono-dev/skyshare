@@ -1,0 +1,78 @@
+/**
+ * ImageGallery のスタイル定義。
+ *
+ * 設計方針:
+ * - grid は枠の比率を固定してクロップする（Bluesky 風）。strip は高さ固定で各画像の縦横比を維持する。
+ * - 読み込み前後でカードの高さが変わらないよう、いずれも比率または高さを先に確定させる。
+ */
+.grid {
+  display: grid;
+  gap: 2px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.grid-2,
+.grid-3,
+.grid-4 {
+  aspect-ratio: 2 / 1;
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-3,
+.grid-4 {
+  grid-template-rows: 1fr 1fr;
+}
+
+.grid-3 > :first-child {
+  grid-row: 1 / span 2;
+}
+
+.grid-cell,
+.strip-cell {
+  display: block;
+  padding: 0;
+  border: none;
+  background: var(--color-card-muted-bg);
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+button.grid-cell,
+button.strip-cell {
+  cursor: zoom-in;
+}
+
+.img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* base-card 配下の `* { overflow: hidden }` より優先させるため重ね書きする */
+.strip.strip {
+  --gallery-strip-height: 10rem;
+  display: flex;
+  gap: var(--space-1);
+  height: var(--gallery-strip-height);
+  margin-top: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.strip-cell {
+  flex: 0 0 auto;
+  height: 100%;
+  border-radius: var(--radius-sm);
+}
+
+/* aspectRatio が無い画像は本来の比率で表示する */
+.strip-img-auto {
+  display: block;
+  height: 100%;
+  width: auto;
+  min-width: 5rem;
+}
