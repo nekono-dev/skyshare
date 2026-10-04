@@ -69,6 +69,7 @@ import { useShareToggles } from "@/lib/settings/useShareToggles"
 import ThreadSegmentForm from "./ThreadSegmentForm"
 import {
   addSegment,
+  areAllSegmentsPostable,
   canRemoveSegment,
   createEmptySegment,
   draftPostsToSegments,
@@ -84,7 +85,8 @@ type Props = {
   /**
    * "dialog": PostLauncher の Overlay に埋め込まれるモーダル表示（既定値）。
    * "page": ページに常時表示する単独フォーム（post.astro 等）。dialog専用の
-   * role="dialog"/aria-labelとキャンセルボタンを省く。
+   * role="dialog"/aria-labelを省く。キャンセルボタンは同位置に置くが、
+   * 閉じる代わりに入力内容をクリアする。
    */
   variant?: "dialog" | "page"
   onClose?: () => void
@@ -417,6 +419,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     }
 
     /**
+     * フォームを閉じる。dialog では `onClose` に委ね、常時表示の page では
+     * 閉じられないため入力内容（返信/引用設定は維持）をクリアする。
+     */
+    const closeForm = () => {
+      if (variant === "dialog") {
+        onClose?.()
+        return
+      }
+      resetInputFields(segments[0].postGate)
+    }
+
+    /**
      * 下書きを保存(新規作成/更新)してからフォームを閉じる。
      *
      * Input:
@@ -440,7 +454,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         }
 
         setDraftSaveConfirmOpen(false)
-        onClose?.()
+        closeForm()
       } catch (error) {
         console.error("ThreadComposer: failed to save draft", error)
         setStatus(deferMessage("post.composer.draftSaveFailed"))
@@ -455,7 +469,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
      */
     const handleDiscardDraftAndClose = () => {
       setDraftSaveConfirmOpen(false)
-      onClose?.()
+      closeForm()
     }
 
     /**
@@ -466,7 +480,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         setDraftSaveConfirmOpen(true)
         return
       }
-      onClose?.()
+      closeForm()
     }
 
     useImperativeHandle(ref, () => ({ requestClose }))
@@ -506,6 +520,9 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       })
     }
 
+    // いずれかのセグメントがバックエンドの投稿条件を満たさない間は投稿ボタンを無効化する
+    const canSubmit = areAllSegmentsPostable(segments)
+
     /**
      * 投稿フォームの内容を API 契約に合わせて送信する。
      *
@@ -517,7 +534,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
      */
     const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
       e.preventDefault()
-      if (isSubmitting) return
+      // Enterキー等によるフォーム送信でもボタンと同じ投稿条件でブロックする
+      if (isSubmitting || !canSubmit) return
 
       // 投稿API呼び出し（下のawait）を挟んでからwindow.openすると、iOS Safariでは
       // ユーザーアクティベーションが失効気味になり、実際にはポップアップが開いて
@@ -707,8 +725,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
           >
             <div className={`${ui["base-component"]}`}>
-              {variant === "dialog" && (
+              {/* page表示では入力が空のとき（クリア対象がないため）非表示にする */}
+              {(variant === "dialog" || hasTextInput) && (
                 <button
+                  type="button"
                   className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
                   aria-label={t("common.cancel")}
                   disabled={isSubmitting}
@@ -734,7 +754,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 form={entryFormId}
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canSubmit}
                 title={
                   guestMode ? t("post.composer.guestSubmitNotice") : undefined
                 }

@@ -143,6 +143,43 @@ export const removeSegment = (
 }
 
 /**
+ * セグメントが投稿条件（`POST /v2/entry`が受理する条件）を満たすか判定する。
+ *
+ * 処理の趣旨:
+ * - バックエンドは、画像もOGPリンクも無い「テキストのみ」の投稿では、空白除去後の
+ *   `text`が1文字以上であることを要求する（空白のみは未指定扱いで400になる）。
+ *   画像付き・OGPリンク付きの投稿は`text`を省略できる。WebUI側でも同じ条件で
+ *   投稿ボタンをブロックするため、この条件はバックエンドのスキーマと一致させること。
+ *
+ * Input:
+ * - `segment`: 判定対象のセグメント
+ *
+ * Output:
+ * - 投稿可能なら `true`
+ *
+ * 例:
+ * - 入力: `{ text: "  ", imageEntry: null, ogpResult: null, ... }`
+ * - 出力: `false`
+ */
+export const isSegmentPostable = (segment: SegmentState): boolean =>
+    segment.text.trim().length > 0 ||
+    (segment.imageEntry?.originalBlobs.length ?? 0) > 0 ||
+    segment.ogpResult !== null
+
+/**
+ * 全セグメントが投稿条件を満たすか判定する（1件でも満たさなければ全体を投稿できない）。
+ *
+ * Input:
+ * - `segments`: 現在のセグメント配列
+ *
+ * Output:
+ * - 全件投稿可能なら `true`（空配列は投稿不可として `false`）
+ */
+export const areAllSegmentsPostable = (segments: SegmentState[]): boolean =>
+    segments.length > 0 &&
+    segments.every((segment, index) => isSegmentPostable(segment))
+
+/**
  * セグメント配列を下書きAPI（`POST`/`PUT /v2/bsky/drafts`）の`posts`配列へ変換する。
  *
  * 処理の趣旨:
