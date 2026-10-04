@@ -78,6 +78,7 @@
   外枠に .select-wrapper-auto を付け、内部に .select-sizer を置くと、
   選択中のラベル幅に合わせて select の横幅が変わる。
   sizer を select と同じグリッドセルに重ね、見えない状態で幅だけを確保する。
+  トリガー側の幅追従（width: 0 など）は Dropdown の .trigger-auto が担う。
 */
 :local(.select-wrapper-auto) {
   display: inline-grid;
@@ -85,16 +86,6 @@
 
 :local(.select-wrapper-auto) > * {
   grid-area: 1 / 1;
-}
-
-/* select は最長の選択肢幅を固有幅として持つため、そのままだと幅が縮まない。
-   固有幅を 0 にして、グリッド幅（= sizer の幅）に追従させる */
-:local(.select-wrapper-auto) > select,
-:local(.select-wrapper-auto) > button,
-:local(.select-wrapper-auto) > input {
-  width: 0;
-  min-width: 100%;
-  max-width: none;
 }
 
 :local(.select-sizer) {

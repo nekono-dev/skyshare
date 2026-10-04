@@ -12,6 +12,16 @@
   border-color: var(--color-muted);
 }
 
+/* 可変幅（autoWidth）時、トリガーは最長の選択肢幅（固有幅）を持つためそのままだと縮まない。
+   固有幅を 0 にして、外枠のグリッド幅（= .select-sizer の幅）に追従させる。
+   呼び出し側が className で渡す min-width/max-width（.select-auto 等、レイヤー外）より
+   必ず優先されるよう、クラスを重ねて詳細度を上げる。 */
+.trigger.trigger-auto {
+  width: 0;
+  min-width: 100%;
+  max-width: none;
+}
+
 /*
  * パネル。トリガーと同じ外枠（.select-wrapper）の中に absolute で置く。座標はJSで持たず、
  * スクロール・ソフトウェアキーボードへの追従はブラウザ任せにする。

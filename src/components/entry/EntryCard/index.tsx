@@ -3,6 +3,8 @@
  *
  * 責務と処理概要:
  * - entry の createdAt・manifest.caption・manifest.visual を表示する。
+ *   visual は Timeline（`PostCard`）と同様に caption の下へ、OGP 比率（1200x630）を
+ *   維持したまま（クロップせず）拡大なしで `ImageGallery` により表示する。
  * - `item.orphaned`（紐づく Bluesky 投稿が削除済み）の場合、`ui["card-muted"]` により
  *   `PostCard` の作成対象外投稿と同じ要領で背景色を変えて識別しやすくする。
  * - 削除ボタン: `item.orphaned` に応じて確認ダイアログを出し分ける。
@@ -32,6 +34,9 @@ import {
 import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
 import Loading from "@/components/common/Loading"
 import EntryEditForm from "@/components/entry/EntryEditForm"
+import ImageGallery from "@/components/image/ImageGallery"
+import type { SourceImage } from "@/lib/entry/entry"
+import { TARGET_WIDTH, TARGET_HEIGHT } from "@/lib/image/postImageProcessing"
 
 type Props = {
   item: TimelineSkyshareEntry
@@ -168,6 +173,18 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
     setIsDialogOpen(true)
   }
 
+  // visual は OGP 仕様（1200x630）で生成されるため、その比率を指定して全体を表示する。
+  const visualImages: SourceImage[] = item.visualUrl
+    ? [
+        {
+          url: item.visualUrl,
+          alt: "",
+          cid: item.visualUrl,
+          aspectRatio: { width: TARGET_WIDTH, height: TARGET_HEIGHT },
+        },
+      ]
+    : []
+
   return (
     <article
       className={`${ui["base-card"]} ${styles.card} ${isOrphaned ? ui["card-muted"] : ""}`}
@@ -181,6 +198,8 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
         ) : (
           <p className={styles["empty-caption"]}>{t("entry.card.noCaption")}</p>
         )}
+
+        <ImageGallery images={visualImages} interactive={false} />
 
         <div
           className={`${styles.footer} ${ui.toolbar} ${ui["toolbar-align"]}`}
@@ -219,14 +238,6 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
           <p className={styles["error-text"]}>{t(deleteError)}</p>
         ) : null}
       </div>
-
-      {item.visualUrl ? (
-        <div className={styles.thumbnail}>
-          <img src={item.visualUrl} alt="" loading="lazy" decoding="async" />
-        </div>
-      ) : (
-        <div className={styles["thumbnail-placeholder"]} aria-hidden="true" />
-      )}
 
       {isDeleting ? (
         <Loading overlay message={t("post.card.deletingEntry")} />

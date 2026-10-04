@@ -612,7 +612,12 @@ export const Dropdown: React.FC<Props> = ({
           type="text"
           ref={triggerRef as React.RefObject<HTMLInputElement>}
           id={id}
-          className={[ui["base-select"], styles.trigger, className]
+          className={[
+            ui["base-select"],
+            styles.trigger,
+            autoWidth && styles["trigger-auto"],
+            className,
+          ]
             .filter(Boolean)
             .join(" ")}
           // 開いている間は一覧モードでも入力待ち（placeholder）を見せる。閉じている間は現在値
@@ -651,7 +656,12 @@ export const Dropdown: React.FC<Props> = ({
           type="button"
           ref={triggerRef as React.RefObject<HTMLButtonElement>}
           id={id}
-          className={[ui["base-select"], styles.trigger, className]
+          className={[
+            ui["base-select"],
+            styles.trigger,
+            autoWidth && styles["trigger-auto"],
+            className,
+          ]
             .filter(Boolean)
             .join(" ")}
           disabled={disabled}
