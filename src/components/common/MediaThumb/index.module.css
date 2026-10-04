@@ -3,6 +3,8 @@
  *
  * 設計方針:
  * - 色・サイズ・余白は src/styles/tokens.css のトークンを使う。
+ * - 「×」「alt」は、ボタンであることが分かるよう縁取りつきで大きく表示し、
+ *   マウスオーバーで色を変える。
  */
 
 .thumb-item {
@@ -19,11 +21,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
+  box-sizing: border-box;
+  border: 2px solid #fff;
   cursor: pointer;
   color: #fff;
-  background: rgb(0 0 0 / 55%);
+  background: rgb(0 0 0 / 60%);
   line-height: 1;
+}
+
+.remove-badge:hover:not(:disabled),
+.alt-badge:hover:not(:disabled) {
+  background: var(--color-bluesky);
 }
 
 .remove-badge:disabled,
@@ -33,21 +41,21 @@
 }
 
 .remove-badge {
-  top: var(--space-1);
-  right: var(--space-1);
-  width: 28px;
-  height: 28px;
+  top: var(--space-2);
+  right: var(--space-2);
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-pill);
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-2xl);
 }
 
 .alt-badge {
-  bottom: var(--space-1);
-  right: var(--space-1);
-  height: 26px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
+  bottom: var(--space-2);
+  right: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
   text-transform: uppercase;
 }
 

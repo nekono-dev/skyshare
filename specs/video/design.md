@@ -383,7 +383,9 @@ export type VideoEntry = {
   alt: string
   posterPreview: string // object URL（取り外し時に revoke）
   posterBlob: Blob // poster（JPEG）
-  thumbnailBlob: Blob // visual（createDefaultThumbnail([poster object URL]) の結果）
+  cropState: SlotCropState // visual の poster の切り抜き状態（初期値は computeInitialCrop の既定配置。「サムネ調整」で更新）
+  thumbnailPreview: string // thumbnailBlob の object URL（プレビュー・縮小表示用。差し替え・取り外し時に revoke）
+  thumbnailBlob: Blob // visual（cropState の切り抜きに再生ボタン・バッジを重ねた 1200x630。初期は createDefaultThumbnail の結果）
   upload:
     | { state: "uploading"; progress: VideoUploadProgress }
     | { state: "done"; blob: VideoBlobRef }
@@ -397,7 +399,7 @@ export type SegmentState = {
 ```
 
 - `createEmptySegment` は `videoEntry: null`。
-- `revokeVideoEntry(entry)` を追加し、`posterPreview` を revoke する。`revokeImageEntry` と同じ呼び出し箇所（segment 削除・差し替え・unmount）で呼ぶ。
+- `revokeVideoEntry(entry)` を追加し、`posterPreview` と `thumbnailPreview` を revoke する。`revokeImageEntry` と同じ呼び出し箇所（segment 削除・差し替え・unmount）で呼ぶ。
 - 排他: `imageEntry` または `ogpResult` が非 null のとき動画追加ボタンを `disabled`、`videoEntry` が非 null のとき画像追加・OGP取得ボタンを `disabled` にする（`ThreadSegmentForm` の既存の排他制御 `update({ imageEntry: entry, ogpResult: null })` と同じ場所に並べる）。ボタンの `title`（ツールチップ）に排他の理由を表示する。
 - 下書き変換（`DraftSegmentPost`）は変更しない（動画は保存対象外）。
 
@@ -473,8 +475,74 @@ type Props = {
 ```
 
 - コンテナは `position: relative; overflow: hidden; background: var(--color-muted)`。`ImagePicker` の従来の `.thumb-item`・`.remove-badge`・`.alt-badge`・`.alt-badge-active` のスタイルを本部品へ移す。
-- ボタンの寸法を従来より一回り大きくする: 「×」は 20px → 28px の円・文字は `var(--font-size-lg)`、「alt」は高さ 18px → 26px・文字は `var(--font-size-sm)`・左右の余白は `var(--space-2)`。位置は従来どおり（×: 右上、alt: 右下。余白は `var(--space-1)`）。
+- ボタンはボタンと分かる寸法・縁取りにする: 「×」は 40px の円・文字は `var(--font-size-2xl)`、「alt」は高さ 36px・文字は `var(--font-size-lg)`・左右の余白は `var(--space-3)`。どちらも `border: 2px solid #fff`、背景は `rgb(0 0 0 / 60%)`。`:hover:not(:disabled)` で背景を `var(--color-bluesky)` に変える（alt 入力済みの強調色 `var(--color-bluesky-hover)` も hover 時は `var(--color-bluesky)` にする）。位置は従来どおり（×: 右上、alt: 右下。余白は `var(--space-2)`）。
 - `ImagePicker` は従来のサムネイルごとの `<div>`・2つのボタンを `MediaThumb` に置き換える（`data-testid="image-thumb"`・各 `aria-label` は従来と同じ値を渡す）。「Visual対象外」ラベルは `children` として渡す。
+
+### 6.2.2 「サムネ調整」ボタンの分離と動画の visual 調整
+
+要件 FR-11・FR-12。
+
+**ボタンの切り離し**: 従来 `ImagePicker` の内部（`slots.length > 0` のとき描画）にあった「サムネ調整」ボタンを、独立コンポーネント `ThumbnailAdjustButton`（`src/components/image/ThumbnailAdjustButton/index.tsx`）にする。
+
+```ts
+type Props = {
+  onClick: () => void
+  disabled?: boolean
+}
+// 見た目: ui["base-button"] ui["text-button"] ui["blue-button"]、ラベル t("image.picker.adjustThumbnail")
+```
+
+**配置と制御**（`ThreadSegmentForm`）: ツールバー左側で `<ImagePicker />`・`<VideoPicker />` の後、`<OgpFetchButton />` の前に置く。`segment.imageEntry || segment.videoEntry` のときだけ描画する。ダイアログは各 Picker が持ち、`ThreadSegmentForm` は命令的ハンドル経由で開く。
+
+```ts
+export type ImagePickerHandle = {
+  addFiles: (files: File[]) => void | Promise<void>
+  openCropDialog: () => void // 既存の handleOpenCrop。slots が空なら何もしない
+}
+export type VideoPickerHandle = {
+  openCropDialog: () => void // value が null なら何もしない
+}
+
+// ThreadSegmentForm
+const onAdjustThumbnail = () =>
+  segment.videoEntry
+    ? videoPickerRef.current?.openCropDialog()
+    : imagePickerRef.current?.openCropDialog()
+// disabled: disabled（投稿処理中）。動画の upload 状態には依存しない
+```
+
+- `ImagePicker` は内部のボタンを削除し、`useImperativeHandle(ref, () => ({ addFiles, openCropDialog: handleOpenCrop }))` とする。調整ダイアログの描画・確定処理は従来どおり `ImagePicker` に置く。
+- `VideoPicker` は `forwardRef<VideoPickerHandle, Props>` にし、`cropDialogOpen` state で調整ダイアログを描画する。
+
+**調整ダイアログ（動画）**: 既存の `ImageCropDialog` を再利用する。props に `overlay?: CompositeOverlay` を追加する。
+
+```ts
+// ImageCropDialog.handleConfirm
+if (overlay) {
+  const thumbnailBlob = await createCroppedThumbnail(
+    imageUrls,
+    cropStates,
+    overlay,
+  )
+  onConfirm([], thumbnailBlob, cropStates) // 原本画像は無い（動画の poster は投稿しない）
+} else {
+  const { originalBlobs, thumbnailBlob } = await createProcessedImages(
+    imageUrls,
+    cropStates,
+  )
+  onConfirm(originalBlobs, thumbnailBlob, cropStates)
+}
+```
+
+`createCroppedThumbnail`（`src/lib/image/postImageProcessing.ts`）は `composeThumbnailBlob(imageUrls, cropStates, overlay)` の `thumbnailBlob` だけを返す薄い関数として追加する。
+
+`VideoPicker` は `imageUrls={[value.posterPreview]}`・`initialCropStates={[value.cropState]}`・`overlay={drawVideoOverlay(value.durationSec)}` を渡す。確定時は `onChange({ ...value, cropState: states[0], thumbnailBlob })` とする。ダイアログ上のプレビューには再生ボタン・バッジは描かれない（確定後の visual にのみ重なる）。
+
+**初期値**: `VideoPicker.handleFileChange` で `loadImageSize(posterPreview)` で poster の寸法を得て、`cropState = { crop: {x:0,y:0}, zoom: 1, cropPixels: computeInitialCrop(poster.width, poster.height, slot.w, slot.h) }`（`slot = getSlotDefs(1)[0]`）とする。`thumbnailBlob` は従来どおり `createDefaultThumbnail`（同じ `computeInitialCrop` を使うため `cropState` と一致する）。
+
+**アップロード進捗との独立**: `VideoPicker.startUpload` の `emit` は、クロージャの `entryBase` ではなく最新の `valueRef.current` に `upload` だけをマージして通知する（アップロード中に調整された `cropState`・`thumbnailBlob`・`alt` を進捗通知で上書きしない）。`valueRef.current` が `null`（取り外し済み）なら通知しない。
+
+**プレビューの表示**: `VideoPicker` のサムネイル `<img>` と、`ThreadSegmentForm` の非アクティブ時の縮小表示（`segment-thumbnail`）は、poster の切り抜きではなく、`VideoEntry.thumbnailPreview`（`thumbnailBlob` の object URL。再生ボタン・バッジ入りの visual、1200×630）を表示する。`thumbnailPreview` は `VideoPicker` が、動画選択時と調整確定時（`thumbnailBlob` を作り直すたび）に生成して `VideoEntry` に持たせる。解放は `posterPreview` と同じく、`ThreadSegmentForm` が URL をキーにした `useEffect` のクリーンアップで行い（差し替え・unmount）、取り外し・segment 削除は `revokeVideoEntry` が行う。サムネイル枠は `aspect-ratio: 1200 / 630` で visual と同じ比率のため、`object-fit: cover` で歪みなく収まり、再生ボタンは調整によらず枠の中央に表示される。調整ダイアログ（`ImageCropDialog`）は poster のみを表示し、`overlay` は確定時の生成にだけ使う（ダイアログ上には再生ボタン・バッジを描かない）。
 
 ### 6.3 送信（`ThreadComposer/submitThread.ts`）
 

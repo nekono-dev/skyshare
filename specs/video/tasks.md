@@ -151,5 +151,40 @@
   3. サムネイルの右下の「alt」ボタンでダイアログが開き、入力して「適用」すると alt ボタンが強調表示（alt 入力済み）になる。
   4. 進捗バー・状態文言が、サムネイルの直下（サムネイルの下端より下）に表示される。
   5. `video-submit-reason` が、ツールバー（言語選択）の下かつ `video-preview` の上に表示される。
-  6. 「×」「alt」ボタンの高さが画像・動画のどちらでも 26px 以上である（画像は `multiImage.spec.ts` 相当の操作で確認）。
+  6. 「×」「alt」ボタンの高さが画像・動画のどちらでも 36px 以上である（画像は `multiImage.spec.ts` 相当の操作で確認）。
 - [x] 検証: 上記 Playwright・既存の `videoComposer.spec.ts`・`multiImage.spec.ts`・`threadComposer.spec.ts`、`tsc`、`vitest` が通る。
+
+## Phase 11: サムネ調整（動画の visual 調整と「サムネ調整」ボタンの分離）
+
+- [x] `[FE]` `src/lib/image/croppedImageStyle.ts` に `computeCroppedImageStyle(cropPixels, naturalWidth, naturalHeight)` を移し、`ImagePicker` から利用する（挙動は不変。動画のプレビューは visual を表示するため使わない。design.md §6.2.2）。
+- [x] `[FE]` `postImageProcessing.ts` に `createCroppedThumbnail(imageUrls, cropStates, overlay?)` を追加する。
+- [x] `[FE]` `ImageCropDialog` に `overlay` prop を追加し、指定時は `createCroppedThumbnail` で visual のみ生成して `onConfirm([], thumbnailBlob, cropStates)` を呼ぶ。
+- [x] `[FE]` `ThumbnailAdjustButton`（`src/components/image/ThumbnailAdjustButton/index.tsx`）を新設し、`ImagePicker` 内蔵のボタンを削除して `ImagePickerHandle.openCropDialog` を公開する。
+- [x] `[FE]` `VideoEntry` に `cropState` を追加し、`VideoPicker` を `forwardRef`（`VideoPickerHandle.openCropDialog`）にして調整ダイアログ・初期値・`emit` の最新値マージを実装する。
+- [x] `[FE]` `ThreadSegmentForm` のツールバー（`VideoPicker` の直後）に `ThumbnailAdjustButton` を置き、画像・動画のどちらを添付しているかでダイアログを開き分ける。
+- [x] `[TEST]` `tests/lib/image/postImageProcessing.test.ts` に追記: `createCroppedThumbnail` が `overlay` を `scale` 付きで呼び、`cropStates` の `cropPixels` が欠けると throw する。`tests/lib/image/croppedImageStyle.test.ts`（新規）: `cropPixels` あり・なしのスタイル。
+- [x] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts`・`multiImage.spec.ts`・`threadComposer.spec.ts` を更新）:
+  1. 何も添付していない間は「サムネ調整」ボタンが無い。画像を添付すると、動画追加ボタンの直後にボタンが現れ、従来どおりダイアログが開く（既存シナリオ）。
+  2. 動画を選択（アップロードを保留したまま）するとボタンが現れ、押せる。ダイアログが開き、キャンセルで閉じる。
+  3. ダイアログでズーム操作して確定すると、プレビューの `<img>` のスタイル（`left`/`top`/`width`/`height`）が調整前から変わる。
+  4. 確定後もアップロードの進捗・完了表示（`アップロード完了`）が失われない（`emit` のマージ）。
+  5. `videoVisual.spec.ts` に追加: ページ内で `createCroppedThumbnail`＋`drawVideoOverlay` により、`cropPixels` を既定から変えても円の中心・再生記号・バッジの画素が §6.5.1 の位置・色のままである。
+  6. 動画を取り外すとボタンが消える。
+- [x] 検証: 上記テスト、`tsc`、`vitest`、全 Playwright が通る。
+
+## Phase 12: プレビューへの visual 表示
+
+- [x] `[FE]` `VideoPicker` のサムネイルを、`thumbnailBlob` の object URL（`useEffect` で生成しクリーンアップで revoke）の表示に変更する（design.md §6.2.2「プレビューの表示」）。`VideoEntry` から `posterWidth`・`posterHeight` を削除し、切り抜き表示のスタイル適用を外す。
+- [x] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts`）:
+  1. 動画選択後のプレビューの `<img>` の自然サイズが 1200×630 で、中央（`(598, 315)`）の画素が白に近く（再生記号）、左下バッジ領域に白に近い画素がある。
+  2. 調整ダイアログ（`crop-slot` の表示中）では再生ボタン・バッジが描かれない（ダイアログ内の `<img>` は poster であり、`1200×630` ではない）。
+  3. ズームして確定した後も、プレビューの `<img>` の中央に再生記号がある。
+- [x] 検証: 上記テスト、`tsc`、`vitest` が通る。
+
+## Phase 13: 縮小表示の visual 化・バッジボタンの視認性
+
+- [x] `[FE]` `VideoEntry` に `thumbnailPreview` を追加し、`VideoPicker` が選択時・調整確定時に生成する（`thumbnailBlob` の object URL を作る `useEffect` は廃止）。`revokeVideoEntry` と `ThreadSegmentForm` の URL キーの解放 `useEffect` を `thumbnailPreview` にも適用する。
+- [x] `[FE]` `ThreadSegmentForm` の縮小表示（`segment-thumbnail`）を `thumbnailPreview` に変更する。
+- [x] `[FE]` `MediaThumb` のボタンを design.md §6.2.1 の寸法・縁取り・hover 色にする。
+- [x] `[TEST]` Playwright: (1) 動画付き segment を非アクティブにした縮小表示（`segment-thumbnail`）の `<img>` が 1200×630 で中央に再生記号がある（`videoComposer.spec.ts`。2 segment にして先頭を非アクティブにする）。(2) 「×」「alt」の `border-top-width` が 2px、hover で `background-color` が変わる（画像は `multiImage.spec.ts`、動画は `videoComposer.spec.ts`）。(3) 高さ 36px 以上（Phase 10 のシナリオ6を更新）。
+- [x] 検証: 上記テスト、`tsc`、`vitest` が通る。

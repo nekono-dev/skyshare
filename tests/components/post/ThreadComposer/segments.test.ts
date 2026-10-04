@@ -120,7 +120,13 @@ const videoEntry = (upload: VideoEntry["upload"]): VideoEntry => ({
     durationSec: 5,
     alt: "",
     posterPreview: "blob:x",
+    thumbnailPreview: "blob:y",
     posterBlob: new Blob(["p"]),
+    cropState: {
+        crop: { x: 0, y: 0 },
+        zoom: 1,
+        cropPixels: null,
+    },
     thumbnailBlob: new Blob(["t"]),
     upload,
 })

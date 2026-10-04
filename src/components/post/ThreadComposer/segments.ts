@@ -12,6 +12,7 @@ import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { OgpResult } from "@/components/image/OgpFetchButton"
 import { DEFAULT_POST_GATE_VALUE, type PostGateValue } from "@/lib/atproto/gate"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
+import type { SlotCropState } from "@/lib/image/postImageProcessing"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import type {
     VideoBlobRef,
@@ -32,7 +33,11 @@ export type VideoEntry = {
     posterPreview: string
     /** poster（JPEG） */
     posterBlob: Blob
-    /** visual（poster に再生ボタンと再生時間バッジを重ねた 1200x630 の画像） */
+    /** visual に使う poster の切り抜き状態（「サムネ調整」で更新する） */
+    cropState: SlotCropState
+    /** `thumbnailBlob` の object URL（プレビュー・縮小表示用。差し替え・取り外し時に revoke する） */
+    thumbnailPreview: string
+    /** visual（`cropState` の切り抜きに再生ボタンと再生時間バッジを重ねた 1200x630 の画像） */
     thumbnailBlob: Blob
     upload:
         | { state: "uploading"; progress: VideoUploadProgress }
@@ -121,6 +126,7 @@ export const revokeVideoEntry = (entry: VideoEntry | null) => {
     if (!entry) return
     try {
         URL.revokeObjectURL(entry.posterPreview)
+        URL.revokeObjectURL(entry.thumbnailPreview)
     } catch (error) {
         console.warn("ThreadComposer: failed to revoke object URL", error)
     }

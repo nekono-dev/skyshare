@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type CSSProperties,
   type RefObject,
 } from "react"
 import { createPortal } from "react-dom"
@@ -28,6 +27,7 @@ import {
   MAX_POST_IMAGES,
   VISUAL_IMAGE_COUNT,
 } from "@/lib/image/postImageLimits"
+import { computeCroppedImageStyle } from "@/lib/image/croppedImageStyle"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import pic from "@/images/image.svg"
@@ -87,6 +87,8 @@ type Props = {
  */
 export type ImagePickerHandle = {
   addFiles: (files: File[]) => void | Promise<void>
+  /** 「サムネ調整」ダイアログを開く（画像が無ければ何もしない） */
+  openCropDialog: () => void
 }
 
 /**
@@ -98,11 +100,11 @@ export type ImagePickerHandle = {
  * - `disabled`: 操作可否
  *
  * Output:
- * - 画像追加・個別サムネイル（削除/alt編集）・クロップ操作 UI
+ * - 画像追加・個別サムネイル（削除/alt編集）UI と、命令的ハンドル経由で開くクロップダイアログ
  *
  * 例:
  * - 入力: `{ value: null, disabled: false }`
- * - 出力: 画像追加ボタンとクロップ操作ボタン
+ * - 出力: 画像追加ボタン（「サムネ調整」ボタンは `ThumbnailAdjustButton` として親が置く）
  */
 export const Component = forwardRef<ImagePickerHandle, Props>(
   function ImagePicker(
@@ -359,8 +361,6 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       await addFiles(newFiles)
     }
 
-    useImperativeHandle(ref, () => ({ addFiles }))
-
     /**
      * クロップダイアログを開く。
      *
@@ -371,6 +371,11 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       if (slots.length === 0) return
       setShowCropDialog(true)
     }
+
+    useImperativeHandle(ref, () => ({
+      addFiles,
+      openCropDialog: handleOpenCrop,
+    }))
 
     /**
      * クロップ確定結果を state と `ImageEntry` に反映する。
@@ -469,46 +474,6 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
     }
 
     /**
-     * サムネイル生成時に使われるクロップ範囲を、個別プレビュー画像へ視覚的に反映するための
-     * インラインスタイルを算出する。
-     *
-     * 処理の趣旨:
-     * - Blueskyへ投稿する原本画像自体はクロップしない（`ImageSlot.cropState` は
-     *   合成サムネイル生成専用の情報）ため、ここでは「作成される予定のサムネイル」を
-     *   見せるための表示上のクロップのみを行う。実際の画像切り抜きは行わず、
-     *   `position:absolute` + 拡大率でクロップ範囲がコンテナいっぱいに映るよう配置する
-     *   （`object-fit`では矩形任意位置の切り抜きを表現できないため）。
-     * - クロップ範囲や元画像サイズが未確定な場合は、通常の中央基準カバー表示にフォールバックする。
-     *
-     * Input:
-     * - `slot`: 対象スロット
-     *
-     * Output:
-     * - `<img>` に適用するインラインスタイル
-     */
-    const computeCroppedImageStyle = (slot: ImageSlot): CSSProperties => {
-      const crop = slot.cropState.cropPixels
-      if (!crop || !slot.naturalWidth || !slot.naturalHeight) {
-        return {
-          display: "block",
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        }
-      }
-
-      return {
-        display: "block",
-        position: "absolute",
-        left: `${(-crop.x / crop.width) * 100}%`,
-        top: `${(-crop.y / crop.height) * 100}%`,
-        width: `${(slot.naturalWidth / crop.width) * 100}%`,
-        height: `${(slot.naturalHeight / crop.height) * 100}%`,
-        maxWidth: "none",
-      }
-    }
-
-    /**
      * 指定インデックスの画像の alt テキストを更新する。
      *
      * 処理の趣旨:
@@ -569,7 +534,11 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
           <img
             src={slot.objectUrl}
             alt=""
-            style={computeCroppedImageStyle(slot)}
+            style={computeCroppedImageStyle(
+              slot.cropState.cropPixels,
+              slot.naturalWidth,
+              slot.naturalHeight,
+            )}
           />
           {isExcluded && (
             <span className={styles["slot-excluded-badge"]}>
@@ -614,17 +583,6 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
             onChange={handleFileChange}
             disabled={disabled}
           />
-
-          {slots.length > 0 && (
-            <button
-              type="button"
-              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-              onClick={handleOpenCrop}
-              disabled={disabled}
-            >
-              {t("image.picker.adjustThumbnail")}
-            </button>
-          )}
         </div>
 
         {overflowNotice && (

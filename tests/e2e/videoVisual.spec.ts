@@ -27,9 +27,11 @@ const sampleVisual = async (
         base64: string
         durationSec?: number
         points: [number, number][]
+        /** 指定時は既定配置ではなく、この切り抜き（poster 座標）で visual を作る */
+        cropPixels?: { x: number; y: number; width: number; height: number }
     },
 ) =>
-    page.evaluate(async ({ base64, durationSec, points }) => {
+    page.evaluate(async ({ base64, durationSec, points, cropPixels }) => {
         // dev サーバー（Vite）が配信するモジュールを URL で読み込む（型解決の対象外）
         const load = (url: string): Promise<any> =>
             import(/* @vite-ignore */ url)
@@ -37,17 +39,21 @@ const sampleVisual = async (
         const { drawVideoOverlay } = await load(
             "/src/lib/video/videoOverlay.ts",
         )
-        const { createDefaultThumbnail } = await load(
+        const { createDefaultThumbnail, createCroppedThumbnail } = await load(
             "/src/lib/image/postImageProcessing.ts",
         )
         const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
         const file = new File([bytes], "v.mp4", { type: "video/mp4" })
         const probe = await probeVideo(file)
         const posterUrl = URL.createObjectURL(probe.posterBlob)
-        const blob = await createDefaultThumbnail(
-            [posterUrl],
-            drawVideoOverlay(durationSec ?? probe.durationSec),
-        )
+        const overlay = drawVideoOverlay(durationSec ?? probe.durationSec)
+        const blob = cropPixels
+            ? await createCroppedThumbnail(
+                  [posterUrl],
+                  [{ crop: { x: 0, y: 0 }, zoom: 2, cropPixels }],
+                  overlay,
+              )
+            : await createDefaultThumbnail([posterUrl], overlay)
         const bitmap = await createImageBitmap(blob)
         const canvas = document.createElement("canvas")
         canvas.width = bitmap.width
@@ -137,6 +143,31 @@ test.describe("動画投稿の visual", () => {
             expect(result.whites).toBeGreaterThanOrEqual(100)
         })
     }
+
+    test("サムネ調整で切り抜きを変えても、円・再生記号・バッジの位置と色は変わらない（サムネ調整）", async ({
+        page,
+    }) => {
+        await page.goto("/post/?guest")
+        // poster（640x360）の右下寄りを 2 倍に拡大した切り抜き（既定は全面）
+        const result = await sampleVisual(page, {
+            base64: fixture("video-solid.mp4"),
+            points: POINTS,
+            cropPixels: { x: 320, y: 180, width: 320, height: 168 },
+        })
+        expect([result.width, result.height]).toEqual([1200, 630])
+        const [circle, play, left, right, badgePad, below, corner] =
+            result.pixels
+        near(circle, [69, 68, 97])
+        for (const channel of play) {
+            expect(channel).toBeGreaterThanOrEqual(245)
+        }
+        near(left, BACKGROUND)
+        near(right, BACKGROUND)
+        near(badgePad, [19, 19, 34])
+        near(below, BACKGROUND)
+        near(corner, BACKGROUND)
+        expect(result.whites).toBeGreaterThanOrEqual(100)
+    })
 
     test("再生時間が長いほどバッジの幅が広がり、左端の位置は変わらない（シナリオ7）", async ({
         page,

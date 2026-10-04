@@ -764,6 +764,34 @@ export const createProcessedImages = async (
 }
 
 /**
+ * 指定のクロップ状態で画像を合成し、サムネイルだけを生成する。
+ *
+ * 処理の趣旨:
+ * - 動画投稿の visual 調整のように、原本画像の処理（`createProcessedImages` の
+ *   `originalBlobs`）が不要で、合成サムネイルだけが必要な場合に使う。
+ *
+ * Input:
+ * - `imageUrls`: 元画像 URL 配列
+ * - `cropStates`: 画像ごとのクロップ状態配列（`cropPixels` が欠けていると throw する）
+ * - `overlay`: 合成後に重ねて描く処理（任意）
+ *
+ * Output:
+ * - 合成サムネイル Blob
+ */
+export const createCroppedThumbnail = async (
+    imageUrls: string[],
+    cropStates: SlotCropState[],
+    overlay?: CompositeOverlay,
+): Promise<Blob> => {
+    const { thumbnailBlob } = await composeThumbnailBlob(
+        imageUrls,
+        cropStates,
+        overlay,
+    )
+    return thumbnailBlob
+}
+
+/**
  * クロップ編集を行わなかった場合の「デフォルト配置」で複数画像をサムネイルへ合成する。
  *
  * 処理の趣旨:

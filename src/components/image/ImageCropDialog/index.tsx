@@ -4,8 +4,10 @@ import CropSlot, { type SlotCropState } from "@/components/image/CropSlot"
 import Overlay from "@/components/common/Overlay"
 import Loading from "@/components/common/Loading"
 import {
+  createCroppedThumbnail,
   createProcessedImages,
   getSlotDefs,
+  type CompositeOverlay,
 } from "@/lib/image/postImageProcessing"
 import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import styles from "./index.module.css"
@@ -27,6 +29,11 @@ import ui from "@/styles/ui.module.css"
 type Props = {
   imageUrls: string[]
   initialCropStates?: (SlotCropState | null)[]
+  /**
+   * 指定すると、原本画像の処理を行わず、visual（合成サムネイル）だけを生成する
+   * （動画の poster のように原本を投稿しない場合）。`onConfirm` の `originalBlobs` は空配列になる。
+   */
+  overlay?: CompositeOverlay
   onConfirm: (
     originalBlobs: Blob[],
     thumbnailBlob: Blob,
@@ -41,6 +48,7 @@ type Props = {
  * Input:
  * - `imageUrls`: クロップ対象画像 URL 配列
  * - `initialCropStates`: 初期クロップ状態配列
+ * - `overlay`: 指定時は visual のみ生成し、確定時にこのオーバーレイを重ねる
  * - `onConfirm`: 画像処理完了時コールバック
  * - `onCancel`: キャンセル時コールバック
  *
@@ -54,6 +62,7 @@ type Props = {
 export const Component: React.FC<Props> = ({
   imageUrls,
   initialCropStates = [],
+  overlay,
   onConfirm,
   onCancel,
 }) => {
@@ -161,6 +170,15 @@ export const Component: React.FC<Props> = ({
     if (!canConfirm || isProcessing) return
     setIsProcessing(true)
     try {
+      if (overlay) {
+        const thumbnailBlob = await createCroppedThumbnail(
+          imageUrls,
+          cropStates,
+          overlay,
+        )
+        onConfirm([], thumbnailBlob, cropStates)
+        return
+      }
       const { originalBlobs, thumbnailBlob } = await createProcessedImages(
         imageUrls,
         cropStates,

@@ -24,7 +24,10 @@ import ImagePicker, {
 } from "@/components/image/ImagePicker"
 import { OgpFetchButton, useOgpFetch } from "@/components/image/OgpFetchButton"
 import OgpPreview from "@/components/image/OgpPreview"
-import VideoPicker from "@/components/video/VideoPicker"
+import VideoPicker, {
+  type VideoPickerHandle,
+} from "@/components/video/VideoPicker"
+import ThumbnailAdjustButton from "@/components/image/ThumbnailAdjustButton"
 import LanguageSelect from "@/components/common/LanguageSelect"
 import PostGateDialog from "@/components/post/PostGateDialog"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
@@ -135,8 +138,9 @@ const Component: React.FC<Props> = ({
 }) => {
   const { t } = useT()
   const [postGateDialogOpen, setPostGateDialogOpen] = useState(false)
-  const [isDraggingImage, setIsDraggingImage] = useState(false)
+  const [isDraggingMedia, setIsDraggingMedia] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
+  const videoPickerRef = useRef<VideoPickerHandle>(null)
   const imagePreviewContainerRef = useRef<HTMLDivElement>(null)
   const inputAreaRef = useRef<HTMLDivElement>(null)
   const toolboxRef = useRef<HTMLDivElement>(null)
@@ -160,6 +164,12 @@ const Component: React.FC<Props> = ({
       if (videoPosterPreview) URL.revokeObjectURL(videoPosterPreview)
     }
   }, [videoPosterPreview])
+  const videoThumbnailPreview = segment.videoEntry?.thumbnailPreview
+  useEffect(() => {
+    return () => {
+      if (videoThumbnailPreview) URL.revokeObjectURL(videoThumbnailPreview)
+    }
+  }, [videoThumbnailPreview])
 
   const suggest = useSuggest({
     text: segment.text,
@@ -232,27 +242,31 @@ const Component: React.FC<Props> = ({
     if (disabled) return
     if (!e.dataTransfer.types.includes("Files")) return
     e.preventDefault()
-    setIsDraggingImage(true)
+    setIsDraggingMedia(true)
   }
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
-    setIsDraggingImage(false)
+    setIsDraggingMedia(false)
   }
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     if (!e.dataTransfer.types.includes("Files")) return
     e.preventDefault()
-    setIsDraggingImage(false)
+    setIsDraggingMedia(false)
     if (disabled) return
 
-    const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith("image/"),
-    )
-    if (files.length === 0) return
-    if (segment.videoEntry) return
+    const dropped = Array.from(e.dataTransfer.files)
+    const images = dropped.filter(file => file.type.startsWith("image/"))
+    if (images.length > 0) {
+      // 動画を添付済みの segment には画像を追加できない（排他）
+      if (!segment.videoEntry) void imagePickerRef.current?.addFiles(images)
+      return
+    }
 
-    void imagePickerRef.current?.addFiles(files)
+    // 動画は1本だけ。形式違い（mp4以外）も VideoPicker 側で検査して通知する。
+    const video = dropped.find(file => file.type.startsWith("video/"))
+    if (video) void videoPickerRef.current?.addFile(video)
   }
 
   // アバター列（アバター＋後続segmentへの連結線）。編集表示・簡略表示のそれぞれの
@@ -277,15 +291,15 @@ const Component: React.FC<Props> = ({
         <div
           hidden={!isActive}
           data-testid="segment-editor"
-          className={`${styles["editor-area"]} ${isDraggingImage ? styles["drag-over"] : ""}`}
+          className={`${styles["editor-area"]} ${isDraggingMedia ? styles["drag-over"] : ""}`}
           onPaste={handlePaste}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          {isDraggingImage && (
+          {isDraggingMedia && (
             <div className={styles["drag-overlay"]} aria-hidden>
-              {t("post.segment.dropImage")}
+              {t("post.segment.dropMedia")}
             </div>
           )}
 
@@ -404,6 +418,7 @@ const Component: React.FC<Props> = ({
                 previewContainerRef={imagePreviewContainerRef}
               />
               <VideoPicker
+                ref={videoPickerRef}
                 value={segment.videoEntry}
                 onChange={entry => update({ videoEntry: entry })}
                 disabled={
@@ -418,6 +433,16 @@ const Component: React.FC<Props> = ({
                 }
                 previewContainerRef={imagePreviewContainerRef}
               />
+              {(segment.imageEntry || segment.videoEntry) && (
+                <ThumbnailAdjustButton
+                  disabled={disabled}
+                  onClick={() =>
+                    segment.videoEntry
+                      ? videoPickerRef.current?.openCropDialog()
+                      : imagePickerRef.current?.openCropDialog()
+                  }
+                />
+              )}
               <span
                 title={
                   segment.videoEntry
@@ -508,7 +533,7 @@ const Component: React.FC<Props> = ({
                 <img
                   className={styles["summary-thumbnail"]}
                   data-testid="segment-thumbnail"
-                  src={segment.videoEntry.posterPreview}
+                  src={segment.videoEntry.thumbnailPreview}
                   alt=""
                   aria-hidden
                 />

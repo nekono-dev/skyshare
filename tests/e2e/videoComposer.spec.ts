@@ -9,7 +9,14 @@
  *   （`posts[i].video` 等）の検証は `tests/components/post/ThreadComposer/submitThread.test.ts`
  *   が担う。
  */
-import { expect, test, type Page, type Route } from "@playwright/test"
+import {
+    expect,
+    test,
+    type Locator,
+    type Page,
+    type Route,
+} from "@playwright/test"
+import { readFileSync } from "node:fs"
 import path from "node:path"
 
 const SAMPLE = path.resolve("tests/fixtures/video-sample.mp4")
@@ -123,6 +130,64 @@ const videoInput = (editor: ReturnType<Page["locator"]>) =>
 const imageInput = (editor: ReturnType<Page["locator"]>) =>
     editor.locator('input[type="file"][accept="image/*"]')
 
+/** `<img>` を canvas に描き、自然サイズと、中央（再生記号）・左下バッジ領域の白画素の有無を返す。 */
+const inspectVisual = (img: Locator) =>
+    img.evaluate(async (el: HTMLImageElement) => {
+        await el.decode()
+        const canvas = document.createElement("canvas")
+        canvas.width = el.naturalWidth
+        canvas.height = el.naturalHeight
+        const context = canvas.getContext("2d", { willReadFrequently: true })!
+        context.drawImage(el, 0, 0)
+        const center = Array.from(
+            context.getImageData(598, 315, 1, 1).data.slice(0, 3),
+        )
+        const badge = context.getImageData(28, 554, 106, 49).data
+        let whites = 0
+        for (let i = 0; i < badge.length; i += 4) {
+            if (badge[i] >= 200 && badge[i + 1] >= 200 && badge[i + 2] >= 200)
+                whites++
+        }
+        return {
+            width: el.naturalWidth,
+            height: el.naturalHeight,
+            center,
+            whites,
+        }
+    })
+
+/** ファイルをエディタ領域へドロップする（dragover → drop を発火）。 */
+const dropFiles = (
+    editor: Locator,
+    files: { name: string; type: string; base64: string }[],
+) =>
+    editor.evaluate(async (el, items) => {
+        const transfer = new DataTransfer()
+        for (const item of items) {
+            const bytes = Uint8Array.from(atob(item.base64), c =>
+                c.charCodeAt(0),
+            )
+            transfer.items.add(
+                new File([bytes], item.name, { type: item.type }),
+            )
+        }
+        for (const type of ["dragover", "drop"]) {
+            el.dispatchEvent(
+                new DragEvent(type, {
+                    bubbles: true,
+                    cancelable: true,
+                    dataTransfer: transfer,
+                }),
+            )
+        }
+    }, files)
+
+const sampleDrop = () => ({
+    name: "video-sample.mp4",
+    type: "video/mp4",
+    base64: readFileSync(SAMPLE).toString("base64"),
+})
+
 const submitButton = (page: Page) => page.locator('button[type="submit"]')
 
 test.describe("動画投稿（ThreadComposer）", () => {
@@ -173,8 +238,21 @@ test.describe("動画投稿（ThreadComposer）", () => {
         })
         const removeBox = (await remove.boundingBox())!
         const altBox = (await alt.boundingBox())!
-        expect(removeBox.height).toBeGreaterThanOrEqual(26)
-        expect(altBox.height).toBeGreaterThanOrEqual(26)
+        expect(removeBox.height).toBeGreaterThanOrEqual(36)
+        expect(altBox.height).toBeGreaterThanOrEqual(36)
+        // 縁取りがあり、マウスオーバーで背景色が変わる
+        for (const button of [remove, alt]) {
+            await expect(button).toHaveCSS("border-top-width", "2px")
+            const before = await button.evaluate(
+                el => getComputedStyle(el).backgroundColor,
+            )
+            await button.hover()
+            await expect
+                .poll(() =>
+                    button.evaluate(el => getComputedStyle(el).backgroundColor),
+                )
+                .not.toBe(before)
+        }
         expect(removeBox.y).toBeLessThan(box.y + box.height / 2)
         expect(altBox.y).toBeGreaterThan(box.y + box.height / 2)
 
@@ -211,6 +289,104 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await remove.click()
         await expect(preview).toHaveCount(0)
         mocks.releaseJob()
+    })
+
+    test("「サムネ調整」ボタンは動画追加ボタンの隣に現れ、アップロード中でも調整できる（サムネ調整）", async ({
+        page,
+    }) => {
+        const mocks = await mockVideoApis(page, { holdJob: true })
+        const editor = await openComposer(page)
+        const adjust = editor.getByRole("button", { name: "サムネ調整" })
+        // 何も添付していない間は表示されない
+        await expect(adjust).toHaveCount(0)
+
+        await videoInput(editor).setInputFiles(SAMPLE)
+        await expect(page.getByRole("progressbar")).toBeVisible()
+        await expect(adjust).toBeEnabled()
+
+        // 動画追加ボタンの右隣（同じ行・動画追加ボタンより右）に置かれる
+        const videoBox = (await editor.getByLabel("動画追加").boundingBox())!
+        const adjustBox = (await adjust.boundingBox())!
+        expect(adjustBox.x).toBeGreaterThan(videoBox.x)
+        expect(Math.abs(adjustBox.y - videoBox.y)).toBeLessThan(40)
+
+        // プレビューは再生ボタン・バッジ入りの visual（1200x630）で、中央に再生記号がある
+        const thumbImg = page.getByTestId("video-preview").locator("img")
+        await expect(thumbImg).toHaveAttribute("src", /^blob:/)
+        const initial = await inspectVisual(thumbImg)
+        expect([initial.width, initial.height]).toEqual([1200, 630])
+        for (const channel of initial.center) {
+            expect(channel).toBeGreaterThanOrEqual(245)
+        }
+        expect(initial.whites).toBeGreaterThanOrEqual(100)
+        const initialSrc = await thumbImg.getAttribute("src")
+
+        // 調整ダイアログには再生ボタン・バッジの描画済み画像ではなく poster だけが表示される
+        await adjust.click()
+        await expect(page.getByTestId("crop-slot")).toHaveCount(1)
+        const dialogImg = page.getByTestId("crop-slot").locator("img").first()
+        const dialogSize = await dialogImg.evaluate((el: HTMLImageElement) => [
+            el.naturalWidth,
+            el.naturalHeight,
+        ])
+        expect(dialogSize).not.toEqual([1200, 630])
+        // キャンセルで閉じ、プレビューは変わらない
+        await page.getByRole("button", { name: "キャンセル" }).click()
+        await expect(page.getByTestId("crop-slot")).toHaveCount(0)
+        await expect(thumbImg).toHaveAttribute("src", initialSrc!)
+
+        // ズームして確定 → visual が作り直され、調整後も中央に再生記号が描かれる
+        await adjust.click()
+        const slider = page.locator('input[type="range"]').first()
+        await expect(slider).toBeVisible()
+        // 最小ズームは画像の読み込み後に確定するため、確定を待ってから min + 1 へ動かす
+        await expect(slider).not.toHaveAttribute("min", "1")
+        const minZoom = Number(await slider.getAttribute("min"))
+        await slider.fill(String(minZoom + 1))
+        await page.getByRole("button", { name: "OK" }).click()
+        await expect(page.getByTestId("crop-slot")).toHaveCount(0)
+        await expect(thumbImg).not.toHaveAttribute("src", initialSrc!)
+        const adjusted = await inspectVisual(thumbImg)
+        expect([adjusted.width, adjusted.height]).toEqual([1200, 630])
+        for (const channel of adjusted.center) {
+            expect(channel).toBeGreaterThanOrEqual(245)
+        }
+        expect(adjusted.whites).toBeGreaterThanOrEqual(100)
+
+        // アップロードの進捗が調整によって失われず、完了表示になる
+        mocks.releaseJob()
+        await expect(
+            page.getByTestId("video-preview").getByText("アップロード完了"),
+        ).toBeVisible()
+
+        // 取り外すとボタンも消える
+        await page.getByRole("button", { name: "動画を取り外す" }).click()
+        await expect(adjust).toHaveCount(0)
+    })
+
+    test("非アクティブなsegmentの縮小表示は、再生ボタン入りの visual になる（縮小表示）", async ({
+        page,
+    }) => {
+        await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await videoInput(editor).setInputFiles(SAMPLE)
+        await expect(
+            page.getByTestId("video-preview").getByText("アップロード完了"),
+        ).toBeVisible()
+
+        // 2件目を追加すると先頭が非アクティブ（縮小表示）になる
+        await page.getByRole("button", { name: "スレッドに追加" }).click()
+        const summaryImg = page
+            .getByTestId("thread-segment-0")
+            .getByTestId("segment-thumbnail")
+        await expect(summaryImg).toBeVisible()
+        await expect(summaryImg).toHaveAttribute("src", /^blob:/)
+        const visual = await inspectVisual(summaryImg)
+        expect([visual.width, visual.height]).toEqual([1200, 630])
+        for (const channel of visual.center) {
+            expect(channel).toBeGreaterThanOrEqual(245)
+        }
+        expect(visual.whites).toBeGreaterThanOrEqual(100)
     })
 
     test("変換完了まで投稿ボタンが無効で理由が表示され、完了後に有効になる（シナリオ2・10）", async ({
@@ -404,5 +580,69 @@ test.describe("動画投稿（ThreadComposer）", () => {
             src,
         )
         expect(svgText).toContain('fill="#0085ff"')
+    })
+
+    test("動画をフォームへドロップすると添付され、アップロードが完了する", async ({
+        page,
+    }) => {
+        await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await dropFiles(editor, [sampleDrop()])
+
+        const preview = page.getByTestId("video-preview")
+        await expect(preview).toBeVisible()
+        await expect(preview.getByText("アップロード完了")).toBeVisible()
+        await expect(submitButton(page)).toBeEnabled()
+    })
+
+    test("mp4以外の動画をドロップすると形式エラーが表示され添付されない", async ({
+        page,
+    }) => {
+        await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await dropFiles(editor, [
+            { name: "a.webm", type: "video/webm", base64: "AAAA" },
+        ])
+
+        await expect(
+            page.getByText("動画はmp4形式のみ添付できます"),
+        ).toBeVisible()
+        await expect(page.getByTestId("video-preview")).toHaveCount(0)
+    })
+
+    test("動画添付済みのフォームへ動画をドロップしても差し替わらない", async ({
+        page,
+    }) => {
+        const mocks = await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await dropFiles(editor, [sampleDrop()])
+        await expect(
+            page.getByTestId("video-preview").getByText("アップロード完了"),
+        ).toBeVisible()
+        const before = mocks.calls.filter(c => c === "startUpload").length
+
+        await dropFiles(editor, [sampleDrop()])
+        await page.waitForTimeout(500)
+        expect(mocks.calls.filter(c => c === "startUpload").length).toBe(before)
+        await expect(page.getByTestId("video-preview")).toHaveCount(1)
+    })
+
+    test("画像添付済みのフォームへ動画をドロップしても添付されない", async ({
+        page,
+    }) => {
+        await mockVideoApis(page)
+        const editor = await openComposer(page)
+        await imageInput(editor).setInputFiles({
+            name: "a.png",
+            mimeType: "image/png",
+            buffer: PNG_1X1,
+        })
+        await expect(
+            editor.getByRole("button", { name: /取り外|削除/ }).first(),
+        ).toBeVisible()
+
+        await dropFiles(editor, [sampleDrop()])
+        await page.waitForTimeout(500)
+        await expect(page.getByTestId("video-preview")).toHaveCount(0)
     })
 })
