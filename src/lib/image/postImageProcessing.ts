@@ -606,6 +606,16 @@ export const createOgpThumbnailFromBlob = async (
 }
 
 /**
+ * 合成済みの画像の上に重ねて描く処理（動画の再生ボタン等）。
+ * `scale` は「出力長辺 / `TARGET_WIDTH`」。縮小描画のたびに呼ばれるため、
+ * 呼び出し側は `scale` を掛けた寸法で描く。
+ */
+export type CompositeOverlay = (
+    context: CanvasRenderingContext2D,
+    scale: number,
+) => void
+
+/**
  * スロット定義・クロップ座標に沿って複数画像を1枚のサムネイルへ合成する。
  *
  * 想定する入力形状(最小要件):
@@ -633,6 +643,7 @@ export const createOgpThumbnailFromBlob = async (
 const composeThumbnailBlob = async (
     imageUrls: string[],
     cropStates: SlotCropState[],
+    overlay?: CompositeOverlay,
 ): Promise<{ thumbnailBlob: Blob; images: HTMLImageElement[] }> => {
     const slotDefs = getSlotDefs(
         Math.min(VISUAL_IMAGE_COUNT, Math.max(1, imageUrls.length)),
@@ -677,6 +688,8 @@ const composeThumbnailBlob = async (
                 slotDef.h * scale,
             )
         })
+
+        overlay?.(context, scale)
 
         return canvas
     }
@@ -764,6 +777,7 @@ export const createProcessedImages = async (
  *
  * Input:
  * - `imageUrls`: 元画像 URL 配列
+ * - `overlay`: 合成後に重ねて描く処理（任意。動画の再生ボタン等）
  *
  * Output:
  * - 合成済みサムネイル Blob
@@ -774,6 +788,7 @@ export const createProcessedImages = async (
  */
 export const createDefaultThumbnail = async (
     imageUrls: string[],
+    overlay?: CompositeOverlay,
 ): Promise<Blob> => {
     const slotDefs = getSlotDefs(
         Math.min(VISUAL_IMAGE_COUNT, Math.max(1, imageUrls.length)),
@@ -791,6 +806,10 @@ export const createDefaultThumbnail = async (
         ),
     }))
 
-    const { thumbnailBlob } = await composeThumbnailBlob(targetUrls, cropStates)
+    const { thumbnailBlob } = await composeThumbnailBlob(
+        targetUrls,
+        cropStates,
+        overlay,
+    )
     return thumbnailBlob
 }

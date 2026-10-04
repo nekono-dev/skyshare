@@ -46,14 +46,14 @@
 
 ## Phase 5: アップロードコア
 
-- [ ] `[FE]` `src/lib/video/probeVideo.ts` に `validateVideoFile`・`probeVideo` を実装する（design.md §5.1）。
-- [ ] `[FE]` `src/lib/video/videoUploadToken.ts` と `src/lib/video/videoUploader.ts`（`uploadVideo`・`VideoUploadError`・トークンキャッシュ）を実装する（§5.2・§5.3）。
-- [ ] `[FE]` `src/lib/video/videoOverlay.ts` に `VIDEO_OVERLAY_SPEC`・`formatVideoDuration`・`drawVideoOverlay` を実装する（design.md §6.5）。
-- [ ] `[FE]` `src/lib/image/postImageProcessing.ts` の `composeThumbnailBlob`・`createDefaultThumbnail` に任意の `overlay` 引数を追加する（§6.5.3。既存呼び出しの挙動は不変）。
-- [ ] `[FE]` `src/lib/video/fetchVideoDuration.ts` に `fetchVideoDurationSec` を実装する（§7.5）。
-- [ ] `[FE]` `src/lib/video/videoErrors.ts`（`mapVideoError`、§5.4 の対応表）と、`src/lib/i18n/messages/{ja,en}/video.ts` の `video.error.*` を追加し `index.ts` に登録する。
-- [ ] `[TEST]` `tests/lib/video/probeVideo.test.ts`: 形式・サイズ違反、`duration` 601秒で `tooLong`、`duration` が `NaN`/寸法0で `unreadable`、正常時に poster Blob が JPEG で返ること。
-- [ ] `[TEST]` `tests/lib/video/videoUploader.test.ts`（`fetch` をフェイク）:
+- [x] `[FE]` `src/lib/video/probeVideo.ts` に `validateVideoFile`・`probeVideo` を実装する（design.md §5.1）。
+- [x] `[FE]` `src/lib/video/videoUploadToken.ts` と `src/lib/video/videoUploader.ts`（`uploadVideo`・`VideoUploadError`・トークンキャッシュ）を実装する（§5.2・§5.3）。
+- [x] `[FE]` `src/lib/video/videoOverlay.ts` に `VIDEO_OVERLAY_SPEC`・`formatVideoDuration`・`drawVideoOverlay` を実装する（design.md §6.5）。
+- [x] `[FE]` `src/lib/image/postImageProcessing.ts` の `composeThumbnailBlob`・`createDefaultThumbnail` に任意の `overlay` 引数を追加する（§6.5.3。既存呼び出しの挙動は不変）。
+- [x] `[FE]` `src/lib/video/fetchVideoDuration.ts` に `fetchVideoDurationSec` を実装する（§7.5）。
+- [x] `[FE]` `src/lib/video/videoErrors.ts`（`mapVideoError`、§5.4 の対応表）と、`src/lib/i18n/messages/{ja,en}/video.ts` の `video.error.*` を追加し `index.ts` に登録する。
+- [x] `[TEST]` `tests/lib/video/probeVideo.test.ts`: 形式・サイズ違反、`duration` 601秒で `tooLong`、`duration` が `NaN`/寸法0で `unreadable`、正常時に poster Blob が JPEG で返ること。
+- [x] `[TEST]` `tests/lib/video/videoUploader.test.ts`（`fetch` をフェイク）:
   1. 正常系: 12MB → 3パートが順番に送られ（`partNumber` と `Content-Length` が一致）、`finishUpload` 後に `COMPLETED` で blob を返す。進捗が `uploading` 0→100、`processing` を経て通知される。
   2. `startUpload` のボディに `sizeBytes`/`mimeType`/`durationMs`/`width`/`height` が含まれる。
   3. パートが 503 → リトライして成功。4回連続失敗で `network` 系エラー。400 は再試行しない。
@@ -62,11 +62,11 @@
   6. `expiresAt` が残り5分未満のとき、次のリクエストの前に `fetchToken` が再度呼ばれる。
   7. `uploadPart` 中に `abort` → `abortUpload` が1回呼ばれ `AbortError`。`finishUpload` 後の `abort` では `abortUpload` は呼ばれない。
   8. トークン文字列が `console.*` に出力されない。
-- [ ] `[TEST]` `tests/lib/video/videoOverlay.test.ts`: `formatVideoDuration`（5→`0:05`、59.6→`1:00`、0→`0:01`、600→`10:00`）、`VIDEO_OVERLAY_SPEC` が design.md §6.5.1 の表の値と一致する（値のスナップショット）、`drawVideoOverlay` が `scale=1` で円（直径 139.9）・三角・バッジの描画命令を §6.5.2 の寸法で発行する（`CanvasRenderingContext2D` のフェイクで座標を検査）。
-- [ ] `[TEST]` `tests/lib/image/postImageProcessing.test.ts`: `overlay` を渡すと各 `renderComposite` 呼び出しで `scale` 付きで1回呼ばれ、渡さなければ従来と出力が変わらない。
-- [ ] `[TEST]` `tests/lib/video/fetchVideoDuration.test.ts`: マスター → 最初のバリアント → `#EXTINF` 合計（例: 4.0+4.0+2.5 → 10.5）、バリアントが相対 URL の解決、マスター 404・バリアント 404・`#EXTINF` なしで throw。
-- [ ] `[TEST]` `tests/lib/video/videoErrors.test.ts`: §5.4 の全コードに対応するキーが存在し、ja・en の双方に定義されている。
-- [ ] 検証: 上記テストと `tsc` が通る。
+- [x] `[TEST]` `tests/lib/video/videoOverlay.test.ts`: `formatVideoDuration`（5→`0:05`、59.6→`1:00`、0→`0:01`、600→`10:00`）、`VIDEO_OVERLAY_SPEC` が design.md §6.5.1 の表の値と一致する（値のスナップショット）、`drawVideoOverlay` が `scale=1` で円（直径 139.9）・三角・バッジの描画命令を §6.5.2 の寸法で発行する（`CanvasRenderingContext2D` のフェイクで座標を検査）。
+- [x] `[TEST]` `tests/lib/image/postImageProcessing.test.ts`: `overlay` を渡すと各 `renderComposite` 呼び出しで `scale` 付きで1回呼ばれ、渡さなければ従来と出力が変わらない。
+- [x] `[TEST]` `tests/lib/video/fetchVideoDuration.test.ts`: マスター → 最初のバリアント → `#EXTINF` 合計（例: 4.0+4.0+2.5 → 10.5）、バリアントが相対 URL の解決、マスター 404・バリアント 404・`#EXTINF` なしで throw。
+- [x] `[TEST]` `tests/lib/video/videoErrors.test.ts`: §5.4 の全コードに対応するキーが存在し、ja・en の双方に定義されている。
+- [x] 検証: 上記テストと `tsc` が通る。
 
 ## Phase 6: 投稿フォームUI
 

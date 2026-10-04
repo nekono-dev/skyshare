@@ -12,6 +12,7 @@ import { nav } from "./nav"
 import { page } from "./page"
 import { post } from "./post"
 import { settings } from "./settings"
+import { video } from "./video"
 
 export const ja = {
     ...account,
@@ -24,4 +25,5 @@ export const ja = {
     ...page,
     ...post,
     ...settings,
+    ...video,
 } as const

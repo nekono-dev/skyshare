@@ -13,6 +13,7 @@ import { nav } from "./nav"
 import { page } from "./page"
 import { post } from "./post"
 import { settings } from "./settings"
+import { video } from "./video"
 
 export const en: EnglishMessages = {
     ...account,
@@ -25,4 +26,5 @@ export const en: EnglishMessages = {
     ...page,
     ...post,
     ...settings,
+    ...video,
 }
