@@ -68,6 +68,21 @@ describe("DeletePostListDialog", () => {
         expect(html).toContain("+2")
     })
 
+    it("動画投稿は poster を1枚と再生マークで表示する", () => {
+        const video = {
+            cid: "vid",
+            playlistUrl: "https://video.test/playlist.m3u8",
+            thumbnailUrl: "https://video.test/thumbnail.jpg",
+            alt: "動画alt",
+        }
+        const html = render({ posts: [makePost("1", { video })] })
+        expect(html.match(/<img/g)).toHaveLength(1)
+        expect(html).toContain("https://video.test/thumbnail.jpg")
+        expect(html).toContain("delete-post-video-mark")
+        // 動画が無い投稿には再生マークを出さない
+        expect(render({})).not.toContain("delete-post-video-mark")
+    })
+
     it("スレッド（2件以上）のみ一覧が固定高さのスクロール領域になる", () => {
         const single = render({})
         const thread = render({ posts: [makePost("1"), makePost("2")] })

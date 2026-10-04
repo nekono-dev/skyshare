@@ -767,7 +767,7 @@ Timeline 用の静的表示。`<img src=thumbnailUrl alt=alt>` の中央に `Vid
 
 ### 7.4 Timeline（`PostCard`・`ThreadCard`）
 
-- `PostCard`: `item.video` または `item.unsupportedVideo` がある場合は `galleryImages = []`（entry の visual は表示せず、動画のサムネイルまたは利用不可表示を出す）。`PostBody` に `video={item.video}`・`unsupportedVideo={item.unsupportedVideo}`・`videoInteractive={false}`・`unsupportedVideoLinkUrl={item.url}` を渡す。
+- `PostCard`: entry の visual がある場合は、動画投稿・利用不可の動画でもその visual を1枚表示し、`video`・`unsupportedVideo` は `PostBody` に渡さない。entry が無く `item.video` または `item.unsupportedVideo` がある場合のみ `galleryImages = []` とし、動画のサムネイルまたは利用不可表示を出す。`PostBody` に `video={item.video}`・`unsupportedVideo={item.unsupportedVideo}`・`videoInteractive={false}`・`unsupportedVideoLinkUrl={item.url}` を渡す。
 - `isSkyshareIneligible`（グレーアウト）の判定は、`useSkyshareEntryStatus` が `hasEntryMedia` を使うため、動画投稿は対象外にならず、`unsupportedVideo` のみを持つ投稿は対象外（グレーアウト、作成ボタン無効）になる。
 - `entryCandidate.ts` の `resolveEntryVisualSourcePost`: 画像の有無の判定を `hasEntryMedia(post)` に置き換える（ルート → ルートに最も近い replies の順）。
 

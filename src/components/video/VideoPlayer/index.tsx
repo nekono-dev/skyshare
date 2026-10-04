@@ -52,6 +52,12 @@ const VideoPlayer = ({ video, postUrl }: Props) => {
           hls.on(Hls.Events.ERROR, (_event, data) => {
             if (data.fatal) setPhase("error")
           })
+          // hls.js は初期帯域を低く見積もり最低画質（360p）から再生を始めるため、
+          // 冒頭が低解像度になる。マニフェスト取得後に最高画質から開始させる。
+          // 以降の自動切替（ABR）は有効のままなので、回線が遅ければ下がる。
+          hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+            hls.startLevel = data.levels.length - 1
+          })
           hls.loadSource(video.playlistUrl)
           hls.attachMedia(element)
         } else if (element.canPlayType("application/vnd.apple.mpegurl")) {
