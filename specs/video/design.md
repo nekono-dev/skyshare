@@ -276,8 +276,9 @@ export const validateVideoFile = (
 }
 
 /**
- * <video preload="metadata"> で width/height/duration を読み、
+ * <video preload="auto"> で width/height/duration を読み、
  * 最初のフレーム相当（`currentTime = Math.min(0.1, duration / 2)` へシークし `seeked` を待つ。0 秒ちょうどは未デコードのことがあるため）のフレームを canvas に描画して poster を作る。
+ * Safari は `preload="metadata"` だとシーク後もフレームを描画せず黒一色になり、`seeked` の時点でも未デコードのことがあるため、`preload="auto"` とし、`requestVideoFrameCallback`（未対応なら `readyState >= 2`）でフレームの描画可能を待ってから描画する（待機は1秒で打ち切り、超えても描画へ進む）。
  * duration > MAX_VIDEO_DURATION_SEC なら "tooLong"、読み込み不能・寸法0・duration が有限でなければ
  * "unreadable" で reject する。object URL は finally で revoke する。
  */
@@ -445,10 +446,35 @@ onSelectFile(file):
   catch (e) AbortError なら何もしない／VideoUploadError は mapVideoError で upload.state="error"
 ```
 
-- 表示: poster のプレビュー、ファイル名、進捗バー（`role="progressbar"`、`aria-valuenow`）、状態文言（アップロード中／変換中／完了／エラー）、alt入力欄、取り外しボタン。エラー状態では「別の動画を選ぶ」操作で選び直せる。
+- 表示（`previewContainerRef` へポータルされるプレビュー。`data-testid="video-preview"`）は、上から次の順に並べる。
+  1. サムネイル: `MediaThumb`（§6.2.1）を、画像の `thumb-grid` と同じ `1200 / 630` の領域・枠線・角丸でフォーム全幅に置く。中身は poster の `<img>`（`object-fit: cover`）。右上に「×」（取り外し。`aria-label` は `t("video.picker.remove")`）、右下に「alt」（`aria-label` は `t("video.picker.altAria")`、alt が入力済みなら強調色）を `MediaThumb` のバッジで表示する。
+  2. 進捗: サムネイルの直下に、進捗バー（`role="progressbar"`、`aria-valuenow`）と状態文言（アップロード中／変換中／完了／エラー）を縦に並べる。エラー状態では「別の動画を選ぶ」ボタンをその下に出す。
+  - alt 入力は、画像と同じ `ImageAltDialog` を `altDialogOpen` state で開く（`onChange` で `VideoEntry.alt` を更新）。インラインの alt 入力欄・「動画を取り外す」テキストボタン・ファイル名表示は持たない。
 - `<input type="file" accept="video/mp4">` を使う。`File` は `onSelectFile` のクロージャでのみ保持し、`VideoEntry` には持たせない（アップロード後は blob 参照だけが必要）。
 - 取り外し: アップロード中なら `abort()`、`revokeVideoEntry`、`onChange(null)`。
 - 全文言は `useT()` の `video.*` キー（§9）。
+
+#### 6.2.1 共通部品 `MediaThumb`（`src/components/common/MediaThumb/index.tsx`・`index.module.css`）
+
+画像（`ImagePicker`）と動画（`VideoPicker`）のプレビューで、サムネイル1枚の枠・「×」ボタン・「alt」ボタンを共有する部品。両者の見た目を一致させる。
+
+```ts
+type Props = {
+  onRemove: () => void
+  onEditAlt: () => void
+  removeAriaLabel: string
+  altAriaLabel: string
+  altFilled: boolean // alt 入力済みなら強調色
+  disabled?: boolean
+  style?: CSSProperties // グリッド配置（gridArea）用
+  testId?: string // コンテナの data-testid
+  children: ReactNode // サムネイルの中身（<img> と、必要なら追加のバッジ）
+}
+```
+
+- コンテナは `position: relative; overflow: hidden; background: var(--color-muted)`。`ImagePicker` の従来の `.thumb-item`・`.remove-badge`・`.alt-badge`・`.alt-badge-active` のスタイルを本部品へ移す。
+- ボタンの寸法を従来より一回り大きくする: 「×」は 20px → 28px の円・文字は `var(--font-size-lg)`、「alt」は高さ 18px → 26px・文字は `var(--font-size-sm)`・左右の余白は `var(--space-2)`。位置は従来どおり（×: 右上、alt: 右下。余白は `var(--space-1)`）。
+- `ImagePicker` は従来のサムネイルごとの `<div>`・2つのボタンを `MediaThumb` に置き換える（`data-testid="image-thumb"`・各 `aria-label` は従来と同じ値を渡す）。「Visual対象外」ラベルは `children` として渡す。
 
 ### 6.3 送信（`ThreadComposer/submitThread.ts`）
 
@@ -463,7 +489,7 @@ onSelectFile(file):
   // submitDisabled = 既存条件 || hasPendingVideo
   ```
   - `uploading`（アップロード・変換中）と `error`（失敗）の動画が1つでも残っている間は投稿できない。これを解消できる操作は、(a) 完了を待つ、(b) 取り外し（キャンセル）、(c) `error` 時の選び直し（新しいアップロードの開始）のみである。取り外すと `videoEntry` が `null` になり、`hasPendingVideo` が偽になる。
-  - 無効の理由を、投稿ボタンの近くに `video.submit.waitUpload`（アップロード中）または `video.submit.removeFailed`（失敗した動画が残っている）で表示する。
+  - 無効の理由は `video.submit.waitUpload`（アップロード中）または `video.submit.removeFailed`（失敗した動画が残っている）で表示する。`ThreadComposer` が `pendingVideoState(segments)` の結果を各 `ThreadSegmentForm` へ `submitBlockedReason` として渡し、`ThreadSegmentForm` が、ツールバー（`toolboxRef` の `div`）の直後・プレビュー（`OgpPreview`・`imagePreviewContainerRef`）の直前に `<p role="status" data-testid="video-submit-reason">` として描画する（文字サイズ `var(--font-size-sm)`、右寄せ。非アクティブな segment は `hidden` のため、表示されるのはアクティブな segment のみ）。投稿ボタン列には置かない。
   - `onSubmit` の先頭でも `hasPendingVideo` を再確認し、真なら送信せず return する（ボタンの `disabled` を迂回した Enter キー等の送信への防御）。
 - 投稿完了後の検証は既存の `warmOgpCache`・`waitForImageLoad` をそのまま使う。
 

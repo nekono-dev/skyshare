@@ -1,0 +1,56 @@
+/**
+ * MediaThumb のスタイル定義。
+ *
+ * 設計方針:
+ * - 色・サイズ・余白は src/styles/tokens.css のトークンを使う。
+ */
+
+.thumb-item {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-muted);
+}
+
+.remove-badge,
+.alt-badge {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  line-height: 1;
+}
+
+.remove-badge:disabled,
+.alt-badge:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.remove-badge {
+  top: var(--space-1);
+  right: var(--space-1);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-lg);
+}
+
+.alt-badge {
+  bottom: var(--space-1);
+  right: var(--space-1);
+  height: 26px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+}
+
+.alt-badge-active {
+  background: var(--color-bluesky-hover);
+}

@@ -46,6 +46,26 @@ const openComposer = async (page: Page) => {
 }
 
 test.describe("複数画像の投稿フォーム", () => {
+    test("画像サムネイルの「×」「alt」ボタンは一回り大きい寸法で表示される", async ({
+        page,
+    }) => {
+        const editor = await openComposer(page)
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(1))
+
+        const thumb = page.getByTestId("image-thumb").first()
+        await expect(thumb).toBeVisible()
+        const remove = (await thumb
+            .getByRole("button", { name: /削除/ })
+            .boundingBox())!
+        const alt = (await thumb
+            .getByRole("button", { name: /altテキスト/ })
+            .boundingBox())!
+        expect(remove.height).toBeGreaterThanOrEqual(26)
+        expect(alt.height).toBeGreaterThanOrEqual(26)
+    })
+
     test("11枚選択すると10枚で止まり通知が出る。5枚目以降にVisual対象外ラベルが付く", async ({
         page,
     }) => {

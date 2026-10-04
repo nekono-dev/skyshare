@@ -150,6 +150,69 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(submitButton(page)).toBeEnabled()
     })
 
+    test("動画のプレビューは画像と同じ見た目の大きなサムネイルで、×・alt ボタンと進捗の配置が正しい（レイアウト）", async ({
+        page,
+    }) => {
+        const mocks = await mockVideoApis(page, { holdJob: true })
+        const editor = await openComposer(page)
+        await videoInput(editor).setInputFiles(SAMPLE)
+
+        const preview = page.getByTestId("video-preview")
+        await expect(preview).toBeVisible()
+        const thumb = preview.locator("img").locator("..")
+        const box = (await thumb.boundingBox())!
+        const editorBox = (await editor.boundingBox())!
+        // フォーム幅いっぱいの、約 1200:630 のサムネイル
+        expect(box.width).toBeGreaterThan(editorBox.width * 0.8)
+        expect(box.width / box.height).toBeCloseTo(1200 / 630, 1)
+
+        // 右上の「×」と右下の「alt」が、画像の従来より大きい寸法で表示される
+        const remove = preview.getByRole("button", { name: "動画を取り外す" })
+        const alt = preview.getByRole("button", {
+            name: "動画のaltテキストを編集",
+        })
+        const removeBox = (await remove.boundingBox())!
+        const altBox = (await alt.boundingBox())!
+        expect(removeBox.height).toBeGreaterThanOrEqual(26)
+        expect(altBox.height).toBeGreaterThanOrEqual(26)
+        expect(removeBox.y).toBeLessThan(box.y + box.height / 2)
+        expect(altBox.y).toBeGreaterThan(box.y + box.height / 2)
+
+        // 進捗はサムネイルの直下
+        const progress = (await preview.getByRole("progressbar").boundingBox())!
+        expect(progress.y).toBeGreaterThanOrEqual(box.y + box.height)
+
+        // 投稿ボタンが押せない理由は、ツールバー（言語選択）の下かつプレビューの上
+        const reason = (await page
+            .getByTestId("video-submit-reason")
+            .boundingBox())!
+        const language = (await editor
+            .getByRole("combobox")
+            .last()
+            .boundingBox())!
+        expect(reason.y).toBeGreaterThanOrEqual(language.y + language.height)
+        expect(reason.y + reason.height).toBeLessThanOrEqual(box.y)
+
+        // alt ボタンからダイアログを開いて alt を設定できる
+        await alt.click()
+        const dialog = page.getByRole("dialog", {
+            name: "画像のaltテキスト編集",
+        })
+        await dialog.getByRole("textbox").fill("動画の説明")
+        await dialog.getByRole("button", { name: "適用" }).click()
+        await expect(dialog).toHaveCount(0)
+        await alt.click()
+        await expect(page.getByRole("dialog").getByRole("textbox")).toHaveValue(
+            "動画の説明",
+        )
+        await page.keyboard.press("Escape")
+
+        // 「×」で取り外せる
+        await remove.click()
+        await expect(preview).toHaveCount(0)
+        mocks.releaseJob()
+    })
+
     test("変換完了まで投稿ボタンが無効で理由が表示され、完了後に有効になる（シナリオ2・10）", async ({
         page,
     }) => {

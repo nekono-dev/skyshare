@@ -138,3 +138,18 @@
 - [x] `[TEST]` 全 `vitest`・`tsc`・全 Playwright が通る（Playwright は `i18n.spec.ts` の2件が失敗する。いずれも動画機能の着手前から古い期待文言（`View original post`、実際は `View original post on Bluesky`）を持つ既存の失敗で、本機能とは無関係）。
 - [ ] 手動確認（実アカウントが必要なため自動化不可）: 300MB 級の mp4 のアップロード所要時間と、トークン再発行（30分を超える低速回線を模擬するか、`VIDEO_UPLOAD_TOKEN_TTL_SEC` を一時的に短縮して確認）。10分超の動画で `tooLong`、変換失敗時（壊れた mp4）に `processingFailed` が表示されること。Safari（デスクトップは hls.js、iOS はネイティブHLS）と Firefox での再生。
 - [ ] 積み残し（実装後の微調整）: 基準カード幅 `referenceCardWidth`（現在は仮置きの 506px）を、実装した visual を X のカード上で見比べて微調整する。調整した値は `VIDEO_OVERLAY_SPEC` と design.md §6.5.2 の換算表（S・各換算値）、本ファイルの visual 検証の期待座標へ反映する。
+
+## Phase 10: 投稿フォームのレイアウト修正
+
+- [x] `[FE]` `src/components/common/MediaThumb/`（`index.tsx`・`index.module.css`）を新設し、`ImagePicker` のサムネイル枠・「×」・「alt」の表示を移す。ボタン寸法を design.md §6.2.1 の値へ拡大する。
+- [x] `[FE]` `ImagePicker` を `MediaThumb` に置き換える（`data-testid`・`aria-label` は変更しない）。
+- [x] `[FE]` `VideoPicker` のプレビューを design.md §6.2 の構成（サムネイル → 進捗 → 選び直し）に作り直し、alt は `ImageAltDialog`、取り外しは「×」にする。不要になったスタイルを `index.module.css` から削除する。
+- [x] `[FE]` 投稿ボタンが押せない理由の表示を `ThreadComposer` から `ThreadSegmentForm`（ツールバーとプレビューの間）へ移す（`submitBlockedReason` prop）。
+- [x] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts` を更新）:
+  1. 動画選択後、`video-preview` 内にサムネイルが表示され、幅がフォーム幅とほぼ同じで縦横比が約 1200:630 である。
+  2. サムネイルの右上の「動画を取り外す」ボタンで取り外せる（プレビューが消える）。
+  3. サムネイルの右下の「alt」ボタンでダイアログが開き、入力して「適用」すると alt ボタンが強調表示（alt 入力済み）になる。
+  4. 進捗バー・状態文言が、サムネイルの直下（サムネイルの下端より下）に表示される。
+  5. `video-submit-reason` が、ツールバー（言語選択）の下かつ `video-preview` の上に表示される。
+  6. 「×」「alt」ボタンの高さが画像・動画のどちらでも 26px 以上である（画像は `multiImage.spec.ts` 相当の操作で確認）。
+- [x] 検証: 上記 Playwright・既存の `videoComposer.spec.ts`・`multiImage.spec.ts`・`threadComposer.spec.ts`、`tsc`、`vitest` が通る。

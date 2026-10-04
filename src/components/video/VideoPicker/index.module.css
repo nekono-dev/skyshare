@@ -3,46 +3,28 @@
  *
  * 設計方針:
  * - 色・サイズ・余白は src/styles/tokens.css のトークンを使う。
+ * - サムネイルの枠は画像（ImagePicker の thumb-grid）と同じ 1200:630・枠線・角丸にそろえる。
  */
 
 .preview {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
   margin-top: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
 }
 
-.preview-row {
-  display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
+.thumb {
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
 }
 
 .poster {
-  width: 120px;
-  max-height: 120px;
-  flex: none;
-  object-fit: contain;
-  border-radius: var(--radius-sm);
-  background: var(--color-muted);
-}
-
-.info {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.file-name {
-  overflow: hidden;
-  font-size: var(--font-size-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .progress {
@@ -82,15 +64,6 @@
   margin: 0;
   font-size: var(--font-size-xs);
   color: var(--color-red-text);
-}
-
-.alt-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
 }
 
 .actions {

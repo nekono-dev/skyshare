@@ -6,8 +6,7 @@ export const video = {
     "video.picker.addAria": "Add video",
     "video.picker.remove": "Remove video",
     "video.picker.reselect": "Choose another video",
-    "video.picker.altLabel": "Video alt text",
-    "video.picker.altPlaceholder": "Enter alt text",
+    "video.picker.altAria": "Edit alt text for the video",
     "video.picker.progressAria": "Video upload progress",
     "video.picker.exclusiveWithImage":
         "A video can't be added while images are attached",

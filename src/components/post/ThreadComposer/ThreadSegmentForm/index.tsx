@@ -15,6 +15,7 @@
  *   親（`ThreadComposer`）から受け取り、変更は`onChange`で親へ通知する制御コンポーネント。
  */
 import { useT } from "@/lib/i18n/react"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
 import React, { useEffect, useRef, useState } from "react"
 import Avatar from "@/components/common/Avatar"
 import { type CounterSpec } from "@/components/common/CountedTextInput"
@@ -58,6 +59,8 @@ type Props = {
   onActivate: () => void
   /** 末尾へセグメントを追加できるか（上限到達時はfalse） */
   canAddSegment: boolean
+  /** 投稿ボタンが押せない理由（動画のアップロード待ち等）。無ければ null */
+  submitBlockedReason: PlainMessageKey | null
   onAddSegment: () => void
   onRemove: () => void
   onChange: (next: SegmentState) => void
@@ -124,6 +127,7 @@ const Component: React.FC<Props> = ({
   mentionSuggestEnabled,
   onActivate,
   canAddSegment,
+  submitBlockedReason,
   onAddSegment,
   onRemove,
   onChange,
@@ -460,6 +464,15 @@ const Component: React.FC<Props> = ({
               />
             </div>
           </div>
+          {submitBlockedReason && (
+            <p
+              role="status"
+              data-testid="video-submit-reason"
+              className={styles["submit-reason"]}
+            >
+              {t(submitBlockedReason)}
+            </p>
+          )}
           <div>
             <OgpPreview ogpFetch={ogpFetch} />
             <div ref={imagePreviewContainerRef} />

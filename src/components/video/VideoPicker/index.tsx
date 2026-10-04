@@ -10,6 +10,8 @@ import {
 } from "react"
 import { createPortal } from "react-dom"
 import type { VideoEntry } from "@/components/post/ThreadComposer/segments"
+import ImageAltDialog from "@/components/image/ImageAltDialog"
+import MediaThumb from "@/components/common/MediaThumb"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
 import {
   probeVideo,
@@ -36,6 +38,8 @@ import icon from "@/images/video.svg"
  *   を生成して親へ `VideoEntry` を通知し、ブラウザから動画サービスへ直接アップロードする。
  * - 進捗・完了・失敗は `VideoEntry.upload` で親へ通知する。失敗は動画の状態に閉じ、
  *   segment の他の入力には触れない。
+ * - プレビューは画像と同じ `MediaThumb`（右上「×」で取り外し、右下「alt」で alt ダイアログ）で、
+ *   進捗はサムネイルの直下に表示する。
  * - 取り外し（キャンセル）でアップロードを中断する。unmount 時も中断する。
  */
 
@@ -70,6 +74,7 @@ export const Component = ({
   const reselectId = useId()
   const [notice, setNotice] = useState<PlainMessageKey | null>(null)
   const [isPreparing, setIsPreparing] = useState(false)
+  const [altDialogOpen, setAltDialogOpen] = useState(false)
   const [previewContainer, setPreviewContainer] =
     useState<HTMLDivElement | null>(null)
 
@@ -194,78 +199,72 @@ export const Component = ({
 
   const preview = value && (
     <div className={styles.preview} data-testid="video-preview">
-      <div className={styles["preview-row"]}>
-        <img className={styles.poster} src={value.posterPreview} alt="" />
-        <div className={styles.info}>
-          <span className={styles["file-name"]}>{value.fileName}</span>
-          {upload?.state === "uploading" && (
-            <>
-              <progress
-                className={styles.progress}
-                role="progressbar"
-                aria-label={t("video.picker.progressAria")}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(upload.progress.percent)}
-                max={100}
-                value={upload.progress.percent}
-              />
-              <p className={styles.status} role="status">
-                {progressText(upload.progress, t)}
-              </p>
-            </>
-          )}
-          {upload?.state === "done" && (
-            <p
-              className={`${styles.status} ${styles["status-done"]}`}
-              role="status"
-            >
-              {t("video.status.done")}
-            </p>
-          )}
-          {upload?.state === "error" && (
-            <p className={styles["status-error"]} role="alert">
-              {t(upload.messageKey)}
-            </p>
-          )}
-        </div>
-      </div>
-      <input
-        type="text"
-        className={styles["alt-input"]}
-        aria-label={t("video.picker.altLabel")}
-        placeholder={t("video.picker.altPlaceholder")}
-        value={value.alt}
+      <MediaThumb
+        className={styles.thumb}
+        removeAriaLabel={t("video.picker.remove")}
+        altAriaLabel={t("video.picker.altAria")}
+        altFilled={!!value.alt}
+        onRemove={handleRemove}
+        onEditAlt={() => setAltDialogOpen(true)}
         disabled={disabled}
-        onChange={event => handleAltChange(event.target.value)}
-      />
-      <div className={styles.actions}>
-        {upload?.state === "error" && (
-          <label
-            htmlFor={reselectId}
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-          >
-            {t("video.picker.reselect")}
-          </label>
-        )}
-        {upload?.state === "error" && (
-          <input
-            id={reselectId}
-            type="file"
-            accept="video/mp4"
-            className={styles["hidden-input"]}
-            onChange={handleFileChange}
-            disabled={disabled || isPreparing}
+      >
+        <img className={styles.poster} src={value.posterPreview} alt="" />
+      </MediaThumb>
+      {upload?.state === "uploading" && (
+        <>
+          <progress
+            className={styles.progress}
+            role="progressbar"
+            aria-label={t("video.picker.progressAria")}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(upload.progress.percent)}
+            max={100}
+            value={upload.progress.percent}
           />
-        )}
-        <button
-          type="button"
-          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-          onClick={handleRemove}
+          <p className={styles.status} role="status">
+            {progressText(upload.progress, t)}
+          </p>
+        </>
+      )}
+      {upload?.state === "done" && (
+        <p
+          className={`${styles.status} ${styles["status-done"]}`}
+          role="status"
         >
-          {t("video.picker.remove")}
-        </button>
-      </div>
+          {t("video.status.done")}
+        </p>
+      )}
+      {upload?.state === "error" && (
+        <>
+          <p className={styles["status-error"]} role="alert">
+            {t(upload.messageKey)}
+          </p>
+          <div className={styles.actions}>
+            <label
+              htmlFor={reselectId}
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+            >
+              {t("video.picker.reselect")}
+            </label>
+            <input
+              id={reselectId}
+              type="file"
+              accept="video/mp4"
+              className={styles["hidden-input"]}
+              onChange={handleFileChange}
+              disabled={disabled || isPreparing}
+            />
+          </div>
+        </>
+      )}
+      <ImageAltDialog
+        open={altDialogOpen}
+        onClose={() => setAltDialogOpen(false)}
+        value={value.alt}
+        onChange={handleAltChange}
+        disabled={disabled}
+      />
     </div>
   )
 

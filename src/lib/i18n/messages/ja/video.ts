@@ -4,8 +4,7 @@ export const video = {
     "video.picker.addAria": "動画追加",
     "video.picker.remove": "動画を取り外す",
     "video.picker.reselect": "別の動画を選ぶ",
-    "video.picker.altLabel": "動画の代替テキスト",
-    "video.picker.altPlaceholder": "altテキストを入力",
+    "video.picker.altAria": "動画のaltテキストを編集",
     "video.picker.progressAria": "動画のアップロード進捗",
     "video.picker.exclusiveWithImage":
         "画像を添付済みのため動画は追加できません",

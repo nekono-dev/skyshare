@@ -15,6 +15,7 @@ import { createPortal } from "react-dom"
 import ImageCropDialog from "@/components/image/ImageCropDialog"
 import ImageAltDialog from "@/components/image/ImageAltDialog"
 import Loading from "@/components/common/Loading"
+import MediaThumb from "@/components/common/MediaThumb"
 import type { Area } from "react-easy-crop"
 import {
   computeCropAroundCenter,
@@ -553,11 +554,17 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
     const renderThumbItem = (slot: ImageSlot, index: number) => {
       const isExcluded = index >= VISUAL_IMAGE_COUNT
       return (
-        <div
+        <MediaThumb
           key={slot.objectUrl}
-          className={styles["thumb-item"]}
           style={isExcluded ? undefined : { gridArea: `slot${index}` }}
-          data-testid="image-thumb"
+          className={isExcluded ? styles["extra-thumb"] : undefined}
+          testId="image-thumb"
+          removeAriaLabel={t("image.picker.removeAria", { index: index + 1 })}
+          altAriaLabel={t("image.picker.altAria", { index: index + 1 })}
+          altFilled={!!slot.alt}
+          onRemove={() => removeImage(index)}
+          onEditAlt={() => setAltDialogIndex(index)}
+          disabled={disabled}
         >
           <img
             src={slot.objectUrl}
@@ -569,25 +576,7 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
               {t("image.picker.excludedFromVisual")}
             </span>
           )}
-          <button
-            type="button"
-            className={styles["remove-badge"]}
-            aria-label={t("image.picker.removeAria", { index: index + 1 })}
-            onClick={() => removeImage(index)}
-            disabled={disabled}
-          >
-            ×
-          </button>
-          <button
-            type="button"
-            className={`${styles["alt-badge"]} ${slot.alt ? styles["alt-badge-active"] : ""}`}
-            aria-label={t("image.picker.altAria", { index: index + 1 })}
-            onClick={() => setAltDialogIndex(index)}
-            disabled={disabled}
-          >
-            alt
-          </button>
-        </div>
+        </MediaThumb>
       )
     }
 

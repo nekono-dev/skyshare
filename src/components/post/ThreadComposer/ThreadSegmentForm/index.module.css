@@ -117,3 +117,11 @@
   border-color: var(--color-bluesky);
   color: var(--color-bluesky);
 }
+
+/* 投稿ボタンが押せない理由。ツールバーとプレビューの間に、控えめな文字サイズで右寄せ表示する */
+.submit-reason {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-align: right;
+}

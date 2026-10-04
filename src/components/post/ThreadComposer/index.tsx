@@ -779,16 +779,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   : t("post.composer.submit")}
               </button>
 
-              {videoPending && (
-                <p role="status" data-testid="video-submit-reason">
-                  {t(
-                    videoPending === "uploading"
-                      ? "video.submit.waitUpload"
-                      : "video.submit.removeFailed",
-                  )}
-                </p>
-              )}
-
               {showXIntentButton && (
                 <button
                   type="button"
@@ -919,6 +909,13 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 mentionSuggestEnabled={mentionSuggestEnabled}
                 onActivate={() => setActiveIndex(index)}
                 canAddSegment={segments.length < MAX_THREAD_POST_COUNT}
+                submitBlockedReason={
+                  videoPending === "uploading"
+                    ? "video.submit.waitUpload"
+                    : videoPending === "error"
+                      ? "video.submit.removeFailed"
+                      : null
+                }
                 onAddSegment={handleAddSegment}
                 onRemove={() => handleRemoveSegment(index)}
                 onChange={next => {
