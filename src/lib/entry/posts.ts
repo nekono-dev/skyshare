@@ -8,13 +8,18 @@
  */
 
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
-import { blobToCdnUrl, extractEmbedImages } from "@/lib/entry/entry"
+import {
+    blobToCdnUrl,
+    extractEmbedImages,
+    extractEmbedVideo,
+    extractUnsupportedEmbedVideo,
+} from "@/lib/entry/entry"
 import {
     bskyPostUrlgen,
     parseAtUri,
     skyshareEntryUrlgen,
 } from "@/lib/entry/url"
-import type { SourceImage } from "@/lib/entry/entry"
+import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
 
 export type TimelinePostAuthor = {
     did: string
@@ -45,8 +50,19 @@ export type TimelinePost = {
     author: TimelinePostAuthor
     text: string
     images: SourceImage[]
+    /** 動画投稿（`app.bsky.embed.video`）の動画。画像とは排他 */
+    video?: SourceVideo
+    /** 利用不可の動画（`recordWithMedia` 内の動画）。再生・entry化の対象外 */
+    unsupportedVideo?: SourceVideo
     skyshareEntry?: TimelineSkyshareEntry
 }
+
+/**
+ * entry 作成の素材（画像または再生可能な動画）を持つ投稿か。
+ * `unsupportedVideo` は含めない（entry 作成の対象外）。
+ */
+export const hasEntryMedia = (post: TimelinePost): boolean =>
+    post.images.length > 0 || !!post.video
 
 /**
  * Timeline一覧上の1スレッドグループ。`buildTimelineThreads`（`@/lib/entry/timelineThreads`）が
@@ -213,6 +229,13 @@ export const normalizeTimelinePost = (
         ? extractTimelinePostImages(postRecord, post.author.did)
         : []
 
+    const video = postRecord
+        ? extractEmbedVideo(postRecord.embed, post.author.did)
+        : undefined
+    const unsupportedVideo = postRecord
+        ? extractUnsupportedEmbedVideo(postRecord.embed, post.author.did)
+        : undefined
+
     return {
         uri: post.uri,
         cid: post.cid,
@@ -232,6 +255,8 @@ export const normalizeTimelinePost = (
         },
         text,
         images,
+        ...(video ? { video } : {}),
+        ...(unsupportedVideo ? { unsupportedVideo } : {}),
         skyshareEntry,
     }
 }

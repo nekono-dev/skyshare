@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
     extractTimelinePostImages,
+    hasEntryMedia,
     groupTimelineEntriesBySourceUri,
     normalizePostViewToTimelinePost,
     normalizeTimelineEntry,
@@ -205,5 +206,47 @@ describe("normalizePostViewToTimelinePost", () => {
 
     it("必須フィールドが欠ける場合は undefined", () => {
         expect(normalizePostViewToTimelinePost({} as any)).toBeUndefined()
+    })
+})
+
+describe("動画投稿の TimelinePost", () => {
+    const withEmbed = (embed: unknown) => ({
+        post: {
+            uri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+            cid: "bafypost",
+            indexedAt: "2026-01-01T00:00:00Z",
+            author: { did: "did:plc:abc", handle: "alice.bsky.social" },
+            record: { text: "hello", embed },
+        },
+    })
+    const video = {
+        $type: "app.bsky.embed.video",
+        video: { ref: { $link: "bafkreivideo" } },
+    }
+
+    it("動画投稿は video を持ち images は空", () => {
+        const post = normalizeTimelinePost(withEmbed(video))
+        expect(post?.images).toEqual([])
+        expect(post?.video?.cid).toBe("bafkreivideo")
+        expect(post?.unsupportedVideo).toBeUndefined()
+        expect(hasEntryMedia(post!)).toBe(true)
+    })
+
+    it("recordWithMedia 内の動画は unsupportedVideo で、entry 素材にならない", () => {
+        const post = normalizeTimelinePost(
+            withEmbed({
+                $type: "app.bsky.embed.recordWithMedia",
+                media: video,
+            }),
+        )
+        expect(post?.video).toBeUndefined()
+        expect(post?.unsupportedVideo?.cid).toBe("bafkreivideo")
+        expect(hasEntryMedia(post!)).toBe(false)
+    })
+
+    it("動画も画像も無い投稿は素材なし", () => {
+        expect(
+            hasEntryMedia(normalizeTimelinePost(withEmbed(undefined))!),
+        ).toBe(false)
     })
 })

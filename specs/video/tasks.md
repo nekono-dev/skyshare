@@ -35,14 +35,14 @@
 
 ## Phase 4: 動画投稿の抽出（表示用データ）
 
-- [ ] `[BE]` `src/lib/entry/entry.ts` に `SourceVideo`・`buildVideoUrls`・`extractEmbedVideo` を実装する（design.md §4.3）。
-- [ ] `[BE]` `src/lib/entry/entry.ts` に `extractUnsupportedEmbedVideo` を実装する（design.md §4.3「利用不可の動画の抽出」）。
-- [ ] `[BE]` `src/lib/entry/posts.ts` の `TimelinePost` に `video?: SourceVideo`・`unsupportedVideo?: SourceVideo` を追加し、変換処理で設定する。`hasEntryMedia`（`unsupportedVideo` を含めない）を追加する。
-- [ ] `[BE]` `src/pages/entries/[slug].astro` の `toEntryPostView` と `EntryDetailView/index.astro` の `EntryPostView` に `video`・`unsupportedVideo` を追加する。
-- [ ] `[TEST]` `tests/lib/entry/entry.test.ts`: `extractEmbedVideo`（動画 embed で URL・alt・aspectRatio、画像 embed・`recordWithMedia`・blob の CID 不正で `undefined`、DID の `:` が `%3A` にエンコードされること）。
-- [ ] `[TEST]` `tests/lib/entry/entry.test.ts`: `extractUnsupportedEmbedVideo`（`recordWithMedia` の `media` が動画のとき poster URL が得られる、`media` が画像・直接の動画 embed・media なしでは `undefined`）。
-- [ ] `[TEST]` `tests/lib/entry/posts.test.ts`: 動画投稿の `TimelinePost.video` と `images: []`、`recordWithMedia` 内動画の `unsupportedVideo`、`hasEntryMedia`（動画あり true、`unsupportedVideo` のみ false）。
-- [ ] 検証: 上記テストと `tsc` が通る。
+- [x] `[BE]` `src/lib/entry/entry.ts` に `SourceVideo`・`buildVideoUrls`・`extractEmbedVideo` を実装する（design.md §4.3）。
+- [x] `[BE]` `src/lib/entry/entry.ts` に `extractUnsupportedEmbedVideo` を実装する（design.md §4.3「利用不可の動画の抽出」）。
+- [x] `[BE]` `src/lib/entry/posts.ts` の `TimelinePost` に `video?: SourceVideo`・`unsupportedVideo?: SourceVideo` を追加し、変換処理で設定する。`hasEntryMedia`（`unsupportedVideo` を含めない）を追加する。
+- [x] `[BE]` `src/pages/entries/[slug].astro` の `toEntryPostView` と `EntryDetailView/index.astro` の `EntryPostView` に `video`・`unsupportedVideo` を追加する。
+- [x] `[TEST]` `tests/lib/entry/entry.test.ts`: `extractEmbedVideo`（動画 embed で URL・alt・aspectRatio、画像 embed・`recordWithMedia`・blob の CID 不正で `undefined`、DID の `:` が `%3A` にエンコードされること）。
+- [x] `[TEST]` `tests/lib/entry/entry.test.ts`: `extractUnsupportedEmbedVideo`（`recordWithMedia` の `media` が動画のとき poster URL が得られる、`media` が画像・直接の動画 embed・media なしでは `undefined`）。
+- [x] `[TEST]` `tests/lib/entry/posts.test.ts`: 動画投稿の `TimelinePost.video` と `images: []`、`recordWithMedia` 内動画の `unsupportedVideo`、`hasEntryMedia`（動画あり true、`unsupportedVideo` のみ false）。
+- [x] 検証: 上記テストと `tsc` が通る。
 
 ## Phase 5: アップロードコア
 
