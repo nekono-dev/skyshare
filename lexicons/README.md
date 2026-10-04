@@ -91,3 +91,18 @@ goat lex publish ./lexicons/dev/
  🟢 dev.nekono.skyshare.defs
  🟢 dev.nekono.skyshare.entry
 ```
+
+# 自ドメインへのNSID変更手順
+
+本アプリはlexicon JSONの`id`を唯一の定義元として、アプリケーションコードがNSIDを導出する。フォークして自ドメインで運用する場合は、アプリケーションコードを編集せず、次の手順でlexiconだけを変更する。
+
+1. `lexicons/` 配下のディレクトリを、新ドメインの逆順構造へ移動する（例: `lexicons/dev/nekono/skyshare/` → `lexicons/com/example/myapp/`）。
+2. `entry.json`・`defs.json`の`id`を新NSIDへ書き換える（`entry`は`<prefix>.entry`、`defs`は`<prefix>.defs`の形を守る）。
+3. `entry.json`内の`manifest`の`ref`（`<prefix>.defs#manifest`）を新NSIDへ書き換える。
+4. `npm run lexgen`でクライアントコードを再生成する（出力先は事前に削除されるため、旧NSIDの生成物は残らない）。
+5. `goat lex lint`で検証し、DNS TXTレコード（`_lexicon.<authority>`）の設定と`goat lex publish`によるPDSへの公開を行う。
+
+注意:
+
+- `lexicons/`配下の`entry.json`は1つだけでなければならない（複数・0件の場合は`npm run lexgen`およびアプリの起動・ビルドがエラーになる）。
+- 旧NSIDで作成済みのレコードは自動では移行されない。

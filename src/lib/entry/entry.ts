@@ -10,6 +10,7 @@
  */
 import { AppBskyFeedPost } from "@atproto/api"
 import { bskyCdnUrlgen } from "@/lib/entry/url"
+import { parseEntryAtUri } from "@/lib/atproto/nsid"
 import { VIDEO_WATCH_BASE_URL } from "@/lib/video/postVideoLimits"
 
 export type SourceLocator = {
@@ -58,8 +59,6 @@ export type SourceVideo = {
     aspectRatio?: { width: number; height: number }
 }
 
-export const ENTRY_COLLECTION = "dev.nekono.skyshare.entry"
-
 const DID_PATTERN = /^did:[a-z0-9]+:[A-Za-z0-9._:%-]+$/i
 
 export const isDidIdentifier = (value: string): boolean => {
@@ -87,12 +86,10 @@ export const parseEntryLocator = (
     }
 
     if (decoded.startsWith("at://")) {
-        const match = decoded.match(
-            /^at:\/\/([^/]+)\/dev\.nekono\.skyshare\.entry\/([^/?#]+)$/,
-        )
-        if (!match) return
-        if (!isDidIdentifier(match[1])) return
-        return { actor: match[1], rkey: match[2] }
+        const parsed = parseEntryAtUri(decoded)
+        if (!parsed) return
+        if (!isDidIdentifier(parsed.actor)) return
+        return parsed
     }
 
     const compact = decoded.match(/^([^@]+)@([^@/]+)$/)

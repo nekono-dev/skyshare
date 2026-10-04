@@ -14,7 +14,7 @@ import {
 } from "@atproto/api"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { resolveDisplayName } from "@/lib/atproto/profile"
-import { ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     buildSkyshareEntryRecord,
     toCreatedSkyshareEntry,
@@ -139,7 +139,7 @@ export const createEntryFromExistingPost = async (
         })
     } catch (err) {
         console.error(
-            "createEntry: dev.nekono.skyshare.entry create failed (from-post)",
+            `createEntry: ${ENTRY_COLLECTION} create failed (from-post)`,
             err,
         )
         return { ok: false, status: 500 }

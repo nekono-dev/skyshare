@@ -42,6 +42,12 @@ export default defineConfig({
     // があるため、rollup 形式のオプションを明示的に指定しておく
     optimizeDeps: {
       rollupOptions: {},
+      // dev 起動後に astro/app/manifest が遅延発見されると SSR 依存の再最適化が走り、
+      // workerd 側が参照中の旧チャンク（sequence-*.js 等）が削除されて
+      // 「The file does not exist at ... deps_ssr」で落ちる。
+      // 事前バンドル対象に含めて再最適化自体を発生させない。
+      // （@astrojs/cloudflare がユーザー指定の include を ssr 環境へ引き継ぐ）
+      include: ["astro/app/manifest", "astro/logger/json"],
     },
     // 新しい選択肢である oxc を空のオブジェクトで用意しておく（互換性援助）
     oxc: {},

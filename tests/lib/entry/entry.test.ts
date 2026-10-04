@@ -10,6 +10,7 @@ import {
     parseEntryLocator,
     toCidString,
 } from "@/lib/entry/entry"
+import { entryAtUri } from "@/lib/atproto/nsid"
 
 describe("isDidIdentifier", () => {
     it("did: 形式は true", () => {
@@ -34,11 +35,10 @@ describe("parseEntryLocator", () => {
     })
 
     it("at:// URI形式を解析する", () => {
-        expect(
-            parseEntryLocator(
-                "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
-            ),
-        ).toEqual({ actor: "did:plc:abc", rkey: "3lxyz" })
+        expect(parseEntryLocator(entryAtUri("did:plc:abc", "3lxyz"))).toEqual({
+            actor: "did:plc:abc",
+            rkey: "3lxyz",
+        })
     })
 
     it("compact形式({did}@{rkey})を解析する", () => {

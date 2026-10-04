@@ -8,6 +8,7 @@ import {
     normalizeTimelineEntry,
     normalizeTimelinePost,
 } from "@/lib/entry/posts"
+import { entryAtUri } from "@/lib/atproto/nsid"
 
 describe("extractTimelinePostImages", () => {
     it("画像embedからCDN URL付き画像一覧を抽出する", () => {
@@ -72,7 +73,7 @@ describe("extractTimelinePostImages", () => {
 
 describe("normalizeTimelineEntry", () => {
     const validEntry = {
-        uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+        uri: entryAtUri("did:plc:abc", "3lxyz"),
         cid: "bafyentry",
         value: {
             source: {
@@ -117,7 +118,7 @@ describe("normalizeTimelineEntry", () => {
 describe("groupTimelineEntriesBySourceUri", () => {
     it("source.uriをキーにMap化する", () => {
         const entry = {
-            uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+            uri: entryAtUri("did:plc:abc", "3lxyz"),
             cid: "bafyentry",
             value: {
                 source: {

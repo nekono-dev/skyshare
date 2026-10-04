@@ -9,7 +9,8 @@
  *   従来通りこのファイルが直接 atproto を呼び出す。
  */
 import type { AtpAgent } from "@atproto/api"
-import { blobToCdnUrl, ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { blobToCdnUrl } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION, MANIFEST_TYPE } from "@/lib/atproto/nsid"
 import { skyshareEntryUrlgen } from "@/lib/entry/url"
 
 type RepoUpdateAgent = {
@@ -75,7 +76,7 @@ export const buildSkyshareEntryRecord = (params: {
             cid: sourceCid,
         },
         manifest: {
-            $type: "dev.nekono.skyshare.defs#manifest",
+            $type: MANIFEST_TYPE,
             visual,
             heading: `${userName} 's Post`,
             caption: headingText.length > 0 ? headingText : "",
@@ -172,7 +173,7 @@ export const updateSkyshareEntry = async (
 ): Promise<UpdatedSkyshareEntry> => {
     const currentRes = await agent.com.atproto.repo.getRecord({
         repo,
-        collection: "dev.nekono.skyshare.entry",
+        collection: ENTRY_COLLECTION,
         rkey,
     })
     const current = currentRes.data.value as {
@@ -182,10 +183,10 @@ export const updateSkyshareEntry = async (
     }
 
     const record = {
-        $type: "dev.nekono.skyshare.entry",
+        $type: ENTRY_COLLECTION,
         source: current.source,
         manifest: {
-            $type: "dev.nekono.skyshare.defs#manifest",
+            $type: MANIFEST_TYPE,
             visual: current.manifest.visual,
             heading,
             caption,
@@ -195,7 +196,7 @@ export const updateSkyshareEntry = async (
 
     const putRes = await agent.com.atproto.repo.putRecord({
         repo,
-        collection: "dev.nekono.skyshare.entry",
+        collection: ENTRY_COLLECTION,
         rkey,
         record,
         swapRecord: currentRes.data.cid,

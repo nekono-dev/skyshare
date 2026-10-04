@@ -22,6 +22,7 @@ import { cidForLex, type LexValue } from "@atproto/lex-cbor"
 import type { AtpAgent } from "@atproto/api"
 import type * as Components from "@/lib/api/schema/common"
 import { buildBskyPostRecord, BSKY_POST_COLLECTION } from "@/lib/atproto/post"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     buildThreadgateRecord,
     buildPostgateRecord,
@@ -209,7 +210,7 @@ export const createBskyThread = async (
         })
         writes.push({
             $type: "com.atproto.repo.applyWrites#create",
-            collection: "dev.nekono.skyshare.entry",
+            collection: ENTRY_COLLECTION,
             rkey: entryRkey,
             value: entryRecord,
         })

@@ -8,6 +8,7 @@ import {
     skyshareEntryPath,
     skyshareEntryUrlgen,
 } from "@/lib/entry/url"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 
 describe("bskyPostUrlgen", () => {
     it("bsky.app の投稿URLを生成する", () => {
@@ -73,7 +74,7 @@ describe("parseOwnedAtUri", () => {
 
     it("collection が不一致なら undefined", () => {
         expect(
-            parseOwnedAtUri(uri, "dev.nekono.skyshare.entry", "did:plc:abc"),
+            parseOwnedAtUri(uri, ENTRY_COLLECTION, "did:plc:abc"),
         ).toBeUndefined()
     })
 

@@ -6,7 +6,7 @@ import {
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
 import { parseLimit } from "@/util/http"
-import { ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     normalizeTimelineEntry,
     type TimelineSkyshareEntry,

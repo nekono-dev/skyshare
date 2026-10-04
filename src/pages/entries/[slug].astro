@@ -30,9 +30,9 @@ import {
     extractSourceImages,
     extractEmbedVideo,
     extractUnsupportedEmbedVideo,
-    ENTRY_COLLECTION,
 } from "@/lib/entry/entry"
 import type { EntryLike } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import { resolveXrpcStatus } from "@/lib/api/response"
 import { extractOwnedLinearReplyChain } from "@/lib/atproto/threadChain"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"

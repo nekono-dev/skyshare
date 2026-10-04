@@ -6,6 +6,7 @@ import type { APIContext } from "astro"
 
 import { GET } from "@/pages/v2/entries"
 import { createFakeAgent, fakeSession } from "./testSupport/fakeAgent"
+import { entryAtUri } from "@/lib/atproto/nsid"
 
 const callRoute = (request: Request, locals: Partial<App.Locals> = {}) =>
     GET({ request, locals } as unknown as APIContext)
@@ -115,7 +116,7 @@ describe("GET /v2/entries", () => {
             data: {
                 records: [
                     {
-                        uri: "at://did:plc:author/dev.nekono.skyshare.entry/3lentry",
+                        uri: entryAtUri("did:plc:author", "3lentry"),
                         cid: "bafyentry",
                         value: {
                             source: { uri: postUri, cid: "bafyown" },

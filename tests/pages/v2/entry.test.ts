@@ -13,6 +13,7 @@ import type { APIContext } from "astro"
 
 import { POST, PUT, DELETE } from "@/pages/v2/entry"
 import { createFakeAgent, fakeSession } from "./testSupport/fakeAgent"
+import { ENTRY_COLLECTION, entryAtUri } from "@/lib/atproto/nsid"
 
 const callRoute = (
     handler: typeof POST,
@@ -1209,7 +1210,7 @@ describe("PUT /v2/entry", () => {
             method: "PUT",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
-                uri: "at://did:plc:author/dev.nekono.skyshare.entry/3lentry",
+                uri: entryAtUri("did:plc:author", "3lentry"),
                 heading: "旅行",
                 caption: "京都にて",
             }),
@@ -1226,7 +1227,7 @@ describe("PUT /v2/entry", () => {
                 "content-type": "application/json",
             },
             body: JSON.stringify({
-                uri: "at://did:plc:author/dev.nekono.skyshare.entry/3lentry",
+                uri: entryAtUri("did:plc:author", "3lentry"),
                 heading: "旅行",
                 caption: "京都にて",
             }),
@@ -1261,7 +1262,7 @@ describe("PUT /v2/entry", () => {
         expect(res.status).toBe(400)
     })
 
-    it("uriが自分自身のdev.nekono.skyshare.entryでない場合は400を返す", async () => {
+    it("uriが自分自身のentryでない場合は400を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "PUT",
             headers: {
@@ -1269,7 +1270,7 @@ describe("PUT /v2/entry", () => {
                 "content-type": "application/json",
             },
             body: JSON.stringify({
-                uri: "at://did:plc:other/dev.nekono.skyshare.entry/3lentry",
+                uri: entryAtUri("did:plc:other", "3lentry"),
                 heading: "旅行",
                 caption: "京都にて",
             }),
@@ -1299,7 +1300,7 @@ describe("PUT /v2/entry", () => {
                 "content-type": "application/json",
             },
             body: JSON.stringify({
-                uri: "at://did:plc:author/dev.nekono.skyshare.entry/3lentry",
+                uri: entryAtUri("did:plc:author", "3lentry"),
                 heading: "旅行",
                 caption: "京都にて",
             }),
@@ -1319,7 +1320,7 @@ describe("PUT /v2/entry", () => {
                 "content-type": "application/json",
             },
             body: JSON.stringify({
-                uri: "at://did:plc:author/dev.nekono.skyshare.entry/3lentry",
+                uri: entryAtUri("did:plc:author", "3lentry"),
                 heading: "旅行",
                 caption: "京都にて",
             }),
@@ -1330,7 +1331,7 @@ describe("PUT /v2/entry", () => {
 })
 
 describe("DELETE /v2/entry", () => {
-    const entryUri = "at://did:plc:author/dev.nekono.skyshare.entry/3lentry"
+    const entryUri = entryAtUri("did:plc:author", "3lentry")
 
     it("cookieヘッダーが無い場合は400を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
@@ -1381,7 +1382,7 @@ describe("DELETE /v2/entry", () => {
         expect(res.status).toBe(400)
     })
 
-    it("uriが自分自身のdev.nekono.skyshare.entryでない場合は400を返す", async () => {
+    it("uriが自分自身のentryでない場合は400を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "DELETE",
             headers: {
@@ -1389,7 +1390,7 @@ describe("DELETE /v2/entry", () => {
                 "content-type": "application/json",
             },
             body: JSON.stringify({
-                uri: "at://did:plc:other/dev.nekono.skyshare.entry/3lentry",
+                uri: entryAtUri("did:plc:other", "3lentry"),
             }),
         })
         const res = await callRoute(DELETE, request, authenticatedLocals())
@@ -1751,7 +1752,7 @@ describe("DELETE /v2/entry", () => {
             expect(deleteRecord).toHaveBeenCalledTimes(1)
             expect(deleteRecord).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    collection: "dev.nekono.skyshare.entry",
+                    collection: ENTRY_COLLECTION,
                 }),
             )
         })
@@ -1907,7 +1908,7 @@ describe("POST /v2/entry（動画投稿）", () => {
         expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
         expect(
             applyWrites.mock.calls[0][0].writes.some(
-                (w: any) => w.collection === "dev.nekono.skyshare.entry",
+                (w: any) => w.collection === ENTRY_COLLECTION,
             ),
         ).toBe(true)
     })

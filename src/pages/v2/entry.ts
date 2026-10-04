@@ -6,7 +6,7 @@ import {
 } from "@/lib/api/response.js"
 import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
 import { formDataToObject } from "@/util/formData"
-import { ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     updateSkyshareEntry,
     type CreatedSkyshareEntry,

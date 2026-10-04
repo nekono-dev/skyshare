@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 import { createEntryFromExistingPost } from "@/lib/entry/fromPost"
+import { entryAtUri } from "@/lib/atproto/nsid"
 
 const session = { did: "did:plc:abc", handle: "alice.bsky.social" } as any
 const postUri = "at://did:plc:abc/app.bsky.feed.post/3labc"
@@ -31,7 +32,7 @@ const makeAgent = (overrides: Partial<Record<string, any>> = {}) => ({
                 getRecord: vi.fn().mockResolvedValue(imagePostRecord),
                 createRecord: vi.fn().mockResolvedValue({
                     data: {
-                        uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+                        uri: entryAtUri("did:plc:abc", "3lxyz"),
                         cid: "bafyentry",
                     },
                 }),
@@ -72,7 +73,7 @@ describe("createEntryFromExistingPost", () => {
         const agent = makeAgent()
         const result = await createEntryFromExistingPost(
             agent as any,
-            "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+            entryAtUri("did:plc:abc", "3lxyz"),
             session,
             ogImage,
         )
@@ -128,7 +129,7 @@ describe("createEntryFromExistingPost", () => {
                         }),
                         createRecord: vi.fn().mockResolvedValue({
                             data: {
-                                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+                                uri: entryAtUri("did:plc:abc", "3lxyz"),
                                 cid: "bafyentry",
                             },
                         }),
@@ -206,7 +207,7 @@ describe("createEntryFromExistingPost: sourceの決定(specs/entry/backend/desig
                         }),
                         createRecord: vi.fn().mockResolvedValue({
                             data: {
-                                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+                                uri: entryAtUri("did:plc:abc", "3lxyz"),
                                 cid: "bafyentry",
                             },
                         }),

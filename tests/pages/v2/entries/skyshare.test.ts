@@ -6,6 +6,7 @@ import type { APIContext } from "astro"
 
 import { GET } from "@/pages/v2/entries/skyshare"
 import { createFakeAgent, fakeSession } from "../testSupport/fakeAgent"
+import { entryAtUri } from "@/lib/atproto/nsid"
 
 const callRoute = (request: Request, locals: Partial<App.Locals> = {}) =>
     GET({ request, locals } as unknown as APIContext)
@@ -16,7 +17,7 @@ const authenticatedLocals = () => ({
 })
 
 const makeEntry = (rkey: string, sourceUri: string) => ({
-    uri: `at://${fakeSession.did}/dev.nekono.skyshare.entry/${rkey}`,
+    uri: entryAtUri(fakeSession.did, rkey),
     cid: `bafy${rkey}`,
     value: {
         source: { uri: sourceUri, cid: `bafysrc${rkey}` },

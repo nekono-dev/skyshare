@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
 import { listAllRecords } from "@/lib/atproto/repo"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 
 describe("listAllRecords", () => {
     it("1ページのみで完結する場合はそのまま返す", async () => {
@@ -11,14 +12,14 @@ describe("listAllRecords", () => {
 
         const result = await listAllRecords(agent, {
             repo: "did:plc:abc",
-            collection: "dev.nekono.skyshare.entry",
+            collection: ENTRY_COLLECTION,
         })
 
         expect(result).toEqual([{ uri: "at://a" }, { uri: "at://b" }])
         expect(listRecords).toHaveBeenCalledTimes(1)
         expect(listRecords).toHaveBeenCalledWith({
             repo: "did:plc:abc",
-            collection: "dev.nekono.skyshare.entry",
+            collection: ENTRY_COLLECTION,
             cursor: undefined,
             limit: 100,
         })
@@ -40,7 +41,7 @@ describe("listAllRecords", () => {
 
         const result = await listAllRecords(agent, {
             repo: "did:plc:abc",
-            collection: "dev.nekono.skyshare.entry",
+            collection: ENTRY_COLLECTION,
         })
 
         expect(result).toEqual([

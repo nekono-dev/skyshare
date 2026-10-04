@@ -5,6 +5,7 @@ import {
     toCreatedSkyshareEntry,
     updateSkyshareEntry,
 } from "@/lib/entry/skyshareRecord"
+import { ENTRY_COLLECTION, MANIFEST_TYPE, entryAtUri } from "@/lib/atproto/nsid"
 
 describe("buildSkyshareEntryRecord", () => {
     it("投稿情報とvisualからレコード値を組み立てる", () => {
@@ -18,13 +19,13 @@ describe("buildSkyshareEntryRecord", () => {
         })
 
         expect(record).toEqual({
-            $type: "dev.nekono.skyshare.entry",
+            $type: ENTRY_COLLECTION,
             source: {
                 uri: "at://did:plc:abc/app.bsky.feed.post/3labc",
                 cid: "bafypost",
             },
             manifest: {
-                $type: "dev.nekono.skyshare.defs#manifest",
+                $type: MANIFEST_TYPE,
                 visual: { ref: "bafkre123" },
                 heading: "Alice 's Post",
                 caption: "Hello world",
@@ -59,12 +60,12 @@ describe("toCreatedSkyshareEntry", () => {
         })
 
         const result = toCreatedSkyshareEntry(record, "did:plc:abc", {
-            uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+            uri: entryAtUri("did:plc:abc", "3lxyz"),
             cid: "bafyentry",
         })
 
         expect(result).toMatchObject({
-            atUri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+            atUri: entryAtUri("did:plc:abc", "3lxyz"),
             cid: "bafyentry",
             sourceUri: "at://did:plc:abc/app.bsky.feed.post/3labc",
             sourceCid: "bafypost",
@@ -91,7 +92,7 @@ describe("updateSkyshareEntry", () => {
         })
         const putRecord = vi.fn().mockResolvedValue({
             data: {
-                uri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+                uri: entryAtUri("did:plc:abc", "3lxyz"),
                 cid: "bafynew",
             },
         })
@@ -108,7 +109,7 @@ describe("updateSkyshareEntry", () => {
         expect(putRecord).toHaveBeenCalledWith(
             expect.objectContaining({
                 repo: "did:plc:abc",
-                collection: "dev.nekono.skyshare.entry",
+                collection: ENTRY_COLLECTION,
                 rkey: "3lxyz",
                 swapRecord: "bafyold",
                 record: expect.objectContaining({
@@ -123,7 +124,7 @@ describe("updateSkyshareEntry", () => {
             }),
         )
         expect(result).toEqual({
-            atUri: "at://did:plc:abc/dev.nekono.skyshare.entry/3lxyz",
+            atUri: entryAtUri("did:plc:abc", "3lxyz"),
             cid: "bafynew",
             heading: "新しい見出し",
             caption: "新しい本文",

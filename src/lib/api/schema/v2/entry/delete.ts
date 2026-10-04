@@ -1,5 +1,5 @@
 /**
- * DELETE /v2/entry/ — skyshare entry(dev.nekono.skyshare.entry)を削除する。
+ * DELETE /v2/entry/ — skyshare entryを削除する。
  * オプションで、紐づくBluesky投稿も削除する。
  *
  * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
@@ -29,7 +29,7 @@ export type RequestHeaderType = z.infer<typeof RequestHeaderSchema>
 export const operation: ZodOpenApiOperationObject = {
     operationId: "deleteEntry",
     summary:
-        "Delete a Skyshare entry (dev.nekono.skyshare.entry). Optionally also deletes the underlying Bluesky post.",
+        "Delete a Skyshare entry. Optionally also deletes the underlying Bluesky post.",
     requestParams: { header: RequestHeaderSchema },
     requestBody: {
         required: true,

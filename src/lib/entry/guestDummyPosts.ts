@@ -16,6 +16,7 @@ import type {
 } from "@/lib/entry/posts"
 import type { EntryDeleteScope } from "@/lib/entry/resolveEntryDeleteScope"
 import type { Locale } from "@/lib/i18n/locale"
+import { entryAtUri } from "@/lib/atproto/nsid"
 import type { Translator } from "@/lib/i18n/translate"
 
 /**
@@ -108,7 +109,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
                 },
             ],
             skyshareEntry: {
-                uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentry1",
+                uri: entryAtUri("did:plc:guestdemo", "guestentry1"),
                 cid: "bafyreiguestentry1",
                 createdAt: "2026-09-06T10:00:00.000Z",
                 sourceUri: "at://did:plc:guestdemo/app.bsky.feed.post/guest2",
@@ -293,7 +294,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
                 },
             ],
             skyshareEntry: {
-                uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentrythreadb",
+                uri: entryAtUri("did:plc:guestdemo", "guestentrythreadb"),
                 cid: "bafyreiguestentrythreadb",
                 createdAt: "2026-09-03T12:00:00.000Z",
                 sourceUri:
@@ -368,7 +369,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             text: t("guest.threadD.midText"),
             images: [],
             skyshareEntry: {
-                uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentrythreadd",
+                uri: entryAtUri("did:plc:guestdemo", "guestentrythreadd"),
                 cid: "bafyreiguestentrythreadd",
                 createdAt: "2026-09-01T12:05:00.000Z",
                 sourceUri:
@@ -407,7 +408,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             text: t("guest.unknown.text"),
             images: [],
             skyshareEntry: {
-                uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentryunknown",
+                uri: entryAtUri("did:plc:guestdemo", "guestentryunknown"),
                 cid: "bafyreiguestentryunknown",
                 createdAt: "2026-08-31T12:00:00.000Z",
                 sourceUri:
@@ -556,7 +557,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
 
     const entries: TimelineSkyshareEntry[] = [
         {
-            uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentry1",
+            uri: entryAtUri("did:plc:guestdemo", "guestentry1"),
             cid: "bafyreiguestentry1",
             createdAt: "2026-09-06T10:00:00.000Z",
             sourceUri: "at://did:plc:guestdemo/app.bsky.feed.post/guest2",
@@ -567,7 +568,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             webUrl: GUEST_SAMPLE_ENTRY_PATH,
         },
         {
-            uri: "at://did:plc:guestdemo/dev.nekono.skyshare.entry/guestentry2",
+            uri: entryAtUri("did:plc:guestdemo", "guestentry2"),
             cid: "bafyreiguestentry2",
             createdAt: "2026-09-05T08:00:00.000Z",
             sourceUri: "at://did:plc:guestdemo/app.bsky.feed.post/guest3",

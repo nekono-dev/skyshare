@@ -13,6 +13,7 @@
  *   のように、変更したいメソッドだけを指定すれば他のデフォルト値は保持される）。
  */
 import { vi } from "vitest"
+import { ENTRY_COLLECTION, entryAtUri } from "@/lib/atproto/nsid"
 
 export type FakeAgentOverrides = {
     uploadBlob?: any
@@ -77,7 +78,7 @@ const defaultGetRecord = vi.fn(
                 },
             }
         }
-        // dev.nekono.skyshare.entry
+        // entry
         return {
             data: {
                 cid: "bafyentrycid",
@@ -105,10 +106,10 @@ const defaultCreateRecord = vi.fn(
         collection: string
         rkey?: string
     }) => {
-        if (collection === "dev.nekono.skyshare.entry") {
+        if (collection === ENTRY_COLLECTION) {
             return {
                 data: {
-                    uri: "at://did:plc:author/dev.nekono.skyshare.entry/3lentry",
+                    uri: entryAtUri("did:plc:author", "3lentry"),
                     cid: "bafyentrycid",
                 },
             }
@@ -234,7 +235,7 @@ export const createFakeAgent = (overrides: FakeAgentOverrides = {}): any => ({
                                 rkey: string
                             }) => ({
                                 data: {
-                                    uri: `at://${repo}/dev.nekono.skyshare.entry/${rkey}`,
+                                    uri: entryAtUri(repo, rkey),
                                     cid: "bafyupdatedcid",
                                 },
                             }),
