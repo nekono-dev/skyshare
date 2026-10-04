@@ -25,16 +25,16 @@
 
 2026-10-04 に検証用アカウントで、スクラッチの検証フォーム（本ブランチと独立）を用いて確認した事実。設計はこれを前提とする。
 
-| 項目                   | 結果                                                                                                                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CORS                   | `video.bsky.app` の API・HLS プレイリスト・セグメント・サムネイルは `access-control-allow-origin: *`。ブラウザから直接アクセスできる。                                                |
-| サービス認証           | `aud` = 利用者の PDS の `did:web:<PDSホスト>`、`lxm` = `com.atproto.repo.uploadBlob` の組み合わせのみ有効。`aud=did:web:video.bsky.app` や各 procedure 名の `lxm` は 401。            |
-| トークンの検証単位     | `startUpload`・`uploadPart`・`finishUpload` の各リクエストでトークンが検証される。有効期間（`exp`）を 30 分で発行して動作した。                                                       |
-| 分割アップロード       | パートサイズはサーバー指定（5,242,880 バイト）。300MB で 58 パート。各パートは冪等。`startUpload` の応答に `jobId`・`partSizeBytes`・`partCount`。                                    |
-| 変換ジョブ             | `finishUpload` の `completedJobId` を `getJobStatus`（認証不要）でポーリング。`JOB_STATE_COMPLETED` で `blob`（JSON形式の blob 参照）が得られる。                                      |
+| 項目                     | 結果                                                                                                                                                                                          |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CORS                     | `video.bsky.app` の API・HLS プレイリスト・セグメント・サムネイルは `access-control-allow-origin: *`。ブラウザから直接アクセスできる。                                                        |
+| サービス認証             | `aud` = 利用者の PDS の `did:web:<PDSホスト>`、`lxm` = `com.atproto.repo.uploadBlob` の組み合わせのみ有効。`aud=did:web:video.bsky.app` や各 procedure 名の `lxm` は 401。                    |
+| トークンの検証単位       | `startUpload`・`uploadPart`・`finishUpload` の各リクエストでトークンが検証される。有効期間（`exp`）を 30 分で発行して動作した。                                                               |
+| 分割アップロード         | パートサイズはサーバー指定（5,242,880 バイト）。300MB で 58 パート。各パートは冪等。`startUpload` の応答に `jobId`・`partSizeBytes`・`partCount`。                                            |
+| 変換ジョブ               | `finishUpload` の `completedJobId` を `getJobStatus`（認証不要）でポーリング。`JOB_STATE_COMPLETED` で `blob`（JSON形式の blob 参照）が得られる。                                             |
 | `startUpload` の事前検証 | サイズ 300,000,000 バイト超は `VideoTooLarge`（400）、極端な縦横比は `BadAspectRatio`（400）。長さ・MIME は参考値として受理され、後段の変換で失敗しうる。長さの上限は 10 分（運用上の仕様）。 |
-| 再生データ             | 投稿レコードの `video` blob の CID から `https://video.bsky.app/watch/<DID(URLエンコード)>/<CID>/playlist.m3u8` と `.../thumbnail.jpg` が得られる。マスタープレイリストは 360p/720p。 |
-| 再生                   | Chromium で hls.js により再生できた。サムネイルの `content-type` は `application/octet-stream`（`<img>` 表示・`fetch` での取得は可能）。                                              |
+| 再生データ               | 投稿レコードの `video` blob の CID から `https://video.bsky.app/watch/<DID(URLエンコード)>/<CID>/playlist.m3u8` と `.../thumbnail.jpg` が得られる。マスタープレイリストは 360p/720p。         |
+| 再生                     | Chromium で hls.js により再生できた。サムネイルの `content-type` は `application/octet-stream`（`<img>` 表示・`fetch` での取得は可能）。                                                      |
 
 ## 3. 定数（`src/lib/video/postVideoLimits.ts`）
 
@@ -73,12 +73,12 @@ export const VIDEO_PART_MAX_RETRIES = 3
 
 ```ts
 export const ResponseBody200Schema = z
-    .object({
-        token: z.string().min(1),
-        did: z.string(),            // 利用者の DID
-        expiresAt: z.number().int(), // UNIX 秒
-    })
-    .strict()
+  .object({
+    token: z.string().min(1),
+    did: z.string(), // 利用者の DID
+    expiresAt: z.number().int(), // UNIX 秒
+  })
+  .strict()
 ```
 
 - エラー: 401（未認証）、400（対応PDS以外）、500（`getServiceAuth` 失敗）。`Common.errorResponses(["400","401","429","500"])` を使う。レスポンスには `Cache-Control: no-store` を付ける。
@@ -87,35 +87,37 @@ export const ResponseBody200Schema = z
 ```ts
 /** PDS の URL が対応PDS（bsky.social 系）か判定する */
 export const isSupportedVideoPds = (pdsUrl: string): boolean => {
-    const host = new URL(pdsUrl).host
-    return host === "bsky.social" || host.endsWith(".host.bsky.network")
+  const host = new URL(pdsUrl).host
+  return host === "bsky.social" || host.endsWith(".host.bsky.network")
 }
 
 type VideoAuthAgent = Pick<AtpAgent, "com"> // com.atproto.server.getServiceAuth のみ使用
 
 export const createVideoUploadToken = async (
-    agent: VideoAuthAgent,
-    session: { did: string; didDoc?: unknown },
-    nowSec: number,
+  agent: VideoAuthAgent,
+  session: { did: string; didDoc?: unknown },
+  nowSec: number,
 ): Promise<
-    | { ok: true; token: string; did: string; expiresAt: number }
-    | { ok: false; status: 400 | 500 }
+  | { ok: true; token: string; did: string; expiresAt: number }
+  | { ok: false; status: 400 | 500 }
 > => {
-    // PDS は session.didDoc の #atproto_pds、無ければ resolvePdsServiceForDid(did)
-    const pdsUrl = readPdsServiceFromDidDoc(session.didDoc) ?? (await resolvePdsServiceForDid(session.did))
-    if (!pdsUrl) return { ok: false, status: 500 }
-    if (!isSupportedVideoPds(pdsUrl)) return { ok: false, status: 400 }
-    const expiresAt = nowSec + VIDEO_UPLOAD_TOKEN_TTL_SEC
-    try {
-        const res = await agent.com.atproto.server.getServiceAuth({
-            aud: `did:web:${new URL(pdsUrl).host}`,
-            lxm: "com.atproto.repo.uploadBlob",
-            exp: expiresAt,
-        })
-        return { ok: true, token: res.data.token, did: session.did, expiresAt }
-    } catch (err) {
-        return { ok: false, status: 500 } // トークンはログに出さない（NFR-2）
-    }
+  // PDS は session.didDoc の #atproto_pds、無ければ resolvePdsServiceForDid(did)
+  const pdsUrl =
+    readPdsServiceFromDidDoc(session.didDoc) ??
+    (await resolvePdsServiceForDid(session.did))
+  if (!pdsUrl) return { ok: false, status: 500 }
+  if (!isSupportedVideoPds(pdsUrl)) return { ok: false, status: 400 }
+  const expiresAt = nowSec + VIDEO_UPLOAD_TOKEN_TTL_SEC
+  try {
+    const res = await agent.com.atproto.server.getServiceAuth({
+      aud: `did:web:${new URL(pdsUrl).host}`,
+      lxm: "com.atproto.repo.uploadBlob",
+      exp: expiresAt,
+    })
+    return { ok: true, token: res.data.token, did: session.did, expiresAt }
+  } catch (err) {
+    return { ok: false, status: 500 } // トークンはログに出さない（NFR-2）
+  }
 }
 ```
 
@@ -129,21 +131,21 @@ export const createVideoUploadToken = async (
 ```ts
 /** 動画 blob 参照（getJobStatus が返す JSON 形式。`app.bsky.embed.video#video` にそのまま使える） */
 export const CommonVideoBlobSchema = z
-    .object({
-        $type: z.literal("blob"),
-        ref: z.object({ $link: z.string().min(1) }).strict(),
-        mimeType: z.literal(VIDEO_MIME_TYPE),
-        size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
-    })
-    .strict()
+  .object({
+    $type: z.literal("blob"),
+    ref: z.object({ $link: z.string().min(1) }).strict(),
+    mimeType: z.literal(VIDEO_MIME_TYPE),
+    size: z.number().int().min(1).max(MAX_VIDEO_BYTES),
+  })
+  .strict()
 
 export const CommonVideoMetaSchema = z
-    .object({
-        width: z.number().int().min(1),
-        height: z.number().int().min(1),
-        alt: z.string().optional().default(""),
-    })
-    .strict()
+  .object({
+    width: z.number().int().min(1),
+    height: z.number().int().min(1),
+    alt: z.string().optional().default(""),
+  })
+  .strict()
 ```
 
 #### 4.2.2 `EntryPostItemSchema` に動画投稿の分岐を追加（`src/lib/api/schema/v2/entry/post.ts`）
@@ -169,13 +171,13 @@ z.object({
 
 ```ts
 export const createVideoEmbed = (
-    video: Components.CommonVideoBlobType,
-    meta: Components.CommonVideoMetaType,
+  video: Components.CommonVideoBlobType,
+  meta: Components.CommonVideoMetaType,
 ) => ({
-    $type: "app.bsky.embed.video" as const,
-    video,
-    alt: meta.alt ?? "",
-    aspectRatio: { width: meta.width, height: meta.height },
+  $type: "app.bsky.embed.video" as const,
+  video,
+  alt: meta.alt ?? "",
+  aspectRatio: { width: meta.width, height: meta.height },
 })
 ```
 
@@ -185,9 +187,12 @@ embed 作成の分岐を「動画 → 画像 → OGP」の順にする。動画�
 
 ```ts
 if ("video" in item && item.video) {
-    embed = createVideoEmbed(item.video, item.videoMeta)
-} else if (hasImages && item.images) { /* 既存 */ }
-else if (item.ogMeta && item.ogImage) { /* 既存 */ }
+  embed = createVideoEmbed(item.video, item.videoMeta)
+} else if (hasImages && item.images) {
+  /* 既存 */
+} else if (item.ogMeta && item.ogImage) {
+  /* 既存 */
+}
 ```
 
 `createBskyThread` は `embed` を不透明な値として扱うため変更しない。冒頭のドキュメントコメント（テキスト／OGP／画像）に「動画」を加える。
@@ -198,17 +203,17 @@ else if (item.ogMeta && item.ogImage) { /* 既存 */ }
 
 ```ts
 export type SourceVideo = {
-    cid: string
-    playlistUrl: string
-    thumbnailUrl: string
-    alt: string
-    aspectRatio?: { width: number; height: number }
+  cid: string
+  playlistUrl: string
+  thumbnailUrl: string
+  alt: string
+  aspectRatio?: { width: number; height: number }
 }
 
 /** blob の CID と repo DID から再生URL・サムネイルURLを組み立てる */
 export const buildVideoUrls = (repoDid: string, cid: string) => ({
-    playlistUrl: `${VIDEO_WATCH_BASE_URL}${encodeURIComponent(repoDid)}/${cid}/playlist.m3u8`,
-    thumbnailUrl: `${VIDEO_WATCH_BASE_URL}${encodeURIComponent(repoDid)}/${cid}/thumbnail.jpg`,
+  playlistUrl: `${VIDEO_WATCH_BASE_URL}${encodeURIComponent(repoDid)}/${cid}/playlist.m3u8`,
+  thumbnailUrl: `${VIDEO_WATCH_BASE_URL}${encodeURIComponent(repoDid)}/${cid}/thumbnail.jpg`,
 })
 
 /**
@@ -217,9 +222,11 @@ export const buildVideoUrls = (repoDid: string, cid: string) => ({
  * `toCidString(embed.video)`（既存の blob→CID 変換）が undefined の場合も undefined。
  */
 export const extractEmbedVideo = (
-    embed: AppBskyFeedPost.Main["embed"] | undefined,
-    repoDid: string,
-): SourceVideo | undefined => { /* $type 判定 → cid → buildVideoUrls → alt / aspectRatio */ }
+  embed: AppBskyFeedPost.Main["embed"] | undefined,
+  repoDid: string,
+): SourceVideo | undefined => {
+  /* $type 判定 → cid → buildVideoUrls → alt / aspectRatio */
+}
 ```
 
 - `src/lib/entry/posts.ts` の `TimelinePost` に `video?: SourceVideo` を追加し、`toTimelinePost` 相当の変換（`extractTimelinePostImages` を呼ぶ箇所）で `extractEmbedVideo(postRecord.embed, post.author.did)` を設定する。
@@ -235,9 +242,11 @@ export const extractEmbedVideo = (
  * 動画 blob は投稿レコードと同じ repo にあるため、repoDid は投稿者の DID をそのまま使う。
  */
 export const extractUnsupportedEmbedVideo = (
-    embed: AppBskyFeedPost.Main["embed"] | undefined,
-    repoDid: string,
-): SourceVideo | undefined => { /* embed.$type === "app.bsky.embed.recordWithMedia" && embed.media?.$type === "app.bsky.embed.video" → extractEmbedVideo({ ...embed.media }, repoDid) 相当 */ }
+  embed: AppBskyFeedPost.Main["embed"] | undefined,
+  repoDid: string,
+): SourceVideo | undefined => {
+  /* embed.$type === "app.bsky.embed.recordWithMedia" && embed.media?.$type === "app.bsky.embed.video" → extractEmbedVideo({ ...embed.media }, repoDid) 相当 */
+}
 ```
 
 - `TimelinePost.unsupportedVideo?: SourceVideo` と `EntryPostView.unsupportedVideo?: SourceVideo` を追加し、`video` と同じ箇所で設定する。`video` と `unsupportedVideo` が同時に設定されることはない（embed は1つの `$type`）。
@@ -248,19 +257,22 @@ export const extractUnsupportedEmbedVideo = (
 
 ```ts
 export type VideoProbe = {
-    width: number
-    height: number
-    durationSec: number
-    posterBlob: Blob // JPEG（最大辺 1280px）
+  width: number
+  height: number
+  durationSec: number
+  posterBlob: Blob // JPEG（最大辺 1280px）
 }
 
-export type VideoValidationError = "notMp4" | "tooLarge" | "tooLong" | "unreadable"
+export type VideoValidationError =
+  "notMp4" | "tooLarge" | "tooLong" | "unreadable"
 
 /** 同期的に検査できるもの（形式・サイズ）。違反なら理由を返し、問題なければ undefined */
-export const validateVideoFile = (file: File): VideoValidationError | undefined => {
-    if (file.type !== VIDEO_MIME_TYPE) return "notMp4"
-    if (file.size > MAX_VIDEO_BYTES) return "tooLarge"
-    return undefined
+export const validateVideoFile = (
+  file: File,
+): VideoValidationError | undefined => {
+  if (file.type !== VIDEO_MIME_TYPE) return "notMp4"
+  if (file.size > MAX_VIDEO_BYTES) return "tooLarge"
+  return undefined
 }
 
 /**
@@ -269,7 +281,9 @@ export const validateVideoFile = (file: File): VideoValidationError | undefined 
  * duration > MAX_VIDEO_DURATION_SEC なら "tooLong"、読み込み不能・寸法0・duration が有限でなければ
  * "unreadable" で reject する。object URL は finally で revoke する。
  */
-export const probeVideo = async (file: File): Promise<VideoProbe> => { /* ... */ }
+export const probeVideo = async (file: File): Promise<VideoProbe> => {
+  /* ... */
+}
 ```
 
 ### 5.2 `videoUploader.ts` — アップロード本体
@@ -336,22 +350,22 @@ getToken = トークンキャッシュ関数（expiresAt - now < VIDEO_TOKEN_REF
 
 ### 5.4 エラーとメッセージキーの対応（`src/lib/video/videoErrors.ts`）
 
-| 発生源                                                         | `VideoUploadErrorCode` / `VideoValidationError` | メッセージキー（`video.error.*`） |
-| -------------------------------------------------------------- | ----------------------------------------------- | --------------------------------- |
-| `validateVideoFile`: 形式                                      | `notMp4`                                        | `notMp4`                          |
-| `validateVideoFile`/`startUpload`: `VideoTooLarge`             | `tooLarge`                                      | `tooLarge`                        |
-| `probeVideo`: 長さ超過                                         | `tooLong`                                       | `tooLong`                         |
-| `probeVideo`: 読み込み不能                                     | `unreadable`                                    | `unreadable`                      |
-| `startUpload`: `BadAspectRatio`                                | `badAspectRatio`                                | `badAspectRatio`                  |
-| `startUpload`: `DailyLimitExceeded`                            | `dailyLimit`                                    | `dailyLimit`                      |
-| `startUpload`: `UploadForbidden`                               | `forbidden`                                     | `forbidden`                       |
-| `startUpload`: `TooManyOpenUploads`                            | `tooManyUploads`                                | `tooManyUploads`                  |
-| `startUpload`/`finishUpload`: `ServiceOverloaded`              | `overloaded`                                    | `overloaded`                      |
-| `getJobStatus`: `JOB_STATE_FAILED`（`failureCode` 全般）       | `processingFailed`                              | `processingFailed`                |
-| ポーリングが `VIDEO_JOB_TIMEOUT_MS` 超過                       | `timeout`                                       | `timeout`                         |
-| トークン発行 400                                               | `unsupportedPds`                                | `unsupportedPds`                  |
-| `fetch` の TypeError（再試行後）                               | `network`                                       | `network`                         |
-| 上記以外                                                       | `unknown`                                       | `unknown`                         |
+| 発生源                                                   | `VideoUploadErrorCode` / `VideoValidationError` | メッセージキー（`video.error.*`） |
+| -------------------------------------------------------- | ----------------------------------------------- | --------------------------------- |
+| `validateVideoFile`: 形式                                | `notMp4`                                        | `notMp4`                          |
+| `validateVideoFile`/`startUpload`: `VideoTooLarge`       | `tooLarge`                                      | `tooLarge`                        |
+| `probeVideo`: 長さ超過                                   | `tooLong`                                       | `tooLong`                         |
+| `probeVideo`: 読み込み不能                               | `unreadable`                                    | `unreadable`                      |
+| `startUpload`: `BadAspectRatio`                          | `badAspectRatio`                                | `badAspectRatio`                  |
+| `startUpload`: `DailyLimitExceeded`                      | `dailyLimit`                                    | `dailyLimit`                      |
+| `startUpload`: `UploadForbidden`                         | `forbidden`                                     | `forbidden`                       |
+| `startUpload`: `TooManyOpenUploads`                      | `tooManyUploads`                                | `tooManyUploads`                  |
+| `startUpload`/`finishUpload`: `ServiceOverloaded`        | `overloaded`                                    | `overloaded`                      |
+| `getJobStatus`: `JOB_STATE_FAILED`（`failureCode` 全般） | `processingFailed`                              | `processingFailed`                |
+| ポーリングが `VIDEO_JOB_TIMEOUT_MS` 超過                 | `timeout`                                       | `timeout`                         |
+| トークン発行 400                                         | `unsupportedPds`                                | `unsupportedPds`                  |
+| `fetch` の TypeError（再試行後）                         | `network`                                       | `network`                         |
+| 上記以外                                                 | `unknown`                                       | `unknown`                         |
 
 `startUpload` 等のエラー応答は `{ error: string }` の JSON で返るため、`error` 名で分岐する。`mapVideoError(code): PlainMessageKey` を提供する。
 
@@ -361,23 +375,23 @@ getToken = トークンキャッシュ関数（expiresAt - now < VIDEO_TOKEN_REF
 
 ```ts
 export type VideoEntry = {
-    fileName: string
-    width: number
-    height: number
-    durationSec: number
-    alt: string
-    posterPreview: string        // object URL（取り外し時に revoke）
-    posterBlob: Blob             // poster（JPEG）
-    thumbnailBlob: Blob          // visual（createDefaultThumbnail([poster object URL]) の結果）
-    upload:
-        | { state: "uploading"; progress: VideoUploadProgress }
-        | { state: "done"; blob: VideoBlobRef }
-        | { state: "error"; messageKey: PlainMessageKey }
+  fileName: string
+  width: number
+  height: number
+  durationSec: number
+  alt: string
+  posterPreview: string // object URL（取り外し時に revoke）
+  posterBlob: Blob // poster（JPEG）
+  thumbnailBlob: Blob // visual（createDefaultThumbnail([poster object URL]) の結果）
+  upload:
+    | { state: "uploading"; progress: VideoUploadProgress }
+    | { state: "done"; blob: VideoBlobRef }
+    | { state: "error"; messageKey: PlainMessageKey }
 }
 
 export type SegmentState = {
-    // 既存フィールド…
-    videoEntry: VideoEntry | null
+  // 既存フィールド…
+  videoEntry: VideoEntry | null
 }
 ```
 
@@ -407,9 +421,9 @@ props:
 
 ```ts
 type Props = {
-    value: VideoEntry | null
-    onChange: (entry: VideoEntry | null) => void
-    disabled?: boolean  // 画像/OGP添付済み、または投稿処理中
+  value: VideoEntry | null
+  onChange: (entry: VideoEntry | null) => void
+  disabled?: boolean // 画像/OGP添付済み、または投稿処理中
 }
 ```
 
@@ -443,7 +457,8 @@ onSelectFile(file):
 - 投稿ボタンの `disabled` 条件（`ThreadComposer/index.tsx` と `spec.submitButton.md`）に次を加える。
   ```ts
   const hasPendingVideo = segments.some(
-      segment => segment.videoEntry !== null && segment.videoEntry.upload.state !== "done",
+    segment =>
+      segment.videoEntry !== null && segment.videoEntry.upload.state !== "done",
   )
   // submitDisabled = 既存条件 || hasPendingVideo
   ```
@@ -462,20 +477,20 @@ onSelectFile(file):
 
 #### 6.5.1 寸法・色（単位は CSS px。スクリーンショットの実測値 ÷ 2）
 
-| 要素                     | 値                                                                                                                                                                         | 根拠（実測）                                                                                                                     |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| 再生ボタン 円の中心      | 動画の表示領域の中心（水平・垂直とも）。動画の縦横比によらない                                                                                                            | 正方形の動画のスクリーンショットで、動画枠の中心 (618, 680.5) と円の中心 (618, 681) が一致                                                                        |
-| 再生ボタン 円の直径      | `59`                                                                                                                                                                       | 円の外接幅 118px（2枚の独立した画像で一致）                                                                                      |
-| 再生ボタン 円の色        | `rgba(50, 50, 50, 0.6)`                                                                                                                                                    | 背景値→円の内側の値の実測 4 点（黒背景 `0→30`、赤背景 `251→130`・`32→43`・`30→42`。いずれも 1 チャンネルの値）を `結果 = (1-α)×背景 + α×色` に当てはめた（α=0.60、色=50.0、誤差 0.2 以下）。別の状態として α=0.8（色は同じ 50）の表示も観測されたが、採用しない（意思決定済み） |
-| 再生記号の形             | 右向きの二等辺三角形。頂点は外接矩形内の `(0,0)`・`(0,H)`・`(W,H/2)`。`W = 20`・`H = 25`                                                                                   | 外接矩形 40×50px                                                                                                                 |
-| 再生記号の色             | `#FFFFFF`（不透明）                                                                                                                                                        | 実測 `rgb(255,255,255)`                                                                                                          |
-| 再生記号の位置           | 外接矩形の中心を、円の中心から右へ `2.5` ずらす（垂直は中心一致）                                                                                                          | 円の中心 (69.5, 64)・記号の中心 (74.5, 64.5)                                                                                      |
-| 再生時間バッジ 高さ      | `20`                                                                                                                                                                       | 外接 y 12〜51（40px）                                                                                                            |
-| 再生時間バッジ 幅        | `文字列の幅 + 18`（左右の余白 `9` ずつ）。`0:05` のとき `26 + 18 = 44`                                                                                                     | 外接 x 28〜115（88px）、文字 x 46〜97                                                                                            |
-| 再生時間バッジ 角丸      | `4`                                                                                                                                                                        | 角の曲がり開始が約 6〜8px                                                                                                        |
-| 再生時間バッジ 色        | `rgba(0, 0, 0, 0.8)`                                                                                                                                                       | 明暗の異なる複数の背景（`84→20`、`145→31`、`251→58`、`32→7` 等、15 点）への当てはめで α=0.80・色≈黒（2）。最大誤差 7 程度 |
-| 再生時間バッジ 文字      | 白 `#FFFFFF`、`font-weight: 700`、`13px`、`sans-serif`、バッジ内で水平・垂直中央、書式 `m:ss`                                                                              | 文字外接 高さ 19px                                                                                                               |
-| 再生時間バッジ 位置      | 動画の表示領域の左端から `12`、下端から `12`（バッジの左下角基準）                                                                                                         | 動画全体が写ったスクリーンショットで、動画枠（x 0〜1235、y 63〜1298）に対し、バッジ x 24〜107・y 1235〜1274（左余白 24px、下余白 24px）                                |
+| 要素                | 値                                                                                            | 根拠（実測）                                                                                                                                                                                                                                                                    |
+| ------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 再生ボタン 円の中心 | 動画の表示領域の中心（水平・垂直とも）。動画の縦横比によらない                                | 正方形の動画のスクリーンショットで、動画枠の中心 (618, 680.5) と円の中心 (618, 681) が一致                                                                                                                                                                                      |
+| 再生ボタン 円の直径 | `59`                                                                                          | 円の外接幅 118px（2枚の独立した画像で一致）                                                                                                                                                                                                                                     |
+| 再生ボタン 円の色   | `rgba(50, 50, 50, 0.6)`                                                                       | 背景値→円の内側の値の実測 4 点（黒背景 `0→30`、赤背景 `251→130`・`32→43`・`30→42`。いずれも 1 チャンネルの値）を `結果 = (1-α)×背景 + α×色` に当てはめた（α=0.60、色=50.0、誤差 0.2 以下）。別の状態として α=0.8（色は同じ 50）の表示も観測されたが、採用しない（意思決定済み） |
+| 再生記号の形        | 右向きの二等辺三角形。頂点は外接矩形内の `(0,0)`・`(0,H)`・`(W,H/2)`。`W = 20`・`H = 25`      | 外接矩形 40×50px                                                                                                                                                                                                                                                                |
+| 再生記号の色        | `#FFFFFF`（不透明）                                                                           | 実測 `rgb(255,255,255)`                                                                                                                                                                                                                                                         |
+| 再生記号の位置      | 外接矩形の中心を、円の中心から右へ `2.5` ずらす（垂直は中心一致）                             | 円の中心 (69.5, 64)・記号の中心 (74.5, 64.5)                                                                                                                                                                                                                                    |
+| 再生時間バッジ 高さ | `20`                                                                                          | 外接 y 12〜51（40px）                                                                                                                                                                                                                                                           |
+| 再生時間バッジ 幅   | `文字列の幅 + 18`（左右の余白 `9` ずつ）。`0:05` のとき `26 + 18 = 44`                        | 外接 x 28〜115（88px）、文字 x 46〜97                                                                                                                                                                                                                                           |
+| 再生時間バッジ 角丸 | `4`                                                                                           | 角の曲がり開始が約 6〜8px                                                                                                                                                                                                                                                       |
+| 再生時間バッジ 色   | `rgba(0, 0, 0, 0.8)`                                                                          | 明暗の異なる複数の背景（`84→20`、`145→31`、`251→58`、`32→7` 等、15 点）への当てはめで α=0.80・色≈黒（2）。最大誤差 7 程度                                                                                                                                                       |
+| 再生時間バッジ 文字 | 白 `#FFFFFF`、`font-weight: 700`、`13px`、`sans-serif`、バッジ内で水平・垂直中央、書式 `m:ss` | 文字外接 高さ 19px                                                                                                                                                                                                                                                              |
+| 再生時間バッジ 位置 | 動画の表示領域の左端から `12`、下端から `12`（バッジの左下角基準）                            | 動画全体が写ったスクリーンショットで、動画枠（x 0〜1235、y 63〜1298）に対し、バッジ x 24〜107・y 1235〜1274（左余白 24px、下余白 24px）                                                                                                                                         |
 
 検証時の許容誤差は、色は各チャンネル ±6（JPEG 圧縮と補間のため）、位置・寸法は ±2 デバイスピクセルとする。
 
@@ -483,13 +498,13 @@ onSelectFile(file):
 
 visual は X のカードで幅 `506` CSS px 前後に縮小表示されるため、描画時に `S = 1200 / 506`（≈ 2.3715）を CSS px の値に掛けて換算する。これにより X 上での見た目が、実測した CSS px の大きさになる。
 
-| 要素 | visual（1200×630）上の寸法（デバイスピクセル、S 倍。小数 1 桁） |
-| ---- | ---------------------------------------------------------------- |
-| 円の直径 | `139.9` |
-| 再生記号 W×H・右ずらし | `47.4 × 59.3`・`5.9` |
-| バッジ 高さ・角丸・左右余白 | `47.4`・`9.5`・`21.3` |
-| バッジ 文字サイズ | `30.8px` |
-| バッジ 余白（左・下） | `28.5` |
+| 要素                        | visual（1200×630）上の寸法（デバイスピクセル、S 倍。小数 1 桁） |
+| --------------------------- | --------------------------------------------------------------- |
+| 円の直径                    | `139.9`                                                         |
+| 再生記号 W×H・右ずらし      | `47.4 × 59.3`・`5.9`                                            |
+| バッジ 高さ・角丸・左右余白 | `47.4`・`9.5`・`21.3`                                           |
+| バッジ 文字サイズ           | `30.8px`                                                        |
+| バッジ 余白（左・下）       | `28.5`                                                          |
 
 **動画の表示領域**は、visual では 1200×630 の画像全体である（`createDefaultThumbnail` が poster を縦横比を保って全面に収まるよう切り抜くため、横長・正方形・縦長のどの動画でも poster が画像全体を占める）。したがって、円の中心は常に `(width/2, height/2) = (600, 315)`、バッジは常に画像の左下隅からの余白で決まり、動画の縦横比に依存しない。UI（`VideoPlayer`・`VideoThumbnail`）では、円は poster コンテナ（`aspect-ratio` で動画の比率に合わせた領域）の中心に置く。
 
@@ -500,29 +515,29 @@ UI（`VideoPlayer`・`VideoThumbnail`）の再生ボタンは `VideoPlayButton`�
 ```ts
 // src/lib/video/videoOverlay.ts
 export const VIDEO_OVERLAY_SPEC = {
-    buttonDiameter: 59,
-    buttonFill: "rgba(50, 50, 50, 0.6)",
-    triangleWidth: 20,
-    triangleHeight: 25,
-    triangleFill: "#ffffff",
-    triangleOffsetX: 2.5,
-    badgeHeight: 20,
-    badgePaddingX: 9,
-    badgeRadius: 4,
-    badgeFill: "rgba(0, 0, 0, 0.8)",
-    badgeTextColor: "#ffffff",
-    badgeFontSize: 13,
-    badgeFontWeight: 700,
-    badgeMarginLeft: 12,
-    badgeMarginBottom: 12,
-    /** CSS px → visual のデバイスピクセルへの換算基準幅 */
-    referenceCardWidth: 506,
+  buttonDiameter: 59,
+  buttonFill: "rgba(50, 50, 50, 0.6)",
+  triangleWidth: 20,
+  triangleHeight: 25,
+  triangleFill: "#ffffff",
+  triangleOffsetX: 2.5,
+  badgeHeight: 20,
+  badgePaddingX: 9,
+  badgeRadius: 4,
+  badgeFill: "rgba(0, 0, 0, 0.8)",
+  badgeTextColor: "#ffffff",
+  badgeFontSize: 13,
+  badgeFontWeight: 700,
+  badgeMarginLeft: 12,
+  badgeMarginBottom: 12,
+  /** CSS px → visual のデバイスピクセルへの換算基準幅 */
+  referenceCardWidth: 506,
 } as const
 
 /** 秒数を `m:ss`（分は桁揃えなし、秒は2桁）へ整形する。四捨五入し、最小 `0:01`。例: 5 → "0:05"、600 → "10:00" */
 export const formatVideoDuration = (sec: number): string => {
-    const total = Math.max(1, Math.round(sec))
-    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`
+  const total = Math.max(1, Math.round(sec))
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`
 }
 
 /**
@@ -531,34 +546,44 @@ export const formatVideoDuration = (sec: number): string => {
  * S = TARGET_WIDTH / referenceCardWidth（1200 / 506）を掛けた寸法で描く。
  */
 export const drawVideoOverlay =
-    (durationSec: number) =>
-    (context: CanvasRenderingContext2D, scale: number): void => {
-        const s = (TARGET_WIDTH / VIDEO_OVERLAY_SPEC.referenceCardWidth) * scale
-        const width = TARGET_WIDTH * scale
-        const height = TARGET_HEIGHT * scale
-        // 1. 円: 中心 (width/2, height/2)、半径 buttonDiameter*s/2、fill buttonFill
-        // 2. 三角: 外接矩形の中心 = (cx + triangleOffsetX*s, cy)。頂点 (x0,y0),(x0,y0+H),(x0+W,y0+H/2)、fill triangleFill
-        // 3. バッジ文字: font = `${badgeFontWeight} ${badgeFontSize*s}px sans-serif`、
-        //    textWidth = measureText(formatVideoDuration(durationSec)).width
-        //    バッジ幅 = textWidth + 2*badgePaddingX*s、高さ = badgeHeight*s
-        //    左 = badgeMarginLeft*s、下端 = height - badgeMarginBottom*s
-        //    角丸矩形（badgeRadius*s）を badgeFill で塗り、文字を badgeTextColor で
-        //    textAlign="center"・textBaseline="middle" としてバッジ中央に描く
-    }
+  (durationSec: number) =>
+  (context: CanvasRenderingContext2D, scale: number): void => {
+    const s = (TARGET_WIDTH / VIDEO_OVERLAY_SPEC.referenceCardWidth) * scale
+    const width = TARGET_WIDTH * scale
+    const height = TARGET_HEIGHT * scale
+    // 1. 円: 中心 (width/2, height/2)、半径 buttonDiameter*s/2、fill buttonFill
+    // 2. 三角: 外接矩形の中心 = (cx + triangleOffsetX*s, cy)。頂点 (x0,y0),(x0,y0+H),(x0+W,y0+H/2)、fill triangleFill
+    // 3. バッジ文字: font = `${badgeFontWeight} ${badgeFontSize*s}px sans-serif`、
+    //    textWidth = measureText(formatVideoDuration(durationSec)).width
+    //    バッジ幅 = textWidth + 2*badgePaddingX*s、高さ = badgeHeight*s
+    //    左 = badgeMarginLeft*s、下端 = height - badgeMarginBottom*s
+    //    角丸矩形（badgeRadius*s）を badgeFill で塗り、文字を badgeTextColor で
+    //    textAlign="center"・textBaseline="middle" としてバッジ中央に描く
+  }
 ```
 
 `src/lib/image/postImageProcessing.ts` を次のように拡張する（既存の呼び出しは第2引数なしで従来どおり動く）。
 
 ```ts
-export type CompositeOverlay = (context: CanvasRenderingContext2D, scale: number) => void
+export type CompositeOverlay = (
+  context: CanvasRenderingContext2D,
+  scale: number,
+) => void
 
-const composeThumbnailBlob = async (imageUrls, cropStates, overlay?: CompositeOverlay) => {
-    // … renderComposite 内、slotDefs.forEach の描画の直後に:
-    overlay?.(context, scale)
-    // compressToByteBudget は従来どおり。オーバーレイ込みで容量予算に収める
+const composeThumbnailBlob = async (
+  imageUrls,
+  cropStates,
+  overlay?: CompositeOverlay,
+) => {
+  // … renderComposite 内、slotDefs.forEach の描画の直後に:
+  overlay?.(context, scale)
+  // compressToByteBudget は従来どおり。オーバーレイ込みで容量予算に収める
 }
-export const createDefaultThumbnail = async (imageUrls: string[], overlay?: CompositeOverlay): Promise<Blob> => {
-    // … composeThumbnailBlob(targetUrls, cropStates, overlay)
+export const createDefaultThumbnail = async (
+  imageUrls: string[],
+  overlay?: CompositeOverlay,
+): Promise<Blob> => {
+  // … composeThumbnailBlob(targetUrls, cropStates, overlay)
 }
 ```
 
@@ -625,19 +650,26 @@ Timeline 用の静的表示。`<img src=thumbnailUrl alt=alt>` の中央に `Vid
  * `#EXTINF:<秒>,` の合計を返す。いずれかの取得失敗・EXTINF が1件も無い・合計が 0 以下の
  * 場合は Error を throw する（呼び出し側が entry 作成を失敗させる。要件 FR-5）。
  */
-export const fetchVideoDurationSec = async (playlistUrl: string): Promise<number> => {
-    const master = await (await fetchOk(playlistUrl)).text()
-    const variant = master.split("\n").find(line => line !== "" && !line.startsWith("#"))
-    if (!variant) throw new Error("no variant playlist")
-    const media = await (await fetchOk(new URL(variant, playlistUrl).href)).text()
-    const total = [...media.matchAll(/^#EXTINF:([0-9.]+)/gm)]
-        .reduce((sum, m) => sum + Number(m[1]), 0)
-    if (!(total > 0)) throw new Error("no segment duration")
-    return total
+export const fetchVideoDurationSec = async (
+  playlistUrl: string,
+): Promise<number> => {
+  const master = await (await fetchOk(playlistUrl)).text()
+  const variant = master
+    .split("\n")
+    .find(line => line !== "" && !line.startsWith("#"))
+  if (!variant) throw new Error("no variant playlist")
+  const media = await (await fetchOk(new URL(variant, playlistUrl).href)).text()
+  const total = [...media.matchAll(/^#EXTINF:([0-9.]+)/gm)].reduce(
+    (sum, m) => sum + Number(m[1]),
+    0,
+  )
+  if (!(total > 0)) throw new Error("no segment duration")
+  return total
 }
 ```
 
-  `createEntryFromPost` は、`visualSource.video` がある場合、`fetchVideoDurationSec(video.playlistUrl)` と poster 取得を並行して行い、`createDefaultThumbnail([posterUrl], drawVideoOverlay(durationSec))` に渡す。どちらかが throw したら既存の `setCreateError("post.entry.createFailed")` の経路で失敗とし、`createEntry` API は呼ばない。
+`createEntryFromPost` は、`visualSource.video` がある場合、`fetchVideoDurationSec(video.playlistUrl)` と poster 取得を並行して行い、`createDefaultThumbnail([posterUrl], drawVideoOverlay(durationSec))` に渡す。どちらかが throw したら既存の `setCreateError("post.entry.createFailed")` の経路で失敗とし、`createEntry` API は呼ばない。
+
 - `createDefaultThumbnail` は `<img>` を object URL から読み込むため、`thumbnail.jpg` の `content-type` が `application/octet-stream` であっても、`fetch` した Blob の `type` が空の場合は `new Blob([blob], { type: "image/jpeg" })` に作り直して渡す。
 
 ### 7.6 ゲスト・サンプル
@@ -656,15 +688,15 @@ props: `{ video: SourceVideo; postUrl?: string }`。利用不可の動画（要�
 
 ## 8. 非機能要件の実現
 
-| 要件  | 実現方法                                                                                                                                  |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| NFR-1 | 動画のバイト列は `video.bsky.app` へのみ送信。`POST /v2/entry` のボディには blob 参照 JSON のみ（AC-9 は E2E でリクエストを検査）。     |
+| 要件  | 実現方法                                                                                                                                    |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| NFR-1 | 動画のバイト列は `video.bsky.app` へのみ送信。`POST /v2/entry` のボディには blob 参照 JSON のみ（AC-9 は E2E でリクエストを検査）。         |
 | NFR-2 | `lxm=com.atproto.repo.uploadBlob` かつ `exp` 30 分のトークン。レスポンスは `no-store`。サーバー・クライアントともトークンをログ出力しない。 |
-| NFR-3 | `hls.js` は `VideoPlayer.start()` 内の動的 import のみ。初期表示は poster `<img>` のみ。                                                  |
-| NFR-4 | 再生開始は `<button aria-label>`、進捗は `role="progressbar"`、再生中は `<video controls>` のネイティブ操作。                              |
-| NFR-5 | `src/lib/i18n/messages/{ja,en}/video.ts` を新設し `index.ts` に登録（§9）。                                                               |
-| NFR-6 | Chromium/Firefox: hls.js（MSE）、Safari: ネイティブHLS。                                                                                  |
-| NFR-7 | 動画のエラーは `VideoEntry.upload.state="error"` に閉じ、segment の他の入力に触れない。投稿失敗時は既存どおり入力を保持。                 |
+| NFR-3 | `hls.js` は `VideoPlayer.start()` 内の動的 import のみ。初期表示は poster `<img>` のみ。                                                    |
+| NFR-4 | 再生開始は `<button aria-label>`、進捗は `role="progressbar"`、再生中は `<video controls>` のネイティブ操作。                               |
+| NFR-5 | `src/lib/i18n/messages/{ja,en}/video.ts` を新設し `index.ts` に登録（§9）。                                                                 |
+| NFR-6 | Chromium/Firefox: hls.js（MSE）、Safari: ネイティブHLS。                                                                                    |
+| NFR-7 | 動画のエラーは `VideoEntry.upload.state="error"` に閉じ、segment の他の入力に触れない。投稿失敗時は既存どおり入力を保持。                   |
 
 ## 9. i18n キー（`src/lib/i18n/messages/{ja,en}/video.ts`）
 

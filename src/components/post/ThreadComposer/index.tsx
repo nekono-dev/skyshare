@@ -73,8 +73,10 @@ import {
   canRemoveSegment,
   createEmptySegment,
   draftPostsToSegments,
+  pendingVideoState,
   removeSegment,
   revokeImageEntry,
+  revokeVideoEntry,
   segmentsToDraftPosts,
   type SegmentState,
 } from "./segments"
@@ -313,7 +315,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
      * - なし
      */
     const resetInputFields = (rootPostGate: SegmentState["postGate"]) => {
-      segments.forEach(segment => revokeImageEntry(segment.imageEntry))
+      segments.forEach(segment => {
+        revokeImageEntry(segment.imageEntry)
+        revokeVideoEntry(segment.videoEntry)
+      })
       setSegments([
         { ...createEmptySegment(languageCode), postGate: rootPostGate },
       ])
@@ -365,7 +370,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const applyDraftToForm = (
       draft: ReturnType<typeof normalizeDraftList>[number],
     ) => {
-      segments.forEach(segment => revokeImageEntry(segment.imageEntry))
+      segments.forEach(segment => {
+        revokeImageEntry(segment.imageEntry)
+        revokeVideoEntry(segment.videoEntry)
+      })
       const restored = draftPostsToSegments(draft.posts, languageCode)
       const nextSegments =
         restored.length > 0 ? restored : [createEmptySegment(languageCode)]
@@ -521,7 +529,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     }
 
     // いずれかのセグメントがバックエンドの投稿条件を満たさない間は投稿ボタンを無効化する
-    const canSubmit = areAllSegmentsPostable(segments)
+    // 動画のアップロード・変換が完了するまで（失敗した動画が残る間も）投稿できない。
+    // 取り外し（キャンセル）した場合のみ、完了を待たずに投稿できる。
+    const videoPending = pendingVideoState(segments)
+    const canSubmit = areAllSegmentsPostable(segments) && videoPending === null
 
     /**
      * 投稿フォームの内容を API 契約に合わせて送信する。
@@ -630,12 +641,16 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         }
         if (dispatch.textToKeep !== null) {
           // 2件目以降は投稿済みのため破棄し、先頭セグメントのテキストのみ保持する。
-          segments
-            .slice(1)
-            .forEach(segment => revokeImageEntry(segment.imageEntry))
+          segments.slice(1).forEach(segment => {
+            revokeImageEntry(segment.imageEntry)
+            revokeVideoEntry(segment.videoEntry)
+          })
+          // 動画は投稿済みのため、先頭 segment にも残さない
+          revokeVideoEntry(rootSegment.videoEntry)
           setSegments([
             {
               ...rootSegment,
+              videoEntry: null,
               text: dispatch.textToKeep,
               postGate: nextRootPostGate,
             },
@@ -763,6 +778,16 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   ? t("post.composer.submitAll")
                   : t("post.composer.submit")}
               </button>
+
+              {videoPending && (
+                <p role="status" data-testid="video-submit-reason">
+                  {t(
+                    videoPending === "uploading"
+                      ? "video.submit.waitUpload"
+                      : "video.submit.removeFailed",
+                  )}
+                </p>
+              )}
 
               {showXIntentButton && (
                 <button

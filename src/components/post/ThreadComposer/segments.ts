@@ -12,6 +12,33 @@ import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { OgpResult } from "@/components/image/OgpFetchButton"
 import { DEFAULT_POST_GATE_VALUE, type PostGateValue } from "@/lib/atproto/gate"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
+import type {
+    VideoBlobRef,
+    VideoUploadProgress,
+} from "@/lib/video/videoUploader"
+
+/**
+ * segment に添付した動画。選択直後に先行アップロードし、`upload` で状態を持つ。
+ * 動画の `File` は保持しない（アップロード後は blob 参照だけが必要）。
+ */
+export type VideoEntry = {
+    fileName: string
+    width: number
+    height: number
+    durationSec: number
+    alt: string
+    /** poster のプレビュー用 object URL（取り外し時に revoke する） */
+    posterPreview: string
+    /** poster（JPEG） */
+    posterBlob: Blob
+    /** visual（poster に再生ボタンと再生時間バッジを重ねた 1200x630 の画像） */
+    thumbnailBlob: Blob
+    upload:
+        | { state: "uploading"; progress: VideoUploadProgress }
+        | { state: "done"; blob: VideoBlobRef }
+        | { state: "error"; messageKey: PlainMessageKey }
+}
 
 export type SegmentState = {
     /** React の key・非アクティブ切替時の同一性判定にのみ使う、UI上だけの識別子。API送信・下書きには含めない。 */
@@ -22,6 +49,7 @@ export type SegmentState = {
     postGate: PostGateValue
     imageEntry: ImageEntry | null
     ogpResult: OgpResult | null
+    videoEntry: VideoEntry | null
 }
 
 export type DraftSegmentPost = {
@@ -54,6 +82,7 @@ export const createEmptySegment = (languageCode: string): SegmentState => ({
     postGate: DEFAULT_POST_GATE_VALUE,
     imageEntry: null,
     ogpResult: null,
+    videoEntry: null,
 })
 
 /**
@@ -77,6 +106,21 @@ export const revokeImageEntry = (entry: ImageEntry | null) => {
         try {
             URL.revokeObjectURL(entry.thumbnailPreview)
         } catch (e) {}
+    } catch (error) {
+        console.warn("ThreadComposer: failed to revoke object URL", error)
+    }
+}
+
+/**
+ * 動画エントリが保持する poster の object URL を解放する。
+ *
+ * Input:
+ * - `entry`: プレビュー URL を保持する動画エントリ
+ */
+export const revokeVideoEntry = (entry: VideoEntry | null) => {
+    if (!entry) return
+    try {
+        URL.revokeObjectURL(entry.posterPreview)
     } catch (error) {
         console.warn("ThreadComposer: failed to revoke object URL", error)
     }
@@ -164,7 +208,34 @@ export const removeSegment = (
 export const isSegmentPostable = (segment: SegmentState): boolean =>
     segment.text.trim().length > 0 ||
     (segment.imageEntry?.originalBlobs.length ?? 0) > 0 ||
-    segment.ogpResult !== null
+    segment.ogpResult !== null ||
+    segment.videoEntry?.upload.state === "done"
+
+/**
+ * アップロード・変換が完了していない動画（実行中・失敗）が1つでも残っているか判定する。
+ * 真の間は投稿できない。解消できるのは、完了を待つ・取り外す（キャンセル）・
+ * 失敗した動画を選び直して完了させる、のいずれか。
+ *
+ * Input:
+ * - `segments`: 現在のセグメント配列
+ *
+ * Output:
+ * - 未完了の動画が残っていれば、その状態（`uploading` / `error`）。無ければ `null`
+ */
+export const pendingVideoState = (
+    segments: SegmentState[],
+): "uploading" | "error" | null => {
+    let state: "uploading" | "error" | null = null
+    for (const segment of segments) {
+        const upload = segment.videoEntry?.upload
+        if (upload?.state === "error") return "error"
+        if (upload?.state === "uploading") state = "uploading"
+    }
+    return state
+}
+
+export const hasPendingVideo = (segments: SegmentState[]): boolean =>
+    pendingVideoState(segments) !== null
 
 /**
  * 全セグメントが投稿条件を満たすか判定する（1件でも満たさなければ全体を投稿できない）。
@@ -227,4 +298,5 @@ export const draftPostsToSegments = (
         postGate: DEFAULT_POST_GATE_VALUE,
         imageEntry: null,
         ogpResult: null,
+        videoEntry: null,
     }))

@@ -50,7 +50,9 @@ test.describe("複数画像の投稿フォーム", () => {
         page,
     }) => {
         const editor = await openComposer(page)
-        await editor.locator('input[type="file"]').setInputFiles(pngFiles(11))
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(11))
 
         await expect(page.getByTestId("image-thumb")).toHaveCount(10)
         await expect(page.getByText("画像は最大10枚までです")).toBeVisible()
@@ -70,7 +72,9 @@ test.describe("複数画像の投稿フォーム", () => {
         page,
     }) => {
         const editor = await openComposer(page)
-        await editor.locator('input[type="file"]').setInputFiles(pngFiles(6))
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(6))
         await expect(page.getByTestId("image-thumb")).toHaveCount(6)
 
         await editor.getByRole("button", { name: "サムネ調整" }).click()
@@ -81,7 +85,9 @@ test.describe("複数画像の投稿フォーム", () => {
         page,
     }) => {
         const editor = await openComposer(page)
-        await editor.locator('input[type="file"]').setInputFiles(pngFiles(6))
+        await editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles(pngFiles(6))
         await expect(page.getByTestId("image-thumb")).toHaveCount(6)
         await expect(page.getByText("Visual対象外")).toHaveCount(2)
 

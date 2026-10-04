@@ -23,6 +23,7 @@ import ImagePicker, {
 } from "@/components/image/ImagePicker"
 import { OgpFetchButton, useOgpFetch } from "@/components/image/OgpFetchButton"
 import OgpPreview from "@/components/image/OgpPreview"
+import VideoPicker from "@/components/video/VideoPicker"
 import LanguageSelect from "@/components/common/LanguageSelect"
 import PostGateDialog from "@/components/post/PostGateDialog"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
@@ -32,7 +33,11 @@ import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
 import PostBodyEditor from "../PostBodyEditor"
 import { useKeyboardRows } from "../useKeyboardRows"
 import { useSuggest } from "../useSuggest"
-import { revokeImageEntry, type SegmentState } from "../segments"
+import {
+  revokeImageEntry,
+  revokeVideoEntry,
+  type SegmentState,
+} from "../segments"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import plusIcon from "@/images/plus.svg"
@@ -143,6 +148,15 @@ const Component: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segment.imageEntry])
 
+  // 動画のプレビューURLは進捗更新のたびに `videoEntry` が作り直されても変わらないため、
+  // URL をキーにして解放する（進捗更新のたびに解放しない）。
+  const videoPosterPreview = segment.videoEntry?.posterPreview
+  useEffect(() => {
+    return () => {
+      if (videoPosterPreview) URL.revokeObjectURL(videoPosterPreview)
+    }
+  }, [videoPosterPreview])
+
   const suggest = useSuggest({
     text: segment.text,
     onReplaceText: text => update({ text }),
@@ -199,6 +213,8 @@ const Component: React.FC<Props> = ({
     if (files.length === 0) return
 
     e.preventDefault()
+    // 動画を添付済みの segment には画像を追加できない（排他）
+    if (segment.videoEntry) return
     void imagePickerRef.current?.addFiles(files)
   }
 
@@ -230,6 +246,7 @@ const Component: React.FC<Props> = ({
       file.type.startsWith("image/"),
     )
     if (files.length === 0) return
+    if (segment.videoEntry) return
 
     void imagePickerRef.current?.addFiles(files)
   }
@@ -379,10 +396,37 @@ const Component: React.FC<Props> = ({
                   }
                   update({ imageEntry: entry })
                 }}
-                disabled={disabled}
+                disabled={disabled || !!segment.videoEntry}
                 previewContainerRef={imagePreviewContainerRef}
               />
-              <OgpFetchButton ogpFetch={ogpFetch} disabled={disabled} />
+              <VideoPicker
+                value={segment.videoEntry}
+                onChange={entry => update({ videoEntry: entry })}
+                disabled={
+                  disabled || !!segment.imageEntry || !!segment.ogpResult
+                }
+                disabledReason={
+                  segment.imageEntry
+                    ? t("video.picker.exclusiveWithImage")
+                    : segment.ogpResult
+                      ? t("video.picker.exclusiveWithOgp")
+                      : undefined
+                }
+                previewContainerRef={imagePreviewContainerRef}
+              />
+              <span
+                title={
+                  segment.videoEntry
+                    ? t("video.picker.exclusiveWithVideo")
+                    : undefined
+                }
+                style={{ display: "inline-flex" }}
+              >
+                <OgpFetchButton
+                  ogpFetch={ogpFetch}
+                  disabled={disabled || !!segment.videoEntry}
+                />
+              </span>
             </div>
 
             <div
@@ -447,6 +491,15 @@ const Component: React.FC<Props> = ({
                   aria-hidden
                 />
               )}
+              {segment.videoEntry && (
+                <img
+                  className={styles["summary-thumbnail"]}
+                  data-testid="segment-thumbnail"
+                  src={segment.videoEntry.posterPreview}
+                  alt=""
+                  aria-hidden
+                />
+              )}
               <span
                 className={`${styles["summary-text"]} ${!segment.text ? styles["summary-placeholder"] : ""}`}
               >
@@ -463,6 +516,7 @@ const Component: React.FC<Props> = ({
                   onClick={e => {
                     e.stopPropagation()
                     revokeImageEntry(segment.imageEntry)
+                    revokeVideoEntry(segment.videoEntry)
                     onRemove()
                   }}
                 >

@@ -248,3 +248,85 @@ describe("submitThread", () => {
         })
     })
 })
+
+describe("submitThread（動画）", () => {
+    const videoBlob = {
+        $type: "blob" as const,
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4" as const,
+        size: 10,
+    }
+    const videoSegment = (overrides = {}) => ({
+        ...createEmptySegment("ja"),
+        text: "動画",
+        videoEntry: {
+            fileName: "a.mp4",
+            width: 640,
+            height: 360,
+            durationSec: 5,
+            alt: "海",
+            posterPreview: "blob:x",
+            posterBlob: new Blob(["p"]),
+            thumbnailBlob: new Blob(["thumb"]),
+            upload: { state: "done" as const, blob: videoBlob },
+        },
+        ...overrides,
+    })
+
+    it("動画 segment の posts[i] に video/videoMeta が載り、images/ogMeta は載らない", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+        await submitThread({
+            segments: [videoSegment()],
+            manualImageAttach: false,
+        })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts[0].video).toEqual(videoBlob)
+        expect(body.posts[0].videoMeta).toEqual({
+            width: 640,
+            height: 360,
+            alt: "海",
+        })
+        expect(body.posts[0]).not.toHaveProperty("images")
+        expect(body.posts[0]).not.toHaveProperty("ogMeta")
+    })
+
+    it("entry 作成候補が動画 segment になり、visual は thumbnailBlob になる", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+        const segment = videoSegment()
+        await submitThread({ segments: [segment], manualImageAttach: false })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBe(true)
+        expect(body.visual).toBe(segment.videoEntry.thumbnailBlob)
+    })
+
+    it("manualImageAttach が有効なら createEntry を付けない", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }])
+        await submitThread({
+            segments: [videoSegment()],
+            manualImageAttach: true,
+        })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBeUndefined()
+        expect(body.visual).toBeUndefined()
+    })
+
+    it("2 segment の動画スレッドで両方に video が載る", async () => {
+        mockCreateEntryOk(
+            [
+                { url: "https://x/1", uri: "at://1", cid: "c1" },
+                { url: "https://x/2", uri: "at://2", cid: "c2" },
+            ],
+            { uri: "https://skyshare/1" },
+        )
+        await submitThread({
+            segments: [videoSegment(), videoSegment({ text: "二つ目" })],
+            manualImageAttach: false,
+        })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts.every(post => "video" in post)).toBe(true)
+    })
+})

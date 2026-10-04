@@ -74,11 +74,13 @@ test.describe("ThreadComposer", () => {
         await expect(editor0).toContainText("1件目のテスト投稿")
 
         // 画像を1枚添付する。
-        await segment0Editor.locator('input[type="file"]').setInputFiles({
-            name: "test.png",
-            mimeType: "image/png",
-            buffer: PNG_1X1,
-        })
+        await segment0Editor
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles({
+                name: "test.png",
+                mimeType: "image/png",
+                buffer: PNG_1X1,
+            })
 
         // ImagePickerが画像を処理し終えると「サムネ調整」ボタンが現れる
         // （slots.length > 0 の目印。画像プレビュー自体はポータル先要素に描画される）。

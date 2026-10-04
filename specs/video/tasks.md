@@ -70,40 +70,38 @@
 
 ## Phase 6: 投稿フォームUI
 
-- [ ] `[FE]` `ThreadComposer/segments.ts` に `VideoEntry`・`SegmentState.videoEntry`・`revokeVideoEntry` を追加し、`createEmptySegment` と segment 削除・unmount の解放処理に反映する（design.md §6.1）。
-- [ ] `[FE]` `src/images/video.svg`（ビデオカメラ風・色 `#0085ff`。§6.2 のSVG）を作成する。
-- [ ] `[FE]` `src/components/video/VideoPicker/index.tsx`・`index.module.css` を実装する（§6.2。画像追加ボタンと別個の動画専用ボタン、進捗バー・alt入力・取り外し・選び直し）。
-- [ ] `[FE]` `ThreadSegmentForm` のツールバーで `ImagePicker` の直後に `VideoPicker` を配置し、画像・OGP・動画の排他（`disabled` とツールチップ）を実装する（§6.1）。
-- [ ] `[FE]` `submitThread.ts` の `buildPostItem`・entry 作成候補・visual 選択を動画対応にする（§6.3）。
-- [ ] `[FE]` `ThreadComposer/index.tsx` と `spec.submitButton.md` の投稿ボタン無効条件に動画アップロード状態を加える。
-- [ ] `[FE]` `video.picker.*`・`video.status.*`・`video.submit.waitUpload` を ja/en に追加する。
-- [ ] `[TEST]` `tests/components/video/VideoPicker.test.ts` に単体テスト（モックした `uploadVideo`）: 選択→進捗→完了の状態遷移、違反ファイルで `onChange` が呼ばれず通知が出る、取り外しで `abort` と `onChange(null)`。
-- [ ] `[TEST]` 既存の `tests/components/post/ThreadComposer/submitThread.test.ts` に追記: 動画 segment の `posts[i]` に `video`/`videoMeta` が載り `images`/`ogMeta` が載らない、entry 作成候補が動画 segment になり `visual` が `thumbnailBlob` になる、`manualImageAttach` 有効時は `createEntry` が付かない。
-- [ ] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts`。`video.bsky.app` と `/v2/bsky/video/upload-token`・`/v2/entry` を `page.route` でモック）:
+- [x] `[FE]` `ThreadComposer/segments.ts` に `VideoEntry`・`SegmentState.videoEntry`・`revokeVideoEntry` を追加し、`createEmptySegment` と segment 削除・unmount の解放処理に反映する（design.md §6.1）。
+- [x] `[FE]` `src/images/video.svg`（ビデオカメラ風・色 `#0085ff`。§6.2 のSVG）を作成する。
+- [x] `[FE]` `src/components/video/VideoPicker/index.tsx`・`index.module.css` を実装する（§6.2。画像追加ボタンと別個の動画専用ボタン、進捗バー・alt入力・取り外し・選び直し）。
+- [x] `[FE]` `ThreadSegmentForm` のツールバーで `ImagePicker` の直後に `VideoPicker` を配置し、画像・OGP・動画の排他（`disabled` とツールチップ）を実装する（§6.1）。
+- [x] `[FE]` `submitThread.ts` の `buildPostItem`・entry 作成候補・visual 選択を動画対応にする（§6.3）。
+- [x] `[FE]` `ThreadComposer/index.tsx` と `spec.submitButton.md` の投稿ボタン無効条件に動画アップロード状態を加える。
+- [x] `[FE]` `video.picker.*`・`video.status.*`・`video.submit.waitUpload` を ja/en に追加する。
+- [x] `[TEST]` `tests/components/post/ThreadComposer/segments.test.ts` に追記: 動画 segment の投稿条件（完了した動画があればテキストなしで可、実行中・失敗は不可）、`pendingVideoState`/`hasPendingVideo`（実行中は `uploading`、失敗が残れば `error`、取り外しで解消）。`VideoPicker` の状態遷移（選択→進捗→完了、違反ファイルで添付されず通知、取り外しでの中断）は、vitest が Node 環境で React の描画を持たないため、下記の Playwright で検証する。
+- [x] `[TEST]` 既存の `tests/components/post/ThreadComposer/submitThread.test.ts` に追記: 動画 segment の `posts[i]` に `video`/`videoMeta` が載り `images`/`ogMeta` が載らない、entry 作成候補が動画 segment になり `visual` が `thumbnailBlob` になる、`manualImageAttach` 有効時は `createEntry` が付かない。
+- [x] `[TEST]` Playwright（`tests/e2e/videoComposer.spec.ts`。`video.bsky.app` と `/v2/bsky/video/upload-token`・`/v2/entry` を `page.route` でモック）:
   1. 投稿フォームで `video-sample.mp4` を選択 → poster プレビューと進捗バーが表示され、変換完了後に「完了」表示になり、投稿ボタンが有効になる。
   2. アップロード中（`getJobStatus` を保留）は投稿ボタンが無効で、理由が表示される。
   3. mp4 以外のファイル、301MB を模したファイル（`size` を偽装した `File`）を選択 → 動画は添付されず、`tooLarge`/`notMp4` の文言が表示される。
   4. 動画添付済みの segment で画像追加・OGP取得ボタンが無効、画像添付済みの segment で動画追加ボタンが無効。
   5. 動画を取り外す → プレビューが消え、画像・OGP ボタンが有効に戻る。アップロード中の取り外しで `abortUpload` が呼ばれる。
   6. `upload-token` を 400 でモック → 動画の送信が1回も行われず、`unsupportedPds` の文言が表示される。
-  7. 投稿 → `/v2/entry` の multipart に `posts[0][video]` と `posts[0][videoMeta]`（JSON）があり、動画のバイト列（`video/mp4` のファイルパート）が含まれず、`visual` が1つ付く。
-  8. 2 segment のスレッドで各 segment に動画を添付して投稿 → `posts[0]` と `posts[1]` の両方に `video` がある。
-  9. alt を入力して投稿 → `videoMeta.alt` に反映される。
+  7〜9. （ゲスト表示は実際の投稿を行わないため、`submitThread.test.ts` の単体テストで検証する。投稿内容の `posts[i].video`/`videoMeta`（alt を含む）、2 segment での両方への `video`、`visual` が `thumbnailBlob` になること、動画のバイト列が送られないこと（blob 参照 JSON のみ）を確認する。実アカウントでの確認は手動確認の項に含む。）
   10. 動画の完了待ち（`getJobStatus` を保留）→ 投稿ボタンが無効で `video.submit.waitUpload` が表示される。完了後に有効になる。
   11. アップロード失敗（`startUpload` を `DailyLimitExceeded` でモック）→ 投稿ボタンが無効のまま `video.submit.removeFailed` が表示される。取り外すと有効になる。別の動画を選び直した場合も、完了するまで無効のまま。
   12. アップロード中に取り外す → 完了を待たず投稿ボタンが有効になる。
   13. ツールバーで動画追加ボタン（`aria-label` が `video.picker.addAria`）が、画像追加ボタンと別個の要素として画像追加ボタンの直後に並ぶ。動画追加ボタンの `<img>` が `video.svg` で、SVGの `fill` が `#0085ff` である。
-- [ ] `[TEST]` Playwright（`tests/e2e/videoVisual.spec.ts`。`video-solid.mp4` を選択し、`/v2/entry` をモックして送信された `visual` を取得。ページ内で `createImageBitmap` と canvas で 1200×630 にデコードし画素をサンプリングする。許容誤差は design.md §6.5.1 のとおり色 ±6）:
+- [x] `[TEST]` Playwright（`tests/e2e/videoVisual.spec.ts`。ページ内で本実装の `probeVideo`・`createDefaultThumbnail`・`drawVideoOverlay` を実行して visual を生成する（ゲスト表示は投稿を行わないため、dev サーバーのモジュールを動的 import して呼ぶ）。`createImageBitmap` と canvas で 1200×630 にデコードし画素をサンプリングする。許容誤差は design.md §6.5.1 のとおり色 ±6）:
   1. 画像サイズが 1200×630 である。
   2. 円の内側（`(555, 315)`）が `rgb(69,68,97)`（無地背景 `rgb(97,95,168)` の上の再生ボタンの円。`0.4×背景 + 30`）。
   3. 再生記号の内側（`(598, 315)`）が白 `rgb(255,255,255)` に近い（各チャンネル 245 以上）。
   4. 円の外側（`(300, 315)`・`(900, 315)`）が `rgb(97,95,168)`。
   5. バッジの左余白部（`(38, 578)`）が `rgb(19,19,34)`（背景に黒 α0.8 を重ねた値）。バッジ矩形（`x:28〜133, y:554〜602`）内に白に近い画素（各チャンネル 200 以上）が一定数（100 画素以上）ある。
   6. バッジの外側（`(300, 600)`・`(1100, 100)`）が `rgb(97,95,168)`。
-  7. 再生時間が異なる動画（モックで `durationSec` が 65 の `File`）でバッジの幅が変わり（`1:05` の幅 > `0:05` の幅）、バッジ左端の位置は変わらない。
+  7. 再生時間が異なる（`durationSec` が 600 と 5）場合にバッジの幅が変わり（`10:00` の幅 > `0:05` の幅）、バッジ左端の位置は変わらない。
   8. 動画の縦横比によらず位置が同じである: `video-solid-square.mp4`（480×480）と `video-solid-portrait.mp4`（360×640）を選択して同じ検証（1〜6）を行い、円の中心・再生記号・バッジの位置と色がすべて `video-solid.mp4`（横長）の場合と一致する（円の内側 `(555, 315)`、再生記号 `(598, 315)`、バッジ余白 `(38, 578)`）。
 - [ ] 手動確認（実アカウントが必要なため自動化不可）: 実際の mp4 を投稿し、Bluesky 公式アプリで動画として表示されること、`alt`・縦横比が保持されること、entry の visual が poster 由来で、中央の再生ボタンと左下の再生時間バッジが X 上のカードで、design.md §6.5.1 の値に沿った見た目になること（X のカードプレビューまたは Card Validator 相当で目視）。
-- [ ] 検証: `tsc`・`vitest`・上記 Playwright が通る。
+- [x] 検証: `tsc`・`vitest`・上記 Playwright が通る。
 
 ## Phase 7: 表示（Timeline・Entry詳細・ゲスト）
 
