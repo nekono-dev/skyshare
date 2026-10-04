@@ -146,4 +146,38 @@ describe("probeVideo", () => {
             code: "unreadable",
         })
     })
+
+    it("requestVideoFrameCallback があれば、フレーム提示の後に描画する（Safari の黒フレーム対策）", async () => {
+        const { fakeVideo, drawn } = stubBrowser({
+            videoWidth: 10,
+            videoHeight: 10,
+            duration: 5,
+        })
+        let presentFrame: () => void = () => undefined
+        fakeVideo.requestVideoFrameCallback = (cb: () => void) => {
+            presentFrame = cb
+        }
+        const promise = probeVideo(file)
+        // seeked 後もフレームが提示されるまでは描画されない
+        await new Promise(resolve => setTimeout(resolve, 20))
+        expect(drawn).toHaveLength(0)
+        presentFrame()
+        await promise
+        expect(drawn).toHaveLength(1)
+    })
+
+    it("requestVideoFrameCallback が無く readyState が足りなければ、loadeddata を待ってから描画する", async () => {
+        const { fakeVideo, drawn } = stubBrowser({
+            videoWidth: 10,
+            videoHeight: 10,
+            duration: 5,
+        })
+        fakeVideo.readyState = 1
+        const promise = probeVideo(file)
+        await new Promise(resolve => setTimeout(resolve, 20))
+        expect(drawn).toHaveLength(0)
+        fakeVideo.listeners.loadeddata()
+        await promise
+        expect(drawn).toHaveLength(1)
+    })
 })

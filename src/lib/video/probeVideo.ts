@@ -20,6 +20,8 @@ export type VideoProbe = {
 const POSTER_MAX_SIDE = 1280
 /** 読み込み・シークの待機上限（ミリ秒） */
 const PROBE_TIMEOUT_MS = 15_000
+/** シーク後にフレームが描画可能になるまでの待機上限（ミリ秒）。超えても描画を試みる */
+const FRAME_READY_TIMEOUT_MS = 1_000
 
 export class VideoProbeError extends Error {
     constructor(readonly code: VideoValidationError) {
@@ -67,12 +69,45 @@ const waitForEvent = (target: HTMLVideoElement, event: string): Promise<void> =>
     })
 
 /**
- * `<video preload="metadata">` で寸法と長さを読み、最初のフレーム相当のフレームを
+ * シーク先のフレームがデコード・描画可能になるまで待つ。
+ *
+ * 処理の趣旨:
+ * - Safari では `seeked` の発火時点でフレームが未デコードのことがあり、そのまま
+ *   `drawImage` すると黒一色になる。`requestVideoFrameCallback`（Safari 15.4+）で
+ *   フレームの提示を待つ。
+ * - 未対応の環境では `readyState` が現在位置のデータを持つまで待つ。
+ * - いずれも待機上限で打ち切る（超えても reject せず、描画へ進む）。
+ *
+ * Input:
+ * - `framePresented`: シーク前に登録した `requestVideoFrameCallback` の Promise
+ *   （シーク中に発火済みでも取りこぼさないため）
+ */
+const waitForFrameReady = async (
+    video: HTMLVideoElement,
+    framePresented: Promise<void> | undefined,
+): Promise<void> => {
+    const timeout = new Promise<void>(resolve =>
+        setTimeout(resolve, FRAME_READY_TIMEOUT_MS),
+    )
+    if (framePresented) {
+        await Promise.race([framePresented, timeout])
+        return
+    }
+    // HAVE_CURRENT_DATA(2) 未満なら現在位置のフレームがまだ無い
+    if (video.readyState < 2) {
+        await Promise.race([waitForEvent(video, "loadeddata"), timeout]).catch(
+            () => undefined,
+        )
+    }
+}
+
+/**
+ * `<video preload="auto">` で寸法と長さを読み、最初のフレーム相当のフレームを
  * canvas に描いて poster を作る。
  *
  * 処理の趣旨:
  * - 0 秒ちょうどは未デコードのことがあるため、`currentTime = Math.min(0.1, duration / 2)`
- *   へシークして `seeked` を待つ。
+ *   へシークして `seeked` とフレームの描画可能（`waitForFrameReady`）を待つ。
  * - 長さが上限を超えれば `tooLong`、読み込み不能・寸法 0・長さが有限でない場合は
  *   `unreadable` で reject する（`VideoProbeError`）。
  * - object URL は終了時に必ず revoke する。
@@ -81,7 +116,8 @@ export const probeVideo = async (file: File): Promise<VideoProbe> => {
     const url = URL.createObjectURL(file)
     try {
         const video = document.createElement("video")
-        video.preload = "metadata"
+        // Safari は "metadata" だとシーク後のフレームをデコードせず、黒いフレームを描画してしまう
+        video.preload = "auto"
         video.muted = true
         video.playsInline = true
         const loaded = waitForEvent(video, "loadedmetadata")
@@ -96,9 +132,16 @@ export const probeVideo = async (file: File): Promise<VideoProbe> => {
             throw new VideoProbeError("tooLong")
         }
 
+        const framePresented =
+            typeof video.requestVideoFrameCallback === "function"
+                ? new Promise<void>(resolve =>
+                      video.requestVideoFrameCallback(() => resolve()),
+                  )
+                : undefined
         const seeked = waitForEvent(video, "seeked")
         video.currentTime = Math.min(0.1, duration / 2)
         await seeked
+        await waitForFrameReady(video, framePresented)
 
         const ratio = Math.min(1, POSTER_MAX_SIDE / Math.max(width, height))
         const canvas = document.createElement("canvas")
