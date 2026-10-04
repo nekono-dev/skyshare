@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.1.4",
+    "@astrojs/partytown": "^2.1.8",
     "@astrojs/react": "6.0.1",
     "@atproto/api": "^0.23.0",
     "@atproto/common-web": "^0.5.9",

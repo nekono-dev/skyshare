@@ -4,6 +4,7 @@ import cloudflare from "@astrojs/cloudflare"
 import basicSsl from "@vitejs/plugin-basic-ssl"
 
 import react from "@astrojs/react"
+import partytown from "@astrojs/partytown"
 
 // astro dev サーバーは HTTPS 化のため vite-plugin-basic-ssl 経由で
 // Node の http2 secure server を使う（Vite が https 設定時に自動選択するため）。
@@ -58,5 +59,10 @@ export default defineConfig({
     },
   },
 
-  integrations: [react()],
+  // GAタグ(type="text/partytown")をWeb Worker上で実行するため Partytown を導入する。
+  // gtag は dataLayer 経由で動作するため、forward に gtag を指定する
+  integrations: [
+    react(),
+    partytown({ config: { forward: ["dataLayer.push"] } }),
+  ],
 })
