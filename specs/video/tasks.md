@@ -6,11 +6,11 @@
 
 ## Phase 1: 前提・定数・テスト資材
 
-- [ ] `hls.js` を `package.json` の dependencies に追加し、`npm install` 後に `tsc` が通ることを確認する（design.md §7.1）。
-- [ ] `src/lib/video/postVideoLimits.ts` を新設し、定数（`MAX_VIDEO_BYTES` ほか design.md §3 の全定数）を定義する。他モジュールを import しない。
-- [ ] `tests/fixtures/video-sample.mp4`（約80KB、H.264+AAC、5秒、640x360）を生成して配置する。
-- [ ] `tests/fixtures/video-solid.mp4`（単色 `rgb(97,95,168)` の無地、H.264、5秒、640x360）、`video-solid-square.mp4`（同色、480x480）、`video-solid-portrait.mp4`（同色、360x640）を生成して配置する（visual の色・位置検証用）。
-- [ ] 検証: `npx tsc --noEmit` と既存 `vitest` が通る。
+- [x] `hls.js` を `package.json` の dependencies に追加し、`npm install` 後に `tsc` が通ることを確認する（design.md §7.1）。
+- [x] `src/lib/video/postVideoLimits.ts` を新設し、定数（`MAX_VIDEO_BYTES` ほか design.md §3 の全定数）を定義する。他モジュールを import しない。
+- [x] `tests/fixtures/video-sample.mp4`（約80KB、H.264+AAC、5秒、640x360）を生成して配置する。
+- [x] `tests/fixtures/video-solid.mp4`（単色 `rgb(97,95,168)` の無地、H.264、5秒、640x360）、`video-solid-square.mp4`（同色、480x480）、`video-solid-portrait.mp4`（同色、360x640）を生成して配置する（visual の色・位置検証用）。
+- [x] 検証: `npx tsc --noEmit` と既存 `vitest` が通る。
 
 ## Phase 2: トークン発行 API
 
