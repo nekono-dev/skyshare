@@ -100,7 +100,7 @@ export const Component: React.FC<Props> = ({
           </button>
           <button
             type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${variantClassName["red-strong"]}`}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
             disabled={isDeleting}
             onClick={() => {
               void onConfirm()

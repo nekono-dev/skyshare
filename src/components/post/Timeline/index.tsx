@@ -227,7 +227,7 @@ const Component = ({ avatarUrl }: Props) => {
       fetchPage,
       reloadKey: guestReloadKey,
       enabled: paginationMode === "paged",
-      loadingText: t("common.loadingPlain"),
+      loadingText: t("common.loading"),
       emptyText: t("post.timeline.initializing"),
     },
   })
@@ -237,7 +237,7 @@ const Component = ({ avatarUrl }: Props) => {
       fetchPage,
       reloadKey: guestReloadKey,
       enabled: paginationMode === "infinite",
-      loadingText: t("common.loadingPlain"),
+      loadingText: t("common.loading"),
       emptyText: t("post.timeline.initializing"),
     },
   })

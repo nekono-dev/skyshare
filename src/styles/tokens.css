@@ -27,8 +27,8 @@
   --width-sm-max: min(360px, calc(100vw - var(--mobile-edge-margin) * 2));
   --width-sm: min(360px, calc(100vw - var(--mobile-edge-margin) * 2));
 
-  --width-xs-max: min(240px, calc(100vw - var(--mobile-edge-margin) * 2));
-  --width-xs: min(240px, calc(100vw - var(--mobile-edge-margin) * 2));
+  --width-xs-max: min(300px, calc(100vw - var(--mobile-edge-margin) * 2));
+  --width-xs: min(300px, calc(100vw - var(--mobile-edge-margin) * 2));
 
   /* Radii */
   --radius-sm: 4px;

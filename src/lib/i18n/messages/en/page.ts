@@ -43,7 +43,7 @@ export const page = {
     "page.login.thumb.item2Bold":
         "(editing of generated link card images added)",
     "page.login.thumb.item3":
-        "If there is demand, we are considering preparing a separate image for the link card (no automatic generation) and processing depending on labeler state... In short, something like mosaicking the thumbnails of R-18 images.",
+        "If there is demand, we are considering preparing a separate image for the link card (no automatic generation) or processing depending on labeler state... In short, something like mosaicking the thumbnails of R-18 images.",
     "page.login.other.title":
         "Many other improvements that make it easier to use",
     "page.login.other.item1":

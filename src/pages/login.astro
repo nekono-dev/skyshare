@@ -23,8 +23,8 @@ import ui from "@/styles/ui.module.css"
             <img class={ui["width-lg"]} src="/materials/longlogo.svg" alt={serviceName} />
             <div class=`${ui.left} ${ui["self-end"]} ${ui.subject}`>v{serviceVersion}</div>
             <div class=`${ui["width-md"]}`>
-                <div class={ui.right} style="margin-bottom: 0.5rem;">
-                    <LocaleSelect client:load />
+                <div class={ui.right} style="margin: 0.5rem 0;">
+                    <LocaleSelect client:load showLabel />
                 </div>
                 {
                     /* LoginForm 自体が base-card のため、入れ子にしない（カードの入れ子だとパスワードマネージャーが入力欄を検出できない） */

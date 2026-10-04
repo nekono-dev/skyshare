@@ -137,7 +137,7 @@ const Component = () => {
       fetchPage,
       reloadKey: guestReloadKey,
       enabled: paginationMode === "paged",
-      loadingText: t("common.loadingPlain"),
+      loadingText: t("common.loading"),
       emptyText: t("entry.list.empty"),
     },
   })
@@ -148,7 +148,7 @@ const Component = () => {
         fetchPage,
         reloadKey: guestReloadKey,
         enabled: paginationMode === "infinite",
-        loadingText: t("common.loadingPlain"),
+        loadingText: t("common.loading"),
         emptyText: t("entry.list.empty"),
       },
     },

@@ -12,6 +12,7 @@
  * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
  * - 設計: specs/postcardlayout/design.md §3.5
  */
+import EntryPostedAt from "@/components/entry/EntryPostedAt"
 import PostBody from "@/components/post/PostBody"
 import type { SourceImage } from "@/lib/entry/entry"
 import { createTranslator, type PlainMessageKey } from "@/lib/i18n/translate"
@@ -34,7 +35,8 @@ interface Props {
     notFoundReasonKey?: PlainMessageKey
     heading: string
     caption: string
-    createdAtText: string
+    /** ISO文字列。表示整形は EntryPostedAt が行う（空なら日時なし） */
+    createdAt: string
     sourcePostAvailable: boolean
     /** 元投稿（Bluesky）のWeb URL。空なら元投稿リンクを非表示 */
     sourceUrl?: string
@@ -48,13 +50,25 @@ const {
     notFoundReasonKey = "entry.detail.error404Body",
     heading,
     caption,
-    createdAtText,
+    createdAt,
     sourcePostAvailable,
     sourceUrl = "",
     visualUrl = "",
     posts,
 } = Astro.props
 const { t } = createTranslator(Astro.locals.locale)
+const titleKey =
+    statusCode === 404
+        ? "entry.detail.error404Title"
+        : statusCode === 503
+          ? "entry.detail.error503Title"
+          : "entry.detail.error500Title"
+const bodyKey =
+    statusCode === 404
+        ? notFoundReasonKey
+        : statusCode === 503
+          ? "entry.detail.error503Body"
+          : "entry.detail.error500Body"
 ---
 
 {
@@ -77,15 +91,19 @@ const { t } = createTranslator(Astro.locals.locale)
                                 rel="noopener noreferrer"
                                 data-testid="entry-source-link"
                             >
-                                {t("entry.detail.viewSource")}
+                                <span data-i18n="entry.detail.viewSource">{t("entry.detail.viewSource")}</span>
                             </a>
                         </div>
                     ) : null}
                     <div>
-                        {t("entry.detail.postedAt", { date: createdAtText ? createdAtText : t("entry.detail.noDate") })}
+                        <EntryPostedAt client:load createdAt={createdAt} />
                     </div>
                 </dl>
-                {!sourcePostAvailable ? <p class={styles["empty-message"]}>{t("entry.detail.sourceDeleted")}</p> : null}
+                {!sourcePostAvailable ? (
+                    <p class={styles["empty-message"]} data-i18n="entry.detail.sourceDeleted">
+                        {t("entry.detail.sourceDeleted")}
+                    </p>
+                ) : null}
             </section>
 
             {posts.length > 0 ? (
@@ -110,14 +128,14 @@ const { t } = createTranslator(Astro.locals.locale)
         </article>
     ) : (
         <section class={styles["error-pane"]}>
-            <h1>
+            <h1 data-i18n={titleKey}>
                 {statusCode === 404
                     ? t("entry.detail.error404Title")
                     : statusCode === 503
                       ? t("entry.detail.error503Title")
                       : t("entry.detail.error500Title")}
             </h1>
-            <p>
+            <p data-i18n={bodyKey}>
                 {statusCode === 404
                     ? t(notFoundReasonKey)
                     : statusCode === 503

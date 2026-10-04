@@ -4,6 +4,7 @@ import { isLocale, type LocaleSetting } from "@/lib/i18n/locale"
 import { readLocaleSetting } from "@/lib/i18n/localeSetting"
 import { useLocale, useT } from "@/lib/i18n/react"
 import { setLocaleSetting } from "@/lib/i18n/store"
+import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
 /**
@@ -23,6 +24,8 @@ export type LocaleSelectProps = {
   className?: string
   id?: string
   ariaLabel?: string
+  /** true の場合、プルダウンの左に「表示言語」ラベルを表示する */
+  showLabel?: boolean
 }
 
 /**
@@ -30,6 +33,7 @@ export type LocaleSelectProps = {
  *
  * Input:
  * - `disabled`/`className`/`id`/`ariaLabel`: 表示・属性制御
+ * - `showLabel`: 単純な見出しラベルを併記するか（設定画面など、呼び出し側でラベルを持つ場合は不要）
  *
  * Output:
  * - 言語候補を持つ `Dropdown`
@@ -43,6 +47,7 @@ export const LocaleSelect = ({
   className,
   id = "ui-locale",
   ariaLabel,
+  showLabel = false,
 }: LocaleSelectProps) => {
   const { t } = useT()
   const locale = useLocale()
@@ -66,7 +71,7 @@ export const LocaleSelect = ({
     }
   }
 
-  return (
+  const dropdown = (
     <Dropdown
       id={id}
       value={value}
@@ -76,6 +81,17 @@ export const LocaleSelect = ({
       ariaLabel={ariaLabel ?? t("settings.locale.label")}
       className={className ? `${styles.select} ${className}` : styles.select}
     />
+  )
+
+  if (!showLabel) return dropdown
+
+  return (
+    <div className={styles.labeled}>
+      <label htmlFor={id} className={ui.label}>
+        {t("settings.locale.label")}
+      </label>
+      {dropdown}
+    </div>
   )
 }
 

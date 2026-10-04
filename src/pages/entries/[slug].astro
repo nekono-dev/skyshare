@@ -13,7 +13,8 @@
 
 export const prerender = false
 
-import { formatDateTime } from "@/lib/i18n/format"
+import ui from "@/styles/ui.module.css"
+import LocaleSelect from "@/components/common/LocaleSelect"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { AtpAgent, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
 import Baselayout from "@/layout/Baselayout.astro"
@@ -62,7 +63,7 @@ let pageTitle = `${serviceName} Entry`
 let cardPath = ""
 let sourceWebUrl = ""
 let sourceText = ""
-let createdAtText = ""
+let createdAt = ""
 let posts: EntryPostView[] = []
 let manifestHeading = ""
 let manifestCaption = ""
@@ -135,13 +136,7 @@ if (typeof slug === "undefined") {
                     return 500
             }
 
-            createdAtText =
-                typeof entry.createdAt === "string"
-                    ? formatDateTime(entry.createdAt, Astro.locals.locale, {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                      })
-                    : ""
+            createdAt = typeof entry.createdAt === "string" ? entry.createdAt : ""
 
             manifestHeading = typeof entry.manifest?.heading === "string" ? (entry.manifest as any).heading : ""
             manifestCaption = typeof entry.manifest?.caption === "string" ? (entry.manifest as any).caption : ""
@@ -234,15 +229,22 @@ Astro.response.status = statusCode
     pageCaption={metaDescription}
     robots={robots}
 >
-    <EntryDetailView
-        statusCode={statusCode}
-        notFoundReasonKey={notFoundReasonKey}
-        heading={manifestHeading}
-        caption={manifestCaption}
-        createdAtText={createdAtText}
-        sourcePostAvailable={sourcePostAvailable}
-        sourceUrl={sourceWebUrl}
-        visualUrl={cardPath}
-        posts={posts}
-    />
+    <div class={ui.center}>
+        <div class={`${ui.page} ${ui["width-lg"]}`}>
+            <div class={ui["self-end"]}>
+                <LocaleSelect client:load showLabel />
+            </div>
+            <EntryDetailView
+                statusCode={statusCode}
+                notFoundReasonKey={notFoundReasonKey}
+                heading={manifestHeading}
+                caption={manifestCaption}
+                createdAt={createdAt}
+                sourcePostAvailable={sourcePostAvailable}
+                sourceUrl={sourceWebUrl}
+                visualUrl={cardPath}
+                posts={posts}
+            />
+        </div>
+    </div>
 </Baselayout>

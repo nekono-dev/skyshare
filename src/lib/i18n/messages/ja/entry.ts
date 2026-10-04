@@ -39,7 +39,7 @@ export const entry = {
         "これはログイン不要のゲスト表示です。実際のEntryの編集はできません。Entryの削除は画面上の模擬動作で、実際のデータには影響しません。",
     "entry.legacy.confirm": "この投稿を削除しますか？",
     "entry.legacy.deleteFailed": "投稿の削除に失敗しました。",
-    "entry.detail.viewSource": "元投稿を見る",
+    "entry.detail.viewSource": "Bluesky上の元投稿を見る",
     "entry.detail.postedAt": "投稿日時:{date}",
     "entry.detail.noDate": "no data",
     "entry.detail.sourceDeleted":

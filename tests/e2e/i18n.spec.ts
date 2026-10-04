@@ -36,6 +36,18 @@ test.describe("英語ブラウザ", () => {
             "Settings",
         )
     })
+
+    test("Entry詳細の投稿日時・元投稿リンクが英語で表示される", async ({
+        page,
+    }) => {
+        await page.goto("/entries/sample/")
+        await expect(page.locator("astro-island[ssr]")).toHaveCount(0)
+
+        await expect(page.getByTestId("entry-source-link")).toHaveText(
+            "View original post",
+        )
+        await expect(page.locator("dl").getByText(/^Posted: /)).toBeVisible()
+    })
 })
 
 test.describe("日本語ブラウザ", () => {
@@ -452,5 +464,24 @@ test.describe("ログイン画面の言語切り替え", () => {
         await expect(
             page.getByRole("combobox", { name: "Language" }),
         ).toHaveText("English")
+    })
+})
+
+test.describe("Entry詳細の言語切り替え", () => {
+    test("Entry詳細のプルダウンで English を選ぶと投稿日時が英語になる", async ({
+        page,
+    }) => {
+        await page.goto("/entries/sample/", { timeout: 60_000 })
+        await expect(page.locator("astro-island[ssr]")).toHaveCount(0, {
+            timeout: 30_000,
+        })
+        const trigger = page.getByRole("combobox", { name: "表示言語" })
+        await clickUntilVisible(trigger, page.getByRole("listbox"))
+        await page.getByRole("option", { name: "English" }).click()
+
+        await expect(page.getByTestId("entry-source-link")).toHaveText(
+            "View original post",
+        )
+        await expect(page.locator("dl").getByText(/^Posted: /)).toBeVisible()
     })
 })

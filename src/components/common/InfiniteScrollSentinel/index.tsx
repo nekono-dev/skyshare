@@ -126,7 +126,7 @@ export const Component = ({
       aria-live="polite"
     >
       {loadingMore ? (
-        <Loading message={loadingText ?? t("common.loadingPlain")} />
+        <Loading message={loadingText ?? t("common.loading")} />
       ) : null}
     </div>
   )
