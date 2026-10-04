@@ -14,13 +14,13 @@
 
 ## Phase 2: トークン発行 API
 
-- [ ] `[BE]` `src/lib/api/schema/v2/bsky/video/upload-token/post.ts` を作成する（design.md §4.1。`ResponseBody200Schema`・`operation`・`Common.errorResponses(["400","401","429","500"])`）。
-- [ ] `[BE]` `src/lib/atproto/videoAuth.ts` に `isSupportedVideoPds`・`createVideoUploadToken` を実装する（`readPdsServiceFromDidDoc`/`resolvePdsServiceForDid` を再利用）。
-- [ ] `[BE]` `src/pages/v2/bsky/video/upload-token.ts` を作成する（401/400/500 の分岐、`Cache-Control: no-store`、トークンをログに出さない）。
-- [ ] `[BE]` `npm run codegen` を実行し、`src/client/openapi/` を再生成する。
-- [ ] `[TEST]` `tests/lib/atproto/videoAuth.test.ts`: `isSupportedVideoPds`（`bsky.social`・`xxx.host.bsky.network` が true、独自ドメイン・`evilbsky.social`・`host.bsky.network.example.com` が false）、`createVideoUploadToken` が `aud=did:web:<PDSホスト>`・`lxm=com.atproto.repo.uploadBlob`・`exp=now+1800` で `getServiceAuth` を呼ぶこと、PDS 未解決・`getServiceAuth` 失敗で 500、対応外PDSで 400。
-- [ ] `[TEST]` `tests/pages/v2/bsky/video/uploadToken.test.ts`: 未認証 401、対応PDS 200（`no-store`）、対応外 400。
-- [ ] 検証: 上記テストと `npm run codegen` 後の `tsc` が通る。
+- [x] `[BE]` `src/lib/api/schema/v2/bsky/video/upload-token/post.ts` を作成する（design.md §4.1。`ResponseBody200Schema`・`operation`・`Common.errorResponses(["400","401","429","500"])`）。
+- [x] `[BE]` `src/lib/atproto/videoAuth.ts` に `isSupportedVideoPds`・`createVideoUploadToken` を実装する（`readPdsServiceFromDidDoc`/`resolvePdsServiceForDid` を再利用）。
+- [x] `[BE]` `src/pages/v2/bsky/video/upload-token.ts` を作成する（401/400/500 の分岐、`Cache-Control: no-store`、トークンをログに出さない）。
+- [x] `[BE]` `npm run codegen` を実行し、`src/client/openapi/` を再生成する。
+- [x] `[TEST]` `tests/lib/atproto/videoAuth.test.ts`: `isSupportedVideoPds`（`bsky.social`・`xxx.host.bsky.network` が true、独自ドメイン・`evilbsky.social`・`host.bsky.network.example.com` が false）、`createVideoUploadToken` が `aud=did:web:<PDSホスト>`・`lxm=com.atproto.repo.uploadBlob`・`exp=now+1800` で `getServiceAuth` を呼ぶこと、PDS 未解決・`getServiceAuth` 失敗で 500、対応外PDSで 400。
+- [x] `[TEST]` `tests/pages/v2/bsky/video/uploadToken.test.ts`: 未認証 401、対応PDS 200（`no-store`）、対応外 400。
+- [x] 検証: 上記テストと `npm run codegen` 後の `tsc` が通る。
 
 ## Phase 3: 投稿作成 API（動画 embed）
 
