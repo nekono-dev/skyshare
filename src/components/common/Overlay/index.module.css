@@ -11,11 +11,13 @@
   z-index: var(--overlay-z);
 }
 
-/* 配置(align-items)の既定値も :where() で詳細度 0 にし、backdropClassName 側
-   （.postform-backdrop の align-items: flex-start など）が import 順に関係なく
-   必ず優先されるようにする。理由は下の .content の :where() コメントと同様。 */
-:where(.backdrop) {
-  align-items: center;
+/* 配置(align-items)の既定値は `ui` レイヤーの中で :where() により詳細度 0 にする。
+   backdropClassName 側（.postform-backdrop の align-items: flex-start など、レイヤー外）が
+   必ず優先されるようにする。 */
+@layer ui {
+  :where(.backdrop) {
+    align-items: center;
+  }
 }
 
 .content {
@@ -31,11 +33,15 @@
   line-height: var(--line-height-normal);
 }
 
-/* 幅の既定値は :where() で詳細度 0 にし、contentClassName 側の単一クラス指定
-   （ui.dialog-overlay-* など）が CSS の記述順（バンドル時の import 順）に
-   関係なく必ず優先されるようにする。通常のクラスセレクタ同士は詳細度が同点になり、
-   どちらが勝つかは import グラフの並び順というビルド上の偶然に左右されてしまうため。 */
-:where(.content) {
-  width: 100%;
-  max-width: 640px;
+/* 幅の既定値は、共通UI（ui.width-*）と同じ `ui` レイヤーの中で :where() により詳細度 0 にする。
+   同一レイヤー内では詳細度が優先されるため、contentClassName に渡される ui.width-* が
+   CSSの記述順（バンドル時の import 順）に関係なく必ず優先される。
+   レイヤー外に書くと ui.width-* が負け、ダイアログ幅が既定値に戻る。
+   また別レイヤー（例: defaults）を作り `@layer a, b;` で順序を宣言する方式は、バンドラが
+   宣言を分割して順序が崩れるため使わないこと。 */
+@layer ui {
+  :where(.content) {
+    width: 100%;
+    max-width: 640px;
+  }
 }
