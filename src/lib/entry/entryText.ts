@@ -8,9 +8,13 @@
  */
 
 import { formatVideoDuration } from "@/lib/video/formatVideoDuration"
+import { serviceName } from "@/vars"
 
 export const ENTRY_HEADING_MAX_LENGTH = 100
 export const ENTRY_CAPTION_MAX_LENGTH = 300
+
+// 上限超過時も接尾辞は残すため、投稿者名側を切り詰める。
+const HEADING_SUFFIX = ` | ${serviceName}`
 
 export type EntryText = {
     heading?: string
@@ -22,7 +26,9 @@ export type EntryText = {
  *
  * 処理の趣旨:
  * - heading は X の twitter:title が空だと OGP カードが正しく生成されないため、空にしない。
- *   画像投稿は投稿者名、動画投稿は動画の再生時間（`m:ss`）とする。動画の再生時間は
+ *   画像投稿は「<投稿者名> | <サービス名>」、動画投稿は動画の再生時間（`m:ss`）とする。
+ *   投稿者名のみ（短い・日本語のみ等）だと X 上で twitter:title が採用されず、ドメイン表示に
+ *   なることがあったため、サービス名を付けた形式にしている。動画の再生時間は
  *   visual へ埋め込まず heading で示し、X 上のリンクカードを動画に見せる。
  * - caption は投稿本文（trim後）とする。本文が空白のみなら caption は付けない。上限超過分は切り詰める。
  *
@@ -36,7 +42,7 @@ export type EntryText = {
  *
  * 例:
  * - 入力: userName="Alice", postText=" Hello "
- *   出力: { heading: "Alice", caption: "Hello" }
+ *   出力: { heading: "Alice | Skyshare", caption: "Hello" }
  * - 入力: userName="Alice", postText="Hello", videoDurationSec=65
  *   出力: { heading: "1:05", caption: "Hello" }
  */
@@ -52,7 +58,7 @@ export const buildEntryText = (params: {
         heading:
             videoDurationSec !== undefined
                 ? formatVideoDuration(videoDurationSec)
-                : userName.slice(0, ENTRY_HEADING_MAX_LENGTH),
+                : `${userName.slice(0, ENTRY_HEADING_MAX_LENGTH - HEADING_SUFFIX.length)}${HEADING_SUFFIX}`,
         ...(caption.length > 0 ? { caption } : {}),
     }
 }

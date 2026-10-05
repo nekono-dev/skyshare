@@ -137,7 +137,7 @@ Bluesky は投稿に動画（最大300MB）を添付できる。skyshare の投�
 ### FR-10b: 動画 entry の heading（再生時間）
 
 - 動画投稿から作成する entry の heading は、動画の再生時間（`m:ss` 形式。1時間以上は `h:mm:ss`。例: `0:05`、`10:00`、`1:00:00`）とする。投稿時の作成・既存の動画投稿からの事後作成のいずれも同じ。
-- 画像投稿から作成する entry の heading は従来どおり投稿者名とする。
+- 画像投稿から作成する entry の heading は「<投稿者名> | Skyshare」とする。
 - entry 詳細ページ（`/entries/<slug>`）は、動画・画像を問わず heading を本文に表示しない。heading は `<title>`・OGP 用の値として扱う。
 
 ### FR-11: visual（サムネイル）の調整

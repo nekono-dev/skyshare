@@ -26,6 +26,9 @@ import { createTranslator, type MessageKey } from "@/lib/i18n/translate"
 import { serviceName } from "@/vars"
 const { cardPath, pageTitle, pageTitleKey, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
 const locale = Astro.locals.locale
+// SSR 応答の Content-Type に charset が無いと、X のクローラーが meta charset を使わず
+// 日本語の OGP タイトルを誤読する恐れがあるため、ヘッダー側でも UTF-8 を明示する。
+Astro.response.headers.set("Content-Type", "text/html; charset=utf-8")
 // pageTitleKey の文言は `{service}` を含みうるためサービス名を渡す（含まない文言では無視される）。
 const resolvedPageTitle =
     pageTitleKey !== undefined
@@ -44,6 +47,7 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
 
 <html lang={locale}>
     <head>
+        <meta charset="utf-8" />
         <script is:inline>
             try {
                 const themeMode = localStorage.getItem("themeMode")

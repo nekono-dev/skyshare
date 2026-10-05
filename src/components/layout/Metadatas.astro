@@ -42,7 +42,6 @@ const cardUrl = new URL(cardPath, Astro.url)
 <meta name="twitter:image" content={cardUrl} />
 <meta property="og:image" content={cardUrl} />
 {avatarUrl ? <link rel="preload" as="image" href={avatarUrl} /> : null}
-<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="generator" content={Astro.generator} />
 <meta name="robots" content={robots.join(",")} />

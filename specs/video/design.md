@@ -665,7 +665,7 @@ export const drawVideoOverlay =
 
 #### 6.5.4 再生時間（heading）
 
-`formatVideoDuration`（`src/lib/video/formatVideoDuration.ts`。四捨五入、最小 `0:01`）で `m:ss`（1時間以上は `h:mm:ss`）に整形し、`buildEntryText({ userName, postText, videoDurationSec })` が動画投稿のとき heading にする（未指定なら投稿者名）。再生時間の取得元は、投稿時が `VideoEntry.durationSec`（`submitThread`）、事後作成が `createPostVisualBlob` の戻り値 `{ blob, videoDurationSec }` である。
+`formatVideoDuration`（`src/lib/video/formatVideoDuration.ts`。四捨五入、最小 `0:01`）で `m:ss`（1時間以上は `h:mm:ss`）に整形し、`buildEntryText({ userName, postText, videoDurationSec })` が動画投稿のとき heading にする（未指定なら「投稿者名 | Skyshare」）。再生時間の取得元は、投稿時が `VideoEntry.durationSec`（`submitThread`）、事後作成が `createPostVisualBlob` の戻り値 `{ blob, videoDurationSec }` である。
 
 `src/lib/image/postImageProcessing.ts` を次のように拡張する（既存の呼び出しは第2引数なしで従来どおり動く）。
 

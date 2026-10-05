@@ -48,7 +48,7 @@ lexicon（AT Protocolのスキーマ定義）は逆順FQDN（`dev.nekono.skyshar
 ```json
 {
   "visual": { "$type": "blob", "ref": {...}, "mimeType": "image/jpeg" },
-  "heading": "alice.bsky.social 's Post",
+  "heading": "alice.bsky.social | Skyshare",
   "caption": "京都にて"
 }
 ```

@@ -7,10 +7,10 @@ import {
 } from "@/lib/entry/entryText"
 
 describe("buildEntryText", () => {
-    it("heading は投稿者名、caption は trim 済み本文を返す", () => {
+    it("heading は「投稿者名 | Skyshare」、caption は trim 済み本文を返す", () => {
         expect(
             buildEntryText({ userName: "Alice", postText: " Hello " }),
-        ).toEqual({ heading: "Alice", caption: "Hello" })
+        ).toEqual({ heading: "Alice | Skyshare", caption: "Hello" })
     })
 
     it("動画投稿は heading が再生時間（m:ss）になり、投稿者名は使わない", () => {
@@ -25,7 +25,7 @@ describe("buildEntryText", () => {
 
     it("本文が空白のみなら caption を含めない", () => {
         const text = buildEntryText({ userName: "Alice", postText: "   " })
-        expect(text).toEqual({ heading: "Alice" })
+        expect(text).toEqual({ heading: "Alice | Skyshare" })
         expect("caption" in text).toBe(false)
     })
 
@@ -35,6 +35,7 @@ describe("buildEntryText", () => {
             postText: "b".repeat(500),
         })
         expect(text.heading).toHaveLength(ENTRY_HEADING_MAX_LENGTH)
+        expect(text.heading?.endsWith(" | Skyshare")).toBe(true)
         expect(text.caption).toHaveLength(ENTRY_CAPTION_MAX_LENGTH)
     })
 })
