@@ -21,6 +21,9 @@ export const settings = {
     "settings.manualImageAttach.label": "画像を自分で添付する",
     "settings.manualImageAttach.description":
         "オンにすると、SkyshareのURLを発行しません。{share}を使用する場合は、共有先へ画像データを共有します。投稿インテント（ポップアップ{popup}） を使う場合は、対象SNSの投稿フォーム側で画像を設定してください。",
+    "settings.truncateIntentText.label": "長文を省略して共有する",
+    "settings.truncateIntentText.description":
+        "オンにすると、X・タイッツーへ共有する際に、140字に収まるよう本文を「...」で省略します。「画像を自分で添付する」がオンの間は使えません。",
     "settings.hashtagSuggest.label": "ハッシュタグ候補を表示",
     "settings.hashtagSuggest.description":
         "オンにすると、投稿本文で「#」を入力した際にハッシュタグの候補一覧を表示します。",
@@ -34,19 +37,11 @@ export const settings = {
     "settings.syncGate.label": "返信・引用オプションを保存する",
     "settings.syncGate.description":
         "オンにすると、投稿時に指定した返信・引用の設定が次回以降のデフォルト値になります。オフの場合、投稿後は本オプションで保存されたデフォルト値に戻ります。",
-    "settings.crosspost.title": "クロスポスト",
-    "settings.showX.label": "X投稿ボタンを表示",
-    "settings.showX.description":
-        "オンにすると、X投稿ボタンを表示します。自動ポップアップはOFFになります。他SNSのクロスポストオプションを設定している場合、両方のボタンを表示します。",
-    "settings.noAutoPopup.label": "自動ポップアップをOFFにする",
-    "settings.noAutoPopup.description":
-        "オンにすると、投稿完了時に共有ポップアップを自動的に開きません。X投稿ボタンを表示がOFFの場合はONになります。自動ポップアップを開くことができない場合は、このオプションがONになります。",
-    "settings.taittsuu.label": "{taittsuu}にクロスポスト",
-    "settings.taittsuu.description":
-        "オンにすると、クロスポスト先をXではなくタイッツー{taittsuu}に変更します。",
-    "settings.mastodon.label": "{mastodon}にクロスポスト",
-    "settings.mastodon.description":
-        "オンにすると、クロスポスト先にMastodon{mastodon}を追加します。ドメイン未設定の場合は mastodon.social が既定値として設定されます。",
+    "settings.autoPopupTarget.description":
+        "投稿後に投稿画面を自動で開くSNSを選びます。「投稿時に選択する」の場合は、投稿後に投稿先を選ぶダイアログを表示します。",
+    "settings.mastodon.instance.label": "Mastodon{mastodon}のインスタンス",
+    "settings.mastodon.instance.description":
+        "Mastodon への共有で使うインスタンスのドメインです。未設定の場合は mastodon.social を使います。",
     "settings.mastodon.domainError":
         "ドメインの形式が正しくありません。スキーム（https://等）やパス（/以降）を含めず、ドメイン名のみを入力してください。",
 } as const

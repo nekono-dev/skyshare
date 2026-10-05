@@ -136,7 +136,7 @@ const videoInput = (editor: ReturnType<Page["locator"]>) =>
 const imageInput = (editor: ReturnType<Page["locator"]>) =>
     editor.locator('input[type="file"][accept="image/*"]')
 
-/** `<img>` を canvas に描き、自然サイズと、中央（再生記号）・左下バッジ領域の白画素の有無を返す。 */
+/** `<img>` を canvas に描き、自然サイズと、中央（再生記号）・左下（旧バッジ位置）の白画素の有無を返す。 */
 const inspectVisual = (img: Locator) =>
     img.evaluate(async (el: HTMLImageElement) => {
         await el.decode()
@@ -148,10 +148,14 @@ const inspectVisual = (img: Locator) =>
         const center = Array.from(
             context.getImageData(598, 315, 1, 1).data.slice(0, 3),
         )
-        const badge = context.getImageData(28, 554, 106, 49).data
+        const oldBadge = context.getImageData(28, 554, 106, 49).data
         let whites = 0
-        for (let i = 0; i < badge.length; i += 4) {
-            if (badge[i] >= 200 && badge[i + 1] >= 200 && badge[i + 2] >= 200)
+        for (let i = 0; i < oldBadge.length; i += 4) {
+            if (
+                oldBadge[i] >= 200 &&
+                oldBadge[i + 1] >= 200 &&
+                oldBadge[i + 2] >= 200
+            )
                 whites++
         }
         return {
@@ -316,7 +320,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         expect(adjustBox.x).toBeGreaterThan(videoBox.x)
         expect(Math.abs(adjustBox.y - videoBox.y)).toBeLessThan(40)
 
-        // プレビューは再生ボタン・バッジ入りの visual（1200x630）で、中央に再生記号がある
+        // プレビューは再生ボタン入りの visual（1200x630）で、中央に再生記号がある
         const thumbImg = page.getByTestId("video-preview").locator("img")
         await expect(thumbImg).toHaveAttribute("src", /^blob:/)
         const initial = await inspectVisual(thumbImg)
@@ -324,10 +328,10 @@ test.describe("動画投稿（ThreadComposer）", () => {
         for (const channel of initial.center) {
             expect(channel).toBeGreaterThanOrEqual(245)
         }
-        expect(initial.whites).toBeGreaterThanOrEqual(100)
+        expect(initial.whites).toBe(0)
         const initialSrc = await thumbImg.getAttribute("src")
 
-        // 調整ダイアログには再生ボタン・バッジの描画済み画像ではなく poster だけが表示される
+        // 調整ダイアログには再生ボタンの描画済み画像ではなく poster だけが表示される
         await adjust.click()
         await expect(page.getByTestId("crop-slot")).toHaveCount(1)
         const dialogImg = page.getByTestId("crop-slot").locator("img").first()
@@ -357,7 +361,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         for (const channel of adjusted.center) {
             expect(channel).toBeGreaterThanOrEqual(245)
         }
-        expect(adjusted.whites).toBeGreaterThanOrEqual(100)
+        expect(adjusted.whites).toBe(0)
 
         // アップロードの進捗が調整によって失われず、完了表示になる
         mocks.releaseJob()
@@ -392,7 +396,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         for (const channel of visual.center) {
             expect(channel).toBeGreaterThanOrEqual(245)
         }
-        expect(visual.whites).toBeGreaterThanOrEqual(100)
+        expect(visual.whites).toBe(0)
     })
 
     test("変換完了まで投稿ボタンが無効で理由が表示され、完了後に有効になる（シナリオ2・10）", async ({

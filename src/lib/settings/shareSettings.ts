@@ -4,20 +4,131 @@
  * 責務と処理概要:
  * - 投稿フォームが参照する共有設定を localStorage で管理する。
  * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする。
+ * - 「自動ポップアップするSNS」の読み取り時に、公開済みの旧共有設定からの引き継ぎ
+ *   （`legacyShareSettings.ts`）を先に実行する。
  */
+import { migrateLegacyShareSettings } from "@/lib/settings/legacyShareSettings"
+import { isValidMastodonInstanceDomain } from "@/util/share/intent"
 
 const POPUP_INTENT_INSTEAD_OF_WEBSHARE_KEY = "popupIntentInsteadOfWebshare"
-const CROSSPOST_TO_TAITTSUU_KEY = "crosspostToTaittsuu"
-const SHOW_CROSSPOST_X_BUTTON = "showCrosspostXButton"
+const AUTO_POPUP_TARGET_KEY = "autoPopupTarget"
+const TRUNCATE_INTENT_TEXT_KEY = "truncateIntentText"
 const PINNED_FORM_DISABLED_KEY = "pinnedFormDisabled"
-const NO_AUTO_POPUP_AFTER_POST_KEY = "noAutoPopupAfterPost"
 const MANUAL_IMAGE_ATTACH_KEY = "manualImageAttach"
 const TEXTAREA_ROWS_KEY = "textareaRows"
 const MASTODON_INSTANCE_DOMAIN_KEY = "mastodonInstanceDomain"
-const CROSSPOST_TO_MASTODON_KEY = "crosspostToMastodon"
 
 /** Mastodonインスタンスドメインが未設定の場合に使う既定値。 */
 export const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
+
+/** 投稿後に自動でポップアップするSNS（"ask" は投稿先選択ダイアログを開く）。 */
+export const AUTO_POPUP_TARGETS = ["ask", "x", "taittsuu", "mastodon"] as const
+export type AutoPopupTarget = (typeof AUTO_POPUP_TARGETS)[number]
+
+/** 「自動ポップアップするSNS」が未設定の場合に使う既定値。 */
+export const DEFAULT_AUTO_POPUP_TARGET: AutoPopupTarget = "x"
+
+/**
+ * 値が `AutoPopupTarget` かを判定する。
+ *
+ * Input:
+ * - `value`: 判定対象（外部入力を想定。文字列以外も受け付ける）
+ *
+ * Output:
+ * - `AUTO_POPUP_TARGETS` のいずれかなら `true`
+ *
+ * 例:
+ * - 入力: `"taittsuu"`
+ * - 出力: `true`
+ */
+export const isAutoPopupTarget = (value: unknown): value is AutoPopupTarget =>
+    AUTO_POPUP_TARGETS.some(target => target === value)
+
+/**
+ * 「自動ポップアップするSNS」設定を localStorage から読み取る。
+ *
+ * 処理の趣旨:
+ * - 公開済みの旧共有設定が残っている場合に備え、読み取りの前に引き継ぎ
+ *   （`migrateLegacyShareSettings`）を実行する。
+ *
+ * Input:
+ * - `defaultValue`: localStorage が利用できない場合・未設定時・不正な値の場合に返す既定値
+ *
+ * Output:
+ * - 保存済み設定値。未設定/不正/失敗時は `defaultValue`
+ *
+ * 例:
+ * - 入力: `"x"`
+ * - 出力: `"taittsuu"`（保存済み値が taittsuu の場合）
+ */
+export const readAutoPopupTargetSetting = (
+    defaultValue: AutoPopupTarget,
+): AutoPopupTarget => {
+    if (typeof window === "undefined") {
+        return defaultValue
+    }
+
+    migrateLegacyShareSettings()
+
+    try {
+        const rawValue = window.localStorage.getItem(AUTO_POPUP_TARGET_KEY)
+        return isAutoPopupTarget(rawValue) ? rawValue : defaultValue
+    } catch (error) {
+        return defaultValue
+    }
+}
+
+/**
+ * 「自動ポップアップするSNS」設定を localStorage に保存する。
+ *
+ * Input:
+ * - `value`: 保存したい設定値
+ *
+ * Output:
+ * - なし（保存失敗時は UI 動作を優先し、例外を握りつぶす）
+ *
+ * 例:
+ * - 入力: `"ask"`
+ * - 出力: localStorage に `autoPopupTarget=ask` を保存
+ */
+export const writeAutoPopupTargetSetting = (value: AutoPopupTarget) => {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    try {
+        window.localStorage.setItem(AUTO_POPUP_TARGET_KEY, value)
+    } catch (error) {
+        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
+    }
+}
+
+/**
+ * 保存されているMastodonインスタンスドメインから、実際に投稿先として使うドメインを決める。
+ *
+ * Input:
+ * - `rawDomain`: 保存値（未設定は空文字）
+ *
+ * Output:
+ * - 空白のみなら既定ドメイン、妥当な形式ならそのドメイン（前後の空白は除去）、
+ *   不正な形式なら `null`
+ *
+ * 例:
+ * - 入力: `""`
+ * - 出力: `"mastodon.social"`
+ * - 入力: `"https://example.com/"`
+ * - 出力: `null`
+ */
+export const resolveMastodonInstanceDomain = (
+    rawDomain: string,
+): string | null => {
+    const trimmed = rawDomain.trim()
+    if (trimmed === "") {
+        return DEFAULT_MASTODON_INSTANCE_DOMAIN
+    }
+    return isValidMastodonInstanceDomain(trimmed) ? trimmed : null
+}
+
 /**
  * 「WebShareAPIの代わりにインテントポップアップを開く」設定を localStorage から読み取る。
  *
@@ -80,7 +191,7 @@ export const writePopupIntentInsteadOfWebshareSetting = (value: boolean) => {
 }
 
 /**
- * 「タイッツーにクロスポスト」設定を localStorage から読み取る。
+ * 「X/タイッツー向け共有文の長文を省略する」設定を localStorage から読み取る。
  *
  * Input:
  * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
@@ -92,13 +203,13 @@ export const writePopupIntentInsteadOfWebshareSetting = (value: boolean) => {
  * - 入力: `false`
  * - 出力: `true`（保存済み値が true の場合）
  */
-export const readCrosspostToTaittsuuSetting = (defaultValue: boolean) => {
+export const readTruncateIntentTextSetting = (defaultValue: boolean) => {
     if (typeof window === "undefined") {
         return defaultValue
     }
 
     try {
-        const rawValue = window.localStorage.getItem(CROSSPOST_TO_TAITTSUU_KEY)
+        const rawValue = window.localStorage.getItem(TRUNCATE_INTENT_TEXT_KEY)
         if (rawValue === null) {
             return defaultValue
         }
@@ -109,7 +220,7 @@ export const readCrosspostToTaittsuuSetting = (defaultValue: boolean) => {
 }
 
 /**
- * 「タイッツーにクロスポスト」設定を localStorage に保存する。
+ * 「X/タイッツー向け共有文の長文を省略する」設定を localStorage に保存する。
  *
  * Input:
  * - `value`: 保存したい設定値
@@ -119,69 +230,15 @@ export const readCrosspostToTaittsuuSetting = (defaultValue: boolean) => {
  *
  * 例:
  * - 入力: `true`
- * - 出力: localStorage に `crosspostToTaittsuu=true` を保存
+ * - 出力: localStorage に `truncateIntentText=true` を保存
  */
-export const writeCrosspostToTaittsuuSetting = (value: boolean) => {
+export const writeTruncateIntentTextSetting = (value: boolean) => {
     if (typeof window === "undefined") {
         return
     }
 
     try {
-        window.localStorage.setItem(CROSSPOST_TO_TAITTSUU_KEY, String(value))
-    } catch (error) {
-        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
-    }
-}
-
-/**
- * 「タイッツークロスポスト時も X 投稿ボタンを表示する」設定を localStorage から読み取る。
- *
- * Input:
- * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
- *
- * Output:
- * - 保存済み設定値。未設定/失敗時は `defaultValue`
- *
- * 例:
- * - 入力: `false`
- * - 出力: `true`（保存済み値が true の場合）
- */
-export const readShowCrosspostXButtonSetting = (defaultValue: boolean) => {
-    if (typeof window === "undefined") {
-        return defaultValue
-    }
-
-    try {
-        const rawValue = window.localStorage.getItem(SHOW_CROSSPOST_X_BUTTON)
-        if (rawValue === null) {
-            return defaultValue
-        }
-        return rawValue === "true"
-    } catch (error) {
-        return defaultValue
-    }
-}
-
-/**
- * 「タイッツークロスポスト時も X 投稿ボタンを表示する」設定を localStorage に保存する。
- *
- * Input:
- * - `value`: 保存したい設定値
- *
- * Output:
- * - なし
- *
- * 例:
- * - 入力: `true`
- * - 出力: localStorage に `showCrosspostXButton=true` を保存
- */
-export const writeShowCrosspostXButtonSetting = (value: boolean) => {
-    if (typeof window === "undefined") {
-        return
-    }
-
-    try {
-        window.localStorage.setItem(SHOW_CROSSPOST_X_BUTTON, String(value))
+        window.localStorage.setItem(TRUNCATE_INTENT_TEXT_KEY, String(value))
     } catch (error) {
         // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
     }
@@ -236,62 +293,6 @@ export const writePinnedFormDisabledSetting = (value: boolean) => {
 
     try {
         window.localStorage.setItem(PINNED_FORM_DISABLED_KEY, String(value))
-    } catch (error) {
-        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
-    }
-}
-
-/**
- * 「投稿後に自動ポップアップをOFFにする」設定を localStorage から読み取る。
- *
- * Input:
- * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
- *
- * Output:
- * - 保存済み設定値。未設定/失敗時は `defaultValue`
- *
- * 例:
- * - 入力: `false`
- * - 出力: `true`（保存済み値が true の場合）
- */
-export const readNoAutoPopupAfterPostSetting = (defaultValue: boolean) => {
-    if (typeof window === "undefined") {
-        return defaultValue
-    }
-
-    try {
-        const rawValue = window.localStorage.getItem(
-            NO_AUTO_POPUP_AFTER_POST_KEY,
-        )
-        if (rawValue === null) {
-            return defaultValue
-        }
-        return rawValue === "true"
-    } catch (error) {
-        return defaultValue
-    }
-}
-
-/**
- * 「投稿後に自動ポップアップをOFFにする」設定を localStorage に保存する。
- *
- * Input:
- * - `value`: 保存したい設定値
- *
- * Output:
- * - なし
- *
- * 例:
- * - 入力: `true`
- * - 出力: localStorage に `noAutoPopupAfterPost=true` を保存
- */
-export const writeNoAutoPopupAfterPostSetting = (value: boolean) => {
-    if (typeof window === "undefined") {
-        return
-    }
-
-    try {
-        window.localStorage.setItem(NO_AUTO_POPUP_AFTER_POST_KEY, String(value))
     } catch (error) {
         // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
     }
@@ -488,59 +489,5 @@ export const removeMastodonInstanceDomainSetting = () => {
         window.localStorage.removeItem(MASTODON_INSTANCE_DOMAIN_KEY)
     } catch (error) {
         // 削除失敗時は UI 動作を優先し、例外を握りつぶす。
-    }
-}
-
-/**
- * 「Mastodonにクロスポスト」設定を localStorage から読み取る。
- *
- * Input:
- * - `defaultValue`: localStorage が利用できない場合や未設定時に返す既定値
- *
- * Output:
- * - 保存済み設定値。未設定/失敗時は `defaultValue`
- *
- * 例:
- * - 入力: `false`
- * - 出力: `true`（保存済み値が true の場合）
- */
-export const readCrosspostToMastodonSetting = (defaultValue: boolean) => {
-    if (typeof window === "undefined") {
-        return defaultValue
-    }
-
-    try {
-        const rawValue = window.localStorage.getItem(CROSSPOST_TO_MASTODON_KEY)
-        if (rawValue === null) {
-            return defaultValue
-        }
-        return rawValue === "true"
-    } catch (error) {
-        return defaultValue
-    }
-}
-
-/**
- * 「Mastodonにクロスポスト」設定を localStorage に保存する。
- *
- * Input:
- * - `value`: 保存したい設定値
- *
- * Output:
- * - なし
- *
- * 例:
- * - 入力: `true`
- * - 出力: localStorage に `crosspostToMastodon=true` を保存
- */
-export const writeCrosspostToMastodonSetting = (value: boolean) => {
-    if (typeof window === "undefined") {
-        return
-    }
-
-    try {
-        window.localStorage.setItem(CROSSPOST_TO_MASTODON_KEY, String(value))
-    } catch (error) {
-        // 保存失敗時は UI 動作を優先し、例外を握りつぶす。
     }
 }

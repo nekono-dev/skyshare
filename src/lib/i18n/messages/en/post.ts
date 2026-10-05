@@ -51,7 +51,12 @@ export const post = {
     "post.selfLabel.spoiler": "Spoiler (spoiler)",
     "post.selfLabel.warn": "Warning (warn)",
 
-    "post.shareDialog.aria": "Share the Skyshare page",
+    "post.autoPopupTarget.label": "Auto-popup destination",
+    "post.autoPopupTarget.ask": "Choose when posting",
+    "post.autoPopupTarget.x": "X",
+    "post.autoPopupTarget.taittsuu": "Taittsuu",
+    "post.autoPopupTarget.mastodon": "Mastodon",
+    "post.shareDialog.aria": "Choose where to share",
     "post.shareDialog.x": "Post to X",
     "post.shareDialog.taittsuu": "Post to Taittsuu",
     "post.shareDialog.mastodon": "Post to Mastodon",
@@ -93,22 +98,11 @@ export const post = {
         "In guest mode, posting to Bluesky is skipped",
     "post.composer.submitAll": "Post all",
     "post.composer.submit": "Post",
-    "post.composer.needShareText": "Enter the post text to share.",
     "post.composer.popupInstead": "Open a popup {popup} instead of {share}",
     "post.composer.manualImageAttach": "Attach images manually (no URL)",
+    "post.composer.counterLabel.taittsuu": "Taittsuu",
+    "post.composer.truncateIntentText": "Truncate long text when sharing",
     "post.composer.moreOptions": "More options",
-
-    "post.intent.xButton": "Post to X",
-    "post.intent.iconButton": "{icon}Post",
-    "post.intent.xOpened": "Opened the x.com post screen.",
-    "post.intent.xBlocked":
-        "Could not open the x.com post screen. Check your popup blocker.",
-    "post.intent.taittsuuOpened": "Opened the Taittsuu post screen.",
-    "post.intent.taittsuuBlocked":
-        "Could not open the Taittsuu post screen. Check your popup blocker.",
-    "post.intent.mastodonOpened": "Opened the Mastodon post screen.",
-    "post.intent.mastodonBlocked":
-        "Could not open the Mastodon post screen. Check your popup blocker.",
 
     "post.submit.postFailed": "Failed to post to Bluesky.",
     "post.submit.entryCreateFailed":
@@ -122,11 +116,10 @@ export const post = {
     "post.share.service.taittsuu": "Taittsuu",
     "post.share.service.mastodon": "Mastodon",
     "post.share.service.x": "x.com",
-    "post.share.noAutoPopup":
-        "{result}. Press a post button for another SNS to cross-post.",
+    "post.share.chooseTarget": "{result}. Choose where to share.",
     "post.share.popupOpened": "{result}. Opened the {service} post screen.",
     "post.share.popupBlocked":
-        "{result}. Could not open the {service} post screen. Check your popup blocker. Automatic popups have been turned off.",
+        '{result}. Could not open the {service} post screen. Check your popup blocker. A dialog to choose where to share has been opened, and the auto-popup destination is now "Choose when posting".',
     "post.share.webShareDone": "{result}. Sent the post to the Web Share API.",
     "post.share.webShareCancelled":
         "{result}. The Web Share API share was cancelled.",
@@ -136,5 +129,5 @@ export const post = {
     "post.share.fallbackOpened":
         "{result}. Opened the post screen. {reason}, the option to open a popup has been turned on.",
     "post.share.fallbackBlocked":
-        "{result}, but the post screen could not be opened. Check your popup blocker. Automatic popups have been turned off.",
+        '{result}, but the post screen could not be opened. Check your popup blocker. A dialog to choose where to share has been opened, and the auto-popup destination is now "Choose when posting".',
 } satisfies MessageEntries

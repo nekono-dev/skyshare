@@ -37,7 +37,7 @@ export type VideoEntry = {
     cropState: SlotCropState
     /** `thumbnailBlob` の object URL（プレビュー・縮小表示用。差し替え・取り外し時に revoke する） */
     thumbnailPreview: string
-    /** visual（`cropState` の切り抜きに再生ボタンと再生時間バッジを重ねた 1200x630 の画像） */
+    /** visual（`cropState` の切り抜きに再生ボタンを重ねた 1200x630 の画像） */
     thumbnailBlob: Blob
     upload:
         | { state: "uploading"; progress: VideoUploadProgress }

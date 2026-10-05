@@ -49,6 +49,7 @@ import {
 } from "@/lib/settings/themeSettings"
 import type { MessageKey } from "@/lib/i18n/translate"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
+import AutoPopupTargetSelect from "@/components/common/AutoPopupTargetSelect"
 import { isValidMastodonInstanceDomain } from "@/util/share/intent"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -199,7 +200,6 @@ export const Settings = () => {
   const slots = {
     share: <InlineIcon name="share" />,
     popup: <InlineIcon name="popup" />,
-    taittsuu: <InlineIcon name="taittsuu" />,
     mastodon: <InlineIcon name="mastodon" />,
   }
   const rich = (key: MessageKey) => renderSlots(raw(key), slots)
@@ -219,12 +219,47 @@ export const Settings = () => {
       checked: shareToggles.popupIntentInsteadOfWebshare,
       onCheckedChange: shareToggles.onPopupIntentInsteadOfWebshareChange,
     },
+    // 「WebShareの代わりにポップアップを開く」がONのときだけ、自動ポップアップ先を選べる。
+    ...(shareToggles.popupIntentInsteadOfWebshare
+      ? [
+          {
+            key: "autoPopupTarget",
+            label: t("post.autoPopupTarget.label"),
+            description: t("settings.autoPopupTarget.description"),
+            renderControl: ({
+              id,
+              ariaLabel,
+              disabled,
+            }: {
+              id: string
+              ariaLabel?: string
+              disabled?: boolean
+            }) => (
+              <AutoPopupTargetSelect
+                id={id}
+                value={shareToggles.autoPopupTarget}
+                disabled={disabled}
+                ariaLabel={ariaLabel}
+                onChange={shareToggles.onAutoPopupTargetChange}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       key: "manualImageAttach",
       label: t("settings.manualImageAttach.label"),
       description: rich("settings.manualImageAttach.description"),
       checked: shareToggles.manualImageAttach,
       onCheckedChange: shareToggles.onManualImageAttachChange,
+    },
+    {
+      key: "truncateIntentText",
+      label: t("settings.truncateIntentText.label"),
+      description: t("settings.truncateIntentText.description"),
+      checked: shareToggles.truncateIntentText,
+      disabled: shareToggles.manualImageAttach,
+      onCheckedChange: shareToggles.onTruncateIntentTextChange,
     },
     {
       key: "hashtagSuggestEnabled",
@@ -240,36 +275,12 @@ export const Settings = () => {
       checked: mentionSuggestEnabled,
       onCheckedChange: onMentionSuggestEnabledChange,
     },
-  ]
-
-  const crosspostItems: SettingListItem[] = [
     {
-      key: "showXWhenCrosspost",
-      label: t("settings.showX.label"),
-      description: t("settings.showX.description"),
-      checked: shareToggles.showXWhenCrosspost,
-      onCheckedChange: shareToggles.onShowXWhenCrosspostChange,
-    },
-    {
-      key: "noAutoPopupAfterPost",
-      label: t("settings.noAutoPopup.label"),
-      description: t("settings.noAutoPopup.description"),
-      checked: shareToggles.noAutoPopupAfterPost,
-      onCheckedChange: shareToggles.onNoAutoPopupAfterPostChange,
-    },
-    {
-      key: "crosspostToTaittsuu",
-      label: rich("settings.taittsuu.label"),
-      description: rich("settings.taittsuu.description"),
-      checked: shareToggles.crosspostToTaittsuu,
-      onCheckedChange: shareToggles.onCrosspostToTaittsuuChange,
-    },
-    {
-      key: "crosspostToMastodon",
-      label: rich("settings.mastodon.label"),
-      description: rich("settings.mastodon.description"),
-      checked: shareToggles.crosspostToMastodon,
-      onCheckedChange: shareToggles.onCrosspostToMastodonChange,
+      key: "mastodonInstanceDomain",
+      label: rich("settings.mastodon.instance.label"),
+      description: t("settings.mastodon.instance.description"),
+      // トグルを持たない行のため、コントロール枠は空にして入力欄のみを使う。
+      renderControl: () => null,
       textInput: true,
       textInputValue: shareToggles.mastodonInstanceDomain,
       onTextInputChange: shareToggles.onMastodonInstanceDomainChange,
@@ -352,11 +363,6 @@ export const Settings = () => {
           setGateDialogOpen(false)
         }}
       />
-
-      <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>{t("settings.crosspost.title")}</h2>
-        <SettingList items={crosspostItems} />
-      </section>
     </div>
   )
 }

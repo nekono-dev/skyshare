@@ -20,7 +20,8 @@ test.describe("entry詳細ページのスレッド表示", () => {
     }) => {
         await page.goto("/entries/sample/")
 
-        await expect(page.getByText("サンプルスレッドEntry")).toBeVisible()
+        // heading は title 用の値で、本文には表示しない
+        await expect(page.getByText("サンプルスレッドEntry")).toHaveCount(0)
         await expect(
             page.getByText(
                 "スレッド1件目（先頭投稿）です。画像が1枚付いています。",

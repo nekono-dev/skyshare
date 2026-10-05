@@ -52,7 +52,12 @@ export const post = {
     "post.selfLabel.spoiler": "ネタバレ(spoiler)",
     "post.selfLabel.warn": "警告(warn)",
 
-    "post.shareDialog.aria": "skyshareページを共有",
+    "post.autoPopupTarget.label": "自動ポップアップするSNS",
+    "post.autoPopupTarget.ask": "投稿時に選択する",
+    "post.autoPopupTarget.x": "X",
+    "post.autoPopupTarget.taittsuu": "タイッツー",
+    "post.autoPopupTarget.mastodon": "Mastodon",
+    "post.shareDialog.aria": "共有先を選択",
     "post.shareDialog.x": "X に投稿",
     "post.shareDialog.taittsuu": "タイッツーに投稿",
     "post.shareDialog.mastodon": "Mastodonに投稿",
@@ -94,23 +99,12 @@ export const post = {
         "ゲスト表示のためBlueskyへの投稿はスキップされます",
     "post.composer.submitAll": "すべて投稿",
     "post.composer.submit": "投稿",
-    "post.composer.needShareText": "共有する投稿本文を入力してください。",
     "post.composer.popupInstead": "{share}の代わりにポップアップ{popup}を開く",
     "post.composer.manualImageAttach":
         "画像を自分で添付する（URLを発行しない）",
+    "post.composer.counterLabel.taittsuu": "ﾀｲｯﾂｰ",
+    "post.composer.truncateIntentText": "長文を省略して共有",
     "post.composer.moreOptions": "詳細オプション",
-
-    "post.intent.xButton": "X投稿",
-    "post.intent.iconButton": "{icon}投稿",
-    "post.intent.xOpened": "x.com 投稿画面を開きました。",
-    "post.intent.xBlocked":
-        "x.com 投稿画面を開けませんでした。ポップアップブロックを確認してください。",
-    "post.intent.taittsuuOpened": "タイッツー投稿画面を開きました。",
-    "post.intent.taittsuuBlocked":
-        "タイッツー投稿画面を開けませんでした。ポップアップブロックを確認してください。",
-    "post.intent.mastodonOpened": "Mastodon投稿画面を開きました。",
-    "post.intent.mastodonBlocked":
-        "Mastodon投稿画面を開けませんでした。ポップアップブロックを確認してください。",
 
     "post.submit.postFailed": "Blueskyへの投稿に失敗しました。",
     "post.submit.entryCreateFailed":
@@ -124,11 +118,10 @@ export const post = {
     "post.share.service.taittsuu": "タイッツー",
     "post.share.service.mastodon": "Mastodon",
     "post.share.service.x": "x.com",
-    "post.share.noAutoPopup":
-        "{result}。クロスポストを行うには他SNS向け投稿ボタンを押してください。",
+    "post.share.chooseTarget": "{result}。共有先を選択してください。",
     "post.share.popupOpened": "{result}。{service} 投稿画面を開きました。",
     "post.share.popupBlocked":
-        "{result}。{service} 投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。",
+        "{result}。{service} 投稿画面を開けませんでした。ポップアップブロックを確認してください。共有先を選ぶダイアログを開き、自動ポップアップするSNSを「投稿時に選択する」にしました。",
     "post.share.webShareDone":
         "{result}。WebShareAPIに投稿内容を転送しました。",
     "post.share.webShareCancelled":
@@ -138,5 +131,5 @@ export const post = {
     "post.share.fallbackOpened":
         "{result}。投稿画面を開きました。{reason}、ポップアップを開くオプションをONにしました。",
     "post.share.fallbackBlocked":
-        "{result}が、投稿画面を開けませんでした。ポップアップブロックを確認してください。自動ポップアップオプションをOFFにしました。",
+        "{result}が、投稿画面を開けませんでした。ポップアップブロックを確認してください。共有先を選ぶダイアログを開き、自動ポップアップするSNSを「投稿時に選択する」にしました。",
 } as const

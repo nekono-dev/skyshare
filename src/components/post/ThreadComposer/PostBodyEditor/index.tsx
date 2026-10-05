@@ -322,7 +322,9 @@ const Component: React.FC<Props> = ({
       ? styles["counters-error"]
       : aggregateState === "warn"
         ? styles["counters-warn"]
-        : ""
+        : counters.some(spec => spec.reduced)
+          ? styles["counters-reduced"]
+          : ""
 
   const wrapperClass = [ui["base-input-box"], styles.wrapper, wrapperClassName]
     .filter(Boolean)

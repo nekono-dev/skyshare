@@ -5,7 +5,13 @@
  * - intent 本文の組み立て、intent URL の組み立て、ポップアップの起動
  *   （実処理は `openIntentPopup` に委譲）を対象SNS共通で担う。
  */
+import type { IntentMeasure } from "@/util/share/intentLength"
 import { openIntentPopup } from "@/util/share/openIntentPopup"
+import {
+    INTENT_TRAILING_MARGIN,
+    INTENT_WEIGHTED_LIMIT,
+    truncateBodyWithSuffix,
+} from "@/util/share/truncateText"
 
 export type IntentTarget = "x" | "taittsuu" | "mastodon"
 
@@ -35,6 +41,78 @@ export const isValidMastodonInstanceDomain = (value: string): boolean => {
     return MASTODON_DOMAIN_PATTERN.test(value.trim())
 }
 
+export type BuildIntentTextOptions = {
+    /** 指定時のみ、本文を重み付き長 limit 以内へ省略する */
+    truncateLimit?: number
+    /** 省略時の長さ換算（宛先別。未指定ならX＝twitter-text） */
+    measure?: IntentMeasure
+}
+
+/**
+ * 宛先と設定から、本文の省略上限を決める。
+ *
+ * 処理の趣旨:
+ * - 文字数制限が厳しいX・タイッツーに限り、設定ONの場合のみ上限を返す。
+ *   Mastodonは制限が緩いため対象外とする。
+ *
+ * Input:
+ * - `target`: 共有先SNS
+ * - `truncateEnabled`: 「長文を省略して共有」設定
+ *
+ * Output:
+ * - 重み付き長の上限（intent先が末尾へ足す空白ぶんの余裕を引いた値）。
+ *   省略しない場合は `undefined`
+ *
+ * 例:
+ * - 入力: `"x"`, `true`
+ * - 出力: `279`
+ */
+export const resolveTruncateLimit = (
+    target: IntentTarget,
+    truncateEnabled: boolean,
+): number | undefined =>
+    truncateEnabled && (target === "x" || target === "taittsuu")
+        ? INTENT_WEIGHTED_LIMIT - INTENT_TRAILING_MARGIN
+        : undefined
+
+/**
+ * 本文の後ろに付ける末尾文字列（skyshare URL・本文に無いリンクカードURL）を組み立てる。
+ *
+ * 処理の趣旨:
+ * - リンクカードURLは、本文に既に含まれていなければ追加する
+ *   （本文側はスキーム省略表記もあり得るため、スキームを除いた形で比較する）。
+ * - 文字数カウンタの上限補正と、実際の共有文の組み立てで同じ判定を使うために公開する。
+ *
+ * Input:
+ * - `body`: 本文（前後の空白は除去済みの想定）
+ * - `skyshareUri`: skyshare entry URL（無ければ空文字）
+ * - `linkCardUrl`: リンクカードの元URL（無ければ省略可）
+ *
+ * Output:
+ * - 改行区切りの末尾文字列（何も付けない場合は空文字）
+ *
+ * 例:
+ * - 入力: `"本文"`, `"https://s/entries/a"`, `"https://example.com"`
+ * - 出力: `"https://s/entries/a\nhttps://example.com"`
+ */
+export const buildIntentSuffix = (
+    body: string,
+    skyshareUri: string,
+    linkCardUrl?: string,
+): string => {
+    const trimmedLinkCardUrl = linkCardUrl?.trim() ?? ""
+    const linkCardUrlWithoutScheme = trimmedLinkCardUrl.replace(
+        /^https?:\/\//i,
+        "",
+    )
+    const needsLinkCardUrl =
+        linkCardUrlWithoutScheme.length > 0 &&
+        !body.includes(linkCardUrlWithoutScheme)
+    return [skyshareUri, needsLinkCardUrl ? trimmedLinkCardUrl : ""]
+        .filter(part => part.length > 0)
+        .join("\n")
+}
+
 /**
  * intent に渡す投稿文を組み立てる。
  *
@@ -42,11 +120,14 @@ export const isValidMastodonInstanceDomain = (value: string): boolean => {
  * - 本文・skyshareUri・リンクカードURLを1つの文字列にまとめる。
  * - リンクカードURLは、本文に既に含まれていなければ末尾に追加する
  *   （本文側はスキーム省略表記もあり得るため、スキームを除いた形で比較する）。
+ * - `options.truncateLimit` 指定時のみ、URL部分を削らず
+ *   本文を「...」付きで省略して重み付き長を上限以内に収める。
  *
  * Input:
  * - `text`: 元の投稿本文
  * - `skyshareUri`: SkyShare の投稿 URI（無ければ空文字）
  * - `linkCardUrl`: 投稿に添付されたリンクカードの元URL（無ければ省略可）
+ * - `options.truncateLimit`: 本文を省略する場合の重み付き長の上限（未指定なら省略しない）
  *
  * Output:
  * - intent に渡す 1 つの文字列
@@ -59,20 +140,19 @@ export const buildIntentText = (
     text: string,
     skyshareUri: string,
     linkCardUrl?: string,
+    options: BuildIntentTextOptions = {},
 ): string => {
     const normalizedText = text.trim()
-    const trimmedLinkCardUrl = linkCardUrl?.trim() ?? ""
-    const linkCardUrlWithoutScheme = trimmedLinkCardUrl.replace(
-        /^https?:\/\//i,
-        "",
-    )
-    const needsLinkCardUrl =
-        linkCardUrlWithoutScheme.length > 0 &&
-        !normalizedText.includes(linkCardUrlWithoutScheme)
-    const suffix = [skyshareUri, needsLinkCardUrl ? trimmedLinkCardUrl : ""]
-        .filter(part => part.length > 0)
-        .join("\n")
+    const suffix = buildIntentSuffix(normalizedText, skyshareUri, linkCardUrl)
 
+    if (options.truncateLimit !== undefined) {
+        return truncateBodyWithSuffix({
+            body: normalizedText,
+            suffix,
+            limit: options.truncateLimit,
+            measure: options.measure,
+        }).text
+    }
     if (normalizedText.length === 0) {
         return suffix
     }

@@ -1,12 +1,12 @@
 /**
- * 動画投稿の entry の visual（再生ボタン・再生時間バッジ入りの 1200x630 画像）の
+ * 動画投稿の entry の visual（再生ボタン入りの 1200x630 画像（再生時間は画像に埋め込まない））の
  * 見た目の検証。
  *
  * 責務と処理概要:
  * - 無地の動画（`rgb(97,95,168)`）の poster から、実ブラウザ上で本実装の
  *   `probeVideo`・`createDefaultThumbnail`・`drawVideoOverlay` を実行して visual を生成し、
  *   画素をサンプリングして `specs/video/design.md §6.5` の寸法・色と照合する。
- * - 動画の縦横比（横長・正方形・縦長）によらず、円の中心とバッジの位置が同じであることを確認する。
+ * - 動画の縦横比（横長・正方形・縦長）によらず、円の中心の位置が同じであることを確認する。
  * - 許容誤差は色が各チャンネル ±6（JPEG 圧縮と補間のため）。
  */
 import { expect, test, type Page } from "@playwright/test"
@@ -20,18 +20,17 @@ const fixture = (name: string) =>
 
 const BACKGROUND: Rgb = [97, 95, 168]
 
-/** ページ内で visual を生成し、指定座標の画素と、バッジ矩形内の白画素数などを返す。 */
+/** ページ内で visual を生成し、指定座標の画素と、左下（旧バッジ位置）の矩形内の白画素数を返す。 */
 const sampleVisual = async (
     page: Page,
     params: {
         base64: string
-        durationSec?: number
         points: [number, number][]
         /** 指定時は既定配置ではなく、この切り抜き（poster 座標）で visual を作る */
         cropPixels?: { x: number; y: number; width: number; height: number }
     },
 ) =>
-    page.evaluate(async ({ base64, durationSec, points, cropPixels }) => {
+    page.evaluate(async ({ base64, points, cropPixels }) => {
         // dev サーバー（Vite）が配信するモジュールを URL で読み込む（型解決の対象外）
         const load = (url: string): Promise<any> =>
             import(/* @vite-ignore */ url)
@@ -46,7 +45,7 @@ const sampleVisual = async (
         const file = new File([bytes], "v.mp4", { type: "video/mp4" })
         const probe = await probeVideo(file)
         const posterUrl = URL.createObjectURL(probe.posterBlob)
-        const overlay = drawVideoOverlay(durationSec ?? probe.durationSec)
+        const overlay = drawVideoOverlay()
         const blob = cropPixels
             ? await createCroppedThumbnail(
                   [posterUrl],
@@ -62,26 +61,18 @@ const sampleVisual = async (
         context.drawImage(bitmap, 0, 0)
         const pixel = (x: number, y: number) =>
             Array.from(context.getImageData(x, y, 1, 1).data.slice(0, 3))
-        // バッジ矩形内の白に近い画素（各チャンネル 200 以上）の数
+        // 左下（旧バッジ位置）の矩形内の白に近い画素（各チャンネル 200 以上）の数
         const badge = context.getImageData(28, 554, 106, 49).data
         let whites = 0
         for (let i = 0; i < badge.length; i += 4) {
             if (badge[i] >= 200 && badge[i + 1] >= 200 && badge[i + 2] >= 200)
                 whites++
         }
-        // y=578 の行で、x=28 から背景に戻るまでの暗い領域の右端（バッジの幅の目安）
-        const row = context.getImageData(0, 578, bitmap.width, 1).data
-        let badgeRight = 0
-        for (let x = 28; x < 400; x++) {
-            const r = row[x * 4]
-            if (r < 80) badgeRight = x
-        }
         return {
             width: bitmap.width,
             height: bitmap.height,
             pixels: points.map(([x, y]) => pixel(x, y)),
             whites,
-            badgeRight,
         }
     }, params)
 
@@ -99,8 +90,8 @@ const POINTS: [number, number][] = [
     [598, 315], // 再生記号の内側
     [300, 315], // 円の外側（左）
     [900, 315], // 円の外側（右）
-    [38, 578], // バッジの左余白
-    [300, 600], // バッジの外側
+    [38, 578], // 左下（旧バッジ位置）
+    [300, 600], // 下辺
     [1100, 100], // 右上
 ]
 
@@ -120,7 +111,7 @@ test.describe("動画投稿の visual", () => {
         ["正方形 480x480", "video-solid-square.mp4"],
         ["縦長 360x640", "video-solid-portrait.mp4"],
     ] as const) {
-        test(`${label} の visual は、円・再生記号・バッジが同じ位置と色で描かれる（シナリオ1〜6・8）`, async ({
+        test(`${label} の visual は、円・再生記号が同じ位置と色で描かれる（シナリオ1〜6・8）`, async ({
             page,
         }) => {
             await page.goto("/post/?guest")
@@ -129,7 +120,7 @@ test.describe("動画投稿の visual", () => {
                 points: POINTS,
             })
             expect([result.width, result.height]).toEqual([1200, 630])
-            const [circle, play, left, right, badgePad, below, corner] =
+            const [circle, play, left, right, oldBadge, below, corner] =
                 result.pixels
             near(circle, [69, 68, 97])
             for (const channel of play) {
@@ -137,14 +128,15 @@ test.describe("動画投稿の visual", () => {
             }
             near(left, BACKGROUND)
             near(right, BACKGROUND)
-            near(badgePad, [19, 19, 34])
+            near(oldBadge, BACKGROUND)
             near(below, BACKGROUND)
             near(corner, BACKGROUND)
-            expect(result.whites).toBeGreaterThanOrEqual(100)
+            // 再生時間バッジは描かれない
+            expect(result.whites).toBe(0)
         })
     }
 
-    test("サムネ調整で切り抜きを変えても、円・再生記号・バッジの位置と色は変わらない（サムネ調整）", async ({
+    test("サムネ調整で切り抜きを変えても、円・再生記号の位置と色は変わらない（サムネ調整）", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -155,7 +147,7 @@ test.describe("動画投稿の visual", () => {
             cropPixels: { x: 320, y: 180, width: 320, height: 168 },
         })
         expect([result.width, result.height]).toEqual([1200, 630])
-        const [circle, play, left, right, badgePad, below, corner] =
+        const [circle, play, left, right, oldBadge, below, corner] =
             result.pixels
         near(circle, [69, 68, 97])
         for (const channel of play) {
@@ -163,28 +155,11 @@ test.describe("動画投稿の visual", () => {
         }
         near(left, BACKGROUND)
         near(right, BACKGROUND)
-        near(badgePad, [19, 19, 34])
+        near(oldBadge, BACKGROUND)
         near(below, BACKGROUND)
         near(corner, BACKGROUND)
-        expect(result.whites).toBeGreaterThanOrEqual(100)
-    })
-
-    test("再生時間が長いほどバッジの幅が広がり、左端の位置は変わらない（シナリオ7）", async ({
-        page,
-    }) => {
-        await page.goto("/post/?guest")
-        const short = await sampleVisual(page, {
-            base64: fixture("video-solid.mp4"),
-            durationSec: 5,
-            points: POINTS,
-        })
-        const long = await sampleVisual(page, {
-            base64: fixture("video-solid.mp4"),
-            durationSec: 600,
-            points: POINTS,
-        })
-        expect(long.badgeRight).toBeGreaterThan(short.badgeRight)
-        near(short.pixels[4], long.pixels[4] as Rgb, 2)
+        // 再生時間バッジは描かれない
+        expect(result.whites).toBe(0)
     })
 
     test.describe("既存の動画投稿からの事後作成（createPostVisualBlob）", () => {
@@ -241,15 +216,16 @@ test.describe("動画投稿の visual", () => {
                         "/src/lib/entry/createPostVisual.ts",
                     )
                     try {
-                        const blob = await createPostVisualBlob({
-                            images: [],
-                            video: {
-                                cid: "cid",
-                                playlistUrl: playlist,
-                                thumbnailUrl: thumbnail,
-                                alt: "",
-                            },
-                        })
+                        const { blob, videoDurationSec } =
+                            await createPostVisualBlob({
+                                images: [],
+                                video: {
+                                    cid: "cid",
+                                    playlistUrl: playlist,
+                                    thumbnailUrl: thumbnail,
+                                    alt: "",
+                                },
+                            })
                         const bitmap = await createImageBitmap(blob)
                         const canvas = document.createElement("canvas")
                         canvas.width = bitmap.width
@@ -261,6 +237,7 @@ test.describe("動画投稿の visual", () => {
                         return {
                             ok: true as const,
                             size: [bitmap.width, bitmap.height],
+                            videoDurationSec,
                             pixels: points.map(([x, y]: number[]) =>
                                 Array.from(
                                     context
@@ -277,21 +254,23 @@ test.describe("動画投稿の visual", () => {
             )
         }
 
-        test("poster と再生時間（EXTINF 合計）から、再生ボタンとバッジ入りの visual が作られる", async ({
+        test("poster と再生時間（EXTINF 合計）から、再生ボタン入りの visual が作られる", async ({
             page,
         }) => {
             const result = await buildFromPost(page)
             expect(result.ok).toBe(true)
             if (!result.ok) return
             expect(result.size).toEqual([1200, 630])
-            const [circle, play, left, right, badgePad] = result.pixels
+            // 再生時間（EXTINF 合計）を、entry の heading 用に返す
+            expect(result.videoDurationSec).toBeCloseTo(5, 0)
+            const [circle, play, left, right, oldBadge] = result.pixels
             near(circle, [69, 68, 97])
             for (const channel of play) {
                 expect(channel).toBeGreaterThanOrEqual(245)
             }
             near(left, BACKGROUND)
             near(right, BACKGROUND)
-            near(badgePad, [19, 19, 34])
+            near(oldBadge, BACKGROUND)
         })
 
         test("playlist を取得できなければ visual は作られず失敗になる", async ({

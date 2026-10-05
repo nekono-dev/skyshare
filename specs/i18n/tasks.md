@@ -57,7 +57,7 @@
 
 - [x] `[FE]` 4-1 `common`（Dropdown・LanguageSelect の placeholder・ConfirmDialog・ChoiceDialog・NavigationBar・PageSizeSelect・PaginationModeSelect・ThemeModeSelect・Loading 等）。
 - [x] `[FE]` 4-2 `account`（LoginForm・AccountSwitcher・AccountSwitchPanel）。API失敗時の表示は Phase 6 で扱う。
-- [x] `[FE]` 4-3 `post`（ThreadComposer 配下・PostGateDialog・PostLauncher・PostCard 系・ThreadCard・Timeline・SelfLabelsSelect・SuggestPopover・SkyshareShareDialog）。`ThreadCard` の返信件数などは `tn()` を使う。
+- [x] `[FE]` 4-3 `post`（ThreadComposer 配下・PostGateDialog・PostLauncher・PostCard 系・ThreadCard・Timeline・SelfLabelsSelect・SuggestPopover・IntentShareDialog）。`ThreadCard` の返信件数などは `tn()` を使う。
 - [x] `[FE]` 4-4 `entry`（EntryCard・EntryList・EntryEditForm・EntryDetailView・Draft 系・Delete 系ダイアログ・LegacyPageDeleteButton の `window.confirm`）。
 - [x] `[FE]` 4-5 `image`（ImagePicker・ImageAltDialog・ImageCropDialog・ImageLightbox・OgpFetchButton・OgpPreview・CropSlot）。
 - [x] `[FE]` 4-6 `settings` とページ（`Settings`・`SettingList`・`SettingsDialog`・`settings.astro` は Phase 3 で移行済み。残り: `pages/*.astro` のタイトル・見出し・本文・`help.astro`・`login.astro`・`jump.astro`・`accounts.astro`）。

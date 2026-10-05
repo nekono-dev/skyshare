@@ -148,7 +148,7 @@ export const useSkyshareEntryStatus = (
      * - Visual取得元投稿（`visualSourcePost`指定時はそちら、未指定なら`item`自身）から
      *   `createPostVisualBlob`（`@/lib/entry/createPostVisual`）でvisualを作る。
      *   画像投稿は先頭`VISUAL_IMAGE_COUNT`枚を投稿フォームでクロップ編集しなかった場合と
-     *   同じデフォルト配置で合成し、動画投稿はposterに再生ボタンと再生時間バッジを重ねる。
+     *   同じデフォルト配置で合成し、動画投稿はposterに再生ボタンを重ねる（再生時間はheadingに記載する）。
      *   素材・再生時間の取得に失敗したら、entryは作成せず作成失敗として扱う。
      * - APIに渡す`uri`（entryの`source`）はVisual取得元とは独立に`sourcePost`
      *   （未指定なら`item`自身）を使う。Visual取得元がスレッドの後続投稿でも、
@@ -168,7 +168,8 @@ export const useSkyshareEntryStatus = (
 
         void (async () => {
             try {
-                const thumbnailBlob = await createPostVisualBlob(visualSource)
+                const { blob: thumbnailBlob, videoDurationSec } =
+                    await createPostVisualBlob(visualSource)
                 const userName = await getActiveAccountDisplayName()
                 if (userName === null) {
                     setCreateError("post.entry.createFailed")
@@ -179,7 +180,7 @@ export const useSkyshareEntryStatus = (
                 const entryText = buildEntryText({
                     userName,
                     postText: sourcePost.text,
-                    isVideo: !!visualSource.video,
+                    videoDurationSec,
                 })
                 const res = await createEntry({
                     uri: sourcePost.uri,

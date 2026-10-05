@@ -359,7 +359,7 @@ test.describe("言語切り替えでの入力保持（FR-7）", () => {
         page,
     }) => {
         await page.goto("/settings/?guest", { timeout: 60_000 })
-        const domain = page.locator("#setting-crosspostToMastodon-text")
+        const domain = page.locator("#setting-mastodonInstanceDomain-text")
         await expect(domain).toBeVisible({ timeout: 60_000 })
         // 水和前に入力すると、水和で値が上書きされる。全アイランドの水和完了を待つ。
         await expect(page.locator("astro-island[ssr]")).toHaveCount(0, {
@@ -373,7 +373,7 @@ test.describe("言語切り替えでの入力保持（FR-7）", () => {
         await page.getByRole("option", { name: "English" }).click()
 
         await expect(
-            page.getByRole("heading", { name: "Cross-post", exact: true }),
+            page.getByRole("heading", { name: "Post form", exact: true }),
         ).toBeVisible()
         await expect(domain).toHaveValue("mastodon.example")
     })

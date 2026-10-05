@@ -315,7 +315,7 @@ describe("submitThread（動画）", () => {
         expect(body.visual).toBe(segment.videoEntry.thumbnailBlob)
     })
 
-    it("動画 entry は heading を送らず、画像 entry は heading/caption を送る", async () => {
+    it("動画 entry は heading に再生時間、画像 entry は heading に投稿者名を送る", async () => {
         mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
             uri: "https://skyshare/1",
         })
@@ -325,7 +325,7 @@ describe("submitThread（動画）", () => {
         })
         const videoBody = vi.mocked(createEntry).mock
             .calls[0][0] as SubmitThreadBody
-        expect("heading" in videoBody).toBe(false)
+        expect(videoBody.heading).toBe("0:05")
         expect(videoBody.caption).toBe("動画です")
 
         await submitThread({
@@ -340,7 +340,7 @@ describe("submitThread（動画）", () => {
         })
         const imageBody = vi.mocked(createEntry).mock
             .calls[1][0] as SubmitThreadBody
-        expect(imageBody.heading).toBe("Alice 's Post")
+        expect(imageBody.heading).toBe("Alice")
         expect(imageBody.caption).toBe("画像です")
     })
 

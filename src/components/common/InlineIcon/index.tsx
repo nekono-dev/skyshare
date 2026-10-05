@@ -12,15 +12,17 @@ import hashtagIcon from "@/images/hashtag.svg"
 import mastodonIcon from "@/images/mastodon.svg"
 import shareIcon from "@/images/share.svg"
 import taittsuuIcon from "@/images/taittsuu.png"
+import xIcon from "@/images/twitter.svg"
 import styles from "./index.module.css"
 
 /** InlineIconで表示できるアイコンの種類 */
 export type InlineIconName =
-  "share" | "popup" | "taittsuu" | "mastodon" | "hashtag"
+  "share" | "popup" | "x" | "taittsuu" | "mastodon" | "hashtag"
 
 const icons: Record<InlineIconName, ImageMetadata> = {
   share: shareIcon,
   popup: crosspostIcon,
+  x: xIcon,
   taittsuu: taittsuuIcon,
   mastodon: mastodonIcon,
   hashtag: hashtagIcon,

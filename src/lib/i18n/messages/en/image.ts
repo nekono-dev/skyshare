@@ -22,6 +22,7 @@ export const image = {
     "image.picker.addAria": "Add images",
     "image.picker.adjustThumbnail": "Adjust thumbnail",
     "image.ogp.button": "Fetch link card",
+    "image.ogp.remove": "Remove link card",
     "image.ogp.loading": "Fetching OGP…",
     "image.ogp.imageAlt": "OGP image of the detected URL",
     "image.ogp.fetchFailed": "Failed to fetch the link card.",

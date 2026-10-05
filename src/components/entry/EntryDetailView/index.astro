@@ -9,6 +9,7 @@
  *   各投稿カードは Timeline と共通の `PostBody` で、その投稿自身のリアクション数を表示する。
  * - 最下部に内容を持たない余白（`.page-footer`）を常に置き、Xアプリ内ブラウザ等で
  *   下部が見切れないようにする（エラーペイン時も含む）。
+ * - heading は本文に表示しない（`<title>`・OGP用の値）。
  * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
  * - 設計: specs/postcardlayout/design.md §3.5
  */
@@ -37,6 +38,7 @@ interface Props {
     statusCode: number
     /** 404 の本文に表示する理由の文言キー（省略時は「Entryが見つからない」） */
     notFoundReasonKey?: PlainMessageKey
+    /** 見出し。ページ本文には表示せず、画像の alt にのみ使う（title表示用の値） */
     heading: string
     caption: string
     /** ISO文字列。表示整形は EntryPostedAt が行う（空なら日時なし） */
@@ -79,11 +81,6 @@ const bodyKey =
     statusCode === 200 ? (
         <article class={styles.container}>
             <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
-                {heading ? (
-                    <header class={styles["header-row"]}>
-                        <h1 class={styles.heading}>{heading}</h1>
-                    </header>
-                ) : null}
                 {caption ? <p class={styles["body-text"]}>{caption}</p> : null}
                 {visualUrl ? (
                     <img class={styles.visual} src={visualUrl} alt={heading || caption} data-testid="entry-visual" />

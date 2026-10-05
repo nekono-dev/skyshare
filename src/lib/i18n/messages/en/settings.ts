@@ -20,6 +20,9 @@ export const settings = {
     "settings.manualImageAttach.label": "Attach images manually",
     "settings.manualImageAttach.description":
         "When on, no Skyshare URL is issued. When using {share}, image data is shared with the target app. When using a post intent (popup {popup}), set the images in the target SNS's post form.",
+    "settings.truncateIntentText.label": "Truncate long text when sharing",
+    "settings.truncateIntentText.description":
+        'When on, when sharing to X or Taittsuu, the text is shortened with "..." so that it fits within the 140-character limit. Not available while Attach images manually is on.',
     "settings.hashtagSuggest.label": "Show hashtag suggestions",
     "settings.hashtagSuggest.description":
         'When on, a list of hashtag suggestions appears when you type "#" in the post text.',
@@ -33,19 +36,11 @@ export const settings = {
     "settings.syncGate.label": "Remember reply and quote options",
     "settings.syncGate.description":
         "When on, the reply and quote settings you choose when posting become the defaults from next time. When off, they return to the saved defaults after posting.",
-    "settings.crosspost.title": "Cross-post",
-    "settings.showX.label": "Show the X post button",
-    "settings.showX.description":
-        "When on, the X post button is shown and the automatic popup is turned off. If you have set up cross-post options for other SNS, both buttons are shown.",
-    "settings.noAutoPopup.label": "Turn off the automatic popup",
-    "settings.noAutoPopup.description":
-        "When on, the share popup does not open automatically after posting. This is turned on when Show the X post button is off, and when automatic popups cannot be opened.",
-    "settings.taittsuu.label": "Cross-post to {taittsuu}",
-    "settings.taittsuu.description":
-        "When on, the cross-post target changes from X to Taittsuu {taittsuu}.",
-    "settings.mastodon.label": "Cross-post to {mastodon}",
-    "settings.mastodon.description":
-        "When on, Mastodon {mastodon} is added as a cross-post target. If no domain is set, mastodon.social is used by default.",
+    "settings.autoPopupTarget.description":
+        'Choose which social network\'s post screen opens automatically after posting. With "Choose when posting", a dialog to pick the destination is shown after posting.',
+    "settings.mastodon.instance.label": "Mastodon{mastodon} instance",
+    "settings.mastodon.instance.description":
+        "The instance domain used when sharing to Mastodon. If not set, mastodon.social is used.",
     "settings.mastodon.domainError":
         "The domain format is invalid. Enter only the domain name, without a scheme (such as https://) or a path (anything after /).",
 } satisfies MessageEntries

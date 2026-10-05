@@ -212,3 +212,11 @@
   7. 既存シナリオ（Phase 6 の「mp4 以外」の `notMp4` 文言の確認）を `unsupportedFormat` に更新する。
 - [ ] 手動確認（実アカウントが必要なため自動化不可）: mov・webm を実際に投稿し、Bluesky 公式アプリで動画として表示されること（AC-2）。iPhone 実機で撮影した HEVC の mov を、Safari では添付・投稿でき、Chromium 系・Firefox では `unreadable` で添付されないこと（AC-17）。壊れた動画で `unreadable` が表示されること。
 - [x] 検証: 上記テスト、`tsc`、`vitest`、全 Playwright が通る。
+
+## Phase 15: 再生時間バッジの廃止と heading への記載（FR-10b）
+
+- [x] `[FE]` `drawVideoOverlay` から再生時間バッジの描画と `VIDEO_OVERLAY_SPEC` のバッジ値を削除し、`formatVideoDuration` を `src/lib/video/formatVideoDuration.ts` へ移す。
+- [x] `[FE]` `buildEntryText` に `videoDurationSec` を追加し、動画投稿の heading を `m:ss` にする。`submitThread` は `videoEntry.durationSec`、事後作成は `createPostVisualBlob` の戻り値 `{ blob, videoDurationSec }` を渡す。
+- [x] `[FE]` `EntryDetailView` から heading の `<h1>` 表示を削除する（動画・画像とも。`<title>`・OGP 用の値）。
+- [x] `[TEST]` `videoOverlay.test.ts`（バッジの描画命令が無い）、`formatVideoDuration.test.ts`、`entryText.test.ts`（動画は heading が再生時間）、`createPostVisual.test.ts`、`submitThread.test.ts`、e2e（`videoVisual`・`videoComposer`・`entryThreadDetail`）を更新した。
+- [ ] 手動確認（実アカウントが必要）: 動画 entry の X 上のリンクカードが、再生ボタン入りの画像と heading の再生時間で動画に見えること。

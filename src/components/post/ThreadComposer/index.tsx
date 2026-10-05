@@ -55,17 +55,23 @@ import {
 } from "@/lib/settings/postGateSettings"
 import {
   readPinnedFormDisabledSetting,
+  resolveMastodonInstanceDomain,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
 import {
   readHashtagSuggestEnabledSetting,
   readMentionSuggestEnabledSetting,
 } from "@/lib/settings/suggestSettings"
-import { buildIntentText, openIntentPopupFor } from "@/util/share/intent"
+import IntentShareDialog, {
+  type IntentShareRequest,
+} from "@/components/post/IntentShareDialog"
+import AutoPopupTargetSelect from "@/components/common/AutoPopupTargetSelect"
 import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
 import { runShareDispatch } from "./shareDispatch"
 import { submitThread } from "./submitThread"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
+import { estimateSkyshareEntryUrl } from "@/lib/entry/estimateEntryUrl"
+import { resolveCounterTargets } from "@/lib/share/counterReserve"
 import ThreadSegmentForm from "./ThreadSegmentForm"
 import {
   addSegment,
@@ -93,6 +99,13 @@ type Props = {
   variant?: "dialog" | "page"
   onClose?: () => void
   onPosted?: () => void
+  /**
+   * 投稿先選択ダイアログの表示要求を親へ委譲する。
+   * PostLauncher のように投稿成功でこのフォームごと（Overlayごと）アンマウントされる
+   * 親では、ダイアログも一緒に消えてしまうため、親側で描画できるようにする用途。
+   * 未指定の場合はこのコンポーネント自身がダイアログを描画する。
+   */
+  onShareRequest?: (request: IntentShareRequest) => void
   avatarUrl?: string | null
   /** ハッシュタグ履歴（`hashtagHistorySettings.ts`）をアカウント別に分けるための識別子 */
   accountDid?: string | null
@@ -105,7 +118,7 @@ type Props = {
   /**
    * ログイン不要のゲスト用デモ表示。Bluesky認証セッションに依存する下書き機能は
    * 無効化する一方、投稿ボタンはBlueskyへの実投稿（submitThread）だけをスキップし、
-   * その後の自動ポップアップ・WebShareAPI・X/タイッツー/Mastodon投稿ボタン等の
+   * その後の自動ポップアップ・WebShareAPI・投稿先選択ダイアログ等の
    * 後続処理は通常時と同じフローで実行して見た目を体験してもらう用途。
    */
   guestMode?: boolean
@@ -185,6 +198,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       variant = "dialog",
       onClose,
       onPosted,
+      onShareRequest,
       avatarUrl,
       accountDid,
       onPinnedFormDisabledChange,
@@ -207,6 +221,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     ])
     const [activeIndex, setActiveIndex] = useState(0)
     const shareToggles = useShareToggles()
+    // 文字数カウンタ: 表示する共有先と、entryが作られる場合の予測URL（共有文末尾の上限補正用）。
+    // entryは「画像/動画を含み、かつ画像を自分で添付しない」場合のみ作られる（submitThreadと同条件）。
+    const counterTargets = resolveCounterTargets(
+      shareToggles.autoPopupTarget,
+      shareToggles.popupIntentInsteadOfWebshare,
+    )
+    const willCreateEntry =
+      !shareToggles.manualImageAttach &&
+      segments.some(segment => !!segment.imageEntry || !!segment.videoEntry)
+    const estimatedEntryUrl = willCreateEntry
+      ? estimateSkyshareEntryUrl(accountDid)
+      : null
     // useShareToggles はハイドレーション不一致を避けるため、マウント直後は
     // 共有系トグルを全てfalse固定で返し、実際の値はマウント後のuseEffectで非同期に
     // 反映する。Collapsible の defaultOpen は初回マウント時のみ評価される
@@ -257,6 +283,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // ステータス文言は組み立て関数で保持し、描画時に現在の表示言語で評価する
     // （表示後に言語を切り替えても追従させるため）。
     const [status, setStatus] = useState<DeferredMessage | null>(null)
+    // 投稿先選択ダイアログの共有対象。`onShareRequest` 未指定時のみこのstateで描画する。
+    const [shareRequest, setShareRequest] = useState<IntentShareRequest | null>(
+      null,
+    )
     const [statusColor, setStatusColor] = useState<string | undefined>(
       undefined,
     )
@@ -278,24 +308,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const hasTextInput = segments.some(s => s.text.trim().length > 0)
     const isThread = segments.length > 1
 
-    // ボタンは自動ポップアップの代わりに手動で投稿する手段のため、
-    // NoAutoPopupAfterPost が ON（自動ポップアップ抑制中）の場合のみ表示する。
-    // クロスポスト先のトグル（taittsuu/mastodon）がONでもNoAutoPopupAfterPost OFF
-    // （＝当該SNSへ自動ポップアップ中）の間はボタン表示は不要な点に注意。
-    // クロスポストは先頭セグメントのみを対象とする（実装時に決定、design.md参照）。
-    const showXIntentButton =
-      shareToggles.showXWhenCrosspost && shareToggles.noAutoPopupAfterPost
-    const showTaittsuuIntentButton =
-      shareToggles.crosspostToTaittsuu && shareToggles.noAutoPopupAfterPost
-    const showMastodonIntentButton =
-      shareToggles.crosspostToMastodon && shareToggles.noAutoPopupAfterPost
     const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
-      optionsList: [
-        pinnedFormDisabled,
-        shareToggles.crosspostToTaittsuu,
-        shareToggles.showXWhenCrosspost,
-        shareToggles.crosspostToMastodon,
-      ],
+      // 自動ポップアップするSNS（およびそれを表示する条件のPopupIntentInsteadOfWebshare）は、
+      // 折りたたみを初期状態で開く理由にしない。
+      optionsList: [pinnedFormDisabled, shareToggles.truncateIntentText],
     })
 
     /**
@@ -554,11 +570,16 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       // 走ることがある。そのため自動ポップアップが行われる設定の場合は、ここ
       // （ユーザー操作と同期的なコールスタック内）で先に空のポップアップを開いて
       // おき、URL確定後にrunShareDispatch内でそこへ遷移させる。
+      // 自動ポップアップ先を決められない場合（投稿時に選択する、またはMastodonの
+      // ドメインが不正）は、ポップアップを開かず投稿先選択ダイアログに委ねるため開かない。
       const willAutoPopup =
-        !shareToggles.noAutoPopupAfterPost &&
-        (shareToggles.crosspostToTaittsuu ||
-          shareToggles.crosspostToMastodon ||
-          shareToggles.popupIntentInsteadOfWebshare)
+        shareToggles.popupIntentInsteadOfWebshare &&
+        shareToggles.autoPopupTarget !== "ask" &&
+        !(
+          shareToggles.autoPopupTarget === "mastodon" &&
+          resolveMastodonInstanceDomain(shareToggles.mastodonInstanceDomain) ===
+            null
+        )
       const popupWindow = willAutoPopup ? preOpenPopupWindow() : null
 
       setIsSubmitting(true)
@@ -618,47 +639,38 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           linkCardUrl: rootSegment.ogpResult?.sourceUrl ?? "",
           imageEntry: rootSegment.imageEntry,
           manualImageAttach: shareToggles.manualImageAttach,
-          crosspostToTaittsuu: shareToggles.crosspostToTaittsuu,
-          crosspostToMastodon: shareToggles.crosspostToMastodon,
-          mastodonInstanceDomain: shareToggles.mastodonInstanceDomain,
+          truncateIntentText: shareToggles.truncateIntentText,
           popupIntentInsteadOfWebshare:
             shareToggles.popupIntentInsteadOfWebshare,
-          noAutoPopupAfterPost: shareToggles.noAutoPopupAfterPost,
+          autoPopupTarget: shareToggles.autoPopupTarget,
+          mastodonInstanceDomain: shareToggles.mastodonInstanceDomain,
           popupWindow,
           guestMode,
         })
 
         onPosted?.()
 
-        if (dispatch.forcedShowXIntentButtonOn) {
-          // onShowXWhenCrosspostChange は内部で popupIntentInsteadOfWebshare / noAutoPopupAfterPost の
-          // 強制ONも行うため、onNoAutoPopupAfterPostChange は別途呼ぶ必要がない。
-          shareToggles.onShowXWhenCrosspostChange(true)
-        } else if (dispatch.forcedNoAutoPopupOn) {
-          shareToggles.onNoAutoPopupAfterPostChange(true)
-        } else if (dispatch.forcedPopupIntentInsteadOfWebshareOn) {
+        if (dispatch.forcedPopupIntentInsteadOfWebshareOn) {
           shareToggles.onPopupIntentInsteadOfWebshareChange(true)
         }
-        if (dispatch.textToKeep !== null) {
-          // 2件目以降は投稿済みのため破棄し、先頭セグメントのテキストのみ保持する。
-          segments.slice(1).forEach(segment => {
-            revokeImageEntry(segment.imageEntry)
-            revokeVideoEntry(segment.videoEntry)
-          })
-          // 動画は投稿済みのため、先頭 segment にも残さない
-          revokeVideoEntry(rootSegment.videoEntry)
-          setSegments([
-            {
-              ...rootSegment,
-              videoEntry: null,
-              text: dispatch.textToKeep,
-              postGate: nextRootPostGate,
-            },
-          ])
-          setActiveIndex(0)
-        } else {
-          resetInputFields(nextRootPostGate)
+        if (dispatch.forcedAutoPopupTarget !== null) {
+          shareToggles.onAutoPopupTargetChange(dispatch.forcedAutoPopupTarget)
         }
+        // 投稿先選択ダイアログは入力欄の内容に依存しないよう、本文・URLをここで確定させる。
+        // 入力欄は結果に関わらず常にクリアする（skyshare URLはダイアログ側が保持する）。
+        if (dispatch.openShareDialog) {
+          const request: IntentShareRequest = {
+            postText: rootSegment.text,
+            entryUrl: skyshareUri === "" ? null : skyshareUri,
+            linkCardUrl: rootSegment.ogpResult?.sourceUrl ?? "",
+          }
+          if (onShareRequest) {
+            onShareRequest(request)
+          } else {
+            setShareRequest(request)
+          }
+        }
+        resetInputFields(nextRootPostGate)
         setStatus({ format: dispatch.status })
         setStatusColor(dispatch.statusColor)
       } catch (err) {
@@ -778,111 +790,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   ? t("post.composer.submitAll")
                   : t("post.composer.submit")}
               </button>
-
-              {showXIntentButton && (
-                <button
-                  type="button"
-                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["black-button"]}`}
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    const intentText = buildIntentText(
-                      rootSegment.text,
-                      "",
-                      rootSegment.ogpResult?.sourceUrl,
-                    )
-                    if (!intentText) {
-                      setStatus(deferMessage("post.composer.needShareText"))
-                      setStatusColor("#b00")
-                      return
-                    }
-
-                    const popupOpened = openIntentPopupFor("x", intentText)
-                    setStatus(
-                      deferMessage(
-                        popupOpened
-                          ? "post.intent.xOpened"
-                          : "post.intent.xBlocked",
-                      ),
-                    )
-                    setStatusColor(popupOpened ? "green" : "#b00")
-                  }}
-                >
-                  {t("post.intent.xButton")}
-                </button>
-              )}
-              {showTaittsuuIntentButton && (
-                <button
-                  type="button"
-                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["taittsuu-button"]}`}
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    const intentText = buildIntentText(
-                      rootSegment.text,
-                      "",
-                      rootSegment.ogpResult?.sourceUrl,
-                    )
-                    if (!intentText) {
-                      setStatus(deferMessage("post.composer.needShareText"))
-                      setStatusColor("#b00")
-                      return
-                    }
-
-                    const popupOpened = openIntentPopupFor(
-                      "taittsuu",
-                      intentText,
-                    )
-                    setStatus(
-                      deferMessage(
-                        popupOpened
-                          ? "post.intent.taittsuuOpened"
-                          : "post.intent.taittsuuBlocked",
-                      ),
-                    )
-                    setStatusColor(popupOpened ? "green" : "#b00")
-                  }}
-                >
-                  {renderSlots(raw("post.intent.iconButton"), {
-                    icon: <InlineIcon name="taittsuu" />,
-                  })}
-                </button>
-              )}
-              {showMastodonIntentButton && (
-                <button
-                  type="button"
-                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["mastodon-button"]}`}
-                  disabled={isSubmitting}
-                  onClick={() => {
-                    const intentText = buildIntentText(
-                      rootSegment.text,
-                      "",
-                      rootSegment.ogpResult?.sourceUrl,
-                    )
-                    if (!intentText) {
-                      setStatus(deferMessage("post.composer.needShareText"))
-                      setStatusColor("#b00")
-                      return
-                    }
-
-                    const popupOpened = openIntentPopupFor(
-                      "mastodon",
-                      intentText,
-                      { instanceDomain: shareToggles.mastodonInstanceDomain },
-                    )
-                    setStatus(
-                      deferMessage(
-                        popupOpened
-                          ? "post.intent.mastodonOpened"
-                          : "post.intent.mastodonBlocked",
-                      ),
-                    )
-                    setStatusColor(popupOpened ? "green" : "#b00")
-                  }}
-                >
-                  {renderSlots(raw("post.intent.iconButton"), {
-                    icon: <InlineIcon name="mastodon" />,
-                  })}
-                </button>
-              )}
             </div>
           </div>
 
@@ -925,6 +832,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   if (index === 0) setLanguageCode(next.languageCode)
                 }}
                 onRequestSubmit={() => entryFormRef.current?.requestSubmit()}
+                counterTargets={counterTargets}
+                estimatedEntryUrl={estimatedEntryUrl}
               />
             ))}
 
@@ -946,15 +855,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 label={t("post.composer.manualImageAttach")}
                 onCheckedChange={shareToggles.onManualImageAttachChange}
               />
-              <ToggleSwitch
-                checked={syncGateDefaultAfterPost}
-                disabled={isSubmitting}
-                label={t("settings.syncGate.label")}
-                onCheckedChange={next => {
-                  setSyncGateDefaultAfterPost(next)
-                  writeSyncGateDefaultAfterPostSetting(next)
-                }}
-              />
             </div>
 
             <div className={ui["base-component"]}>
@@ -964,6 +864,35 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 defaultOpen={defaultOpenShareOptions}
               >
                 <div className={ui["toggle-box"]}>
+                  {shareToggles.popupIntentInsteadOfWebshare && (
+                    <div className={styles["auto-popup-target-row"]}>
+                      <label htmlFor={`${entryFormId}-auto-popup-target`}>
+                        {t("post.autoPopupTarget.label")}
+                      </label>
+                      <AutoPopupTargetSelect
+                        id={`${entryFormId}-auto-popup-target`}
+                        ariaLabel={t("post.autoPopupTarget.label")}
+                        value={shareToggles.autoPopupTarget}
+                        disabled={isSubmitting}
+                        onChange={shareToggles.onAutoPopupTargetChange}
+                      />
+                    </div>
+                  )}
+                  <ToggleSwitch
+                    checked={shareToggles.truncateIntentText}
+                    disabled={isSubmitting || shareToggles.manualImageAttach}
+                    label={t("post.composer.truncateIntentText")}
+                    onCheckedChange={shareToggles.onTruncateIntentTextChange}
+                  />
+                  <ToggleSwitch
+                    checked={syncGateDefaultAfterPost}
+                    disabled={isSubmitting}
+                    label={t("settings.syncGate.label")}
+                    onCheckedChange={next => {
+                      setSyncGateDefaultAfterPost(next)
+                      writeSyncGateDefaultAfterPostSetting(next)
+                    }}
+                  />
                   <ToggleSwitch
                     checked={pinnedFormDisabled}
                     disabled={isSubmitting}
@@ -973,34 +902,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       writePinnedFormDisabledSetting(next)
                       onPinnedFormDisabledChange?.(next)
                     }}
-                  />
-                  <ToggleSwitch
-                    checked={shareToggles.showXWhenCrosspost}
-                    disabled={isSubmitting}
-                    label={t("settings.showX.label")}
-                    onCheckedChange={shareToggles.onShowXWhenCrosspostChange}
-                  />
-                  <ToggleSwitch
-                    checked={shareToggles.noAutoPopupAfterPost}
-                    disabled={isSubmitting}
-                    label={t("settings.noAutoPopup.label")}
-                    onCheckedChange={shareToggles.onNoAutoPopupAfterPostChange}
-                  />
-                  <ToggleSwitch
-                    checked={shareToggles.crosspostToTaittsuu}
-                    disabled={isSubmitting}
-                    label={renderSlots(raw("settings.taittsuu.label"), {
-                      taittsuu: <InlineIcon name="taittsuu" />,
-                    })}
-                    onCheckedChange={shareToggles.onCrosspostToTaittsuuChange}
-                  />
-                  <ToggleSwitch
-                    checked={shareToggles.crosspostToMastodon}
-                    disabled={isSubmitting}
-                    label={renderSlots(raw("settings.mastodon.label"), {
-                      mastodon: <InlineIcon name="mastodon" />,
-                    })}
-                    onCheckedChange={shareToggles.onCrosspostToMastodonChange}
                   />
                 </div>
               </Collapsible>
@@ -1017,6 +918,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             )}
           </form>
         </div>
+
+        <IntentShareDialog
+          request={shareRequest}
+          keepOpenOnSelect
+          onClose={() => setShareRequest(null)}
+        />
       </>
     )
   },

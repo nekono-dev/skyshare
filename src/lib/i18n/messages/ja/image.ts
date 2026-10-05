@@ -19,6 +19,7 @@ export const image = {
     "image.picker.addAria": "画像追加",
     "image.picker.adjustThumbnail": "サムネ調整",
     "image.ogp.button": "リンクカードを取得",
+    "image.ogp.remove": "リンクカードを取り外す",
     "image.ogp.loading": "OGPを取得中…",
     "image.ogp.imageAlt": "検出URLのOGP画像",
     "image.ogp.fetchFailed": "リンクカード取得に失敗しました。",

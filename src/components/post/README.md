@@ -11,7 +11,7 @@ graph TD
   PostCard --> PostBody
   PostBody --> PostEngagementStats
   PostCard --> PostCardEntryActions
-  PostCard --> SkyshareShareDialog
+  PostCard --> IntentShareDialog
   PostCardEntryActions -. type only .-> PostCard
   PostForm --> SelfLabelsSelect
   SelfLabelsSelect --> Dropdown
@@ -22,7 +22,7 @@ graph TD
   PostLauncher --> commonExt
   PostCard --> commonExt
   PostForm --> commonExt
-  SkyshareShareDialog --> commonExt
+  IntentShareDialog --> commonExt
   PostForm --> imageExt
   PostCard --> entryExt
   PostBody --> commonExt
@@ -38,7 +38,7 @@ graph TD
 
 外部カテゴリへの依存の内訳:
 
-- `common`: Timeline(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、PostLauncher(Overlay)、PostCard(Loading)、PostBody(Avatar)、PostForm(Collapsible・CountedTextInput・LanguageSelect・Loading・Overlay・ToggleSwitch)、SkyshareShareDialog(ChoiceDialog)
+- `common`: Timeline(ComponentList・InfiniteScrollSentinel・NavigationBar・PageSizeSelect)、PostLauncher(Overlay)、PostCard(Loading)、PostBody(Avatar)、PostForm(Collapsible・CountedTextInput・LanguageSelect・Loading・Overlay・ToggleSwitch)、IntentShareDialog(ChoiceDialog)
 - `image`: PostForm(ImagePicker・ImageAltDialog・OgpFetchButton・OgpPreview)、PostBody(ImageGallery)
 - `entry`: PostCard(EntryDeleteConfirmDialog)
 

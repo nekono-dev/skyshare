@@ -33,7 +33,15 @@ import PostGateDialog from "@/components/post/PostGateDialog"
 import SelfLabelsSelect from "@/components/post/SelfLabelsSelect"
 import SuggestPopover from "@/components/post/SuggestPopover"
 import { isDefaultPostGateValue } from "@/lib/settings/postGateSettings"
-import { countGraphemes, countWeightedTweetLength } from "@/util/textCount"
+import {
+  countGraphemes,
+  countTaittsuuLength,
+  countWeightedTweetLength,
+} from "@/util/textCount"
+import {
+  resolveCounterReserve,
+  type CounterTarget,
+} from "@/lib/share/counterReserve"
 import PostBodyEditor from "../PostBodyEditor"
 import { useKeyboardRows } from "../useKeyboardRows"
 import { useSuggest } from "../useSuggest"
@@ -69,26 +77,76 @@ type Props = {
   onRemove: () => void
   onChange: (next: SegmentState) => void
   onRequestSubmit: () => void
+  /** 表示する共有先カウンタ（X / タイッツー）。Blueskyのカウンタは常に表示する */
+  counterTargets: CounterTarget[]
+  /**
+   * 共有文の末尾に付く skyshare entry の予測URL。entryが作られない場合は null。
+   * 共有文は先頭セグメントの本文を使うため、補正を受けるのも先頭セグメントのみ。
+   */
+  estimatedEntryUrl: string | null
 }
 
 const bskyMaxCount = 300
 const xWarnCount = 140
-const textCounters: CounterSpec[] = [
-  {
-    key: "x",
-    label: "X",
-    count: countWeightedTweetLength,
-    maxAssumed: xWarnCount,
-    warnAt: xWarnCount,
-  },
-  {
+const taittsuuWarnCount = 140
+
+/**
+ * 本文欄に出す文字数カウンタの定義を組み立てる。
+ *
+ * 処理の趣旨:
+ * - 共有文の末尾に付くURL（skyshare entry・本文に無いリンクカード）の分だけ、
+ *   X・タイッツーの右側の値（上限）と警告開始値を減らし、警告色・エラー色を早めに出す。
+ *   左側の値（本文の実文字数）は変えない。Blueskyは末尾URLが本文に入らないため補正しない。
+ *
+ * Input:
+ * - `targets`: 表示する共有先カウンタ
+ * - `reserves`: 共有先ごとに上限から引く量（カウンタ単位）
+ * - `taittsuuLabel`: タイッツーのカウンタ末尾に出すラベル（言語ごとの文言）
+ *
+ * Output:
+ * - `CounterSpec` の配列（共有先カウンタ → Bluesky の順）
+ *
+ * 例:
+ * - 入力: `["x"]`, `{ x: 12, taittsuu: 0 }`, `"ﾀｲｯﾂｰ"`
+ * - 出力: X（上限128）, Bluesky（上限300）
+ */
+const buildTextCounters = (
+  targets: CounterTarget[],
+  reserves: Record<CounterTarget, number>,
+  taittsuuLabel: string,
+): CounterSpec[] => {
+  const specs: CounterSpec[] = []
+  if (targets.includes("x")) {
+    const limit = xWarnCount - reserves.x
+    specs.push({
+      key: "x",
+      label: "X",
+      count: countWeightedTweetLength,
+      maxAssumed: limit,
+      warnAt: limit,
+      reduced: reserves.x > 0,
+    })
+  }
+  if (targets.includes("taittsuu")) {
+    const limit = taittsuuWarnCount - reserves.taittsuu
+    specs.push({
+      key: "taittsuu",
+      label: taittsuuLabel,
+      count: countTaittsuuLength,
+      maxAssumed: limit,
+      warnAt: limit,
+      reduced: reserves.taittsuu > 0,
+    })
+  }
+  specs.push({
     key: "bsky",
     label: "Bluesky",
     count: countGraphemes,
     maxAssumed: bskyMaxCount,
     errorAt: bskyMaxCount,
-  },
-]
+  })
+  return specs
+}
 const pageMaxRows = 7
 const pageMinRows = 3
 
@@ -136,8 +194,29 @@ const Component: React.FC<Props> = ({
   onRemove,
   onChange,
   onRequestSubmit,
+  counterTargets,
+  estimatedEntryUrl,
 }) => {
   const { t } = useT()
+  // 共有文に使われる先頭セグメントのみ、末尾URL分を上限から引く（本文・リンクカードの変更に追従）
+  const linkCardUrl = segment.ogpResult?.sourceUrl ?? ""
+  const reserveFor = (target: CounterTarget): number =>
+    index === 0
+      ? resolveCounterReserve({
+          target,
+          body: segment.text,
+          entryUrl: estimatedEntryUrl,
+          linkCardUrl,
+        })
+      : 0
+  const textCounters = buildTextCounters(
+    counterTargets,
+    {
+      x: reserveFor("x"),
+      taittsuu: reserveFor("taittsuu"),
+    },
+    t("post.composer.counterLabel.taittsuu"),
+  )
   const [postGateDialogOpen, setPostGateDialogOpen] = useState(false)
   const [isDraggingMedia, setIsDraggingMedia] = useState(false)
   const imagePickerRef = useRef<ImagePickerHandle>(null)
@@ -505,7 +584,14 @@ const Component: React.FC<Props> = ({
             </p>
           )}
           <div>
-            <OgpPreview ogpFetch={ogpFetch} />
+            <OgpPreview
+              ogpFetch={ogpFetch}
+              disabled={disabled}
+              onRemove={() => {
+                update({ ogpResult: null })
+                ogpFetch.clearOgpStatus()
+              }}
+            />
             <div ref={imagePreviewContainerRef} />
           </div>
         </div>

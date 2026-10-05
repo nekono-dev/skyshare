@@ -7,32 +7,25 @@ import {
 } from "@/lib/entry/entryText"
 
 describe("buildEntryText", () => {
-    it("画像投稿は heading と trim 済み caption を返す", () => {
+    it("heading は投稿者名、caption は trim 済み本文を返す", () => {
+        expect(
+            buildEntryText({ userName: "Alice", postText: " Hello " }),
+        ).toEqual({ heading: "Alice", caption: "Hello" })
+    })
+
+    it("動画投稿は heading が再生時間（m:ss）になり、投稿者名は使わない", () => {
         expect(
             buildEntryText({
                 userName: "Alice",
-                postText: " Hello ",
-                isVideo: false,
+                postText: "Hello",
+                videoDurationSec: 65,
             }),
-        ).toEqual({ heading: "Alice 's Post", caption: "Hello" })
-    })
-
-    it("動画投稿は heading を含めない", () => {
-        const text = buildEntryText({
-            userName: "Alice",
-            postText: "Hello",
-            isVideo: true,
-        })
-        expect(text).toEqual({ caption: "Hello" })
-        expect("heading" in text).toBe(false)
+        ).toEqual({ heading: "1:05", caption: "Hello" })
     })
 
     it("本文が空白のみなら caption を含めない", () => {
-        const text = buildEntryText({
-            userName: "Alice",
-            postText: "   ",
-            isVideo: false,
-        })
+        const text = buildEntryText({ userName: "Alice", postText: "   " })
+        expect(text).toEqual({ heading: "Alice" })
         expect("caption" in text).toBe(false)
     })
 
@@ -40,7 +33,6 @@ describe("buildEntryText", () => {
         const text = buildEntryText({
             userName: "a".repeat(500),
             postText: "b".repeat(500),
-            isVideo: false,
         })
         expect(text.heading).toHaveLength(ENTRY_HEADING_MAX_LENGTH)
         expect(text.caption).toHaveLength(ENTRY_CAPTION_MAX_LENGTH)

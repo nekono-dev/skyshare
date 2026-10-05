@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - Overlay 上に baseCard を重ね、`role="dialog"` の選択肢ダイアログを描画する。
- * - DraftSaveConfirmDialog（3択）や SkyshareShareDialog（2択）など、
+ * - DraftSaveConfirmDialog（3択）や IntentShareDialog（4択）など、
  *   選択肢ボタンの縦並びだけで構成されるダイアログの共通骨格を提供する。
  */
 import React from "react"

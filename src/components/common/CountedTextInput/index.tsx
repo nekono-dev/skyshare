@@ -24,6 +24,8 @@ export type CounterSpec = {
   warnAt?: number
   /** この値を超えたらerror状態にする（省略時はerror判定なし） */
   errorAt?: number
+  /** 上限が末尾URL分などで本来より引き下げられているか（true中は通知色の背景で示す） */
+  reduced?: boolean
 }
 
 type Props = {

@@ -1,6 +1,6 @@
 # common
 
-特定の機能ドメインに依存しない汎用UI部品。モーダル基盤(`Overlay`/`ChoiceDialog`/`ConfirmDialog`/`Loading`)、リスト表示・ページング(`ComponentList`/`NavigationBar`/`PageSizeSelect`/`PaginationModeSelect`/`InfiniteScrollSentinel`)、フローティング表示(`FloatingBox`)、入力系(`CountedTextInput`/`ToggleSwitch`/`Dropdown`/`ListboxOption`/`LanguageSelect`/`ThemeModeSelect`)、汎用UI(`Collapsible`/`Spinner`/`InlineIcon`/`Avatar`)から成る。
+特定の機能ドメインに依存しない汎用UI部品。モーダル基盤(`Overlay`/`ChoiceDialog`/`ConfirmDialog`/`Loading`)、リスト表示・ページング(`ComponentList`/`NavigationBar`/`PageSizeSelect`/`PaginationModeSelect`/`InfiniteScrollSentinel`)、フローティング表示(`FloatingBox`)、入力系(`CountedTextInput`/`ToggleSwitch`/`Dropdown`/`ListboxOption`/`LanguageSelect`/`ThemeModeSelect`/`AutoPopupTargetSelect`)、汎用UI(`Collapsible`/`Spinner`/`InlineIcon`/`Avatar`)から成る。
 
 ```mermaid
 graph TD
@@ -14,6 +14,8 @@ graph TD
   Dropdown --> ComponentList
   LanguageSelect --> Dropdown
   ThemeModeSelect --> Dropdown
+  AutoPopupTargetSelect --> Dropdown
+  AutoPopupTargetSelect --> InlineIcon
   PageSizeSelect --> Dropdown
   PaginationModeSelect --> Dropdown
 ```

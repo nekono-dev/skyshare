@@ -2,6 +2,9 @@ import { useT } from "@/lib/i18n/react"
 import React, { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import Overlay from "@/components/common/Overlay"
+import IntentShareDialog, {
+  type IntentShareRequest,
+} from "@/components/post/IntentShareDialog"
 import ThreadComposer, {
   type ThreadComposerHandle,
 } from "@/components/post/ThreadComposer"
@@ -50,6 +53,11 @@ const PostLauncher: React.FC<{
 }) => {
   const { t } = useT()
   const [open, setOpen] = useState(false)
+  // 投稿成功でOverlay（とThreadComposer）が閉じてアンマウントされても残るよう、
+  // 投稿先選択ダイアログはOverlayの外で描画する。
+  const [shareRequest, setShareRequest] = useState<IntentShareRequest | null>(
+    null,
+  )
   const postFormRef = useRef<ThreadComposerHandle>(null)
   // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
   // Sidebar が用意する #sidebar-action へ Portal で描画することで、フレックス
@@ -103,6 +111,7 @@ const PostLauncher: React.FC<{
         <ThreadComposer
           ref={postFormRef}
           onClose={() => setOpen(false)}
+          onShareRequest={setShareRequest}
           onPosted={() => {
             setOpen(false)
             onPosted?.()
@@ -113,6 +122,12 @@ const PostLauncher: React.FC<{
           guestMode={guestMode}
         />
       </Overlay>
+
+      <IntentShareDialog
+        request={shareRequest}
+        keepOpenOnSelect
+        onClose={() => setShareRequest(null)}
+      />
     </>
   )
 }

@@ -1,20 +1,27 @@
 /**
  * PostForm の投稿成功後の共有ディスパッチ（ポップアップ/WebShareAPIの実行判断と
- * 実行、テキストボックス保持内容・ステータスメッセージの決定）を担うモジュール。
+ * 実行、投稿先選択ダイアログの要否・ステータスメッセージの決定）を担うモジュール。
  *
  * 責務と処理概要:
- * - `spec.submitButton.md` に定義された、共有系トグルの組み合わせに応じた
- *   自動ポップアップ/WebShareAPIの分岐ロジックを集約する。
+ * - `spec.submitButton.md` に定義された、共有系設定（WebShareの代わりにポップアップを開く・
+ *   自動ポップアップするSNS・画像を自分で添付・長文を省略して共有）の組み合わせに応じた
+ *   自動ポップアップ/WebShareAPI/投稿先選択ダイアログの分岐ロジックを集約する。
  * - Reactのstateには一切触れず、実行結果を `ShareDispatchResult` として返すのみ。
  *   呼び出し側（`index.tsx`）がその内容に応じて state を更新する。
  */
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { MessageFormatter } from "@/lib/i18n/translate"
 import {
+    resolveMastodonInstanceDomain,
+    type AutoPopupTarget,
+} from "@/lib/settings/shareSettings"
+import {
     IntentTarget,
     buildIntentText,
     openIntentPopupFor,
+    resolveTruncateLimit,
 } from "@/util/share/intent"
+import { resolveIntentMeasure } from "@/util/share/intentLength"
 import {
     canShareWithWebApi,
     shareWithWebApi,
@@ -33,11 +40,15 @@ export type ShareDispatchParams = {
     linkCardUrl: string
     imageEntry: ImageEntry | null
     manualImageAttach: boolean
-    crosspostToTaittsuu: boolean
-    crosspostToMastodon: boolean
-    mastodonInstanceDomain: string
+    /**
+     * X/タイッツー向け共有文の長文省略設定。WebShareAPIに渡す共有文には適用しない。
+     */
+    truncateIntentText: boolean
     popupIntentInsteadOfWebshare: boolean
-    noAutoPopupAfterPost: boolean
+    /** 自動ポップアップするSNS。`popupIntentInsteadOfWebshare` がtrueの場合のみ参照する。 */
+    autoPopupTarget: AutoPopupTarget
+    /** Mastodonインスタンスドメインの保存値そのまま（未設定は空文字） */
+    mastodonInstanceDomain: string
     /**
      * 呼び出し側が投稿API呼び出し（await）より前に`preOpenPopupWindow`で
      * 事前に開いておいたポップアップウィンドウ。自動ポップアップ対象になった
@@ -57,22 +68,23 @@ export type ShareDispatchResult = {
     /** 表示するステータス文言。言語は描画時に決まるため、文字列ではなく組み立て関数で返す。 */
     status: MessageFormatter
     statusColor: string
-    /** null なら呼び出し側で resetInputFields() する合図。非nullならこのテキストを textbox に保持する。 */
-    textToKeep: string | null
-    /** true なら呼び出し側で forceNoAutoPopupAfterPostOn() を呼ぶ必要がある。 */
-    forcedNoAutoPopupOn: boolean
     /**
-     * true なら呼び出し側で ShowXIntentButton を強制ONにする必要がある
-     * （Xターゲットの自動ポップアップ失敗時のみ。ボタン表示がNoAutoPopupAfterPostに
-     * 連動するため、これをしないと再試行手段が無くなる）。
+     * true なら呼び出し側で投稿先選択ダイアログ（本文・skyshare URL・リンクカードURLを保持）を開く。
+     * 投稿フォームの入力欄は結果に関わらず呼び出し側で常にクリアする。
      */
-    forcedShowXIntentButtonOn: boolean
+    openShareDialog: boolean
     /**
      * true なら呼び出し側で onPopupIntentInsteadOfWebshareChange(true) を呼ぶ必要がある
      * （WebShareAPIが非対応、または実際に試行して失敗した場合。以後はWebShareAPIを
      * 試さずポップアップ経由の共有に切り替えるフォールバック）。
      */
     forcedPopupIntentInsteadOfWebshareOn: boolean
+    /**
+     * 非null なら呼び出し側で onAutoPopupTargetChange(この値) を呼ぶ必要がある
+     * （自動ポップアップが開けなかった場合は "ask"、WebShareAPIの代わりにXポップアップを
+     * 開けた場合は "x"）。
+     */
+    forcedAutoPopupTarget: AutoPopupTarget | null
 }
 
 /**
@@ -123,33 +135,27 @@ const buildWebShareData = ({
 /**
  * 投稿成功後の共有ディスパッチを実行する。
  *
- * 処理の趣旨（spec.submitButton.md準拠）:
- * - NoAutoPopupAfterPost がONの場合、自動ポップアップ・WebShareAPIともに行わず、
- *   共有用テキスト（skyshare entry作成時はURL付き）をtextboxに保持する。
- * - OFFの場合、CrosspostToTaittsuu ON なら Taittsu、そうでなくCrosspostToMastodon ON なら
- *   Mastodon、そうでなくPopupIntentInsteadOfWebshare ON なら X をターゲットに自動ポップアップ
- *   する（優先順位: タイッツー > Mastodon > X）。失敗時はその旨を伝えたうえで
- *   NoAutoPopupAfterPost をONへフォールバックし、テキストも保持する。
- * - どちらのポップアップ系トグルもOFFならWebShareAPIを試行する。非対応環境、または
- *   対応環境で実際に試行したが失敗した場合（ユーザーによる共有シートのキャンセルを
- *   除く）は、いずれもPopupIntentInsteadOfWebshareをONへフォールバックし、以後は
- *   WebShareAPIを試さずポップアップ経由の共有に切り替える。あわせてその場でXポップアップ
- *   も即時に試行し、それも失敗した場合は同様にNoAutoPopupAfterPostをONへフォールバック
- *   する。
- * - ボタン表示はNoAutoPopupAfterPostに連動するため、Xターゲットの自動ポップアップが
- *   失敗した場合はShowXIntentButtonも強制ONにし、再試行用ボタンを必ず提示する
- *   （Taittsu/Mastodonターゲットの場合はCrosspostToTaittsuu/CrosspostToMastodonが
- *   既にONのため不要）。
+ * 処理の趣旨（spec.submitButton.md 準拠）:
+ * - PopupIntentInsteadOfWebshare がONの場合、AutoPopupTarget に従う。
+ *   "ask"、または "mastodon" でインスタンスドメインが不正な場合は、ポップアップを開かず
+ *   投稿先選択ダイアログを開く。X/タイッツー/Mastodon が選ばれていれば、そのSNSの
+ *   ポップアップを自動で開く。開けなかった場合は投稿先選択ダイアログを開き、
+ *   AutoPopupTarget を "ask" へ変更させる。
+ * - OFFの場合はWebShareAPIを試行する。非対応環境、または対応環境で実際に試行したが
+ *   失敗した場合（ユーザーによる共有シートのキャンセルを除く）は、その場でXポップアップを
+ *   即時に試行し、PopupIntentInsteadOfWebshare をONへフォールバックする。開けた場合は
+ *   AutoPopupTarget を "x"、開けなかった場合は "ask" にして投稿先選択ダイアログを開く。
+ * - X/タイッツー向けの共有文は、truncateIntentText がONの場合に本文を省略する。WebShareAPIに渡す共有文は省略しない。
  *
  * Input:
- * - `params`: 投稿本文・skyshare URI・共有系トグルの現在値
+ * - `params`: 投稿本文・skyshare URL・共有系設定の現在値
  *
  * Output:
- * - 表示すべきステータス・textboxに保持すべきテキスト・トグル強制変更の要否
+ * - 表示すべきステータス・投稿先選択ダイアログの要否・設定の強制変更の要否
  *
  * 例:
- * - 入力: `{ noAutoPopupAfterPost: true, ... }`
- * - 出力: `{ textToKeep: "本文\nURL", forcedNoAutoPopupOn: false, ... }`
+ * - 入力: `{ popupIntentInsteadOfWebshare: true, autoPopupTarget: "ask", ... }`
+ * - 出力: `{ openShareDialog: true, forcedAutoPopupTarget: null, ... }`
  */
 export const runShareDispatch = async (
     params: ShareDispatchParams,
@@ -160,61 +166,75 @@ export const runShareDispatch = async (
         linkCardUrl,
         imageEntry,
         manualImageAttach,
-        crosspostToTaittsuu,
-        crosspostToMastodon,
-        mastodonInstanceDomain,
+        truncateIntentText,
         popupIntentInsteadOfWebshare,
-        noAutoPopupAfterPost,
+        autoPopupTarget,
+        mastodonInstanceDomain,
         popupWindow,
         guestMode = false,
     } = params
 
     // 「画像を自分で添付する」有効時は skyshare エントリを作らないため、
-    // ポップアップ/テキストボックス/WebShareAPI のいずれにも URL を含めない。
+    // ポップアップ/ダイアログ/WebShareAPI のいずれにも URL を含めない。
     const effectiveSkyshareUri = manualImageAttach ? "" : skyshareUri
-    const intentText = buildIntentText(text, effectiveSkyshareUri, linkCardUrl)
+    // WebShareAPIは共有先SNSを特定できないため、省略しない共有文を使う。
+    const webShareText = buildIntentText(
+        text,
+        effectiveSkyshareUri,
+        linkCardUrl,
+    )
+    // intent（ポップアップ）は宛先ごとに省略要否が決まるため、宛先を受けて組み立てる。
+    const buildTextFor = (intentTarget: IntentTarget) =>
+        buildIntentText(text, effectiveSkyshareUri, linkCardUrl, {
+            truncateLimit: resolveTruncateLimit(
+                intentTarget,
+                truncateIntentText,
+            ),
+            // 字数換算は宛先ごとに異なる（タイッツーはURLも全文字を数える）
+            measure: resolveIntentMeasure(
+                intentTarget === "taittsuu" ? "taittsuu" : "x",
+            ),
+        })
+    const mastodonDomain = resolveMastodonInstanceDomain(mastodonInstanceDomain)
     // 各ステータスの先頭に付ける、投稿結果の文（文末の句点は各文言側で付ける）
     const resultKey = guestMode
         ? "post.share.resultGuest"
         : "post.share.resultSuccess"
 
-    if (noAutoPopupAfterPost) {
-        popupWindow?.close()
-        return {
-            status: tr =>
-                tr.t("post.share.noAutoPopup", { result: tr.t(resultKey) }),
-            statusColor: "green",
-            textToKeep: intentText,
-            forcedNoAutoPopupOn: false,
-            forcedShowXIntentButtonOn: false,
-            forcedPopupIntentInsteadOfWebshareOn: false,
+    if (popupIntentInsteadOfWebshare) {
+        // 自動ポップアップ先を決められない（投稿時に選択する、またはMastodonの
+        // ドメインが不正）場合は、ポップアップを開かず投稿先選択ダイアログに委ねる。
+        if (
+            autoPopupTarget === "ask" ||
+            (autoPopupTarget === "mastodon" && mastodonDomain === null)
+        ) {
+            popupWindow?.close()
+            return {
+                status: tr =>
+                    tr.t("post.share.chooseTarget", {
+                        result: tr.t(resultKey),
+                    }),
+                statusColor: "green",
+                openShareDialog: true,
+                forcedPopupIntentInsteadOfWebshareOn: false,
+                forcedAutoPopupTarget: null,
+            }
         }
-    }
-    // 不変条件: NoAutoPopupAfterPostがOFFの間、crosspostToTaittsuu/crosspostToMastodonが
-    // 同時にONになることはない（reconcileShareTogglesが両方ONにする際に必ず
-    // noAutoPopupAfterPostも強制ONにするため）。ただし将来の変更で不変条件が崩れた場合に
-    // 備え、優先順位を明示的に定義しておく: タイッツー > Mastodon > X。
-    const target: IntentTarget = crosspostToTaittsuu
-        ? "taittsuu"
-        : crosspostToMastodon
-          ? "mastodon"
-          : "x"
-    const serviceKey =
-        target === "taittsuu"
-            ? "post.share.service.taittsuu"
-            : target === "mastodon"
-              ? "post.share.service.mastodon"
-              : "post.share.service.x"
 
-    if (
-        crosspostToTaittsuu ||
-        crosspostToMastodon ||
-        popupIntentInsteadOfWebshare
-    ) {
-        const opened = openIntentPopupFor(target, intentText, {
-            instanceDomain: mastodonInstanceDomain,
-            preOpenedWindow: popupWindow,
-        })
+        const serviceKey =
+            autoPopupTarget === "taittsuu"
+                ? "post.share.service.taittsuu"
+                : autoPopupTarget === "mastodon"
+                  ? "post.share.service.mastodon"
+                  : "post.share.service.x"
+        const opened = openIntentPopupFor(
+            autoPopupTarget,
+            buildTextFor(autoPopupTarget),
+            {
+                instanceDomain: mastodonDomain ?? undefined,
+                preOpenedWindow: popupWindow,
+            },
+        )
 
         if (opened) {
             return {
@@ -224,10 +244,9 @@ export const runShareDispatch = async (
                         service: tr.t(serviceKey),
                     }),
                 statusColor: "green",
-                textToKeep: null,
-                forcedNoAutoPopupOn: false,
-                forcedShowXIntentButtonOn: false,
+                openShareDialog: false,
                 forcedPopupIntentInsteadOfWebshareOn: false,
+                forcedAutoPopupTarget: null,
             }
         }
 
@@ -238,13 +257,12 @@ export const runShareDispatch = async (
                     service: tr.t(serviceKey),
                 }),
             statusColor: "green",
-            textToKeep: intentText,
-            forcedNoAutoPopupOn: true,
-            // Taittsu/Mastodonターゲットの場合は CrosspostToTaittsuu/CrosspostToMastodon が
-            // 既にONのため、NoAutoPopupAfterPost連動ルールで対応するボタンが自動的に表示される。
-            // Xターゲットの場合のみ、再試行用のボタンを出すために明示的な強制が必要。
-            forcedShowXIntentButtonOn: target === "x",
+            // ポップアップがブロックされたため、ユーザー操作（ダイアログ内のクリック）で
+            // 再試行できるよう投稿先選択ダイアログを開き、以後も同じ失敗を繰り返さないよう
+            // 自動ポップアップ先を「投稿時に選択する」へ変更する。
+            openShareDialog: true,
             forcedPopupIntentInsteadOfWebshareOn: false,
+            forcedAutoPopupTarget: "ask",
         }
     }
 
@@ -254,7 +272,7 @@ export const runShareDispatch = async (
     popupWindow?.close()
 
     const webShareData = buildWebShareData({
-        text: intentText,
+        text: webShareText,
         imageEntry,
         manualImageAttach,
     })
@@ -270,10 +288,9 @@ export const runShareDispatch = async (
                         result: tr.t(resultKey),
                     }),
                 statusColor: "green",
-                textToKeep: null,
-                forcedNoAutoPopupOn: false,
-                forcedShowXIntentButtonOn: false,
+                openShareDialog: false,
                 forcedPopupIntentInsteadOfWebshareOn: false,
+                forcedAutoPopupTarget: null,
             }
         }
         if (shareResult.reason === "aborted") {
@@ -283,10 +300,9 @@ export const runShareDispatch = async (
                         result: tr.t(resultKey),
                     }),
                 statusColor: "green",
-                textToKeep: null,
-                forcedNoAutoPopupOn: false,
-                forcedShowXIntentButtonOn: false,
+                openShareDialog: false,
                 forcedPopupIntentInsteadOfWebshareOn: false,
+                forcedAutoPopupTarget: null,
             }
         }
         webShareUnavailableReason = "failed"
@@ -295,17 +311,16 @@ export const runShareDispatch = async (
     }
 
     // WebShareAPIが非対応、または対応環境で実際に試行したが失敗した場合の
-    // Xポップアップ即時フォールバック。ここもXターゲットの自動実行であるため、
-    // 失敗時は上のX分岐と同様にShowXIntentButtonを強制ONにする。WebShareAPIが
-    // 使えなかったこと自体が「うまくいかなかった」ケースのため、ポップアップの
-    // 開閉の成否に関わらず以後はWebShareAPIを試さずポップアップ経由にするよう
-    // PopupIntentInsteadOfWebshareをONへフォールバックする。
+    // Xポップアップ即時フォールバック。WebShareAPIが使えなかったこと自体が
+    // 「うまくいかなかった」ケースのため、ポップアップの開閉の成否に関わらず以後は
+    // WebShareAPIを試さずポップアップ経由にするよう PopupIntentInsteadOfWebshare を
+    // ONへフォールバックする。
     const unavailableReasonKey =
         webShareUnavailableReason === "unsupported"
             ? "post.share.reason.unsupported"
             : "post.share.reason.failed"
 
-    const opened = openIntentPopupFor("x", intentText)
+    const opened = openIntentPopupFor("x", buildTextFor("x"))
     if (opened) {
         return {
             status: tr =>
@@ -314,10 +329,9 @@ export const runShareDispatch = async (
                     reason: tr.t(unavailableReasonKey),
                 }),
             statusColor: "green",
-            textToKeep: null,
-            forcedNoAutoPopupOn: false,
-            forcedShowXIntentButtonOn: false,
+            openShareDialog: false,
             forcedPopupIntentInsteadOfWebshareOn: true,
+            forcedAutoPopupTarget: "x",
         }
     }
 
@@ -325,9 +339,8 @@ export const runShareDispatch = async (
         status: tr =>
             tr.t("post.share.fallbackBlocked", { result: tr.t(resultKey) }),
         statusColor: "green",
-        textToKeep: intentText,
-        forcedNoAutoPopupOn: true,
-        forcedShowXIntentButtonOn: true,
+        openShareDialog: true,
         forcedPopupIntentInsteadOfWebshareOn: true,
+        forcedAutoPopupTarget: "ask",
     }
 }

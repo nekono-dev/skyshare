@@ -11,11 +11,12 @@ import styles from "./index.module.css"
 
 type Props = {
   onRemove: () => void
-  onEditAlt: () => void
+  /** 省略時は「alt」ボタンを出さない（リンクカードなど alt を持たない添付用） */
+  onEditAlt?: () => void
   removeAriaLabel: string
-  altAriaLabel: string
+  altAriaLabel?: string
   /** alt 入力済みなら強調色にする */
-  altFilled: boolean
+  altFilled?: boolean
   disabled?: boolean
   /** グリッド配置（gridArea）用 */
   style?: CSSProperties
@@ -31,7 +32,7 @@ export const MediaThumb = ({
   onEditAlt,
   removeAriaLabel,
   altAriaLabel,
-  altFilled,
+  altFilled = false,
   disabled = false,
   style,
   className,
@@ -54,15 +55,17 @@ export const MediaThumb = ({
       >
         ×
       </button>
-      <button
-        type="button"
-        className={`${styles["alt-badge"]} ${altFilled ? styles["alt-badge-active"] : ""}`}
-        aria-label={altAriaLabel}
-        onClick={onEditAlt}
-        disabled={disabled}
-      >
-        alt
-      </button>
+      {onEditAlt && (
+        <button
+          type="button"
+          className={`${styles["alt-badge"]} ${altFilled ? styles["alt-badge-active"] : ""}`}
+          aria-label={altAriaLabel}
+          onClick={onEditAlt}
+          disabled={disabled}
+        >
+          alt
+        </button>
+      )}
     </div>
   )
 }

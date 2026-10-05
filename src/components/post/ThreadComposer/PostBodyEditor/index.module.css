@@ -42,6 +42,10 @@
   font-size: var(--font-size-sm);
   font-variant-numeric: tabular-nums;
 }
+.counters-reduced {
+  background: var(--color-info-soft-bg);
+  color: var(--color-info-soft-text);
+}
 .counters-warn {
   background: var(--color-warning-soft-bg);
   color: var(--color-warning-soft-text);

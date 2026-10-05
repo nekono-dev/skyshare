@@ -105,7 +105,7 @@ Zodの `union`（3分岐、いずれも `.strict()`）。`createEntry`/`entrySou
 | `createEntry` | boolean | このリクエスト（1件またはスレッド全体）にskyshare entryを1件紐づけるか                                               |
 | `visual`      | Blob    | `createEntry:true`時に必須。entryの代表画像素材。リクエスト中のどの`posts[i].images`と一致するかはサーバは検証しない |
 
-`heading`（最大100文字）・`caption`（最大300文字）はクライアントが決めて送る任意フィールドで、サーバは生成・補完しない（未指定ならentryレコードのmanifestに含めない）。既定値の組み立て（画像: `<表示名> 's Post`＋本文、動画: headingなし）は[entryText.ts](../../../src/lib/entry/entryText.ts)が担う。
+`heading`（最大100文字）・`caption`（最大300文字）はクライアントが決めて送る任意フィールドで、サーバは生成・補完しない（未指定ならentryレコードのmanifestに含めない）。既定値の組み立て（画像: heading＝投稿者名、動画: heading＝再生時間`m:ss`。いずれもcaption＝本文）は[entryText.ts](../../../src/lib/entry/entryText.ts)が担う。
 
 注記: `createEntry:true`ならリクエスト全体につき`visual`必須、という制約のみをハンドラ側（フェーズ5）で検証する。旧仕様にあった「`posts`のいずれかが画像投稿であること」という追加検証は行わない（[requirements.md FR-1](requirements.md#fr-1-新規bluesky投稿の作成単発スレッド共通)、サーバはentryの作成対象としての妥当性を判定しない）。
 

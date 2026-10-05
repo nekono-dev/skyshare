@@ -7,7 +7,7 @@
 - 動画の実体は **ブラウザから Bluesky の動画サービス（`https://video.bsky.app/xrpc/`）へ直接アップロード**する（NFR-1）。skyshare のサーバー（Workers）は、動画アップロード用サービス認証トークンの発行と、アップロード完了後の blob 参照を `embed` に載せた投稿作成のみを担う。
 - アップロードは分割アップロード（`startUpload` → `uploadPart` → `finishUpload`）を使い、変換完了を `getJobStatus` のポーリングで待つ。動画は選択直後に**先行アップロード**し、完了するまで投稿ボタンを無効にする。投稿時には動画の blob 参照（JSON）だけを `POST /v2/entry` に送る。
 - 動画は `app.bsky.embed.video` で投稿する。画像（`images`/`gallery`）・OGPリンク（`external`）とは排他とする。
-- entry の visual は、動画の最初のフレーム相当の poster 1枚から既存の `createDefaultThumbnail` で生成し、その上に **再生ボタンと再生時間バッジを描画**する（§6.5。X の動画表示を模した、色・透明度・寸法を固定した仕様）。
+- entry の visual は、動画の最初のフレーム相当の poster 1枚から既存の `createDefaultThumbnail` で生成し、その上に **再生ボタンを描画**する（§6.5。X の動画表示を模した、色・透明度・寸法を固定した仕様）。再生時間は画像に埋め込まず entry の heading に記載する。
 - 表示は、投稿レコードの `embed` から再生URL（HLS）と poster URL を組み立てる。AppView の `embed.view` には依存しない（投稿直後に AppView へ未反映の期間があるため）。
 - 引用投稿（`recordWithMedia`）に添付された動画は「利用不可の動画」として、poster を暗くして再生不可を明示する（§7.7）。再生・entry化の対象にはしない。
 - Entry 詳細ページの再生は `hls.js` を再生開始時に動的 import して行い（`hls.js` が使えない MSE 非対応の環境、iOS Safari 等はネイティブHLS）、初期バンドルに含めない（NFR-3）。Timeline は poster のサムネイル表示のみとする。
@@ -422,7 +422,7 @@ export type VideoEntry = {
   posterBlob: Blob // poster（JPEG）
   cropState: SlotCropState // visual の poster の切り抜き状態（初期値は computeInitialCrop の既定配置。「サムネ調整」で更新）
   thumbnailPreview: string // thumbnailBlob の object URL（プレビュー・縮小表示用。差し替え・取り外し時に revoke）
-  thumbnailBlob: Blob // visual（cropState の切り抜きに再生ボタン・バッジを重ねた 1200x630。初期は createDefaultThumbnail の結果）
+  thumbnailBlob: Blob // visual（cropState の切り抜きに再生ボタンを重ねた 1200x630。初期は createDefaultThumbnail の結果）
   upload:
     | { state: "uploading"; progress: VideoUploadProgress }
     | { state: "done"; blob: VideoBlobRef }
@@ -475,7 +475,7 @@ onSelectFile(file):
   probe = await probeVideo(file)          → 失敗は同様に通知
   thumbnailBlob = await createDefaultThumbnail(
                     [URL.createObjectURL(probe.posterBlob)],
-                    drawVideoOverlay(probe.durationSec),   // §6.5
+                    drawVideoOverlay(),   // §6.5
                 )
   entry = { …, alt: "", upload: { state: "uploading", progress: {phase:"uploading", percent:0} } }
   onChange(entry)
@@ -573,13 +573,13 @@ if (overlay) {
 
 `createCroppedThumbnail`（`src/lib/image/postImageProcessing.ts`）は `composeThumbnailBlob(imageUrls, cropStates, overlay)` の `thumbnailBlob` だけを返す薄い関数として追加する。
 
-`VideoPicker` は `imageUrls={[value.posterPreview]}`・`initialCropStates={[value.cropState]}`・`overlay={drawVideoOverlay(value.durationSec)}` を渡す。確定時は `onChange({ ...value, cropState: states[0], thumbnailBlob })` とする。ダイアログ上のプレビューには再生ボタン・バッジは描かれない（確定後の visual にのみ重なる）。
+`VideoPicker` は `imageUrls={[value.posterPreview]}`・`initialCropStates={[value.cropState]}`・`overlay={drawVideoOverlay()}` を渡す。確定時は `onChange({ ...value, cropState: states[0], thumbnailBlob })` とする。ダイアログ上のプレビューには再生ボタンは描かれない（確定後の visual にのみ重なる）。
 
 **初期値**: `VideoPicker.handleFileChange` で `loadImageSize(posterPreview)` で poster の寸法を得て、`cropState = { crop: {x:0,y:0}, zoom: 1, cropPixels: computeInitialCrop(poster.width, poster.height, slot.w, slot.h) }`（`slot = getSlotDefs(1)[0]`）とする。`thumbnailBlob` は従来どおり `createDefaultThumbnail`（同じ `computeInitialCrop` を使うため `cropState` と一致する）。
 
 **アップロード進捗との独立**: `VideoPicker.startUpload` の `emit` は、クロージャの `entryBase` ではなく最新の `valueRef.current` に `upload` だけをマージして通知する（アップロード中に調整された `cropState`・`thumbnailBlob`・`alt` を進捗通知で上書きしない）。`valueRef.current` が `null`（取り外し済み）なら通知しない。
 
-**プレビューの表示**: `VideoPicker` のサムネイル `<img>` と、`ThreadSegmentForm` の非アクティブ時の縮小表示（`segment-thumbnail`）は、poster の切り抜きではなく、`VideoEntry.thumbnailPreview`（`thumbnailBlob` の object URL。再生ボタン・バッジ入りの visual、1200×630）を表示する。`thumbnailPreview` は `VideoPicker` が、動画選択時と調整確定時（`thumbnailBlob` を作り直すたび）に生成して `VideoEntry` に持たせる。解放は `posterPreview` と同じく、`ThreadSegmentForm` が URL をキーにした `useEffect` のクリーンアップで行い（差し替え・unmount）、取り外し・segment 削除は `revokeVideoEntry` が行う。サムネイル枠は `aspect-ratio: 1200 / 630` で visual と同じ比率のため、`object-fit: cover` で歪みなく収まり、再生ボタンは調整によらず枠の中央に表示される。調整ダイアログ（`ImageCropDialog`）は poster のみを表示し、`overlay` は確定時の生成にだけ使う（ダイアログ上には再生ボタン・バッジを描かない）。
+**プレビューの表示**: `VideoPicker` のサムネイル `<img>` と、`ThreadSegmentForm` の非アクティブ時の縮小表示（`segment-thumbnail`）は、poster の切り抜きではなく、`VideoEntry.thumbnailPreview`（`thumbnailBlob` の object URL。再生ボタン入りの visual、1200×630）を表示する。`thumbnailPreview` は `VideoPicker` が、動画選択時と調整確定時（`thumbnailBlob` を作り直すたび）に生成して `VideoEntry` に持たせる。解放は `posterPreview` と同じく、`ThreadSegmentForm` が URL をキーにした `useEffect` のクリーンアップで行い（差し替え・unmount）、取り外し・segment 削除は `revokeVideoEntry` が行う。サムネイル枠は `aspect-ratio: 1200 / 630` で visual と同じ比率のため、`object-fit: cover` で歪みなく収まり、再生ボタンは調整によらず枠の中央に表示される。調整ダイアログ（`ImageCropDialog`）は poster のみを表示し、`overlay` は確定時の生成にだけ使う（ダイアログ上には再生ボタンを描かない）。
 
 ### 6.3 送信（`ThreadComposer/submitThread.ts`）
 
@@ -602,26 +602,20 @@ if (overlay) {
 
 `fetchToken` が `unsupportedPds` を投げた場合は、`uploadVideo` が最初のトークン取得（`startUpload` 前）で失敗するため、動画は1バイトも送信されない。`VideoEntry.upload` は `{ state: "error", messageKey: "video.error.unsupportedPds" }` になり、プレビュー上に理由が表示される（取り外しで解消）。
 
-### 6.5 動画投稿の visual（再生ボタン・再生時間バッジ）
+### 6.5 動画投稿の visual（再生ボタン）
 
-要件 FR-10。X の動画表示を模した見た目を、`src/lib/video/videoOverlay.ts` に実装する。数値は X の画面のスクリーンショット（再生ボタン4枚・再生時間表示1枚。リポジトリには含めない）を実測して定めた。スクリーンショットは DPR 2 で取得されたもので、再生時間の数字の高さ 19px（デバイスピクセル）が 13px の文字（大文字高さ約 9.5 CSS px）に一致することから、`1 CSS px = 2 デバイスピクセル` とした。
+要件 FR-10・FR-10b。再生時間は画像へ埋め込まず、entry の heading（`m:ss`）に記載する（§6.5.4）。X の動画表示を模した再生ボタンの見た目を、`src/lib/video/videoOverlay.ts` に実装する。数値は X の画面のスクリーンショット（再生ボタン4枚・再生時間表示1枚。リポジトリには含めない）を実測して定めた。スクリーンショットは DPR 2 で取得されたもので、再生時間の数字の高さ 19px（デバイスピクセル）が 13px の文字（大文字高さ約 9.5 CSS px）に一致することから、`1 CSS px = 2 デバイスピクセル` とした。
 
 #### 6.5.1 寸法・色（単位は CSS px。スクリーンショットの実測値 ÷ 2）
 
-| 要素                | 値                                                                                            | 根拠（実測）                                                                                                                                                                                                                                                                    |
-| ------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 再生ボタン 円の中心 | 動画の表示領域の中心（水平・垂直とも）。動画の縦横比によらない                                | 正方形の動画のスクリーンショットで、動画枠の中心 (618, 680.5) と円の中心 (618, 681) が一致                                                                                                                                                                                      |
-| 再生ボタン 円の直径 | `59`                                                                                          | 円の外接幅 118px（2枚の独立した画像で一致）                                                                                                                                                                                                                                     |
-| 再生ボタン 円の色   | `rgba(50, 50, 50, 0.6)`                                                                       | 背景値→円の内側の値の実測 4 点（黒背景 `0→30`、赤背景 `251→130`・`32→43`・`30→42`。いずれも 1 チャンネルの値）を `結果 = (1-α)×背景 + α×色` に当てはめた（α=0.60、色=50.0、誤差 0.2 以下）。別の状態として α=0.8（色は同じ 50）の表示も観測されたが、採用しない（意思決定済み） |
-| 再生記号の形        | 右向きの二等辺三角形。頂点は外接矩形内の `(0,0)`・`(0,H)`・`(W,H/2)`。`W = 20`・`H = 25`      | 外接矩形 40×50px                                                                                                                                                                                                                                                                |
-| 再生記号の色        | `#FFFFFF`（不透明）                                                                           | 実測 `rgb(255,255,255)`                                                                                                                                                                                                                                                         |
-| 再生記号の位置      | 外接矩形の中心を、円の中心から右へ `2.5` ずらす（垂直は中心一致）                             | 円の中心 (69.5, 64)・記号の中心 (74.5, 64.5)                                                                                                                                                                                                                                    |
-| 再生時間バッジ 高さ | `20`                                                                                          | 外接 y 12〜51（40px）                                                                                                                                                                                                                                                           |
-| 再生時間バッジ 幅   | `文字列の幅 + 18`（左右の余白 `9` ずつ）。`0:05` のとき `26 + 18 = 44`                        | 外接 x 28〜115（88px）、文字 x 46〜97                                                                                                                                                                                                                                           |
-| 再生時間バッジ 角丸 | `4`                                                                                           | 角の曲がり開始が約 6〜8px                                                                                                                                                                                                                                                       |
-| 再生時間バッジ 色   | `rgba(0, 0, 0, 0.8)`                                                                          | 明暗の異なる複数の背景（`84→20`、`145→31`、`251→58`、`32→7` 等、15 点）への当てはめで α=0.80・色≈黒（2）。最大誤差 7 程度                                                                                                                                                       |
-| 再生時間バッジ 文字 | 白 `#FFFFFF`、`font-weight: 700`、`13px`、`sans-serif`、バッジ内で水平・垂直中央、書式 `m:ss` | 文字外接 高さ 19px                                                                                                                                                                                                                                                              |
-| 再生時間バッジ 位置 | 動画の表示領域の左端から `12`、下端から `12`（バッジの左下角基準）                            | 動画全体が写ったスクリーンショットで、動画枠（x 0〜1235、y 63〜1298）に対し、バッジ x 24〜107・y 1235〜1274（左余白 24px、下余白 24px）                                                                                                                                         |
+| 要素                | 値                                                                                       | 根拠（実測）                                                                                                                                                                                                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 再生ボタン 円の中心 | 動画の表示領域の中心（水平・垂直とも）。動画の縦横比によらない                           | 正方形の動画のスクリーンショットで、動画枠の中心 (618, 680.5) と円の中心 (618, 681) が一致                                                                                                                                                                                      |
+| 再生ボタン 円の直径 | `59`                                                                                     | 円の外接幅 118px（2枚の独立した画像で一致）                                                                                                                                                                                                                                     |
+| 再生ボタン 円の色   | `rgba(50, 50, 50, 0.6)`                                                                  | 背景値→円の内側の値の実測 4 点（黒背景 `0→30`、赤背景 `251→130`・`32→43`・`30→42`。いずれも 1 チャンネルの値）を `結果 = (1-α)×背景 + α×色` に当てはめた（α=0.60、色=50.0、誤差 0.2 以下）。別の状態として α=0.8（色は同じ 50）の表示も観測されたが、採用しない（意思決定済み） |
+| 再生記号の形        | 右向きの二等辺三角形。頂点は外接矩形内の `(0,0)`・`(0,H)`・`(W,H/2)`。`W = 20`・`H = 25` | 外接矩形 40×50px                                                                                                                                                                                                                                                                |
+| 再生記号の色        | `#FFFFFF`（不透明）                                                                      | 実測 `rgb(255,255,255)`                                                                                                                                                                                                                                                         |
+| 再生記号の位置      | 外接矩形の中心を、円の中心から右へ `2.5` ずらす（垂直は中心一致）                        | 円の中心 (69.5, 64)・記号の中心 (74.5, 64.5)                                                                                                                                                                                                                                    |
 
 検証時の許容誤差は、色は各チャンネル ±6（JPEG 圧縮と補間のため）、位置・寸法は ±2 デバイスピクセルとする。
 
@@ -629,15 +623,12 @@ if (overlay) {
 
 visual は X のカードで幅 `506` CSS px 前後に縮小表示されるため、描画時に `S = 1200 / 506`（≈ 2.3715）を CSS px の値に掛けて換算する。これにより X 上での見た目が、実測した CSS px の大きさになる。
 
-| 要素                        | visual（1200×630）上の寸法（デバイスピクセル、S 倍。小数 1 桁） |
-| --------------------------- | --------------------------------------------------------------- |
-| 円の直径                    | `139.9`                                                         |
-| 再生記号 W×H・右ずらし      | `47.4 × 59.3`・`5.9`                                            |
-| バッジ 高さ・角丸・左右余白 | `47.4`・`9.5`・`21.3`                                           |
-| バッジ 文字サイズ           | `30.8px`                                                        |
-| バッジ 余白（左・下）       | `28.5`                                                          |
+| 要素                   | visual（1200×630）上の寸法（デバイスピクセル、S 倍。小数 1 桁） |
+| ---------------------- | --------------------------------------------------------------- |
+| 円の直径               | `139.9`                                                         |
+| 再生記号 W×H・右ずらし | `47.4 × 59.3`・`5.9`                                            |
 
-**動画の表示領域**は、visual では 1200×630 の画像全体である（`createDefaultThumbnail` が poster を縦横比を保って全面に収まるよう切り抜くため、横長・正方形・縦長のどの動画でも poster が画像全体を占める）。したがって、円の中心は常に `(width/2, height/2) = (600, 315)`、バッジは常に画像の左下隅からの余白で決まり、動画の縦横比に依存しない。UI（`VideoPlayer`・`VideoThumbnail`）では、円は poster コンテナ（`aspect-ratio` で動画の比率に合わせた領域）の中心に置く。
+**動画の表示領域**は、visual では 1200×630 の画像全体である（`createDefaultThumbnail` が poster を縦横比を保って全面に収まるよう切り抜くため、横長・正方形・縦長のどの動画でも poster が画像全体を占める）。したがって、円の中心は常に `(width/2, height/2) = (600, 315)`、動画の縦横比に依存しない。UI（`VideoPlayer`・`VideoThumbnail`）では、円は poster コンテナ（`aspect-ratio` で動画の比率に合わせた領域）の中心に置く。
 
 UI（`VideoPlayer`・`VideoThumbnail`）の再生ボタンは `VideoPlayButton`（`src/components/video/VideoPlayButton/index.tsx`）に実装し、同じ数値を **S = 1** の CSS px で使う（直径 59px の円、`<svg width="20" height="25">` の `<polygon points="0,0 0,25 20,12.5" fill="#fff">` を円の中心から右へ 2.5px ずらして配置）。数値は `videoOverlay.ts` の定数 `VIDEO_OVERLAY_SPEC` を唯一の定義とし、`VideoPlayButton` も同定数を参照する。
 
@@ -652,24 +643,9 @@ export const VIDEO_OVERLAY_SPEC = {
   triangleHeight: 25,
   triangleFill: "#ffffff",
   triangleOffsetX: 2.5,
-  badgeHeight: 20,
-  badgePaddingX: 9,
-  badgeRadius: 4,
-  badgeFill: "rgba(0, 0, 0, 0.8)",
-  badgeTextColor: "#ffffff",
-  badgeFontSize: 13,
-  badgeFontWeight: 700,
-  badgeMarginLeft: 12,
-  badgeMarginBottom: 12,
   /** CSS px → visual のデバイスピクセルへの換算基準幅 */
   referenceCardWidth: 506,
 } as const
-
-/** 秒数を `m:ss`（分は桁揃えなし、秒は2桁）へ整形する。四捨五入し、最小 `0:01`。例: 5 → "0:05"、600 → "10:00" */
-export const formatVideoDuration = (sec: number): string => {
-  const total = Math.max(1, Math.round(sec))
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`
-}
 
 /**
  * `composeThumbnailBlob` の描画後に呼ばれるオーバーレイ描画関数を返す。
@@ -677,21 +653,19 @@ export const formatVideoDuration = (sec: number): string => {
  * S = TARGET_WIDTH / referenceCardWidth（1200 / 506）を掛けた寸法で描く。
  */
 export const drawVideoOverlay =
-  (durationSec: number) =>
+  () =>
   (context: CanvasRenderingContext2D, scale: number): void => {
     const s = (TARGET_WIDTH / VIDEO_OVERLAY_SPEC.referenceCardWidth) * scale
     const width = TARGET_WIDTH * scale
     const height = TARGET_HEIGHT * scale
     // 1. 円: 中心 (width/2, height/2)、半径 buttonDiameter*s/2、fill buttonFill
     // 2. 三角: 外接矩形の中心 = (cx + triangleOffsetX*s, cy)。頂点 (x0,y0),(x0,y0+H),(x0+W,y0+H/2)、fill triangleFill
-    // 3. バッジ文字: font = `${badgeFontWeight} ${badgeFontSize*s}px sans-serif`、
-    //    textWidth = measureText(formatVideoDuration(durationSec)).width
-    //    バッジ幅 = textWidth + 2*badgePaddingX*s、高さ = badgeHeight*s
-    //    左 = badgeMarginLeft*s、下端 = height - badgeMarginBottom*s
-    //    角丸矩形（badgeRadius*s）を badgeFill で塗り、文字を badgeTextColor で
-    //    textAlign="center"・textBaseline="middle" としてバッジ中央に描く
   }
 ```
+
+#### 6.5.4 再生時間（heading）
+
+`formatVideoDuration`（`src/lib/video/formatVideoDuration.ts`。四捨五入、最小 `0:01`）で `m:ss`（1時間以上は `h:mm:ss`）に整形し、`buildEntryText({ userName, postText, videoDurationSec })` が動画投稿のとき heading にする（未指定なら投稿者名）。再生時間の取得元は、投稿時が `VideoEntry.durationSec`（`submitThread`）、事後作成が `createPostVisualBlob` の戻り値 `{ blob, videoDurationSec }` である。
 
 `src/lib/image/postImageProcessing.ts` を次のように拡張する（既存の呼び出しは第2引数なしで従来どおり動く）。
 
@@ -775,7 +749,7 @@ Timeline 用の静的表示。`<img src=thumbnailUrl alt=alt>` の中央に `Vid
 
 - `hasImages` を `hasEntryMedia(visualSource)` に変更する。
 - visual の素材取得: `visualSource.video` がある場合は、`fetch(video.thumbnailUrl)`（CORS `*`）で Blob を取得し、object URL を `createDefaultThumbnail([url])` に渡す。画像の場合は従来どおり `getBskyImage`（同一オリジンプロキシ）経由。取得失敗は既存の `createError` の経路（`setCreateError("post.entry.createFailed")`）で扱う。
-- 再生時間バッジに使う動画の長さは、HLS プレイリストから取得する（投稿レコードには長さが無いため）。`src/lib/video/fetchVideoDuration.ts`:
+- entry の heading（再生時間）に使う動画の長さは、HLS プレイリストから取得する（投稿レコードには長さが無いため）。`src/lib/video/fetchVideoDuration.ts`:
 
 ```ts
 /**
@@ -801,7 +775,7 @@ export const fetchVideoDurationSec = async (
 }
 ```
 
-`createEntryFromPost` は、`visualSource.video` がある場合、`fetchVideoDurationSec(video.playlistUrl)` と poster 取得を並行して行い、`createDefaultThumbnail([posterUrl], drawVideoOverlay(durationSec))` に渡す。どちらかが throw したら既存の `setCreateError("post.entry.createFailed")` の経路で失敗とし、`createEntry` API は呼ばない。
+`createEntryFromPost` は、`visualSource.video` がある場合、`fetchVideoDurationSec(video.playlistUrl)` と poster 取得を並行して行い、`createDefaultThumbnail([posterUrl], drawVideoOverlay())`（`durationSec` は heading 用に呼び出し側へ返す） に渡す。どちらかが throw したら既存の `setCreateError("post.entry.createFailed")` の経路で失敗とし、`createEntry` API は呼ばない。
 
 - `createDefaultThumbnail` は `<img>` を object URL から読み込むため、`thumbnail.jpg` の `content-type` が `application/octet-stream` であっても、`fetch` した Blob の `type` が空の場合は `new Blob([blob], { type: "image/jpeg" })` に作り直して渡す。
 

@@ -70,7 +70,7 @@ afterEach(() => {
 describe("createPostVisualBlob（動画投稿）", () => {
     it("thumbnail.jpg と playlist.m3u8 を取得し、overlay 付きで createDefaultThumbnail を呼ぶ", async () => {
         const fetchMock = stubFetch(okResponses())
-        const blob = await createPostVisualBlob(videoPost)
+        const { blob, videoDurationSec } = await createPostVisualBlob(videoPost)
 
         const urls = fetchMock.mock.calls.map(call => call[0])
         expect(urls).toContain(THUMBNAIL)
@@ -80,6 +80,7 @@ describe("createPostVisualBlob（動画投稿）", () => {
         expect(objectUrls).toEqual(["blob:poster"])
         expect(typeof overlay).toBe("function")
         expect(blob).toBeInstanceOf(Blob)
+        expect(videoDurationSec).toBe(6.5)
         expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:poster")
         expect(getBskyImage).not.toHaveBeenCalled()
     })

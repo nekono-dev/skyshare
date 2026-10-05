@@ -241,7 +241,8 @@ export const submitThread = async (
         entryText = buildEntryText({
             userName,
             postText: segments[0].text,
-            isVideo: !!segments[entryCandidateIndex].videoEntry,
+            videoDurationSec:
+                segments[entryCandidateIndex].videoEntry?.durationSec,
         })
     }
 

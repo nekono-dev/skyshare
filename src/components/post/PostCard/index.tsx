@@ -23,7 +23,7 @@ import { useWebShareCrosspost } from "./useWebShareCrosspost"
 import { parseAtUri, skyshareEntryPath } from "@/lib/entry/url"
 import Loading from "@/components/common/Loading"
 import PostCardEntryActions from "@/components/post/PostCardEntryActions"
-import SkyshareShareDialog from "@/components/post/SkyshareShareDialog"
+import IntentShareDialog from "@/components/post/IntentShareDialog"
 import EntryDeleteConfirmDialog from "@/components/entry/EntryDeleteConfirmDialog"
 import blueskyIcon from "@/images/bluesky.svg"
 import shareIcon from "@/images/share.svg"
@@ -137,7 +137,7 @@ const Component = ({
   } = useWebShareCrosspost(item, entryWebUrl ?? null, guestMode)
 
   // ページ内リンクは entry 自身の AT URI から直接パスを組み立てる（常に相対パス）。
-  // X共有（SkyshareShareDialog）は外部サービスへの絶対URLが必要なため、
+  // X共有（IntentShareDialog）は外部サービスへの絶対URLが必要なため、
   // そちらは本番ドメイン固定で生成された entryWebUrl をそのまま渡す。
   // ゲストモードのダミーEntryはPDS上に実レコードを持たないため、AT URIから
   // 算出するパスの代わりに、実際に閲覧できるサンプルEntryページのパス
@@ -285,10 +285,16 @@ const Component = ({
         <Loading overlay message={t("post.card.loadingImages")} />
       ) : null}
 
-      <SkyshareShareDialog
-        open={shareDialogOpen}
-        postText={item.text}
-        entryUrl={entryWebUrl ?? null}
+      <IntentShareDialog
+        request={
+          shareDialogOpen
+            ? {
+                postText: item.text,
+                entryUrl: entryWebUrl ?? null,
+                linkCardUrl: "",
+              }
+            : null
+        }
         onClose={() => setShareDialogOpen(false)}
       />
 

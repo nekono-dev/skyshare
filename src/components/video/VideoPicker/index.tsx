@@ -44,7 +44,7 @@ import icon from "@/images/video.svg"
  *
  * 責務と処理概要:
  * - 画像追加ボタンとは独立した、動画専用の追加ボタンを描画する。
- * - 選択直後に形式・サイズ・長さを検査し、poster と visual（再生ボタン・再生時間バッジ入り）
+ * - 選択直後に形式・サイズ・長さを検査し、poster と visual（再生ボタン入り）
  *   を生成して親へ `VideoEntry` を通知し、ブラウザから動画サービスへ直接アップロードする。
  * - 進捗・完了・失敗は `VideoEntry.upload` で親へ通知する。失敗は動画の状態に閉じ、
  *   segment の他の入力には触れない。
@@ -193,7 +193,7 @@ export const Component = forwardRef<VideoPickerHandle, Props>(
         posterPreview = URL.createObjectURL(probe.posterBlob)
         const thumbnailBlob = await createDefaultThumbnail(
           [posterPreview],
-          drawVideoOverlay(probe.durationSec),
+          drawVideoOverlay(),
         )
         thumbnailPreview = URL.createObjectURL(thumbnailBlob)
         const posterSize = await loadImageSize(posterPreview)
@@ -247,7 +247,7 @@ export const Component = forwardRef<VideoPickerHandle, Props>(
       },
     }))
 
-    /** 調整ダイアログの確定結果（切り抜き状態と、再生ボタン・バッジ入りの visual）を反映する */
+    /** 調整ダイアログの確定結果（切り抜き状態と、再生ボタン入りの visual）を反映する */
     const handleCropConfirm = (
       _originalBlobs: Blob[],
       thumbnailBlob: Blob,
@@ -343,7 +343,7 @@ export const Component = forwardRef<VideoPickerHandle, Props>(
           <ImageCropDialog
             imageUrls={[value.posterPreview]}
             initialCropStates={[value.cropState]}
-            overlay={drawVideoOverlay(value.durationSec)}
+            overlay={drawVideoOverlay()}
             onCancel={() => setCropDialogOpen(false)}
             onConfirm={handleCropConfirm}
           />

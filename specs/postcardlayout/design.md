@@ -190,14 +190,14 @@ type Props = {
 
 ### 3.5 `EntryDetailView`（`src/components/entry/EntryDetailView/index.astro`、既存を置き換え）
 
-Props: `statusCode`, `notFoundReason`, `heading`, `caption`, `createdAtText`, `sourcePostAvailable`, `visualUrl`, `posts: EntryPostView[]`。
+Props: `statusCode`, `notFoundReason`, `heading`（本文には表示せず画像のaltのみに使う）, `caption`, `createdAtText`, `sourcePostAvailable`, `visualUrl`, `posts: EntryPostView[]`。
 
 `statusCode === 200` のとき、次の構造を描画する。`statusCode !== 200` のエラーペインは現行の `error-pane` をそのまま維持する。`<footer class="page-footer">` は `statusCode` に関わらず、`EntryDetailView` の最後の要素として常に描画する（FR-9）。`<body>` が `max-height: 100dvh` の flex column であるため、`.page-footer` には `flex-shrink: 0` を指定する。
 
 ```
 <article>
   <section class="header-card">          <!-- ui["base-card"] 相当の枠 -->
-    <h1>{heading}</h1> + Entryのカード画像（View。拡大表示なし）
+    Entryのカード画像（View。拡大表示なし）
     caption があれば <p>
     <dl> 投稿日時: {createdAtText}
     !sourcePostAvailable のとき 「元の投稿は削除されているため…」案内文
