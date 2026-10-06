@@ -47,10 +47,12 @@ export const pickLocaleFromLanguages = (langs: readonly string[]): Locale | unde
 // Accept-Language ヘッダ文字列 → 言語配列(q降順、q=0除外)
 export const parseAcceptLanguage = (header: string | null): string[]
 
-// 優先順位: 保存済み設定 → ブラウザ言語 → DEFAULT_LOCALE
+// 優先順位: 保存済み設定 → ブラウザ言語 → フォールバック
+// フォールバック: ブラウザ言語が空なら DEFAULT_LOCALE(ja)、あるが非対応のみなら UNSUPPORTED_LANGUAGE_LOCALE(en)
 export const resolveLocale = (storedValue: string | null | undefined, languages: readonly string[]): Locale => {
   if (isLocale(storedValue)) return storedValue
-  return pickLocaleFromLanguages(languages) ?? DEFAULT_LOCALE
+  if (languages.length === 0) return DEFAULT_LOCALE
+  return pickLocaleFromLanguages(languages) ?? UNSUPPORTED_LANGUAGE_LOCALE
 }
 ```
 

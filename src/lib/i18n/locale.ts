@@ -15,6 +15,9 @@ export type LocaleSetting = Locale | "system"
 
 export const DEFAULT_LOCALE: Locale = "ja"
 
+/** ブラウザ言語が設定されているが対応言語に一致しない場合の表示言語。 */
+export const UNSUPPORTED_LANGUAGE_LOCALE: Locale = "en"
+
 /**
  * 値が対応言語かを判定する。
  *
@@ -97,7 +100,11 @@ export const pickLocaleFromLanguages = (
 }
 
 /**
- * 表示言語を決定する。優先順位は 保存済み設定 → ブラウザ言語 → 既定（日本語）。
+ * 表示言語を決定する。優先順位は 保存済み設定 → ブラウザ言語 → フォールバック。
+ *
+ * 処理の趣旨:
+ * - ブラウザ言語が1つも得られない（空配列）場合は既定言語（日本語）にする。
+ * - ブラウザ言語はあるが対応言語に1つも一致しない場合は、英語にする。
  *
  * Input:
  * - `storedValue`: 保存済みの言語設定（未保存・不正値は無視される）
@@ -109,11 +116,15 @@ export const pickLocaleFromLanguages = (
  * 例:
  * - 入力: `(null, ["en-US"])` → 出力: `"en"`
  * - 入力: `("ja", ["en-US"])` → 出力: `"ja"`
+ * - 入力: `(null, ["fr-FR"])` → 出力: `"en"`
+ * - 入力: `(null, [])` → 出力: `"ja"`
  */
 export const resolveLocale = (
     storedValue: string | null | undefined,
     languages: readonly string[],
 ): Locale => {
     if (isLocale(storedValue)) return storedValue
-    return pickLocaleFromLanguages(languages) ?? DEFAULT_LOCALE
+    // ブラウザ言語が未設定なら既定言語、設定はあるが非対応言語のみなら英語
+    if (languages.length === 0) return DEFAULT_LOCALE
+    return pickLocaleFromLanguages(languages) ?? UNSUPPORTED_LANGUAGE_LOCALE
 }

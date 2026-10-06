@@ -59,8 +59,11 @@ describe("resolveLocale", () => {
         expect(resolveLocale(undefined, ["en-US"])).toBe("en")
         expect(resolveLocale("fr", ["en-US"])).toBe("en")
     })
-    it("どれも一致しなければ日本語", () => {
-        expect(resolveLocale(null, ["fr"])).toBe("ja")
+    it("ブラウザ言語が非対応言語のみなら英語", () => {
+        expect(resolveLocale(null, ["fr"])).toBe("en")
+        expect(resolveLocale(null, ["fr-FR", "de"])).toBe("en")
+    })
+    it("ブラウザ言語が未設定なら日本語", () => {
         expect(resolveLocale(null, [])).toBe("ja")
     })
 })
