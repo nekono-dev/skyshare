@@ -53,7 +53,7 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       # lexicon の lint（goat）。リリースのチェックサムを検証してから導入する
-      - name: goat を導入
+      - name: Run goat lint
         env:
           GOAT_VERSION: 0.2.5
         run: |
@@ -78,13 +78,13 @@ jobs:
           cache: npm
       - run: npm ci
       # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
-      - name: デプロイ設定を生成
+      - name: Configure build setting
         run: node hack/render-deploy-config.mjs
-      - name: ビルド
+      - name: Run build
         run: npm run build
-      - name: wrangler 検証（dry-run）
+      - name: Dry run cloudflare deploy
         run: npx wrangler deploy --dry-run
-      - name: デプロイ
+      - name: Deploy cloudflare worker
         if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
         run: npx wrangler deploy
         env:
