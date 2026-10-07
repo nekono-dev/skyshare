@@ -1,0 +1,81 @@
+# develop ブランチへの push をトリガーに、Cloudflare Workers へ自動デプロイする。
+#
+# 必要な設定は DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
+# - Secrets:   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
+# - Variables: PUBLIC_LEGACY_BACKEND_ENDPOINT / PUBLIC_DEFAULT_ATP_SERVICE / PUBLIC_NODE_ENV /
+#              PUBLIC_OGP_EXTRACTOR_API / PUBLIC_PLC_DIRECTORY_BASE_URL
+# 手動実行（workflow_dispatch）で dry_run を true にすると、ビルドと wrangler の検証のみ行い、公開はしない。
+name: deploy
+
+on:
+  push:
+    branches: [develop,main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "デプロイせずビルドと検証のみ行う"
+        type: boolean
+        default: true
+
+# 同一ブランチのデプロイが同時に走らないようにする。デプロイ中の処理は中断せず、後続を待たせる
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_LEGACY_BACKEND_ENDPOINT: ${{ vars.PUBLIC_LEGACY_BACKEND_ENDPOINT }}
+  PUBLIC_DEFAULT_ATP_SERVICE: ${{ vars.PUBLIC_DEFAULT_ATP_SERVICE }}
+  PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
+  PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
+  PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
+
+jobs:
+  # テストと型検査。失敗した場合はデプロイしない
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（AGENTS.md 参照）
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      # src/client 配下の生成コード（atproto / openapi）を作る。型検査とテストの前提
+      - run: npm run codegen
+      - run: npx tsc --noEmit
+      - run: npm test
+
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
+      - name: デプロイ設定を生成
+        run: node hack/render-deploy-config.mjs
+      - name: ビルド
+        run: npm run build
+      - name: wrangler 検証（dry-run）
+        run: npx wrangler deploy --dry-run
+      - name: デプロイ
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

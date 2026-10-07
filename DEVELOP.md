@@ -38,6 +38,22 @@ npm run build
 npm run deploy
 ```
 
+## CI/CD（GitHub Actions）
+
+`develop` ブランチへの push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査を通過した場合のみ Cloudflare Workers へデプロイする。`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
+
+| 種別     | 名前                             | 内容                                         |
+| -------- | -------------------------------- | -------------------------------------------- |
+| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン    |
+| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                    |
+| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント             |
+| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                             |
+| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
+| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
+| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
+
+手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
+
 ## PRブランチの動作確認（部分リリース）
 
 ```sh

@@ -340,7 +340,7 @@ describe("submitThread（動画）", () => {
         })
         const imageBody = vi.mocked(createEntry).mock
             .calls[1][0] as SubmitThreadBody
-        expect(imageBody.heading).toBe("Alice")
+        expect(imageBody.heading).toBe("Alice | Skyshare")
         expect(imageBody.caption).toBe("画像です")
     })
 
