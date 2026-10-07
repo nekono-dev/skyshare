@@ -28,7 +28,7 @@
 ## Phase 4: コード生成手順と手順書
 
 - [x] `src/client/atproto/` に手書きファイルが無いことを `git status`・差分で確認する。
-- [x] `hack/gen-client.sh` を設計 4 のとおり改修する。
+- [x] `hack/gen-client.sh` を設計 4 のとおり改修する。（後に廃止。下記 Phase 6）
 - [x] `lexicons/README.md` に設計 6 のドメイン変更手順を追記する。
 - [x] テスト: `npm run lexgen` を実行し、生成物が現行 NSID のまま再現される（差分が出ない、または機械的な差分のみ）ことを確認する。`entry.json` が0個・複数個の場合にスクリプトがエラー終了することを確認する。
 
@@ -38,3 +38,12 @@
 - [x] コピー上で `npm run lexgen`・`npx tsc --noEmit`・`npx vitest run`・`npx astro build`（`_legacy` のビルドは NSID と無関係のため除く）を実行し、アプリケーションコードの編集なしで全て成功することを確認する。
 - [x] 旧 NSID のディレクトリが `src/client/atproto/types/` に残存しないことを確認する。
 - [x] テスト: 上記の実行結果をもって受け入れ条件を満たすことを確認する。確認用コピーは削除する。
+
+## Phase 6: クライアント生成の廃止と lexicon 検証テスト
+
+- [x] `hack/gen-client.sh` と `npm run lexgen` を廃止し、`codegen` から外す。
+- [x] `@atproto/lexicon` を devDependencies に追加する。
+- [x] `tests/lexicons/lexicons.test.ts` を設計 4 のとおり作成する。
+- [x] `lexicons/README.md`・`openapi/README.md`・`src/client/README.md` を更新する。
+- [x] `hack/lint-lexicon.sh`（`npm run lint:lexicon`）を追加し、CI の verify ジョブに goat の導入と実行を加える。
+- [x] テスト: クリーンな clone で `npm run codegen`・`npx tsc --noEmit`・`npx vitest run` が成功し、lexicon を壊した場合（`$ref` 不正・`id` 不一致）に `tests/lexicons` が失敗することを確認する。

@@ -16,7 +16,7 @@
 - [x] `useShareToggles.ts`を設計2.3の構成へ作り直す
 - [x] `tests/lib/settings/legacyShareSettings.test.ts`、`tests/lib/settings/shareSettings.test.ts`を追加する
 
-完了確認: `npx vitest run tests/lib/settings` が全件成功すること。`npx tsc --noEmit`で、本機能と無関係な`src/client/atproto/index.ts`の既存エラーを除いて型エラーがないこと。
+完了確認: `npx vitest run tests/lib/settings` が全件成功すること。`npx tsc --noEmit`で型エラーがないこと。
 
 ## Phase 3: 投稿直後の共有処理
 

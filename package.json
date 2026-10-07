@@ -3,11 +3,10 @@
   "type": "module",
   "version": "2.0.0-preview.r09",
   "scripts": {
-    "lexgen": "./hack/gen-client.sh ./src/client/atproto",
     "apigen:doc": "tsx ./hack/build-openapi-document.ts",
     "apigen:client": "orval",
     "apigen": "npm run apigen:doc && npm run apigen:client",
-    "codegen": "npm run lexgen && npm run apigen",
+    "codegen": "npm run apigen",
     "build:pripare": "npm run codegen && npm run format",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
     "build:v2": "PUBLIC_VERSION=$npm_package_version astro build",
@@ -19,6 +18,7 @@
     "format": "prettier --write .",
     "generate-types": "wrangler types",
     "test": "vitest run",
+    "lint:lexicon": "./hack/lint-lexicon.sh",
     "test:watch": "vitest",
     "test:e2e": "npm run dev && playwright test"
   },
@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@atproto/lex-cli": "^0.9.8",
+    "@atproto/lexicon": "^0.7.16",
     "@playwright/test": "^1.63.0",
     "@types/node": "^25.2.0",
     "@types/twitter-text": "*",

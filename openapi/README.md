@@ -25,7 +25,7 @@ src/lib/api/schema/**/*.ts (手書きZod。バリデーション+OpenAPIメタ�
 ## 開発フロー
 
 - 新しいエンドポイントを追加する、または既存のリクエスト/レスポンス形状を変える場合は、`src/lib/api/schema/**`のZodスキーマを直接編集する。
-- `npm run apigen`(`apigen:doc` → `apigen:client`)、または`npm run codegen`(`lexgen` → `apigen`)でOpenAPIドキュメントとフロントエンド用クライアントを再生成する。`npm run dev`/`npm run build`はこれを自動的に実行する。
+- `npm run apigen`(`apigen:doc` → `apigen:client`)、または`npm run codegen`(`apigen`と同じ)でOpenAPIドキュメントとフロントエンド用クライアントを再生成する。`npm run dev`/`npm run build`はこれを自動的に実行する。
 - `src/client/openapi/**`(orval生成物)と`openapi/generated.json`はいずれもgitignore対象。コミットする必要はなく、`npm run codegen`を実行すれば常に最新化される。
 
 # API設計思想・リソース一覧

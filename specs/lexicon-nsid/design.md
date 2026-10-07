@@ -10,11 +10,11 @@ lexicon JSON（`lexicons/<逆順ドメイン>/.../entry.json`）の `id` を唯�
 lexicons/<domain>/**/entry.json ──(import.meta.glob, eager)──▶ src/lib/atproto/nsid.ts
         │ id = "<prefix>.entry"                                   ENTRY_COLLECTION
         │                                                         DEFS_NSID
-        └─(hack/gen-client.sh が find で探索)─▶ src/client/atproto  MANIFEST_TYPE
-                                                  （生成物。アプリからは未使用）  entryAtUri / parseEntryAtUri
+        └─(tests/lexicons/lexicons.test.ts が全 JSON を検証)           MANIFEST_TYPE
+                                                                      entryAtUri / parseEntryAtUri
 ```
 
-- 生成物 `src/client/atproto/` はアプリの手書きコードから import されていないため、参照先として使わない。
+- 型付きクライアント（旧 `src/client/atproto/`、`lex gen-api` の生成物）はアプリの手書きコードから import されておらず、`record` lexicon に対し `com.atproto.repo.*` の型を必須とする副作用があったため、生成を廃止した。
 - `import.meta.glob` はビルド時に解決されるため、Workers ランタイムでファイル読み込みは発生しない（NFR-1）。vitest も Vite の変換を通るため同じコードが動く。
 
 ## 2. NSID モジュール（`src/lib/atproto/nsid.ts`）
@@ -91,30 +91,17 @@ export const parseEntryAtUri = (
 - `app.bsky.*` のリテラルは対象外のため変更しない。
 - 後方互換のための再 export・ラッパーは作らない（v2 はリリース前）。
 
-## 4. コード生成（`hack/gen-client.sh`）
+## 4. lexicon の検証（`tests/lexicons/lexicons.test.ts`）
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-OUTPUT_DIR="${1:-./dev/client/lexicon}"
+`lex gen-api` による型付きクライアント生成（`hack/gen-client.sh`）は廃止した。lexicon の妥当性は `@atproto/lexicon` の `Lexicons` を用いたテストで担保する。
 
-# Skyshare 独自 lexicon のディレクトリは entry.json の位置から特定する
-ENTRY_JSON=$(find ./lexicons -name entry.json)
-[ "$(echo "$ENTRY_JSON" | grep -c .)" -eq 1 ] || {
-  echo "entry.json は1つだけ必要です" >&2
-  exit 1
-}
-APP_LEXICON_DIR=$(dirname "$ENTRY_JSON")
-
-# 旧 NSID 由来の生成物を残さないため、出力先を空にしてから生成する
-rm -rf "$OUTPUT_DIR"
-npx lex gen-api --yes "$OUTPUT_DIR" \
-  "$APP_LEXICON_DIR"/* \
-  ./lexicons/com/atproto/repo/{strongRef,defs,listRecords,getRecord,createRecord,putRecord,deleteRecord}.json
-```
-
-- `src/client/atproto/` 配下は全て `lex gen-api` の生成物（`index.ts`・`lexicons.ts`・`types/`・`util.ts`）のため、出力先ごと削除しても再生成で復元される。実施前に `git status` で手書きファイルが無いことを確認する。
-- `com/atproto/repo/*` は仕様上固定のためパスを直書きのまま維持する。
+- `import.meta.glob("/lexicons/**/*.json")` で全 lexicon を読み込む。ドメイン・ファイル構成に依存しない。
+- `new Lexicons(docs)` でスキーマ構文を検証し、全 def と、entry が参照する `com.atproto.repo.strongRef`・`<prefix>.defs#manifest` の解決を確認する。
+- ファイルパスと `id` の対応、`id` の重複なしを確認する。
+- entry レコードの正例（受理）と負例（必須欠落・文字数超過）を `assertValidRecord` で確認する。
+- `strongRef.json` は atproto サブモジュールへの symlink のため、サブモジュール未取得もこのテストで検知される。
+- 上記に加え、goat（`goat lex lint`、`npm run lint:lexicon`）で record key・NSID の文字種・description などの仕様適合を検証する。CI の verify ジョブでは vitest と両方実行する。
+- `entry.json` が 0 件・複数件の場合は `nsid.ts` がビルド時・テスト時に例外とする（FR-3）。
 
 ## 5. テスト
 
@@ -142,7 +129,7 @@ npx lex gen-api --yes "$OUTPUT_DIR" \
 
 1. `lexicons/` 配下のディレクトリを新ドメインの逆順構造へ移動する（例: `lexicons/com/example/myapp/`）。
 2. `entry.json`・`defs.json` の `id`、および `entry.json` 内の `manifest` の `ref`（`<prefix>.defs#manifest`）を新 NSID に書き換える。
-3. `npm run lexgen` でクライアントコードを再生成する。
+3. `npm test` で lexicon を検証する。
 4. `goat lex lint` で検証し、DNS TXT レコード（`_lexicon.<authority>`）の設定と `goat lex publish` を行う（アプリの責務外）。
 5. 旧 NSID の既存レコードは自動では移行されない。
 
