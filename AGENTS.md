@@ -14,6 +14,10 @@
   - 1エンドポイントにつきスキーマは1つ。バリデーション用とOpenAPIドキュメント生成用でスキーマを分けないこと（multipart+anyOfのような複雑なケースでも例外にしない）。
   - 共通のエラーレスポンス（400/401/404/429/500等）は `Common.errorResponses(statuses, schema?)` を `operation.responses` にスプレッドし、`ResponseBody400Schema = Common.CommonErrorSchema` のような重複定義を書かないこと。
   - スキーマの書き方・ディレクトリ構成・multipart+anyOfの扱い方の詳細は `openapi/README.md` を参照すること。
+- テスト・型検査（`npm test` / `npx tsc --noEmit`）の前に、CI（`.github/workflows/deploy.yaml`）と同じく次の準備が必要。`lexicons/com/atproto/repo/strongRef.json` は `atproto` サブモジュールへのシンボリックリンクであり、`src/client/` 配下は `npm run codegen` の生成物で git 管理外のため、準備を欠くとテストが失敗する。Claude Code のクラウドセッションでは `.claude/hooks/session-start.sh` が開始時に自動実行する。
+  - `git submodule update --init --depth 1 atproto`
+  - `npm install`（CI では `npm ci`）
+  - `npm run codegen`
 
 # ブランチ・プレビューの規則
 
