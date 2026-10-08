@@ -3,7 +3,7 @@
  * 実行、投稿先選択ダイアログの要否・ステータスメッセージの決定）を担うモジュール。
  *
  * 責務と処理概要:
- * - `spec.submitButton.md` に定義された、共有系設定（WebShareの代わりにポップアップを開く・
+ * - `specs/auto-popup` に定義された、共有系設定（WebShareの代わりにポップアップを開く・
  *   自動ポップアップするSNS・画像を自分で添付・長文を省略して共有）の組み合わせに応じた
  *   自動ポップアップ/WebShareAPI/投稿先選択ダイアログの分岐ロジックを集約する。
  * - Reactのstateには一切触れず、実行結果を `ShareDispatchResult` として返すのみ。
@@ -135,7 +135,7 @@ const buildWebShareData = ({
 /**
  * 投稿成功後の共有ディスパッチを実行する。
  *
- * 処理の趣旨（spec.submitButton.md 準拠）:
+ * 処理の趣旨（`specs/auto-popup` 準拠）:
  * - PopupIntentInsteadOfWebshare がONの場合、AutoPopupTarget に従う。
  *   "ask"、または "mastodon" でインスタンスドメインが不正な場合は、ポップアップを開かず
  *   投稿先選択ダイアログを開く。X/タイッツー/Mastodon が選ばれていれば、そのSNSの

@@ -48,7 +48,7 @@ export type UseSkyshareEntryStatusResult = {
     createError: PlainMessageKey | null
     deleteError: PlainMessageKey | null
     isDeleteDialogOpen: boolean
-    /** `resolveEntryDeleteScope`による削除範囲判定の実行中フラグ（`specs/timeline/design.md §7`） */
+    /** `resolveEntryDeleteScope`による削除範囲判定の実行中フラグ（`specs/timeline`） */
     isResolvingDeleteScope: boolean
     /** 削除確認ダイアログに渡す削除範囲の判定結果 */
     deleteScope: EntryDeleteScope
@@ -66,27 +66,27 @@ type Options = {
      * リンクのみ削除（deleteBskyPost=false）の場合は呼ばれない
      * （元投稿はTimelineに残り続けるため）。
      * Timelineのページング対象アイテムはスレッドグループ単位のため
-     * （`specs/timeline/design.md §4`）、呼び出し元（`ThreadCard`）は常に
+     * （`specs/timeline`）、呼び出し元（`ThreadCard`）は常に
      * そのスレッドグループ全体を一覧から除去する。
      */
     onPostDeleted?: () => void
     /**
      * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿。
      * `ThreadCard`がスレッドのルート投稿向けに、ルートに最も近い画像付き投稿
-     * （`resolveEntryVisualSourcePost`）を渡す用途（`specs/timeline/design.md §5`）。
+     * （`resolveEntryVisualSourcePost`）を渡す用途（`specs/timeline`）。
      * 未指定時は`item`自身が対象になる（単独投稿・従来通りの挙動）。
      */
     visualSourcePost?: TimelinePost
     /**
      * 作成するentryの`source`にする投稿。APIへ送信する`uri`に使う
      * （Visual取得元とは独立。サーバは`source`の自動解決を行わないため、
-     * `ThreadCard`がスレッドのルート投稿を明示的に渡す。`specs/timeline/design.md §5`）。
+     * `ThreadCard`がスレッドのルート投稿を明示的に渡す。`specs/timeline`）。
      * 未指定時は`item`自身（単独投稿・従来通りの挙動）。
      */
     sourcePost?: TimelinePost
     /**
      * ゲスト表示。削除範囲の判定・削除の実行をアプリ内で模擬し、通信は行わない
-     * （`specs/entry/frontend/design.md §3.4.4`）。
+     * （`specs/entry-delete-dialog`）。
      */
     guestMode?: boolean
 }
@@ -232,9 +232,9 @@ export const useSkyshareEntryStatus = (
      * Entry削除確認ダイアログを開く。
      *
      * 処理の趣旨:
-     * - `resolveEntryDeleteScope`（`specs/entry/frontend/design.md §3.4`と共通のロジック）で
+     * - `resolveEntryDeleteScope`（`specs/entry-delete-dialog`と共通のロジック）で
      *   「リンク・Bluesky投稿を削除」の可否・削除件数を判定し、`deleteScope`を確定させて
-     *   からダイアログを開く（`specs/timeline/design.md §7`、`EntryCard`の
+     *   からダイアログを開く（`specs/timeline`、`EntryCard`の
      *   `openDeleteDialog`と同じ方針）。ゲスト表示では通信せず`resolveGuestDeleteScope`で判定する。
      * - 判定中は`isResolvingDeleteScope`をtrueにし、連打による多重判定を防ぐ。
      *

@@ -40,12 +40,12 @@ describe("readAutoPopupTargetSetting / writeAutoPopupTargetSetting", () => {
         expect(readAutoPopupTargetSetting("x")).toBe("x")
     })
 
-    it("未設定時は defaultValue を返す", () => {
+    it("[share-settings/AC-2] 未設定時は defaultValue を返す", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         expect(readAutoPopupTargetSetting("x")).toBe("x")
     })
 
-    it("保存した値を読み取れる", () => {
+    it("[share-settings/AC-1] 保存した値を読み取れる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         writeAutoPopupTargetSetting("ask")
         expect(readAutoPopupTargetSetting("x")).toBe("ask")
@@ -58,7 +58,7 @@ describe("readAutoPopupTargetSetting / writeAutoPopupTargetSetting", () => {
         expect(readAutoPopupTargetSetting("x")).toBe("x")
     })
 
-    it("旧設定のみが保存されている場合は引き継いだ値を返し、旧キーを削除する", () => {
+    it("[share-settings/AC-6] 旧設定のみが保存されている場合は引き継いだ値を返し、旧キーを削除する", () => {
         const localStorage = createMemoryLocalStorage()
         localStorage.setItem("crosspostToMastodon", "true")
         localStorage.setItem("showCrosspostXButton", "true")
@@ -69,7 +69,7 @@ describe("readAutoPopupTargetSetting / writeAutoPopupTargetSetting", () => {
         expect(localStorage.getItem("autoPopupTarget")).toBe("ask")
     })
 
-    it("localStorage が例外を投げる環境では defaultValue を返し、書き込みも例外を投げない", () => {
+    it("[share-settings/AC-9] localStorage が例外を投げる環境では defaultValue を返し、書き込みも例外を投げない", () => {
         vi.stubGlobal("window", {
             localStorage: {
                 getItem: () => {

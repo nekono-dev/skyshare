@@ -8,14 +8,14 @@
  *   このテスト環境では直接検証できない（実アカウントでの確認は手動確認タスクとして
  *   別途残す）。ここでは`entries/sample.astro`（スレッド表示、`[slug].astro`と同じ`EntryDetailView`を
  *   描画するサンプルページ）を用いて、コンポーネント自体の描画を検証する。
- * - `specs/entry/frontend/requirements.md`の受け入れ条件のうち、「先頭から後続投稿まで
+ * - `specs/entry-detail`の受け入れ条件のうち、「先頭から後続投稿まで
  *   時系列順にすべて表示される」
  *   実ブラウザでのレンダリング結果として確認する。
  */
 import { expect, test } from "@playwright/test"
 
 test.describe("entry詳細ページのスレッド表示", () => {
-    test("スレッド由来entryのサンプルページで、先頭から末尾まで時系列順にすべて表示される", async ({
+    test("[entry-detail/AC-4] スレッド由来entryのサンプルページで、先頭から末尾まで時系列順にすべて表示される", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")

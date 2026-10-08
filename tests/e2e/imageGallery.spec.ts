@@ -1,6 +1,6 @@
 /**
  * 画像サムネイル（`ImageGallery`）と拡大表示（`ImageLightbox`）のヘッドレスブラウザによる動作確認
- * （specs/postcardlayout FR-3・FR-4・NFR-2）。
+ * （specs/image-gallery）。
  *
  * - `entries/sample/` の投稿のうち、画像付きの3投稿（画像1・3・5枚）を使う。
  */
@@ -14,7 +14,9 @@ const gotoThread = async (page: Page) => {
 const card = (page: Page, text: string) => page.locator("li", { hasText: text })
 
 test.describe("サムネイルのレイアウト", () => {
-    test("1枚はクランプ済みの縦横比で object-fit: cover", async ({ page }) => {
+    test("[image-gallery/AC-1] 1枚はクランプ済みの縦横比で object-fit: cover", async ({
+        page,
+    }) => {
         await gotoThread(page)
         const button = card(page, "スレッド1件目").getByRole("button", {
             name: "画像1/1を拡大",
@@ -24,7 +26,9 @@ test.describe("サムネイルのレイアウト", () => {
         await expect(button.locator("img")).toHaveCSS("object-fit", "cover")
     })
 
-    test("3枚は 2:1 のコンテナで左1枚・右2枚", async ({ page }) => {
+    test("[image-gallery/AC-2] 3枚は 2:1 のコンテナで左1枚・右2枚", async ({
+        page,
+    }) => {
         await gotoThread(page)
         const buttons = card(page, "スレッド2件目").getByRole("button", {
             name: /を拡大/,
@@ -40,7 +44,9 @@ test.describe("サムネイルのレイアウト", () => {
         expect(c!.y).toBeGreaterThan(b!.y)
     })
 
-    test("5枚は高さ固定の横スクロールで縦横比を維持する", async ({ page }) => {
+    test("[image-gallery/AC-3] 5枚は高さ固定の横スクロールで縦横比を維持する", async ({
+        page,
+    }) => {
         // 5枚の合計幅がカード幅を超える幅（モバイル幅）で確認する
         await page.setViewportSize({ width: 480, height: 900 })
         await gotoThread(page)
@@ -64,7 +70,7 @@ test.describe("サムネイルのレイアウト", () => {
 })
 
 test.describe("拡大表示", () => {
-    test("開く・矢印キーで切り替え・位置表示・先頭で前ボタン無効", async ({
+    test("[image-gallery/AC-5 image-gallery/AC-6 image-gallery/AC-7] 開く・矢印キーで切り替え・位置表示・先頭で前ボタン無効", async ({
         page,
     }) => {
         await gotoThread(page)
@@ -86,7 +92,7 @@ test.describe("拡大表示", () => {
         await expect(dialog.getByText("2/3")).toBeVisible()
     })
 
-    test("スワイプで次の画像になる", async ({ page }) => {
+    test("[image-gallery/AC-6] スワイプで次の画像になる", async ({ page }) => {
         await gotoThread(page)
         await card(page, "スレッド2件目")
             .getByRole("button", { name: "画像1/3を拡大" })
@@ -144,7 +150,7 @@ test.describe("拡大表示", () => {
     })
 
     for (const how of ["閉じるボタン", "Esc", "背景クリック"] as const) {
-        test(`${how}で閉じ、フォーカスが開いたサムネイルへ戻る`, async ({
+        test(`[image-gallery/AC-8 image-gallery/AC-12] ${how}で閉じ、フォーカスが開いたサムネイルへ戻る`, async ({
             page,
         }) => {
             await gotoThread(page)
@@ -163,7 +169,9 @@ test.describe("拡大表示", () => {
         })
     }
 
-    test("拡大表示中は背面がスクロールしない", async ({ page }) => {
+    test("[image-gallery/AC-8] 拡大表示中は背面がスクロールしない", async ({
+        page,
+    }) => {
         await gotoThread(page)
         await card(page, "スレッド3件目")
             .getByRole("button", { name: "画像1/5を拡大" })
@@ -174,7 +182,9 @@ test.describe("拡大表示", () => {
         expect(await page.evaluate(() => window.scrollY)).toBe(before)
     })
 
-    test("1枚の投稿では前後ボタンと位置表示が無い", async ({ page }) => {
+    test("[image-gallery/AC-6] 1枚の投稿では前後ボタンと位置表示が無い", async ({
+        page,
+    }) => {
         await gotoThread(page)
         await card(page, "スレッド1件目")
             .getByRole("button", { name: "画像1/1を拡大" })

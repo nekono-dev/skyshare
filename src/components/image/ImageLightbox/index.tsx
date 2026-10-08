@@ -14,7 +14,7 @@ import styles from "./index.module.css"
  *   離したときに閾値を超えていれば隣へ移動し、満たなければ元の位置へ戻す。
  * - マウント時に閉じるボタンへフォーカスし、Tab を拡大表示内の操作要素だけで巡回させる。
  * - 現在の画像と前後1枚だけをスライドとして描画する（隣の画像はスライド描画により先読みされる）。
- * - 設計: specs/postcardlayout/design.md §3.2
+ * - 設計: specs/image-gallery
  */
 
 type Props = {

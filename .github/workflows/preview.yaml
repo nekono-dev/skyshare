@@ -1,0 +1,114 @@
+# dev/** ブランチへの push をトリガーに、Cloudflare Workers へ「プレビュー用バージョン」をアップロードする。
+#
+# - 本番へは公開しない（wrangler versions upload。デプロイ済みのバージョンは変わらない）
+# - ブランチ名から決めた Preview Alias を付けるため、同じブランチに再 push しても
+#   プレビューURL（https://<alias>-skyshare.<account-subdomain>.workers.dev）は変わらず、中身だけ最新になる
+# - ブランチ名は dev/XXXX（XXXX は小文字英数字とハイフンのみ）のルールに合うものだけが対象
+# - 利用者への案内には、skyshare-preview-domain-proxy 経由の https://dev-XXXX.skyshare.nekono.dev を使う
+# - 発行されたURLはジョブの Summary に出力する
+#
+# 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは .claude/skills/remote-preview）。
+# 前提: wrangler.jsonc の preview_urls が true で、Worker が一度デプロイ済みであること。
+name: preview
+
+on:
+  push:
+    branches: ["dev/**"]
+
+# 同一ブランチのプレビューは最新の push だけ反映すればよいため、古い実行は中断する
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_LEGACY_BACKEND_ENDPOINT: ${{ vars.PUBLIC_LEGACY_BACKEND_ENDPOINT }}
+  PUBLIC_DEFAULT_ATP_SERVICE: ${{ vars.PUBLIC_DEFAULT_ATP_SERVICE }}
+  PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
+  PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
+  PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（AGENTS.md 参照）
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+
+      # ブランチ名（dev/XXXX）から Preview Alias（dev-XXXX）を作る。
+      # ブランチ命名ルール（.claude/skills/remote-preview 参照）: XXXX は小文字英数字とハイフンのみ・先頭末尾はハイフン不可・
+      # 連続ハイフン不可・50文字以内。ルールに合わないブランチは警告を出してプレビューを行わない
+      # （alias は DNS ラベルになるため。Worker名込みで63文字以内に収めるための上限）。
+      - name: Resolve preview alias
+        id: alias
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          if printf '%s' "$BRANCH_NAME" | grep -Eq '^dev/[a-z0-9]+(-[a-z0-9]+)*$' && [ "${#BRANCH_NAME}" -le 54 ]; then
+            alias="dev-${BRANCH_NAME#dev/}"
+            echo "valid=true" >> "$GITHUB_OUTPUT"
+            echo "alias=$alias" >> "$GITHUB_OUTPUT"
+            echo "Preview Alias: $alias"
+          else
+            echo "valid=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ブランチ名 '$BRANCH_NAME' は dev/XXXX（XXXX は小文字英数字とハイフンのみ、50文字以内）のルールに合わないため、プレビューをスキップします"
+          fi
+
+      # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
+      - name: Configure build setting
+        if: steps.alias.outputs.valid == 'true'
+        run: node hack/render-deploy-config.mjs
+      - name: Run build
+        if: steps.alias.outputs.valid == 'true'
+        run: npm run build
+
+      # versions upload は新しい Version を作るだけで、本番のデプロイ状態は変えない
+      - name: Upload preview version
+        if: steps.alias.outputs.valid == 'true'
+        id: upload
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PREVIEW_ALIAS: ${{ steps.alias.outputs.alias }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -o pipefail
+          npx wrangler versions upload \
+            --preview-alias "$PREVIEW_ALIAS" \
+            --tag "${COMMIT_SHA::7}" \
+            --message "preview: $BRANCH_NAME @ ${COMMIT_SHA::7}" \
+            | tee upload.log
+
+      # wrangler の出力から Alias URL を取り出し、Summary に載せる
+      - name: Show preview URL
+        if: steps.alias.outputs.valid == 'true'
+        env:
+          PREVIEW_ALIAS: ${{ steps.alias.outputs.alias }}
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          url="$(grep -Eo 'https://[^ ]+\.workers\.dev' upload.log | grep -F "${PREVIEW_ALIAS}-" | head -n1 || true)"
+          if [ -z "$url" ]; then
+            echo "::warning::wrangler の出力から Preview Alias URL を取得できませんでした。upload.log を確認してください"
+            exit 0
+          fi
+          {
+            echo "### プレビューURL"
+            echo ""
+            echo "- ブランチ: \`$BRANCH_NAME\`"
+            echo "- 案内用URL（nekono.dev）: https://${PREVIEW_ALIAS}.skyshare.nekono.dev"
+            echo "- workers.dev URL（プロキシの転送先）: $url"
+            echo ""
+            echo "同じブランチへ再 push しても URL は変わりません。"
+          } >> "$GITHUB_STEP_SUMMARY"

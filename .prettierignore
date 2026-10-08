@@ -5,3 +5,4 @@ node_modules/**
 astro/**
 _legacy/**
 atproto/**
+.claude/skills/spec-driven-development/references/rules.md

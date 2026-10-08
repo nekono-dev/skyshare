@@ -23,7 +23,7 @@ describe("resolveGalleryLayout", () => {
         })
     })
 
-    it("1枚で極端な縦長は下限、横長は上限にクランプされる", () => {
+    it("[image-gallery/AC-1] 1枚で極端な縦長は下限、横長は上限にクランプされる", () => {
         expect(resolveGalleryLayout([img(1, 10)])).toEqual({
             kind: "grid",
             count: 1,
@@ -36,7 +36,7 @@ describe("resolveGalleryLayout", () => {
         })
     })
 
-    it("1枚で縦横比不明は 3:2", () => {
+    it("[image-gallery/AC-1] 1枚で縦横比不明は 3:2", () => {
         expect(resolveGalleryLayout([img()])).toEqual({
             kind: "grid",
             count: 1,

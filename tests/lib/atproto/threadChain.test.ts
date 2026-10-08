@@ -51,7 +51,7 @@ describe("extractOwnedLinearReplyChain", () => {
         ])
     })
 
-    it("第三者の返信は除外する", () => {
+    it("[entry-detail/AC-5] 第三者の返信は除外する", () => {
         const otherReply = makeNode("at://other-reply", otherDid)
         const root = makeNode("at://root", ownerDid, [otherReply])
 
@@ -59,7 +59,7 @@ describe("extractOwnedLinearReplyChain", () => {
         expect(result.map(p => p.uri)).toEqual(["at://root"])
     })
 
-    it("第三者の返信で分岐した先(仮に所有者自身の投稿でも)は除外する", () => {
+    it("[entry-detail/AC-5] 第三者の返信で分岐した先(仮に所有者自身の投稿でも)は除外する", () => {
         const ownedButBranched = makeNode("at://branched", ownerDid)
         const otherReply = makeNode("at://other-reply", otherDid, [
             ownedButBranched,

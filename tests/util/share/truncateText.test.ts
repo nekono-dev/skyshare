@@ -9,7 +9,7 @@ import {
 const URL_TEXT = "https://skyshare.nekono.dev/entries/abc"
 
 describe("weightedLength", () => {
-    it("URLは長さに関わらず重み23、全角は2、半角は1、改行は1で数える", () => {
+    it("[share-text/AC-5] URLは長さに関わらず重み23、全角は2、半角は1、改行は1で数える", () => {
         expect(weightedLength(URL_TEXT)).toBe(23)
         expect(weightedLength(`\n${URL_TEXT}`)).toBe(24)
         expect(weightedLength("あ")).toBe(2)
@@ -18,7 +18,7 @@ describe("weightedLength", () => {
 })
 
 describe("truncateBodyWithSuffix", () => {
-    it("全体が上限以内なら加工しない", () => {
+    it("[share-text/AC-9] 全体が上限以内なら加工しない", () => {
         const result = truncateBodyWithSuffix({
             body: "こんにちは",
             suffix: URL_TEXT,
@@ -51,7 +51,7 @@ describe("truncateBodyWithSuffix", () => {
         ).toEqual({ text: "こんにちは", truncated: false })
     })
 
-    it("上限を超える場合は本文のみを省略し「...」＋改行＋URLで終える", () => {
+    it("[share-text/AC-8] 上限を超える場合は本文のみを省略し「...」＋改行＋URLで終える", () => {
         const result = truncateBodyWithSuffix({
             body: "あ".repeat(200),
             suffix: URL_TEXT,
@@ -78,7 +78,7 @@ describe("truncateBodyWithSuffix", () => {
         expect(result.text).toBe(`${"あ".repeat(126)}...\n${URL_TEXT}`)
     })
 
-    it("絵文字などの結合文字を途中で分断しない", () => {
+    it("[share-text/AC-11] 絵文字などの結合文字を途中で分断しない", () => {
         const family = "👨‍👩‍👧‍👦"
         const result = truncateBodyWithSuffix({
             body: family.repeat(200),
@@ -99,7 +99,7 @@ describe("truncateBodyWithSuffix", () => {
         expect(result.text).toBe(`${"あ".repeat(126)}...\n${URL_TEXT}`)
     })
 
-    it("URLだけで上限近く本文を1文字も残せない場合は省略しない", () => {
+    it("[share-text/AC-10] URLだけで上限近く本文を1文字も残せない場合は省略しない", () => {
         const result = truncateBodyWithSuffix({
             body: "あいう",
             suffix: URL_TEXT,

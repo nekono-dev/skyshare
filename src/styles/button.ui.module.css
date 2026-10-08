@@ -63,7 +63,7 @@
   --btn-padding-y: calc(var(--space-1));
 }
 
-/* スマホ幅(640px未満)は操作領域を一辺44px以上確保する(specs/mobilescale/design.md参照)。
+/* スマホ幅(640px未満)は操作領域を一辺44px以上確保する(specs/design-tokens)。
    上のブロックより後ろに書くことで上書きを有効にする。 */
 @media (max-width: 639px) {
   :root {

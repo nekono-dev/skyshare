@@ -150,7 +150,7 @@
   スマホ幅（640px未満。FooterNav/Sidebarの切替境界と同じ）のみ、フォント・余白・
   ボタン・アイコン・トグルの各トークンを一段大きな値に上書きする。
   各コンポーネントは var() 参照のため個別編集なしで追従する。値の根拠は
-  specs/mobilescale/design.md 参照。色・横幅・アバター寸法は対象外。
+  specs/design-tokens 参照。色・横幅・アバター寸法は対象外。
   ボタン寸法(--size-button-*)は定義側の button.ui.module.css で上書きする
   （import順で後勝ちになるため、こちらに書くと打ち消される）。
 */

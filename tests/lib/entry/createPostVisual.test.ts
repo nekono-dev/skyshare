@@ -68,7 +68,7 @@ afterEach(() => {
 })
 
 describe("createPostVisualBlob（動画投稿）", () => {
-    it("thumbnail.jpg と playlist.m3u8 を取得し、overlay 付きで createDefaultThumbnail を呼ぶ", async () => {
+    it("[entry-visual/AC-9] thumbnail.jpg と playlist.m3u8 を取得し、overlay 付きで createDefaultThumbnail を呼ぶ", async () => {
         const fetchMock = stubFetch(okResponses())
         const { blob, videoDurationSec } = await createPostVisualBlob(videoPost)
 
@@ -92,7 +92,7 @@ describe("createPostVisualBlob（動画投稿）", () => {
         expect(created.type).toBe("image/jpeg")
     })
 
-    it("再生時間を取得できなければ throw し、visual を作らない", async () => {
+    it("[entry-visual/AC-10] 再生時間を取得できなければ throw し、visual を作らない", async () => {
         stubFetch({
             ...okResponses(),
             [PLAYLIST]: new Response("", { status: 404 }),
@@ -112,7 +112,7 @@ describe("createPostVisualBlob（動画投稿）", () => {
 })
 
 describe("createPostVisualBlob（画像投稿）", () => {
-    it("先頭 4 枚だけを取得し、overlay なしで合成する", async () => {
+    it("[entry-visual/AC-9] 先頭 4 枚だけを取得し、overlay なしで合成する", async () => {
         getBskyImage.mockResolvedValue({ status: 200, data: new Blob(["img"]) })
         const images = Array.from({ length: 6 }, (_, i) => ({
             url: `u${i}`,

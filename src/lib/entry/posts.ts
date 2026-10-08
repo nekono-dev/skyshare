@@ -66,7 +66,7 @@ export const hasEntryMedia = (post: TimelinePost): boolean =>
 
 /**
  * Timeline一覧上の1スレッドグループ。`buildTimelineThreads`（`@/lib/entry/timelineThreads`）が
- * バックエンドで権威的に解決・確定させる（`specs/timeline/design.md §1`）。
+ * バックエンドで権威的に解決・確定させる（`specs/timeline-api`）。
  */
 export type ThreadGroup = {
     rootPost: TimelinePost
@@ -264,7 +264,7 @@ export const normalizeTimelinePost = (
 /**
  * `app.bsky.feed.getPostThread`が返す`PostView`を`TimelinePost`へ変換する。
  * `buildTimelineThreads`（`@/lib/entry/timelineThreads`）が、スレッドのroot・返信
- * 双方を権威的に解決する際に使う（`specs/timeline/design.md §2.3`）。
+ * 双方を権威的に解決する際に使う（`specs/timeline-api`）。
  *
  * 処理の趣旨:
  * - `getPostThread`が返す`PostView`には`FeedViewPost.reply`（enriched view）が無いため、

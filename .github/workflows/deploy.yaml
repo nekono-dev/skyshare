@@ -52,6 +52,9 @@ jobs:
       - run: npm run codegen
       - run: npx tsc --noEmit
       - run: npm test
+      # 仕様書チェックスクリプトの自己テストと、specs 配下の仕様書の検証（spec-driven-development スキル）
+      - run: npm run test:spec
+      - run: npm run lint:spec
       # lexicon の lint（goat）。リリースのチェックサムを検証してから導入する
       - name: Run goat lint
         env:

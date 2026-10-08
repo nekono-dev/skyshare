@@ -64,7 +64,7 @@ npm run prev
 
 表示言語は日本語（`ja`）と英語（`en`）に対応している。設定画面の「表示言語」で「システム設定に従う / 日本語 / English」を選べる。選択は localStorage の `uiLocale` に保存され、未選択時はブラウザの言語（`navigator.languages`）、一致しなければ日本語になる。サーバー描画（SSR）ページの初回HTMLは `Accept-Language` で決まり、保存済みの設定との差は初期描画後に切り替わる。SSG（`prerender = true`）のページはビルド時に日本語で出力し、クライアントで言語を確定して書き換える。
 
-実装は外部ライブラリを使わない型付き辞書（`src/lib/i18n/`）で、設計は `specs/i18n/` にある。
+実装は外部ライブラリを使わない型付き辞書（`src/lib/i18n/`）で、設計は `specs/i18n-locale/` と `specs/i18n-messages/` にある。
 
 ### 文言の追加手順
 

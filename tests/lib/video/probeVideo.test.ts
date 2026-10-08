@@ -17,7 +17,7 @@ describe("resolveVideoMimeType", () => {
         expect(resolveVideoMimeType({ type, name })).toBe(type)
     })
 
-    it("MIME が空のときは拡張子（大文字小文字を問わない）で判定する", () => {
+    it("[video-picker/AC-4] MIME が空のときは拡張子（大文字小文字を問わない）で判定する", () => {
         expect(resolveVideoMimeType({ type: "", name: "a.MOV" })).toBe(
             "video/quicktime",
         )
@@ -32,7 +32,7 @@ describe("resolveVideoMimeType", () => {
         ).toBeUndefined()
     })
 
-    it("MIME が対応外なら、拡張子が対応形式でも対応外", () => {
+    it("[video-picker/AC-4] MIME が対応外なら、拡張子が対応形式でも対応外", () => {
         expect(
             resolveVideoMimeType({ type: "application/pdf", name: "a.mp4" }),
         ).toBeUndefined()
@@ -53,7 +53,7 @@ describe("validateVideoFile", () => {
         )
     })
 
-    it("mov・webm・mpeg は可、301MB の mov は tooLarge", () => {
+    it("[video-picker/AC-3] mov・webm・mpeg は可、301MB の mov は tooLarge", () => {
         for (const [type, name] of [
             ["video/quicktime", "a.mov"],
             ["video/webm", "a.webm"],
@@ -69,7 +69,7 @@ describe("validateVideoFile", () => {
         ).toBe("tooLarge")
     })
 
-    it("300,000,001 バイトは tooLarge、300,000,000 バイトは可", () => {
+    it("[video-picker/AC-3] 300,000,001 バイトは tooLarge、300,000,000 バイトは可", () => {
         expect(
             validateVideoFile({
                 type: "video/mp4",
@@ -189,7 +189,7 @@ describe("probeVideo", () => {
         expect(revoke).toHaveBeenCalled()
     })
 
-    it("duration が NaN・寸法 0 は unreadable", async () => {
+    it("[video-picker/AC-5] duration が NaN・寸法 0 は unreadable", async () => {
         stubBrowser({ videoWidth: 10, videoHeight: 10, duration: NaN })
         await expect(probeVideo(file)).rejects.toBeInstanceOf(VideoProbeError)
         stubBrowser({ videoWidth: 0, videoHeight: 0, duration: 5 })

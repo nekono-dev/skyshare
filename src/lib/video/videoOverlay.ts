@@ -2,7 +2,7 @@
  * 動画投稿の visual（entry の代表画像）に重ねる、再生ボタンの描画。
  *
  * X の動画表示を模した見た目で、色・透明度・寸法は X の実際の表示から実測した値
- * （単位は CSS px。`specs/video/design.md §6.5.1`）を `VIDEO_OVERLAY_SPEC` に固定する。
+ * （単位は CSS px。`specs/entry-visual`）を `VIDEO_OVERLAY_SPEC` に固定する。
  * UI（`VideoPlayButton`）も同じ定数を参照する。
  * 再生時間は画像へ埋め込まず、entry の heading に記載する（`@/lib/entry/entryText`）。
  */

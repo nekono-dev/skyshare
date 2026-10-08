@@ -10,7 +10,7 @@
  * entry作成(`createEntry`/`visual`)は、`posts`と同階層のトップレベルフィールドとして
  * リクエスト全体で高々1組だけ持つ。作成できるskyshare entryは1リクエストにつき常に
  * 高々1件であり、その`source`は常にスレッド先頭(`posts[0]`)にサーバが自動解決する
- * (投稿ごとの個別指定は行わない。詳細は`specs/entry/backend/design.md §3.1・§7`)。
+ * (投稿ごとの個別指定は行わない。詳細は`specs/entry-api`)。
  *
  * `reply`(スレッド接続用のStrongRef)も同様に`posts`と同階層のトップレベルフィールドとして
  * 1つだけ持つ。同一リクエスト内の2件目以降のreply chainはサーバが自動的に組み立てるため、
@@ -45,7 +45,7 @@ const selfLabelsField = z
  * `posts`配列の1件分(1セグメント)。現行`/v2/bsky/record`の3分岐
  * (テキストのみ/OGPリンク付き/画像付き)に、動画付きの分岐を加えたもの。
  * entry作成の指定(`createEntry`/`visual`)はリクエスト全体でトップレベルに1組だけ持ち、
- * 投稿ごとの個別指定は行わない(詳細は`specs/entry/backend/design.md §3.1`参照)。
+ * 投稿ごとの個別指定は行わない(詳細は`specs/entry-api`参照)。
  */
 export const EntryPostItemSchema = z.union([
     // テキストのみの投稿
@@ -118,7 +118,7 @@ export const RequestBodySchema = z.union([
         })
         .strict(),
     // 新規投稿(1件、またはスレッドとして複数件)。`createEntry`/`visual`はリクエスト全体で
-    // 高々1組のみ持つトップレベルフィールド(詳細は`specs/entry/backend/design.md §3.1`)。
+    // 高々1組のみ持つトップレベルフィールド(詳細は`specs/entry-api`)。
     z
         .object({
             posts: z

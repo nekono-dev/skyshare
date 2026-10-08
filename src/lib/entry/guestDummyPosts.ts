@@ -184,7 +184,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             },
         },
         // 画像6枚の投稿（entry未作成）。カードには全6枚が横スクロールのサムネイルで表示され、
-        // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/multiimage FR-3・FR-5）。
+        // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/entry-visual）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-multi-image",
             cid: "bafyreiguestmultiimage",
@@ -209,7 +209,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
                 cid: `bafkreiguestmulti${index + 1}`,
             })),
         },
-        // 以下、Timelineのスレッドグルーピング表示（specs/timeline）のゲスト確認用。
+        // 以下、Timelineのスレッドグルーピング表示（specs/timeline-api）のゲスト確認用。
         // スレッドA: entry未作成、ルート投稿(guest-thread-a-root)は画像を持たないが
         // 中間segment(guest-thread-a-mid)が画像を持つケース。事後entry作成ボタンは
         // ルート投稿のカードに表示され、Visualはguest-thread-a-midの画像から生成される
@@ -433,7 +433,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
 
     /**
      * `GET /v2/entries`のスレッド構造化済みレスポンス（`threads`）を模したゲスト表示用データ。
-     * バックエンドが`buildTimelineThreads`で確定させる形（`specs/timeline/design.md §1`）を、
+     * バックエンドが`buildTimelineThreads`で確定させる形（`specs/timeline-api`）を、
      * `posts`の実体を再利用してあらかじめ手書きでネストしたもの。
      */
     const threads: ThreadGroup[] = [
@@ -533,7 +533,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
 
     /**
      * ゲスト表示のEntry削除確認ダイアログが参照する、ダミーentryの`sourceUri`ごとの
-     * 削除範囲判定結果（`specs/entry/frontend/design.md §3.4.4`）。実際の`getPostThread`は呼ばない。
+     * 削除範囲判定結果（`specs/entry-delete-dialog`）。実際の`getPostThread`は呼ばない。
      */
     const deleteScopes: Record<string, EntryDeleteScope> = {
         "at://did:plc:guestdemo/app.bsky.feed.post/guest2": {

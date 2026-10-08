@@ -1,6 +1,6 @@
 /**
  * entry削除時のBluesky投稿削除（`deleteBskyPost:true`）の削除対象を導出する
- * （`specs/entry/backend/design.md §7.3.1`）。DELETEハンドラのみが呼び出す。
+ * （`specs/entry-api`）。DELETEハンドラのみが呼び出す。
  *
  * 責務と処理概要:
  * - `sourceUri`を起点に`getPostThread`でreply chainを取得し、`source`が返信投稿

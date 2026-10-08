@@ -9,6 +9,7 @@ const { t, tn } = createTranslator("ja")
 t("common.cancel")
 tn("common.itemCount", 3)
 
+// [i18n-messages/AC-6] 存在しないキーの参照と置換パラメータの不足は型エラーになる
 // @ts-expect-error 存在しないキー
 t("common.noSuchKey")
 // @ts-expect-error 存在しない複数形の基底名

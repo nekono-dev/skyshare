@@ -7,13 +7,13 @@ import {
 } from "@/lib/entry/entryText"
 
 describe("buildEntryText", () => {
-    it("heading は「投稿者名 | Skyshare」、caption は trim 済み本文を返す", () => {
+    it("[entry-visual/AC-8] heading は「投稿者名 | Skyshare」、caption は trim 済み本文を返す", () => {
         expect(
             buildEntryText({ userName: "Alice", postText: " Hello " }),
         ).toEqual({ heading: "Alice | Skyshare", caption: "Hello" })
     })
 
-    it("動画投稿は heading が再生時間（m:ss）になり、投稿者名は使わない", () => {
+    it("[entry-visual/AC-8] 動画投稿は heading が再生時間（m:ss）になり、投稿者名は使わない", () => {
         expect(
             buildEntryText({
                 userName: "Alice",

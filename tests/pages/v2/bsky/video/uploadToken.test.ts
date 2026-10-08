@@ -41,7 +41,7 @@ describe("POST /v2/bsky/video/upload-token", () => {
         expect(res.status).toBe(401)
     })
 
-    it("対応PDSは 200 でトークンを返し、キャッシュさせない", async () => {
+    it("[video-upload/AC-13] 対応PDSは 200 でトークンを返し、キャッシュさせない", async () => {
         const res = await callRoute({
             agent: makeAgent(),
             session: makeSession("https://bsky.social") as any,
@@ -53,7 +53,7 @@ describe("POST /v2/bsky/video/upload-token", () => {
         expect(typeof body.expiresAt).toBe("number")
     })
 
-    it("対応外PDSは 400", async () => {
+    it("[video-upload/AC-2] 対応外PDSは 400", async () => {
         const res = await callRoute({
             agent: makeAgent(),
             session: makeSession("https://example.com") as any,

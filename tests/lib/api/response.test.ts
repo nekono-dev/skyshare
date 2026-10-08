@@ -32,10 +32,13 @@ describe("resolveXrpcStatus", () => {
         ["RepoNotFound", 404],
         ["RecordNotFound", 404],
         ["SomethingElse", 500],
-    ])("XRPCError(%s) は %i を返す", (errorCode, expected) => {
-        const error = new XRPCError(500, errorCode, "message")
-        expect(resolveXrpcStatus(error)).toBe(expected)
-    })
+    ])(
+        "[entry-api/AC-19] XRPCError(%s) は %i を返す",
+        (errorCode, expected) => {
+            const error = new XRPCError(500, errorCode, "message")
+            expect(resolveXrpcStatus(error)).toBe(expected)
+        },
+    )
 
     it("cause チェーンを辿って XRPCError を見つける", () => {
         const inner = new XRPCError(500, "ExpiredToken", "message")

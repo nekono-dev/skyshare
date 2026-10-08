@@ -23,7 +23,7 @@ const stripComments = (source: string): string =>
     source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1")
 
 describe("NSIDリテラルの再混入防止", () => {
-    it("src配下（生成物を除く）のコード本文にSkyshare独自NSIDのリテラルが含まれない", () => {
+    it("[lexicon/AC-13] src配下（生成物を除く）のコード本文にSkyshare独自NSIDのリテラルが含まれない", () => {
         // `<prefix>.entry` から `.entry` を除いた部分（例: dev.nekono.skyshare）
         const prefix = ENTRY_COLLECTION.slice(0, -".entry".length)
         const offenders = SCAN_ROOTS.flatMap(listSourceFiles).filter(file =>

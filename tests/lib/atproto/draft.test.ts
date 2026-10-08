@@ -77,7 +77,7 @@ describe("parseDraftPostsInput / parseCreateDraftBody", () => {
         })
     })
 
-    it("posts配列(複数件、スレッド下書き)を検証する", () => {
+    it("[draft-api/AC-1] posts配列(複数件、スレッド下書き)を検証する", () => {
         expect(
             parseDraftPostsInput({
                 posts: [{ text: "スレッド1" }, { text: "スレッド2" }],
@@ -96,7 +96,7 @@ describe("parseDraftPostsInput / parseCreateDraftBody", () => {
         ).toEqual([{ text: "hello", labels: ["sexual"] }])
     })
 
-    it("labelsが文字列配列でなければ undefined", () => {
+    it("[draft-api/AC-2] labelsが文字列配列でなければ undefined", () => {
         expect(
             parseDraftPostsInput({
                 posts: [{ text: "hello", labels: "sexual" }],
@@ -109,7 +109,7 @@ describe("parseDraftPostsInput / parseCreateDraftBody", () => {
         ).toBeUndefined()
     })
 
-    it("postsが空配列/未指定/上限超過なら undefined", () => {
+    it("[draft-api/AC-1] postsが空配列/未指定/上限超過なら undefined", () => {
         expect(parseDraftPostsInput({ posts: [] })).toBeUndefined()
         expect(parseDraftPostsInput({})).toBeUndefined()
         expect(

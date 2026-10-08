@@ -96,7 +96,7 @@ describe("buildTimelineThreads", () => {
         )
     })
 
-    it("通常のスレッド(root+mid+tailがすべてfeedに存在)を1つのThreadGroupにまとめる", async () => {
+    it("[timeline-api/AC-2 timeline-api/AC-11] 通常のスレッド(root+mid+tailがすべてfeedに存在)を1つのThreadGroupにまとめる", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -135,7 +135,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("rootは残るが後続投稿がすべて欠落している場合でも、replyCountを手がかりに補完する", async () => {
+    it("[timeline-api/AC-5] rootは残るが後続投稿がすべて欠落している場合でも、replyCountを手がかりに補完する", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -170,7 +170,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("中間投稿が欠落している場合でも、末尾投稿のrecord.replyから補完する", async () => {
+    it("[timeline-api/AC-5] 中間投稿が欠落している場合でも、末尾投稿のrecord.replyから補完する", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -305,7 +305,7 @@ describe("buildTimelineThreads", () => {
         )
     })
 
-    it("分岐時、採用された系統のみが1つのThreadGroupになり、採用されなかった側はTimelineに一切含まれない", async () => {
+    it("[timeline-api/AC-3 timeline-api/AC-4] 分岐時、採用された系統のみが1つのThreadGroupになり、採用されなかった側はTimelineに一切含まれない", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode(
@@ -367,7 +367,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("採用側が削除された場合、次回評価で不採用だった系統が新たにメインスレッドとして表示される", async () => {
+    it("[timeline-api/AC-8] 採用側が削除された場合、次回評価で不採用だった系統が新たにメインスレッドとして表示される", async () => {
         const feed = [
             makeFeedItem("branchD", "2026-01-05T00:00:00Z", {
                 replyToRkey: "root",
@@ -403,7 +403,7 @@ describe("buildTimelineThreads", () => {
         expect(threads[0].replies.map(p => p.uri)).toEqual([feed[0].post.uri])
     })
 
-    it("他人の投稿への返信から始まるスレッドは、後続が自分の投稿のみでもTimelineに一切含まれず、getPostThreadも呼ばれない", async () => {
+    it("[timeline-api/AC-1] 他人の投稿への返信から始まるスレッドは、後続が自分の投稿のみでもTimelineに一切含まれず、getPostThreadも呼ばれない", async () => {
         const otherDid = "did:plc:other"
         const getPostThread = vi.fn()
         const agent = { app: { bsky: { feed: { getPostThread } } } } as any
@@ -433,7 +433,7 @@ describe("buildTimelineThreads", () => {
         expect(getPostThread).not.toHaveBeenCalled()
     })
 
-    it("メインスレッドのrootがfeedに現れない場合、rootのindexedAtに基づく位置へ新しい順を保って挿入される", async () => {
+    it("[timeline-api/AC-6] メインスレッドのrootがfeedに現れない場合、rootのindexedAtに基づく位置へ新しい順を保って挿入される", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode(
@@ -473,7 +473,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("getPostThreadが失敗した場合、自分がルートの投稿は単独投稿として表示され、返信側は表示されない", async () => {
+    it("[timeline-api/AC-7] getPostThreadが失敗した場合、自分がルートの投稿は単独投稿として表示され、返信側は表示されない", async () => {
         const getPostThread = vi.fn().mockRejectedValue(new Error("boom"))
         const agent = { app: { bsky: { feed: { getPostThread } } } } as any
         const errSpy = vi.spyOn(console, "error").mockImplementation(() => {})

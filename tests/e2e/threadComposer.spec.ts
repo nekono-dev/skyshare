@@ -9,7 +9,7 @@
  *   （実際のBluesky投稿はゲスト表示ではスキップされるため対象外。投稿そのものの検証は
  *   ログイン可能な環境での手動確認に委ねる）。
  * - 主眼は、非アクティブ化に伴う`ImagePicker`の再マウントで画像プレビューが消える
- *   不具合（`specs/threadpost`のバグ修正）の回帰防止。
+ *   不具合（`specs/thread-composer`のバグ修正）の回帰防止。
  */
 import { expect, test, type Locator } from "@playwright/test"
 
@@ -50,7 +50,7 @@ test.describe("ThreadComposer", () => {
         await page.close()
     })
 
-    test("セグメント追加後も、画像を添付したセグメントのプレビューが保持される", async ({
+    test("[thread-composer/AC-3 thread-composer/AC-4 thread-composer/AC-13] セグメント追加後も、画像を添付したセグメントのプレビューが保持される", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -121,7 +121,7 @@ test.describe("ThreadComposer", () => {
         await expect(editor0).toContainText("1件目のテスト投稿")
     })
 
-    test("先頭セグメントは削除できず、2件目以降は削除できる", async ({
+    test("[thread-composer/AC-5] 先頭セグメントは削除できず、2件目以降は削除できる", async ({
         page,
     }) => {
         await page.goto("/post/?guest")

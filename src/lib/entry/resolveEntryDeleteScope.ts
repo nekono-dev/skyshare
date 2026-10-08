@@ -1,7 +1,7 @@
 /**
  * entry削除確認ダイアログで「リンク・Bluesky投稿を削除」の可否・削除件数を判定する
- * ロジック（`specs/entry/frontend/design.md §3.4.1`）。
- * `EntryCard`（entry一覧）・`PostCard`（Timeline一覧、`specs/timeline/design.md §7`）の
+ * ロジック（`specs/entry-delete-dialog`）。
+ * `EntryCard`（entry一覧）・`PostCard`（Timeline一覧、`specs/timeline`）の
  * 双方から共有利用するため`src/lib/entry/`に置く。
  *
  * 責務と処理概要:

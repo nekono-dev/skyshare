@@ -58,7 +58,7 @@ describe("resolveEntryVisualSourcePost", () => {
         expect(resolveEntryVisualSourcePost(group)).toBe(root)
     })
 
-    it("repliesの投稿に既にentryがあっても、ルート投稿を返す(実装前に中間投稿へentryが作成されていたケース)", () => {
+    it("[timeline/AC-7] repliesの投稿に既にentryがあっても、ルート投稿を返す(実装前に中間投稿へentryが作成されていたケース)", () => {
         const root = makePost("root", { images: [image] })
         const group: ThreadGroup = {
             rootPost: root,
@@ -75,7 +75,7 @@ describe("resolveEntryVisualSourcePost", () => {
         expect(resolveEntryVisualSourcePost(group)).toBeNull()
     })
 
-    it("ルートが画像を持たない場合、repliesのうち時系列上最も古い画像投稿を返す", () => {
+    it("[timeline/AC-5] ルートが画像を持たない場合、repliesのうち時系列上最も古い画像投稿を返す", () => {
         const mid = makePost("mid", { images: [image] })
         const tail = makePost("tail", { images: [image] })
         const group: ThreadGroup = {

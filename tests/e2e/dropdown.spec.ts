@@ -2,7 +2,7 @@
  * 共通プルダウン（Dropdown）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
- * - `specs/dropdown/tasks.md` の Phase 4 に定めるシナリオを検証する。
+ * - `specs/dropdown`・`specs/dropdown-search` の受け入れ条件を検証する。
  * - 表示テーマ（`/settings/`、絞り込み無し）と投稿言語（`/post/?guest`、絞り込み有り・国旗付き）
  *   を対象に、開閉・キーボード・スクロール・絞り込み・IME・配置反転を確認する。
  * - 自己ラベルは `/post/?guest` のセグメントで確認する。表示件数（PageSizeSelect）は
@@ -59,7 +59,7 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         await expect(themeTrigger(page)).toBeVisible({ timeout: 60_000 })
     })
 
-    test("1. クリックで開き、選択すると閉じてトリガー表示が変わりフォーカスが戻る", async ({
+    test("[dropdown/AC-1 dropdown/AC-11] 1. クリックで開き、選択すると閉じてトリガー表示が変わりフォーカスが戻る", async ({
         page,
     }) => {
         const trigger = themeTrigger(page)
@@ -79,7 +79,7 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         await expect(trigger).toBeFocused()
     })
 
-    test("15. パネル幅はコンテンツに合わせた幅で、広すぎない", async ({
+    test("[dropdown/AC-4] 15. パネル幅はコンテンツに合わせた幅で、広すぎない", async ({
         page,
     }) => {
         await clickUntilOpen(themeTrigger(page), page.getByRole("listbox"))
@@ -104,7 +104,7 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         )
     })
 
-    test("21. 一覧の表示行数は最大5行（超える分はスクロール）", async ({
+    test("[dropdown/AC-7] 21. 一覧の表示行数は最大5行（超える分はスクロール）", async ({
         page,
     }) => {
         await clickUntilOpen(themeTrigger(page), page.getByRole("listbox"))
@@ -115,7 +115,9 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         expect(small.scrollable).toBe(false)
     })
 
-    test("16. 親の overflow に切られない（表示テーマ）", async ({ page }) => {
+    test("[dropdown/AC-5] 16. 親の overflow に切られない（表示テーマ）", async ({
+        page,
+    }) => {
         await clickUntilOpen(themeTrigger(page), page.getByRole("listbox"))
         expect(await panelNotClipped(page)).toEqual([
             true,
@@ -126,7 +128,7 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         ])
     })
 
-    test("2. キーボードで開く→移動→確定。Escは値を変えずに閉じる", async ({
+    test("[dropdown/AC-8] 2. キーボードで開く→移動→確定。Escは値を変えずに閉じる", async ({
         page,
     }) => {
         const trigger = themeTrigger(page)
@@ -146,7 +148,9 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         await expect(trigger).toBeFocused()
     })
 
-    test("3. パネル外クリックで閉じ、値は変わらない", async ({ page }) => {
+    test("[dropdown/AC-2] 3. パネル外クリックで閉じ、値は変わらない", async ({
+        page,
+    }) => {
         const trigger = themeTrigger(page)
         await clickUntilOpen(trigger, page.getByRole("listbox"))
         await page.mouse.click(5, 5)
@@ -154,7 +158,7 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         await expect(trigger).toHaveText("システム設定に従う")
     })
 
-    test("14. 先頭一致のタイプアヘッドでアクティブ項目が動く", async ({
+    test("[dropdown/AC-9] 14. 先頭一致のタイプアヘッドでアクティブ項目が動く", async ({
         page,
     }) => {
         const trigger = themeTrigger(page)
@@ -182,7 +186,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(languageTrigger(page)).toHaveAttribute("inputmode", "text")
     }
 
-    test("1. 1回目は一覧モードで開く（inputmode=none・入力待ち表示）", async ({
+    test("[dropdown-search/AC-1 dropdown-search/AC-2] 1. 1回目は一覧モードで開く（inputmode=none・入力待ち表示）", async ({
         page,
     }) => {
         await openList(page)
@@ -211,7 +215,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         expect(box!.y + box!.height).toBeLessThanOrEqual(viewport.height)
     })
 
-    test("2. 再クリックで検索モードに入り、パネルは閉じず入力待ち表示になる", async ({
+    test("[dropdown-search/AC-3 dropdown-search/AC-4] 2. 再クリックで検索モードに入り、パネルは閉じず入力待ち表示になる", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -226,7 +230,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(page.getByRole("option")).toHaveCount(0)
     })
 
-    test("3. 'ko' で絞り込み、クリックで確定するとトリガーに国旗と言語名が出る", async ({
+    test("[dropdown-search/AC-5 dropdown-search/AC-8 language-select/AC-1 language-select/AC-5] 3. 'ko' で絞り込み、クリックで確定するとトリガーに国旗と言語名が出る", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -240,7 +244,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(trigger).toHaveValue("🇰🇷 한국어")
     })
 
-    test("4. 該当なしはメッセージを出し、Enterでは何も確定せず、Escで直前の選択に戻る", async ({
+    test("[dropdown-search/AC-7 dropdown-search/AC-9] 4. 該当なしはメッセージを出し、Enterでは何も確定せず、Escで直前の選択に戻る", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -254,7 +258,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(trigger).toHaveValue("🇯🇵 日本語")
     })
 
-    test("5. 検索モードでパネル外クリックすると閉じ、直前の選択に戻る", async ({
+    test("[dropdown-search/AC-9] 5. 検索モードでパネル外クリックすると閉じ、直前の選択に戻る", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -264,7 +268,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(languageTrigger(page)).toHaveValue("🇯🇵 日本語")
     })
 
-    test("6. 一覧モードで文字キーを打つと検索モードに入り、入力として扱う", async ({
+    test("[dropdown-search/AC-3] 6. 一覧モードで文字キーを打つと検索モードに入り、入力として扱う", async ({
         page,
     }) => {
         await openList(page)
@@ -278,7 +282,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(trigger).toHaveValue("Kongo")
     })
 
-    test("7. スクロール/リサイズでは閉じず、パネルはトリガーに付いてくる", async ({
+    test("[dropdown/AC-3] 7. スクロール/リサイズでは閉じず、パネルはトリガーに付いてくる", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -304,7 +308,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         expect(Math.min(below, above)).toBeLessThanOrEqual(6)
     })
 
-    test("20. 検索モードでフォーカスだけ外れると、空なら一覧モードへ戻り、入力済みなら残る", async ({
+    test("[dropdown-search/AC-10] 20. 検索モードでフォーカスだけ外れると、空なら一覧モードへ戻り、入力済みなら残る", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -328,7 +332,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(page.getByRole("option").first()).toBeVisible()
     })
 
-    test("22. 親の overflow に切られず、パネル全体が最前面に見える", async ({
+    test("[dropdown/AC-5] 22. 親の overflow に切られず、パネル全体が最前面に見える", async ({
         page,
     }) => {
         await openList(page)
@@ -377,7 +381,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         }).toPass({ timeout: 5_000 })
     })
 
-    test("25. 可変幅のトリガーは placeholder が見切れない", async ({
+    test("[dropdown/AC-12] 25. 可変幅のトリガーは placeholder が見切れない", async ({
         page,
     }) => {
         await openList(page)
@@ -413,7 +417,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(trigger).toHaveValue("🇯🇵 日本語")
     })
 
-    test("8. 開き直すと一覧モード・入力は空に戻り、選択中の言語が見える位置にある", async ({
+    test("[dropdown/AC-7 dropdown-search/AC-11] 8. 開き直すと一覧モード・入力は空に戻り、選択中の言語が見える位置にある", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -435,7 +439,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         )
     })
 
-    test("9. パネル幅は一覧・検索・絞り込み後で変わらず、開き直しても同じ", async ({
+    test("[dropdown-search/AC-12] 9. パネル幅は一覧・検索・絞り込み後で変わらず、開き直しても同じ", async ({
         page,
     }) => {
         await openList(page)
@@ -457,7 +461,9 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         expect(Math.abs(second.width - first.width)).toBeLessThanOrEqual(1)
     })
 
-    test("10. IME変換中のEnterでは確定されない", async ({ page }) => {
+    test("[dropdown/AC-10] 10. IME変換中のEnterでは確定されない", async ({
+        page,
+    }) => {
         await enterSearch(page)
         const trigger = languageTrigger(page)
         await page.keyboard.type("ko")
@@ -475,7 +481,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(trigger).toHaveValue("ko")
     })
 
-    test("11. 国旗なしの言語は入力欄に国旗が出ず、一覧ではラベルの左端が揃う", async ({
+    test("[language-select/AC-4 language-select/AC-5] 11. 国旗なしの言語は入力欄に国旗が出ず、一覧ではラベルの左端が揃う", async ({
         page,
     }) => {
         await enterSearch(page)
@@ -516,7 +522,7 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await expect(trigger).toHaveValue("Esperanto")
     })
 
-    test("12. 画面下端付近ではトリガーの上に反転し、ビューポート内に収まる", async ({
+    test("[dropdown/AC-6] 12. 画面下端付近ではトリガーの上に反転し、ビューポート内に収まる", async ({
         page,
     }) => {
         const trigger = languageTrigger(page)

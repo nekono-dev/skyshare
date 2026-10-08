@@ -149,7 +149,7 @@ describe("createVideoEmbed", () => {
         size: 10,
     }
 
-    it("blob参照・alt・縦横比を保持する", () => {
+    it("[video-upload/AC-9] blob参照・alt・縦横比を保持する", () => {
         expect(
             createVideoEmbed(blob, { width: 640, height: 360, alt: "海" }),
         ).toEqual({

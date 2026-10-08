@@ -3,13 +3,13 @@
  *
  * 責務と処理概要:
  * - `group.replies.length === 0`（単独投稿）の場合は、既存`PostCard`をそのまま描画する
- *   フォールバック（`specs/timeline/design.md §4.1`、FR-2）。
+ *   フォールバック（`specs/timeline`）。
  * - 2件以上のスレッドグループは、既定で折りたたみ表示（ルート投稿＋「スレッドを展開」ボタン）
  *   とし、操作により全投稿を時系列順（古い→新しい）に展開表示する。
  * - 事後entry作成ボタン（`resolveEntryVisualSourcePost`）の判定は`entryCandidate.ts`に委譲する。ボタン自体は常に
  *   ルート投稿のカードにのみ表示し、中間投稿のカードに表示することはない。
  * - Timelineのページング対象アイテムはバックエンドが権威的に確定した`ThreadGroup`
- *   そのものであるため（`specs/timeline/design.md §1`）、削除成功時の一覧除去は常に
+ *   そのものであるため（`specs/timeline`）、削除成功時の一覧除去は常に
  *   スレッドグループ単位で行う（同§4）。
  */
 import { useT } from "@/lib/i18n/react"

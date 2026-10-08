@@ -42,7 +42,7 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 const slug = Astro.params.slug
 
 // PostView（AppView算出のリアクション数を含む）から、投稿カード1件分の表示用データを作る。
-// リアクション数は各投稿自身の値（数値でなければ 0）を使う（specs/postcardlayout/design.md §2.2）。
+// リアクション数は各投稿自身の値（数値でなければ 0）を使う（specs/entry-detail）。
 const toEntryPostView = (post: AppBskyFeedDefs.PostView, repoDid: string, webUrl: string): EntryPostView => {
     const record = post.record as AppBskyFeedPost.Main
     const count = (value: unknown) => (typeof value === "number" ? value : 0)
@@ -172,7 +172,7 @@ if (typeof slug === "undefined") {
                 posts = [toEntryPostView(postView, parsedSourceUri.repo, sourceWebUrl)]
 
                 // source投稿を起点に、entry所有者自身が投稿した後続投稿のみを直線的に辿る
-                // （specs/entry/frontend/design.md §3.3）。取得・抽出に失敗しても500にはせず、
+                // （specs/entry-detail）。取得・抽出に失敗しても500にはせず、
                 // 単一投稿のカード表示へフォールバックする。
                 try {
                     const threadRes = await agent.app.bsky.feed.getPostThread({

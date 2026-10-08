@@ -10,7 +10,7 @@ describe("辞書の整合性", () => {
     const jaKeys = Object.keys(ja)
     const enRecord = en as Record<string, string>
 
-    it("ja の全キーが en にある", () => {
+    it("[i18n-messages/AC-5] ja の全キーが en にある", () => {
         const missing = jaKeys.filter(key => !(key in enRecord))
         expect(missing).toEqual([])
     })

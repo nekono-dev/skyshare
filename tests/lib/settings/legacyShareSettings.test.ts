@@ -76,7 +76,7 @@ describe("deriveAutoPopupTarget", () => {
             },
             "ask",
         ],
-    ] as const)("%s", (_name, legacy, expected) => {
+    ] as const)("[share-settings/AC-7] %s", (_name, legacy, expected) => {
         expect(deriveAutoPopupTarget(legacy)).toBe(expected)
     })
 })
@@ -93,7 +93,7 @@ describe("migrateLegacyShareSettings", () => {
         expect(localStorage.store.size).toBe(0)
     })
 
-    it("新キー未保存なら旧設定から引き継いで保存し、旧キー4つを削除する", () => {
+    it("[share-settings/AC-6] 新キー未保存なら旧設定から引き継いで保存し、旧キー4つを削除する", () => {
         const localStorage = createMemoryLocalStorage()
         localStorage.setItem("crosspostToTaittsuu", "true")
         localStorage.setItem("showCrosspostXButton", "true")

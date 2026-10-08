@@ -3,7 +3,7 @@
  * ヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
- * - `specs/intentshare/tasks.md` Phase 4 に定めたシナリオの恒久テスト。
+ * - `specs/share-settings`・`specs/auto-popup`・`specs/intent-share-dialog`・`specs/share-counter` の受け入れ条件の恒久テスト。
  * - `/post/?guest`（ログイン不要のゲスト表示）で、設定の表示条件・永続化・投稿後の
  *   自動ポップアップ／投稿先選択ダイアログを検証する。
  * - `/?guest` のタイムライン上のPostCardから、skyshare entry URL付きの共有ダイアログを検証する。
@@ -147,7 +147,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("自動ポップアップ先の設定値は、詳細オプションを初期状態で開く理由にならない", async ({
+    test("[thread-composer/AC-12] 自動ポップアップ先の設定値は、詳細オプションを初期状態で開く理由にならない", async ({
         page,
     }) => {
         for (const target of ["ask", "x", "taittsuu", "mastodon"]) {
@@ -169,7 +169,7 @@ test.describe("intentShare", () => {
         }
     })
 
-    test("設定ページにも自動ポップアップ先のプルダウンがあり、Mastodonのインスタンス入力欄は常時表示される。旧項目は存在しない", async ({
+    test("[share-settings/AC-5 share-settings/AC-8] 設定ページにも自動ポップアップ先のプルダウンがあり、Mastodonのインスタンス入力欄は常時表示される。旧項目は存在しない", async ({
         page,
     }) => {
         await page.goto("/settings/")
@@ -204,7 +204,7 @@ test.describe("intentShare", () => {
         }
     })
 
-    test("「投稿時に選択する」で投稿すると、ポップアップは開かず投稿先選択ダイアログが開き、入力欄が空になる", async ({
+    test("[auto-popup/AC-4 intent-share-dialog/AC-8] 「投稿時に選択する」で投稿すると、ポップアップは開かず投稿先選択ダイアログが開き、入力欄が空になる", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -230,7 +230,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("「タイッツー」で投稿すると、タイッツーのintentポップアップが開き、ダイアログは開かない", async ({
+    test("[auto-popup/AC-3] 「タイッツー」で投稿すると、タイッツーのintentポップアップが開き、ダイアログは開かない", async ({
         page,
         context,
     }) => {
@@ -255,7 +255,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("投稿後のダイアログは、投稿先を選んでも閉じず、続けて別の投稿先を選べ、「閉じる」・背景クリック・Escで閉じる", async ({
+    test("[intent-share-dialog/AC-2 intent-share-dialog/AC-3] 投稿後のダイアログは、投稿先を選んでも閉じず、続けて別の投稿先を選べ、「閉じる」・背景クリック・Escで閉じる", async ({
         page,
         context,
     }) => {
@@ -299,7 +299,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeHidden()
     })
 
-    test("投稿フォームを固定表示しない場合（Overlay）でも、投稿成功でOverlayが閉じた後にダイアログが残り、続けて選べる", async ({
+    test("[intent-share-dialog/AC-7] 投稿フォームを固定表示しない場合（Overlay）でも、投稿成功でOverlayが閉じた後にダイアログが残り、続けて選べる", async ({
         page,
         context,
     }) => {
@@ -326,7 +326,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeVisible()
     })
 
-    test("タイムラインのPostCardの共有ダイアログは、投稿先を選ぶとポップアップを開いて閉じ、skyshare URL付きで上限を超えない", async ({
+    test("[intent-share-dialog/AC-4 intent-share-dialog/AC-5] タイムラインのPostCardの共有ダイアログは、投稿先を選ぶとポップアップを開いて閉じ、skyshare URL付きで上限を超えない", async ({
         page,
         context,
     }) => {
@@ -353,7 +353,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeHidden()
     })
 
-    test("長文省略トグルと「返信・引用オプションを保存する」は詳細オプション内に表示され、設定がリロード後も保持される", async ({
+    test("[thread-composer/AC-11] 長文省略トグルと「返信・引用オプションを保存する」は詳細オプション内に表示され、設定がリロード後も保持される", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -406,7 +406,7 @@ test.describe("intentShare", () => {
         ).toBeChecked()
     })
 
-    test("「画像を自分で添付」をONにすると省略がOFFかつ操作不能になり、OFFに戻しても復帰しない。競合する保存値は読み込み時に補正される", async ({
+    test("[share-settings/AC-3 share-settings/AC-4] 「画像を自分で添付」をONにすると省略がOFFかつ操作不能になり、OFFに戻しても復帰しない。競合する保存値は読み込み時に補正される", async ({
         page,
     }) => {
         await seedStorage(page, { truncateIntentText: "true" })
@@ -521,7 +521,7 @@ test.describe("intentShare", () => {
         ["mastodon", ["/300:Bluesky"], [":X", "ﾀｲｯﾂｰ"]],
         ["ask", ["/140:X", "/140:ﾀｲｯﾂｰ", "/300:Bluesky"], []],
     ] as const) {
-        test(`文字数カウンタは自動ポップアップ先「${target}」に応じて表示が切り替わる`, async ({
+        test(`[share-counter/AC-7 share-counter/AC-8 share-counter/AC-9] 文字数カウンタは自動ポップアップ先「${target}」に応じて表示が切り替わる`, async ({
             page,
         }) => {
             await seedStorage(page, {

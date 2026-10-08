@@ -16,7 +16,7 @@ import styles from "./index.module.css"
  * - カードの枠・背景は呼び出し側が持つ。
  * - 動画（`video`）・利用不可の動画（`unsupportedVideo`）・画像のいずれかを本文の下に表示する。
  *   画像は `ImageGallery` で表示し、`engagement` が渡された場合のみ画像の下にリアクション数を表示する。
- * - 設計: specs/postcardlayout/design.md §3.3
+ * - 設計: specs/entry-detail
  */
 
 type Props = {

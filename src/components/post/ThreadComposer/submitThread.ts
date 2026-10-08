@@ -4,17 +4,17 @@
  * 責務と処理概要:
  * - `createEntry`（`POST /v2/entry`、旧`/v2/bsky/record`を統合した投稿作成エンドポイント）を、
  *   セグメント配列を`posts`配列にそのままマッピングして1回だけ呼び出す
- *   （`specs/threadpost/design.md §4.3`、原子的な複数投稿作成をそのまま利用する）。
+ *   （`specs/thread-composer`、原子的な複数投稿作成をそのまま利用する）。
  * - entry作成（`createEntry`/`visual`）はリクエスト全体でトップレベルに高々1組だけ持つ
- *   （`specs/entry/backend/design.md §3.1`）。画像投稿かつ`manualImageAttach`が無効な
+ *   （`specs/entry-api`）。画像投稿かつ`manualImageAttach`が無効な
  *   セグメント（＝entry作成候補）が複数ある場合、先頭（最小index）のセグメントのみを
  *   自動選択してそのsegmentの`thumbnailBlob`をトップレベル`visual`として送信する
  *   （`posts[i]`側にはentry関連のフィールドを一切送らない）。画像投稿segmentが2件以上
  *   ある場合に手動で選択させるUIは設けず、常に先頭を自動選択する
- *   （`specs/entry/frontend/requirements.md FR-1`）。
+ *   （`specs/thread-composer`）。
  * - entryの`source`（スレッド先頭を指すか、単発投稿なら自身を指すか）はサーバが常に
  *   自動解決するため、クライアントは解決方針を送信しない
- *   （`specs/entry/backend/design.md §7.1`）。
+ *   （`specs/entry-api`）。
  * - バックエンドはfacetsの自動検出を行わない設計になったため、送信直前に
  *   `detectFacetsForSubmission`でfacetsを組み立てて併せて送信する。
  * - クロスポスト（X/タイッツー/Mastodon自動ポップアップ・WebShareAPI）は先頭（1件目）

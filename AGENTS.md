@@ -15,6 +15,12 @@
   - 共通のエラーレスポンス（400/401/404/429/500等）は `Common.errorResponses(statuses, schema?)` を `operation.responses` にスプレッドし、`ResponseBody400Schema = Common.CommonErrorSchema` のような重複定義を書かないこと。
   - スキーマの書き方・ディレクトリ構成・multipart+anyOfの扱い方の詳細は `openapi/README.md` を参照すること。
 
+# ブランチ・プレビューの規則
+
+- 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に skill `remote-preview` の手順で開発ブランチ `dev/XXXX`（`XXXX` は小文字英数字とハイフンのみ・50文字以内）を作成すること。`git checkout -b` 等で直接作らない。
+- ユーザーが製造したコードの挙動を確認したい旨を示したら、`skyshare-preview-domain-proxy` 経由の `https://dev-XXXX.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
+- 詳細は `.claude/skills/remote-preview/SKILL.md` を参照。
+
 # lib / util の使い分け
 
 - `src/util/` は、ドメイン知識ゼロで他プロジェクトへそのまま持ち出しても成立する汎用ヘルパーの置き場とする。判定基準（ポータビリティテスト）:

@@ -7,12 +7,12 @@ import {
 import { BLUESKY_POST_LANGUAGES } from "@/components/common/LanguageSelect"
 
 describe("languageCodeToFlagEmoji", () => {
-    it("代表国の国旗を返す", () => {
+    it("[language-select/AC-2 language-select/AC-3] 代表国の国旗を返す", () => {
         expect(languageCodeToFlagEmoji("ja")).toBe("🇯🇵")
         expect(languageCodeToFlagEmoji("en")).toBe("🇺🇸")
     })
 
-    it("国に対応しない言語は undefined", () => {
+    it("[language-select/AC-4] 国に対応しない言語は undefined", () => {
         expect(languageCodeToFlagEmoji("eo")).toBeUndefined()
         expect(languageCodeToFlagEmoji("la")).toBeUndefined()
     })

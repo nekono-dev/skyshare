@@ -36,20 +36,20 @@ type PostCardProps = {
   /**
    * Bluesky投稿ごと削除された直後に呼び出されるコールバック。呼び出し元
    * （`ThreadCard`）は、Timelineのページング対象アイテムがスレッドグループ単位
-   * であるため（`specs/timeline/design.md §4`）、常にそのスレッドグループ全体を
+   * であるため（`specs/timeline`）、常にそのスレッドグループ全体を
    * 一覧から除去する。
    */
   onPostDeleted?: () => void
   /**
    * ログイン不要のゲスト用デモ表示。Bluesky投稿への実際の書き込みを伴う操作
    * （Entry作成・元投稿へのリンク）のみ無効化する。Entry削除は有効で、削除範囲の判定・
-   * 削除の実行はアプリ内で模擬する（`specs/entry/frontend/design.md §3.4.4`）。クロスポスト（Xへの
+   * 削除の実行はアプリ内で模擬する（`specs/entry-delete-dialog`）。クロスポスト（Xへの
    * 共有intentポップアップ）とWebShare共有はatproto認証を必要としないため
    * 通常通り操作でき、「Entryを開く」もサンプルEntryページへ遷移できる。
    */
   guestMode?: boolean
   /**
-   * 事後entry作成ボタンの表示制御（`specs/timeline/design.md §5`）。
+   * 事後entry作成ボタンの表示制御（`specs/timeline`）。
    * - `undefined`（既定）: 単独投稿と同じ、投稿自身の適格性のみで判定する。
    * - `true`: スレッドのルート投稿として明示的にボタンを表示する
    *   （`entryVisualSourcePost`がある場合はそちらの画像を使う）。
@@ -59,14 +59,14 @@ type PostCardProps = {
   postCreateEntryButton?: boolean
   /**
    * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿
-   * （`resolveEntryVisualSourcePost`、`specs/timeline/design.md §5`）。
+   * （`resolveEntryVisualSourcePost`、`specs/timeline`）。
    * `ThreadCard`がスレッドのルート投稿向けに、ルート自身が画像を持たない場合の
    * 代わりの画像取得元（ルートに最も近い画像付き投稿）を渡す。未指定時は`item`
    * 自身が対象になる。
    */
   entryVisualSourcePost?: TimelinePost
   /**
-   * 作成するentryの`source`にする投稿（`specs/timeline/design.md §5`）。
+   * 作成するentryの`source`にする投稿（`specs/timeline`）。
    * `ThreadCard`がルート投稿のカードに、スレッドのルート投稿を渡す。
    * 未指定時は`item`自身が`source`になる。
    */

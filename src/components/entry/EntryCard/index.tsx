@@ -44,7 +44,7 @@ type Props = {
   onSaved?: (next: { heading: string; caption: string }) => void
   /**
    * ログイン不要のゲスト表示。編集は無効化する。削除は有効だが、削除範囲の判定・削除の
-   * 実行はアプリ内で模擬し、通信は行わない（`specs/entry/frontend/design.md §3.4.4`）。
+   * 実行はアプリ内で模擬し、通信は行わない（`specs/entry-delete-dialog`）。
    * 「Entryを開く」はサンプルEntryページ（`item.webUrl`）へ遷移できる。
    */
   guestMode?: boolean

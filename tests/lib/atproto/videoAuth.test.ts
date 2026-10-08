@@ -41,7 +41,7 @@ describe("isSupportedVideoPds", () => {
 })
 
 describe("createVideoUploadToken", () => {
-    it("aud・lxm・expを指定して getServiceAuth を呼ぶ", async () => {
+    it("[video-upload/AC-1] aud・lxm・expを指定して getServiceAuth を呼ぶ", async () => {
         const getServiceAuth = vi
             .fn()
             .mockResolvedValue({ data: { token: "tok" } })
@@ -102,7 +102,7 @@ describe("createVideoUploadToken", () => {
         expect(result).toEqual({ ok: false, status: 500 })
     })
 
-    it("対応外PDSは 400 で getServiceAuth を呼ばない", async () => {
+    it("[video-upload/AC-2] 対応外PDSは 400 で getServiceAuth を呼ばない", async () => {
         const getServiceAuth = vi.fn()
         const result = await createVideoUploadToken(
             makeAgent(getServiceAuth),

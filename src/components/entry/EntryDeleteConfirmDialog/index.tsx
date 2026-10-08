@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - PostCard/EntryCard の「Entryを削除」選択時、削除方法を確認する
- *   （`specs/entry/frontend/design.md §3.4`）。
+ *   （`specs/entry-delete-dialog`）。
  * - 「Skyshareリンクを削除」（entryのみ削除、最終確認なし）「リンク・Bluesky投稿を削除」
  *   「キャンセル」の3択を提示する。
  * - 「リンク・Bluesky投稿を削除」は取り消し不能で影響範囲が大きいため、選択と同時に

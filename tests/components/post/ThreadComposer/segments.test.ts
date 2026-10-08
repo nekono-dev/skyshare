@@ -33,14 +33,14 @@ describe("createEmptySegment", () => {
 })
 
 describe("addSegment", () => {
-    it("末尾にセグメントを1件追加する", () => {
+    it("[thread-composer/AC-1] 末尾にセグメントを1件追加する", () => {
         const segments = [createEmptySegment("ja")]
         const next = addSegment(segments, "en")
         expect(next).toHaveLength(2)
         expect(next[1].languageCode).toBe("en")
     })
 
-    it("MAX_THREAD_POST_COUNTに達している場合は追加しない", () => {
+    it("[thread-composer/AC-1] MAX_THREAD_POST_COUNTに達している場合は追加しない", () => {
         const segments = Array.from({ length: MAX_THREAD_POST_COUNT }, () =>
             createEmptySegment("ja"),
         )
@@ -51,7 +51,7 @@ describe("addSegment", () => {
 })
 
 describe("canRemoveSegment / removeSegment", () => {
-    it("先頭(0件目)は削除できない", () => {
+    it("[thread-composer/AC-5] 先頭(0件目)は削除できない", () => {
         expect(canRemoveSegment(0)).toBe(false)
         const segments = [createEmptySegment("ja"), createEmptySegment("ja")]
         const next = removeSegment(segments, 0)
@@ -59,7 +59,7 @@ describe("canRemoveSegment / removeSegment", () => {
         expect(next).toHaveLength(2)
     })
 
-    it("2件目以降は削除できる", () => {
+    it("[thread-composer/AC-5] 2件目以降は削除できる", () => {
         expect(canRemoveSegment(1)).toBe(true)
         const first = createEmptySegment("ja")
         const second = createEmptySegment("ja")
@@ -70,7 +70,7 @@ describe("canRemoveSegment / removeSegment", () => {
 })
 
 describe("segmentsToDraftPosts / draftPostsToSegments", () => {
-    it("セグメント配列を下書きposts配列へ変換する（labelsは選択時のみ）", () => {
+    it("[thread-composer/AC-9] セグメント配列を下書きposts配列へ変換する（labelsは選択時のみ）", () => {
         const segments: SegmentState[] = [
             {
                 ...createEmptySegment("ja"),
@@ -86,7 +86,7 @@ describe("segmentsToDraftPosts / draftPostsToSegments", () => {
         ])
     })
 
-    it("下書きposts配列からセグメント配列を復元する（画像等は空で復元される）", () => {
+    it("[thread-composer/AC-9] 下書きposts配列からセグメント配列を復元する（画像等は空で復元される）", () => {
         const restored = draftPostsToSegments(
             [{ text: "1件目", labels: ["spoiler"] }, { text: "2件目" }],
             "en",
@@ -101,7 +101,7 @@ describe("segmentsToDraftPosts / draftPostsToSegments", () => {
         expect(restored[1].selfLabel).toBeUndefined()
     })
 
-    it("往復させても本文とlabelsが保たれる", () => {
+    it("[thread-composer/AC-9] 往復させても本文とlabelsが保たれる", () => {
         const original = segmentsToDraftPosts([
             { ...createEmptySegment("ja"), text: "本文A" },
             { ...createEmptySegment("ja"), text: "本文B", selfLabel: "!warn" },

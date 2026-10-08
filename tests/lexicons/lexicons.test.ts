@@ -27,7 +27,7 @@ describe("lexicon JSONの検証", () => {
         expect(docs.length).toBeGreaterThan(0)
     })
 
-    it("全lexiconがスキーマとして妥当で、$refがすべて解決できる", () => {
+    it("[lexicon/AC-10] 全lexiconがスキーマとして妥当で、$refがすべて解決できる", () => {
         // コンストラクタが各docを検証して登録する。不正なdocは例外になる。
         const lexicons = new Lexicons(docs)
         for (const doc of docs) {
@@ -46,7 +46,7 @@ describe("lexicon JSONの検証", () => {
         ).not.toThrow()
     })
 
-    it("ファイルパスとlexiconのidが対応している（NSID → パス）", () => {
+    it("[lexicon/AC-10] ファイルパスとlexiconのidが対応している（NSID → パス）", () => {
         for (const [path, doc] of Object.entries(lexiconFiles)) {
             const expected = `/lexicons/${doc.id.split(".").join("/")}.json`
             // `<prefix>.defs` のような末尾セグメントがファイル名になる
@@ -54,7 +54,7 @@ describe("lexicon JSONの検証", () => {
         }
     })
 
-    it("lexiconのidが重複していない", () => {
+    it("[lexicon/AC-10] lexiconのidが重複していない", () => {
         const ids = docs.map(doc => doc.id)
         expect(new Set(ids).size).toBe(ids.length)
     })
@@ -90,7 +90,7 @@ describe("entryレコードのバリデーション", () => {
         createdAt: "2026-01-01T00:00:00.000Z",
     }) as Record<string, any>
 
-    it("正しいレコードを受理する", () => {
+    it("[lexicon/AC-1] 正しいレコードを受理する", () => {
         expect(() =>
             lexicons.assertValidRecord(ENTRY_COLLECTION, validRecord),
         ).not.toThrow()
@@ -103,7 +103,7 @@ describe("entryレコードのバリデーション", () => {
         ).toThrow()
     })
 
-    it("headingの上限（100文字）超過を拒否する", () => {
+    it("[lexicon/AC-4] headingの上限（100文字）超過を拒否する", () => {
         const record = {
             ...validRecord,
             manifest: { ...validRecord.manifest, heading: "あ".repeat(101) },

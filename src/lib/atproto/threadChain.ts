@@ -3,9 +3,9 @@
  * 後続投稿のみを直線的に辿って時系列順に抽出する共通ロジック。
  *
  * 責務と処理概要:
- * - Timeline一覧のスレッドグルーピング（`specs/timeline/design.md §2.2`）、
- *   entry削除時のスレッド全体削除対象の導出（`specs/entry/backend/design.md §7.4.1`）、
- *   entry詳細ページのスレッド表示（`specs/entry/frontend/design.md §3.3`）は、
+ * - Timeline一覧のスレッドグルーピング（`specs/timeline-api`）、
+ *   entry削除時のスレッド全体削除対象の導出（`specs/entry-api`）、
+ *   entry詳細ページのスレッド表示（`specs/entry-detail`）は、
  *   いずれも「第三者の返信、およびその分岐先を除外し、投稿者自身の投稿のみを
  *   直線的に辿る」という同一の抽出規則を要求しているため、この1箇所に実装を集約する。
  */
@@ -125,7 +125,7 @@ export const extractOwnedLinearReplyChain = (
  * 投稿レコード自体（`record.reply`、`app.bsky.feed.post#replyRef`のStrongRef）から
  * スレッド先頭(root)投稿のuriを取り出す。`FeedViewPost.reply`（AppViewによる
  * enriched view、NotFoundPost/BlockedPost型で欠落しうる）には依存しない
- * （`specs/timeline/design.md §2.2`）。
+ * （`specs/timeline-api`）。
  *
  * Input:
  * - `post`: 対象の`PostView`
@@ -142,7 +142,7 @@ export const extractReplyRootUri = (
  * AT URI（`at://<did-or-handle>/collection/rkey`）のauthority部分（DID）を取り出す。
  * `record.reply.root`/`parent`のStrongRef.uriは常にDID形式で記録されるため、
  * 追加のAPI呼び出しなしに「その投稿がどのrepoの所有か」を判定できる。
- * 他者起点スレッドの除外判定（`specs/timeline/design.md §2.3`）に用いる。
+ * 他者起点スレッドの除外判定（`specs/timeline-api`）に用いる。
  *
  * Input:
  * - `uri`: AT URI文字列
@@ -158,7 +158,7 @@ export const extractRepoDidFromAtUri = (uri: string): string | undefined =>
 
 /**
  * 投稿がスレッドの起点（`record.reply`を持たない投稿）かどうかを判定する。
- * entry削除時のBluesky投稿削除可否の判定（`specs/entry/backend/design.md §7.3.1`）で、
+ * entry削除時のBluesky投稿削除可否の判定（`specs/entry-api`）で、
  * サーバ（`resolveDeleteTargets`）とクライアント（`resolveEntryDeleteScope`）が
  * 同一の基準を用いるために共有する。
  *

@@ -21,7 +21,7 @@ export const BSKY_POST_COLLECTION = "app.bsky.feed.post"
  * - `POST /v2/entry`の`posts`配列、`v2/bsky/drafts`の下書き`posts`配列の両方が
  *   「スレッドの1セグメント」という同じ概念を表しているため、上限値をここに一本化する。
  *   将来フロントエンドにスレッド作成UIを実装する際も、この定数を参照して
- *   バックエンドと同じ上限をUI側で表示・制御できるようにする（`specs/threadpost/design.md`参照）。
+ *   バックエンドと同じ上限をUI側で表示・制御できるようにする（`specs/thread-composer`参照）。
  * - 実体は依存を持たない`./threadLimit.ts`で定義し、ここでは再エクスポートするだけに
  *   留める。`src/lib/api/schema/**`配下のスキーマファイル（コード生成ツール`orval`が
  *   `jiti`経由で読み込む。`jiti`は`@/*`エイリアスを解決しないため相対importのみで

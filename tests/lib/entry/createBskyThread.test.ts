@@ -47,7 +47,7 @@ const entryInput: ThreadEntryInput = {
     caption: "hello",
 }
 
-describe("createBskyThread: entry(source)の解決(specs/entry/backend/design.md §7.2)", () => {
+describe("createBskyThread: entry(source)の解決(specs/entry-api)", () => {
     it("entryInput未指定ならskyshareEntryは作成されない", async () => {
         const agent = makeAgent()
         const posts: ThreadPostInput[] = [{ text: "1件目" }, { text: "2件目" }]

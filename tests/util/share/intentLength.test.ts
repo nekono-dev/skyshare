@@ -18,7 +18,7 @@ describe("taittsuuIntentMeasure", () => {
         expect(taittsuuIntentMeasure("ｱ")).toBe(1)
     })
 
-    it("URLも例外とせず全文字を数える（Xの23固定にならない）", () => {
+    it("[share-text/AC-6] URLも例外とせず全文字を数える（Xの23固定にならない）", () => {
         expect(taittsuuIntentMeasure(URL_TEXT)).toBe(URL_TEXT.length)
         expect(xIntentMeasure(URL_TEXT)).toBe(23)
     })

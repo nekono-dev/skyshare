@@ -18,18 +18,21 @@ describe("resolveTruncateLimit", () => {
         ["x", false, undefined],
         ["taittsuu", false, undefined],
         ["mastodon", false, undefined],
-    ] as const)("%s / 設定%s → %s", (target, enabled, expected) => {
-        expect(resolveTruncateLimit(target, enabled)).toBe(expected)
-    })
+    ] as const)(
+        "[share-text/AC-4] %s / 設定%s → %s",
+        (target, enabled, expected) => {
+            expect(resolveTruncateLimit(target, enabled)).toBe(expected)
+        },
+    )
 })
 
 describe("buildIntentText の省略", () => {
-    it("truncateLimit未指定なら省略しない", () => {
+    it("[share-text/AC-1] truncateLimit未指定なら省略しない", () => {
         const text = buildIntentText(LONG_BODY, ENTRY_URL)
         expect(text).toBe(`${LONG_BODY}\n${ENTRY_URL}`)
     })
 
-    it("truncateLimit指定ならskyshareUriありで省略する", () => {
+    it("[share-text/AC-3] truncateLimit指定ならskyshareUriありで省略する", () => {
         const text = buildIntentText(LONG_BODY, ENTRY_URL, undefined, {
             truncateLimit: INTENT_WEIGHTED_LIMIT,
         })
@@ -56,7 +59,7 @@ describe("buildIntentText の省略", () => {
         expect(weightedLength(text)).toBeLessThanOrEqual(INTENT_WEIGHTED_LIMIT)
     })
 
-    it("リンクカードURLも末尾要素として削らずに残す", () => {
+    it("[share-text/AC-7] リンクカードURLも末尾要素として削らずに残す", () => {
         const text = buildIntentText(
             LONG_BODY,
             ENTRY_URL,
@@ -69,7 +72,7 @@ describe("buildIntentText の省略", () => {
         expect(weightedLength(text)).toBeLessThanOrEqual(INTENT_WEIGHTED_LIMIT)
     })
 
-    it("本文に含まれるリンクカードURLは重複して付けない", () => {
+    it("[share-text/AC-2] 本文に含まれるリンクカードURLは重複して付けない", () => {
         const text = buildIntentText(
             "見て example.com/page",
             ENTRY_URL,

@@ -104,7 +104,7 @@ describe("submitThread", () => {
         expect(body.posts[0]).not.toHaveProperty("ogImage")
     })
 
-    it("画像投稿segmentが0件のスレッドでは、createEntry/visualを送らない", async () => {
+    it("[thread-composer/AC-8] 画像投稿segmentが0件のスレッドでは、createEntry/visualを送らない", async () => {
         mockCreateEntryOk([
             { url: "https://x/1", uri: "at://1", cid: "c1" },
             { url: "https://x/2", uri: "at://2", cid: "c2" },
@@ -126,7 +126,7 @@ describe("submitThread", () => {
         expect(body.posts.every(p => !("createEntry" in p))).toBe(true)
     })
 
-    it("画像投稿segmentが1件のスレッドでは、そのsegmentのthumbnailBlobがトップレベルvisualになる", async () => {
+    it("[thread-composer/AC-8] 画像投稿segmentが1件のスレッドでは、そのsegmentのthumbnailBlobがトップレベルvisualになる", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },
@@ -158,7 +158,7 @@ describe("submitThread", () => {
         expect(warmOgpCache).toHaveBeenCalledWith("https://skyshare/2")
     })
 
-    it("画像投稿segmentが複数あるスレッドでは、先頭のsegmentのthumbnailBlobのみが自動選択される", async () => {
+    it("[thread-composer/AC-8] 画像投稿segmentが複数あるスレッドでは、先頭のsegmentのthumbnailBlobのみが自動選択される", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },
@@ -197,7 +197,7 @@ describe("submitThread", () => {
         expect(warmOgpCache).not.toHaveBeenCalledWith("https://skyshare/2")
     })
 
-    it("manualImageAttachが有効な画像投稿ではcreateEntry/visualを送らない", async () => {
+    it("[thread-composer/AC-8] manualImageAttachが有効な画像投稿ではcreateEntry/visualを送らない", async () => {
         mockCreateEntryOk([{ url: "https://x/1", uri: "at://1", cid: "c1" }])
 
         const segments = [
@@ -237,7 +237,7 @@ describe("submitThread", () => {
         })
     })
 
-    it("APIが200以外を返した場合、エラーコードを文言キーに変換して失敗にする", async () => {
+    it("[api-error-message/AC-8] APIが200以外を返した場合、エラーコードを文言キーに変換して失敗にする", async () => {
         vi.mocked(createEntry).mockResolvedValue({
             status: 400,
             data: { error: "APP_BSKY_POST_FAILED" },
@@ -355,7 +355,7 @@ describe("submitThread（動画）", () => {
         expect(body.visual).toBeUndefined()
     })
 
-    it("2 segment の動画スレッドで両方に video が載る", async () => {
+    it("[thread-composer/AC-7] 2 segment の動画スレッドで両方に video が載る", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },

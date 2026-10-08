@@ -17,7 +17,7 @@ const callRoute = (
 const authenticatedLocals = () => ({ agent: createFakeAgent() })
 
 describe("GET /v2/bsky/drafts", () => {
-    it("未認証の場合は401を返す", async () => {
+    it("[draft-api/AC-9] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
         )
@@ -25,7 +25,7 @@ describe("GET /v2/bsky/drafts", () => {
         expect(res.status).toBe(401)
     })
 
-    it("limitが範囲外の場合は400を返す", async () => {
+    it("[draft-api/AC-3] limitが範囲外の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/?limit=0",
         )
@@ -33,7 +33,7 @@ describe("GET /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("cursorが空文字の場合は400を返す", async () => {
+    it("[draft-api/AC-3] cursorが空文字の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/?cursor=",
         )
@@ -41,7 +41,7 @@ describe("GET /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("getDraftsのレスポンスが不正な形の場合は500を返す", async () => {
+    it("[draft-api/AC-7] getDraftsのレスポンスが不正な形の場合は500を返す", async () => {
         const getDrafts = vi
             .fn()
             .mockResolvedValue({ data: { drafts: [{ id: "missing-fields" }] } })
@@ -114,7 +114,7 @@ describe("GET /v2/bsky/drafts", () => {
         ])
     })
 
-    it("atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
+    it("[draft-api/AC-9] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
         const getDrafts = vi.fn().mockRejectedValue(
             Object.assign(new Error("RateLimitExceeded"), {
                 error: "RateLimitExceeded",
@@ -162,7 +162,7 @@ describe("POST /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("成功時は200で{id}を返す", async () => {
+    it("[draft-api/AC-4] 成功時は200で{id}を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             {
@@ -270,7 +270,7 @@ describe("PUT /v2/bsky/drafts", () => {
         expect(res.status).toBe(200)
     })
 
-    it("posts複数件(スレッド下書き)へ更新できる", async () => {
+    it("[draft-api/AC-5] posts複数件(スレッド下書き)へ更新できる", async () => {
         const updateDraft = vi.fn().mockResolvedValue({ data: {} })
         const agent = createFakeAgent({
             app: { bsky: { draft: { updateDraft } } },
@@ -313,7 +313,7 @@ describe("DELETE /v2/bsky/drafts", () => {
         expect(res.status).toBe(401)
     })
 
-    it("bodyがスキーマ不正(id欠落)の場合は400を返す", async () => {
+    it("[draft-api/AC-6] bodyがスキーマ不正(id欠落)の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             { method: "DELETE", body: JSON.stringify({}) },
@@ -322,7 +322,7 @@ describe("DELETE /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("成功時は200(本文なし)を返す", async () => {
+    it("[draft-api/AC-6] 成功時は200(本文なし)を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             { method: "DELETE", body: JSON.stringify({ id: "3ldrafttid" }) },

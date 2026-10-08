@@ -13,7 +13,7 @@ import styles from "./index.module.css"
  * - 4枚以下は比率固定でクロップするグリッド、5枚以上は高さ固定の横スクロール1行（`resolveGalleryLayout`）。
  * - 拡大中の画像インデックスを保持し、閉じたときに開いたサムネイルへフォーカスを戻す。
  * - `interactive=false` のときは拡大表示を持たない静的表示にする（レイアウトは同一）。
- * - 設計: specs/postcardlayout/design.md §3.1
+ * - 設計: specs/image-gallery
  */
 
 type Props = {

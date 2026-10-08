@@ -10,12 +10,12 @@ describe("formatDateTime", () => {
         timeZone: "Asia/Tokyo",
     } as const
 
-    it("ja は従来の toLocaleString('ja-JP') と一致する", () => {
+    it("[i18n-messages/AC-4] ja は従来の toLocaleString('ja-JP') と一致する", () => {
         expect(formatDateTime(iso, "ja", options)).toBe(
             new Date(iso).toLocaleString("ja-JP", options),
         )
     })
-    it("en は英語の書式になる", () => {
+    it("[i18n-messages/AC-3] en は英語の書式になる", () => {
         expect(formatDateTime(iso, "en", options)).toBe(
             new Date(iso).toLocaleString("en-US", options),
         )
@@ -27,7 +27,7 @@ describe("formatDateTime", () => {
 })
 
 describe("formatNumber", () => {
-    it("桁区切りを言語に合わせる", () => {
+    it("[i18n-messages/AC-3] 桁区切りを言語に合わせる", () => {
         expect(formatNumber(12345, "en")).toBe("12,345")
         expect(formatNumber(12345, "ja")).toBe("12,345")
     })

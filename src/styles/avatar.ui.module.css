@@ -20,7 +20,7 @@
   --size-avatar-footer: 36px;
 }
 
-/* スマホ幅(640px未満)は一段大きくする(specs/mobilescale/design.md参照)。
+/* スマホ幅(640px未満)は一段大きくする(specs/design-tokens)。
    tokens.cssより後にimportされるため、定義側のここで上書きする。 */
 @media (max-width: 639px) {
   :root {

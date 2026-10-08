@@ -4,7 +4,7 @@
  * 責務と処理概要:
  * - Reactの外側で完結する、セグメントの追加・削除・下書き変換ロジックのみを持つ
  *   （DOM・API呼び出し・Reactの state 更新には一切触れない）。
- * - `specs/threadpost/requirements.md §5`の決定により、先頭（1件目）segmentは
+ * - `specs/thread-composer`の決定により、先頭（1件目）segmentは
  *   スレッドの起点のため削除できない。2件目以降は編集中かどうかに関わらずいつでも削除できる。
  */
 import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"

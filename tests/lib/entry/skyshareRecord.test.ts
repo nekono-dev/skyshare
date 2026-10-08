@@ -79,7 +79,7 @@ describe("toCreatedSkyshareEntry", () => {
 })
 
 describe("updateSkyshareEntry", () => {
-    it("既存レコードのsource/visual/createdAtを維持しheading/captionのみ更新する", async () => {
+    it("[entry-api/AC-15] 既存レコードのsource/visual/createdAtを維持しheading/captionのみ更新する", async () => {
         const getRecord = vi.fn().mockResolvedValue({
             data: {
                 cid: "bafyold",

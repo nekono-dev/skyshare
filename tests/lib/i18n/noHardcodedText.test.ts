@@ -128,7 +128,7 @@ const files = listFiles(SRC_DIR)
     )
 
 describe("文言の直書き検出", () => {
-    it("ts/tsx に日本語・英語のUI文言が直書きされていない", () => {
+    it("[i18n-messages/AC-7] ts/tsx に日本語・英語のUI文言が直書きされていない", () => {
         const violations: string[] = []
         for (const { file, rel } of files.filter(({ rel }) =>
             /\.(ts|tsx)$/.test(rel),

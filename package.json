@@ -19,6 +19,8 @@
     "generate-types": "wrangler types",
     "test": "vitest run",
     "lint:lexicon": "./hack/lint-lexicon.sh",
+    "lint:spec": "prettier --check specs && node .claude/skills/spec-driven-development/scripts/check-all.mjs",
+    "test:spec": "node --test .claude/skills/spec-driven-development/scripts/selftest.mjs",
     "test:watch": "vitest",
     "test:e2e": "npm run dev && playwright test"
   },

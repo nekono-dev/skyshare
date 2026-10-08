@@ -19,7 +19,7 @@ import { listAllRecords } from "@/lib/atproto/repo"
  *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ）と embed し、
  *   バックエンド側で権威的にスレッド構造化（`buildTimelineThreads`）した
  *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する
- *   （`specs/timeline/design.md §1-§2`）。
+ *   （`specs/timeline-api`）。
  * - skyshare entry 自体の一覧・作成・削除は `/v2/entry`・`/v2/entries/skyshare` を参照。
  *
  * 実装上の制約:

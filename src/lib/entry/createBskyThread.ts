@@ -55,7 +55,7 @@ export type ThreadPostInput = {
 /**
  * リクエスト全体で高々1件だけ作成されるskyshare entryの入力。
  * `source`は常にスレッド先頭（`posts[0]`）の事前計算済みuri/cidになる
- * （`specs/entry/backend/design.md §7.2`）。
+ * （`specs/entry-api`）。
  */
 export type ThreadEntryInput = {
     visual: any
@@ -122,7 +122,7 @@ export const createBskyThread = async (
     // スレッド先頭(posts[0])自身のuri/cid。`rootRef`は`reply`で指定された既存スレッドへ
     // 継ぎ足す場合、その既存投稿(このリクエストの外)を指すことがあるため、
     // entryの`source`が指す「posts[0]自身」を別途保持する
-    // (specs/entry/backend/design.md §7.2)。
+    // (specs/entry-api)。
     let firstPostRef: Components.CommonStrongRefType | undefined
 
     for (const [i, post] of posts.entries()) {

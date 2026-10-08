@@ -4,7 +4,7 @@
  * 責務と処理概要:
  * - 「リンク・Bluesky投稿を削除」の最終確認として、実際に削除される投稿
  *   （本文・投稿日時・サムネイル）を古い順に一覧表示する
- *   （`specs/entry/frontend/design.md §3.4.5`）。
+ *   （`specs/entry-delete-dialog`）。
  * - 汎用の`ConfirmDialog`は本文メッセージのみを持つため継承・拡張せず、`Overlay`と
  *   ダイアログ共通スタイルを直接使って独立に実装する。
  * - 一覧は共通の`ComponentList`＋`DeletePostListItem`で描画する。スレッド（2件以上）では一覧の

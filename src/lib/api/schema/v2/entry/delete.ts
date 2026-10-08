@@ -10,7 +10,7 @@ import * as Common from "../../common"
 
 /**
  * `deleteBskyPost:true`は、`source`を起点とする自己後続投稿すべて（単発投稿なら1件）の
- * 削除を意味する（`specs/entry/backend/design.md §5.1`）。未知のキー（廃止された
+ * 削除を意味する（`specs/entry-api`）。未知のキー（廃止された
  * `deleteBskyThread`を含む）は400になる。
  */
 export const RequestBodySchema = z

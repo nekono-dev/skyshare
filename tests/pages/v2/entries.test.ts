@@ -31,7 +31,7 @@ describe("GET /v2/entries", () => {
         expect(res.status).toBe(401)
     })
 
-    it("リポストを除外し、自分の投稿のみをthreads配列として返す", async () => {
+    it("[timeline-api/AC-1] リポストを除外し、自分の投稿のみをthreads配列として返す", async () => {
         const ownPost = {
             post: {
                 uri: "at://did:plc:author/app.bsky.feed.post/3lown",
@@ -62,7 +62,7 @@ describe("GET /v2/entries", () => {
         expect(json.threads[0].rootPost.uri).toBe(ownPost.post.uri)
     })
 
-    it("1ページ目がlimit未満の場合はcursorを辿って追加ページを取得する", async () => {
+    it("[timeline-api/AC-10] 1ページ目がlimit未満の場合はcursorを辿って追加ページを取得する", async () => {
         const makeOwnPost = (rkey: string) => ({
             post: {
                 uri: `at://did:plc:author/app.bsky.feed.post/${rkey}`,
@@ -91,7 +91,7 @@ describe("GET /v2/entries", () => {
         expect(getAuthorFeed).toHaveBeenCalledTimes(2)
     })
 
-    it("紐づくskyshare entryをsource.uriで突き合わせて付与する", async () => {
+    it("[timeline-api/AC-9] 紐づくskyshare entryをsource.uriで突き合わせて付与する", async () => {
         const postUri = "at://did:plc:author/app.bsky.feed.post/3lown"
         const getAuthorFeed = vi.fn().mockResolvedValue({
             data: {
@@ -139,7 +139,7 @@ describe("GET /v2/entries", () => {
         expect(json.threads[0].rootPost.skyshareEntry.sourceUri).toBe(postUri)
     })
 
-    it("getAuthorFeedがスレッド中間の投稿を欠落させた場合、getPostThreadで補って1つのThreadGroupにまとめる", async () => {
+    it("[timeline-api/AC-5] getAuthorFeedがスレッド中間の投稿を欠落させた場合、getPostThreadで補って1つのThreadGroupにまとめる", async () => {
         // 実際に観測された不具合の再現: getAuthorFeedのレスポンスに"root"(test)と
         // "tail"(test3、record.replyは一覧に無い"mid"を指す)のみが含まれ、
         // "mid"(test2)自体が欠落しているケース。
@@ -231,7 +231,7 @@ describe("GET /v2/entries", () => {
         ).toEqual([midUri, tailUri])
     })
 
-    it("root投稿は残るが後続投稿がすべて欠落する場合でも、replyCountを手がかりに補完する", async () => {
+    it("[timeline-api/AC-5] root投稿は残るが後続投稿がすべて欠落する場合でも、replyCountを手がかりに補完する", async () => {
         // root(test)のみがgetAuthorFeedに含まれ、その後続(test2/test3)は
         // 1件もfeedに現れないケース（gap検出方式では検知不可能だった、より重度な欠落）。
         const rootUri = "at://did:plc:author/app.bsky.feed.post/3lroot"

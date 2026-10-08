@@ -167,7 +167,7 @@ const findPostWrite = (writes: ThreadWrite[], text: string): ThreadWrite => {
 }
 
 describe("POST /v2/entry", () => {
-    it("cookieヘッダーが無い場合は400を返す", async () => {
+    it("[entry-api/AC-16] cookieヘッダーが無い場合は400を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "POST",
             body: new FormData(),
@@ -176,7 +176,7 @@ describe("POST /v2/entry", () => {
         expect(res.status).toBe(400)
     })
 
-    it("cookieヘッダーはあるがセッション未確立の場合は401を返す", async () => {
+    it("[entry-api/AC-16] cookieヘッダーはあるがセッション未確立の場合は401を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "POST",
             headers: authHeaders,
@@ -233,7 +233,7 @@ describe("POST /v2/entry", () => {
     describe("uri指定時(from-post)", () => {
         const postUri = "at://did:plc:author/app.bsky.feed.post/3lpost"
 
-        it("所有者不一致のuriなら400を返す", async () => {
+        it("[entry-api/AC-7] 所有者不一致のuriなら400を返す", async () => {
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
                 {
@@ -278,7 +278,7 @@ describe("POST /v2/entry", () => {
             expect(res.status).toBe(404)
         })
 
-        it("成功時は200でbsky/skyshare情報を返す", async () => {
+        it("[entry-api/AC-7] 成功時は200でbsky/skyshare情報を返す", async () => {
             const agent = createFakeAgent()
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
@@ -300,7 +300,7 @@ describe("POST /v2/entry", () => {
     })
 
     describe("新規投稿(posts)", () => {
-        it("createEntry:trueで画像投稿を含まなくても、visualがあれば200でskyshareEntryを返す（作成可否の判定はクライアントの責務）", async () => {
+        it("[entry-api/AC-5] createEntry:trueで画像投稿を含まなくても、visualがあれば200でskyshareEntryを返す（作成可否の判定はクライアントの責務）", async () => {
             const formData = buildTextPostFormData()
             formData.set("createEntry", "true")
             formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
@@ -659,7 +659,7 @@ describe("POST /v2/entry", () => {
             )
         })
 
-        it("replyのroot/parentが他人の投稿を指す場合は400を返す", async () => {
+        it("[entry-api/AC-4 entry-api/AC-13] replyのroot/parentが他人の投稿を指す場合は400を返す", async () => {
             const reply = {
                 root: {
                     uri: "at://did:plc:other/app.bsky.feed.post/3lroot",
@@ -841,7 +841,7 @@ describe("POST /v2/entry", () => {
             })
         }
 
-        it("テキストのみ投稿と画像のみ投稿が混在するスレッドは200で各投稿のembedが独立して反映される", async () => {
+        it("[entry-api/AC-1] テキストのみ投稿と画像のみ投稿が混在するスレッドは200で各投稿のembedが独立して反映される", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
                 [{ text: "1件目" }, { text: "2件目", imagesCount: 1 }],
@@ -857,7 +857,7 @@ describe("POST /v2/entry", () => {
             )
         })
 
-        it("画像4枚はimages型、5枚はgallery型のembedになる", async () => {
+        it("[entry-api/AC-2] 画像4枚はimages型、5枚はgallery型のembedになる", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
                 [
@@ -876,7 +876,7 @@ describe("POST /v2/entry", () => {
             expect(gallery.items).toHaveLength(5)
         })
 
-        it("画像11枚の投稿は400を返す", async () => {
+        it("[entry-api/AC-2] 画像11枚の投稿は400を返す", async () => {
             const res = await sendThread(
                 [{ text: "11枚", imagesCount: 11 }],
                 mockApplyWrites(),
@@ -973,7 +973,7 @@ describe("POST /v2/entry", () => {
             )
         })
 
-        it("画像とOGP情報を両方指定した投稿は画像embedが優先される", async () => {
+        it("[entry-api/AC-3] 画像とOGP情報を両方指定した投稿は画像embedが優先される", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
                 [
@@ -1013,7 +1013,7 @@ describe("POST /v2/entry", () => {
             expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
         })
 
-        it("createEntry:trueのスレッドで、画像投稿が中間(posts[1])にあっても、sourceは常にposts[0](スレッド先頭)を指す", async () => {
+        it("[entry-api/AC-6] createEntry:trueのスレッドで、画像投稿が中間(posts[1])にあっても、sourceは常にposts[0](スレッド先頭)を指す", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
                 [{ text: "1件目" }, { text: "2件目", imagesCount: 1 }],
@@ -1027,7 +1027,7 @@ describe("POST /v2/entry", () => {
             expect(json.skyshareEntry.sourceUri).not.toBe(json.posts[1].uri)
         })
 
-        it("createEntry:trueのスレッドが画像投稿を1件も含まなくても、visualがあれば200でsourceがposts[0]のskyshareEntryを返す", async () => {
+        it("[entry-api/AC-5] createEntry:trueのスレッドが画像投稿を1件も含まなくても、visualがあれば200でsourceがposts[0]のskyshareEntryを返す", async () => {
             const applyWrites = mockApplyWrites()
             const res = await sendThread(
                 [{ text: "1件目" }, { text: "2件目" }],
@@ -1079,7 +1079,7 @@ describe("POST /v2/entry", () => {
             expect(secondWrite.value.reply.parent.uri).toBe(firstPostUri)
         })
 
-        it("スレッド内の特定投稿のみgate指定した場合、該当rkeyにのみgateレコードが作成される", async () => {
+        it("[entry-api/AC-4] スレッド内の特定投稿のみgate指定した場合、該当rkeyにのみgateレコードが作成される", async () => {
             const applyWrites = mockApplyWrites()
             const gate = {
                 replyAudience: "nobody",
@@ -1111,7 +1111,7 @@ describe("POST /v2/entry", () => {
     })
 
     describe("スレッド投稿の異常系", () => {
-        it("2件目でfacetsのbyteEndが本文バイト長を超える場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
+        it("[entry-api/AC-14] 2件目でfacetsのbyteEndが本文バイト長を超える場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
             const applyWrites = vi.fn()
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
@@ -1147,7 +1147,7 @@ describe("POST /v2/entry", () => {
             expect(applyWrites).not.toHaveBeenCalled()
         })
 
-        it("2件目で画像枚数とメタデータ件数が不一致の場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
+        it("[entry-api/AC-14] 2件目で画像枚数とメタデータ件数が不一致の場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
             const applyWrites = vi.fn()
             const request = new Request(
                 "https://skyshare.nekono.dev/v2/entry/",
@@ -1262,7 +1262,7 @@ describe("PUT /v2/entry", () => {
         expect(res.status).toBe(400)
     })
 
-    it("uriが自分自身のentryでない場合は400を返す", async () => {
+    it("[entry-api/AC-8 entry-api/AC-13] uriが自分自身のentryでない場合は400を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "PUT",
             headers: {
@@ -1279,7 +1279,7 @@ describe("PUT /v2/entry", () => {
         expect(res.status).toBe(400)
     })
 
-    it("対象entryが見つからない場合は404を返す", async () => {
+    it("[entry-api/AC-16] 対象entryが見つからない場合は404を返す", async () => {
         const agent = createFakeAgent({
             com: {
                 atproto: {
@@ -1312,7 +1312,7 @@ describe("PUT /v2/entry", () => {
         expect(res.status).toBe(404)
     })
 
-    it("成功時は200(本文なし)を返す", async () => {
+    it("[entry-api/AC-8] 成功時は200(本文なし)を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "PUT",
             headers: {
@@ -1382,7 +1382,7 @@ describe("DELETE /v2/entry", () => {
         expect(res.status).toBe(400)
     })
 
-    it("uriが自分自身のentryでない場合は400を返す", async () => {
+    it("[entry-api/AC-13] uriが自分自身のentryでない場合は400を返す", async () => {
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "DELETE",
             headers: {
@@ -1424,7 +1424,7 @@ describe("DELETE /v2/entry", () => {
         expect(res.status).toBe(404)
     })
 
-    it("deleteBskyPost指定時、元投稿の削除に失敗してもentry削除自体は200を返す", async () => {
+    it("[entry-api/AC-12] deleteBskyPost指定時、元投稿の削除に失敗してもentry削除自体は200を返す", async () => {
         const agent = createFakeAgent({
             com: {
                 atproto: {
@@ -1555,7 +1555,7 @@ describe("DELETE /v2/entry", () => {
             expect(applyWrites).not.toHaveBeenCalled()
         })
 
-        it("起点の後続自己投稿を辿って1回のapplyWritesで全件削除する", async () => {
+        it("[entry-api/AC-9] 起点の後続自己投稿を辿って1回のapplyWritesで全件削除する", async () => {
             const applyWrites = vi.fn().mockResolvedValue({ data: {} })
             const getPostThread = vi.fn().mockResolvedValue({
                 data: {
@@ -1599,7 +1599,7 @@ describe("DELETE /v2/entry", () => {
             }
         })
 
-        it("第三者の返信で分岐した先は削除対象から除外される", async () => {
+        it("[entry-api/AC-9] 第三者の返信で分岐した先は削除対象から除外される", async () => {
             const deleteRecord = vi.fn().mockResolvedValue({})
             const applyWrites = vi.fn().mockResolvedValue({ data: {} })
             const getPostThread = vi.fn().mockResolvedValue({
@@ -1676,7 +1676,7 @@ describe("DELETE /v2/entry", () => {
             ])
         })
 
-        it("sourceが返信投稿(起点でない)の場合は409を返し、何も削除しない", async () => {
+        it("[entry-api/AC-10] sourceが返信投稿(起点でない)の場合は409を返し、何も削除しない", async () => {
             const deleteRecord = vi.fn().mockResolvedValue({})
             const applyWrites = vi.fn().mockResolvedValue({ data: {} })
             const getPostThread = vi.fn().mockResolvedValue({
@@ -1710,7 +1710,7 @@ describe("DELETE /v2/entry", () => {
             expect(applyWrites).not.toHaveBeenCalled()
         })
 
-        it("getPostThreadがNotFound以外で失敗した場合は500を返し、何も削除しない", async () => {
+        it("[entry-api/AC-11] getPostThreadがNotFound以外で失敗した場合は500を返し、何も削除しない", async () => {
             const deleteRecord = vi.fn().mockResolvedValue({})
             const getPostThread = vi
                 .fn()
@@ -1728,7 +1728,7 @@ describe("DELETE /v2/entry", () => {
             expect(deleteRecord).not.toHaveBeenCalled()
         })
 
-        it("source投稿が既に存在しない場合はentryのみ削除して200を返す", async () => {
+        it("[entry-api/AC-11] source投稿が既に存在しない場合はentryのみ削除して200を返す", async () => {
             const deleteRecord = vi.fn().mockResolvedValue({})
             const getPostThread = vi.fn().mockResolvedValue({
                 data: {
@@ -1757,7 +1757,7 @@ describe("DELETE /v2/entry", () => {
             )
         })
 
-        it("applyWritesが失敗してもentry削除自体は200を返す", async () => {
+        it("[entry-api/AC-12] applyWritesが失敗してもentry削除自体は200を返す", async () => {
             const applyWrites = vi.fn().mockRejectedValue(new Error("fail"))
             const getPostThread = vi.fn().mockResolvedValue({
                 data: {
@@ -1859,7 +1859,7 @@ describe("POST /v2/entry（動画投稿）", () => {
         formData.set(`posts[${i}][videoMeta]`, JSON.stringify(meta))
     }
 
-    it("動画投稿は app.bsky.embed.video を作り、動画の uploadBlob は呼ばない", async () => {
+    it("[video-upload/AC-9 video-upload/AC-12] 動画投稿は app.bsky.embed.video を作り、動画の uploadBlob は呼ばない", async () => {
         const formData = new FormData()
         formData.set("posts[0][text]", "動画です")
         setVideo(formData, 0)
@@ -1877,7 +1877,7 @@ describe("POST /v2/entry（動画投稿）", () => {
         })
     })
 
-    it("2セグメントのスレッドで各投稿に動画 embed が載る", async () => {
+    it("[video-upload/AC-11] 2セグメントのスレッドで各投稿に動画 embed が載る", async () => {
         const formData = new FormData()
         formData.set("posts[0][text]", "一つ目")
         setVideo(formData, 0)
@@ -1913,7 +1913,7 @@ describe("POST /v2/entry（動画投稿）", () => {
         ).toBe(true)
     })
 
-    it("動画と画像の併用は 400", async () => {
+    it("[video-upload/AC-10] 動画と画像の併用は 400", async () => {
         const formData = new FormData()
         formData.set("posts[0][text]", "x")
         setVideo(formData, 0)

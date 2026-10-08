@@ -8,7 +8,9 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("# 候補: ハイライト移動・クリック確定・Escで閉じる", async ({ page }) => {
+test("[listbox-option/AC-1 listbox-option/AC-2] # 候補: ハイライト移動・クリック確定・Escで閉じる", async ({
+    page,
+}) => {
     test.setTimeout(90_000)
     await page.route("**/app.bsky.unspecced.getTrendingTopics**", route =>
         route.fulfill({

@@ -41,7 +41,7 @@ describe("pickLocaleFromLanguages", () => {
         expect(pickLocaleFromLanguages(["en-GB"])).toBe("en")
         expect(pickLocaleFromLanguages(["JA-jp"])).toBe("ja")
     })
-    it("未対応言語を飛ばして最初の一致を返す", () => {
+    it("[i18n-locale/AC-2] 未対応言語を飛ばして最初の一致を返す", () => {
         expect(pickLocaleFromLanguages(["fr-FR", "en-US", "ja"])).toBe("en")
     })
     it("一致なしは undefined", () => {
@@ -51,7 +51,7 @@ describe("pickLocaleFromLanguages", () => {
 })
 
 describe("resolveLocale", () => {
-    it("保存済み設定がブラウザ言語より優先される", () => {
+    it("[i18n-locale/AC-1] 保存済み設定がブラウザ言語より優先される", () => {
         expect(resolveLocale("ja", ["en-US"])).toBe("ja")
     })
     it("未保存・不正値はブラウザ言語を使う", () => {
@@ -59,11 +59,11 @@ describe("resolveLocale", () => {
         expect(resolveLocale(undefined, ["en-US"])).toBe("en")
         expect(resolveLocale("fr", ["en-US"])).toBe("en")
     })
-    it("ブラウザ言語が非対応言語のみなら英語", () => {
+    it("[i18n-locale/AC-3] ブラウザ言語が非対応言語のみなら英語", () => {
         expect(resolveLocale(null, ["fr"])).toBe("en")
         expect(resolveLocale(null, ["fr-FR", "de"])).toBe("en")
     })
-    it("ブラウザ言語が未設定なら日本語", () => {
+    it("[i18n-locale/AC-3] ブラウザ言語が未設定なら日本語", () => {
         expect(resolveLocale(null, [])).toBe("ja")
     })
 })

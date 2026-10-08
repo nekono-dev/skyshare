@@ -3,8 +3,8 @@
  * 「スレッド由来entryを持つ投稿」（FR-4）を判定するロジック。
  *
  * 責務と処理概要:
- * - `resolveEntryVisualSourcePost`: `specs/timeline/design.md §5.1`。
- * - `findEntryCarrier`: `specs/timeline/design.md §6.1`。
+ * - `resolveEntryVisualSourcePost`: `specs/timeline`。
+ * - `findEntryCarrier`: `specs/timeline`。
  * - いずれも`ThreadGroup`のみを入力に取る純粋関数で、UI（`ThreadCard`）から分離する。
  */
 import {

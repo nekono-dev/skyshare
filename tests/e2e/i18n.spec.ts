@@ -11,7 +11,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 test.describe("英語ブラウザ", () => {
     test.use({ locale: "en-US" })
 
-    test("初期描画後にナビ・タイトル・lang が英語になり、遷移後も維持される", async ({
+    test("[i18n-locale/AC-9] 初期描画後にナビ・タイトル・lang が英語になり、遷移後も維持される", async ({
         page,
     }) => {
         await page.goto("/entries/?guest")
@@ -75,7 +75,7 @@ const clickUntilVisible = async (trigger: Locator, target: Locator) => {
 }
 
 test.describe("表示言語の切り替え（設定画面）", () => {
-    test("English を選ぶと即座に英語になり、再読み込み・遷移後も維持され、システム設定で戻る", async ({
+    test("[i18n-locale/AC-6 i18n-locale/AC-8] English を選ぶと即座に英語になり、再読み込み・遷移後も維持され、システム設定で戻る", async ({
         page,
     }) => {
         await page.goto("/settings/?guest", { timeout: 60_000 })
@@ -208,7 +208,7 @@ const collectJapanese = (page: Page) =>
 test.describe("英語ブラウザ: 画面ごとの翻訳漏れ（ゲスト表示）", () => {
     test.use({ locale: "en-US" })
 
-    test("/post/?guest: 投稿フォームの文言が英語で、日本語が残らない", async ({
+    test("[i18n-messages/AC-1] /post/?guest: 投稿フォームの文言が英語で、日本語が残らない", async ({
         page,
     }) => {
         await page.goto("/post/?guest", { timeout: 60_000 })
@@ -222,7 +222,7 @@ test.describe("英語ブラウザ: 画面ごとの翻訳漏れ（ゲスト表示
         expect(await collectJapanese(page)).toEqual([])
     })
 
-    test("/?guest: ダミー投稿が英語で、スレッドの件数が単数・複数で表示される", async ({
+    test("[i18n-messages/AC-9 i18n-messages/AC-2] /?guest: ダミー投稿が英語で、スレッドの件数が単数・複数で表示される", async ({
         page,
     }) => {
         await page.goto("/?guest", { timeout: 60_000 })
@@ -267,7 +267,9 @@ test.describe("英語ブラウザ: 画面ごとの翻訳漏れ（ゲスト表示
         await expect(dialog).toContainText("This will delete 1 Bluesky post.")
     })
 
-    test("/login/ と /help/: 案内文が英語になる", async ({ page }) => {
+    test("[i18n-messages/AC-9] /login/ と /help/: 案内文が英語になる", async ({
+        page,
+    }) => {
         await page.goto("/login/", { timeout: 60_000 })
         await expect(
             page.getByText("Persistent Skyshare-generated content"),
@@ -314,7 +316,7 @@ test.describe("APIエラーの表示（ログイン）", () => {
         test.describe(locale, () => {
             test.use({ locale })
 
-            test("409 はアカウント数上限、500 は汎用のログイン失敗が表示される", async ({
+            test("[api-error-message/AC-1 api-error-message/AC-4] 409 はアカウント数上限、500 は汎用のログイン失敗が表示される", async ({
                 page,
             }) => {
                 let status = 409
@@ -378,7 +380,7 @@ test.describe("言語切り替えでの入力保持（FR-7）", () => {
         await expect(domain).toHaveValue("mastodon.example")
     })
 
-    test("/post/?guest: 投稿本文の入力中に言語を切り替えても、本文が保持され文言だけが変わる", async ({
+    test("[i18n-locale/AC-7] /post/?guest: 投稿本文の入力中に言語を切り替えても、本文が保持され文言だけが変わる", async ({
         page,
     }) => {
         await page.goto("/post/?guest", { timeout: 60_000 })
@@ -412,7 +414,7 @@ test.describe("サーバー描画ページの言語（FR-13）", () => {
     test.describe("en-US", () => {
         test.use({ locale: "en-US" })
 
-        test("Entry詳細（SSR）は Accept-Language が英語なら lang=en で描画される", async ({
+        test("[i18n-locale/AC-10] Entry詳細（SSR）は Accept-Language が英語なら lang=en で描画される", async ({
             page,
         }) => {
             const response = await page.goto("/entries/not-exist/", {
@@ -435,7 +437,7 @@ test.describe("サーバー描画ページの言語（FR-13）", () => {
 })
 
 test.describe("ログイン画面の言語切り替え", () => {
-    test("ログイン画面のプルダウンで English を選ぶと、フォームの文言が即座に英語になり再読み込み後も維持される", async ({
+    test("[i18n-locale/AC-5] ログイン画面のプルダウンで English を選ぶと、フォームの文言が即座に英語になり再読み込み後も維持される", async ({
         page,
     }) => {
         await page.goto("/login/", { timeout: 60_000 })

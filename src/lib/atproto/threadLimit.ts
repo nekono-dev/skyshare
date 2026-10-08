@@ -1,6 +1,6 @@
 /**
  * スレッド投稿数の上限。`v2/entry`の`posts`配列・`v2/bsky/drafts`の下書き`posts`配列の
- * 双方が参照する共有定数（NFR-7、`specs/entry/backend/requirements.md`参照）。
+ * 双方が参照する共有定数（`specs/entry-api` 参照）。
  *
  * このファイル自体は他に何もimportしない、依存を持たない定数のみのモジュールにする。
  * `src/lib/api/schema/**`配下のスキーマファイルは、コード生成ツール（`orval`、

@@ -48,7 +48,7 @@ describe("drawVideoOverlay", () => {
         return { context, calls }
     }
 
-    it("scale=1 で円・再生記号を設計の寸法で描く", () => {
+    it("[entry-visual/AC-11] scale=1 で円・再生記号を設計の寸法で描く", () => {
         const { context, calls } = makeContext(40)
         drawVideoOverlay()(context, 1)
 
@@ -76,7 +76,7 @@ describe("drawVideoOverlay", () => {
         )
     })
 
-    it("scale を掛けた寸法で描く", () => {
+    it("[entry-visual/AC-4] scale を掛けた寸法で描く", () => {
         const { context, calls } = makeContext()
         drawVideoOverlay()(context, 0.5)
         const arc = calls.find(c => c.op === "arc")!

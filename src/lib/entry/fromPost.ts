@@ -109,7 +109,7 @@ export const createEntryFromExistingPost = async (
     }
 
     // sourceは検証済みの対象投稿自身。reply.rootを辿る自動解決は行わない
-    // （どの投稿をsourceにするかはクライアントの責務、specs/entry/backend/design.md §7.2）。
+    // （どの投稿をsourceにするかはクライアントの責務、specs/entry-api）。
     const source = { uri: postUri, cid: postCid }
 
     let skyshareEntry: CreatedSkyshareEntry

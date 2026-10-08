@@ -7,7 +7,7 @@
  *   （中間・後続を問わず任意件数）を一覧レスポンスから欠落させる場合がある
  *   （既知のAppView側の挙動）。この欠落に依存せず正しいスレッド構造を返すため、
  *   `replyCount`や投稿レコード自体の`record.reply`をシグナルに、該当スレッドを
- *   `app.bsky.feed.getPostThread`で直接・権威的に取得し直す（`specs/timeline/design.md §1-§2`）。
+ *   `app.bsky.feed.getPostThread`で直接・権威的に取得し直す（`specs/timeline-api`）。
  * - 表示対象は「自分起点スレッド」（プロトコルルートが自分の投稿）のメインスレッド
  *   （`extractOwnedLinearReplyChain`が選ぶ唯一の直線的投稿列）のみ。他者起点スレッド
  *   （他人の投稿への返信から始まるもの）と、分岐で採用されなかったサブスレッドは

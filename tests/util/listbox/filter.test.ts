@@ -9,7 +9,7 @@ const items = [
 ]
 
 describe("normalizeForSearch", () => {
-    it("全角半角と大文字小文字を同一視する", () => {
+    it("[dropdown-search/AC-5] 全角半角と大文字小文字を同一視する", () => {
         expect(normalizeForSearch("ＫＯ")).toBe("ko")
         expect(normalizeForSearch("English")).toBe("english")
     })
@@ -21,12 +21,12 @@ describe("filterOptions", () => {
         expect(filterOptions(items, "  ")).toHaveLength(3)
     })
 
-    it("ラベルの部分一致で絞り込む", () => {
+    it("[dropdown-search/AC-5] ラベルの部分一致で絞り込む", () => {
         expect(filterOptions(items, "한국")).toEqual([items[1]])
         expect(filterOptions(items, "ENGL")).toEqual([items[2]])
     })
 
-    it("searchText でも絞り込める（全角入力も可）", () => {
+    it("[dropdown-search/AC-6] searchText でも絞り込める（全角入力も可）", () => {
         expect(filterOptions(items, "ko")).toEqual([items[1]])
         expect(filterOptions(items, "ＪＡ")).toEqual([items[0]])
     })

@@ -87,7 +87,7 @@ describe("resolveEntryDeleteScope", () => {
         ])
     })
 
-    it("分岐がある場合でも、採用された1系統の件数で判定する", async () => {
+    it("[entry-delete-dialog/AC-13] 分岐がある場合でも、採用された1系統の件数で判定する", async () => {
         getPostThread.mockResolvedValue({
             data: {
                 thread: {

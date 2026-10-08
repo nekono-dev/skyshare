@@ -19,7 +19,7 @@ describe("createTranslator", () => {
         expect(createTranslator("ja").t("common.cancel")).toBe("キャンセル")
         expect(createTranslator("en").t("common.cancel")).toBe("Cancel")
     })
-    it("tn は英語で 0/1/2 の単複を切り替える", () => {
+    it("[i18n-messages/AC-2] tn は英語で 0/1/2 の単複を切り替える", () => {
         const { tn } = createTranslator("en")
         expect(tn("common.itemCount", 0)).toBe("0 items")
         expect(tn("common.itemCount", 1)).toBe("1 item")

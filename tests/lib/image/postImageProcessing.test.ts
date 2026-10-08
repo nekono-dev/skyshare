@@ -13,7 +13,7 @@ import {
 } from "@/lib/image/postImageProcessing"
 
 describe("getSlotDefs", () => {
-    it("1枚は全面スロット", () => {
+    it("[entry-visual/AC-2] 1枚は全面スロット", () => {
         const slots = getSlotDefs(1)
         expect(slots).toHaveLength(1)
         expect(slots[0]).toMatchObject({
@@ -24,18 +24,18 @@ describe("getSlotDefs", () => {
         })
     })
 
-    it("2枚は左右2分割", () => {
+    it("[entry-visual/AC-2] 2枚は左右2分割", () => {
         const slots = getSlotDefs(2)
         expect(slots).toHaveLength(2)
         expect(slots[0].w).toBe(TARGET_WIDTH / 2)
         expect(slots[1].x).toBe(TARGET_WIDTH / 2)
     })
 
-    it("3枚は左1列+右上下2段", () => {
+    it("[entry-visual/AC-2] 3枚は左1列+右上下2段", () => {
         expect(getSlotDefs(3)).toHaveLength(3)
     })
 
-    it("4枚以上は2x2グリッド", () => {
+    it("[entry-visual/AC-2] 4枚以上は2x2グリッド", () => {
         expect(getSlotDefs(4)).toHaveLength(4)
         expect(getSlotDefs(10)).toHaveLength(4)
     })
@@ -72,22 +72,22 @@ describe("computeInitialCrop", () => {
 })
 
 describe("canUsePostImageAsIs", () => {
-    it("jpeg かつ 予算内なら true", () => {
+    it("[image-picker/AC-6] jpeg かつ 予算内なら true", () => {
         const blob = new Blob([new Uint8Array(1000)], { type: "image/jpeg" })
         expect(canUsePostImageAsIs(blob)).toBe(true)
     })
 
-    it("png かつ 予算内なら true", () => {
+    it("[image-picker/AC-6] png かつ 予算内なら true", () => {
         const blob = new Blob([new Uint8Array(1000)], { type: "image/png" })
         expect(canUsePostImageAsIs(blob)).toBe(true)
     })
 
-    it("webp は false(形式が対象外)", () => {
+    it("[image-picker/AC-6] webp は false(形式が対象外)", () => {
         const blob = new Blob([new Uint8Array(1000)], { type: "image/webp" })
         expect(canUsePostImageAsIs(blob)).toBe(false)
     })
 
-    it("予算超過のjpegは false", () => {
+    it("[image-picker/AC-6] 予算超過のjpegは false", () => {
         const blob = new Blob([new Uint8Array(2_000_000)], {
             type: "image/jpeg",
         })
@@ -148,7 +148,7 @@ describe("createProcessedImages", () => {
             cropPixels: { x: 0, y: 0, width: 100, height: 50 },
         }))
 
-    it("5枚入力でoriginalBlobsは5件、visualの素材は先頭4枚のみ", async () => {
+    it("[entry-visual/AC-1] 5枚入力でoriginalBlobsは5件、visualの素材は先頭4枚のみ", async () => {
         const drawnSrcs = stubBrowserApis()
         const urls = ["u0", "u1", "u2", "u3", "u4"]
         const result = await createProcessedImages(urls, buildCropStates(5))
