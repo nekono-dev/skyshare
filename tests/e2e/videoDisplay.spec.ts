@@ -8,7 +8,8 @@
  * - `video.bsky.app` の playlist・セグメントは `tests/fixtures/hls/` の小さな HLS を
  *   `page.route` で返す（実通信なし）。
  */
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Locator, type Page } from "@playwright/test"
 import fs from "node:fs"
 import path from "node:path"
 

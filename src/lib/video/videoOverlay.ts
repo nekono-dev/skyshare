@@ -15,8 +15,8 @@ export const VIDEO_OVERLAY_SPEC = {
     triangleHeight: 25,
     triangleFill: "#ffffff",
     triangleOffsetX: 2.5,
-    /** CSS px → visual のデバイスピクセルへの換算基準幅（X のカード上の表示幅） */
-    referenceCardWidth: 506,
+    /** CSS px → visual のデバイスピクセルへの換算基準幅（スマホ（iPhone Air）の X アプリでのカード表示幅。実測） */
+    referenceCardWidth: 342,
 } as const
 
 /**

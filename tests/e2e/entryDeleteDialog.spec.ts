@@ -8,7 +8,8 @@
  * - ゲスト表示は削除範囲の判定・削除の実行をアプリ内で模擬するため、全シナリオで
  *   `DELETE /v2/entry`と公開APIの`getPostThread`への通信が発生しないことも検証する。
  */
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Page } from "@playwright/test"
 
 /** 禁止された通信（DELETE /v2/entry、getPostThread）を記録する。 */
 const watchForbiddenRequests = async (page: Page): Promise<string[]> => {

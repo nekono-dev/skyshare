@@ -5,7 +5,7 @@
 - 対応: D-1, D-2
 - [x] T-1.1: `postImageProcessing.ts` に先頭4枚の合成と overlay を実装する。
 - [x] T-1.2: `videoOverlay.ts` を実装し、単体テストを受け入れ条件のタグ付きで追加する。
-- [ ] T-1.3: XのカードでreferenceCardWidthの506pxが実際の表示幅と一致することを確認する手順のテストを追加する。
+- [x] T-1.3: iPhone AirのXアプリのスクリーンショットを実測し、referenceCardWidthを342pxに更新する。
 - 検証: `npx vitest run tests/lib/image/postImageProcessing.test.ts tests/lib/video/videoOverlay.test.ts`
 
 ## Phase 2: サムネ調整

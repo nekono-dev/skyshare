@@ -9,7 +9,8 @@
  * - 動画の縦横比（横長・正方形・縦長）によらず、円の中心の位置が同じであることを確認する。
  * - 許容誤差は色が各チャンネル ±6（JPEG 圧縮と補間のため）。
  */
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Page } from "@playwright/test"
 import fs from "node:fs"
 import path from "node:path"
 

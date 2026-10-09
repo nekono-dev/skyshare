@@ -9,7 +9,7 @@
  *   展開/折りたたみ・事後entry作成ボタン（常にルートのカードに表示、FR-3）・
  *   スレッドタグが表示されないことを検証する。
  */
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 
 test.describe("Timeline一覧のスレッド表示", () => {
     test("[timeline/AC-1 timeline/AC-2] スレッドAが折りたたみ表示され、展開すると3件が時系列順に表示される。ルート自身は画像を持たないが、中間投稿の画像を元に事後entry作成ボタンがルート投稿のカードに表示される", async ({

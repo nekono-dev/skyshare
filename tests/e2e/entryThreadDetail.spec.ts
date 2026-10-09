@@ -12,7 +12,7 @@
  *   時系列順にすべて表示される」
  *   実ブラウザでのレンダリング結果として確認する。
  */
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 
 test.describe("entry詳細ページのスレッド表示", () => {
     test("[entry-detail/AC-4] スレッド由来entryのサンプルページで、先頭から末尾まで時系列順にすべて表示される", async ({

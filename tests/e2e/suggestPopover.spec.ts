@@ -6,7 +6,7 @@
  *   mousedown確定・フォーカス維持・Escでの消去が従来どおり動くことを検証する。
  * - トレンド取得（`getTrendingTopics`）はネットワークに依存しないようモックする。
  */
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 
 test("[listbox-option/AC-1 listbox-option/AC-2] # 候補: ハイライト移動・クリック確定・Escで閉じる", async ({
     page,

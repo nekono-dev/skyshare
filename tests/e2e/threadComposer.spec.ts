@@ -11,7 +11,8 @@
  * - 主眼は、非アクティブ化に伴う`ImagePicker`の再マウントで画像プレビューが消える
  *   不具合（`specs/thread-composer`のバグ修正）の回帰防止。
  */
-import { expect, test, type Locator } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Locator } from "@playwright/test"
 
 /**
  * Astroアイランド（Reactコンポーネント）は、SSR直後はDOM上に見えていても

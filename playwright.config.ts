@@ -19,6 +19,11 @@
  *   から`npm run test:e2e`を実行する運用とする。
  */
 import { defineConfig, devices } from "@playwright/test"
+import { LIVE_STORAGE_STATE, loadLiveAccount } from "./tests/e2e/live/env"
+
+// 検証用アカウントの認証情報があるときだけ、実アカウントE2E（ライブテスト）を有効にする
+// （`specs/e2elive/design.md §3`）。無ければprojectごと存在しない。
+const liveEnabled = loadLiveAccount() !== null
 
 export default defineConfig({
     testDir: "./tests/e2e",
@@ -27,7 +32,8 @@ export default defineConfig({
     // 現状ではworkersを1に固定する。
     workers: 1,
     forbidOnly: !!process.env.CI,
-    retries: process.env.CI ? 2 : 0,
+    // 実行環境のネットワーク変動（net::ERR_NETWORK_CHANGED・chrome-error）による一過性の失敗を吸収する
+    retries: 2,
     reporter: "list",
     timeout: 30_000,
     expect: { timeout: 10_000 },
@@ -43,7 +49,44 @@ export default defineConfig({
     projects: [
         {
             name: "chromium",
+            testIgnore: /live\/|\.ios\.spec\.ts$/,
             use: { ...devices["Desktop Chrome"] },
         },
+        // 他ブラウザ・iPhoneエミュレーション（WebKit）での確認。Chromiumで検証済みの全specを
+        // 流すのではなく、ブラウザ差が出る機能（Dropdown・動画再生）のspecに限定する
+        // （`specs/e2elive`ではなく各機能のspecの手動確認項目に対応する）。
+        {
+            name: "firefox",
+            testMatch: /(dropdown|videoDisplay|videoLimits)\.spec\.ts$/,
+            use: { ...devices["Desktop Firefox"] },
+        },
+        {
+            name: "webkit",
+            testMatch: /(dropdown|videoDisplay)\.spec\.ts$/,
+            use: { ...devices["Desktop Safari"] },
+        },
+        {
+            name: "webkit-iphone",
+            testMatch: /(dropdown|videoDisplay)\.spec\.ts$|\.ios\.spec\.ts$/,
+            use: { ...devices["iPhone 13"] },
+        },
+        ...(liveEnabled
+            ? [
+                  {
+                      name: "live-setup",
+                      testMatch: /live\/auth\.setup\.ts/,
+                      use: { ...devices["Desktop Chrome"] },
+                  },
+                  {
+                      name: "live",
+                      testMatch: /live\/.*\.spec\.ts/,
+                      dependencies: ["live-setup"],
+                      use: {
+                          ...devices["Desktop Chrome"],
+                          storageState: LIVE_STORAGE_STATE,
+                      },
+                  },
+              ]
+            : []),
     ],
 })

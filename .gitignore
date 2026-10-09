@@ -32,3 +32,13 @@ src/client/**/
 /playwright-report
 /blob-report
 /playwright/.cache
+# E2E（実アカウントのライブテスト）
+/.env.e2e
+/playwright/.auth
+
+# 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
+.env.local
+.env.*.local
+_legacy/**/.env.test
+_legacy/**/.env.test.*
+!_legacy/**/.env.test.template

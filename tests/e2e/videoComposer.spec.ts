@@ -9,13 +9,8 @@
  *   （`posts[i].video` 等）の検証は `tests/components/post/ThreadComposer/submitThread.test.ts`
  *   が担う。
  */
-import {
-    expect,
-    test,
-    type Locator,
-    type Page,
-    type Route,
-} from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Locator, type Page, type Route } from "@playwright/test"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 

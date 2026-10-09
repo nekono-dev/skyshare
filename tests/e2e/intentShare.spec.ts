@@ -13,7 +13,8 @@
  *   ゲスト表示では skyshare entry の新規作成を伴う投稿ができないため、省略の実動作
  *   （ログイン状態での長文の画像投稿→ダイアログ→X）は手動確認に委ねる。
  */
-import { expect, test, type BrowserContext, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type BrowserContext, type Page } from "@playwright/test"
 import { weightedLength } from "../../src/util/share/truncateText"
 
 const LABEL_POPUP = /代わりにポップアップ/

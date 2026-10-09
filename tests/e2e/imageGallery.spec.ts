@@ -4,7 +4,8 @@
  *
  * - `entries/sample/` の投稿のうち、画像付きの3投稿（画像1・3・5枚）を使う。
  */
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Page } from "@playwright/test"
 
 const gotoThread = async (page: Page) => {
     await page.goto("/entries/sample/")

@@ -8,7 +8,8 @@
  * - 自己ラベルは `/post/?guest` のセグメントで確認する。表示件数（PageSizeSelect）は
  *   画面から到達できないため対象外。
  */
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Locator, type Page } from "@playwright/test"
 
 /**
  * Astroアイランドはハイドレーション完了前のクリックに反応しないことがあるため、
@@ -30,7 +31,10 @@ const openByKeyboard = async (page: Page, trigger: Locator) => {
     }).toPass({ timeout: 15_000 })
 }
 
-/** パネルの四隅・中央で最前面の要素がパネル自身であること（親の overflow で切れていないこと） */
+/**
+ * パネルの四隅・中央で最前面の要素がパネル自身であること（親の overflow で切れていないこと）。
+ * 固定表示のナビ等が重なる点は除く。
+ */
 const panelNotClipped = (page: Page) =>
     page.getByRole("listbox").evaluate(list => {
         const panel = list.parentElement as HTMLElement
@@ -44,7 +48,14 @@ const panelNotClipped = (page: Page) =>
         ]
         return points.map(([x, y]) => {
             const el = document.elementFromPoint(x, y)
-            return !!el && panel.contains(el)
+            if (!el) return false
+            if (panel.contains(el)) return true
+            // 画面に固定されたナビ等が上に重なる点は、親のクリップではなくページのスクロールで
+            // 見えるようになるため除く（モバイル幅の下部ナビ）
+            for (let e: Element | null = el; e; e = e.parentElement) {
+                if (getComputedStyle(e).position === "fixed") return true
+            }
+            return false
         })
     })
 
@@ -391,13 +402,16 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
             const input = el as HTMLInputElement
             const style = getComputedStyle(input)
             const probe = document.createElement("span")
-            probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${style.font}`
+            probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font-style:${style.fontStyle};font-weight:${style.fontWeight};font-size:${style.fontSize};font-family:${style.fontFamily};letter-spacing:${style.letterSpacing}`
             probe.textContent = input.placeholder
             document.body.appendChild(probe)
             const textWidth = probe.getBoundingClientRect().width
             probe.remove()
+            // Firefoxは`input.clientWidth`が内容幅だけを返すため、境界ボックスから枠線・余白を引いて求める
             const inner =
-                input.clientWidth -
+                input.getBoundingClientRect().width -
+                parseFloat(style.borderLeftWidth) -
+                parseFloat(style.borderRightWidth) -
                 parseFloat(style.paddingLeft) -
                 parseFloat(style.paddingRight)
             return textWidth > inner + 0.5

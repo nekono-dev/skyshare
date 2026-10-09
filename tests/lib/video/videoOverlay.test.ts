@@ -11,7 +11,7 @@ describe("VIDEO_OVERLAY_SPEC", () => {
             triangleHeight: 25,
             triangleFill: "#ffffff",
             triangleOffsetX: 2.5,
-            referenceCardWidth: 506,
+            referenceCardWidth: 342,
         })
     })
 })
@@ -52,19 +52,19 @@ describe("drawVideoOverlay", () => {
         const { context, calls } = makeContext(40)
         drawVideoOverlay()(context, 1)
 
-        // 円: 中心は画像の中心、直径 139.9（59*S）
+        // 円: 中心は画像の中心、直径 207.0（59*S）
         const arc = calls.find(c => c.op === "arc")!
         expect(arc.args[0]).toBeCloseTo(600)
         expect(arc.args[1]).toBeCloseTo(315)
-        expect((arc.args[2] as number) * 2).toBeCloseTo(139.9, 1)
+        expect((arc.args[2] as number) * 2).toBeCloseTo(207.0, 1)
 
-        // 再生記号: 47.4 x 59.3、円の中心から右へ 5.9 ずれる
+        // 再生記号: 70.2 x 87.7、円の中心から右へ 8.8 ずれる
         const moves = calls.filter(c => c.op === "moveTo")
         const lines = calls.filter(c => c.op === "lineTo")
         const [tx0, ty0] = moves[0].args as number[]
-        expect((lines[1].args[0] as number) - tx0).toBeCloseTo(47.4, 1)
-        expect((lines[0].args[1] as number) - ty0).toBeCloseTo(59.3, 1)
-        expect(tx0 + 47.4 / 2).toBeCloseTo(600 + 5.9, 1)
+        expect((lines[1].args[0] as number) - tx0).toBeCloseTo(70.2, 1)
+        expect((lines[0].args[1] as number) - ty0).toBeCloseTo(87.7, 1)
+        expect(tx0 + 70.2 / 2).toBeCloseTo(600 + 8.8, 1)
 
         // 塗り色
         const fills = calls.filter(c => c.op === "fill").map(c => c.fillStyle)
@@ -82,6 +82,6 @@ describe("drawVideoOverlay", () => {
         const arc = calls.find(c => c.op === "arc")!
         expect(arc.args[0]).toBeCloseTo(300)
         expect(arc.args[1]).toBeCloseTo(157.5)
-        expect((arc.args[2] as number) * 2).toBeCloseTo(139.9 / 2, 1)
+        expect((arc.args[2] as number) * 2).toBeCloseTo(207.0 / 2, 1)
     })
 })

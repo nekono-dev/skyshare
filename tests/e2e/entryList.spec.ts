@@ -6,7 +6,7 @@
  *   削除ボタンが有効（削除フローはアプリ内で模擬される）であることを確認する。
  * - 削除フロー自体の検証は`entryDeleteDialog.spec.ts`で行う。
  */
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 
 test.describe("Entry一覧ページ", () => {
     test("ゲスト表示でカードが表示され、削除ボタンが有効な状態でレンダリングされる", async ({

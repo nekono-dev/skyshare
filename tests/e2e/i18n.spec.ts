@@ -6,7 +6,8 @@
  * - 英語環境は `test.use({ locale: "en-US" })`、日本語環境は既定（playwright.config.ts の `ja-JP`）。
  * - ゲスト表示（`?guest`）で実アカウント不要。
  */
-import { expect, test, type Locator, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Locator, type Page } from "@playwright/test"
 
 test.describe("英語ブラウザ", () => {
     test.use({ locale: "en-US" })

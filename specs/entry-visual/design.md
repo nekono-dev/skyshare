@@ -42,7 +42,7 @@ export const VIDEO_OVERLAY_SPEC = {
   triangleHeight: 25,
   triangleFill: "#ffffff",
   triangleOffsetX: 2.5,
-  referenceCardWidth: 506,
+  referenceCardWidth: 342,
 } as const
 export const drawVideoOverlay =
   () =>
@@ -55,10 +55,10 @@ export const drawVideoOverlay =
 
 | 要素                          | 代表画像（1200×630）上の寸法 |
 | ----------------------------- | ---------------------------- |
-| 円の直径                      | 139.9px                      |
-| 再生記号の幅×高さ・右へのずれ | 47.4 × 59.3px・5.9px         |
+| 円の直径                      | 207.0px                      |
+| 再生記号の幅×高さ・右へのずれ | 70.2 × 87.7px・8.8px         |
 
-数値は、XのDPR 2のスクリーンショットの実測値を2で割ったCSS pxである。
+再生ボタンの寸法（直径59px・再生記号20×25px）は、Xの動画の実際の表示を、iPhone AirのXアプリのDPR 3のスクリーンショットで測った値を3で割ったCSS pxである。Xの再生ボタンはカードの幅によらず同じ寸法で表示される。一方、代表画像はスマホのXアプリで幅342px（カードの左右の端の間の1026pxを3で割った値）に縮小されるため、換算の基準幅を342pxとし、倍率 S は 1200 / 342 になる。
 
 ### D-3: サムネ調整 (FR-5, FR-6, FR-7)
 

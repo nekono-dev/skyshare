@@ -2,7 +2,7 @@
  * Entry詳細ページの投稿カード表示（specs/entry-detail）の
  * ヘッドレスブラウザによる動作確認。`entries/sample` の固定サンプルページを使う。
  */
-import { expect, test } from "@playwright/test"
+import { expect, test } from "./fixtures"
 
 test.describe("Entry詳細ページの投稿カード", () => {
     test("[entry-detail/AC-1 entry-detail/AC-6 entry-detail/AC-7] スレッドサンプル: 5カードが順に並び、連結線があり、リアクションは各カード別", async ({

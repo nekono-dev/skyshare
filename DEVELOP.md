@@ -103,3 +103,40 @@ APIは利用者向けのエラー文言を返さない。`{ error: "Conflict" }`
 1. `LOCALES`（`src/lib/i18n/locale.ts`）と `intlLocale`（`translate.ts`・`format.ts`）に言語を追加する。
 2. `src/lib/i18n/messages/<言語>/` に、日本語辞書と同じキー集合の辞書を作り、`translate.ts` の辞書表に登録する。複数形のカテゴリは言語ごとに異なるため、`Intl.PluralRules` の返すカテゴリ（`few`/`many` 等）に対応するキーを追加し、`EnglishMessages` に相当する型を言語ごとに用意する。
 3. `LocaleSelect` に選択肢（その言語の自称表記）を追加する。
+
+## E2Eテスト
+
+```sh
+npm run dev         # 別ターミナルで開発サーバを起動しておく
+npx playwright test # ゲスト表示（?guest）で完結するE2E
+```
+
+### 実アカウントのE2E（ライブテスト）
+
+検証用アカウントの認証情報を環境変数で与えると、`tests/e2e/live/` のテストが有効になる。未設定のときは実行対象にならない。設計は `specs/e2elive/` にある。
+
+| 環境変数                    | 必須 | 内容                                   |
+| --------------------------- | ---- | -------------------------------------- |
+| `SKYSHARE_E2E_IDENTIFIER`   | 必須 | 検証用アカウントのハンドル             |
+| `SKYSHARE_E2E_APP_PASSWORD` | 必須 | 検証用アカウントのアプリパスワード     |
+| `SKYSHARE_E2E_SERVICE`      | 任意 | PDSのURL（既定 `https://bsky.social`） |
+
+第三者の返信のテスト（`peerReply.spec.ts`）には、任意で `SKYSHARE_E2E_PEER_IDENTIFIER`・`SKYSHARE_E2E_PEER_APP_PASSWORD` を設定する（未設定ならスキップ）。
+
+ライブテストが作る投稿は本文が `[e2e <識別子>]` で始まり、テスト終了時に削除される。異常終了で残った分は、次回のライブテスト開始時に回収される。手動で掃除するには `npm run e2e:live:sweep -- --dry-run`（削除予定の確認）、`npm run e2e:live:sweep`（1時間より古いものを削除）を使う。
+
+リポジトリ直下の `.env.e2e`（Git管理対象外）に `KEY=value` 形式で書いてもよい。必ず検証専用のアカウントとアプリパスワードを使うこと。
+
+ヘッドレスブラウザで日本語・国旗絵文字を表示するには、OSのフォントが必要（例: `sudo apt-get install fonts-noto-cjk fonts-noto-color-emoji`）。動画のライブテストの素材作成・確認には `ffmpeg` を使う。
+
+他ブラウザでの確認（Firefox・Safari系・iPhoneエミュレーション）には、Playwrightのブラウザを追加で入れる。
+
+```sh
+npx playwright install firefox webkit
+sudo npx playwright install-deps firefox webkit # OSの依存パッケージ
+npx playwright test --project=firefox --project=webkit --project=webkit-iphone
+```
+
+これらのprojectが実行するのは、ブラウザ差が出る機能のspec（Dropdown・動画の表示・添付制限）と、iPhoneエミュレーション専用の`*.ios.spec.ts`だけである。
+
+300MB級の動画を実アカウントへ投稿するライブテスト（時間とBlueskyの動画アップロード残量を消費する）は、`SKYSHARE_E2E_LARGE_VIDEO=1`を付けたときだけ実行される。

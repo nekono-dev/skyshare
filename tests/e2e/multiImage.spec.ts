@@ -10,7 +10,8 @@
  *   事後作成時の取得枚数は検証対象外）。
  * - 実Blueskyアカウントが必要な投稿そのもの（gallery embedの作成）は手動確認に委ねる。
  */
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test } from "./fixtures"
+import { type Page } from "@playwright/test"
 
 const PNG_1X1 = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
