@@ -56,7 +56,7 @@ npm run deploy
 
 ### E2E（e2e.yaml）
 
-`develop` への push で `.github/workflows/e2e.yaml` が起動し、単体テストの後に Playwright の全project（chromium・firefox・webkit・webkit-iphone、およびライブテスト）を実行する。
+`.github/workflows/e2e.yaml` は deploy.yaml から呼び出され（手動実行も可）、単体テストの後に Playwright の全project（chromium・firefox・webkit・webkit-iphone、およびライブテスト）を実行する。verify と e2e の両方に成功した場合のみデプロイされる。
 
 | 種別     | 名前              | 内容                                                                                                |
 | -------- | ----------------- | --------------------------------------------------------------------------------------------------- |

@@ -1,5 +1,6 @@
 # develop ブランチへの push をトリガーに、Cloudflare Workers へ自動デプロイする。
 #
+# verify（テスト・型検査）と e2e（Playwright）の両方に成功した場合のみデプロイする。
 # 必要な設定は DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
 # - Secrets:   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
 # - Variables: PUBLIC_LEGACY_BACKEND_ENDPOINT / PUBLIC_DEFAULT_ATP_SERVICE / PUBLIC_NODE_ENV /
@@ -67,8 +68,13 @@ jobs:
           goat --version
       - run: npm run lint:lexicon
 
+  # E2E（ライブテスト・他ブラウザを含む）。失敗した場合はデプロイしない
+  e2e:
+    uses: ./.github/workflows/e2e.yaml
+    secrets: inherit
+
   deploy:
-    needs: verify
+    needs: [verify, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
