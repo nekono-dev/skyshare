@@ -1,0 +1,104 @@
+# develop ブランチへの push をトリガーに、フロントエンドのE2E（Playwright）を実行する。
+#
+# - Secret `E2E_ENV` に、リポジトリ直下の `.env.e2e` の中身（KEY=value 形式、複数行）をそのまま登録する。
+#   登録があれば実アカウントのライブテストも実行し、無ければゲスト表示のE2Eだけを実行する。
+# - Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照）。
+# - 実行対象ブラウザ: chromium（ライブテスト含む）/ firefox / webkit / webkit-iphone
+name: e2e
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+# 同じ検証用アカウントへ同時に投稿・削除しないよう直列化する。実行中のテストは中断せず後続を待たせる
+concurrency:
+  group: e2e-live-account
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_LEGACY_BACKEND_ENDPOINT: ${{ vars.PUBLIC_LEGACY_BACKEND_ENDPOINT }}
+  PUBLIC_DEFAULT_ATP_SERVICE: ${{ vars.PUBLIC_DEFAULT_ATP_SERVICE }}
+  PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
+  PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
+  PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（AGENTS.md 参照）
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      # 日本語・国旗絵文字の描画用フォントと、動画のライブテストの素材作成用 ffmpeg
+      - name: Install fonts and ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji ffmpeg
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      # 単体テスト（vitest）。E2E の前に失敗を検出する
+      - run: npm run codegen
+      - run: npm test
+
+      # wrangler.jsonc は .gitignore 対象のため、Variables から生成する（astro dev が参照する）
+      - name: Configure build setting
+        run: node hack/render-deploy-config.mjs
+
+      # 認証情報（.env.e2e）を Secret から復元する。値はログに出さず、env 経由で受け渡す。
+      # 未登録なら作らず、ライブテストの project ごと無効になる（tests/e2e/live/env.ts）
+      - name: Restore .env.e2e
+        env:
+          E2E_ENV: ${{ secrets.E2E_ENV }}
+        run: |
+          if [ -n "$E2E_ENV" ]; then
+            printf '%s\n' "$E2E_ENV" > .env.e2e
+            chmod 600 .env.e2e
+            echo "ライブテストを有効にします"
+          else
+            echo "::warning::Secret E2E_ENV が未登録のため、ライブテストをスキップします"
+          fi
+
+      # astro dev は起動後にデーモン化するため、バックグラウンド起動して HTTPS の応答を待つ
+      - name: Start dev server
+        run: |
+          npx astro dev > dev-server.log 2>&1 &
+          for _ in $(seq 1 60); do
+            if curl -ksf -o /dev/null https://localhost:4321/; then
+              echo "dev サーバーが起動しました"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::dev サーバーが起動しませんでした"
+          cat dev-server.log
+          exit 1
+        env:
+          PUBLIC_VERSION: ci
+
+      # 全 project（chromium / firefox / webkit / webkit-iphone / ライブテスト）を実行する
+      - name: Run E2E
+        run: npx playwright test
+        env:
+          CI: "true"
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            dev-server.log
+          retention-days: 7
+          if-no-files-found: ignore

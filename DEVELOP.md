@@ -54,6 +54,17 @@ npm run deploy
 
 手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
 
+### E2E（e2e.yaml）
+
+`develop` への push で `.github/workflows/e2e.yaml` が起動し、単体テストの後に Playwright の全project（chromium・firefox・webkit・webkit-iphone、およびライブテスト）を実行する。
+
+| 種別     | 名前              | 内容                                                                                                |
+| -------- | ----------------- | --------------------------------------------------------------------------------------------------- |
+| Secret   | `E2E_ENV`         | `.env.e2e` の中身（`KEY=value` 形式・複数行）をそのまま登録する。未登録ならライブテストを除いて実行 |
+| Variable | `PUBLIC_*`（5件） | deploy.yaml と共通                                                                                  |
+
+同じ検証用アカウントを同時に操作しないよう、実行は直列化される。検証専用のアカウントとアプリパスワードを使うこと。
+
 ## PRブランチの動作確認（部分リリース）
 
 ```sh
