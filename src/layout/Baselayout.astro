@@ -34,7 +34,9 @@ const resolvedPageTitle =
     pageTitleKey !== undefined
         ? createTranslator(locale).t(pageTitleKey, { service: serviceName } as never)
         : (pageTitle ?? serviceName)
-const favicon = "favicon.svg"
+// 相対パスだと /entries/{slug}/favicon.svg のようにページ階層ごとの別URLになり、
+// 静的アセットに無いため毎回 Worker が起動して 404 を返してしまう。必ずルート絶対パスで参照する。
+const favicon = "/favicon.svg"
 import ui from "@/styles/ui.module.css"
 import { ClientRouter } from "astro:transitions"
 
