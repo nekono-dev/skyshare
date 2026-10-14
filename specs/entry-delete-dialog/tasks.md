@@ -11,7 +11,7 @@
 - 対応: D-2, D-3
 - [x] T-2.1: `EntryDeleteConfirmDialog` と `ChoiceDialog` の `description` を実装する。
 - [x] T-2.2: `DeletePostListDialog` と `DeletePostListItem` を実装する。
-- [ ] T-2.3: 削除済みの派生元・409の応答を確認するE2Eテストを追加する。
+- [x] T-2.3: 削除済みの派生元・409の応答を確認するE2Eテストを追加する。
 - 検証: `npm run build`
 - E2E: `tests/e2e/entryDeleteDialog.spec.ts` スレッドのentryでリンクとBluesky投稿を削除を選ぶ → 2件の一覧と注意が表示され、確定でスレッド全体が消える
 

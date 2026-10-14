@@ -10,7 +10,42 @@
 | `src/util/share/webShare.ts`                            | WebShareの呼び出し                  |
 | `src/components/post/ThreadComposer/index.tsx`          | 事前オープンと分岐結果の反映        |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+共有の分岐とポップアップ操作の依存方向を示す。
+
+```mermaid
+flowchart LR
+  tc["ThreadComposer/index"] --> shareDispatch
+  tc --> openIntentPopup
+  shareDispatch --> openIntentPopup
+  shareDispatch --> webShare
+  tc --> sel["AutoPopupTargetSelect/index"]
+```
+
+投稿直後の共有先の決定と、ブロック時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant tc as ThreadComposer/index
+  participant shareDispatch
+  participant openIntentPopup
+  participant webShare
+  tc->>openIntentPopup: preOpenPopupWindow
+  tc->>shareDispatch: runShareDispatch
+  alt ポップアップ設定がON
+    shareDispatch->>openIntentPopup: openIntentPopup
+    openIntentPopup-->>shareDispatch: 成否
+  else WebShare
+    shareDispatch->>webShare: 共有の呼び出し
+    opt 失敗
+      shareDispatch->>openIntentPopup: X のポップアップ
+    end
+  end
+  shareDispatch-->>tc: ShareDispatchResult
+```
+
+## 3. 設計項目
 
 ### D-1: プルダウン (FR-1, FR-2)
 
@@ -76,7 +111,7 @@ export const openIntentPopup = (url: string, preOpenedWindow?: Window | null): b
 - `opener` の切り離しは `setTimeout` で1タスク遅らせる。同期的に切り離すとSafariで遷移が中断されるため。
 - `ThreadComposer` は分岐結果の `forced*` を共有設定へ反映し、`openShareDialog` が true なら投稿先選択ダイアログを開く。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                               | 処理                                                       |
 | ---------------------------------- | ---------------------------------------------------------- |

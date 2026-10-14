@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import {
-    ENTRY_CAPTION_MAX_LENGTH,
-    ENTRY_HEADING_MAX_LENGTH,
+    ENTRY_CAPTION_MAX_BYTES,
+    ENTRY_HEADING_MAX_BYTES,
     buildEntryText,
 } from "@/lib/entry/entryText"
 
@@ -34,8 +34,21 @@ describe("buildEntryText", () => {
             userName: "a".repeat(500),
             postText: "b".repeat(500),
         })
-        expect(text.heading).toHaveLength(ENTRY_HEADING_MAX_LENGTH)
+        expect(text.heading).toHaveLength(ENTRY_HEADING_MAX_BYTES)
         expect(text.heading?.endsWith(" | Skyshare")).toBe(true)
-        expect(text.caption).toHaveLength(ENTRY_CAPTION_MAX_LENGTH)
+        expect(text.caption).toHaveLength(ENTRY_CAPTION_MAX_BYTES)
+    })
+
+    it("上限はlexiconに合わせてUTF-8のバイト数で数え、日本語は文字の途中で切らない", () => {
+        const text = buildEntryText({
+            userName: "あ".repeat(100),
+            postText: "い".repeat(200),
+        })
+        expect(
+            new TextEncoder().encode(text.heading!).length,
+        ).toBeLessThanOrEqual(ENTRY_HEADING_MAX_BYTES)
+        expect(text.heading?.endsWith(" | Skyshare")).toBe(true)
+        // 300バイトに収まる最大の文字数（3バイト×100文字）
+        expect(text.caption).toBe("い".repeat(100))
     })
 })

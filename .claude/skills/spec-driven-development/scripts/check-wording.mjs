@@ -1,7 +1,8 @@
 /**
  * 表現チェック: 規定ルールにそぐわない語・表現を検出する。
  *
- * コードブロック内は対象外（W008 の重複検出も同様）。
+ * コードブロック内は対象外（W008 の重複検出も同様）。ただし mermaid の図は
+ * 設計書の本文とみなし、W008 以外のルールを適用する（図の行は設計上重複しうるため）。
  */
 import { pathToFileURL } from "node:url"
 import { finding, runCli } from "./lib.mjs"
@@ -61,7 +62,8 @@ export function check(ctx) {
       if (!f) continue
       const add = (no, rule, msg) => out.push(finding(f.rel, no, rule, msg))
       for (const l of f.lines) {
-        if (l.code) continue
+        const inDiagram = l.code && l.lang === "mermaid" && !l.fence
+        if (l.code && !inDiagram) continue
         const t = l.text
         for (const rule of ["W001", "W002", "W005", "W007"]) {
           const m = RE[rule].exec(t)
@@ -80,7 +82,7 @@ export function check(ctx) {
               `「${m[0]}」は使用不可（判断は requirements／design で確定させる）`,
             )
         }
-        if (kind === "requirements") {
+        if (kind === "requirements" && !inDiagram) {
           // 受け入れ条件行の tests/ パス参照は許可する
           const body = /^- AC-\d+ /.test(t)
             ? t.replace(/`tests\/[^`]+`/g, "")
@@ -89,7 +91,8 @@ export function check(ctx) {
           if (hit)
             add(l.no, "W003", `「${hit[0]}」: 実装の詳細は design.md に書く`)
         }
-        // 重複検出（表の区切り行は除く）
+        // 重複検出（表の区切り行と図の行は除く）
+        if (inDiagram) continue
         if (/^\s*\|[\s:|-]+\|\s*$/.test(t)) continue
         const key = normalize(t)
         if ([...key].length < 24) continue
@@ -103,5 +106,5 @@ export function check(ctx) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exitCode = runCli([{ title, rules, check }])
+  process.exitCode = await runCli([{ title, rules, check }])
 }

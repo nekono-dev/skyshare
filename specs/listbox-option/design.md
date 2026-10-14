@@ -8,7 +8,11 @@
 | `src/components/common/ListboxOption/index.module.css` | 行のハイライト・選択中・無効の見た目 |
 | `src/components/post/SuggestPopover/index.tsx`         | 候補一覧での行の利用                 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+- なし
+
+## 3. 設計項目
 
 ### D-1: 選択肢行 (FR-2, FR-3, FR-4, FR-5)
 
@@ -56,6 +60,6 @@ type ListboxOptionProps = {
 
 キャレット位置への表示、押下での確定、フォーカスの維持は候補一覧の挙動を変えない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

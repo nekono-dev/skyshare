@@ -8,7 +8,11 @@
 | `src/lib/atproto/languageFlag.ts`                | 投稿言語から代表国への対応表   |
 | `src/util/emoji/countryFlag.ts`                  | 国コードから国旗絵文字への変換 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+- なし
+
+## 3. 設計項目
 
 ### D-1: 国旗の対応 (FR-2, FR-3, FR-4)
 
@@ -53,6 +57,6 @@ const options: DropdownOption[] = UNIQUE_BLUESKY_POST_LANGUAGES.map(l => {
 
 `.flag` は `display: inline-block; width: 1.5em; text-align: center` とし、国旗の無い言語でも同じ幅の領域を確保する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

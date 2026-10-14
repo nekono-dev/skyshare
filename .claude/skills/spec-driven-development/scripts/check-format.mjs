@@ -4,7 +4,7 @@
  * - 見出しの構成・順序・階層
  * - 行形式と ID の連番（FR／NFR／AC／D／Phase／T）
  * - 要件 → 受け入れ条件 → 設計項目 → Phase のトレーサビリティ
- * - サイズ上限（行数・件数）
+ * - サイズ上限（行数・件数。design.md は「2. 関係図・ワークフロー」の行を除いて数える）
  */
 import { pathToFileURL } from "node:url"
 import {
@@ -58,7 +58,7 @@ export const rules = {
   "F-D01":
     "design.md の1行目は「# <名称> 設計書」の H1 とし、H1 は1つだけにする",
   "F-D02":
-    "design.md の H2 は「1. 構成」「2. 設計項目」「3. エラー処理」をこの順で過不足なく置き、H1 と最初の H2 の間に本文を置かない",
+    "design.md の H2 は「1. 構成」「2. 関係図・ワークフロー」「3. 設計項目」「4. エラー処理」をこの順で過不足なく置き、H1 と最初の H2 の間に本文を置かない",
   "F-D03":
     "設計項目の H3 は「### D-n: <題> (FR-m, NFR-k)」とし、n は1からの連番にする。H3 は設計項目の中だけに置き、H4 以下は使わない",
   "F-D04":
@@ -71,7 +71,7 @@ export const rules = {
   "F-D08":
     "設計項目の本文で ID（D／FR／NFR／AC／T）に言及しない。対応関係は見出しのタグだけで表す",
   "F-D09": "エラー処理は「| 事象 | 処理 |」の表、または「- なし」のみで書く",
-  "F-D10": `design.md は ${LIMIT.designLines} 行以内にする`,
+  "F-D10": `design.md は「2. 関係図・ワークフロー」の行（見出し・説明・図）を除いて ${LIMIT.designLines} 行以内にする`,
   "F-T01":
     "tasks.md の1行目は「# <名称> タスク一覧」の H1 とし、H1 は1つだけにする",
   "F-T02": `tasks.md の H2 は「## Phase n: <名>」のみとし、n は1からの連番、${LIMIT.phases} Phase 以内にする。H1 と最初の H2 の間に本文を置かない`,
@@ -97,7 +97,12 @@ const REQ_H2 = [
   "5. 非機能要件",
   "6. 受け入れ条件",
 ]
-const DES_H2 = ["1. 構成", "2. 設計項目", "3. エラー処理"]
+const DES_H2 = [
+  "1. 構成",
+  "2. 関係図・ワークフロー",
+  "3. 設計項目",
+  "4. エラー処理",
+]
 
 const ID_TOKEN = /\b(?:D|N?FR|AC|T)-\d+(?:\.\d+)?\b/
 
@@ -124,9 +129,9 @@ function checkH2(f, secs, expected, rule, add) {
     add(l.no, rule, "H1 と最初の H2 の間に本文を置かない")
 }
 
-function checkLineLimit(f, limit, rule, add) {
-  if (f.lines.length > limit)
-    add(f.lines.length, rule, `${f.lines.length} 行（上限 ${limit} 行）`)
+function checkLineLimit(f, limit, rule, add, excluded = 0) {
+  const n = f.lines.length - excluded
+  if (n > limit) add(f.lines.length, rule, `${n} 行（上限 ${limit} 行）`)
 }
 
 function checkSentence(text, no, add) {
@@ -281,18 +286,21 @@ function checkDesign(f, reqFile, add) {
   checkH1(f, "設計書", "F-D01", add)
   const secs = sectionsByH2(f.lines)
   checkH2(f, secs, DES_H2, "F-D02", add)
-  checkLineLimit(f, LIMIT.designLines, "F-D10", add)
   const sec = t => secs.find(s => s.title === t)
+  // 図の章（見出し・説明・図）は上限の換算から除く
+  const diagram = sec(DES_H2[1])
+  const diagramLines = diagram ? diagram.lines.length + 1 : 0
+  checkLineLimit(f, LIMIT.designLines, "F-D10", add, diagramLines)
 
   // H3/H4 の配置
-  const items = sec(DES_H2[1])
+  const items = sec(DES_H2[2])
   for (const s of secs) {
     for (const l of s.lines) {
       const m = !l.code && /^(#{3,6})\s/.exec(l.text)
       if (!m) continue
       if (m[1].length > 3) add(l.no, "F-D03", "H4 以下は使わない")
       else if (s !== items)
-        add(l.no, "F-D03", "H3 は「2. 設計項目」の中だけに置く")
+        add(l.no, "F-D03", "H3 は「3. 設計項目」の中だけに置く")
     }
   }
 
@@ -355,7 +363,7 @@ function checkDesign(f, reqFile, add) {
   }
 
   // 3. エラー処理
-  const err = sec(DES_H2[2])
+  const err = sec(DES_H2[3])
   if (err)
     checkTable(err, ["事象", "処理"], "F-D09", add, {
       allowNone: true,
@@ -508,5 +516,5 @@ export function check(ctx) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  process.exitCode = runCli([{ title, rules, check }])
+  process.exitCode = await runCli([{ title, rules, check }])
 }

@@ -59,7 +59,7 @@ describe("DELETE /v2/bsky/session/{did}", () => {
         expect(res.status).toBe(404)
     })
 
-    it("アクティブアカウント対象の場合はatp_sessionを失効させる", async () => {
+    it("[account-session/AC-11] アクティブアカウント対象の場合はatp_sessionを失効させる", async () => {
         const request = new Request(
             `https://skyshare.nekono.dev/v2/bsky/session/${activeDid}`,
             {
@@ -78,7 +78,7 @@ describe("DELETE /v2/bsky/session/{did}", () => {
         ).toBe(true)
     })
 
-    it("プール中アカウント対象の場合はatp_accountsから除去する", async () => {
+    it("[account-session/AC-12] プール中アカウント対象の場合はatp_accountsから除去する", async () => {
         const request = new Request(
             `https://skyshare.nekono.dev/v2/bsky/session/${pooledDid}`,
             {

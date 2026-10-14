@@ -48,23 +48,62 @@ export const resolveEntryLexiconId = (
     return id
 }
 
-/** entry レコードのコレクション名（= entry lexicon の NSID） */
-export const ENTRY_COLLECTION = resolveEntryLexiconId(entryLexicons)
-
-const NSID_PREFIX = ENTRY_COLLECTION.slice(0, -ENTRY_SUFFIX.length)
-
-/** defs lexicon の NSID */
-export const DEFS_NSID = `${NSID_PREFIX}.defs`
-
-/** manifest 定義の型識別子（`$type` / `ref` に使う） */
-export const MANIFEST_TYPE = `${DEFS_NSID}#manifest`
+/** entry の NSID から導出する値と、それを使う URI の組み立て・解析 */
+export type NsidSet = {
+    /** entry レコードのコレクション名（= entry lexicon の NSID） */
+    entryCollection: string
+    /** defs lexicon の NSID */
+    defsNsid: string
+    /** manifest 定義の型識別子（`$type` / `ref` に使う） */
+    manifestType: string
+    /** entry を指す `at://` URI を組み立てる */
+    entryAtUri: (did: string, rkey: string) => string
+    /** entry を指す `at://` URI を解析する。別コレクション・余分なパス/クエリ/フラグメント付きは `undefined` */
+    parseEntryAtUri: (
+        uri: string,
+    ) => { actor: string; rkey: string } | undefined
+}
 
 const escapeRegExp = (value: string): string =>
     value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
-const ENTRY_AT_URI_PATTERN = new RegExp(
-    `^at://([^/]+)/${escapeRegExp(ENTRY_COLLECTION)}/([^/?#]+)$`,
-)
+/**
+ * entry の NSID から、defs・manifest の NSID と URI の組み立て・解析を導出する。
+ *
+ * 処理の趣旨:
+ * - 運用者がドメインを変えた場合にも、同じ導出規則で値が決まることを、アプリ本体と同じ関数で確認できるようにする。
+ *
+ * - 入力: `"dev.nekono.skyshare.entry"`
+ * - 出力: `{ entryCollection: "dev.nekono.skyshare.entry", defsNsid: "dev.nekono.skyshare.defs", ... }`
+ */
+export const createNsidSet = (entryId: string): NsidSet => {
+    const prefix = entryId.slice(0, -ENTRY_SUFFIX.length)
+    const defsNsid = `${prefix}.defs`
+    const pattern = new RegExp(
+        `^at://([^/]+)/${escapeRegExp(entryId)}/([^/?#]+)$`,
+    )
+    return {
+        entryCollection: entryId,
+        defsNsid,
+        manifestType: `${defsNsid}#manifest`,
+        entryAtUri: (did, rkey) => `at://${did}/${entryId}/${rkey}`,
+        parseEntryAtUri: uri => {
+            const match = uri.match(pattern)
+            return match ? { actor: match[1], rkey: match[2] } : undefined
+        },
+    }
+}
+
+const nsids = createNsidSet(resolveEntryLexiconId(entryLexicons))
+
+/** entry レコードのコレクション名（= entry lexicon の NSID） */
+export const ENTRY_COLLECTION = nsids.entryCollection
+
+/** defs lexicon の NSID */
+export const DEFS_NSID = nsids.defsNsid
+
+/** manifest 定義の型識別子（`$type` / `ref` に使う） */
+export const MANIFEST_TYPE = nsids.manifestType
 
 /**
  * entry を指す `at://` URI を組み立てる。
@@ -72,8 +111,7 @@ const ENTRY_AT_URI_PATTERN = new RegExp(
  * - 入力: `("did:plc:abc", "3lxyz")`
  * - 出力: `"at://did:plc:abc/<ENTRY_COLLECTION>/3lxyz"`
  */
-export const entryAtUri = (did: string, rkey: string): string =>
-    `at://${did}/${ENTRY_COLLECTION}/${rkey}`
+export const entryAtUri = nsids.entryAtUri
 
 /**
  * entry を指す `at://` URI を解析する。別コレクション・余分なパス/クエリ/フラグメント付きは `undefined`。
@@ -81,9 +119,4 @@ export const entryAtUri = (did: string, rkey: string): string =>
  * - 入力: `"at://did:plc:abc/<ENTRY_COLLECTION>/3lxyz"`
  * - 出力: `{ actor: "did:plc:abc", rkey: "3lxyz" }`
  */
-export const parseEntryAtUri = (
-    uri: string,
-): { actor: string; rkey: string } | undefined => {
-    const match = uri.match(ENTRY_AT_URI_PATTERN)
-    return match ? { actor: match[1], rkey: match[2] } : undefined
-}
+export const parseEntryAtUri = nsids.parseEntryAtUri

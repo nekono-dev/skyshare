@@ -48,4 +48,14 @@ test.describe("entry詳細ページのスレッド表示", () => {
         ).toHaveCount(0)
         await expect(page.getByTestId("entry-visual")).toBeVisible()
     })
+
+    test("[entry-detail/AC-9] 形式が正しくないentryの詳細ページを開くと、404のエラー表示になる", async ({
+        page,
+    }) => {
+        const response = await page.goto("/entries/invalid-slug/")
+        expect(response?.status()).toBe(404)
+        await expect(
+            page.getByRole("heading", { name: "Entry Not Found" }),
+        ).toBeVisible()
+    })
 })

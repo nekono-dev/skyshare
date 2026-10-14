@@ -22,7 +22,7 @@ import {
 } from "@/lib/atproto/richtext"
 
 describe("extractLinkUrisFromFacets", () => {
-    it("facet配列からlink URIを抽出する", () => {
+    it("[post-record/AC-11] facet配列からlink URIを抽出する", () => {
         expect(
             extractLinkUrisFromFacets([
                 {
@@ -62,7 +62,7 @@ describe("extractLinkUrisFromFacets", () => {
         ).toEqual(["https://b"])
     })
 
-    it("重複するURIは1つにまとめる", () => {
+    it("[post-record/AC-11] 重複するURIは1つにまとめる", () => {
         expect(
             extractLinkUrisFromFacets([
                 {
@@ -105,7 +105,7 @@ describe("extractLinkUrisFromFacets", () => {
 })
 
 describe("extractTagsFromFacets", () => {
-    it("facet配列からタグを抽出する（#を含まない）", () => {
+    it("[post-record/AC-12] facet配列からタグを抽出する（#を含まない）", () => {
         expect(
             extractTagsFromFacets([
                 {
@@ -165,7 +165,7 @@ describe("extractTagsFromFacets", () => {
 })
 
 describe("countHashtagUsage", () => {
-    it("複数投稿にまたがるタグ使用数を集計する", () => {
+    it("[post-record/AC-13] 複数投稿にまたがるタグ使用数を集計する", () => {
         expect(
             countHashtagUsage(["#猫 かわいい", "#猫 と #犬", "#犬"]),
         ).toEqual([
@@ -180,7 +180,7 @@ describe("countHashtagUsage", () => {
         ])
     })
 
-    it("大文字小文字を無視してマージする（表記は最初の出現を採用）", () => {
+    it("[post-record/AC-14] 大文字小文字を無視してマージする（表記は最初の出現を採用）", () => {
         expect(countHashtagUsage(["#Bluesky", "#bluesky"])).toEqual([
             { tag: "Bluesky", count: 2 },
         ])
@@ -203,7 +203,7 @@ describe("countHashtagUsage", () => {
 })
 
 describe("detectFacetsForSubmission", () => {
-    it("URLとハッシュタグを検出する(メンションを含まないためネットワーク未使用)", async () => {
+    it("[post-record/AC-15] URLとハッシュタグを検出する(メンションを含まないためネットワーク未使用)", async () => {
         const facets = await detectFacetsForSubmission(
             "https://example.com を見て #猫",
         )
@@ -219,7 +219,7 @@ describe("detectFacetsForSubmission", () => {
         })
     })
 
-    it("メンションは公開AppView(publicAtpAgent)経由でdidを解決する", async () => {
+    it("[post-record/AC-16] メンションは公開AppView(publicAtpAgent)経由でdidを解決する", async () => {
         const facets = await detectFacetsForSubmission("@alice.bsky.social")
 
         expect(resolveHandleMock).toHaveBeenCalledWith({

@@ -9,7 +9,37 @@
 | `src/components/post/PostLauncher/index.tsx`      | 投稿フォームのオーバーレイ外でのダイアログの表示 |
 | `src/components/post/PostCard/index.tsx`          | タイムラインの投稿からのダイアログの表示         |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+ダイアログを表示する側とされる側の依存方向を示す。
+
+```mermaid
+flowchart LR
+  pc["PostCard/index"] --> isd["IntentShareDialog/index"]
+  tc["ThreadComposer/index"] --> isd
+  pl["PostLauncher/index"] --> tc
+  pl --> isd
+  isd --> ext_choice["ChoiceDialog"]
+```
+
+投稿先の選択から外部の投稿画面を開くまでの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant isd as IntentShareDialog/index
+  participant ext_choice as ChoiceDialog
+  participant ext_popup as 投稿画面
+  isd->>ext_choice: 投稿先ボタンを表示
+  ext_choice->>isd: 投稿先を選択
+  alt keepOpenOnSelect が偽
+    isd->>ext_popup: ポップアップを開く
+    isd->>isd: onClose
+  else keepOpenOnSelect が真
+    isd->>ext_popup: ポップアップを開く
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: ダイアログ (FR-1, FR-3, FR-4, FR-5, FR-6)
 
@@ -42,7 +72,7 @@ type Props = {
 - `ThreadComposer` は、共有の分岐結果で `openShareDialog` が true なら、先頭の投稿の本文・skyshare entryのURL・リンクカードのURLから `IntentShareRequest` を作る。`onShareRequest` があればそれを呼び、無ければ自身のstateに入れる。
 - 入力欄のクリア（`resetInputFields`）は、ダイアログの有無によらず投稿成功後に必ず実行する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                   | 処理                                                         |
 | ---------------------- | ------------------------------------------------------------ |

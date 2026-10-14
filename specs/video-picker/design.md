@@ -11,7 +11,44 @@
 | `src/components/post/ThreadComposer/ThreadSegmentForm/index.tsx` | 排他・ドロップ・投稿できない理由の表示             |
 | `src/images/video.svg`                                           | 動画の追加ボタンの絵柄                             |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+動画選択の構成要素の依存方向を示す。
+
+```mermaid
+flowchart LR
+  vp["VideoPicker/index"] --> probeVideo
+  vp --> mt["MediaThumb/index"]
+  vp --> video
+  tsf["ThreadSegmentForm/index"] --> vp
+  tsf --> segments
+```
+
+動画の検査から排他制御までの流れと、失敗時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant vp as VideoPicker/index
+  participant probeVideo
+  participant segments
+  participant tsf as ThreadSegmentForm/index
+  vp->>probeVideo: resolveVideoMimeType
+  vp->>probeVideo: validateVideoFile
+  alt 形式・サイズ不正
+    probeVideo-->>vp: エラー
+  else 妥当
+    vp->>probeVideo: probeVideo
+    alt 読み取り不能
+      probeVideo-->>vp: unreadable
+    else 読み取り成功
+      probeVideo-->>vp: 長さ・寸法・poster
+    end
+  end
+  tsf->>segments: pendingVideoState
+  tsf->>segments: hasPendingVideo
+```
+
+## 3. 設計項目
 
 ### D-1: 検査と読み取り (FR-3, FR-4, FR-5, FR-6)
 
@@ -76,7 +113,7 @@ export const hasPendingVideo = (segments: SegmentState[]): boolean => pendingVid
 - 理由（`video.submit.waitUpload` / `video.submit.removeFailed`）は、ツールバーの直後・プレビューの直前に `<p role="status" data-testid="video-submit-reason">` で表示する。
 - ドロップでは、ファイルの種別を `resolveVideoMimeType` で判定し、動画か画像が添付済みなら受け付けない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                 | 処理                                         |
 | -------------------- | -------------------------------------------- |

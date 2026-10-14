@@ -1,0 +1,27 @@
+{
+  "entry#main.source": {
+    "type": "ref",
+    "required": true
+  },
+  "entry#main.manifest": {
+    "type": "ref",
+    "required": true
+  },
+  "entry#main.createdAt": {
+    "type": "string",
+    "required": true,
+    "format": "datetime"
+  },
+  "defs#manifest.visual": {
+    "type": "blob",
+    "required": true
+  },
+  "defs#manifest.heading": {
+    "type": "string",
+    "required": false
+  },
+  "defs#manifest.caption": {
+    "type": "string",
+    "required": false
+  }
+}

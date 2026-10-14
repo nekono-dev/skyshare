@@ -57,7 +57,7 @@ describe("encodeBase64Utf8 / decodeBase64Utf8", () => {
 })
 
 describe("parseSessionFromRequest", () => {
-    it("atp_session cookie を復号してsession/serviceを取得する", () => {
+    it("[account-session/AC-1] atp_session cookie を復号してsession/serviceを取得する", () => {
         const payload = {
             session: { did: "did:plc:abc" },
             service: "https://x",
@@ -82,7 +82,7 @@ describe("parseSessionFromRequest", () => {
 })
 
 describe("makeSessionSetCookie", () => {
-    it("Set-Cookie文字列に必要な属性を含む", () => {
+    it("[account-session/AC-1] Set-Cookie文字列に必要な属性を含む", () => {
         const cookie = makeSessionSetCookie({ did: "did:plc:abc" })
         expect(cookie).toContain("atp_session=")
         expect(cookie).toContain("Path=/")

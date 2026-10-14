@@ -9,7 +9,39 @@
 | `src/lib/settings/useShareToggles.ts`        | 共有設定のstateと保存を束ねるフック        |
 | `src/components/settings/Settings/index.tsx` | 設定ページの共有設定の行                   |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+設定の保存と画面の依存方向を示す。
+
+```mermaid
+flowchart LR
+  index --> useShareToggles
+  useShareToggles --> shareSettings
+  shareSettings --> legacyShareSettings
+```
+
+保存値の読み取りと旧設定の引き継ぎの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant useShareToggles
+  participant shareSettings
+  participant legacyShareSettings
+  useShareToggles->>shareSettings: readAutoPopupTargetSetting
+  shareSettings->>legacyShareSettings: migrateLegacyShareSettings
+  alt 旧キーなし
+    legacyShareSettings-->>shareSettings: 何もしない
+  else 旧キーあり
+    legacyShareSettings->>legacyShareSettings: deriveAutoPopupTarget
+    legacyShareSettings-->>shareSettings: 保存して旧キー削除
+  end
+  shareSettings-->>useShareToggles: AUTO_POPUP_TARGETS の値
+  useShareToggles->>shareSettings: writeAutoPopupTargetSetting
+  useShareToggles->>shareSettings: resolveMastodonInstanceDomain
+  shareSettings-->>useShareToggles: DEFAULT_AUTO_POPUP_TARGET
+```
+
+## 3. 設計項目
 
 ### D-1: 設定の読み書き (FR-1, FR-2, FR-5, NFR-1)
 
@@ -17,7 +49,8 @@
 export const AUTO_POPUP_TARGETS = ["ask", "x", "taittsuu", "mastodon"] as const
 export type AutoPopupTarget = (typeof AUTO_POPUP_TARGETS)[number]
 export const DEFAULT_AUTO_POPUP_TARGET: AutoPopupTarget = "x"
-export const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
+const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
+export { DEFAULT_MASTODON_INSTANCE_DOMAIN }
 
 // 保存キー: autoPopupTarget / popupIntentInsteadOfWebshare / manualImageAttach /
 //           truncateIntentText / mastodonInstanceDomain
@@ -92,7 +125,7 @@ export type UseShareTogglesResult = {
 | 7   | メンション候補を表示                                                          | 常時                                   |
 | 8   | Mastodonのインスタンス（`textInput`、検証は `isValidMastodonInstanceDomain`） | 常時                                   |
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                         | 処理                                     |
 | ---------------------------- | ---------------------------------------- |

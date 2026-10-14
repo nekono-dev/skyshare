@@ -16,7 +16,53 @@
 | `src/lib/atproto/gate.ts`               | 簡略化したgate設定から公式レコードへの変換 |
 | `src/lib/api/response.ts`               | エラー応答とatprotoの例外の変換            |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+entry APIの構成要素の依存方向を示す。
+
+```mermaid
+flowchart LR
+  entry --> post
+  entry --> put
+  entry --> delete
+  entry --> response
+  entry --> createBskyThread
+  entry --> fromPost
+  entry --> resolveDeleteTargets
+  createBskyThread --> skyshareRecord
+  createBskyThread --> gate
+  fromPost --> skyshareRecord
+  resolveDeleteTargets --> threadChain
+```
+
+作成と削除の流れ、削除対象の導出での分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant entry
+  participant createBskyThread
+  participant resolveDeleteTargets
+  participant response
+  participant ext_pds as PDS
+  alt POST
+    entry->>createBskyThread: 投稿とentryの作成
+    createBskyThread->>ext_pds: applyWrites
+  else DELETE
+    opt deleteBskyPost が true
+      entry->>resolveDeleteTargets: resolveDeleteTargets
+      alt 起点でない
+        entry->>response: 409
+      else 起点
+        resolveDeleteTargets-->>entry: 削除対象の一覧
+      end
+    end
+    entry->>ext_pds: deleteRecord
+  end
+  ext_pds-->>response: 例外
+  response-->>entry: resolveXrpcStatus の値
+```
+
+## 3. 設計項目
 
 ### D-1: 共通の検証とエラー (NFR-1, NFR-4, NFR-6, NFR-7)
 
@@ -32,7 +78,7 @@
 - atprotoの例外は `resolveXrpcStatus` で変換する: 認証系→401、`RateLimitExceeded` `DraftLimitReached`→429、`BlobNotFound` `RepoNotFound` `RecordNotFound`→404、その他→500。
 - 入力スキーマはZodで定義し、同じ定義からOpenAPIドキュメントを生成する。アプリ独自の頻度制限は持たない。
 
-### D-2: 新規投稿の入力 (FR-1, FR-2, FR-3, FR-4)
+### D-2: 新規投稿の入力 (FR-1, FR-2, FR-3, FR-4, NFR-8)
 
 ```ts
 // multipart/form-data。uri（既存の投稿から作成）か posts（新規投稿）の anyOf
@@ -41,8 +87,8 @@ type NewPostsBody = {
   reply?: ReplyRef // スレッド全体の接続先。自分の投稿であることを isReplyRefOwnedBySelf で検証
   createEntry?: boolean
   visual?: Blob // createEntry が true のとき必須
-  heading?: string // 100文字まで。サーバは生成しない
-  caption?: string // 300文字まで
+  heading?: string // 100バイトまで（UTF-8）。サーバは生成しない
+  caption?: string // 300バイトまで（UTF-8）
 }
 // テキストのみ・リンクカード付き・画像付きの3分岐の union（各 .strict()）
 type EntryPostItem = {
@@ -146,7 +192,7 @@ export const resolveDeleteTargets = async (
 
 `extractOwnedLinearReplyChain` は、直前の投稿への自分の返信を次の対象とし、自分の返信が複数ある場合は `createdAt` の差が最小のものを選ぶ。第三者の返信の先はたどらない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                                         | 処理                                  |
 | -------------------------------------------- | ------------------------------------- |

@@ -161,6 +161,27 @@ test.describe("動画投稿の表示", () => {
         expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1)
     })
 
+    test("[video-player/AC-12] 再生ボタンを押すと、Chromium系・Firefox・Safariのそれぞれで動画が再生される", async ({
+        page,
+    }) => {
+        await mockHls(page)
+        await page.goto("/entries/sample/")
+        const item = sampleItem(page, SAMPLE_VIDEO_TEXT)
+        await item.getByRole("button", { name: "動画を再生" }).click()
+        await expect(item.locator("video")).toBeVisible()
+        await expect(item.getByRole("alert")).toHaveCount(0)
+        // 動画のデータが読み込まれ、再生できる状態になる
+        await expect
+            .poll(
+                () =>
+                    item
+                        .locator("video")
+                        .evaluate(el => (el as HTMLVideoElement).readyState),
+                { timeout: 20_000 },
+            )
+            .toBeGreaterThanOrEqual(2)
+    })
+
     test("[video-player/AC-5] playlist が 404 なら再生失敗の文言と Bluesky へのリンクが表示される（シナリオ4）", async ({
         page,
     }) => {

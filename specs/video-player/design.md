@@ -12,7 +12,46 @@
 | `src/components/video/VideoUnavailable/index.tsx` | 再生できない動画の表示                            |
 | `src/components/post/PostBody/index.tsx`          | 動画・再生できない動画・画像の表示の切り替え      |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+動画表示の部品の依存方向を示す。
+
+```mermaid
+flowchart LR
+  pb["PostBody/index"] --> vp["VideoPlayer/index"]
+  pb --> vt["VideoThumbnail/index"]
+  pb --> vu["VideoUnavailable/index"]
+  vp --> vpb["VideoPlayButton/index"]
+  vt --> vpb
+  posts --> entry
+```
+
+動画の抽出と表示の切り替えの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant entry
+  participant posts
+  participant pb as PostBody/index
+  participant vp as VideoPlayer/index
+  posts->>entry: extractEmbedVideo
+  entry->>entry: buildVideoUrls
+  posts->>entry: extractUnsupportedEmbedVideo
+  alt 再生できる動画
+    pb->>vp: 再生ボタンを表示
+    alt hls.js が利用可能
+      vp->>vp: hls.js で再生
+    else ネイティブ対応
+      vp->>vp: video の src に設定
+    else 非対応
+      vp->>vp: 失敗の文言を表示
+    end
+  else 再生できない動画
+    pb->>pb: VideoUnavailable を表示
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 動画の抽出 (FR-7, FR-8, FR-9, FR-10)
 
@@ -69,7 +108,7 @@ Chromiumはネイティブの再生対応を報告することがあるため、
 | リンク   | `postUrl` があるときだけ `t("video.unavailable.link")`（白・下線・新しいタブ） |
 | 操作要素 | 再生ボタンと `<button>` を置かない                                             |
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                           | 処理                                        |
 | ------------------------------ | ------------------------------------------- |

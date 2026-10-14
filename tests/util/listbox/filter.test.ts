@@ -35,3 +35,20 @@ describe("filterOptions", () => {
         expect(filterOptions(items, "zzz")).toEqual([])
     })
 })
+
+describe("filterOptions の処理時間", () => {
+    it("[dropdown-search/AC-13] 約180件の選択肢の絞り込みが、16ミリ秒以内に終わる", () => {
+        const many = Array.from({ length: 180 }, (_, i) => ({
+            label: `言語${i} Language ${i}`,
+            searchText: `lang${i} ＬＡＮＧ${i}`,
+        }))
+        // 初回のJIT等の影響を除くため、ウォームアップの後に複数回測り、最小値で判定する
+        filterOptions(many, "ko")
+        const durations = Array.from({ length: 20 }, () => {
+            const start = performance.now()
+            filterOptions(many, "ｌａｎｇ１")
+            return performance.now() - start
+        })
+        expect(Math.min(...durations)).toBeLessThanOrEqual(16)
+    })
+})

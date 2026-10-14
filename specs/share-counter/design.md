@@ -9,7 +9,40 @@
 | `src/components/post/ThreadComposer/index.tsx`                   | 表示するカウンタと予測URLの算出      |
 | `src/components/post/ThreadComposer/ThreadSegmentForm/index.tsx` | 先頭の投稿のカウンタへの減算量の適用 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+カウンタの算出に関わる依存方向を示す。
+
+```mermaid
+flowchart LR
+  tc["ThreadComposer/index"] --> estimateEntryUrl
+  tc --> counterReserve
+  tc --> tsf["ThreadSegmentForm/index"]
+  tsf --> counterReserve
+  estimateEntryUrl --> ext_urlgen["skyshareEntryUrlgen"]
+```
+
+予測URLと減算量の決定の流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant tc as ThreadComposer/index
+  participant estimateEntryUrl
+  participant counterReserve
+  participant tsf as ThreadSegmentForm/index
+  tc->>counterReserve: resolveCounterTargets
+  opt 画像または動画あり
+    tc->>estimateEntryUrl: estimateSkyshareEntryUrl
+  end
+  tc->>tsf: カウンタ対象と予測URL
+  alt 先頭の投稿
+    tsf->>counterReserve: resolveCounterReserve
+  else 2件目以降
+    tsf->>tsf: 減算量は0
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: URLの長さの予測 (FR-2, FR-3)
 
@@ -61,6 +94,6 @@ export const resolveCounterReserve = (params: {
 
 `ThreadSegmentForm` は、`index === 0` のときだけ `resolveCounterReserve` の結果を減算量とし、X・タイッツーのカウンタの上限と警告閾値を `140 - 減算量` にする。Blueskyのカウンタ（上限300）は常に先頭に置き、減算しない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

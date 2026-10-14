@@ -13,7 +13,12 @@ import { readFileSync } from "node:fs"
 import { Lexicons, jsonToLex, type LexiconDoc } from "@atproto/lexicon"
 import { describe, expect, it } from "vitest"
 
-import { ENTRY_COLLECTION, DEFS_NSID } from "@/lib/atproto/nsid"
+import {
+    ENTRY_COLLECTION,
+    DEFS_NSID,
+    createNsidSet,
+    resolveEntryLexiconId,
+} from "@/lib/atproto/nsid"
 
 // lexicons/ 配下の全 JSON を `/lexicons/...` 形式のパスをキーに読み込む（symlink も辿る）
 const lexiconFiles = import.meta.glob<LexiconDoc>("/lexicons/**/*.json", {
@@ -103,13 +108,177 @@ describe("entryレコードのバリデーション", () => {
         ).toThrow()
     })
 
-    it("[lexicon/AC-4] headingの上限（100文字）超過を拒否する", () => {
+    it("[lexicon/AC-4] headingの上限（100バイト）超過を拒否し、ちょうどは受理する", () => {
         const record = {
             ...validRecord,
-            manifest: { ...validRecord.manifest, heading: "あ".repeat(101) },
+            manifest: { ...validRecord.manifest, heading: "a".repeat(101) },
         }
         expect(() =>
             lexicons.assertValidRecord(ENTRY_COLLECTION, record),
         ).toThrow()
+        expect(() =>
+            lexicons.assertValidRecord(ENTRY_COLLECTION, {
+                ...validRecord,
+                manifest: {
+                    ...validRecord.manifest,
+                    heading: "a".repeat(100),
+                },
+            }),
+        ).not.toThrow()
+    })
+
+    it("[lexicon/AC-4] captionの上限（300バイト）超過を拒否し、代表画像はPNG・JPEG・WebPだけを許可する定義になっている", () => {
+        const withManifest = (manifest: Record<string, unknown>) => ({
+            ...validRecord,
+            manifest: { ...validRecord.manifest, ...manifest },
+        })
+        expect(() =>
+            lexicons.assertValidRecord(
+                ENTRY_COLLECTION,
+                withManifest({ caption: "a".repeat(300) }),
+            ),
+        ).not.toThrow()
+        expect(() =>
+            lexicons.assertValidRecord(
+                ENTRY_COLLECTION,
+                withManifest({ caption: "a".repeat(301) }),
+            ),
+        ).toThrow()
+        // 代表画像の形式は、lexicon の定義（accept）で許可する。検証ライブラリは accept を強制しない
+        const defs = docs.find(doc => doc.id === DEFS_NSID)!
+        const visual = (defs.defs.manifest as any).properties.visual
+        expect(visual.type).toBe("blob")
+        expect(visual.accept).toEqual(["image/png", "image/jpeg", "image/webp"])
+    })
+
+    it("[lexicon/AC-2] 投稿以外のレコード種別を指す派生元への参照を受理する", () => {
+        for (const uri of [
+            "at://did:plc:abc/app.bsky.actor.profile/self",
+            "at://did:plc:abc/app.bsky.graph.list/3lxyz",
+        ]) {
+            expect(() =>
+                lexicons.assertValidRecord(ENTRY_COLLECTION, {
+                    ...validRecord,
+                    source: { ...validRecord.source, uri },
+                }),
+            ).not.toThrow()
+        }
+    })
+
+    it("[lexicon/AC-3] 代表画像の無いマニフェストを拒否し、見出しと説明文の無いマニフェストを受理する", () => {
+        const { visual: _visual, ...withoutVisual } = validRecord.manifest
+        expect(() =>
+            lexicons.assertValidRecord(ENTRY_COLLECTION, {
+                ...validRecord,
+                manifest: withoutVisual,
+            }),
+        ).toThrow()
+        expect(() =>
+            lexicons.assertValidRecord(ENTRY_COLLECTION, {
+                ...validRecord,
+                manifest: { visual: validRecord.manifest.visual },
+            }),
+        ).not.toThrow()
+    })
+})
+
+describe("別ドメインへの書き換え", () => {
+    const FROM = "dev.nekono.skyshare"
+    const TO = "example.org.app"
+
+    it("[lexicon/AC-6] idと参照を別ドメインのNSIDに書き換えると、導出される値とURIの扱いが書き換え後の値に従い、定義が妥当になる", () => {
+        // 運用者が行う手順と同じく、entry.json・defs.json の id と ref の文字列だけを書き換える
+        const rewritten = docs
+            .filter(doc => doc.id.startsWith(`${FROM}.`))
+            .map(doc => JSON.parse(JSON.stringify(doc).replaceAll(FROM, TO)))
+        expect(rewritten.map(doc => doc.id).sort()).toEqual([
+            `${TO}.defs`,
+            `${TO}.entry`,
+        ])
+
+        const nsids = createNsidSet(
+            resolveEntryLexiconId({
+                "/lexicons/example/org/app/entry.json": rewritten.find(doc =>
+                    doc.id.endsWith(".entry"),
+                ),
+            }),
+        )
+        expect(nsids.entryCollection).toBe(`${TO}.entry`)
+        expect(nsids.defsNsid).toBe(`${TO}.defs`)
+        expect(nsids.manifestType).toBe(`${TO}.defs#manifest`)
+        const uri = nsids.entryAtUri("did:plc:abc", "3lxyz")
+        expect(uri).toBe(`at://did:plc:abc/${TO}.entry/3lxyz`)
+        expect(nsids.parseEntryAtUri(uri)).toEqual({
+            actor: "did:plc:abc",
+            rkey: "3lxyz",
+        })
+        // 書き換え前のコレクションは受理しない
+        expect(
+            nsids.parseEntryAtUri(`at://did:plc:abc/${ENTRY_COLLECTION}/3lxyz`),
+        ).toBeUndefined()
+
+        // 書き換え後の定義は、スキーマとして妥当で、参照が解決できる
+        const strongRef = docs.find(
+            doc => doc.id === "com.atproto.repo.strongRef",
+        )!
+        const lexicons = new Lexicons([...rewritten, strongRef])
+        expect(() => lexicons.getDefOrThrow(nsids.manifestType)).not.toThrow()
+        const entry = rewritten.find(doc => doc.id === nsids.entryCollection)
+        // 読み込み済みの定義は参照に `lex:` が付くため、外して比べる
+        expect(
+            entry.defs.main.record.properties.manifest.ref.replace(/^lex:/, ""),
+        ).toBe(nsids.manifestType)
+    })
+})
+
+type PublishedField = { type: string; required: boolean; format?: string }
+
+/** 現在のlexiconから、`<entry|defs>#<定義>.<項目>` をキーにした項目の一覧を作る。 */
+const currentFields = (): Record<string, PublishedField> => {
+    const fields: Record<string, PublishedField> = {}
+    for (const doc of docs) {
+        const kind = [ENTRY_COLLECTION, DEFS_NSID].indexOf(doc.id)
+        if (kind < 0) continue
+        const name = kind === 0 ? "entry" : "defs"
+        for (const [defName, def] of Object.entries(doc.defs) as [
+            string,
+            any,
+        ][]) {
+            const object = def.type === "record" ? def.record : def
+            const required = new Set<string>(object.required ?? [])
+            for (const [prop, schema] of Object.entries(
+                object.properties as Record<string, any>,
+            )) {
+                fields[`${name}#${defName}.${prop}`] = {
+                    type: schema.type,
+                    required: required.has(prop),
+                    ...(schema.format ? { format: schema.format } : {}),
+                }
+            }
+        }
+    }
+    return fields
+}
+
+describe("公開済みのlexiconとの互換", () => {
+    const published = JSON.parse(
+        readFileSync("tests/lexicons/publishedFields.json", "utf-8"),
+    ) as Record<string, PublishedField>
+
+    it("[lexicon/AC-11] 公開済みの項目の型・必須指定が変わっておらず、追加された項目はすべて任意である", () => {
+        const current = currentFields()
+        for (const [key, field] of Object.entries(published)) {
+            // 削除・型の変更・必須化のいずれも互換性を壊す
+            expect(current[key], `${key} が削除されている`).toBeDefined()
+            expect(current[key].type, `${key} の型`).toBe(field.type)
+            expect(current[key].required, `${key} の必須指定`).toBe(
+                field.required,
+            )
+            expect(current[key].format, `${key} の形式`).toBe(field.format)
+        }
+        for (const [key, field] of Object.entries(current)) {
+            if (key in published) continue
+            expect(field.required, `追加した ${key} は任意にする`).toBe(false)
+        }
     })
 })

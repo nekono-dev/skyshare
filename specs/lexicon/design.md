@@ -11,7 +11,44 @@
 | `tests/lexicons/lexicons.test.ts`         | lexicon定義の検証                      |
 | `tests/lib/atproto/nsidLiteral.test.ts`   | NSIDの直書きの検出                     |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+定義・導出・検証の依存方向を示す。
+
+```mermaid
+flowchart LR
+  nsid --> entry
+  nsid --> defs
+  entry --> defs
+  lt["lexicons.test"] --> entry
+  lt --> defs
+  nl["nsidLiteral.test"] --> nsid
+  README --> entry
+```
+
+モジュール評価時のNSID導出と、URI解析の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant nsid
+  participant entry
+  participant ext_caller as 呼び出し側
+  nsid->>entry: ENTRY_COLLECTION を導出
+  alt 0件・複数・id不正
+    nsid-->>nsid: resolveEntryLexiconId が例外
+  else 1件
+    nsid->>nsid: DEFS_NSID と MANIFEST_TYPE
+  end
+  ext_caller->>nsid: entryAtUri
+  ext_caller->>nsid: parseEntryAtUri
+  alt 形式が一致
+    nsid-->>ext_caller: actor と rkey
+  else 不一致
+    nsid-->>ext_caller: undefined
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: レコード定義 (FR-1, FR-2, FR-3, FR-4, NFR-1)
 
@@ -25,6 +62,8 @@
 |                          |                        | `caption`   | 任意 | `maxLength: 300`                                         |
 
 - 派生元の種別を投稿に限定する制約はAPI側で行い、lexiconには書かない。
+- `maxLength` は文字数ではなくバイト数の上限である。APIの入力は文字数で制限するため、1文字が複数バイトになる文字では、lexiconの上限より緩い。
+- `accept` は代表画像の形式の宣言であり、検証ライブラリは強制しない。代表画像はクライアントがJPEGかPNGで生成するため、形式はこの範囲に収まる。
 - 公開には GoAT（`goat lex lint` / `goat lex check-dns` / `goat lex publish`）を使う。公開後は他のPDSからも解決されるため、追加するフィールドは任意にする。
 
 ### D-2: NSIDの導出 (FR-5, FR-7, NFR-2)
@@ -85,7 +124,7 @@ export const parseEntryAtUri = (uri: string): { actor: string; rkey: string } | 
 
 CIの検証ジョブで vitest と `npm run lint:lexicon`（goat）を両方実行する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                          | 処理                                                     |
 | ----------------------------- | -------------------------------------------------------- |

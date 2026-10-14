@@ -12,7 +12,46 @@
 | `src/lib/entry/guestDummyPosts.ts`       | 表示言語で組み立てるゲスト用ダミーデータ   |
 | `tests/lib/i18n/noHardcodedText.test.ts` | 文言の直書き検出                           |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+辞書・翻訳・書式の依存方向を示す。
+
+```mermaid
+flowchart LR
+  translate --> ja["ja/index"]
+  translate --> en["en/index"]
+  en --> ja
+  rich --> translate
+  format --> translate
+  guestDummyPosts --> translate
+  nh["noHardcodedText.test"] --> ja
+```
+
+翻訳関数の生成と、キー未登録時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant ext_view as 画面
+  participant translate
+  participant ja as ja/index
+  participant en as en/index
+  participant format
+  ext_view->>translate: createTranslator
+  alt 日本語
+    translate->>ja: ja の辞書
+  else 英語
+    translate->>en: en の辞書
+  end
+  alt キーが辞書にある
+    translate-->>ext_view: 置換後の文言
+  else キーが辞書にない
+    translate-->>ext_view: キー文字列
+  end
+  ext_view->>format: formatDateTime
+  ext_view->>format: formatNumber
+```
+
+## 3. 設計項目
 
 ### D-1: 辞書と翻訳関数 (FR-1, FR-2, FR-5, FR-6)
 
@@ -77,7 +116,7 @@ const ALLOWED: { path: string; reason: string }[] // 言語の自称表記、静
 
 許可一覧のファイルが実在することも同じテストで検査する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                         | 処理                         |
 | ---------------------------- | ---------------------------- |

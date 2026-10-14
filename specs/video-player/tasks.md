@@ -4,15 +4,15 @@
 
 - 対応: D-1, D-2
 - [x] T-1.1: 動画の抽出と、`VideoThumbnail`・`VideoPlayButton`・`PostBody` の切り替えを実装する。
-- [ ] T-1.2: 代替テキストと他のクライアントの動画の表示を確認するテストを追加する。
-- 検証: `npx vitest run tests/lib/entry/entry.test.ts`
+- [x] T-1.2: 代替テキストと他のクライアントの動画の表示を確認するテストを追加する。
+- 検証: `npx vitest run tests/lib/entry/entry.test.ts tests/components/video/VideoThumbnail.test.ts`
 - E2E: `tests/e2e/videoDisplay.spec.ts` ゲスト表示のタイムラインを開く → 動画の投稿がposterと再生ボタンで表示され、再生されない
 
 ## Phase 2: 再生
 
 - 対応: D-3
 - [x] T-2.1: `VideoPlayer` を実装し、`hls.js` を再生時に読み込む。
-- [ ] T-2.2: Firefox と Safari での再生を確認するE2Eテストを追加する。
+- [x] T-2.2: Firefox と Safari での再生を確認するE2Eテストを追加する。
 - 検証: `npm run build`
 - E2E: `tests/e2e/videoDisplay.spec.ts` サンプルのentryページで再生ボタンを押す → 押す前は動画のデータが取得されず、押すと再生され、表示領域の大きさが変わらない
 

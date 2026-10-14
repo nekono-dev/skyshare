@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { buildBskyPostRecord, isReplyRefOwnedBySelf } from "@/lib/atproto/post"
 
 describe("buildBskyPostRecord", () => {
-    it("selfLabel指定時はlabelsをselfLabels形式に変換する", () => {
+    it("[post-record/AC-1][post-record/AC-17] selfLabel指定時はlabelsをselfLabels形式に変換する", () => {
         const record = buildBskyPostRecord({
             text: "hello",
             facets: undefined,
@@ -27,7 +27,7 @@ describe("buildBskyPostRecord", () => {
         })
     })
 
-    it("selfLabel未指定ならlabelsはundefined", () => {
+    it("[post-record/AC-2] selfLabel未指定ならlabelsはundefined", () => {
         const record = buildBskyPostRecord({
             text: "hello",
             facets: undefined,
@@ -41,7 +41,7 @@ describe("buildBskyPostRecord", () => {
         expect(record.labels).toBeUndefined()
     })
 
-    it("reply指定時はそのままレコードへ含める", () => {
+    it("[post-record/AC-3] reply指定時はそのままレコードへ含める", () => {
         const reply = {
             root: { uri: "at://did:plc:abc/app.bsky.feed.post/1", cid: "c1" },
             parent: { uri: "at://did:plc:abc/app.bsky.feed.post/2", cid: "c2" },
@@ -60,7 +60,7 @@ describe("buildBskyPostRecord", () => {
         expect(record.reply).toEqual(reply)
     })
 
-    it("reply未指定ならreplyはundefined", () => {
+    it("[post-record/AC-4] reply未指定ならreplyはundefined", () => {
         const record = buildBskyPostRecord({
             text: "hello",
             facets: undefined,
@@ -82,11 +82,11 @@ describe("isReplyRefOwnedBySelf", () => {
     const otherPostUri = (rkey: string) =>
         `at://did:plc:other/app.bsky.feed.post/${rkey}`
 
-    it("reply未指定ならtrue", () => {
+    it("[post-record/AC-7] reply未指定ならtrue", () => {
         expect(isReplyRefOwnedBySelf(undefined, did)).toBe(true)
     })
 
-    it("root/parentともに自分の投稿ならtrue", () => {
+    it("[post-record/AC-5] root/parentともに自分の投稿ならtrue", () => {
         const reply = {
             root: { uri: ownPostUri("1"), cid: "c1" },
             parent: { uri: ownPostUri("2"), cid: "c2" },
@@ -94,7 +94,7 @@ describe("isReplyRefOwnedBySelf", () => {
         expect(isReplyRefOwnedBySelf(reply, did)).toBe(true)
     })
 
-    it("rootが他人の投稿ならfalse", () => {
+    it("[post-record/AC-6] rootが他人の投稿ならfalse", () => {
         const reply = {
             root: { uri: otherPostUri("1"), cid: "c1" },
             parent: { uri: ownPostUri("2"), cid: "c2" },

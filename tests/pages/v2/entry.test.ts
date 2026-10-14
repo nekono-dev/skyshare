@@ -1425,27 +1425,18 @@ describe("DELETE /v2/entry", () => {
     })
 
     it("[entry-api/AC-12] deleteBskyPost指定時、元投稿の削除に失敗してもentry削除自体は200を返す", async () => {
-        const agent = createFakeAgent({
-            com: {
-                atproto: {
-                    repo: {
-                        deleteRecord: vi
-                            .fn()
-                            .mockImplementation(
-                                async ({
-                                    collection,
-                                }: {
-                                    collection: string
-                                }) => {
-                                    if (collection === "app.bsky.feed.post") {
-                                        throw new Error("delete failed")
-                                    }
-                                    return {}
-                                },
-                            ),
-                    },
+        const deleteRecord = vi
+            .fn()
+            .mockImplementation(
+                async ({ collection }: { collection: string }) => {
+                    if (collection === "app.bsky.feed.post") {
+                        throw new Error("delete failed")
+                    }
+                    return {}
                 },
-            },
+            )
+        const agent = createFakeAgent({
+            com: { atproto: { repo: { deleteRecord } } },
         })
         const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
             method: "DELETE",
@@ -1460,6 +1451,12 @@ describe("DELETE /v2/entry", () => {
             session: fakeSession,
         })
         expect(res.status).toBe(200)
+        // 元投稿の削除を試みて失敗しても、entry自体の削除は行われている
+        const collections = deleteRecord.mock.calls.map(
+            ([input]) => (input as { collection: string }).collection,
+        )
+        expect(collections).toContain("app.bsky.feed.post")
+        expect(collections).toContain(ENTRY_COLLECTION)
     })
 
     it("deleteBskyPost=falseの場合は元投稿を削除せず200を返す", async () => {
@@ -1769,8 +1766,9 @@ describe("DELETE /v2/entry", () => {
                     ]),
                 },
             })
+            const deleteRecord = vi.fn().mockResolvedValue({})
             const agent = createFakeAgent({
-                com: { atproto: { repo: { applyWrites } } },
+                com: { atproto: { repo: { applyWrites, deleteRecord } } },
                 app: { bsky: { feed: { getPostThread } } },
             })
             const res = await callRoute(
@@ -1779,6 +1777,11 @@ describe("DELETE /v2/entry", () => {
                 { agent, session: fakeSession },
             )
             expect(res.status).toBe(200)
+            // 投稿の一括削除が失敗しても、entry自体の削除は行われている
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            expect(deleteRecord).toHaveBeenCalledWith(
+                expect.objectContaining({ collection: ENTRY_COLLECTION }),
+            )
         })
 
         it("deleteBskyPost未指定時はgetPostThreadを呼ばない", async () => {

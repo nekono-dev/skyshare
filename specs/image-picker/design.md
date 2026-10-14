@@ -10,7 +10,41 @@
 | `src/components/image/ImageAltDialog/index.tsx` | 代替テキストの編集                             |
 | `src/lib/image/postImageProcessing.ts`          | 投稿用の画像の圧縮                             |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+画像選択の部品間の依存方向を示す。
+
+```mermaid
+flowchart LR
+  ip["ImagePicker/index"] --> postImageLimits
+  ip --> mt["MediaThumb/index"]
+  ip --> alt["ImageAltDialog/index"]
+  ip --> postImageProcessing
+```
+
+画像の追加から圧縮までの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant ip as ImagePicker/index
+  participant postImageLimits
+  participant postImageProcessing
+  ip->>postImageLimits: MAX_POST_IMAGES
+  ip->>postImageLimits: MAX_IMAGES_EMBED
+  ip->>postImageLimits: VISUAL_IMAGE_COUNT
+  alt 上限超過
+    ip->>ip: 超過分を捨てて通知
+  else 上限内
+    ip->>postImageProcessing: canUsePostImageAsIs
+    alt そのまま使える
+      postImageProcessing-->>ip: 元の画像
+    else 再圧縮が必要
+      postImageProcessing-->>ip: 圧縮済み画像
+    end
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 枚数と通知 (FR-1, FR-3, FR-4, NFR-1)
 
@@ -61,7 +95,7 @@ export const canUsePostImageAsIs = (blob: Blob): boolean
 
 全画像（最大10枚）を個別に処理し、代表画像の合成とは独立させる。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                 | 処理                     |
 | -------------------- | ------------------------ |

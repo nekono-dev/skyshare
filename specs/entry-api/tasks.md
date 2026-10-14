@@ -6,8 +6,9 @@
 - [x] T-1.1: 入力スキーマと共通の検証・エラー変換を実装する。
 - [x] T-1.2: 埋め込みの組み立てと `createBskyThread` による原子的な作成を実装する。
 - [x] T-1.3: 新規投稿とスレッドのハンドラテストを受け入れ条件のタグ付きで追加する。
-- [ ] T-1.4: スレッドの上限の定数の共有と、APIドキュメントとスキーマの一致を確認するテストを追加する。
-- 検証: `npx vitest run tests/pages/v2/entry.test.ts -t POST`
+- [x] T-1.4: スレッドの上限の定数の共有と、APIドキュメントとスキーマの一致を確認するテストを追加する。
+- [x] T-1.5: 見出しと説明文の上限をバイト数で判定し、確認するテストを追加する。
+- 検証: `npx vitest run tests/pages/v2/entry.test.ts tests/lib/api/schema/threadLimit.test.ts tests/lib/api/schema/entryTextBytes.test.ts`
 
 ## Phase 2: 既存の投稿からの作成と編集
 

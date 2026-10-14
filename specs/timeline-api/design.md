@@ -11,7 +11,45 @@
 | `src/lib/atproto/repo.ts`              | 新しい日時の範囲のレコードの取得     |
 | `src/lib/atproto/threadChain.ts`       | 返信の連鎖の抽出と起点・所有者の判定 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+一覧取得の呼び出しの依存方向を示す。
+
+```mermaid
+flowchart LR
+  entries --> get
+  entries --> timelineThreads
+  timelineThreads --> posts
+  timelineThreads --> threadChain
+  posts --> threadChain
+```
+
+スレッドグループの構築と取得失敗時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant entries
+  participant timelineThreads
+  participant threadChain
+  participant ext_bsky as Bluesky
+  entries->>ext_bsky: フィードとentryの取得
+  entries->>timelineThreads: buildTimelineThreads
+  timelineThreads->>threadChain: extractRepoDidFromAtUri
+  timelineThreads->>threadChain: extractReplyRootUri
+  alt 自分が起点
+    timelineThreads->>ext_bsky: getPostThread
+    alt 取得失敗
+      timelineThreads->>timelineThreads: 単独の投稿にする
+    else 取得成功
+      timelineThreads->>threadChain: extractOwnedLinearReplyChain
+    end
+  else 他人が起点
+    timelineThreads->>timelineThreads: 出力しない
+  end
+  timelineThreads-->>entries: ThreadGroup の配列
+```
+
+## 3. 設計項目
 
 ### D-1: 応答の形式 (FR-9, NFR-1, NFR-2)
 
@@ -129,7 +167,7 @@ export const buildThreadViewFromPosts = (
 
 返信数は他人の返信も数えるため、他人の返信が付いたスレッドは一致せず、個別取得に回る。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                 | 処理                                                     |
 | -------------------- | -------------------------------------------------------- |

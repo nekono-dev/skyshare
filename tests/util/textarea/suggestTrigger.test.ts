@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { detectSuggestTrigger } from "@/util/textarea/suggestTrigger"
 
 describe("detectSuggestTrigger", () => {
-    it("文字列先頭の@メンションを検出する", () => {
+    it("[post-suggest/AC-1] 文字列先頭の@メンションを検出する", () => {
         const text = "@alice"
         expect(detectSuggestTrigger(text, text.length)).toEqual({
             kind: "mention",
@@ -21,7 +21,7 @@ describe("detectSuggestTrigger", () => {
         })
     })
 
-    it("空白直後の日本語#ハッシュタグを検出する", () => {
+    it("[post-suggest/AC-2] 空白直後の日本語#ハッシュタグを検出する", () => {
         const text = "今日も #猫"
         expect(detectSuggestTrigger(text, text.length)).toEqual({
             kind: "hashtag",
@@ -30,7 +30,7 @@ describe("detectSuggestTrigger", () => {
         })
     })
 
-    it("全角＃も検出する", () => {
+    it("[post-suggest/AC-3] 全角＃も検出する", () => {
         const text = "＃猫"
         expect(detectSuggestTrigger(text, text.length)).toEqual({
             kind: "hashtag",
@@ -48,7 +48,7 @@ describe("detectSuggestTrigger", () => {
         })
     })
 
-    it("メールアドレスのように空白を挟まない@は検出しない", () => {
+    it("[post-suggest/AC-4] メールアドレスのように空白を挟まない@は検出しない", () => {
         const text = "foo@example.com"
         expect(detectSuggestTrigger(text, text.length)).toBeNull()
     })
@@ -68,8 +68,11 @@ describe("detectSuggestTrigger", () => {
         expect(detectSuggestTrigger(text, text.length)).toBeNull()
     })
 
-    it("クエリが長すぎる場合はnullを返す", () => {
+    it("[post-suggest/AC-5] クエリが長すぎる場合はnullを返す", () => {
         const text = `@${"a".repeat(41)}`
         expect(detectSuggestTrigger(text, text.length)).toBeNull()
+        // 40文字ちょうどは契機になる（41文字以上との境界）
+        const limit = `@${"a".repeat(40)}`
+        expect(detectSuggestTrigger(limit, limit.length)).not.toBeNull()
     })
 })

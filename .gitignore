@@ -12,6 +12,10 @@ pnpm-debug.log*
 .env
 .env.staging
 .env.production
+# 認証情報を含み得るenvファイル（developの.gitignoreと同じ記述）
+.env.local
+.env.*.local
+.env.e2e
 
 # macOS-specific files
 .DS_Store

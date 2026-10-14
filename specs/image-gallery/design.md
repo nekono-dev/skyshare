@@ -9,7 +9,42 @@
 | `src/components/image/ImageLightbox/index.tsx` | 拡大表示と画像の切り替え                 |
 | `src/components/post/PostCard/index.tsx`       | タイムラインで表示する画像の選択         |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+タイムラインの画像表示に関わる依存方向を示す。
+
+```mermaid
+flowchart LR
+  pc["PostCard/index"] --> ig["ImageGallery/index"]
+  ig --> galleryLayout
+  ig --> il["ImageLightbox/index"]
+  il --> ext_overlay["Overlay"]
+```
+
+配置の決定と拡大表示の起動までの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant ig as ImageGallery/index
+  participant galleryLayout
+  participant il as ImageLightbox/index
+  ig->>galleryLayout: resolveGalleryLayout
+  alt 画像なし
+    galleryLayout-->>ig: null
+  else 5枚以上
+    galleryLayout-->>ig: strip
+  else 1枚
+    galleryLayout-->>ig: SINGLE_RATIO_MIN 以上
+    galleryLayout-->>ig: SINGLE_RATIO_MAX 以下
+  else 2〜4枚
+    galleryLayout-->>ig: grid
+  end
+  opt interactive が true
+    ig->>il: サムネイル押下で拡大
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 配置の決定 (FR-1, FR-2, FR-3, FR-4)
 
@@ -92,6 +127,6 @@ const imagesInteractive = entryVisualImages === undefined
 
 派生元が削除済みで添付画像の無いentryも、同じ規則で代表画像を表示する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

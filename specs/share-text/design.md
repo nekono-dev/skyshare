@@ -8,7 +8,11 @@
 | `src/util/share/truncateText.ts` | 末尾文字列を残した本文の省略     |
 | `src/util/share/intent.ts`       | 共有文の組み立てと省略上限の決定 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+- なし
+
+## 3. 設計項目
 
 ### D-1: 宛先別の文字数 (FR-5, FR-6)
 
@@ -60,7 +64,7 @@ export const resolveTruncateLimit = (target: IntentTarget, truncateEnabled: bool
 - `buildIntentText` は本文を `trim()` し、`truncateLimit` があれば `truncateBodyWithSuffix` の結果を返す。無ければ本文と末尾文字列を改行で連結する。
 - 末尾文字列の組み立ては、文字数カウンタの上限補正と共用するため `buildIntentSuffix` として公開する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象               | 処理                          |
 | ------------------ | ----------------------------- |

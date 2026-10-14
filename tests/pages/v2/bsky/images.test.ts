@@ -11,7 +11,7 @@ const callRoute = (request: Request, locals: Partial<App.Locals> = {}) =>
     GET({ request, locals } as unknown as APIContext)
 
 describe("GET /v2/bsky/images", () => {
-    it("未認証の場合は401を返す", async () => {
+    it("[bsky-images-api/AC-1] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/images/?cid=bafkreiabc",
         )
@@ -19,7 +19,7 @@ describe("GET /v2/bsky/images", () => {
         expect(res.status).toBe(401)
     })
 
-    it("cidが未指定の場合は400を返す", async () => {
+    it("[bsky-images-api/AC-2] cidが未指定の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/images/",
         )
@@ -30,7 +30,7 @@ describe("GET /v2/bsky/images", () => {
         expect(res.status).toBe(400)
     })
 
-    it("cidが空文字の場合は400を返す", async () => {
+    it("[bsky-images-api/AC-3] cidが空文字の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/images/?cid=%20",
         )
@@ -41,7 +41,7 @@ describe("GET /v2/bsky/images", () => {
         expect(res.status).toBe(400)
     })
 
-    it("成功時は上流のContent-Typeを引き継いだ画像バイナリを返す", async () => {
+    it("[bsky-images-api/AC-4] 成功時は上流のContent-Typeを引き継いだ画像バイナリを返す", async () => {
         const getBlob = vi.fn().mockResolvedValue({
             data: new Uint8Array([1, 2, 3, 4]),
             headers: { "content-type": "image/webp" },
@@ -59,7 +59,7 @@ describe("GET /v2/bsky/images", () => {
         expect(Array.from(buf)).toEqual([1, 2, 3, 4])
     })
 
-    it("上流にContent-Typeが無い場合はoctet-streamにフォールバックする", async () => {
+    it("[bsky-images-api/AC-5] 上流にContent-Typeが無い場合はoctet-streamにフォールバックする", async () => {
         const getBlob = vi.fn().mockResolvedValue({
             data: new Uint8Array([1]),
             headers: {},
@@ -75,7 +75,7 @@ describe("GET /v2/bsky/images", () => {
         expect(res.headers.get("content-type")).toBe("application/octet-stream")
     })
 
-    it("blobが見つからない場合はresolveXrpcStatusにより404を返す", async () => {
+    it("[bsky-images-api/AC-6] blobが見つからない場合はresolveXrpcStatusにより404を返す", async () => {
         const getBlob = vi.fn().mockRejectedValue(
             Object.assign(new Error("BlobNotFound"), {
                 error: "BlobNotFound",
