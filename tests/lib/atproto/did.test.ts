@@ -6,7 +6,7 @@ import {
 } from "@/lib/atproto/did"
 
 describe("readPdsServiceFromDidDoc", () => {
-    it("atproto PDS のserviceEndpointを抽出する", () => {
+    it("[atproto-access/AC-8] atproto PDS のserviceEndpointを抽出する", () => {
         expect(
             readPdsServiceFromDidDoc({
                 service: [
@@ -20,7 +20,7 @@ describe("readPdsServiceFromDidDoc", () => {
         ).toBe("https://example.social")
     })
 
-    it("該当するserviceが無ければ undefined", () => {
+    it("[atproto-access/AC-9] 該当するserviceが無ければ undefined", () => {
         expect(
             readPdsServiceFromDidDoc({
                 service: [
@@ -56,7 +56,7 @@ describe("resolvePdsServiceForDid", () => {
         vi.unstubAllGlobals()
     })
 
-    it("did:plc: 以外は fetch を呼ばず undefined", async () => {
+    it("[atproto-access/AC-10] did:plc: 以外は fetch を呼ばず undefined", async () => {
         const fetchMock = vi.fn()
         vi.stubGlobal("fetch", fetchMock)
 
@@ -66,7 +66,7 @@ describe("resolvePdsServiceForDid", () => {
         expect(fetchMock).not.toHaveBeenCalled()
     })
 
-    it("レスポンスが失敗(ok=false)なら undefined", async () => {
+    it("[atproto-access/AC-11] レスポンスが失敗(ok=false)なら undefined", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }))
 
         expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()

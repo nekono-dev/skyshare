@@ -53,6 +53,8 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm test
       # 仕様書チェックスクリプトの自己テストと、specs 配下の仕様書の検証（spec-driven-development スキル）
+      # 図の構文検証（mermaid・jsdom）の依存はスキル配下に閉じており、ルートの npm ci では入らない
+      - run: npm ci --ignore-scripts --prefix .claude/skills/spec-driven-development/scripts
       - run: npm run test:spec
       - run: npm run lint:spec
       # lexicon の lint（goat）。リリースのチェックサムを検証してから導入する

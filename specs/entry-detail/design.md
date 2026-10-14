@@ -11,7 +11,44 @@
 | `src/lib/entry/entry.ts`                           | 投稿の画像の抽出                                   |
 | `src/pages/entries/sample.astro`                   | 表示確認用のサンプルページ                         |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+詳細ページの表示に関わる依存方向を示す。
+
+```mermaid
+flowchart LR
+  slug["[slug]"] --> edv["EntryDetailView/index"]
+  slug --> threadChain
+  slug --> entry
+  edv --> pb["PostBody/index"]
+  sample --> edv
+```
+
+スレッド取得とフォールバックの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant slug as [slug]
+  participant threadChain
+  participant edv as EntryDetailView/index
+  participant ext_bsky as Bluesky
+  slug->>ext_bsky: entryの取得
+  alt 存在しない
+    slug->>edv: 404 の表示
+  else 取得失敗
+    slug->>edv: 500 または 503 の表示
+  else 取得成功
+    slug->>ext_bsky: getPostThread
+    alt 失敗または1件
+      slug->>ext_bsky: 派生元の getPosts
+    else 2件以上
+      slug->>threadChain: extractOwnedLinearReplyChain
+    end
+    slug->>edv: 表示用データ
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 表示用データ (FR-4, FR-5, FR-7, FR-8)
 
@@ -67,7 +104,7 @@ export type EntryPostView = {
 | JavaScript依存 | 画像の拡大表示だけ                                                           |
 | 横幅           | 横スクロールは画像5枚以上の帯の内部だけで発生させる                          |
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                 | 処理                                |
 | -------------------- | ----------------------------------- |

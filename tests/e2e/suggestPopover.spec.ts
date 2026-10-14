@@ -8,7 +8,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[listbox-option/AC-1 listbox-option/AC-2] # 候補: ハイライト移動・クリック確定・Escで閉じる", async ({
+test("[listbox-option/AC-1 listbox-option/AC-2 post-suggest/AC-21] # 候補: ハイライト移動・クリック確定・Escで閉じる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

@@ -30,12 +30,12 @@ afterEach(() => {
 })
 
 describe("readPostGateDefaultSetting", () => {
-    it("未設定時はDEFAULT_POST_GATE_VALUEを返す", () => {
+    it("[post-gate/AC-8] 未設定時はDEFAULT_POST_GATE_VALUEを返す", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         expect(readPostGateDefaultSetting()).toEqual(DEFAULT_POST_GATE_VALUE)
     })
 
-    it("破損したJSONの場合はDEFAULT_POST_GATE_VALUEへフォールバックする", () => {
+    it("[post-gate/AC-9] 破損したJSONの場合はDEFAULT_POST_GATE_VALUEへフォールバックする", () => {
         const localStorage = createMemoryLocalStorage()
         localStorage.setItem("postGateDefault", "not json")
         vi.stubGlobal("window", { localStorage })
@@ -52,7 +52,7 @@ describe("readPostGateDefaultSetting", () => {
         expect(readPostGateDefaultSetting()).toEqual(DEFAULT_POST_GATE_VALUE)
     })
 
-    it("書き込み→読み込みのラウンドトリップが成立する", () => {
+    it("[post-gate/AC-7] 書き込み→読み込みのラウンドトリップが成立する", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
 
@@ -71,11 +71,11 @@ describe("readPostGateDefaultSetting", () => {
 })
 
 describe("isDefaultPostGateValue", () => {
-    it("既定のデフォルト値と一致する場合はtrue", () => {
+    it("[post-gate/AC-10] 既定のデフォルト値と一致する場合はtrue", () => {
         expect(isDefaultPostGateValue(DEFAULT_POST_GATE_VALUE)).toBe(true)
     })
 
-    it("replyAudienceが異なる場合はfalse", () => {
+    it("[post-gate/AC-11] replyAudienceが異なる場合はfalse", () => {
         expect(
             isDefaultPostGateValue({
                 ...DEFAULT_POST_GATE_VALUE,
@@ -100,7 +100,7 @@ describe("readSyncGateDefaultAfterPostSetting / writeSyncGateDefaultAfterPostSet
         expect(readSyncGateDefaultAfterPostSetting(false)).toBe(false)
     })
 
-    it("書き込み→読み込みのラウンドトリップが成立する", () => {
+    it("[post-gate/AC-14] 書き込み→読み込みのラウンドトリップが成立する", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
 

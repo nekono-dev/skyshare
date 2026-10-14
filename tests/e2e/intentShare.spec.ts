@@ -230,6 +230,68 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
+    test("[auto-popup/AC-1 auto-popup/AC-2] プルダウンを開くと4つの選択肢が表示され、「投稿時に選択する」は「X」のときより横幅が広い", async ({
+        page,
+    }) => {
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "x",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+        await openMoreOptions(page)
+
+        const select = page.getByRole("combobox", {
+            name: LABEL_AUTO_POPUP_TARGET,
+        })
+        await expect(select).toContainText("X")
+        const widthOfX = (await select.boundingBox())!.width
+
+        const dropdownOption = page.getByRole("option")
+        await expect(async () => {
+            await select.click()
+            await expect(dropdownOption).toHaveCount(4, { timeout: 2_000 })
+        }).toPass({ timeout: 15_000 })
+        await expect(dropdownOption).toHaveText([
+            /投稿時に選択する/,
+            /X/,
+            /タイッツー/,
+            /Mastodon/,
+        ])
+
+        await page.getByRole("option", { name: "投稿時に選択する" }).click()
+        await expect(select).toContainText("投稿時に選択する")
+        const widthOfAsk = (await select.boundingBox())!.width
+        expect(widthOfAsk).toBeGreaterThan(widthOfX)
+    })
+
+    test("[auto-popup/AC-12] 投稿ボタンのクリックで待機画面のウィンドウが開き、投稿完了後に共有先の投稿画面へ遷移する", async ({
+        page,
+        context,
+    }) => {
+        await stubExternalSns(context)
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "taittsuu",
+        })
+        const requestedUrls: string[] = []
+        context.on("request", request => requestedUrls.push(request.url()))
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+
+        const popupPromise = page.waitForEvent("popup")
+        await submitGuestPost(page, "事前オープンのテスト")
+        const popup = await popupPromise
+        await popup.waitForURL(/^https:\/\/taittsuu\.com\//, {
+            timeout: 20_000,
+        })
+        // 待機画面を経由して共有先へ遷移している（新規に開き直していない）
+        expect(
+            requestedUrls.some(url => new URL(url).pathname === "/jump/"),
+        ).toBe(true)
+        expect(new URL(popup.url()).hostname).toBe("taittsuu.com")
+    })
+
     test("[auto-popup/AC-3] 「タイッツー」で投稿すると、タイッツーのintentポップアップが開き、ダイアログは開かない", async ({
         page,
         context,
@@ -253,6 +315,86 @@ test.describe("intentShare", () => {
         await expect(
             page.getByRole("dialog", { name: DIALOG_NAME }),
         ).toHaveCount(0)
+    })
+
+    test("[share-settings/AC-10] 共有設定を保存した状態で投稿フォームを開いても、ハイドレーションの警告が出力されない", async ({
+        page,
+    }) => {
+        const warnings: string[] = []
+        page.on("console", message => {
+            if (
+                ["warning", "error"].includes(message.type()) &&
+                /hydrat|did not match|server-rendered/i.test(message.text())
+            ) {
+                warnings.push(message.text())
+            }
+        })
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "mastodon",
+            mastodonInstanceDomain: "mastodon.social",
+            truncateIntentText: "true",
+            manualImageAttach: "true",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+        // 保存値が画面に反映されるまで待ってから、警告の有無を確認する
+        await expect(
+            page.getByRole("switch", { name: LABEL_POPUP }),
+        ).toBeChecked()
+        await openMoreOptions(page)
+        await expect(
+            page.getByRole("switch", { name: LABEL_TRUNCATE }),
+        ).toBeVisible()
+        expect(warnings).toEqual([])
+    })
+
+    test("[intent-share-dialog/AC-1] skyshare entryのない投稿でダイアログを開くと、X・タイッツー・Mastodon・閉じるの4つが操作可能な状態で表示される", async ({
+        page,
+    }) => {
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "ask",
+            mastodonInstanceDomain: "mastodon.social",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+        await submitGuestPost(page, "ダイアログの選択肢のテスト")
+
+        const dialog = page.getByRole("dialog", { name: DIALOG_NAME })
+        await expect(dialog).toBeVisible({ timeout: 20_000 })
+        const buttons = dialog.getByRole("button")
+        await expect(buttons).toHaveText([
+            /X に投稿/,
+            /タイッツー/,
+            /Mastodon/,
+            /閉じる/,
+        ])
+        for (const button of await buttons.all()) {
+            await expect(button).toBeEnabled()
+        }
+    })
+
+    test("[intent-share-dialog/AC-6] Mastodonのドメインに不正な値が保存されているとき、Mastodonの選択肢が操作不能になる", async ({
+        page,
+    }) => {
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "ask",
+            mastodonInstanceDomain: "not a domain!",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+        await submitGuestPost(page, "不正なドメインのテスト")
+
+        const dialog = page.getByRole("dialog", { name: DIALOG_NAME })
+        await expect(dialog).toBeVisible({ timeout: 20_000 })
+        await expect(
+            dialog.getByRole("button", { name: /Mastodon/ }),
+        ).toBeDisabled()
+        await expect(
+            dialog.getByRole("button", { name: /X に投稿/ }),
+        ).toBeEnabled()
     })
 
     test("[intent-share-dialog/AC-2 intent-share-dialog/AC-3] 投稿後のダイアログは、投稿先を選んでも閉じず、続けて別の投稿先を選べ、「閉じる」・背景クリック・Escで閉じる", async ({
@@ -326,7 +468,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeVisible()
     })
 
-    test("[intent-share-dialog/AC-4 intent-share-dialog/AC-5] タイムラインのPostCardの共有ダイアログは、投稿先を選ぶとポップアップを開いて閉じ、skyshare URL付きで上限を超えない", async ({
+    test("[intent-share-dialog/AC-4] タイムラインのPostCardの共有ダイアログは、投稿先を選ぶとポップアップを開いて閉じ、skyshare URL付きで上限を超えない", async ({
         page,
         context,
     }) => {
@@ -351,6 +493,73 @@ test.describe("intentShare", () => {
         expect(text).toMatch(/https?:\/\/\S+$/)
         expect(weightedLength(text)).toBeLessThanOrEqual(280)
         await expect(dialog).toBeHidden()
+    })
+
+    test("[intent-share-dialog/AC-5] 省略がONのとき、タイムラインの長文の投稿をXへ共有すると、本文が省略されて共有文がX向けの上限280以内になる", async ({
+        page,
+        context,
+    }) => {
+        await stubExternalSns(context)
+        await seedStorage(page, { truncateIntentText: "true" })
+        const entryWebUrl = "https://skyshare.nekono.dev/entries/did:plc:t@3e/"
+        // ゲスト表示のダミー投稿は短くて省略が起きないため、長文の投稿を返すよう差し替える
+        await page.route(/\/v2\/bsky\/session\/?$/, route =>
+            route.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                    accounts: [
+                        { did: "did:plc:t", handle: "t.test", isActive: true },
+                    ],
+                }),
+            }),
+        )
+        await page.route(/\/v2\/entries\/?(\?.*)?$/, route =>
+            route.fulfill({
+                contentType: "application/json",
+                body: JSON.stringify({
+                    threads: [
+                        {
+                            rootPost: {
+                                uri: "at://did:plc:t/app.bsky.feed.post/3long",
+                                cid: "bafylong",
+                                url: "https://bsky.app/profile/t.test/post/3long",
+                                indexedAt: "2026-09-06T10:00:00.000Z",
+                                text: "長い本文です。".repeat(80),
+                                author: { did: "did:plc:t", handle: "t.test" },
+                                images: [],
+                                skyshareEntry: {
+                                    uri: "at://did:plc:t/dev.nekono.skyshare.entry/3e",
+                                    cid: "bafyentry",
+                                    createdAt: "2026-09-06T10:00:00.000Z",
+                                    sourceUri:
+                                        "at://did:plc:t/app.bsky.feed.post/3long",
+                                    sourceCid: "bafylong",
+                                    webUrl: entryWebUrl,
+                                },
+                            },
+                            replies: [],
+                        },
+                    ],
+                }),
+            }),
+        )
+        await page.goto("/")
+        await waitHydrated(page)
+
+        const crosspost = page.getByRole("button", { name: "クロスポスト" })
+        const dialog = page.getByRole("dialog", { name: DIALOG_NAME })
+        await expect(async () => {
+            await crosspost.first().click()
+            await expect(dialog).toBeVisible({ timeout: 2_000 })
+        }).toPass({ timeout: 30_000 })
+
+        const popupPromise = page.waitForEvent("popup")
+        await dialog.getByRole("button", { name: "X に投稿" }).click()
+        const text =
+            new URL((await popupPromise).url()).searchParams.get("text") ?? ""
+        expect(text).toContain("...")
+        expect(text.endsWith(entryWebUrl)).toBe(true)
+        expect(weightedLength(text)).toBeLessThanOrEqual(280)
     })
 
     test("[thread-composer/AC-11] 長文省略トグルと「返信・引用オプションを保存する」は詳細オプション内に表示され、設定がリロード後も保持される", async ({
@@ -540,4 +749,56 @@ test.describe("intentShare", () => {
             }
         })
     }
+
+    const PNG_1X1 = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+    )
+
+    test("[share-counter/AC-2 share-counter/AC-6] 画像付きの先頭の投稿は、skyshare URL分だけXの上限が減り、「画像を自分で添付」をONにすると140に戻る。2件目以降は140のまま", async ({
+        page,
+    }) => {
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "x",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+
+        const segment0 = page.getByTestId("thread-segment-0")
+        await segment0
+            .locator('input[type="file"][accept="image/*"]')
+            .setInputFiles({
+                name: "a.png",
+                mimeType: "image/png",
+                buffer: PNG_1X1,
+            })
+        await expect(
+            segment0.getByRole("button", { name: "サムネ調整" }),
+        ).toBeVisible()
+        // skyshare URLを共有文に付けるため、先頭の投稿のXの上限は140より小さくなる
+        await expect(segment0.getByText(/\/1[0-3]\d:X/)).toBeVisible()
+        await expect(segment0.getByText("/140:X")).toHaveCount(0)
+
+        // 2件目以降はURLを付けないため、上限は140のまま
+        const segment1 = page.getByTestId("thread-segment-1")
+        await expect(async () => {
+            await page.getByRole("button", { name: "スレッドに追加" }).click()
+            await expect(segment1).toBeVisible({ timeout: 1_000 })
+        }).toPass({ timeout: 15_000 })
+        await expect(segment1.getByText("/140:X")).toBeVisible()
+        // 先頭の投稿に戻しても、先頭の上限は減ったまま
+        await page
+            .getByTestId("thread-segment-0")
+            .getByTestId("segment-summary")
+            .click()
+        await expect(segment0.getByText(/\/1[0-3]\d:X/)).toBeVisible()
+
+        // 画像を自分で添付するとURLを付けないため、上限が140に戻る
+        await openMoreOptions(page)
+        await page
+            .getByRole("switch", { name: LABEL_MANUAL_ATTACH })
+            .setChecked(true, { force: true })
+        await expect(segment0.getByText("/140:X")).toBeVisible()
+    })
 })

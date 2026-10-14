@@ -29,13 +29,20 @@ import type { ZodOpenApiOperationObject } from "zod-openapi"
 import type { FormDataFieldKind } from "@/util/formData"
 import { MAX_THREAD_POST_COUNT } from "../../../../atproto/threadLimit"
 import { MAX_POST_IMAGES } from "../../../../image/postImageLimits"
+import { countUtf8Bytes } from "../../../../../util/utf8Bytes"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)
 // skyshare entryの見出し・キャプション（lexiconの`manifest`の上限に合わせる）。
 // クライアントが決めた値をそのまま保存し、サーバは補完しない。
-const headingField = z.string().max(100)
-const captionField = z.string().max(300)
+const headingField = z
+    .string()
+    .max(100)
+    .refine(v => countUtf8Bytes(v) <= 100)
+const captionField = z
+    .string()
+    .max(300)
+    .refine(v => countUtf8Bytes(v) <= 300)
 const imageField = z.instanceof(Blob).meta({ type: "string", format: "binary" })
 const selfLabelsField = z
     .enum(["sexual", "nudity", "porn", "spoiler", "!warn"])

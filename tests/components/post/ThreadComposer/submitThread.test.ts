@@ -197,6 +197,47 @@ describe("submitThread", () => {
         expect(warmOgpCache).not.toHaveBeenCalledWith("https://skyshare/2")
     })
 
+    it("[thread-composer/AC-7] 2件のセグメントを投稿すると、2件の投稿を含む1回のリクエストが送信される", async () => {
+        mockCreateEntryOk([
+            { url: "https://x/1", uri: "at://1", cid: "c1" },
+            { url: "https://x/2", uri: "at://2", cid: "c2" },
+        ])
+        const result = await submitThread({
+            segments: [
+                { ...createEmptySegment("ja"), text: "1件目" },
+                { ...createEmptySegment("ja"), text: "2件目" },
+            ],
+            manualImageAttach: false,
+        })
+
+        expect(result.ok).toBe(true)
+        expect(createEntry).toHaveBeenCalledTimes(1)
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts.map(post => post.text)).toEqual(["1件目", "2件目"])
+    })
+
+    it("[thread-composer/AC-2] 2件目のセグメントに画像を添付して投稿すると、2件目の投稿にだけ画像が含まれる", async () => {
+        mockCreateEntryOk(
+            [
+                { url: "https://x/1", uri: "at://1", cid: "c1" },
+                { url: "https://x/2", uri: "at://2", cid: "c2" },
+            ],
+            { uri: "https://skyshare/2" },
+        )
+        const imageEntry = buildImageEntry()
+        await submitThread({
+            segments: [
+                { ...createEmptySegment("ja"), text: "1件目" },
+                { ...createEmptySegment("ja"), text: "2件目", imageEntry },
+            ],
+            manualImageAttach: false,
+        })
+
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts[0]).not.toHaveProperty("images")
+        expect(body.posts[1].images).toEqual(imageEntry.originalBlobs)
+    })
+
     it("[thread-composer/AC-8] manualImageAttachが有効な画像投稿ではcreateEntry/visualを送らない", async () => {
         mockCreateEntryOk([{ url: "https://x/1", uri: "at://1", cid: "c1" }])
 

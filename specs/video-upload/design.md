@@ -14,7 +14,50 @@
 | `src/lib/atproto/embed.ts`                              | 動画の埋め込みの組み立て       |
 | `src/lib/api/schema/v2/entry/post.ts`                   | 投稿の動画の分岐               |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+動画アップロードの構成要素の依存方向を示す。
+
+```mermaid
+flowchart LR
+  ut["upload-token"] --> videoAuth
+  ut --> utp["upload-token/post"]
+  videoUploader --> videoUploadToken
+  videoUploader --> videoErrors
+  videoUploader --> postVideoLimits
+  videoAuth --> postVideoLimits
+  videoUploadToken --> ut
+  ep["entry/post"] --> embed
+```
+
+トークン発行と分割アップロードの流れ、失敗時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant videoUploader
+  participant ut as upload-token
+  participant videoAuth
+  participant ext_video as 動画サービス
+  videoUploader->>ut: トークンの要求
+  ut->>videoAuth: createVideoUploadToken
+  videoAuth->>videoAuth: isSupportedVideoPds
+  alt 対応外のPDS
+    ut-->>videoUploader: 400
+  else 未認証
+    ut-->>videoUploader: 401
+  else 発行成功
+    ut-->>videoUploader: token と expiresAt
+  end
+  videoUploader->>ext_video: startUpload と各パート
+  alt 変換に失敗
+    ext_video-->>videoUploader: FAILED
+  else 変換に成功
+    ext_video-->>videoUploader: blob
+    videoUploader->>embed: createVideoEmbed
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: トークンの発行 (FR-1, FR-2, NFR-2)
 
@@ -94,7 +137,7 @@ export const createVideoEmbed = (video, meta) => ({
 
 ハンドラは埋め込みを動画・画像・リンクカードの順に判定し、動画は送信済みのため `uploadBlob` を呼ばない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                                | 処理 |
 | ----------------------------------- | ---- |

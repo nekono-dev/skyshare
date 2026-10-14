@@ -13,7 +13,53 @@
 | `src/components/image/ThumbnailAdjustButton/index.tsx` | サムネ調整のボタン               |
 | `src/components/image/ImageCropDialog/index.tsx`       | 切り抜きの調整の画面             |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+代表画像の生成に関わる依存方向を示す。
+
+```mermaid
+flowchart LR
+  createPostVisual --> postImageProcessing
+  createPostVisual --> videoOverlay
+  createPostVisual --> fetchVideoDuration
+  createPostVisual --> entryText
+  entryText --> formatVideoDuration
+  fetchVideoDuration --> formatVideoDuration
+  tab["ThumbnailAdjustButton/index"] --> icd["ImageCropDialog/index"]
+  icd --> postImageProcessing
+  icd --> videoOverlay
+```
+
+既存の投稿からの代表画像の生成と、失敗時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant createPostVisual
+  participant postImageProcessing
+  participant videoOverlay
+  participant fetchVideoDuration
+  participant entryText
+  alt 動画の投稿
+    createPostVisual->>fetchVideoDuration: fetchVideoDurationSec
+    createPostVisual->>videoOverlay: drawVideoOverlay
+    createPostVisual->>postImageProcessing: createDefaultThumbnail
+  else 画像の投稿
+    createPostVisual->>postImageProcessing: getSlotDefs
+    createPostVisual->>postImageProcessing: VISUAL_IMAGE_COUNT 枚まで
+    createPostVisual->>postImageProcessing: createCroppedThumbnail
+    createPostVisual->>postImageProcessing: createProcessedImages
+  end
+  alt 取得に失敗
+    createPostVisual-->>createPostVisual: entryの作成を失敗
+  else 成功
+    createPostVisual->>entryText: buildEntryText
+    createPostVisual-->>createPostVisual: createPostVisualBlob
+  end
+  videoOverlay->>videoOverlay: VIDEO_OVERLAY_SPEC を参照
+  entryText->>entryText: formatVideoDuration
+```
+
+## 3. 設計項目
 
 ### D-1: 合成 (FR-1, FR-2)
 
@@ -87,8 +133,8 @@ const onAdjustThumbnail = () =>
 ```ts
 export const formatVideoDuration = (sec: number): string // 四捨五入、最小 0:01、1時間以上は h:mm:ss
 export const buildEntryText = ({ userName, postText, videoDurationSec }) => ({
-  heading: videoDurationSec !== undefined ? formatVideoDuration(videoDurationSec) : `${userName} | Skyshare`, // 100文字まで
-  caption: postText.trim() || undefined, // 300文字まで
+  heading: videoDurationSec !== undefined ? formatVideoDuration(videoDurationSec) : `${userName} | Skyshare`, // 100バイトまで（超過時は投稿者名側を書記素単位で切る）
+  caption: postText.trim() || undefined, // 300バイトまで（超過時は書記素単位で切る）
 })
 // マスターの最初のバリアントのメディアプレイリストの #EXTINF を合計する。取得失敗・0件は throw
 export const fetchVideoDurationSec = async (playlistUrl: string): Promise<number>
@@ -97,7 +143,7 @@ export const createPostVisualBlob = async (post): Promise<{ blob: Blob; videoDur
 
 既存の動画の投稿では、`thumbnail.jpg` の取得と `fetchVideoDurationSec` を並行して行い、Blobの `type` が空なら `image/jpeg` として `createDefaultThumbnail([url], drawVideoOverlay())` に渡す。どちらかが失敗したらentryの作成を失敗にし、APIを呼ばない。画像の投稿では先頭4枚だけを取得する。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                           | 処理                            |
 | ------------------------------ | ------------------------------- |

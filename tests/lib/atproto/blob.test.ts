@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import { uploadBlob } from "@/lib/atproto/blob"
 
 describe("uploadBlob", () => {
-    it("blob.type を encoding に反映して uploadBlob を呼ぶ", async () => {
+    it("[atproto-access/AC-1] blob.type を encoding に反映して uploadBlob を呼ぶ", async () => {
         const uploadBlobFn = vi
             .fn()
             .mockResolvedValue({ data: { blob: { $type: "blob", ref: "x" } } })
@@ -20,7 +20,7 @@ describe("uploadBlob", () => {
         expect(result).toEqual({ $type: "blob", ref: "x" })
     })
 
-    it("typeが空ならapplication/octet-streamにフォールバックする", async () => {
+    it("[atproto-access/AC-2] typeが空ならapplication/octet-streamにフォールバックする", async () => {
         const uploadBlobFn = vi.fn().mockResolvedValue({ data: { blob: {} } })
         const agent = { uploadBlob: uploadBlobFn }
 

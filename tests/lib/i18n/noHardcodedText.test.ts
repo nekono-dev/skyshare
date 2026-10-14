@@ -152,6 +152,26 @@ describe("文言の直書き検出", () => {
         expect(violations).toEqual([])
     })
 
+    it("[i18n-messages/AC-7] 日本語・英語の文言を直書きしたコードを、検出して失敗の対象にする", () => {
+        const source = ts.createSourceFile(
+            "sample.tsx",
+            [
+                'const label = "保存する"',
+                "const view = <p>Hello</p>",
+                'const field = <input placeholder="Name" />',
+                'const dictionaryKey = "common.cancel"',
+            ].join("\n"),
+            ts.ScriptTarget.Latest,
+            true,
+            ts.ScriptKind.TSX,
+        )
+        expect(collectLiterals(source)).toEqual([
+            { kind: "cjk", text: "保存する", line: 1 },
+            { kind: "latin", text: "Hello", line: 2 },
+            { kind: "latin", text: "Name", line: 3 },
+        ])
+    })
+
     it(".astro の本文・フロントマターに日本語が直書きされていない", () => {
         const violations: string[] = []
         for (const { file, rel } of files.filter(({ rel }) =>

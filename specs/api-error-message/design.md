@@ -10,7 +10,38 @@
 | `src/components/account/LoginForm/index.tsx`         | ログイン失敗の文言の表示                  |
 | `src/components/post/ThreadComposer/submitThread.ts` | 投稿APIのエラーコードから文言キーへの変換 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+エラー応答から画面の文言までの依存方向を示す。
+
+```mermaid
+flowchart LR
+  session --> post
+  session --> errorMessage
+  index --> errorMessage
+  submitThread --> errorMessage
+  post --> ext_common["Common.errorResponses"]
+```
+
+ログイン失敗時の文言キー決定の流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant index
+  participant errorMessage
+  participant ext_api as ログインAPI
+  index->>ext_api: ログイン要求
+  alt 通信例外
+    index->>index: error.network
+  else 応答が失敗
+    index->>errorMessage: errorMessageKeyFromStatus
+    errorMessage-->>index: 文言キー
+  else 応答が成功
+    ext_api-->>index: 成功
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: エラー応答とステータスの対応 (FR-1, FR-2, FR-3, FR-5)
 
@@ -57,7 +88,7 @@ try {
 | `submitThread`           | 応答の `error` のエラーコードを `post.submit.*` に変換し、未知のコードは `post.submit.failed` |
 | ステータスを持たない失敗 | `error.network`                                                                               |
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                 | 処理                               |
 | -------------------- | ---------------------------------- |

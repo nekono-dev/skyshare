@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { computeCroppedImageStyle } from "@/lib/image/croppedImageStyle"
 
 describe("computeCroppedImageStyle", () => {
-    it("クロップ範囲が未確定なら中央基準のカバー表示にフォールバックする", () => {
+    it("[image-crop/AC-1] クロップ範囲が未確定なら中央基準のカバー表示にフォールバックする", () => {
         expect(computeCroppedImageStyle(null, 100, 100)).toMatchObject({
             width: "100%",
             height: "100%",
@@ -14,7 +14,7 @@ describe("computeCroppedImageStyle", () => {
         ).toMatchObject({ objectFit: "cover" })
     })
 
-    it("クロップ範囲がコンテナいっぱいに映るよう、拡大率と位置を算出する", () => {
+    it("[image-crop/AC-2] クロップ範囲がコンテナいっぱいに映るよう、拡大率と位置を算出する", () => {
         // 2000x1000 の画像の左上 1000x500 を表示 → 2倍に拡大し原点に合わせる
         const style = computeCroppedImageStyle(
             { x: 0, y: 0, width: 1000, height: 500 },

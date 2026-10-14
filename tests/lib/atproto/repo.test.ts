@@ -25,7 +25,7 @@ describe("listAllRecords", () => {
         })
     })
 
-    it("複数ページのcursorを辿って全件結合する", async () => {
+    it("[atproto-access/AC-3] 複数ページのcursorを辿って全件結合する", async () => {
         const listRecords = vi
             .fn()
             .mockResolvedValueOnce({

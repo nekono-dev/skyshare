@@ -13,7 +13,8 @@ import { expect, test, type Page } from "@playwright/test"
 /** 禁止された通信（DELETE /v2/entry、getPostThread）を記録する。 */
 const watchForbiddenRequests = async (page: Page): Promise<string[]> => {
     const hits: string[] = []
-    await page.route("**/v2/entry", async route => {
+    // APIのパスは末尾にスラッシュが付くため、有無の両方に一致させる
+    await page.route(/\/v2\/entry\/?$/, async route => {
         if (route.request().method() === "DELETE") {
             hits.push(`DELETE ${route.request().url()}`)
         }
@@ -238,5 +239,127 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
 
         await expect(page.getByText("スレッドB・2件目です。")).toHaveCount(0)
         expect(hits).toEqual([])
+    })
+})
+
+/** ログイン済みの`/entries/`で、1件のentryだけを返す。APIの応答を差し替える。 */
+const mockEntries = async (page: Page, orphaned: boolean) => {
+    const sourceUri = "at://did:plc:test/app.bsky.feed.post/3src"
+    await page.route(/\/v2\/bsky\/session\/?$/, route =>
+        route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                accounts: [
+                    {
+                        did: "did:plc:test",
+                        handle: "test.bsky.social",
+                        isActive: true,
+                    },
+                ],
+            }),
+        }),
+    )
+    await page.route("**/v2/entries/skyshare**", route =>
+        route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+                entries: [
+                    {
+                        uri: "at://did:plc:test/dev.nekono.skyshare.entry/3abc",
+                        cid: "bafy",
+                        createdAt: "2026-01-01T00:00:00.000Z",
+                        sourceUri,
+                        sourceCid: "bafy2",
+                        heading: "削除確認用の見出し",
+                        caption: "削除確認用のキャプション",
+                        orphaned,
+                    },
+                ],
+            }),
+        }),
+    )
+    // 派生元は起点の単発投稿として判定させる
+    await page.route(/app\.bsky\.feed\.getPostThread/, route =>
+        route.fulfill({
+            contentType: "application/json",
+            // 別オリジンの公開APIのため、CORSの許可が要る
+            headers: { "access-control-allow-origin": "*" },
+            body: JSON.stringify({
+                thread: {
+                    $type: "app.bsky.feed.defs#threadViewPost",
+                    post: {
+                        uri: sourceUri,
+                        cid: "bafyreigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+                        author: { did: "did:plc:test", handle: "t.test" },
+                        record: {
+                            $type: "app.bsky.feed.post",
+                            text: "派生元の投稿",
+                            createdAt: "2026-01-01T00:00:00.000Z",
+                        },
+                        indexedAt: "2026-01-01T00:00:00.000Z",
+                    },
+                    replies: [],
+                },
+            }),
+        }),
+    )
+}
+
+/** 削除ボタンが効くまで（ハイドレーション前は無視される）クリックを繰り返す。 */
+const openDeleteDialog = async (page: Page) => {
+    const button = page.getByRole("button", { name: "削除" }).first()
+    await expect(async () => {
+        await button.click()
+        await expect(dialog(page)).toBeVisible({ timeout: 2_000 })
+    }).toPass({ timeout: 30_000 })
+}
+
+test.describe("Entry削除確認ダイアログ（APIの応答を差し替え）", () => {
+    test("[entry-delete-dialog/AC-10] 派生元が削除済みのentryの削除の確認には、Bluesky投稿の削除の選択肢が無い", async ({
+        page,
+    }) => {
+        test.setTimeout(90_000)
+        await mockEntries(page, true)
+        await page.goto("/entries/")
+        await openDeleteDialog(page)
+
+        // 派生元の判定をせず、entryだけを削除する確認になる
+        await expect(
+            dialog(page).getByRole("button", { name: "削除", exact: true }),
+        ).toBeVisible()
+        await expect(
+            dialog(page).getByRole("button", { name: "キャンセル" }),
+        ).toBeVisible()
+        await expect(deletePostButton(page)).toHaveCount(0)
+        await expect(
+            dialog(page).getByRole("button", { name: "Skyshareリンクを削除" }),
+        ).toHaveCount(0)
+    })
+
+    test("[entry-delete-dialog/AC-11] 削除の応答が409のとき、entryが残り、削除できない旨のエラーが表示される", async ({
+        page,
+    }) => {
+        test.setTimeout(90_000)
+        await mockEntries(page, false)
+        const deleteBodies: unknown[] = []
+        await page.route(/\/v2\/entry\/?$/, route => {
+            if (route.request().method() !== "DELETE") return route.continue()
+            deleteBodies.push(route.request().postDataJSON())
+            return route.fulfill({
+                status: 409,
+                contentType: "application/json",
+                body: JSON.stringify({ error: "Conflict" }),
+            })
+        })
+        await page.goto("/entries/")
+        await openDeleteDialog(page)
+        await deletePostButton(page).click()
+        await dialog(page).getByRole("button", { name: "全て削除" }).click()
+
+        await expect(
+            page.getByText("このEntryはBluesky投稿を含めて削除できません。"),
+        ).toBeVisible()
+        await expect(page.getByText("削除確認用のキャプション")).toBeVisible()
+        expect(deleteBodies).toMatchObject([{ deleteBskyPost: true }])
     })
 })

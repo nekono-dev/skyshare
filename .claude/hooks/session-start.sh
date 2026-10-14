@@ -17,3 +17,6 @@ npm install --no-audit --no-fund
 
 # src/client 配下の生成コード（atproto / openapi）を作る。型検査とテストの前提
 npm run codegen
+
+# 仕様書チェック（npm run lint:spec / test:spec）の図の構文検証に必要な依存。スキル配下に閉じている
+npm ci --ignore-scripts --no-audit --no-fund --prefix .claude/skills/spec-driven-development/scripts

@@ -14,7 +14,56 @@
 | `src/components/post/ThreadComposer/segments.ts`       | `manualFacets` のフィールド               |
 | `src/components/post/ThreadComposer/submitThread.ts`   | 送信時の統合                              |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+リッチテキスト編集の依存方向を示す。
+
+```mermaid
+classDiagram
+  class lfp["LinkFacetPanel/index"]
+  class ytp["YayTextPanel/index"]
+  class manualFacets
+  manualFacets : mergeManualFacetsWithAutoDetected
+  creatorTools --> lfp
+  creatorTools --> ytp
+  lfp --> manualFacets
+  lfp --> facetReindex
+  lfp --> byteOffset
+  ytp --> yaytext
+  ytp --> facetReindex
+  submitThread --> manualFacets
+  submitThread --> segments
+  manualFacets --> byteOffset
+  facetReindex --> byteOffset
+```
+
+装飾の適用と範囲の再計算、送信時の統合の流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant ytp as YayTextPanel/index
+  participant yaytext
+  participant facetReindex
+  participant byteOffset
+  participant submitThread
+  participant manualFacets
+  ytp->>yaytext: removeYayTextStyle
+  ytp->>yaytext: applyYayTextStyle
+  ytp->>byteOffset: charIndexToByteIndex
+  ytp->>facetReindex: reindexFacetsAfterReplace
+  opt 本文を入力で編集
+    ytp->>facetReindex: computeByteEdit
+    ytp->>facetReindex: reindexFacetsAfterEdit
+  end
+  submitThread->>manualFacets: 手動リンクの統合
+  alt 範囲が重なる
+    manualFacets-->>submitThread: 自動検出を除外
+  else 重ならない
+    manualFacets-->>submitThread: 両方を昇順で結合
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 手動リンクと範囲の再計算 (FR-1, FR-3, FR-4, FR-9)
 
@@ -90,7 +139,7 @@ onApplyStyle(style):
   update({ text: 置換後の本文, manualFacets })
 ```
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象               | 処理                               |
 | ------------------ | ---------------------------------- |

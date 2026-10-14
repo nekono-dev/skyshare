@@ -42,7 +42,7 @@ const buildAccountsCookie = (accounts: object[]) =>
     `${ACCOUNTS_COOKIE_NAME}=${encodeBase64Utf8(JSON.stringify(accounts))}`
 
 describe("GET /v2/bsky/session", () => {
-    it("cookieヘッダーが無い場合は401を返す", async () => {
+    it("[account-session/AC-3] cookieヘッダーが無い場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/session/",
         )
@@ -50,7 +50,7 @@ describe("GET /v2/bsky/session", () => {
         expect(res.status).toBe(401)
     })
 
-    it("cookieはあるがアクティブ・プール共に無い場合は401を返す", async () => {
+    it("[account-session/AC-4] cookieはあるがアクティブ・プール共に無い場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/session/",
             { headers: { cookie: "unrelated=1" } },
@@ -59,7 +59,7 @@ describe("GET /v2/bsky/session", () => {
         expect(res.status).toBe(401)
     })
 
-    it("アクティブアカウントのみの場合、そのプロフィールを付与して200を返す", async () => {
+    it("[account-session/AC-17] アクティブアカウントのみの場合、そのプロフィールを付与して200を返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             getProfile: vi.fn().mockResolvedValue({
                 data: { displayName: "Alice", avatar: "https://a" },
@@ -85,9 +85,10 @@ describe("GET /v2/bsky/session", () => {
             isActive: true,
             displayName: "Alice",
         })
+        expect(res.headers.get("cache-control")).toBe("no-store")
     })
 
-    it("アクティブ+プールがある場合、アクティブを先頭に並べる", async () => {
+    it("[account-session/AC-2] アクティブ+プールがある場合、アクティブを先頭に並べる", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             getProfile: vi.fn().mockResolvedValue({ data: {} }),
         } as any)
@@ -124,7 +125,7 @@ describe("GET /v2/bsky/session", () => {
         expect(json.accounts[1].isActive).toBe(false)
     })
 
-    it("プロフィール取得が失敗しても致命的にならず空メタで返す", async () => {
+    it("[account-session/AC-5] プロフィール取得が失敗しても致命的にならず空メタで返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             getProfile: vi.fn().mockRejectedValue(new Error("network error")),
         } as any)
@@ -255,7 +256,7 @@ describe("POST /v2/bsky/session", () => {
         ).toBe(true)
     })
 
-    it("同一did再ログインの場合はpoolへ退避しない", async () => {
+    it("[account-session/AC-7] 同一did再ログインの場合はpoolへ退避しない", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:same", handle: "same.bsky.social" },
@@ -286,7 +287,7 @@ describe("POST /v2/bsky/session", () => {
         ).toBe(true)
     })
 
-    it("別アカウントが既にアクティブな状態からの追加ログインで現在のアカウントがpoolへ退避される", async () => {
+    it("[account-session/AC-6] 別アカウントが既にアクティブな状態からの追加ログインで現在のアカウントがpoolへ退避される", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -319,7 +320,7 @@ describe("POST /v2/bsky/session", () => {
         expect(accountsCookie).not.toMatch(`${ACCOUNTS_COOKIE_NAME}=;`)
     })
 
-    it("pool上限に達している場合は409を返す", async () => {
+    it("[account-session/AC-8] pool上限に達している場合は409を返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -385,7 +386,7 @@ describe("PUT /v2/bsky/session", () => {
         expect(res.status).toBe(400)
     })
 
-    it("対象didがpoolに見つからない場合は404を返す", async () => {
+    it("[account-session/AC-10] 対象didがpoolに見つからない場合は404を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/session/",
             {
@@ -497,7 +498,7 @@ describe("PUT /v2/bsky/session", () => {
         expect(decoded.session.accessJwt).toBe(targetSession.accessJwt)
     })
 
-    it("現在アクティブなアカウントがある場合、切り替え後はpoolへ戻される", async () => {
+    it("[account-session/AC-9] 現在アクティブなアカウントがある場合、切り替え後はpoolへ戻される", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             resumeSession: vi.fn().mockResolvedValue(undefined),
             session: targetSession,

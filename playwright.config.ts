@@ -45,5 +45,17 @@ export default defineConfig({
             name: "chromium",
             use: { ...devices["Desktop Chrome"] },
         },
+        // 他のブラウザでは、ブラウザごとに挙動が違う再生のテストだけを実行する
+        // （specs/video-player/AC-12）。
+        {
+            name: "firefox",
+            use: { ...devices["Desktop Firefox"] },
+            grep: /video-player\/AC-12/,
+        },
+        {
+            name: "webkit",
+            use: { ...devices["Desktop Safari"] },
+            grep: /video-player\/AC-12/,
+        },
     ],
 })

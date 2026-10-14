@@ -13,7 +13,50 @@
 | `src/lib/api/schema/v2/entry/post.ts`                     | 投稿の `customFields`                                |
 | `src/pages/v2/entry.ts`                                   | 検証とレコードへの統合                               |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+カスタムフィールドの入力からレコード統合までの依存方向を示す。
+
+```mermaid
+flowchart LR
+  creatorTools --> index
+  index --> customFields
+  index --> segments
+  submitThread --> customFields
+  submitThread --> segments
+  entry --> customFields
+  entry --> post
+  post --> common
+```
+
+入力の検証から送信とレコード統合までの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant index
+  participant customFields
+  participant submitThread
+  participant entry
+  index->>customFields: validateCustomFieldEntries
+  alt 検証エラーあり
+    customFields-->>index: エラー一覧
+  else 検証成功
+    submitThread->>customFields: buildCustomFieldsObject
+    submitThread->>entry: 投稿ごとに送信
+    entry->>customFields: validateCustomFieldEntries
+    alt API の検証エラー
+      entry-->>submitThread: 400
+    else 通過
+      entry->>customFields: mergeCustomFieldsIntoRecord
+    end
+  end
+  customFields->>customFields: RESERVED_TOP_LEVEL_KEYS を参照
+  customFields->>customFields: MAX_CUSTOM_FIELD_KEYS を参照
+  customFields->>customFields: MAX_CUSTOM_FIELD_DEPTH を参照
+  post->>common: CommonCustomFieldsSchema
+```
+
+## 3. 設計項目
 
 ### D-1: 検証と変換 (FR-2, FR-3, FR-4, FR-5, FR-6, NFR-1)
 
@@ -57,7 +100,7 @@ export const CommonCustomFieldsSchema = z
 
 ハンドラは、入れ子のオブジェクトを `CustomFieldEntry[]` に平坦化して `validateCustomFieldEntries` を適用し、エラーがあれば400を返す。通過した場合は投稿のレコードの組み立て後に `mergeCustomFieldsIntoRecord` を適用する。`npm run codegen` でクライアントを生成し直す。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象              | 処理                       |
 | ----------------- | -------------------------- |

@@ -469,6 +469,59 @@ test.describe("ログイン画面の言語切り替え", () => {
     })
 })
 
+test.describe("表示後のメッセージと言語の自称表記", () => {
+    test("[i18n-messages/AC-8] ログインの失敗を表示した後に English へ切り替えると、失敗の文言が英語に変わる", async ({
+        page,
+    }) => {
+        await page.route(/\/v2\/bsky\/session\/?$/, route =>
+            route.request().method() === "POST"
+                ? route.fulfill({
+                      status: 500,
+                      contentType: "application/json",
+                      body: JSON.stringify({ error: "Internal Server Error" }),
+                  })
+                : route.continue(),
+        )
+        await page.goto("/login/", { timeout: 60_000 })
+        const form = page.locator("#login-form")
+        await expect(form).toBeVisible({ timeout: 60_000 })
+        await form.locator("#username").fill("someone.bsky.social")
+        await form.locator("#password").fill("password")
+        await expect(async () => {
+            await form.locator('button[type="submit"]').click()
+            await expect(page.locator("#message")).toHaveText(
+                "ログインに失敗しました。",
+                { timeout: 2_000 },
+            )
+        }).toPass({ timeout: 15_000 })
+
+        const trigger = page.getByRole("combobox", { name: "表示言語" })
+        await clickUntilVisible(trigger, page.getByRole("listbox"))
+        await page.getByRole("option", { name: "English" }).click()
+
+        await expect(page.locator("#message")).toHaveText("Login failed.")
+    })
+
+    test.describe("en-US", () => {
+        test.use({ locale: "en-US" })
+
+        test("[i18n-messages/AC-10] 英語表示でも、表示言語の選択肢に「日本語」という表記が残る", async ({
+            page,
+        }) => {
+            await page.goto("/settings/?guest", { timeout: 60_000 })
+            const trigger = page.getByRole("combobox", { name: "Language" })
+            await expect(trigger).toBeVisible({ timeout: 60_000 })
+            await clickUntilVisible(trigger, page.getByRole("listbox"))
+            const options = page.getByRole("option")
+            await expect(options).toHaveText([
+                "Follow system settings",
+                "日本語",
+                "English",
+            ])
+        })
+    })
+})
+
 test.describe("Entry詳細の言語切り替え", () => {
     test("Entry詳細のプルダウンで English を選ぶと投稿日時が英語になる", async ({
         page,
@@ -485,5 +538,64 @@ test.describe("Entry詳細の言語切り替え", () => {
             "View original post on Bluesky",
         )
         await expect(page.locator("dl").getByText(/^Posted: /)).toBeVisible()
+    })
+})
+
+test.describe("複数のタブ・リクエスト", () => {
+    test("[i18n-locale/AC-11] 別のタブで English を選ぶと、日本語で開いていたタブが英語に切り替わる", async ({
+        context,
+    }) => {
+        const settingsTab = await context.newPage()
+        const loginTab = await context.newPage()
+        await loginTab.goto("/login/", { timeout: 60_000 })
+        await expect(loginTab.locator("html")).toHaveAttribute("lang", "ja")
+        await expect(loginTab.locator("#username")).toBeVisible({
+            timeout: 60_000,
+        })
+
+        await settingsTab.goto("/settings/?guest", { timeout: 60_000 })
+        const localeTrigger = settingsTab.getByRole("combobox", {
+            name: "表示言語",
+        })
+        await expect(localeTrigger).toBeVisible({ timeout: 60_000 })
+        await clickUntilVisible(localeTrigger, settingsTab.getByRole("listbox"))
+        await settingsTab.getByRole("option", { name: "English" }).click()
+        await expect(settingsTab.locator("html")).toHaveAttribute("lang", "en")
+
+        // 日本語で開いていたもう一方のタブが、再読み込みなしで英語になる
+        await expect(loginTab.locator("html")).toHaveAttribute("lang", "en")
+        await expect(loginTab.getByLabel("Handle")).toBeVisible()
+    })
+
+    test("[i18n-locale/AC-13] 受け入れ言語が異なるリクエストを並行して送っても、それぞれの言語の lang で描画される", async ({
+        request,
+    }) => {
+        const languages = ["en", "ja", "en", "ja", "en", "ja", "en", "ja"]
+        const responses = await Promise.all(
+            languages.map(language =>
+                request.get("/entries/not-exist/", {
+                    headers: { "accept-language": language },
+                    timeout: 60_000,
+                }),
+            ),
+        )
+        const bodies = await Promise.all(responses.map(res => res.text()))
+        bodies.forEach((body, index) => {
+            expect(body, `${index}件目 ${languages[index]}`).toMatch(
+                new RegExp(`<html lang="${languages[index]}"`),
+            )
+        })
+    })
+
+    test("[i18n-locale/AC-14] 静的生成するページは、受け入れ言語が英語でも lang が日本語で出力される", async ({
+        request,
+    }) => {
+        for (const path of ["/help/", "/login/"]) {
+            const response = await request.get(path, {
+                headers: { "accept-language": "en-US,en;q=0.9" },
+                timeout: 60_000,
+            })
+            expect(await response.text(), path).toMatch(/<html lang="ja"/)
+        }
     })
 })

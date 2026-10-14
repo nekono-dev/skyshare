@@ -7,11 +7,13 @@
  * - 上限は API スキーマ（`src/lib/api/schema/v2/entry/post.ts`）に合わせる。
  */
 
+import { countUtf8Bytes, truncateToUtf8Bytes } from "@/util/utf8Bytes"
 import { formatVideoDuration } from "@/lib/video/formatVideoDuration"
 import { serviceName } from "@/vars"
 
-export const ENTRY_HEADING_MAX_LENGTH = 100
-export const ENTRY_CAPTION_MAX_LENGTH = 300
+/** lexicon の `maxLength` はバイト数の上限（UTF-8） */
+export const ENTRY_HEADING_MAX_BYTES = 100
+export const ENTRY_CAPTION_MAX_BYTES = 300
 
 // 上限超過時も接尾辞は残すため、投稿者名側を切り詰める。
 const HEADING_SUFFIX = ` | ${serviceName}`
@@ -52,13 +54,16 @@ export const buildEntryText = (params: {
     videoDurationSec?: number
 }): EntryText => {
     const { userName, postText, videoDurationSec } = params
-    const caption = postText.trim().slice(0, ENTRY_CAPTION_MAX_LENGTH)
+    const caption = truncateToUtf8Bytes(
+        postText.trim(),
+        ENTRY_CAPTION_MAX_BYTES,
+    )
 
     return {
         heading:
             videoDurationSec !== undefined
                 ? formatVideoDuration(videoDurationSec)
-                : `${userName.slice(0, ENTRY_HEADING_MAX_LENGTH - HEADING_SUFFIX.length)}${HEADING_SUFFIX}`,
+                : `${truncateToUtf8Bytes(userName, ENTRY_HEADING_MAX_BYTES - countUtf8Bytes(HEADING_SUFFIX))}${HEADING_SUFFIX}`,
         ...(caption.length > 0 ? { caption } : {}),
     }
 }

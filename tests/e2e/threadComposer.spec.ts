@@ -158,4 +158,69 @@ test.describe("ThreadComposer", () => {
             .click()
         await expect(segment1).toBeHidden()
     })
+
+    test("[thread-composer/AC-6] セグメントが2件以上あるときだけ、1件目のアバターの下に縦線が表示される", async ({
+        page,
+    }) => {
+        await page.goto("/post/?guest")
+        await page.waitForFunction(
+            () => document.querySelector("astro-island[ssr]") === null,
+        )
+        const segment0 = page.getByTestId("thread-segment-0")
+        // 編集中と簡略表示の両方の構造に線があるため、表示されているものを数える
+        const line = segment0.locator('[class*="connector-line"]:visible')
+        await expect(segment0).toBeVisible()
+        await expect(line).toHaveCount(0)
+
+        const segment1 = page.getByTestId("thread-segment-1")
+        await clickUntilEffect(
+            page.getByRole("button", { name: "スレッドに追加" }),
+            segment1,
+        )
+        await expect(line).toHaveCount(1)
+        const box = await line.boundingBox()
+        expect(box!.width).toBeCloseTo(2, 0)
+        expect(box!.height).toBeGreaterThan(0)
+    })
+
+    test("[thread-composer/AC-10] 2件のスレッドを投稿すると、共有文に先頭のセグメントの本文だけが含まれる", async ({
+        page,
+        context,
+    }) => {
+        await context.route(/^https:\/\/x\.com\//, route =>
+            route.fulfill({ status: 200, body: "" }),
+        )
+        await page.addInitScript(() => {
+            window.localStorage.setItem("popupIntentInsteadOfWebshare", "true")
+            window.localStorage.setItem("autoPopupTarget", "x")
+        })
+        await page.goto("/post/?guest")
+        await page.waitForFunction(
+            () => document.querySelector("astro-island[ssr]") === null,
+        )
+
+        const editor0 = page
+            .getByTestId("thread-segment-0")
+            .locator("[data-post-body-editor]")
+        await editor0.click()
+        await page.keyboard.type("先頭の本文")
+        await expect(editor0).toContainText("先頭の本文")
+
+        const segment1 = page.getByTestId("thread-segment-1")
+        await clickUntilEffect(
+            page.getByRole("button", { name: "スレッドに追加" }),
+            segment1,
+        )
+        const editor1 = segment1.locator("[data-post-body-editor]")
+        await editor1.click()
+        await page.keyboard.type("二番目の本文")
+        await expect(editor1).toContainText("二番目の本文")
+
+        const popupPromise = page.waitForEvent("popup")
+        await page.getByRole("button", { name: "すべて投稿" }).click()
+        const text =
+            new URL((await popupPromise).url()).searchParams.get("text") ?? ""
+        expect(text).toContain("先頭の本文")
+        expect(text).not.toContain("二番目の本文")
+    })
 })

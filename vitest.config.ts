@@ -12,7 +12,7 @@
  * - `astro.config.mjs` の `site` 値（`import.meta.env.SITE`）をテスト用に固定する
  *   （`skyshareEntryUrlgen` 等が参照するため）。
  */
-import { defineConfig } from "vitest/config"
+import { configDefaults, defineConfig } from "vitest/config"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -30,6 +30,8 @@ export default defineConfig({
     test: {
         environment: "node",
         include: ["tests/**/*.test.ts"],
+        // `.astro` の描画テストは Astro の設定が要るため `vitest.astro.config.ts` で実行する
+        exclude: [...configDefaults.exclude, "tests/astro/**"],
         coverage: {
             provider: "v8",
             include: [

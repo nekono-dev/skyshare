@@ -32,12 +32,24 @@ describe("getSlotDefs", () => {
     })
 
     it("[entry-visual/AC-2] 3枚は左1列+右上下2段", () => {
-        expect(getSlotDefs(3)).toHaveLength(3)
+        const half = { w: TARGET_WIDTH / 2, h: TARGET_HEIGHT / 2 }
+        expect(getSlotDefs(3)).toMatchObject([
+            { x: 0, y: 0, w: TARGET_WIDTH / 2, h: TARGET_HEIGHT },
+            { x: TARGET_WIDTH / 2, y: 0, ...half },
+            { x: TARGET_WIDTH / 2, y: TARGET_HEIGHT / 2, ...half },
+        ])
     })
 
-    it("[entry-visual/AC-2] 4枚以上は2x2グリッド", () => {
-        expect(getSlotDefs(4)).toHaveLength(4)
-        expect(getSlotDefs(10)).toHaveLength(4)
+    it("[entry-visual/AC-2 image-picker/AC-7] 4枚は2x2グリッドで、5枚以上でも区画は先頭4枚分だけ", () => {
+        const half = { w: TARGET_WIDTH / 2, h: TARGET_HEIGHT / 2 }
+        const grid = [
+            { x: 0, y: 0, ...half },
+            { x: TARGET_WIDTH / 2, y: 0, ...half },
+            { x: 0, y: TARGET_HEIGHT / 2, ...half },
+            { x: TARGET_WIDTH / 2, y: TARGET_HEIGHT / 2, ...half },
+        ]
+        expect(getSlotDefs(4)).toMatchObject(grid)
+        expect(getSlotDefs(10)).toMatchObject(grid)
     })
 })
 
@@ -153,6 +165,15 @@ describe("createProcessedImages", () => {
         const urls = ["u0", "u1", "u2", "u3", "u4"]
         const result = await createProcessedImages(urls, buildCropStates(5))
         expect(result.originalBlobs).toHaveLength(5)
+        expect(result.thumbnailBlob).toBeInstanceOf(Blob)
+        expect(drawnSrcs).toEqual(["u0", "u1", "u2", "u3"])
+    })
+
+    it("[image-picker/AC-7] 4枚の画像からは、4枚すべてを合成した代表画像が作られる", async () => {
+        const drawnSrcs = stubBrowserApis()
+        const urls = ["u0", "u1", "u2", "u3"]
+        const result = await createProcessedImages(urls, buildCropStates(4))
+        expect(result.originalBlobs).toHaveLength(4)
         expect(result.thumbnailBlob).toBeInstanceOf(Blob)
         expect(drawnSrcs).toEqual(["u0", "u1", "u2", "u3"])
     })
