@@ -13,6 +13,12 @@
  * - `/v2/bsky/session`（GET/POST/PUT）と `/v2/bsky/session/{did}`（DELETE）は、
  *   アカウント追加・切り替え・ログアウトという通常と異なるセッション操作を行うため対象外とする
  *   （各エンドポイントが目的に応じて個別にセッションを取り扱う）。
+ *
+ * 実装上の制約:
+ * - このミドルウェアは全リクエストで読み込まれる。`@atproto/api`（約1.3MB）を静的に importすると、
+ *   対象外のリクエスト（entry詳細のキャッシュHITや静的アセットの404など）でも Worker の起動
+ *   （cold start）のたびに評価コスト（約70ms）がかかり、無料枠の CPU 上限を圧迫する。
+ *   このため `agentFactory` は対象パスで認証処理を始める時点で動的に importする。
  */
 import type { MiddlewareHandler } from "astro"
 import {
@@ -23,7 +29,6 @@ import {
     errorResponseFromStatus,
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
-import { createAtpAgent } from "@/lib/atproto/agentFactory"
 
 /**
  * このミドルウェアが認証処理の対象とするパスかどうかを判定する。
@@ -69,6 +74,7 @@ export const refreshBskySession: MiddlewareHandler = async (context, next) => {
         return errorResponseFromStatus(401)
     }
 
+    const { createAtpAgent } = await import("@/lib/atproto/agentFactory")
     const agent = createAtpAgent(service)
     try {
         await agent.resumeSession({

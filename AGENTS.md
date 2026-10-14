@@ -9,6 +9,7 @@
 # 注意事項
 
 - 本システムは Cloudflare Workers 環境で動作するため、Nodejs 固有の API は使用できず、バージョンもCloudflareの扱えるNodejsの最新バージョン: 22.16.0に固定される。
+- 無料枠のCPU上限（10ms）を守るため、`src/middleware.ts` から静的に辿れる範囲（`lib/session/bskySessionRefresh.ts`・`lib/api/response.ts` など）で `@atproto/*` を静的にimportしない。全リクエストで読み込まれるため、Workerの起動（cold start）のたびに約70msの評価コストがかかる。atprotoを使う処理は、使う時点で動的import（`await import()`）する。`tests/lib/coldStart.test.ts` が検査する。
 - 特に指示がない場合、作業は `(root)/src/` 配下のコードを対象とする。`_legacy`を対象とする作業の場合は明示的に示す。曖昧な場合は確認すること。
 - APIはコードファーストで実装すること。各エンドポイントのZodスキーマ（バリデーション用途と兼用、`src/lib/api/schema/` が単一の真実の源）を同ディレクトリ配下にURLパスと対応するディレクトリ構成で定義し、`src/pages/**` のAPIルートハンドラはそのスキーマを直接importして `.safeParse()` で検証する。`hack/build-openapi-document.ts` がこれらのスキーマからOpenAPI 3.1ドキュメントを組み立て、`orval` がそれを入力にフロントエンド用クライアント（`src/client/openapi/client.ts` 等）を生成する。すべて `npm run codegen` で実行できる。
   - 1エンドポイントにつきスキーマは1つ。バリデーション用とOpenAPIドキュメント生成用でスキーマを分けないこと（multipart+anyOfのような複雑なケースでも例外にしない）。

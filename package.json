@@ -53,6 +53,7 @@
     "@types/node": "^25.2.0",
     "@types/twitter-text": "*",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "esbuild": "^0.28.2",
     "orval": "^8.32.0",
     "patch-package": "^8.0.1",
     "prettier": "^3.8.1",
