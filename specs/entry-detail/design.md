@@ -9,6 +9,7 @@
 | `src/components/post/PostBody/index.tsx`           | 投稿カードの表示部（タイムラインと共用）           |
 | `src/lib/atproto/threadChain.ts`                   | 自分の投稿の直線的な連鎖の抽出                     |
 | `src/lib/entry/entry.ts`                           | 投稿の画像の抽出                                   |
+| `src/lib/entry/entryPageCache.ts`                  | 詳細ページのSSR結果の保存と再利用                  |
 | `src/pages/entries/sample.astro`                   | 表示確認用のサンプルページ                         |
 
 ## 2. 設計項目
@@ -66,6 +67,19 @@ export type EntryPostView = {
 | 描画           | Cloudflare Workers 上でSSRし、`PostBody` を `client:load` でハイドレートする |
 | JavaScript依存 | 画像の拡大表示だけ                                                           |
 | 横幅           | 横スクロールは画像5枚以上の帯の内部だけで発生させる                          |
+
+### D-4: SSR結果の再利用 (NFR-3)
+
+| 項目         | 内容                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| 保存先       | Cloudflare の Cache API（`caches.default`）。データセンターごとに保存される                  |
+| キー         | 末尾スラッシュ付きのパスと表示言語（`locals.locale`）。クエリ文字列は含めない                |
+| 保存対象     | 200 の HTML のみ。404・500・Cookie を設定する応答は保存しない                                |
+| 保存期間     | 300秒。entryの更新・削除は、最大でこの時間は保存済みのページに反映されない                   |
+| 保存の流れ   | 未保存なら通常どおり描画し、`waitUntil` で保存する。保存済みなら後続の処理を呼ばずに返す     |
+| 応答ヘッダー | `x-skyshare-cache` に `HIT` か `MISS` を入れる                                               |
+| 対象外       | GET以外、事前描画のページ、Cache API が使えない環境（`workers.dev`）では保存も再利用もしない |
+| 失敗時       | Cache API の失敗は握りつぶし、通常の描画にフォールバックする                                 |
 
 ## 3. エラー処理
 

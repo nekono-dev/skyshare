@@ -22,3 +22,10 @@
 - [x] T-3.1: JavaScript無効時と幅360pxの表示を確認する。
 - 検証: `npm run build`
 - E2E: `tests/e2e/entryPostCards.spec.ts` JavaScriptを無効にしてサンプルページを開く → サムネイルが表示され、幅360pxで横スクロールが無い
+
+## Phase 4: SSR結果の再利用
+
+- 対応: D-4
+- [x] T-4.1: `entryPageCache` を追加し、`middleware.ts` で表示言語の判定の後に登録する。
+- [x] T-4.2: 保存・再利用・言語ごとの分離・保存対象外・失敗時の動作の単体テストを追加する。
+- 検証: `npx vitest run tests/lib/entry/entryPageCache.test.ts`
