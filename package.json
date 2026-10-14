@@ -3,6 +3,7 @@
   "type": "module",
   "version": "2.0.0-preview.r09",
   "scripts": {
+    "postinstall": "patch-package",
     "apigen:doc": "tsx ./hack/build-openapi-document.ts",
     "apigen:client": "orval",
     "apigen": "npm run apigen:doc && npm run apigen:client",
@@ -53,6 +54,7 @@
     "@types/twitter-text": "*",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "orval": "^8.32.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.8.1",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-sh": "^0.18.0",
