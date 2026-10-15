@@ -17,6 +17,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  min-height: var(--size-button-md);
   padding: var(--space-2);
   border: none;
   background: transparent;

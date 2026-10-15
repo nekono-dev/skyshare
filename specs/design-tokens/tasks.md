@@ -6,7 +6,7 @@
 - [x] T-1.1: `tokens.css` にスマホ幅の上書きブロックを追加する。
 - [x] T-1.2: `button.ui.module.css` と `avatar.ui.module.css` にスマホ幅の上書きブロックを追加する。
 - 検証: `npm run build`
-- E2E: `tests/e2e/mobileScale.spec.ts` 幅390pxで投稿フォームを開く → 本文が18px、中サイズのボタン高さが44px以上になる
+- E2E: `tests/e2e/mobileScale.spec.ts` 幅390pxで投稿フォームを開く → 本文が18px、すべてのボタン高さが44px以上になる
 
 ## Phase 2: 直書きの置換
 
