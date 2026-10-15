@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { buildTimelineThreads } from "@/lib/entry/timelineThreads"
+import {
+    ENTRY_RANGE_MARGIN_MS,
+    attachSkyshareEntries,
+    buildTimelineThreads,
+    resolveEntryRangeStartMs,
+} from "@/lib/entry/timelineThreads"
 import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
 
 const did = "did:plc:author"
@@ -68,8 +73,6 @@ const makeThreadNode = (
     replies,
 })
 
-const emptyEntries = new Map<string, TimelineSkyshareEntry>()
-
 describe("buildTimelineThreads", () => {
     it("単独投稿のみの場合、各投稿がreplies:[]の単独ThreadGroupになる", () => {
         const getPostThread = vi.fn()
@@ -80,20 +83,18 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("a", "2026-01-01T00:00:00Z"),
         ]
 
-        return buildTimelineThreads(agent, did, feed as any, emptyEntries).then(
-            threads => {
-                expect(getPostThread).not.toHaveBeenCalled()
-                expect(threads).toHaveLength(2)
-                expect(threads[0]).toMatchObject({
-                    rootPost: { uri: feed[0].post.uri },
-                    replies: [],
-                })
-                expect(threads[1]).toMatchObject({
-                    rootPost: { uri: feed[1].post.uri },
-                    replies: [],
-                })
-            },
-        )
+        return buildTimelineThreads(agent, did, feed as any).then(threads => {
+            expect(getPostThread).not.toHaveBeenCalled()
+            expect(threads).toHaveLength(2)
+            expect(threads[0]).toMatchObject({
+                rootPost: { uri: feed[0].post.uri },
+                replies: [],
+            })
+            expect(threads[1]).toMatchObject({
+                rootPost: { uri: feed[1].post.uri },
+                replies: [],
+            })
+        })
     })
 
     it("[timeline-api/AC-2 timeline-api/AC-11] 通常のスレッド(root+mid+tailがすべてfeedに存在)を1つのThreadGroupにまとめる", async () => {
@@ -119,12 +120,7 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 2 }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(getPostThread).toHaveBeenCalledTimes(1)
         expect(threads).toHaveLength(1)
@@ -152,12 +148,7 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 2 }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(getPostThread).toHaveBeenCalledWith(
             expect.objectContaining({ uri: feed[0].post.uri }),
@@ -192,12 +183,7 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("root", "2026-01-01T00:00:00Z"),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(getPostThread).toHaveBeenCalledWith(
             expect.objectContaining({ uri: feed[1].post.uri }),
@@ -221,12 +207,7 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 1 }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(threads).toHaveLength(1)
         expect(threads[0]).toMatchObject({
@@ -289,12 +270,7 @@ describe("buildTimelineThreads", () => {
             }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(threads).toHaveLength(2)
         expect(threads[0].rootPost.uri).toBe(
@@ -351,12 +327,7 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 2 }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         // root-branchB-branchCの1グループのみ。branchDは単独投稿としても出ない。
         expect(threads).toHaveLength(1)
@@ -391,12 +362,7 @@ describe("buildTimelineThreads", () => {
         })
         const agent = { app: { bsky: { feed: { getPostThread } } } } as any
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(threads).toHaveLength(1)
         expect(threads[0].rootPost.uri).toBe(feed[1].post.uri)
@@ -422,12 +388,7 @@ describe("buildTimelineThreads", () => {
             }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(threads).toEqual([])
         expect(getPostThread).not.toHaveBeenCalled()
@@ -456,12 +417,7 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("oldest", "2026-01-01T00:00:00Z"),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
 
         expect(threads.map(t => t.rootPost.uri.split("/").pop())).toEqual([
             "newest",
@@ -483,16 +439,215 @@ describe("buildTimelineThreads", () => {
             makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 1 }),
         ]
 
-        const threads = await buildTimelineThreads(
-            agent,
-            did,
-            feed as any,
-            emptyEntries,
-        )
+        const threads = await buildTimelineThreads(agent, did, feed as any)
         errSpy.mockRestore()
 
         expect(threads).toHaveLength(1)
         expect(threads[0].rootPost.uri).toBe(feed[1].post.uri)
         expect(threads[0].replies).toEqual([])
+    })
+})
+
+describe("buildTimelineThreads（一覧だけでの確定）", () => {
+    const makeAgent = (getPostThread = vi.fn()) =>
+        ({ app: { bsky: { feed: { getPostThread } } } }) as any
+
+    it("[timeline-api/AC-14] 返信数が一覧の子の件数と一致するスレッドは、getPostThreadを呼ばずに1つのグループにまとめる", async () => {
+        const getPostThread = vi.fn()
+        const feed = [
+            makeFeedItem("tail", "2026-01-01T00:02:00Z", {
+                replyToRkey: "mid",
+                rootRkey: "root",
+                replyCount: 0,
+            }),
+            makeFeedItem("mid", "2026-01-01T00:01:00Z", {
+                replyToRkey: "root",
+                replyCount: 1,
+            }),
+            makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 1 }),
+        ]
+
+        const threads = await buildTimelineThreads(
+            makeAgent(getPostThread),
+            did,
+            feed as any,
+        )
+
+        expect(getPostThread).not.toHaveBeenCalled()
+        expect(threads).toHaveLength(1)
+        expect(threads[0].rootPost.uri).toContain("/root")
+        expect(threads[0].replies.map(p => p.uri.split("/").pop())).toEqual([
+            "mid",
+            "tail",
+        ])
+    })
+
+    it("[timeline-api/AC-14] 一覧だけで確定した分岐でも、親に最も近い日時の系統だけを返す", async () => {
+        const getPostThread = vi.fn()
+        const withCreatedAt = (item: any, createdAt: string) => {
+            item.post.record.createdAt = createdAt
+            return item
+        }
+        const feed = [
+            withCreatedAt(
+                makeFeedItem("far", "2026-01-05T00:00:00Z", {
+                    replyToRkey: "root",
+                    replyCount: 0,
+                }),
+                "2026-01-05T00:00:00Z",
+            ),
+            withCreatedAt(
+                makeFeedItem("near", "2026-01-01T00:00:10Z", {
+                    replyToRkey: "root",
+                    replyCount: 0,
+                }),
+                "2026-01-01T00:00:10Z",
+            ),
+            withCreatedAt(
+                makeFeedItem("root", "2026-01-01T00:00:00Z", {
+                    replyCount: 2,
+                }),
+                "2026-01-01T00:00:00Z",
+            ),
+        ]
+
+        const threads = await buildTimelineThreads(
+            makeAgent(getPostThread),
+            did,
+            feed as any,
+        )
+
+        expect(getPostThread).not.toHaveBeenCalled()
+        expect(threads).toHaveLength(1)
+        expect(threads[0].replies.map(p => p.uri.split("/").pop())).toEqual([
+            "near",
+        ])
+    })
+
+    it("[timeline-api/AC-15] 他人の返信などで返信数が一覧と一致しないスレッドは、getPostThreadで取得する", async () => {
+        const getPostThread = vi.fn().mockResolvedValue({
+            data: {
+                thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
+                    makeThreadNode("mid", "2026-01-01T00:01:00Z"),
+                ]),
+            },
+        })
+        const feed = [
+            makeFeedItem("mid", "2026-01-01T00:01:00Z", {
+                replyToRkey: "root",
+                replyCount: 0,
+            }),
+            // 返信数2のうち1件は他人の返信で、一覧にない
+            makeFeedItem("root", "2026-01-01T00:00:00Z", { replyCount: 2 }),
+        ]
+
+        const threads = await buildTimelineThreads(
+            makeAgent(getPostThread),
+            did,
+            feed as any,
+        )
+
+        expect(getPostThread).toHaveBeenCalledTimes(1)
+        expect(threads[0].replies.map(p => p.uri.split("/").pop())).toEqual([
+            "mid",
+        ])
+    })
+
+    it("[timeline-api/AC-14] 一覧に起点が無いスレッドはgetPostThreadで取得する", async () => {
+        const getPostThread = vi.fn().mockResolvedValue({
+            data: {
+                thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
+                    makeThreadNode("mid", "2026-01-01T00:01:00Z"),
+                ]),
+            },
+        })
+        const feed = [
+            makeFeedItem("mid", "2026-01-01T00:01:00Z", {
+                replyToRkey: "root",
+                replyCount: 0,
+            }),
+        ]
+
+        await buildTimelineThreads(makeAgent(getPostThread), did, feed as any)
+
+        expect(getPostThread).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe("resolveEntryRangeStartMs", () => {
+    const post = (rkey: string, indexedAt: string) =>
+        ({ uri: `at://${did}/app.bsky.feed.post/${rkey}`, indexedAt }) as any
+
+    it("[timeline-api/AC-12] 起点と後続を含む最も古いindexedAtからマージンを引いた日時を返す", () => {
+        const start = resolveEntryRangeStartMs([
+            {
+                rootPost: post("a", "2026-01-05T00:00:00Z"),
+                replies: [post("b", "2026-01-06T00:00:00Z")],
+            },
+            {
+                rootPost: post("c", "2026-01-08T00:00:00Z"),
+                replies: [],
+            },
+        ])
+
+        expect(start).toBe(
+            Date.parse("2026-01-05T00:00:00Z") - ENTRY_RANGE_MARGIN_MS,
+        )
+    })
+
+    it("[timeline-api/AC-13] 補完した起点が一覧より古ければ、その起点を始点の基準にする", () => {
+        const start = resolveEntryRangeStartMs([
+            {
+                rootPost: post("old-root", "2025-12-01T00:00:00Z"),
+                replies: [post("new-reply", "2026-01-08T00:00:00Z")],
+            },
+        ])
+
+        expect(start).toBe(
+            Date.parse("2025-12-01T00:00:00Z") - ENTRY_RANGE_MARGIN_MS,
+        )
+    })
+
+    it("[timeline-api/AC-12] 投稿が無い、または日時が読めなければundefinedを返す", () => {
+        expect(resolveEntryRangeStartMs([])).toBeUndefined()
+        expect(
+            resolveEntryRangeStartMs([
+                { rootPost: post("a", "invalid"), replies: [] },
+            ]),
+        ).toBeUndefined()
+    })
+})
+
+describe("attachSkyshareEntries", () => {
+    const entry = (sourceUri: string) =>
+        ({ uri: `entry-of-${sourceUri}`, sourceUri }) as any
+    const post = (rkey: string) =>
+        ({ uri: `at://${did}/app.bsky.feed.post/${rkey}` }) as any
+
+    it("[timeline-api/AC-9] 起点と後続の両方へsource.uriが一致するentryを付与し、入力は変更しない", () => {
+        const root = post("root")
+        const reply = post("reply")
+        const threads = [{ rootPost: root, replies: [reply] }]
+
+        const result = attachSkyshareEntries(
+            threads,
+            new Map([
+                [root.uri, entry(root.uri)],
+                [reply.uri, entry(reply.uri)],
+            ]),
+        )
+
+        expect(result[0].rootPost.skyshareEntry?.sourceUri).toBe(root.uri)
+        expect(result[0].replies[0].skyshareEntry?.sourceUri).toBe(reply.uri)
+        expect(root.skyshareEntry).toBeUndefined()
+    })
+
+    it("[timeline-api/AC-9] 一致するentryが無い投稿にはskyshareEntryを付けない", () => {
+        const result = attachSkyshareEntries(
+            [{ rootPost: post("a"), replies: [] }],
+            new Map(),
+        )
+
+        expect(result[0].rootPost.skyshareEntry).toBeUndefined()
     })
 })

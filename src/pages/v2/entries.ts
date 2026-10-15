@@ -8,15 +8,20 @@ import {
 import { parseLimit } from "@/util/http"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import { groupTimelineEntriesBySourceUri } from "@/lib/entry/posts"
-import { buildTimelineThreads } from "@/lib/entry/timelineThreads"
-import { listAllRecords } from "@/lib/atproto/repo"
+import {
+    attachSkyshareEntries,
+    buildTimelineThreads,
+    resolveEntryRangeStartMs,
+} from "@/lib/entry/timelineThreads"
+import { listRecordsSince } from "@/lib/atproto/repo"
 
 /**
  * Skyshare v2 entries API。
  *
  * 責務と処理概要:
  * - 自分の Bluesky 投稿一覧（`app.bsky.feed.getAuthorFeed`）を、紐づく
- *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ）と embed し、
+ *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ。表示する投稿の日時の範囲だけ
+ *   新しい順に取得する）と embed し、
  *   バックエンド側で権威的にスレッド構造化（`buildTimelineThreads`）した
  *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する
  *   （`specs/timeline-api`）。
@@ -120,20 +125,31 @@ export const GET: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(401)
         }
 
-        const [feedRes, rawEntries] = await Promise.all([
-            fetchOwnAuthorFeed(agent, session.did, limit, cursor),
-            listAllRecords(agent, {
-                repo: session.did,
-                collection: ENTRY_COLLECTION,
-            }),
-        ])
-
-        const entriesBySourceUri = groupTimelineEntriesBySourceUri(rawEntries)
-        const threads = await buildTimelineThreads(
+        const feedRes = await fetchOwnAuthorFeed(
+            agent,
+            session.did,
+            limit,
+            cursor,
+        )
+        const builtThreads = await buildTimelineThreads(
             agent,
             session.did,
             feedRes.feed,
-            entriesBySourceUri,
+        )
+
+        // entryは表示する投稿の日時の範囲だけ取得する（保存済みの総数に依存させない）
+        const entryRangeStartMs = resolveEntryRangeStartMs(builtThreads)
+        const rawEntries =
+            entryRangeStartMs === undefined
+                ? []
+                : await listRecordsSince(
+                      agent,
+                      { repo: session.did, collection: ENTRY_COLLECTION },
+                      entryRangeStartMs,
+                  )
+        const threads = attachSkyshareEntries(
+            builtThreads,
+            groupTimelineEntriesBySourceUri(rawEntries),
         )
 
         return new Response(

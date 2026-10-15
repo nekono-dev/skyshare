@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+    buildThreadViewFromPosts,
     extractOwnedLinearReplyChain,
     extractReplyRootUri,
     extractRepoDidFromAtUri,
@@ -259,5 +260,125 @@ describe("isThreadRootPost", () => {
 
     it("recordが投稿レコードでない場合は起点として扱う", () => {
         expect(isThreadRootPost(post({}))).toBe(true)
+    })
+})
+
+describe("buildThreadViewFromPosts", () => {
+    /** 一覧の投稿（返信数と親の参照を持つ）。 */
+    const makeFeedPost = (
+        id: string,
+        parent: string | undefined,
+        replyCount: number | undefined,
+        createdAt?: string,
+    ) => ({
+        ...makePost(`at://${id}`, ownerDid, createdAt),
+        record: {
+            ...(createdAt !== undefined ? { createdAt } : {}),
+            ...(parent
+                ? {
+                      reply: {
+                          parent: { uri: `at://${parent}` },
+                          root: { uri: "at://root" },
+                      },
+                  }
+                : {}),
+        },
+        replyCount,
+    })
+    const toMap = (...posts: any[]) =>
+        new Map(posts.map(post => [post.uri as string, post]))
+
+    it("[timeline-api/AC-14] 返信数がすべて一覧の子の件数と一致すれば、個別取得した場合と同じ系統を返す", () => {
+        const posts = toMap(
+            makeFeedPost("root", undefined, 1),
+            makeFeedPost("mid", "root", 1),
+            makeFeedPost("tail", "mid", 0),
+        )
+
+        const view = buildThreadViewFromPosts("at://root", posts as any)
+
+        expect(view).toBeDefined()
+        const chain = extractOwnedLinearReplyChain(view!, ownerDid, 100)
+        expect(chain.map(p => p.uri)).toEqual([
+            "at://root",
+            "at://mid",
+            "at://tail",
+        ])
+    })
+
+    it("[timeline-api/AC-14] 分岐でも全候補が一覧にあれば、親に最も近い日時の系統を選ぶ", () => {
+        const posts = toMap(
+            makeFeedPost("root", undefined, 2, "2026-01-01T00:00:00Z"),
+            makeFeedPost("far", "root", 0, "2026-01-05T00:00:00Z"),
+            makeFeedPost("near", "root", 0, "2026-01-01T00:00:10Z"),
+        )
+
+        const view = buildThreadViewFromPosts("at://root", posts as any)
+
+        const chain = extractOwnedLinearReplyChain(view!, ownerDid, 100)
+        expect(chain.map(p => p.uri)).toEqual(["at://root", "at://near"])
+    })
+
+    it("[timeline-api/AC-15] 返信数が一覧の子の件数より多ければ（他人の返信や欠落）確定できない", () => {
+        const posts = toMap(
+            makeFeedPost("root", undefined, 2),
+            makeFeedPost("mid", "root", 0),
+        )
+
+        expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(
+            undefined,
+        )
+    })
+
+    it("[timeline-api/AC-15] 中間の投稿が一覧から欠けていれば確定できない", () => {
+        const posts = toMap(
+            makeFeedPost("root", undefined, 1),
+            makeFeedPost("tail", "mid", 0),
+        )
+
+        expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(
+            undefined,
+        )
+    })
+
+    it("[timeline-api/AC-15] 返信数が一覧の子の件数より少なければ確定できない", () => {
+        const posts = toMap(
+            makeFeedPost("root", undefined, 0),
+            makeFeedPost("mid", "root", 0),
+        )
+
+        expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(
+            undefined,
+        )
+    })
+
+    it("[timeline-api/AC-15] 返信数が数値でない投稿があれば確定できない", () => {
+        const posts = toMap(
+            makeFeedPost("root", undefined, undefined),
+            makeFeedPost("mid", "root", 0),
+        )
+
+        expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(
+            undefined,
+        )
+    })
+
+    it("[timeline-api/AC-15] 起点が一覧に無ければ確定できない", () => {
+        const posts = toMap(makeFeedPost("mid", "root", 0))
+
+        expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(
+            undefined,
+        )
+    })
+
+    it("親子の参照が循環していても無限に辿らない", () => {
+        const posts = toMap(
+            makeFeedPost("root", "tail", 1),
+            makeFeedPost("tail", "root", 1),
+        )
+
+        expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(
+            undefined,
+        )
     })
 })

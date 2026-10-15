@@ -10,6 +10,7 @@
  *   直線的に辿る」という同一の抽出規則を要求しているため、この1箇所に実装を集約する。
  */
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
+import type { $Typed } from "@atproto/api"
 
 /**
  * `post.record.createdAt`（クライアント申告のISO 8601文字列）をエポックミリ秒に変換する。
@@ -119,6 +120,68 @@ export const extractOwnedLinearReplyChain = (
     }
 
     return result
+}
+
+/**
+ * 一覧で取得済みの投稿だけから、`rootUri` を起点とするスレッドの木を組み立てる。
+ * 組み立てた木が `getPostThread` の結果と同じ系統を選べると言える場合にだけ返す。
+ *
+ * 処理の趣旨:
+ * - 各投稿の `replyCount`（直下の返信の件数。他人の返信も数える）と、`posts` にある
+ *   直下の子の件数が一致すれば、その投稿の返信はすべて取得済みで欠けが無いと言える。
+ * - 木に含まれるすべての投稿で一致した場合に限り、木を返す。1つでも一致しない
+ *   （他人の返信がある、返信が一覧から欠けている）か、`replyCount` が数値でない場合は
+ *   確定できないため `undefined` を返し、呼び出し元に `getPostThread` で取得させる。
+ * - 親子の関係は投稿レコードの `record.reply.parent.uri` で判定する。
+ * - 組み立てる木の大きさは `posts` の件数で抑えられ、循環した参照は辿らない。
+ *
+ * Input:
+ * - `rootUri`: 起点の投稿の uri
+ * - `posts`: 一覧の投稿を uri で引く表
+ *
+ * Output:
+ * - 確定できる場合: `extractOwnedLinearReplyChain` に渡せる `ThreadViewPost`
+ * - 起点が `posts` に無い、または確定できない場合: `undefined`
+ */
+export const buildThreadViewFromPosts = (
+    rootUri: string,
+    posts: Map<string, AppBskyFeedDefs.PostView>,
+): AppBskyFeedDefs.ThreadViewPost | undefined => {
+    const childrenByParent = new Map<string, AppBskyFeedDefs.PostView[]>()
+    for (const post of posts.values()) {
+        const parentUri = (post.record as AppBskyFeedPost.Main | undefined)
+            ?.reply?.parent?.uri
+        if (typeof parentUri !== "string") continue
+        const children = childrenByParent.get(parentUri) ?? []
+        children.push(post)
+        childrenByParent.set(parentUri, children)
+    }
+
+    const visited = new Set<string>()
+    const build = (
+        post: AppBskyFeedDefs.PostView,
+    ): $Typed<AppBskyFeedDefs.ThreadViewPost> | undefined => {
+        if (visited.has(post.uri)) return undefined
+        visited.add(post.uri)
+
+        const children = childrenByParent.get(post.uri) ?? []
+        if (post.replyCount !== children.length) return undefined
+
+        const replies: $Typed<AppBskyFeedDefs.ThreadViewPost>[] = []
+        for (const child of children) {
+            const node = build(child)
+            if (!node) return undefined
+            replies.push(node)
+        }
+        return {
+            $type: "app.bsky.feed.defs#threadViewPost",
+            post,
+            replies,
+        }
+    }
+
+    const root = posts.get(rootUri)
+    return root ? build(root) : undefined
 }
 
 /**

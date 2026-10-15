@@ -14,10 +14,15 @@
  *   Timelineに一切含めない（FR-1）。状態は保持せず、呼び出しのたびに再評価する。
  * - フロントエンドはこの結果（`ThreadGroup[]`）をそのまま描画するだけでよく、
  *   reply chainの再構築を行わない（NFR-4）。
+ * - Workers無料枠のCPU時間を抑えるため、`getAuthorFeed`の結果だけでスレッドの構成を確定
+ *   できる場合は`getPostThread`を呼ばない（`buildThreadViewFromPosts`）。skyshare entryの
+ *   付与はスレッドの確定後に、表示する投稿の日時の範囲だけを取得して行う
+ *   （`resolveEntryRangeStartMs` / `attachSkyshareEntries`）。
  */
 import { AppBskyFeedDefs } from "@atproto/api"
 import type { AtpAgent } from "@atproto/api"
 import {
+    buildThreadViewFromPosts,
     extractOwnedLinearReplyChain,
     extractRepoDidFromAtUri,
     extractReplyRootUri,
@@ -34,13 +39,22 @@ import type {
 } from "@/lib/entry/posts"
 
 /**
+ * entryの取得範囲の始点に持たせるマージン（ミリ秒）。
+ * entryの`createdAt`は派生元の投稿のindexedAtより前にならないはずだが、端末の時計のずれや
+ * 反映の遅れで数秒〜数分前後しうるため、十分に広い1日を取る。
+ */
+export const ENTRY_RANGE_MARGIN_MS = 24 * 60 * 60 * 1000
+
+/**
  * `feed`（`getAuthorFeed`の生レスポンス）から`ThreadGroup[]`を構築する。
  *
  * 処理の趣旨:
  * 1. 各投稿を正規化し、プロトコルルートuri（`record.reply.root`、無ければ自分自身）を
  *    併記する。ルートが他人のrepoの投稿（他者起点スレッド）は解決対象にしない。
- * 2. 自分起点のルートごとに`getPostThread` + `extractOwnedLinearReplyChain`で
- *    メインスレッドを解決する（`Promise.all`で並行、1 rootの失敗は他に影響させない）。
+ * 2. 自分起点のルートごとにメインスレッドを解決する。ルートが`feed`にあり、各投稿の
+ *    `replyCount`が`feed`内の子の件数と一致するなら、`feed`だけで木を組む（NFR-4）。
+ *    確定できないルートは`getPostThread`で取得する（`Promise.all`で並行、1 rootの失敗は
+ *    他に影響させない）。どちらも`extractOwnedLinearReplyChain`で系統を選ぶ。
  * 3. 解決済みメインスレッドのルートが`feed`に現れない場合（ルートのみ一覧から欠落）、
  *    ルートのindexedAtに基づいて新しい順を保ったまま挿入する（NFR-3）。
  * 4. `feed`の出現順で`ThreadGroup[]`を組み立てる。他者起点スレッド・サブスレッドは
@@ -51,10 +65,10 @@ import type {
  * - `agent`: 認証済みAtpAgent
  * - `did`: セッション本人のDID
  * - `feed`: `fetchOwnAuthorFeed`が返す自分の投稿のみのFeedViewPost配列
- * - `entriesBySourceUri`: `source.uri`をキーにしたskyshare entryのMap
  *
  * Output:
- * - `ThreadGroup[]`。`feed`の出現順（新しい順）を維持する。
+ * - `ThreadGroup[]`。`feed`の出現順（新しい順）を維持する。`skyshareEntry`は付与しない
+ *   （`attachSkyshareEntries`で付与する）。
  *
  * Example:
  * - feed=[B(返信, root=A), A] → `[{ rootPost: A, replies: [B] }]`
@@ -63,22 +77,17 @@ export const buildTimelineThreads = async (
     agent: AtpAgent,
     did: string,
     feed: AppBskyFeedDefs.FeedViewPost[],
-    entriesBySourceUri: Map<string, TimelineSkyshareEntry>,
 ): Promise<ThreadGroup[]> => {
     type Entry = { post: TimelinePost; protocolRootUri: string }
+    const feedPostViews = new Map<string, AppBskyFeedDefs.PostView>()
     const normalizedByUri = new Map<string, Entry>()
     const order: string[] = []
     const rootsNeedingResolution = new Set<string>()
 
     for (const item of feed) {
-        const sourceUri = item?.post?.uri
-        const normalized = normalizeTimelinePost(
-            item,
-            typeof sourceUri === "string"
-                ? entriesBySourceUri.get(sourceUri)
-                : undefined,
-        )
+        const normalized = normalizeTimelinePost(item)
         if (!normalized) continue
+        feedPostViews.set(normalized.uri, item.post)
         const protocolRootUri = extractReplyRootUri(item.post) ?? normalized.uri
         normalizedByUri.set(normalized.uri, {
             post: normalized,
@@ -99,8 +108,37 @@ export const buildTimelineThreads = async (
     }
     const resolvedThreads = new Map<string, Resolved>()
 
+    // 解決した系統（起点から順の`PostView`）を`Resolved`へ変換して登録する。
+    const registerChain = (
+        rootUri: string,
+        chain: AppBskyFeedDefs.PostView[],
+    ): boolean => {
+        // 通常発生しないフェイルセーフ（解決対象は自分起点のみ）
+        if (chain.length === 0) return false
+        const rootPost = normalizePostViewToTimelinePost(chain[0])
+        if (!rootPost) return false
+
+        const repliesByUri = new Map<string, TimelinePost>()
+        for (const post of chain.slice(1)) {
+            const normalized = normalizePostViewToTimelinePost(post)
+            if (normalized) repliesByUri.set(normalized.uri, normalized)
+        }
+        resolvedThreads.set(rootUri, { rootPost, repliesByUri })
+        return true
+    }
+
+    // feedだけで構成を確定できるルートはgetPostThreadを省く（NFR-4）。
+    const rootsNeedingFetch: string[] = []
+    for (const rootUri of rootsNeedingResolution) {
+        const view = buildThreadViewFromPosts(rootUri, feedPostViews)
+        const chain = view
+            ? extractOwnedLinearReplyChain(view, did, MAX_THREAD_POST_COUNT)
+            : []
+        if (!registerChain(rootUri, chain)) rootsNeedingFetch.push(rootUri)
+    }
+
     await Promise.all(
-        [...rootsNeedingResolution].map(async rootUri => {
+        rootsNeedingFetch.map(async rootUri => {
             try {
                 const threadRes = await agent.app.bsky.feed.getPostThread({
                     uri: rootUri,
@@ -110,28 +148,14 @@ export const buildTimelineThreads = async (
                     return
                 }
 
-                const chain = extractOwnedLinearReplyChain(
-                    threadRes.data.thread,
-                    did,
-                    MAX_THREAD_POST_COUNT,
+                registerChain(
+                    rootUri,
+                    extractOwnedLinearReplyChain(
+                        threadRes.data.thread,
+                        did,
+                        MAX_THREAD_POST_COUNT,
+                    ),
                 )
-                // 通常発生しないフェイルセーフ（解決対象は自分起点のみ）
-                if (chain.length === 0) return
-                const rootPost = normalizePostViewToTimelinePost(
-                    chain[0],
-                    entriesBySourceUri.get(chain[0].uri),
-                )
-                if (!rootPost) return
-
-                const repliesByUri = new Map<string, TimelinePost>()
-                for (const post of chain.slice(1)) {
-                    const normalized = normalizePostViewToTimelinePost(
-                        post,
-                        entriesBySourceUri.get(post.uri),
-                    )
-                    if (normalized) repliesByUri.set(normalized.uri, normalized)
-                }
-                resolvedThreads.set(rootUri, { rootPost, repliesByUri })
             } catch (err) {
                 console.error(
                     "timelineThreads.ts: failed to resolve thread",
@@ -190,4 +214,59 @@ export const buildTimelineThreads = async (
     }
 
     return threads
+}
+
+/**
+ * 確定したスレッドグループに含まれる投稿の日時から、entryを取得する範囲の始点を求める。
+ *
+ * 処理の趣旨:
+ * - entryは派生元の投稿が存在してから作られるため、表示する投稿のいちばん古い
+ *   `indexedAt`より前に作られたentryは、表示する投稿のどれにも紐づかない。
+ * - 補完で取得した起点が一覧より古い場合も含めるため、`feed`ではなく確定後の
+ *   スレッドグループの全投稿（起点と後続）から求める。
+ *
+ * Input:
+ * - `threads`: `buildTimelineThreads`の結果
+ *
+ * Output:
+ * - 最小の`indexedAt`から`ENTRY_RANGE_MARGIN_MS`を引いたエポックミリ秒。
+ *   日時の読める投稿が無い場合は`undefined`（entryを取得しない）。
+ */
+export const resolveEntryRangeStartMs = (
+    threads: ThreadGroup[],
+): number | undefined => {
+    let oldest: number | undefined
+    for (const thread of threads) {
+        for (const post of [thread.rootPost, ...thread.replies]) {
+            const ms = Date.parse(post.indexedAt)
+            if (Number.isNaN(ms)) continue
+            if (oldest === undefined || ms < oldest) oldest = ms
+        }
+    }
+    return oldest === undefined ? undefined : oldest - ENTRY_RANGE_MARGIN_MS
+}
+
+/**
+ * スレッドグループの各投稿へ、`source.uri`が一致するskyshare entryを付与する。
+ *
+ * Input:
+ * - `threads`: `buildTimelineThreads`の結果
+ * - `entriesBySourceUri`: `source.uri`をキーにしたskyshare entryのMap
+ *
+ * Output:
+ * - 起点と後続の全投稿へ`skyshareEntry`を付けた新しい`ThreadGroup[]`（入力は変更しない）。
+ *   一致するentryが無い投稿は`skyshareEntry`を持たない。
+ */
+export const attachSkyshareEntries = (
+    threads: ThreadGroup[],
+    entriesBySourceUri: Map<string, TimelineSkyshareEntry>,
+): ThreadGroup[] => {
+    const attach = (post: TimelinePost): TimelinePost => ({
+        ...post,
+        skyshareEntry: entriesBySourceUri.get(post.uri),
+    })
+    return threads.map(thread => ({
+        rootPost: attach(thread.rootPost),
+        replies: thread.replies.map(reply => attach(reply)),
+    }))
 }

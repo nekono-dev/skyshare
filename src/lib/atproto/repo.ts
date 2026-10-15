@@ -1,8 +1,9 @@
 /**
- * `com.atproto.repo.listRecords` の全件取得ユーティリティ。
+ * `com.atproto.repo.listRecords` のレコード取得ユーティリティ。
  *
  * 責務と処理概要:
- * - cursor ページングを内部で辿り、指定 repo/collection のレコードを全件収集する。
+ * - cursor ページングを内部で辿り、指定 repo/collection のレコードを新しい順に、
+ *   指定日時より古いページに達するまで収集する（`specs/timeline-api`）。
  * - 実際に呼び出すメソッドは `listRecords` のみのため、`AtpAgent` 全体ではなく
  *   最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
  */
@@ -18,23 +19,33 @@ type ListRecordsAgent = {
 }
 
 /**
- * 指定 repo/collection のレコードを cursor ページングしながら全件取得する。
+ * 指定日時より新しいレコードを、新しい順に cursor ページングしながら取得する。
+ *
+ * 処理の趣旨:
+ * - `listRecords` を `reverse: true`（rkey の降順＝TID の新しい順）で呼び、全件を読まずに
+ *   必要な範囲で打ち切る。保存済みレコードの総数に比例した取得と解析を避けるため。
+ * - ページ内のすべてのレコードの `value.createdAt` が `sinceMs` より古くなった時点で、
+ *   次のページを取得しない。`createdAt` が文字列でない、または日時として読めないレコードは
+ *   古いとみなさず、取得を続ける。
+ * - 返すのは取得したページのレコードすべてで、`sinceMs` より古いレコードも含みうる
+ *   （呼び出し元は始点にマージンを持たせ、レコード単位の絞り込みを必要としない）。
  *
  * Input:
  * - `agent`: `com.atproto.repo.listRecords` を持つ認証済み AtpAgent（または同等の最小インターフェース）
  * - `params.repo`: 取得対象 repo DID
- * - `params.collection`: 取得対象コレクション（例: `dev.nekono.skyshare.entry`）
+ * - `params.collection`: 取得対象コレクション
+ * - `sinceMs`: 取得範囲の始点（エポックミリ秒）
  *
  * Output:
- * - `listRecords` の `records` を全ページぶん連結した配列
+ * - 新しい順に並んだレコード配列
  *
  * 例:
- * - 入力: `listAllRecords(agent, { repo: "did:plc:abc", collection: "dev.nekono.skyshare.entry" })`
- * - 出力: 2ページに渡って合計150件あれば、150件の配列
+ * - 1ページ目が全件 `sinceMs` より古い場合、そのページだけを返して打ち切る。
  */
-export const listAllRecords = async (
+export const listRecordsSince = async (
     agent: ListRecordsAgent,
     params: { repo: string; collection: string },
+    sinceMs: number,
 ) => {
     const records: any[] = []
     let cursor: string | undefined
@@ -46,11 +57,21 @@ export const listAllRecords = async (
                 collection: params.collection,
                 cursor,
                 limit: 100,
+                reverse: true,
             })
             .then(res => res.data)
 
-        records.push(...(res.records ?? []))
+        const page = res.records ?? []
+        records.push(...page)
         cursor = res.cursor
+
+        const allOlder =
+            page.length > 0 &&
+            page.every((record: any) => {
+                const createdAt = Date.parse(record?.value?.createdAt)
+                return !Number.isNaN(createdAt) && createdAt < sinceMs
+            })
+        if (allOlder) break
     } while (cursor)
 
     return records

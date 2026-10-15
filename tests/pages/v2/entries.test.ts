@@ -410,4 +410,170 @@ describe("GET /v2/entries", () => {
         const res = await callRoute(request, { agent, session: fakeSession })
         expect(res.status).toBe(401)
     })
+
+    describe("entryの取得範囲", () => {
+        const author = { did: fakeSession.did, handle: fakeSession.handle }
+        const ownFeedItem = (rkey: string, indexedAt: string) => ({
+            post: {
+                uri: `at://did:plc:author/app.bsky.feed.post/${rkey}`,
+                cid: `bafy${rkey}`,
+                indexedAt,
+                author,
+                record: { text: rkey },
+            },
+        })
+        const entryRecord = (
+            rkey: string,
+            sourceUri: string,
+            createdAt: string,
+        ) => ({
+            uri: entryAtUri("did:plc:author", rkey),
+            cid: `bafyentry${rkey}`,
+            value: {
+                source: { uri: sourceUri, cid: "bafysource" },
+                manifest: {},
+                createdAt,
+            },
+        })
+
+        it("[timeline-api/AC-12] entryを新しい順に取得し、表示する投稿より古いページは取得しない", async () => {
+            const feedItem = ownFeedItem("3lnew", "2026-01-20T00:00:00.000Z")
+            const getAuthorFeed = vi.fn().mockResolvedValue({
+                data: { feed: [feedItem], cursor: undefined },
+            })
+            const listRecords = vi
+                .fn()
+                .mockResolvedValueOnce({
+                    data: {
+                        records: [
+                            entryRecord(
+                                "3lnewentry",
+                                feedItem.post.uri,
+                                "2026-01-20T00:00:05.000Z",
+                            ),
+                        ],
+                        cursor: "page2",
+                    },
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        records: [
+                            entryRecord(
+                                "3loldentry",
+                                "at://did:plc:author/app.bsky.feed.post/3lold",
+                                "2025-06-01T00:00:00.000Z",
+                            ),
+                        ],
+                        cursor: "page3",
+                    },
+                })
+                .mockResolvedValueOnce({
+                    data: { records: [], cursor: undefined },
+                })
+            const agent = createFakeAgent({
+                getAuthorFeed,
+                com: { atproto: { repo: { listRecords } } },
+            })
+
+            const res = await callRoute(
+                new Request("https://skyshare.nekono.dev/v2/entries/"),
+                { agent, session: fakeSession },
+            )
+
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.threads[0].rootPost.skyshareEntry.sourceUri).toBe(
+                feedItem.post.uri,
+            )
+            expect(listRecords).toHaveBeenCalledTimes(2)
+            expect(listRecords).toHaveBeenCalledWith(
+                expect.objectContaining({ reverse: true }),
+            )
+        })
+
+        it("[timeline-api/AC-12] 表示する投稿が0件のときはentryを取得しない", async () => {
+            const getAuthorFeed = vi.fn().mockResolvedValue({
+                data: { feed: [], cursor: undefined },
+            })
+            const listRecords = vi.fn()
+            const agent = createFakeAgent({
+                getAuthorFeed,
+                com: { atproto: { repo: { listRecords } } },
+            })
+
+            const res = await callRoute(
+                new Request("https://skyshare.nekono.dev/v2/entries/"),
+                { agent, session: fakeSession },
+            )
+
+            expect(res.status).toBe(200)
+            expect(listRecords).not.toHaveBeenCalled()
+        })
+
+        it("[timeline-api/AC-13] 補完した起点が一覧より古くても、その起点のentryが付与される", async () => {
+            const rootUri = "at://did:plc:author/app.bsky.feed.post/3lroot"
+            const replyItem = ownFeedItem("3lreply", "2026-01-20T00:00:00.000Z")
+            replyItem.post.record = {
+                text: "reply",
+                reply: {
+                    parent: { uri: rootUri, cid: "bafyroot" },
+                    root: { uri: rootUri, cid: "bafyroot" },
+                },
+            } as any
+            const rootPost = {
+                uri: rootUri,
+                cid: "bafyroot",
+                indexedAt: "2025-12-01T00:00:00.000Z",
+                author,
+                record: { text: "root" },
+            }
+            const getAuthorFeed = vi.fn().mockResolvedValue({
+                data: { feed: [replyItem], cursor: undefined },
+            })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: {
+                        $type: "app.bsky.feed.defs#threadViewPost",
+                        post: rootPost,
+                        replies: [
+                            {
+                                $type: "app.bsky.feed.defs#threadViewPost",
+                                post: replyItem.post,
+                                replies: [],
+                            },
+                        ],
+                    },
+                },
+            })
+            // 起点のentryは一覧の投稿（2026-01-20）より古い日時だが、補完した起点の範囲には入る
+            const listRecords = vi.fn().mockResolvedValue({
+                data: {
+                    records: [
+                        entryRecord(
+                            "3lrootentry",
+                            rootUri,
+                            "2025-12-01T00:00:05.000Z",
+                        ),
+                    ],
+                    cursor: undefined,
+                },
+            })
+            const agent = createFakeAgent({
+                getAuthorFeed,
+                app: { bsky: { feed: { getPostThread } } },
+                com: { atproto: { repo: { listRecords } } },
+            })
+
+            const res = await callRoute(
+                new Request("https://skyshare.nekono.dev/v2/entries/"),
+                { agent, session: fakeSession },
+            )
+
+            const json = await res.json()
+            expect(json.threads[0].rootPost.uri).toBe(rootUri)
+            expect(json.threads[0].rootPost.skyshareEntry.sourceUri).toBe(
+                rootUri,
+            )
+        })
+    })
 })
