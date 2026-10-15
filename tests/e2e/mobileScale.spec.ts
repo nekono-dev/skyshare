@@ -35,14 +35,13 @@ test("[design-tokens/AC-2] 幅390pxの画面で、トークンを参照するボ
     await expect(button).toHaveCSS("padding-right", "16px")
 })
 
-test("[design-tokens/AC-4] 幅390pxの画面で、中サイズ以上のボタンの高さが44px以上になる", async ({
+test("[design-tokens/AC-4] 幅390pxの画面で、表示されるすべてのボタンの高さが44px以上になる", async ({
     page,
 }) => {
-    for (const path of ["/post/?guest", "/?guest"]) {
+    for (const path of ["/post/?guest", "/?guest", "/login/"]) {
         await page.goto(path, { timeout: 60_000 })
-        const buttons = page.locator(
-            '[class*="md-button"], [class*="lg-button"]',
-        )
+        // プルダウンの開閉ボタン(入力欄の一種)は対象外
+        const buttons = page.locator('button:not([class*="base-select"])')
         await page.waitForLoadState("networkidle")
         const heights = await buttons.evaluateAll(elements =>
             elements

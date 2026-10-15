@@ -116,6 +116,8 @@
 /* テキストボタン */
 :local(.text-button) {
   padding: var(--btn-padding-y) var(--btn-padding-x);
+  /* 高さは中サイズのボタン寸法トークンに揃える(幅は内容に応じて可変) */
+  min-height: var(--size-button-md);
   border-radius: var(--radius-button-md);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-md);

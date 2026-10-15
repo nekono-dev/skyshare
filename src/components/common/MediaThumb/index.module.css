@@ -43,8 +43,8 @@
 .remove-badge {
   top: var(--space-2);
   right: var(--space-2);
-  width: 40px;
-  height: 40px;
+  width: var(--size-button-md);
+  height: var(--size-button-md);
   border-radius: var(--radius-pill);
   font-size: var(--font-size-2xl);
 }
@@ -52,7 +52,7 @@
 .alt-badge {
   bottom: var(--space-2);
   right: var(--space-2);
-  height: 36px;
+  height: var(--size-button-md);
   padding: 0 var(--space-3);
   border-radius: var(--radius-md);
   font-size: var(--font-size-lg);
