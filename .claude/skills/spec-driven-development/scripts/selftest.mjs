@@ -11,78 +11,25 @@
  * 未導入の環境では G014 に関わるケースだけが導入手順を示して失敗する。
  *   npm ci --ignore-scripts --prefix <scripts のパス>
  */
-import { after, test } from "node:test"
+import { test } from "node:test"
 import assert from "node:assert/strict"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
-import { fileURLToPath } from "node:url"
-import { setupProblem } from "./mermaid-syntax.mjs"
-
-const here = path.dirname(fileURLToPath(import.meta.url))
-const skill = path.dirname(here)
-const templates = path.join(skill, "templates")
-
-// 依存が未導入なら案内文（導入済みなら null）
-const depsProblem = setupProblem()
-
-const roots = []
-after(() => roots.forEach(r => fs.rmSync(r, { recursive: true, force: true })))
-
-/** 雛形から spec を作る。edits: { "<spec>/<file>": (text) => text } */
-function makeRoot(edits = {}, specNames = ["sample"]) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "spec-selftest-"))
-  roots.push(root)
-  const specs = path.join(root, "specs")
-  for (const name of specNames) {
-    fs.mkdirSync(path.join(specs, name), { recursive: true })
-    for (const f of ["requirements.md", "design.md", "tasks.md"]) {
-      fs.copyFileSync(path.join(templates, f), path.join(specs, name, f))
-    }
-  }
-  for (const [key, fn] of Object.entries(edits)) {
-    const p = path.join(specs, key)
-    fs.mkdirSync(path.dirname(p), { recursive: true })
-    const before = fs.existsSync(p) ? fs.readFileSync(p, "utf8") : ""
-    if (fn === null) fs.rmSync(p, { force: true })
-    else fs.writeFileSync(p, fn(before))
-  }
-  return root
-}
-
-const checkAll = path.join(here, "check-all.mjs")
-
-/** 構文検証を省いて実行する */
-function run(root, ...args) {
-  return runWith(checkAll, root, ["--no-syntax", ...args])
-}
-
-/** 構文検証つきで実行する（依存が未導入なら省く） */
-function runFull(root, ...args) {
-  return runWith(checkAll, root, [
-    ...(depsProblem ? ["--no-syntax"] : []),
-    ...args,
-  ])
-}
-
-function runWith(script, root, args) {
-  const r = spawnSync(
-    process.execPath,
-    [script, "--root", "specs", "--json", ...args],
-    {
-      cwd: root,
-      encoding: "utf8",
-    },
-  )
-  return {
-    code: r.status,
-    findings: r.stdout.trim() === "" ? [] : JSON.parse(r.stdout),
-    stderr: r.stderr,
-  }
-}
-
-const rulesOf = findings => [...new Set(findings.map(f => f.rule))].sort()
+import {
+  depsProblem,
+  here,
+  makeRoot,
+  roots,
+  rulesOf,
+  run,
+  runFull,
+  runWith,
+  skill,
+  templates,
+} from "./selftest-lib.mjs"
+import { docCases } from "./selftest-docs.mjs"
 
 test("雛形はすべてのチェックを通過する", () => {
   const r = runFull(makeRoot())
@@ -91,7 +38,7 @@ test("雛形はすべてのチェックを通過する", () => {
 })
 
 test("同じ入力に対して出力が一致する（冪等）", () => {
-  const root = makeRoot({ "sample/design.md": t => t + "\n今後対応する。\n" })
+  const root = makeRoot({ "sample/design.md": (t) => t + "\n今後対応する。\n" })
   const a = run(root)
   const b = run(root)
   assert.deepEqual(a, b)
@@ -110,14 +57,14 @@ test("references/rules.md がルール定義と一致する", () => {
   )
 })
 
-const rep = (from, to) => t => {
+const rep = (from, to) => (t) => {
   assert.ok(t.includes(from), `置換元が雛形にない: ${from}`)
   return t.replace(from, to)
 }
 
 // 全タスク完了済みで、構成表のパス・テスト・受け入れ条件タグがすべて揃った状態
 const completed = {
-  "sample/tasks.md": t => t.replaceAll("- [ ]", "- [x]"),
+  "sample/tasks.md": (t) => t.replaceAll("- [ ]", "- [x]"),
   "../src/lib/notification/unreadCount.ts": () => "export {}\n",
   "../src/lib/notification/useUnreadCount.ts": () => "export {}\n",
   "../src/components/layout/Header.tsx": () => "export {}\n",
@@ -133,7 +80,7 @@ test("全タスク完了済みで実装・テストが揃った spec は通過�
 })
 
 /** 図の章（見出し直後〜次の H2 まで）の本文を差し替える */
-const chapter = fn => t =>
+const chapter = (fn) => (t) =>
   t.replace(
     /(## 2\. 関係図・ワークフロー\n\n)[\s\S]*?(?=## 3\.)/,
     (_, head) => head + fn() + (fn() === "" ? "" : "\n"),
@@ -153,7 +100,7 @@ stateDiagram-v2
 \`\`\`
 
 `
-const withState = edit => t =>
+const withState = (edit) => (t) =>
   edit(t.replace("## 3. 設計項目", STATE_DIAGRAM + "## 3. 設計項目"))
 
 // [説明, edits, 期待ルール, 追加 spec 名]
@@ -220,7 +167,7 @@ const cases = [
   ],
   [
     "dead spec",
-    { "sample/tasks.md": t => t.replaceAll("- [ ]", "- [x]") },
+    { "sample/tasks.md": (t) => t.replaceAll("- [ ]", "- [x]") },
     "S009",
   ],
   [
@@ -270,7 +217,7 @@ const cases = [
     {
       "sample/requirements.md": rep(
         "- なし\n\n## 4",
-        "- creator-mode に依存する。\n\n## 4",
+        "- other-spec に依存する。\n\n## 4",
       ),
     },
     "F-R07",
@@ -324,7 +271,7 @@ const cases = [
   [
     "要件 行数",
     {
-      "sample/requirements.md": t =>
+      "sample/requirements.md": (t) =>
         t.replace(
           "- 通知本文の一覧表示。",
           "- 通知本文の一覧表示。\n".repeat(100).trim(),
@@ -370,7 +317,7 @@ const cases = [
   [
     "D にコード・表がない",
     {
-      "sample/design.md": t =>
+      "sample/design.md": (t) =>
         t.replace(
           /### D-2[\s\S]*?(?=## 4)/,
           "### D-2: 表示タイミング (NFR-1)\n\n説明のみ。\n\n",
@@ -406,7 +353,7 @@ const cases = [
   [
     "エラー処理 地の文",
     {
-      "sample/design.md": t =>
+      "sample/design.md": (t) =>
         t.replace(
           /## 4\. エラー処理[\s\S]*$/,
           "## 4. エラー処理\n\n失敗時は描画しない。\n",
@@ -416,7 +363,9 @@ const cases = [
   ],
   [
     "設計 行数",
-    { "sample/design.md": t => t + "\n".repeat(1) + "| x | y |\n".repeat(300) },
+    {
+      "sample/design.md": (t) => t + "\n".repeat(1) + "| x | y |\n".repeat(300),
+    },
     "F-D10",
   ],
   [
@@ -432,11 +381,11 @@ const cases = [
   [
     "Phase 数",
     {
-      "sample/tasks.md": t =>
+      "sample/tasks.md": (t) =>
         t +
         [3, 4, 5, 6]
           .map(
-            p =>
+            (p) =>
               `\n## Phase ${p}: 追加\n\n- 対応: D-2\n- [ ] T-${p}.1: 作業。\n- 検証: \`npm test\`\n`,
           )
           .join(""),
@@ -456,7 +405,7 @@ const cases = [
   ],
   [
     "UI Phase の E2E なし",
-    { "sample/tasks.md": t => t.replace(/- E2E:.*\n/, "") },
+    { "sample/tasks.md": (t) => t.replace(/- E2E:.*\n/, "") },
     "F-T06",
   ],
   [
@@ -472,11 +421,11 @@ const cases = [
   [
     "タスク総数",
     {
-      "sample/tasks.md": t =>
+      "sample/tasks.md": (t) =>
         t +
         [3, 4, 5]
           .map(
-            p =>
+            (p) =>
               `\n## Phase ${p}: 追加\n\n- 対応: D-2\n` +
               Array.from(
                 { length: 10 },
@@ -612,7 +561,7 @@ const cases = [
   [
     "ワークフロー図がない",
     {
-      "sample/design.md": t =>
+      "sample/design.md": (t) =>
         t.replace(/件数の取得から[\s\S]*?\n```\n\n(?=## 3)/, ""),
     },
     "G004",
@@ -697,7 +646,7 @@ const cases = [
   [
     "ワークフロー図に分岐がない",
     {
-      "sample/design.md": t =>
+      "sample/design.md": (t) =>
         t.replace(
           /  alt 取得失敗[\s\S]*?\n  end\n/,
           "  unreadCount-->>useUnreadCount: 件数\n  useUnreadCount-->>NotificationBadge: 件数\n  NotificationBadge->>unreadCount: formatBadge\n",
@@ -707,7 +656,7 @@ const cases = [
   ],
   [
     "状態 ID が PascalCase でない",
-    { "sample/design.md": withState(t => t.replaceAll("Idle", "idle")) },
+    { "sample/design.md": withState((t) => t.replaceAll("Idle", "idle")) },
     "G012",
   ],
   [
@@ -763,14 +712,14 @@ for (const [name, edits, rule, specNames] of cases) {
 }
 
 test("状態図を追加しても通過する", () => {
-  const r = runFull(makeRoot({ "sample/design.md": withState(t => t) }))
+  const r = runFull(makeRoot({ "sample/design.md": withState((t) => t) }))
   assert.deepEqual(r.findings, [])
 })
 
 test("構成表が3行以下なら図を「- なし」で免除できる", () => {
   const r = run(
     makeRoot({
-      "sample/design.md": t =>
+      "sample/design.md": (t) =>
         chapter(() => "- なし\n")(
           t.replace(/\| `src\/components\/layout\/Header.tsx`.*\n/, ""),
         ),
@@ -807,9 +756,9 @@ test("G014: コメント行を挟んでも構文エラーの行番号が合う",
   const r = runFull(makeRoot({ "sample/design.md": edit }))
   const text = edit(fs.readFileSync(path.join(templates, "design.md"), "utf8"))
   const line = text.split("\n").indexOf("  Header --> end") + 1
-  const g014 = r.findings.filter(f => f.rule === "G014")
+  const g014 = r.findings.filter((f) => f.rule === "G014")
   assert.deepEqual(
-    g014.map(f => f.line),
+    g014.map((f) => f.line),
     [line],
   )
 })
@@ -834,7 +783,7 @@ function scriptsWithoutDeps(nm = {}) {
   roots.push(dir)
   fs.cpSync(here, dir, {
     recursive: true,
-    filter: src => !src.includes("node_modules"),
+    filter: (src) => !src.includes("node_modules"),
   })
   for (const [name, version] of Object.entries(nm)) {
     const d = path.join(dir, "node_modules", name)
@@ -863,7 +812,7 @@ test("依存の版が package.json と違えば止まる", () => {
 
 test("図がない spec は依存が未導入でも検査できる", () => {
   const root = makeRoot({
-    "sample/design.md": t =>
+    "sample/design.md": (t) =>
       chapter(() => "- なし\n")(
         t.replace(/\| `src\/components\/layout\/Header.tsx`.*\n/, ""),
       ),
@@ -892,12 +841,14 @@ test("ルール定義の全 ID がテストケースで網羅されている", a
     "check-format.mjs",
     "check-diagram.mjs",
     "check-wording.mjs",
+    "check-architecture.mjs",
+    "check-poc.mjs",
   ]) {
     ids.push(...Object.keys((await import(path.join(here, m))).rules))
   }
-  const covered = new Set(cases.map(c => c[2]))
+  const covered = new Set([...cases, ...docCases].map((c) => c[2]))
   assert.deepEqual(
-    ids.filter(id => !covered.has(id)),
+    ids.filter((id) => !covered.has(id)),
     [],
   )
 })

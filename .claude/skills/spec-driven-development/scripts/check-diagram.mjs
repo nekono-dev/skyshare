@@ -22,7 +22,7 @@ import {
 
 export const title = "図チェック（check-diagram）"
 
-const LIMIT = {
+export const LIMIT = {
   exemptRows: 3, // 構成表がこの行数以下なら図を免除する
   perGroup: 2, // 関係図・ワークフロー図それぞれの個数上限
   minNodes: 3,
@@ -54,6 +54,7 @@ export const rules = {
   G011: "C5: ワークフロー図の少なくとも1つに分岐がある（alt／opt／break、または2本以上の遷移が出る状態）",
   G012: `状態図の状態 ID は ASCII の PascalCase、状態名（\`state "名" as ID\` の名、なければ ID）は ${LIMIT.stateName} 文字以内で空白・句読点を含めない。遷移ラベルは ${LIMIT.transition} 文字以内で「。」を含めない`,
   G013: `状態図は開始遷移（[*] --> S）をちょうど1本持ち、全状態が開始から到達可能で、すべての状態が出る遷移を持つ（終了は --> [*] で明示する）。同一遷移の重複と、状態数×${LIMIT.transitionsPerState} 本を超える遷移を置かない`,
+  G015: 'architecture の図だけ、次の記法を追加で使える。flowchart: 円柱 `ID[("名")]`。sequenceDiagram: `Note over ID: 文言`・`Note over ID,ID: 文言`',
   G014: "図の構文が Mermaid（mermaid.parse）で解釈できる。G004／G005 の指摘がある図は、それを直してから検査する。依存は scripts/ に導入する（npm ci --ignore-scripts --prefix <scripts のパス>）",
 }
 
@@ -65,8 +66,8 @@ const KINDS = {
 }
 
 const ID = "[A-Za-z_]\\w*"
-const len = s => [...s].length
-const unquote = s => s.trim().replace(/^"(.*)"$/, "$1")
+const len = (s) => [...s].length
+const unquote = (s) => s.trim().replace(/^"(.*)"$/, "$1")
 
 // ---------------------------------------------------------------------------
 // 図の解析
@@ -76,7 +77,7 @@ const unquote = s => s.trim().replace(/^"(.*)"$/, "$1")
  * mermaid ブロックを部分集合の文法で解析する。
  * 戻り値: { kind, group, nodes: Map, edges, texts, branch, errors, ... }
  */
-function parseDiagram(block) {
+export function parseDiagram(block, ext = false) {
   const d = {
     kind: null,
     group: null,
@@ -110,14 +111,14 @@ function parseDiagram(block) {
   const edge = (from, to, label, no) => d.edges.push({ from, to, label, no })
 
   const body = block.lines
-    .map(l => ({ no: l.no, t: l.text.trim() }))
-    .filter(l => l.t !== "" && !l.t.startsWith("%%"))
+    .map((l) => ({ no: l.no, t: l.text.trim() }))
+    .filter((l) => l.t !== "" && !l.t.startsWith("%%"))
   const head = body.shift()
   if (!head) {
     bad(block.open.no, "図が空")
     return d
   }
-  const kind = Object.keys(KINDS).find(k => KINDS[k].re.test(head.t))
+  const kind = Object.keys(KINDS).find((k) => KINDS[k].re.test(head.t))
   if (!kind) {
     bad(
       head.no,
@@ -131,6 +132,15 @@ function parseDiagram(block) {
   const stack = [] // flowchart の subgraph／sequence のブロック
   for (const { no, t } of body) {
     let m
+    // G015: architecture 用の追加記法は、設計書の図では使えない
+    if (
+      !ext &&
+      ((kind === "flowchart" && t.includes('[("')) ||
+        (kind === "sequenceDiagram" && /^Note over /.test(t)))
+    ) {
+      bad(no, `拡張記法は architecture の図だけで使える: ${t}`)
+      continue
+    }
     if (kind === "flowchart") {
       if ((m = /^subgraph (\S.*)$/.exec(t))) {
         stack.push("subgraph")
@@ -139,12 +149,12 @@ function parseDiagram(block) {
       } else if (t === "end") {
         if (stack.pop() !== "subgraph") bad(no, "対応する subgraph がない end")
       } else {
-        const chain = parseChain(t)
+        const chain = parseChain(t, ext)
         if (!chain) {
           bad(no, `未対応の記法: ${t}`)
           continue
         }
-        chain.eps.forEach(e => node(e.id, e.label, no))
+        chain.eps.forEach((e) => node(e.id, e.label, no))
         chain.arrows.forEach((label, i) =>
           edge(chain.eps[i].id, chain.eps[i + 1].id, label, no),
         )
@@ -173,6 +183,12 @@ function parseDiagram(block) {
         node(m[1], undefined, no)
         node(m[3], undefined, no)
         edge(m[1], m[3], m[4].trim(), no)
+      } else if (
+        ext &&
+        (m = new RegExp(`^Note over ${ID}(?:,${ID})?: (\\S.*)$`).exec(t))
+      ) {
+        d.texts.push(m[1])
+        d.labelsToCheck.push({ text: m[1], no, max: LIMIT.label })
       } else if ((m = /^(alt|opt|break|loop) (\S.*)$/.exec(t))) {
         stack.push(m[1])
         if (m[1] !== "loop") d.branch = true
@@ -210,14 +226,18 @@ function parseDiagram(block) {
 }
 
 /** flowchart の「A --> B -->|ラベル| C」形式の1行を解析する */
-function parseChain(text) {
-  const EP = new RegExp(`^(${ID})(?:\\["([^"\\n]*)"\\])?`)
+function parseChain(text, ext = false) {
+  const shape = ext
+    ? '(?:\\["([^"\\n]*)"\\]|\\[\\("([^"\\n]*)"\\)\\])?'
+    : '(?:\\["([^"\\n]*)"\\])?'
+  const EP = new RegExp(`^(${ID})${shape}`)
+  const label = (m) => m[2] ?? m[3]
   const eps = []
   const arrows = []
   let rest = text.trim()
   let m = EP.exec(rest)
   if (!m) return null
-  eps.push({ id: m[1], label: m[2] })
+  eps.push({ id: m[1], label: label(m) })
   rest = rest.slice(m[0].length).trimStart()
   while (rest !== "") {
     const a = /^-->(?:\|([^|\n]*)\|)?\s*/.exec(rest)
@@ -226,7 +246,7 @@ function parseChain(text) {
     rest = rest.slice(a[0].length)
     m = EP.exec(rest)
     if (!m) return null
-    eps.push({ id: m[1], label: m[2] })
+    eps.push({ id: m[1], label: label(m) })
     rest = rest.slice(m[0].length).trimStart()
   }
   return { eps, arrows }
@@ -242,16 +262,16 @@ function componentNames(sec) {
   const paths = nonBlank(sec.lines)
     .filter(isTableLine)
     .slice(2)
-    .map(l => splitRow(l.text)[0]?.replace(/^`|`$/g, ""))
+    .map((l) => splitRow(l.text)[0]?.replace(/^`|`$/g, ""))
     .filter(Boolean)
-  const base = p =>
+  const base = (p) =>
     p
       .split("/")
       .at(-1)
       .replace(/\.[^.]+$/, "")
   const counts = new Map()
   for (const p of paths) counts.set(base(p), (counts.get(base(p)) ?? 0) + 1)
-  return paths.map(p => {
+  return paths.map((p) => {
     const parent = p.split("/").at(-2)
     return counts.get(base(p)) > 1 && parent ? `${parent}/${base(p)}` : base(p)
   })
@@ -280,7 +300,7 @@ function exportedNames(sec) {
 // ---------------------------------------------------------------------------
 
 /** 章を「説明 → mermaid ブロック」の組に分解する（G002） */
-function splitChapter(chapter, add) {
+export function splitChapter(chapter, add) {
   const items = []
   const blocks = codeBlocks(chapter.lines)
   let pending = null
@@ -313,17 +333,17 @@ function splitChapter(chapter, add) {
   return items
 }
 
-function checkCaption(caption, d, add) {
+export function checkCaption(caption, d, add) {
   if (!caption) return
   const t = caption.text.trim()
   if (!t.endsWith("。") || t.split("。").length !== 2)
     add(caption.no, "G003", "説明は「。」で終わる1文にする")
   if (len(t) > LIMIT.caption)
     add(caption.no, "G003", `${len(t)} 文字（上限 ${LIMIT.caption} 文字）`)
-  const labels = [...new Set([...d.nodes.values()].map(n => n.label))].filter(
-    s => len(s) >= 2,
+  const labels = [...new Set([...d.nodes.values()].map((n) => n.label))].filter(
+    (s) => len(s) >= 2,
   )
-  const hits = labels.filter(s => t.includes(s))
+  const hits = labels.filter((s) => t.includes(s))
   if (hits.length >= LIMIT.captionLabels)
     add(
       caption.no,
@@ -332,21 +352,26 @@ function checkCaption(caption, d, add) {
     )
 }
 
-function checkScale(d, add) {
+export function checkScale(
+  d,
+  add,
+  minNodes = LIMIT.minNodes,
+  looseEdges = false,
+) {
   const names = [...d.nodes.values()]
-  if (names.length < LIMIT.minNodes || names.length > LIMIT.maxNodes)
+  if (names.length < minNodes || names.length > LIMIT.maxNodes)
     add(
       d.open.no,
       "G006",
-      `ノードは ${LIMIT.minNodes}〜${LIMIT.maxNodes} 個（実際: ${names.length} 個）`,
+      `ノードは ${minNodes}〜${LIMIT.maxNodes} 個（実際: ${names.length} 個）`,
     )
-  if (d.edges.length < names.length - 1)
+  if (!looseEdges && d.edges.length < names.length - 1)
     add(
       d.open.no,
       "G006",
       `エッジは ${names.length - 1} 本以上（実際: ${d.edges.length} 本）`,
     )
-  const used = new Set(d.edges.flatMap(e => [e.from, e.to]))
+  const used = new Set(d.edges.flatMap((e) => [e.from, e.to]))
   for (const n of names)
     if (!used.has(n.id)) add(n.no, "G006", `孤立ノード ${n.id}（エッジがない）`)
   if (d.kind === "stateDiagram-v2") return // 文字数は G012
@@ -366,7 +391,7 @@ function checkScale(d, add) {
   for (const mem of d.members) over(mem.text, LIMIT.member, mem.no, "メンバー")
 }
 
-function checkState(d, add) {
+export function checkState(d, add) {
   const nodes = [...d.nodes.values()]
   const seenDecl = new Set()
   for (const x of d.stateDecls) {
@@ -398,19 +423,19 @@ function checkState(d, add) {
   }
 
   // G013
-  const starts = d.edges.filter(e => e.from === "[*]")
+  const starts = d.edges.filter((e) => e.from === "[*]")
   if (starts.length !== 1)
     add(
       d.open.no,
       "G013",
       `開始遷移（[*] --> S）はちょうど1本（実際: ${starts.length} 本）`,
     )
-  if (starts.some(e => e.to === "[*]"))
+  if (starts.some((e) => e.to === "[*]"))
     add(starts[0].no, "G013", "[*] --> [*] は書かない")
-  const out = new Map(nodes.map(n => [n.id, []]))
+  const out = new Map(nodes.map((n) => [n.id, []]))
   for (const e of d.edges) if (e.from !== "[*]") out.get(e.from)?.push(e.to)
   const reach = new Set()
-  const walk = id => {
+  const walk = (id) => {
     if (id === "[*]" || reach.has(id)) return
     reach.add(id)
     for (const t of out.get(id) ?? []) walk(t)
@@ -459,7 +484,7 @@ function checkComponents(d, names, add) {
 }
 
 /** 関係図の依存グラフに循環がないことを検証する（G009） */
-function checkCycle(diagrams, add) {
+export function checkCycle(diagrams, add) {
   const key = (d, id) => {
     const n = d.nodes.get(id)
     return id.startsWith("ext_") ? id : (n?.label ?? id)
@@ -475,7 +500,7 @@ function checkCycle(diagrams, add) {
     }
   const state = new Map()
   const path = []
-  const dfs = u => {
+  const dfs = (u) => {
     state.set(u, 1)
     path.push(u)
     for (const { to, no } of adj
@@ -496,18 +521,47 @@ function checkCycle(diagrams, add) {
   for (const u of [...adj.keys()].sort()) if (!state.has(u) && dfs(u)) return
 }
 
-function hasBranch(d) {
+export function hasBranch(d) {
   if (d.kind === "sequenceDiagram") return d.branch
   const outCount = new Map()
   for (const e of d.edges)
     if (e.from !== "[*]") outCount.set(e.from, (outCount.get(e.from) ?? 0) + 1)
-  return [...outCount.values()].some(c => c >= 2)
+  return [...outCount.values()].some((c) => c >= 2)
+}
+
+/**
+ * 図1つの共通検査（G003・G004・G005・G006・G012・G013・G014）。
+ * 解析できた図を返し、図種が不正で解析できなければ null を返す。
+ * opts.ext: architecture 用の追加記法（G015）を許す。opts.minNodes: ノード数の下限。
+ * opts.looseEdges: 辺の本数を「ノード数−1 以上」でなく「孤立ノードなし」だけにする（つながりのない部分を含む境界図用）。
+ */
+export async function analyzeDiagram(it, add, syntax, opts = {}) {
+  const d = parseDiagram(it.block, opts.ext)
+  for (const e of d.errors)
+    add(
+      e.no,
+      e.msg.startsWith("図種")
+        ? "G004"
+        : e.msg.startsWith("拡張記法")
+          ? "G015"
+          : "G005",
+      e.msg,
+    )
+  if (!d.kind) return null
+  checkCaption(it.caption, d, add)
+  if (syntax && d.errors.length === 0) {
+    const e = await syntax(it.block)
+    if (e) add(e.no, "G014", e.message)
+  }
+  checkScale(d, add, opts.minNodes, opts.looseEdges)
+  if (d.kind === "stateDiagram-v2") checkState(d, add)
+  return d
 }
 
 async function checkDesign(f, add, syntax) {
   const secs = sectionsByH2(f.lines)
-  const chapter = secs.find(s => s.title === CHAPTER)
-  const comp = secs.find(s => s.title === COMPONENT)
+  const chapter = secs.find((s) => s.title === CHAPTER)
+  const comp = secs.find((s) => s.title === COMPONENT)
   if (!chapter || !comp) return // 章の欠落は F-D02 が指摘する
   const names = componentNames(comp)
   const nb = nonBlank(chapter.lines)
@@ -534,26 +588,16 @@ async function checkDesign(f, add, syntax) {
   const diagrams = []
   for (const it of items) {
     if (!it.block.close) continue
-    const d = parseDiagram(it.block)
-    for (const e of d.errors)
-      add(e.no, e.msg.startsWith("図種") ? "G004" : "G005", e.msg)
-    if (d.kind) {
-      checkCaption(it.caption, d, add)
-      if (syntax && d.errors.length === 0) {
-        const e = await syntax(it.block)
-        if (e) add(e.no, "G014", e.message)
-      }
-      checkScale(d, add)
-      if (d.kind === "stateDiagram-v2") checkState(d, add)
-      if (d.group === "relation" || d.kind === "sequenceDiagram")
-        checkComponents(d, names, add)
-      diagrams.push(d)
-    }
+    const d = await analyzeDiagram(it, add, syntax)
+    if (!d) continue
+    if (d.group === "relation" || d.kind === "sequenceDiagram")
+      checkComponents(d, names, add)
+    diagrams.push(d)
   }
 
   // G004: 図種ごとの個数
-  const relation = diagrams.filter(d => d.group === "relation")
-  const workflow = diagrams.filter(d => d.group === "workflow")
+  const relation = diagrams.filter((d) => d.group === "relation")
+  const workflow = diagrams.filter((d) => d.group === "workflow")
   for (const [label, list] of [
     ["関係図（flowchart／classDiagram）", relation],
     ["ワークフロー図（sequenceDiagram／stateDiagram-v2）", workflow],
@@ -568,10 +612,10 @@ async function checkDesign(f, add, syntax) {
 
   // G008: 構成表の全行が関係図に現れる
   const inDiagram = new Set(
-    relation.flatMap(d =>
+    relation.flatMap((d) =>
       [...d.nodes.values()]
-        .filter(n => !n.id.startsWith("ext_"))
-        .map(n => n.label),
+        .filter((n) => !n.id.startsWith("ext_"))
+        .map((n) => n.label),
     ),
   )
   for (const n of names)
@@ -581,8 +625,8 @@ async function checkDesign(f, add, syntax) {
   checkCycle(relation, add)
 
   // G010: export 名が図に現れる
-  const texts = diagrams.flatMap(d => d.texts).join("\n")
-  const items3 = secs.find(s => s.title === ITEMS)
+  const texts = diagrams.flatMap((d) => d.texts).join("\n")
+  const items3 = secs.find((s) => s.title === ITEMS)
   const seen = new Set()
   for (const { name, no } of exportedNames(items3)) {
     if (seen.has(name)) continue
@@ -606,7 +650,7 @@ export async function check(ctx) {
   const syntax =
     ctx.options?.syntax === false
       ? null
-      : block => syntaxError(block.lines, block.open.no)
+      : (block) => syntaxError(block.lines, block.open.no)
   for (const spec of ctx.specs) {
     if (!ctx.targets.has(spec.name)) continue
     const d = spec.files.design

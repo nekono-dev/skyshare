@@ -11,6 +11,15 @@ import * as structure from "./check-structure.mjs"
 import * as format from "./check-format.mjs"
 import * as diagram from "./check-diagram.mjs"
 import * as wording from "./check-wording.mjs"
+import * as architecture from "./check-architecture.mjs"
+import * as poc from "./check-poc.mjs"
 import { runCli } from "./lib.mjs"
 
-process.exitCode = await runCli([structure, format, diagram, wording])
+process.exitCode = await runCli([
+  structure,
+  format,
+  diagram,
+  wording,
+  architecture,
+  poc,
+])
