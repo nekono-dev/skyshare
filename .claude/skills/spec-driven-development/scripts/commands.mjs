@@ -51,8 +51,8 @@ function specState(spec) {
 }
 
 export function statusModel(ctx) {
-  const specs = ctx.specs.map((s) => ({ name: s.name, ...specState(s) }))
-  const pocs = ctx.docs.pocs.map((p) => {
+  const specs = ctx.specs.map(s => ({ name: s.name, ...specState(s) }))
+  const pocs = ctx.docs.pocs.map(p => {
     const st = pocState(p, ctx.specs)
     return {
       name: p.name,
@@ -115,7 +115,7 @@ function status(ctx, json) {
 // ---------------------------------------------------------------------------
 
 function retarget(ctx, theme, write) {
-  const poc = ctx.docs.pocs.find((p) => p.name === theme)
+  const poc = ctx.docs.pocs.find(p => p.name === theme)
   if (!poc || !poc.readme) {
     process.stderr.write(`poc/${theme} が存在しない（README.md が必要）\n`)
     return 2
@@ -127,7 +127,7 @@ function retarget(ctx, theme, write) {
     )
     return 2
   }
-  if (!ctx.specs.some((s) => s.name === target && isDesigned(s))) {
+  if (!ctx.specs.some(s => s.name === target && isDesigned(s))) {
     process.stderr.write(
       `反映先 ${target} が設計済みの spec として存在しない\n`,
     )
@@ -141,13 +141,13 @@ function retarget(ctx, theme, write) {
   const changes = []
   for (const doc of parsed.docs)
     for (const row of doc.basis) {
-      if (!row.refs.some((r) => pocThemeOf(r) === theme)) continue
-      const line = doc.file.lines.find((l) => l.no === row.no)
+      if (!row.refs.some(r => pocThemeOf(r) === theme)) continue
+      const line = doc.file.lines.find(l => l.no === row.no)
       const m = /^(.*\|\s*)([^|]*?)(\s*\|\s*)$/.exec(line.text)
       if (!m) continue
       const sep = m[2].includes("、") ? "、" : ", "
       const next = [
-        ...new Set(row.refs.map((r) => (pocThemeOf(r) === theme ? target : r))),
+        ...new Set(row.refs.map(r => (pocThemeOf(r) === theme ? target : r))),
       ].join(sep)
       changes.push({
         file: doc.file,
@@ -169,7 +169,7 @@ function retarget(ctx, theme, write) {
     process.stdout.write("差分の表示のみ。適用は --write を付ける\n")
     return 0
   }
-  for (const rel of new Set(changes.map((c) => c.file.rel))) {
+  for (const rel of new Set(changes.map(c => c.file.rel))) {
     const file = path.resolve(rel)
     const raw = fs.readFileSync(file, "utf8").split("\n")
     for (const c of changes) if (c.file.rel === rel) raw[c.no - 1] = c.text

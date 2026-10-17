@@ -40,7 +40,7 @@ const LIMIT = {
   name: 30,
 }
 
-const len = (s) => [...s].length
+const len = s => [...s].length
 
 export const rules = {
   "F-A01":
@@ -80,7 +80,7 @@ export const rules = {
 const NONE = /^- なし$/
 
 /** 章の本文のうち、表の行を除いた行 */
-const nonTable = (lines) => lines.filter((l) => !isTableLine(l))
+const nonTable = lines => lines.filter(l => !isTableLine(l))
 
 export async function check(ctx) {
   if (!ctx.targetArch) return []
@@ -90,7 +90,7 @@ export async function check(ctx) {
   const syntax =
     ctx.options?.syntax === false
       ? null
-      : (block) => syntaxError(block.lines, block.open.no)
+      : block => syntaxError(block.lines, block.open.no)
   const out = []
   const results = []
   for (const doc of parsed.docs)
@@ -103,7 +103,7 @@ export async function check(ctx) {
 async function checkDoc(model, cfg, syntax, out) {
   const kind = model.kind
   const main = model.file
-  const adder = (file) => (no, rule, msg) =>
+  const adder = file => (no, rule, msg) =>
     out.push(finding(file.rel, no, rule, msg))
   const add = adder(main)
   const secs = model.secs
@@ -111,7 +111,7 @@ async function checkDoc(model, cfg, syntax, out) {
 
   // ---- F-A01〜03: 見出し ----
   const hs = headings(main.lines)
-  const h1s = hs.filter((h) => h.level === 1)
+  const h1s = hs.filter(h => h.level === 1)
   if (
     !/^# \S.* アーキテクチャ$/.test(main.lines[0]?.text ?? "") ||
     h1s.length !== 1
@@ -121,14 +121,14 @@ async function checkDoc(model, cfg, syntax, out) {
       "F-A01",
       "1行目は「# <名称> アーキテクチャ」の H1 にし、H1 は1つだけにする",
     )
-  const h2s = secs.filter((s) => s.title !== null).map((s) => s.title)
+  const h2s = secs.filter(s => s.title !== null).map(s => s.title)
   if (h2s.join("\n") !== ARCH_CHAPTERS.join("\n"))
     add(
       1,
       "F-A02",
       `H2 は「${ARCH_CHAPTERS.join("」「")}」をこの順で過不足なく置く（実際: ${h2s.join("、") || "なし"}）`,
     )
-  const preamble = nonBlank(secs[0].lines).filter((l) => !/^#\s/.test(l.text))
+  const preamble = nonBlank(secs[0].lines).filter(l => !/^#\s/.test(l.text))
   if (preamble.length > 0)
     add(preamble[0].no, "F-A02", "H1 と最初の H2 の間に本文を置かない")
   let currentH2 = null
@@ -146,13 +146,13 @@ async function checkDoc(model, cfg, syntax, out) {
   const s1 = model.sec("1. 目的と範囲")
   if (s1) {
     const body = nonBlank(s1.lines)
-    const bad = body.find((l) =>
+    const bad = body.find(l =>
       /^\s*([-*]|\d+\.)\s|^\s*[|#]|^\s*```/.test(l.text),
     )
     if (body.length === 0) add(s1.no, "F-A04", "目的と範囲が空")
     else if (bad)
       add(bad.no, "F-A04", "箇条書き・表・見出し・コードは使わず地の文で書く")
-    const chars = len(body.map((l) => l.text.trim()).join(""))
+    const chars = len(body.map(l => l.text.trim()).join(""))
     if (chars > LIMIT.purposeChars)
       add(s1.no, "F-A04", `${chars} 文字（上限 ${LIMIT.purposeChars} 文字）`)
   }
@@ -221,7 +221,7 @@ async function checkDoc(model, cfg, syntax, out) {
     // 表以外の行: 4 章は説明と図、そのほかは置かない
     if (!isIf) {
       const extra = nonBlank(nonTable(s.lines)).filter(
-        (l) => !NONE.test(l.text.trim()),
+        l => !NONE.test(l.text.trim()),
       )
       if (extra.length > 0) add(extra[0].no, "F-A05", "表以外の行を置かない")
     }
@@ -459,7 +459,7 @@ async function checkDoc(model, cfg, syntax, out) {
       if (!names.all.has(n))
         fa(fn.involvedNo, "F-A11", `関与「${n}」が構成要素表にない`)
     // F-A17: 外部の要素を含むか、外部以外が 3 件以上
-    const externals = [...uniq].filter((n) => names.external.has(n)).length
+    const externals = [...uniq].filter(n => names.external.has(n)).length
     if (externals === 0 && uniq.size < 3)
       fa(
         fn.involvedNo,
@@ -469,7 +469,7 @@ async function checkDoc(model, cfg, syntax, out) {
     const entry = { fn, set: uniq, msgs: new Set() }
     sets.push(entry)
     // 図
-    const chapter = { lines: fn.lines.filter((l) => l.no !== fn.involvedNo) }
+    const chapter = { lines: fn.lines.filter(l => l.no !== fn.involvedNo) }
     const items = splitChapter(chapter, fa)
     const diagrams = []
     for (const it of items) {
@@ -518,7 +518,7 @@ async function checkDoc(model, cfg, syntax, out) {
   }
   // F-A14: 同じ振る舞いの重複（関与の集合と図のメッセージ名の集合がどちらも似ている機能）
   const jaccard = (a, b) => {
-    const inter = [...a].filter((x) => b.has(x)).length
+    const inter = [...a].filter(x => b.has(x)).length
     const union = a.size + b.size - inter
     return union === 0 ? 0 : inter / union
   }
@@ -568,7 +568,7 @@ async function checkDoc(model, cfg, syntax, out) {
       if (
         refs.length === 0 ||
         refs.some(
-          (x) =>
+          x =>
             !(pocThemeOf(x) !== null || /^[a-z0-9][a-z0-9-]*$/.test(x)) ||
             x === "",
         )
@@ -607,7 +607,7 @@ function checkRootRelation(parsed, results, out) {
   parsed.groups.forEach((g, i) => {
     if (!g.name) return
     const others = new Set(
-      g.model.components.filter((c) => c.kind === "他機能").map((c) => c.name),
+      g.model.components.filter(c => c.kind === "他機能").map(c => c.name),
     )
     for (const e of results[i + 1].edges) {
       const fromOther = others.has(e.from)
@@ -642,7 +642,7 @@ function checkRootRelation(parsed, results, out) {
 
 /** 境界図（F-A09）: ノード名と、表の行 ↔ 辺の一対一・向き */
 function checkBoundary(d, model, names, add) {
-  const nodeInfo = (id) => d.nodes.get(id)
+  const nodeInfo = id => d.nodes.get(id)
   for (const n of d.nodes.values()) {
     const ext = n.id.startsWith("ext_")
     if (names.other.has(n.label))
@@ -660,7 +660,7 @@ function checkBoundary(d, model, names, add) {
   }
   const matched = new Set()
   for (const e of d.edges) {
-    const row = model.interfaces.find((i) => i.name === e.label)
+    const row = model.interfaces.find(i => i.name === e.label)
     if (!row) {
       add(
         e.no,

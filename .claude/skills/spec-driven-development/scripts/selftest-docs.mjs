@@ -20,7 +20,7 @@ import {
   templates,
 } from "./selftest-lib.mjs"
 
-const read = (f) => fs.readFileSync(path.join(templates, f), "utf8")
+const read = f => fs.readFileSync(path.join(templates, f), "utf8")
 
 /** architecture の雛形が参照する spec 名（雛形のとおり設計済みの spec として作る） */
 export const ARCH_SPECS = [
@@ -69,7 +69,7 @@ const G = {
   store: "../docs/architecture/store.md",
   display: "../docs/architecture/display.md",
 }
-const gread = (f) => fs.readFileSync(path.join(GDIR, f), "utf8")
+const gread = f => fs.readFileSync(path.join(GDIR, f), "utf8")
 const GROUPED_DEFAULTS = {
   [G.root]: () => gread("architecture.md"),
   [G.publish]: () => gread("publish.md"),
@@ -79,14 +79,14 @@ const GROUPED_DEFAULTS = {
 /** くくり別の architecture の雛形を配置した edits */
 export const grouped = (edits = {}) => layer(GROUPED_DEFAULTS, edits)
 
-const a = (fn) => arch({ [ARCH]: fn })
-const p = (fn) => arch({ [POC]: fn })
+const a = fn => arch({ [ARCH]: fn })
+const p = fn => arch({ [POC]: fn })
 
-const rep = (from, to) => (t) => {
+const rep = (from, to) => t => {
   assert.ok(t.includes(from), `置換元が雛形にない: ${from}`)
   return t.replace(from, to)
 }
-const sub = (re, to) => (t) => {
+const sub = (re, to) => t => {
   assert.ok(re.test(t), `置換元が雛形にない: ${re}`)
   return t.replace(re, to)
 }
@@ -98,7 +98,7 @@ const FIRST_FUNCTION = read("architecture.md")
 const PART = "../docs/architecture/notification-publish.md"
 
 const gr = (file, fn) => grouped({ [file]: fn })
-const cfgOf = (obj) => ({ "../.spec-driven.json": () => JSON.stringify(obj) })
+const cfgOf = obj => ({ "../.spec-driven.json": () => JSON.stringify(obj) })
 
 /** 検証中の PoC（結論なし・結果なし・反映先なし） */
 const pendingPoc = () =>
@@ -161,13 +161,13 @@ export const docCases = [
   ],
   [
     "反映先 spec が完了した PoC が残っている",
-    arch({ "delivery-worker/tasks.md": (t) => t.replaceAll("- [ ]", "- [x]") }),
+    arch({ "delivery-worker/tasks.md": t => t.replaceAll("- [ ]", "- [x]") }),
     "S016",
     ARCH_SPECS,
   ],
   [
     "反映先 spec が完了した PoC を根拠に持つ行が残っている",
-    arch({ "delivery-worker/tasks.md": (t) => t.replaceAll("- [ ]", "- [x]") }),
+    arch({ "delivery-worker/tasks.md": t => t.replaceAll("- [ ]", "- [x]") }),
     "S018",
     ARCH_SPECS,
   ],
@@ -418,7 +418,7 @@ sequenceDiagram
   ],
   [
     "PoC の README が行数の上限を超える",
-    p((t) => t + "- [測定手順と測定値](measure.md)\n".repeat(110)),
+    p(t => t + "- [測定手順と測定値](measure.md)\n".repeat(110)),
     "F-P09",
     ARCH_SPECS,
   ],
@@ -626,7 +626,7 @@ test("旧形式（機能ごとの分割ファイル）は、ファイルごと�
     ),
   )
   assert.deepEqual(
-    r.findings.map((f) => `${f.file} ${f.rule}`),
+    r.findings.map(f => `${f.file} ${f.rule}`),
     ["docs/architecture S011"],
   )
   assert.match(r.findings[0].message, /旧形式/)
@@ -636,7 +636,7 @@ test("くくりの文書の指摘は、その文書のパスで報告される",
   const r = run(
     makeRoot(gr(G.store, rep("管理する。\n", "管理する\n")), GROUPED_SPECS),
   )
-  const f = r.findings.find((x) => x.rule === "W010")
+  const f = r.findings.find(x => x.rule === "W010")
   assert.equal(f.file, "docs/architecture/store.md")
 })
 
@@ -766,7 +766,7 @@ test("--show-config は実効値を表示する", () => {
 })
 
 test("設定の雛形は初期値と一致する", () => {
-  const show = (edits) =>
+  const show = edits =>
     JSON.parse(
       spawnSync(
         process.execPath,
@@ -792,7 +792,7 @@ test("architecture・PoC を対象に指定できる", () => {
 
 test("--status は成果物から工程を導出する", () => {
   const root = makeRoot(
-    arch({ "delivery-worker/tasks.md": (t) => t.replace("- [ ]", "- [x]") }),
+    arch({ "delivery-worker/tasks.md": t => t.replace("- [ ]", "- [x]") }),
     ARCH_SPECS,
   )
   const r = spawnSync(
@@ -802,14 +802,8 @@ test("--status は成果物から工程を導出する", () => {
   )
   assert.equal(r.status, 0, r.stderr)
   const m = JSON.parse(r.stdout)
-  assert.equal(
-    m.specs.find((s) => s.name === "delivery-worker").state,
-    "進行中",
-  )
-  assert.equal(
-    m.specs.find((s) => s.name === "notification-api").state,
-    "着手前",
-  )
+  assert.equal(m.specs.find(s => s.name === "delivery-worker").state, "進行中")
+  assert.equal(m.specs.find(s => s.name === "notification-api").state, "着手前")
   assert.deepEqual(m.pocs, [
     {
       name: "storage-cost",
@@ -842,7 +836,7 @@ test("--status は architecture の形式（1 ファイルかくくり別か）�
 })
 
 test("PoC の状態: 結論なしは検証中、反映先なしは反映待ち", () => {
-  const status = (edit) => {
+  const status = edit => {
     const root = makeRoot(arch({ [POC]: edit }), ARCH_SPECS)
     const r = spawnSync(
       process.execPath,

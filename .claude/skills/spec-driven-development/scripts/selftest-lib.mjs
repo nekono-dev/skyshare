@@ -18,9 +18,7 @@ export const templates = path.join(skill, "templates")
 export const depsProblem = setupProblem()
 
 export const roots = []
-after(() =>
-  roots.forEach((r) => fs.rmSync(r, { recursive: true, force: true })),
-)
+after(() => roots.forEach(r => fs.rmSync(r, { recursive: true, force: true })))
 
 /** 雛形から spec を作る。edits: { "<spec>/<file>": (text) => text } */
 export function makeRoot(edits = {}, specNames = ["sample"]) {
@@ -74,5 +72,5 @@ export function runWith(script, root, args) {
   }
 }
 
-export const rulesOf = (findings) =>
-  [...new Set(findings.map((f) => f.rule))].sort()
+export const rulesOf = findings =>
+  [...new Set(findings.map(f => f.rule))].sort()

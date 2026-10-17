@@ -83,16 +83,16 @@ export function sectionsByH2(lines) {
   return secs
 }
 
-export const nonBlank = (lines) => lines.filter((l) => l.text.trim() !== "")
+export const nonBlank = lines => lines.filter(l => l.text.trim() !== "")
 
-export const isTableLine = (l) => !l.code && /^\s*\|/.test(l.text)
+export const isTableLine = l => !l.code && /^\s*\|/.test(l.text)
 
-export const splitRow = (text) =>
+export const splitRow = text =>
   text
     .trim()
     .replace(/^\||\|$/g, "")
     .split("|")
-    .map((s) => s.trim())
+    .map(s => s.trim())
 
 /** requirements.md から FR/NFR の ID を抽出する */
 export function requirementIds(file) {
@@ -116,13 +116,13 @@ export function designIds(file) {
   return ids
 }
 
-const toPosix = (p) => p.split(path.sep).join("/")
+const toPosix = p => p.split(path.sep).join("/")
 
 export function listSpecNames(root) {
   return fs
     .readdirSync(root, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => e.name)
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
     .sort()
 }
 
@@ -130,7 +130,7 @@ export function loadSpec(root, name) {
   const dir = path.join(root, name)
   const entries = fs
     .readdirSync(dir, { withFileTypes: true })
-    .map((e) => ({ name: e.name, isDir: e.isDirectory() }))
+    .map(e => ({ name: e.name, isDir: e.isDirectory() }))
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
   const files = {}
   for (const f of SPEC_FILES) {
@@ -168,7 +168,7 @@ function sortFindings(list) {
         cmp(a.rule, b.rule) ||
         cmp(a.message, b.message),
     )
-    .filter((f) => {
+    .filter(f => {
       const key = `${f.file}\0${f.line}\0${f.rule}\0${f.message}`
       if (seen.has(key)) return false
       seen.add(key)
@@ -275,7 +275,7 @@ export function loadConfig(repoRoot) {
     const ok =
       Array.isArray(v) &&
       v.length === 2 &&
-      v.every((n) => Number.isInteger(n) && n >= spec.min && n <= spec.max) &&
+      v.every(n => Number.isInteger(n) && n >= spec.min && n <= spec.max) &&
       v[0] <= v[1]
     if (!ok)
       throw new ConfigError(
@@ -292,11 +292,11 @@ export function loadConfig(repoRoot) {
 
 /** tasks.md のチェックボックスの完了数と総数 */
 export function taskProgress(spec) {
-  const boxes = (spec.files.tasks?.lines ?? []).filter((l) =>
+  const boxes = (spec.files.tasks?.lines ?? []).filter(l =>
     /^- \[[ x]\] /.test(l.text),
   )
   return {
-    done: boxes.filter((l) => l.text.startsWith("- [x]")).length,
+    done: boxes.filter(l => l.text.startsWith("- [x]")).length,
     total: boxes.length,
   }
 }
@@ -308,9 +308,9 @@ export function isCompleted(spec) {
 }
 
 /** 設計済み（design.md がある）spec。要件のみ（requirements.md だけ）の spec は含めない */
-export const isDesigned = (spec) => Boolean(spec.files.design)
+export const isDesigned = spec => Boolean(spec.files.design)
 
-const readFile = (p) => ({
+const readFile = p => ({
   rel: toPosix(path.relative(process.cwd(), p)),
   lines: parseLines(fs.readFileSync(p, "utf8")),
 })
@@ -327,7 +327,7 @@ export function loadDocs(repoRoot) {
   const entries = fs.existsSync(partsDir)
     ? fs
         .readdirSync(partsDir, { withFileTypes: true })
-        .map((e) => ({ name: e.name, isDir: e.isDirectory() }))
+        .map(e => ({ name: e.name, isDir: e.isDirectory() }))
         .sort(byName)
     : []
   const architecture = {
@@ -336,8 +336,8 @@ export function loadDocs(repoRoot) {
     main: fs.existsSync(mainPath) ? readFile(mainPath) : null,
     partEntries: entries,
     parts: entries
-      .filter((e) => !e.isDir && e.name.endsWith(".md"))
-      .map((e) => ({
+      .filter(e => !e.isDir && e.name.endsWith(".md"))
+      .map(e => ({
         name: e.name.replace(/\.md$/, ""),
         file: readFile(path.join(partsDir, e.name)),
       })),
@@ -346,12 +346,12 @@ export function loadDocs(repoRoot) {
   const pocEntries = fs.existsSync(pocDir)
     ? fs
         .readdirSync(pocDir, { withFileTypes: true })
-        .map((e) => ({ name: e.name, isDir: e.isDirectory() }))
+        .map(e => ({ name: e.name, isDir: e.isDirectory() }))
         .sort(byName)
     : []
   const pocs = pocEntries
-    .filter((e) => e.isDir)
-    .map((e) => {
+    .filter(e => e.isDir)
+    .map(e => {
       const dir = path.join(pocDir, e.name)
       const readme = path.join(dir, "README.md")
       return {
@@ -364,7 +364,7 @@ export function loadDocs(repoRoot) {
   return {
     architecture,
     pocs,
-    pocFiles: pocEntries.filter((e) => !e.isDir).map((e) => e.name),
+    pocFiles: pocEntries.filter(e => !e.isDir).map(e => e.name),
   }
 }
 
@@ -380,7 +380,7 @@ export function parseTable(lines) {
     separator: Boolean(hasSep),
     rows: rows
       .slice(hasSep ? 2 : 1)
-      .map((l) => ({ cells: splitRow(l.text), no: l.no })),
+      .map(l => ({ cells: splitRow(l.text), no: l.no })),
   }
 }
 
@@ -410,9 +410,9 @@ export function buildContext(rootArg, names, options) {
   const specNames = listSpecNames(root)
   const docs = loadDocs(repoRoot)
   const wanted = names.map(normalizeTarget)
-  const pocNames = docs.pocs.map((p) => `poc/${p.name}`)
+  const pocNames = docs.pocs.map(p => `poc/${p.name}`)
   const unknown = wanted.filter(
-    (n) =>
+    n =>
       n !== "architecture" && !specNames.includes(n) && !pocNames.includes(n),
   )
   if (unknown.length > 0)
@@ -422,15 +422,15 @@ export function buildContext(rootArg, names, options) {
     root,
     repoRoot,
     config,
-    specs: specNames.map((n) => loadSpec(root, n)),
+    specs: specNames.map(n => loadSpec(root, n)),
     docs,
     // 対象の絞り込み。引数なしは全件。spec 名は targets、architecture／PoC は個別に持つ
     targets: new Set(
-      all ? specNames : wanted.filter((n) => specNames.includes(n)),
+      all ? specNames : wanted.filter(n => specNames.includes(n)),
     ),
     targetArch: all || wanted.includes("architecture"),
     targetPocs: new Set(
-      all ? pocNames : wanted.filter((n) => pocNames.includes(n)),
+      all ? pocNames : wanted.filter(n => pocNames.includes(n)),
     ),
     options,
   }

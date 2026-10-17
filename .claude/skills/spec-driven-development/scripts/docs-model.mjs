@@ -56,7 +56,7 @@ const ROOT_TABLES = {
   "4. 外部インターフェース": ["IF", "方向", "外部の要素", "内部の要素"],
 }
 
-export const archTables = (kind) =>
+export const archTables = kind =>
   kind === "root" ? { ...ARCH_TABLES, ...ROOT_TABLES } : ARCH_TABLES
 
 /** 構成要素表の種別。「他機能」はくくり文書だけで使い、ほかのくくりが持つ内部の要素を指す */
@@ -87,11 +87,11 @@ export const POC_TABLES = {
 }
 
 /** 一覧セルの区切り（半角カンマ・読点） */
-export const splitList = (text) =>
+export const splitList = text =>
   text
     .replace(/`/g, "")
     .split(/\s*[,、]\s*/)
-    .map((s) => s.trim())
+    .map(s => s.trim())
     .filter(Boolean)
 
 const NONE = /^- なし$/
@@ -139,13 +139,13 @@ const DETAIL_LINK = /^\[([^\]]+)\]\(architecture\/([^)]+)\)$/
 /** 1 つの architecture 文書（single・root・group）から文書モデルを作る */
 export function parseArchDoc(file, kind) {
   const secs = sectionsByH2(file.lines)
-  const sec = (title) => secs.find((s) => s.title === title) ?? null
-  const table = (title) => {
+  const sec = title => secs.find(s => s.title === title) ?? null
+  const table = title => {
     const s = sec(title)
     return s ? parseTable(s.lines) : null
   }
 
-  const components = (table("2. 構成要素")?.rows ?? []).map((r) => {
+  const components = (table("2. 構成要素")?.rows ?? []).map(r => {
     const cell = r.cells[3] ?? ""
     const link = kind === "root" ? DETAIL_LINK.exec(cell) : null
     return {
@@ -159,17 +159,15 @@ export function parseArchDoc(file, kind) {
     }
   })
 
-  const interfaces = (table("4. 外部インターフェース")?.rows ?? []).map(
-    (r) => ({
-      name: r.cells[0] ?? "",
-      dir: r.cells[1] ?? "",
-      ext: r.cells[2] ?? "",
-      int: r.cells[3] ?? "",
-      method: r.cells[4] ?? "",
-      auth: r.cells[5] ?? "",
-      no: r.no,
-    }),
-  )
+  const interfaces = (table("4. 外部インターフェース")?.rows ?? []).map(r => ({
+    name: r.cells[0] ?? "",
+    dir: r.cells[1] ?? "",
+    ext: r.cells[2] ?? "",
+    int: r.cells[3] ?? "",
+    method: r.cells[4] ?? "",
+    auth: r.cells[5] ?? "",
+    no: r.no,
+  }))
 
   const fnChapter = parseFunctionsChapter(sec("5. 機能"), file)
 
@@ -204,7 +202,7 @@ export function parseArchDoc(file, kind) {
 
 /** 構成要素表の最終列が詳細か（全体が root の形式か） */
 function hasDetailColumn(arch) {
-  const s = sectionsByH2(arch.main.lines).find((x) => x.title === "2. 構成要素")
+  const s = sectionsByH2(arch.main.lines).find(x => x.title === "2. 構成要素")
   return (s ? parseTable(s.lines)?.header : null)?.[3] === "詳細"
 }
 
@@ -227,14 +225,14 @@ export function parseArchitecture(arch) {
     if (c.kind === "内部" && c.link)
       nameOfFile.set(c.link.target.replace(/\.md$/, ""), c.name)
   const groups = grouped
-    ? arch.parts.map((p) => ({
+    ? arch.parts.map(p => ({
         file: p.name,
         name: nameOfFile.get(p.name) ?? null,
         model: parseArchDoc(p.file, "group"),
       }))
     : []
-  const docs = [main, ...groups.map((g) => g.model)]
-  const internal = (m) => m.components.filter((c) => c.kind === "内部")
+  const docs = [main, ...groups.map(g => g.model)]
+  const internal = m => m.components.filter(c => c.kind === "内部")
   return {
     mode: grouped ? "grouped" : legacy ? "legacy" : "single",
     main,
@@ -248,7 +246,7 @@ export function parseArchitecture(arch) {
 }
 
 /** 根拠の値の種別: poc/<テーマ> か spec 名 */
-export const pocThemeOf = (ref) => /^poc\/([^/\s]+)$/.exec(ref)?.[1] ?? null
+export const pocThemeOf = ref => /^poc\/([^/\s]+)$/.exec(ref)?.[1] ?? null
 
 // ---------------------------------------------------------------------------
 // PoC
@@ -257,12 +255,12 @@ export const pocThemeOf = (ref) => /^poc\/([^/\s]+)$/.exec(ref)?.[1] ?? null
 /** PoC の README から、結論・反映先・制約値・検証項目を取り出す */
 export function parsePoc(poc) {
   const secs = poc.readme ? sectionsByH2(poc.readme.lines) : []
-  const sec = (t) => secs.find((s) => s.title === t) ?? null
+  const sec = t => secs.find(s => s.title === t) ?? null
   const conclusionLines = nonBlank(sec("1. 結論")?.lines ?? [])
   const conclusion = {
     none:
       conclusionLines.length === 1 && NONE.test(conclusionLines[0].text.trim()),
-    text: conclusionLines.map((l) => l.text.trim()).join(""),
+    text: conclusionLines.map(l => l.text.trim()).join(""),
     lines: conclusionLines,
   }
   const targetLines = nonBlank(sec("2. 反映先")?.lines ?? [])
@@ -285,7 +283,7 @@ export function parsePoc(poc) {
     target,
     items,
     constraints,
-    results: (items?.rows ?? []).map((r) => r.cells[2] ?? ""),
+    results: (items?.rows ?? []).map(r => r.cells[2] ?? ""),
   }
 }
 
@@ -300,11 +298,11 @@ export function pocState(poc, specs) {
   const concluded =
     !m.conclusion.none &&
     m.results.length > 0 &&
-    m.results.every((x) => x === "合" || x === "否")
+    m.results.every(x => x === "合" || x === "否")
   if (!concluded)
     return { state: "検証中", remove: false, target: m.target.name }
   if (!m.target.name) return { state: "反映待ち", remove: false, target: null }
-  const spec = specs.find((s) => s.name === m.target.name && isDesigned(s))
+  const spec = specs.find(s => s.name === m.target.name && isDesigned(s))
   return {
     state: "反映済み",
     remove: Boolean(spec && isCompleted(spec)),
@@ -313,4 +311,4 @@ export function pocState(poc, specs) {
 }
 
 /** 反映済みでない（検証中・反映待ち）PoC か */
-export const isPending = (st) => st.state !== "反映済み"
+export const isPending = st => st.state !== "反映済み"

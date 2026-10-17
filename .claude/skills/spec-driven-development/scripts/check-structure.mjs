@@ -65,7 +65,7 @@ const TEST_PATH_RE =
 function testCorpus(ctx) {
   if (ctx.testCorpus !== undefined) return ctx.testCorpus
   const texts = []
-  const walk = (dir) => {
+  const walk = dir => {
     if (!fs.existsSync(dir)) return
     const entries = fs
       .readdirSync(dir, { withFileTypes: true })
@@ -84,13 +84,13 @@ function testCorpus(ctx) {
 
 const NAME_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 
-const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
 /** requirements.md の「3. 前提」から前提 spec 名を取り出す */
 function prerequisites(spec) {
   const f = spec.files.requirements
   if (!f) return { lines: new Set(), deps: [] }
-  const sec = sectionsByH2(f.lines).find((s) => s.title === "3. 前提")
+  const sec = sectionsByH2(f.lines).find(s => s.title === "3. 前提")
   const lines = new Set()
   const deps = []
   for (const l of sec?.lines ?? []) {
@@ -104,14 +104,14 @@ function prerequisites(spec) {
 const KEBAB_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/
 
 /** --status が使う、architecture と spec・PoC の突合の指摘（対象の絞り込みを無視する） */
-export const crossFindings = (ctx) => archFindings(ctx)
+export const crossFindings = ctx => archFindings(ctx)
 
 /** S010〜S013・S018〜S022: architecture の有無と、spec・PoC・文書間の突合 */
 function archFindings(ctx) {
   const out = []
   const arch = ctx.docs.architecture
   const designed = ctx.specs.filter(isDesigned)
-  const designedNames = new Set(designed.map((s) => s.name))
+  const designedNames = new Set(designed.map(s => s.name))
   const { minSpecs, groupMinComponents } = ctx.config.architecture
 
   if (!arch.main) {
@@ -184,7 +184,7 @@ function archFindings(ctx) {
 
   // S011: 全体からのリンクと H1
   if (grouped) {
-    const partNames = new Set(arch.parts.map((p) => p.name))
+    const partNames = new Set(arch.parts.map(p => p.name))
     const linked = new Map()
     for (const c of main.components) {
       if (c.kind !== "内部" || !c.link) continue
@@ -256,7 +256,7 @@ function archFindings(ctx) {
 
   // S012: 実装spec と設計済み spec の一致
   const listed = new Map()
-  for (const doc of grouped ? parsed.groups.map((g) => g.model) : [main])
+  for (const doc of grouped ? parsed.groups.map(g => g.model) : [main])
     for (const c of doc.components)
       for (const name of c.specs) {
         if (listed.has(name))
@@ -270,7 +270,7 @@ function archFindings(ctx) {
           )
         else listed.set(name, `${doc.file.rel}:${c.no}`)
         if (!designedNames.has(name)) {
-          const exists = ctx.specs.some((s) => s.name === name)
+          const exists = ctx.specs.some(s => s.name === name)
           out.push(
             finding(
               doc.file.rel,
@@ -298,7 +298,7 @@ function archFindings(ctx) {
   if (grouped) groupFindings(parsed, out)
 
   // S013・S018: 根拠の実在と、完了した PoC の残留
-  const pocByName = new Map(ctx.docs.pocs.map((p) => [p.name, p]))
+  const pocByName = new Map(ctx.docs.pocs.map(p => [p.name, p]))
   for (const doc of parsed.docs)
     for (const row of doc.basis)
       for (const ref of row.refs) {
@@ -344,10 +344,10 @@ function archFindings(ctx) {
 /** S020〜S022: くくり別に分けたときの、全体とくくりの文書の整合 */
 function groupFindings(parsed, out) {
   const root = parsed.main
-  const groups = parsed.groups.filter((g) => g.name)
+  const groups = parsed.groups.filter(g => g.name)
   const add = (file, no, rule, msg) =>
     out.push(finding(file.rel, no, rule, msg))
-  const internal = (m) => m.components.filter((c) => c.kind === "内部")
+  const internal = m => m.components.filter(c => c.kind === "内部")
 
   // S020: 内部の要素の名前の一意性と、他機能の実在
   const owners = new Map()
@@ -367,7 +367,7 @@ function groupFindings(parsed, out) {
   for (const g of groups)
     for (const c of g.model.components) {
       if (c.kind !== "他機能") continue
-      const own = (owners.get(c.name) ?? []).filter((x) => x !== g)
+      const own = (owners.get(c.name) ?? []).filter(x => x !== g)
       if (own.length !== 1)
         add(
           g.model.file,
@@ -381,7 +381,7 @@ function groupFindings(parsed, out) {
 
   // S021: 外部の要素と外部インターフェース
   const rootExt = new Map(
-    root.components.filter((c) => c.kind === "外部").map((c) => [c.name, c]),
+    root.components.filter(c => c.kind === "外部").map(c => [c.name, c]),
   )
   const usedExt = new Set()
   for (const g of groups)
@@ -409,7 +409,7 @@ function groupFindings(parsed, out) {
   for (const g of groups)
     for (const i of g.model.interfaces) {
       const k = key(i, g.name)
-      if ([...groupIf.values()].some((x) => x.name === i.name))
+      if ([...groupIf.values()].some(x => x.name === i.name))
         add(
           g.model.file,
           i.no,
@@ -418,7 +418,7 @@ function groupFindings(parsed, out) {
         )
       groupIf.set(k, { name: i.name, file: g.model.file, no: i.no })
     }
-  const rootIf = new Map(root.interfaces.map((i) => [key(i, i.int), i]))
+  const rootIf = new Map(root.interfaces.map(i => [key(i, i.int), i]))
   for (const [k, v] of groupIf)
     if (!rootIf.has(k))
       add(
@@ -441,8 +441,8 @@ function groupFindings(parsed, out) {
   for (const g of groups)
     for (const c of g.model.components)
       for (const name of c.specs) specOwner.set(name, g.name)
-  const specRefs = (row) =>
-    row.refs.filter((r) => pocThemeOf(r) === null && specOwner.has(r))
+  const specRefs = row =>
+    row.refs.filter(r => pocThemeOf(r) === null && specOwner.has(r))
   for (const g of groups)
     for (const row of g.model.basis)
       for (const ref of specRefs(row))
@@ -455,7 +455,7 @@ function groupFindings(parsed, out) {
           )
   for (const row of root.basis) {
     const refs = specRefs(row)
-    const owned = new Set(refs.map((r) => specOwner.get(r)))
+    const owned = new Set(refs.map(r => specOwner.get(r)))
     if (refs.length > 0 && owned.size < 2)
       add(
         root.file,
@@ -470,7 +470,7 @@ function groupFindings(parsed, out) {
 function pocFindings(ctx) {
   const out = []
   const docs = ctx.docs
-  const designedNames = new Set(ctx.specs.filter(isDesigned).map((s) => s.name))
+  const designedNames = new Set(ctx.specs.filter(isDesigned).map(s => s.name))
   const allPocs = docs.pocs.length === ctx.targetPocs.size
   if (allPocs)
     for (const f of docs.pocFiles)
@@ -556,8 +556,8 @@ export function check(ctx) {
     }
   }
 
-  const names = ctx.specs.map((s) => s.name)
-  const prereqOf = new Map(ctx.specs.map((s) => [s.name, prerequisites(s)]))
+  const names = ctx.specs.map(s => s.name)
+  const prereqOf = new Map(ctx.specs.map(s => [s.name, prerequisites(s)]))
 
   for (const spec of ctx.specs) {
     if (!ctx.targets.has(spec.name)) continue
@@ -609,10 +609,10 @@ export function check(ctx) {
 
     // S004: 他 spec への参照
     const { lines: preLines, deps } = prereqOf.get(spec.name)
-    const others = names.filter((n) => n !== spec.name)
+    const others = names.filter(n => n !== spec.name)
     // ハイフンを含まない名前（timeline 等）はコード上の識別子と区別できないため、
     // バッククォートでの言及はハイフンを含む名前に限って検出する
-    const hyphenated = others.filter((n) => n.includes("-"))
+    const hyphenated = others.filter(n => n.includes("-"))
     const backtickRe =
       hyphenated.length > 0
         ? new RegExp("`(" + hyphenated.map(escapeRe).join("|") + ")`")
@@ -666,7 +666,7 @@ export function check(ctx) {
               "S005",
               `前提 ${d.name} 自身が前提（${prereqOf
                 .get(d.name)
-                .deps.map((x) => x.name)
+                .deps.map(x => x.name)
                 .join(", ")}）を持つ（連鎖の禁止）`,
             ),
           )
@@ -678,18 +678,18 @@ export function check(ctx) {
     const tasks = spec.files.tasks
     if (!tasks) continue
     if (!isCompleted(spec)) continue
-    const exists = (p) => fs.existsSync(path.join(ctx.repoRoot, p))
+    const exists = p => fs.existsSync(path.join(ctx.repoRoot, p))
 
     // S006/S009: 構成表のパス。すべて不在なら dead spec として削除を求める
     const design = spec.files.design
     const comp =
-      design && sectionsByH2(design.lines).find((s) => s.title === "1. 構成")
+      design && sectionsByH2(design.lines).find(s => s.title === "1. 構成")
     const compPaths = []
     for (const l of (comp?.lines ?? []).filter(isTableLine).slice(2)) {
       const m = /^`([^`]+)`$/.exec(splitRow(l.text)[0])
       if (m && !/[*<>]/.test(m[1])) compPaths.push({ p: m[1], no: l.no })
     }
-    const missing = compPaths.filter((c) => !exists(c.p))
+    const missing = compPaths.filter(c => !exists(c.p))
     if (compPaths.length > 0 && missing.length === compPaths.length) {
       out.push(
         finding(
@@ -707,7 +707,7 @@ export function check(ctx) {
     }
 
     // S007: 検証行・E2E 行のテストファイル
-    for (const l of tasks.lines.filter((x) => /^- (検証|E2E): /.test(x.text))) {
+    for (const l of tasks.lines.filter(x => /^- (検証|E2E): /.test(x.text))) {
       for (const m of l.text.matchAll(TEST_PATH_RE)) {
         if (!exists(m[1]))
           out.push(

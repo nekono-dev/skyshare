@@ -60,7 +60,7 @@ const W003_PATTERNS = [
 ]
 
 // 重複比較用の正規化: 箇条書き記号・チェックボックス・ID 接頭辞を除去する
-const normalize = (text) =>
+const normalize = text =>
   text
     .trim()
     .replace(/^[-*]\s*(\[[ x]\]\s*)?/, "")
@@ -103,7 +103,7 @@ function checkSpecs(ctx) {
           const body = /^- AC-\d+ /.test(t)
             ? t.replace(/`tests\/[^`]+`/g, "")
             : t
-          const hit = W003_PATTERNS.map((re) => re.exec(body)).find(Boolean)
+          const hit = W003_PATTERNS.map(re => re.exec(body)).find(Boolean)
           if (hit)
             add(l.no, "W003", `「${hit[0]}」: 実装の詳細は design.md に書く`)
         }
@@ -121,7 +121,7 @@ function checkSpecs(ctx) {
   return out
 }
 
-const escapeRe = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+const escapeRe = x => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
 /** 表の行の列位置 → 「名称・値の列」（W013 の免除列）。実装spec と根拠の列 */
 const SPEC_REF_COLUMNS = {
@@ -142,10 +142,10 @@ function checkArchitecture(ctx) {
   const out = []
   const arch = ctx.docs.architecture
   if (!ctx.targetArch) return out
-  const files = (parseArchitecture(arch)?.docs ?? []).map((d) => d.file)
+  const files = (parseArchitecture(arch)?.docs ?? []).map(d => d.file)
   if (files.length === 0) return out
 
-  const specNames = ctx.specs.map((s) => s.name)
+  const specNames = ctx.specs.map(s => s.name)
   const refRe = new RegExp(
     `(?<![A-Za-z0-9_-])(?:${specNames.length > 0 ? specNames.map(escapeRe).join("|") + "|" : ""}poc/[a-z0-9-]+)(?![A-Za-z0-9_-])`,
   )

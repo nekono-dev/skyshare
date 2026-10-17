@@ -23,7 +23,7 @@ export const title = "PoC 体裁チェック（check-poc）"
 
 const LIMIT = { conclusionChars: 200 }
 
-const len = (s) => [...s].length
+const len = s => [...s].length
 
 export const rules = {
   "F-P01":
@@ -55,17 +55,17 @@ export function check(ctx) {
     const m = parsePoc(poc)
 
     // F-P01・F-P02
-    const h1s = headings(f.lines).filter((h) => h.level === 1)
+    const h1s = headings(f.lines).filter(h => h.level === 1)
     if (!/^# \S.* PoC$/.test(f.lines[0]?.text ?? "") || h1s.length !== 1)
       add(1, "F-P01", "1行目は「# <テーマ> PoC」の H1 にし、H1 は1つだけにする")
-    const h2s = m.secs.filter((s) => s.title !== null).map((s) => s.title)
+    const h2s = m.secs.filter(s => s.title !== null).map(s => s.title)
     if (h2s.join("\n") !== POC_CHAPTERS.join("\n"))
       add(
         1,
         "F-P02",
         `H2 は「${POC_CHAPTERS.join("」「")}」をこの順で過不足なく置く（実際: ${h2s.join("、") || "なし"}）`,
       )
-    const pre = nonBlank(m.secs[0].lines).filter((l) => !/^#\s/.test(l.text))
+    const pre = nonBlank(m.secs[0].lines).filter(l => !/^#\s/.test(l.text))
     if (pre.length > 0)
       add(pre[0].no, "F-P02", "H1 と最初の H2 の間に本文を置かない")
 
@@ -125,12 +125,12 @@ export function check(ctx) {
           for (const r of t.rows)
             if (
               r.cells.length !== 2 ||
-              r.cells.some((c) => c === "") ||
+              r.cells.some(c => c === "") ||
               !/\d/.test(r.cells[1])
             )
               add(r.no, "F-P05", "2列とも埋め、値は数値を含める")
         }
-        const extra = nonBlank(s3.lines).filter((l) => !isTableLine(l))
+        const extra = nonBlank(s3.lines).filter(l => !isTableLine(l))
         if (extra.length > 0) add(extra[0].no, "F-P05", "表以外の行を置かない")
       }
     }
@@ -149,7 +149,7 @@ export function check(ctx) {
         if (t.rows.length === 0)
           add(t.headerNo, "F-P06", "検証項目を1行以上置く")
         for (const r of t.rows) {
-          if (r.cells.length !== 3 || r.cells.some((c) => c === ""))
+          if (r.cells.length !== 3 || r.cells.some(c => c === ""))
             add(r.no, "F-P06", "3列とも埋める")
           else if (!["合", "否", "-"].includes(r.cells[2]))
             add(
@@ -159,7 +159,7 @@ export function check(ctx) {
             )
         }
       }
-      const extra = nonBlank(s4.lines).filter((l) => !isTableLine(l))
+      const extra = nonBlank(s4.lines).filter(l => !isTableLine(l))
       if (extra.length > 0) add(extra[0].no, "F-P06", "表以外の行を置かない")
     }
 
@@ -192,7 +192,7 @@ export function check(ctx) {
 
     // F-P08: 整合
     const resultsFilled =
-      m.results.length > 0 && m.results.every((x) => x === "合" || x === "否")
+      m.results.length > 0 && m.results.every(x => x === "合" || x === "否")
     const concluded = !m.conclusion.none
     if (s1 && m.items && concluded !== resultsFilled)
       add(
