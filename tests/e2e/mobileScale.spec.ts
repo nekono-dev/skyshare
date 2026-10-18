@@ -41,10 +41,16 @@ test("[design-tokens/AC-4] 幅390pxの画面で、表示されるすべてのボ
     for (const path of ["/post/?guest", "/?guest", "/login/"]) {
         await page.goto(path, { timeout: 60_000 })
         // プルダウンの開閉ボタン(入力欄の一種)は対象外
+        // Astroのdevツールバー(開発時のみ表示される外部UI)のボタンも、アプリの画面ではないため対象外
         const buttons = page.locator('button:not([class*="base-select"])')
         await page.waitForLoadState("networkidle")
         const heights = await buttons.evaluateAll(elements =>
             elements
+                .filter(
+                    el =>
+                        (el.getRootNode() as ShadowRoot).host?.tagName !==
+                        "ASTRO-DEV-TOOLBAR",
+                )
                 .map(el => el.getBoundingClientRect())
                 .filter(rect => rect.width > 0 && rect.height > 0)
                 .map(rect => rect.height),

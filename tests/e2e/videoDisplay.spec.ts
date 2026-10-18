@@ -239,7 +239,14 @@ test.describe("動画投稿の表示", () => {
             expect(button.fill).toBe("#ffffff")
             expect(button.points).toBe("0,0 0,25 20,12.5")
         }
-        expect(timeline).toEqual(detail)
+        // 寸法はブラウザの丸め誤差(Firefoxの58.99987…等)を許容して比較する
+        expect(timeline.width).toBeCloseTo(detail.width, 0)
+        expect(timeline.height).toBeCloseTo(detail.height, 0)
+        expect({ ...timeline, width: 0, height: 0 }).toEqual({
+            ...detail,
+            width: 0,
+            height: 0,
+        })
     })
 
     test("[video-player/AC-6] 再生ボタンは動画の表示領域の中央に置かれる（シナリオ8補足）", async ({
