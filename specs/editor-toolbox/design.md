@@ -9,7 +9,35 @@
 | `src/components/common/EditorToolbox/toolboxReducer.ts` | 開いているパネルの状態遷移               |
 | `src/components/common/FloatingBox/index.tsx`           | パネルのフローティング表示（変更しない） |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+ツールボックスの内部構成と依存方向を示す。
+
+```mermaid
+flowchart LR
+  ei["EditorToolbox/index"] --> toolboxReducer
+  ei --> fb["FloatingBox/index"]
+  ei --> em["index.module"]
+```
+
+ボタン操作からパネル表示までの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant ei as EditorToolbox/index
+  participant toolboxReducer
+  participant fb as FloatingBox/index
+  ei->>toolboxReducer: initialToolboxState から開始
+  ei->>toolboxReducer: toolboxReducer TOGGLE_PANEL
+  alt 同じツールを再度押下
+    toolboxReducer-->>ei: openToolId null
+  else 別のツールを押下
+    toolboxReducer-->>ei: openToolId 更新
+    ei->>fb: renderPanel の描画
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: ツールの型 (FR-1, FR-3, FR-12)
 
@@ -97,6 +125,6 @@ export const toolboxReducer = (
 
 Enterキーと Spaceキーによる実行は `<button>` の既定の動作に任せる。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

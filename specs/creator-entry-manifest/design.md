@@ -10,7 +10,41 @@
 | `src/components/post/ThreadComposer/segments.ts`           | `entryManifest` のフィールド   |
 | `src/components/post/ThreadComposer/submitThread.ts`       | 指定の送信への反映             |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+指定の入力から送信までの依存方向を示す。
+
+```mermaid
+flowchart LR
+  creatorTools --> index
+  index --> entryManifest
+  index --> segments
+  submitThread --> segments
+  submitThread --> entryManifest
+```
+
+入力の検証から送信内容の決定までの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant index
+  participant entryManifest
+  participant submitThread
+  index->>entryManifest: validateEntryManifestOverride
+  alt 上限超過
+    entryManifest-->>index: エラーキー
+  else 妥当
+    entryManifest-->>index: 空配列
+    index->>submitThread: 指定を保持して送信
+    alt 指定が空
+      submitThread->>submitThread: 既定の見出しを使う
+    else 指定あり
+      submitThread->>submitThread: 指定の見出しを使う
+    end
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 指定の状態 (FR-1, FR-6)
 
@@ -54,7 +88,7 @@ const body = {
 
 見出しと説明文はクライアントが決めて送る形式のため、APIの変更は不要とする。カバー画像の切り抜きには再生ボタンの overlay を渡さない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                       | 処理                                         |
 | -------------------------- | -------------------------------------------- |

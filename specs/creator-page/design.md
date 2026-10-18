@@ -9,7 +9,38 @@
 | `src/components/post/ThreadComposer/index.tsx`                   | ツールの組み立て関数の受け渡し           |
 | `src/components/post/ThreadComposer/ThreadSegmentForm/index.tsx` | ツールボックスの表示                     |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+ページからツールボックスまでの依存方向を示す。
+
+```mermaid
+flowchart LR
+  creator --> creatorTools
+  creator --> tc["ThreadComposer/index"]
+  tc --> tsf["ThreadSegmentForm/index"]
+  tc --> creatorTools
+  tsf --> creatorTools
+```
+
+ツールの組み立てと、未認証時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant creator
+  participant tc as ThreadComposer/index
+  participant tsf as ThreadSegmentForm/index
+  participant creatorTools
+  alt 未認証
+    creator-->>creator: ログインへ遷移
+  else 認証済み
+    creator->>tc: buildCreatorTools を渡す
+    tc->>tsf: buildTools
+    tsf->>creatorTools: buildCreatorTools
+    creatorTools->>creatorTools: CREATOR_TOOLS を順に実行
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: ツールの組み立て (FR-3, FR-4)
 
@@ -58,7 +89,7 @@ buildTools?: (ctx: CreatorToolContext) => EditorToolboxTool[] // 未指定なら
 </Baselayout>
 ```
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象   | 処理                               |
 | ------ | ---------------------------------- |
