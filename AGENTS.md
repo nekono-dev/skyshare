@@ -20,6 +20,12 @@
   - `npm install`（CI では `npm ci`）
   - `npm run codegen`
 
+# 仕様駆動開発
+
+- 仕様駆動開発は skill `spec-driven-development` に従う。スキルはリポジトリに同梱せず、環境側（`~/.claude/skills/spec-driven-development`）に導入する（導入・更新手順は https://github.com/nekono-dev/spec-driven-development の README）。
+- 仕様書（`specs/`・`docs/architecture*`・`poc/`）の検査は `npm run lint:spec`（`spec-lint`）で行う。`spec-lint` はグローバルに導入する（`npm install -g @nekono-dev/spec-lint`。GitHub Packages の認証が必要）。
+- 整形はリポジトリ側の prettier（`.prettierrc` のプラグインを使うため）で検査・修正する（`npx prettier --write specs docs`）。`spec-lint` は `--no-format` で実行する。
+
 # ブランチ・プレビューの規則
 
 - ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、保護ブランチ `main`・`develop`）。

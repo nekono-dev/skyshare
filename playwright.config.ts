@@ -2,7 +2,7 @@
  * Playwright（ヘッドレスブラウザでのe2eテスト）設定。
  *
  * 責務と処理概要:
- * - `.claude/skills/spec-driven-development/SKILL.md`が定める「UI実装の検証には
+ * - spec-driven-development スキル（`references/ui-verification.md`）が定める「UI実装の検証には
  *   Playwrightによるヘッドレスブラウザでの実動作確認を必須とする」方針を実行するための
  *   最小構成。
  * - `https://localhost:4321`（`astro dev`、`astro.config.mjs`参照。dev サーバーは

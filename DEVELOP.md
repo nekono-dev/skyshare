@@ -46,6 +46,7 @@ npm run deploy
 | -------- | -------------------------------- | -------------------------------------------- |
 | Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン    |
 | Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                    |
+| Secret   | `SPEC_LINT_TOKEN`                | 仕様書の検査コマンド `spec-lint`（GitHub Packages）の取得用。`read:packages` 権限のトークン。Actions の Secret に登録する |
 | Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント             |
 | Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                             |
 | Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |

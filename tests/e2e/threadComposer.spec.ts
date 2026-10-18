@@ -2,7 +2,7 @@
  * ThreadComposer（スレッド投稿UI）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
- * - `.claude/skills/spec-driven-development/SKILL.md`が定める「UI実装の検証には
+ * - spec-driven-development スキル（`references/ui-verification.md`）が定める「UI実装の検証には
  *   Playwrightによるヘッドレスブラウザでの実動作確認を必須とする」方針の対象テスト。
  * - `/post/?guest`（ログイン不要のゲスト表示、`src/lib/guestMode.ts`）を使い、
  *   実Blueskyアカウント無しでセグメントの追加・画像添付・アクティブ切り替えを検証する
