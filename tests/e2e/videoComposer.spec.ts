@@ -605,6 +605,23 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(submitButton(page)).toBeEnabled()
     })
 
+    test("[video-picker/AC-12] アップロードが失敗しても、入力済みの本文が残っている", async ({
+        page,
+    }) => {
+        await mockVideoApis(page, { startError: "DailyLimitExceeded" })
+        const editor = await openComposer(page)
+        const body = editor.locator("[data-post-body-editor]")
+        await body.click()
+        await page.keyboard.type("失敗しても残る本文")
+        await expect(body).toContainText("失敗しても残る本文")
+
+        await videoInput(editor).setInputFiles(SAMPLE)
+        await expect(page.getByRole("alert")).toContainText(
+            "動画アップロード上限",
+        )
+        await expect(body).toContainText("失敗しても残る本文")
+    })
+
     test("[video-picker/AC-1] 動画追加ボタンは画像追加ボタンと別要素で、直後に並び、青い絵柄を使う（シナリオ13）", async ({
         page,
     }) => {

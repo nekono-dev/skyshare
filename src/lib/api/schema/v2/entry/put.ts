@@ -5,13 +5,20 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
+import { countUtf8Bytes } from "../../../../../util/utf8Bytes"
 import * as Common from "../../common"
 
 export const RequestBodySchema = z
     .object({
         uri: z.string(),
-        heading: z.string().max(100),
-        caption: z.string().max(300),
+        heading: z
+            .string()
+            .max(100)
+            .refine(v => countUtf8Bytes(v) <= 100),
+        caption: z
+            .string()
+            .max(300)
+            .refine(v => countUtf8Bytes(v) <= 300),
     })
     .strict()
 export type RequestBodyType = z.infer<typeof RequestBodySchema>

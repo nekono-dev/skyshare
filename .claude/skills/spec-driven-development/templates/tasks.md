@@ -10,6 +10,6 @@
 ## Phase 2: バッジ表示
 
 - 対応: D-2
-- [ ] T-2.1: `NotificationBadge.tsx` を作成し、ヘッダーへ組み込む。
+- [ ] T-2.1: `useUnreadCount` と `NotificationBadge.tsx` を作成し、ヘッダーへ組み込む。
 - 検証: `npm run build`
 - E2E: `tests/e2e/notificationBadge.spec.ts` 未読3件の状態でトップページを開く → ヘッダーのバッジに「3」が1秒以内に表示される

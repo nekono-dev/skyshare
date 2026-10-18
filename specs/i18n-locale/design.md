@@ -14,7 +14,53 @@
 | `src/layout/Baselayout.astro`                  | 言語属性と初期化スクリプト         |
 | `src/components/common/LocaleSelect/index.tsx` | 表示言語の選択欄                   |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+表示言語の決定と反映の依存方向を示す。
+
+```mermaid
+flowchart LR
+  mw["src/middleware"] --> im["i18n/middleware"]
+  im --> locale
+  base["Baselayout"] --> store
+  store --> locale
+  store --> localeSetting
+  store --> applyDom
+  react --> store
+  index --> localeSetting
+  index --> store
+```
+
+サーバーとクライアントでの言語決定の流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant im as i18n/middleware
+  participant locale
+  participant store
+  participant localeSetting
+  participant react
+  im->>locale: parseAcceptLanguage
+  im->>locale: resolveLocale
+  locale->>locale: pickLocaleFromLanguages
+  locale-->>im: DEFAULT_LOCALE か対応言語
+  store->>store: initLocaleFromBrowser
+  store->>localeSetting: 保存値の読み取り
+  alt 保存値が不正または未保存
+    store->>locale: システム設定で決定
+  else 保存値あり
+    localeSetting-->>store: ja か en
+  end
+  store->>store: setLocaleSetting
+  store->>store: getLocale
+  store->>store: subscribe
+  react->>store: useLocale
+  react->>store: useT
+  im-->>im: onRequest で locals.locale を設定
+  locale->>locale: LOCALES を照合
+```
+
+## 3. 設計項目
 
 ### D-1: 言語の判定と保存 (FR-1, FR-2, FR-3, FR-4)
 
@@ -79,7 +125,7 @@ export const onRequest = sequence(localeMiddleware, refreshBskySession)
 | 変更時 | `setLocaleSetting(value)` を呼ぶ                                                                           |
 | 配置   | 設定画面の表示設定（表示テーマの隣）、ログイン画面のフォーム上に右寄せ                                     |
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                           | 処理                                 |
 | ------------------------------ | ------------------------------------ |

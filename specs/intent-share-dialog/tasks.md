@@ -4,7 +4,7 @@
 
 - 対応: D-1
 - [x] T-1.1: `IntentShareDialog` を実装する。
-- [ ] T-1.2: entryのない投稿での選択肢の表示と、不正なMastodonドメインでの操作不能を確認するE2Eテストを追加する。
+- [x] T-1.2: entryのない投稿での選択肢の表示と、不正なMastodonドメインでの操作不能を確認するE2Eテストを追加する。
 - 検証: `npm run build`
 - E2E: `tests/e2e/intentShare.spec.ts` 不正なMastodonドメインを保存してタイムラインの投稿の共有ダイアログを開く → Mastodonの選択肢が操作不能で、他の3つは操作できる
 

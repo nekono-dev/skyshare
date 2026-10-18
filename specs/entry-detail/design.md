@@ -12,7 +12,45 @@
 | `src/lib/entry/entryPageCache.ts`                  | 詳細ページのSSR結果の保存と再利用                  |
 | `src/pages/entries/sample.astro`                   | 表示確認用のサンプルページ                         |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+詳細ページの表示に関わる依存方向を示す。
+
+```mermaid
+flowchart LR
+  slug["[slug]"] --> edv["EntryDetailView/index"]
+  slug --> threadChain
+  slug --> entry
+  slug --> entryPageCache
+  edv --> pb["PostBody/index"]
+  sample --> edv
+```
+
+スレッド取得とフォールバックの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant slug as [slug]
+  participant threadChain
+  participant edv as EntryDetailView/index
+  participant ext_bsky as Bluesky
+  slug->>ext_bsky: entryの取得
+  alt 存在しない
+    slug->>edv: 404 の表示
+  else 取得失敗
+    slug->>edv: 500 または 503 の表示
+  else 取得成功
+    slug->>ext_bsky: getPostThread
+    alt 失敗または1件
+      slug->>ext_bsky: 派生元の getPosts
+    else 2件以上
+      slug->>threadChain: extractOwnedLinearReplyChain
+    end
+    slug->>edv: 表示用データ
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 表示用データ (FR-4, FR-5, FR-7, FR-8)
 
@@ -81,7 +119,7 @@ export type EntryPostView = {
 | 対象外       | GET以外、事前描画のページ、Cache API が使えない環境（`workers.dev`）では保存も再利用もしない |
 | 失敗時       | Cache API の失敗は握りつぶし、通常の描画にフォールバックする                                 |
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                 | 処理                                |
 | -------------------- | ----------------------------------- |

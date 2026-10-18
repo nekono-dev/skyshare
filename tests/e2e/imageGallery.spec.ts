@@ -201,3 +201,76 @@ test.describe("拡大表示", () => {
         await expect(dialog.getByText("1/1")).toHaveCount(0)
     })
 })
+
+test.describe("サムネイルの代替テキストと支援技術向けの名前", () => {
+    test("[image-gallery/AC-4] 各サムネイルに、画像の代替テキストが設定されている", async ({
+        page,
+    }) => {
+        await gotoThread(page)
+        const images = card(page, "スレッド2件目").locator(
+            "img[loading='lazy']",
+        )
+        await expect(images).toHaveCount(3)
+        expect(
+            await images.evaluateAll(els =>
+                els.map(el => el.getAttribute("alt")),
+            ),
+        ).toEqual(["threeの画像1", "threeの画像2", "threeの画像3"])
+    })
+
+    test("[image-gallery/AC-11] 拡大表示の前へ・次へ・閉じるのボタンに名前があり、キーボードだけで操作できる", async ({
+        page,
+    }) => {
+        await gotoThread(page)
+        await card(page, "スレッド2件目")
+            .getByRole("button", { name: "画像1/3を拡大" })
+            .click()
+        const dialog = page.getByRole("dialog", { name: "画像の拡大表示" })
+        await expect(dialog).toBeVisible()
+        const next = dialog.getByRole("button", { name: "次の画像" })
+        const prev = dialog.getByRole("button", { name: "前の画像" })
+        const close = dialog.getByRole("button", { name: "閉じる" })
+
+        await next.focus()
+        await page.keyboard.press("Enter")
+        await expect(dialog.getByText("2/3")).toBeVisible()
+        await prev.focus()
+        await page.keyboard.press("Enter")
+        await expect(dialog.getByText("1/3")).toBeVisible()
+        await close.focus()
+        await page.keyboard.press("Enter")
+        await expect(dialog).toHaveCount(0)
+    })
+})
+
+test.describe("タイムラインの代表画像", () => {
+    test("[image-gallery/AC-9] entryを持つ投稿は代表画像を拡大なしで表示し、entryを持たない投稿は添付画像を拡大表示できる", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const withEntry = page.locator("article", {
+            hasText: "スレッドB・1件目",
+        })
+        await expect(withEntry).toBeVisible()
+        await expect(
+            withEntry.getByRole("button", { name: /拡大/ }),
+        ).toHaveCount(0)
+        const visual = withEntry.locator("img[loading='lazy']")
+        await expect(visual).toHaveCount(1)
+        await expect(visual).toHaveAttribute("src", /sample-og/)
+        await visual.click()
+        await expect(
+            page.getByRole("dialog", { name: "画像の拡大表示" }),
+        ).toHaveCount(0)
+
+        const withoutEntry = page.locator("article", {
+            hasText: "スレッドC・1件目",
+        })
+        await withoutEntry
+            .getByRole("button", { name: "画像1/1を拡大" })
+            .click()
+        await expect(
+            page.getByRole("dialog", { name: "画像の拡大表示" }),
+        ).toBeVisible()
+    })
+})

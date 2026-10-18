@@ -7,7 +7,11 @@
 | `src/components/common/Dropdown/index.tsx` | 検索モードの状態とトリガーの入力欄 |
 | `src/util/listbox/filter.ts`               | 絞り込み用の正規化と判定           |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+- なし
+
+## 3. 設計項目
 
 ### D-1: 追加のインターフェースと状態 (FR-1, FR-6, FR-12)
 
@@ -70,6 +74,6 @@ export const filterOptions = <T extends { label: string; searchText?: string }>(
 - 約180件の正規化は同期処理で間に合うため、デバウンスは行わない。
 - IMEの変換中の中間文字列もそのまま絞り込みに使う。Enterキーだけは変換中に確定として扱わない。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

@@ -31,7 +31,7 @@ describe("GET /v2/entries", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[timeline-api/AC-1] リポストを除外し、自分の投稿のみをthreads配列として返す", async () => {
+    it("[timeline-api/AC-1 timeline-api/AC-11] リポストを除外し、自分の投稿のみを確定済みのスレッドグループの配列(threads)として返す", async () => {
         const ownPost = {
             post: {
                 uri: "at://did:plc:author/app.bsky.feed.post/3lown",
@@ -60,6 +60,8 @@ describe("GET /v2/entries", () => {
         const json = await res.json()
         expect(json.threads).toHaveLength(1)
         expect(json.threads[0].rootPost.uri).toBe(ownPost.post.uri)
+        // 単独の投稿も、起点と空の返信の配列を持つグループとして返る
+        expect(json.threads[0].replies).toEqual([])
     })
 
     it("[timeline-api/AC-10] 1ページ目がlimit未満の場合はcursorを辿って追加ページを取得する", async () => {

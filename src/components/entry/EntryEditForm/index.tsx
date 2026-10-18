@@ -21,7 +21,7 @@ import CountedTextInput, {
 } from "@/components/common/CountedTextInput"
 import Loading from "@/components/common/Loading"
 import Overlay from "@/components/common/Overlay"
-import { countGraphemes } from "@/util/textCount"
+import { countUtf8Bytes } from "@/util/utf8Bytes"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -48,7 +48,7 @@ const buildCounters = (labels: { heading: string; caption: string }) => ({
     {
       key: "heading",
       label: labels.heading,
-      count: countGraphemes,
+      count: countUtf8Bytes,
       maxAssumed: 100,
       errorAt: 100,
     },
@@ -57,7 +57,7 @@ const buildCounters = (labels: { heading: string; caption: string }) => ({
     {
       key: "caption",
       label: labels.caption,
-      count: countGraphemes,
+      count: countUtf8Bytes,
       maxAssumed: 300,
       errorAt: 300,
     },

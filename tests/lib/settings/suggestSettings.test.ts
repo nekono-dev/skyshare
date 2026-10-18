@@ -50,7 +50,7 @@ describe("writeHashtagSuggestEnabledSetting", () => {
         expect(() => writeHashtagSuggestEnabledSetting(false)).not.toThrow()
     })
 
-    it("保存した値をreadHashtagSuggestEnabledSettingで読み取れる", () => {
+    it("[post-suggest/AC-19] 保存した値をreadHashtagSuggestEnabledSettingで読み取れる", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
         writeHashtagSuggestEnabledSetting(false)
@@ -81,7 +81,7 @@ describe("writeMentionSuggestEnabledSetting", () => {
         expect(() => writeMentionSuggestEnabledSetting(false)).not.toThrow()
     })
 
-    it("保存した値をreadMentionSuggestEnabledSettingで読み取れる", () => {
+    it("[post-suggest/AC-20] 保存した値をreadMentionSuggestEnabledSettingで読み取れる", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
         writeMentionSuggestEnabledSetting(false)

@@ -90,6 +90,37 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
         await expect(trigger).toBeFocused()
     })
 
+    test("[listbox-option/AC-4 listbox-option/AC-5] 28. 選択中の項目だけが太字で、選択状態の属性を持つ", async ({
+        page,
+    }) => {
+        await clickUntilOpen(themeTrigger(page), page.getByRole("listbox"))
+        const selected = page.getByRole("option", {
+            name: "システム設定に従う",
+        })
+        const other = page.getByRole("option", { name: "ライト" })
+        await expect(selected).toHaveAttribute("aria-selected", "true")
+        await expect(other).toHaveAttribute("aria-selected", "false")
+        await expect(selected).toHaveCSS("font-weight", "600")
+        await expect(other).not.toHaveCSS("font-weight", "600")
+    })
+
+    test("[dropdown/AC-13] 26. トリガーにコンボボックスの役割と開閉状態、一覧にリストボックスの役割が付く", async ({
+        page,
+    }) => {
+        const trigger = themeTrigger(page)
+        await expect(trigger).toHaveAttribute("aria-haspopup", "listbox")
+        await expect(trigger).toHaveAttribute("aria-expanded", "false")
+        await clickUntilOpen(trigger, page.getByRole("listbox"))
+        await expect(trigger).toHaveAttribute("aria-expanded", "true")
+        await expect(trigger).toHaveAttribute(
+            "aria-controls",
+            (await page.getByRole("listbox").getAttribute("id"))!,
+        )
+        await page.keyboard.press("Escape")
+        await expect(page.getByRole("listbox")).toHaveCount(0)
+        await expect(trigger).toHaveAttribute("aria-expanded", "false")
+    })
+
     test("[dropdown/AC-4] 15. パネル幅はコンテンツに合わせた幅で、広すぎない", async ({
         page,
     }) => {
@@ -249,6 +280,10 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await page.keyboard.type("ko")
         const options = page.getByRole("option")
         await expect(options.filter({ hasText: "한국어" })).toHaveCount(1)
+        // 全件ではなく、入力に該当する言語だけに絞り込まれている
+        const matched = await options.allTextContents()
+        expect(matched.length).toBeGreaterThan(0)
+        expect(matched.length).toBeLessThan(10)
         await expect(options.first()).toHaveClass(/option-active/)
         await options.filter({ hasText: "한국어" }).click()
         await expect(page.getByRole("listbox")).toHaveCount(0)
@@ -576,5 +611,19 @@ test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄�
         await trigger.click()
         await page.getByRole("option", { name: "ラベルなし" }).click()
         await expect(trigger).toHaveText("ラベルなし")
+    })
+})
+
+test.describe("Dropdown: サーバー描画", () => {
+    test.use({ javaScriptEnabled: false })
+
+    test("[dropdown/AC-14] 27. JavaScript無効のサーバー描画には、トリガーだけが出力され、パネルは出力されない", async ({
+        page,
+    }) => {
+        await page.goto("/settings/", { timeout: 60_000 })
+        await expect(themeTrigger(page)).toBeVisible({ timeout: 60_000 })
+        await expect(themeTrigger(page)).toHaveText("システム設定に従う")
+        await expect(page.getByRole("listbox")).toHaveCount(0)
+        await expect(page.getByRole("option")).toHaveCount(0)
     })
 })

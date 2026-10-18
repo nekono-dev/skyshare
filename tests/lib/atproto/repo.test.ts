@@ -40,6 +40,29 @@ describe("listRecordsSince", () => {
         })
     })
 
+    it("[atproto-access/AC-3] 複数ページのcursorを辿って全件結合する", async () => {
+        const { agent, listRecords } = makeAgent(
+            {
+                records: [record("a", "2026-01-15T00:00:00Z")],
+                cursor: "c1",
+            },
+            {
+                records: [record("b", "2026-01-14T00:00:00Z")],
+                cursor: "c2",
+            },
+            { records: [record("c", "2026-01-13T00:00:00Z")] },
+        )
+
+        const result = await listRecordsSince(
+            agent,
+            { repo: "did:plc:abc", collection: ENTRY_COLLECTION },
+            since,
+        )
+
+        expect(result.map(r => r.uri)).toEqual(["at://a", "at://b", "at://c"])
+        expect(listRecords).toHaveBeenCalledTimes(3)
+    })
+
     it("[timeline-api/AC-12] ページ内がすべて始点より古ければ、cursorがあっても次のページを取得しない", async () => {
         const { agent, listRecords } = makeAgent(
             {

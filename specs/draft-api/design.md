@@ -11,7 +11,47 @@
 | `src/lib/api/schema/v2/bsky/drafts/delete.ts` | 削除の入力スキーマ                 |
 | `src/lib/atproto/draft.ts`                    | 入力と応答の検証、自己ラベルの変換 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+下書きAPIの入力検証と連携先の依存方向を示す。
+
+```mermaid
+flowchart LR
+  drafts --> post
+  drafts --> put
+  drafts --> get
+  drafts --> delete
+  drafts --> draft
+  post --> draft
+  put --> draft
+```
+
+メソッドごとの検証と連携先の呼び出しの流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant drafts
+  participant draft
+  participant ext_bsky as Bluesky
+  drafts->>draft: parseDraftPostsInput
+  alt 未認証
+    drafts-->>drafts: 401
+  else 検証失敗
+    drafts-->>drafts: 400
+  else 検証成功
+    drafts->>draft: buildSelfLabels
+    drafts->>ext_bsky: app.bsky.draft の呼び出し
+    alt 例外
+      drafts-->>drafts: resolveXrpcStatus の値
+    else 成功
+      ext_bsky-->>drafts: 応答
+      drafts->>draft: DraftPostSchema を検証
+      drafts->>post: RequestBodySchema
+    end
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 下書きの形式 (FR-1, FR-2, NFR-1)
 
@@ -39,7 +79,7 @@ export const buildSelfLabels = (labels: string[] | undefined) // ラベル値か
 - `parseDraftViewsResponse` は各下書きを `parseDraft` で検証し、1件でも不正なら `undefined` を返す。ハンドラはこのとき500を返す。
 - 連携先の例外は `resolveXrpcStatus` で変換する（`DraftLimitReached` は429）。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                     | 処理                                     |
 | ------------------------ | ---------------------------------------- |

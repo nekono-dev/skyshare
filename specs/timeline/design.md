@@ -11,7 +11,42 @@
 | `src/components/post/PostCard/useSkyshareEntryStatus.ts` | entryの作成・削除の状態            |
 | `src/lib/entry/guestDummyPosts.ts`                       | ゲスト表示のスレッドグループ       |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+タイムライン表示の依存方向を示す。
+
+```mermaid
+flowchart LR
+  ti["Timeline/index"] --> tci["ThreadCard/index"]
+  ti --> guestDummyPosts
+  tci --> entryCandidate
+  tci --> pci["PostCard/index"]
+  pci --> useSkyshareEntryStatus
+```
+
+グループの描画と、削除後に一覧を更新する流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant tci as ThreadCard/index
+  participant entryCandidate
+  participant pci as PostCard/index
+  participant useSkyshareEntryStatus
+  tci->>entryCandidate: resolveEntryVisualSourcePost
+  alt 素材の投稿あり
+    tci->>pci: 起点にentry作成ボタン
+  else 素材なし
+    tci->>pci: ボタンなし
+  end
+  pci->>useSkyshareEntryStatus: 作成と削除の状態
+  alt 投稿ごと削除に成功
+    useSkyshareEntryStatus-->>tci: onPostDeleted
+  else entryのみ削除
+    useSkyshareEntryStatus-->>pci: 表示を取り除く
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 一覧とグループの表示 (FR-1, FR-2, FR-3, FR-8, FR-9, NFR-1)
 
@@ -69,7 +104,7 @@ entryの有無は `useSkyshareEntryStatus` の `display` だけで判定する�
 
 `useSkyshareEntryStatus` は、`deleteBskyPost: true` の削除が成功したときだけ `onPostDeleted` を呼ぶ。entryだけの削除ではカードのentryの表示だけを取り除く。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                   | 処理                                                    |
 | ---------------------- | ------------------------------------------------------- |

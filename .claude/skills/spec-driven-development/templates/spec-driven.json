@@ -1,0 +1,18 @@
+{
+  "architecture": {
+    "minSpecs": 3,
+    "maxLines": 400,
+    "maxGroupLines": 300,
+    "maxFunctionLines": 80,
+    "maxFunctions": 5,
+    "functionComponents": [2, 6],
+    "groupMinComponents": 8,
+    "groupCount": [3, 10],
+    "groupComponents": [2, 8],
+    "mergeSimilarity": 0.8
+  },
+  "poc": {
+    "maxReadmeLines": 100,
+    "maxPending": 3
+  }
+}

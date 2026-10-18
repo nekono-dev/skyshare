@@ -24,7 +24,53 @@
 | `tests/repo/e2eliveIsolation.test.ts` | アプリ本体への混入と、設定ファイルの無視設定の検証                             |
 | `playwright.config.ts`                | ライブテストのプロジェクトの登録                                               |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+ライブテストの各ファイルの依存方向を示す。
+
+```mermaid
+flowchart LR
+  config["playwright.config"] --> setup["auth.setup"]
+  setup -->|loadLiveAccount| env["env"]
+  setup -->|planDeletion| pds["pds"]
+  sweep["sweep"] -->|loadLiveAccount| env
+  sweep -->|DELETE_LIMIT| pds
+  liveTest["liveTest"] -->|isE2eText| pds
+  liveTest -->|makeRunTag| pds
+  thread["threadEntry.spec"] -->|createThread| pds
+  multi["multiImage.spec"] -->|createPost| pds
+  video["video.spec"] --> liveTest
+  posthoc["postHocEntry.spec"] -->|createEntryRecord| pds
+  visual["visualSource.spec"] --> helpers["helpers"]
+  del["deleteFlow.spec"] --> liveTest
+  branch["branch.spec"] --> liveTest
+  peer["peerReply.spec"] -->|loadPeerAccount| env
+  cleanup["cleanup.spec"] --> liveTest
+  session["session.spec"] --> helpers
+  login["loginForm.spec"] --> helpers
+  iso["e2eliveIsolation.test"] --> config
+```
+
+ライブテストを登録するかどうかが、認証情報の有無で分岐する流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant config as playwright.config
+  participant env
+  participant setup as auth.setup
+  participant pds
+  participant ext_pds as Bluesky PDS
+  config->>env: 認証情報の読み込み
+  alt 必須の2値が揃う
+    config->>setup: ライブのプロジェクトを登録
+    setup->>ext_pds: ログイン
+    setup->>pds: 取りこぼしの掃除
+  else 揃わない
+    env-->>config: null（登録しない）
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 認証情報の指定 (FR-1, NFR-3)
 
@@ -159,7 +205,7 @@ const peerAgent = await createPdsAgent(peer!, "peer")
 /playwright/.auth
 ```
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                          | 処理                                                       |
 | ----------------------------- | ---------------------------------------------------------- |

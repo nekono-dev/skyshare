@@ -32,6 +32,15 @@ describe("buildIntentText の省略", () => {
         expect(text).toBe(`${LONG_BODY}\n${ENTRY_URL}`)
     })
 
+    it("[share-text/AC-1] 本文・skyshare entryのURL・リンクカードのURLを、この順に改行区切りで連結する", () => {
+        const text = buildIntentText(
+            "見て",
+            ENTRY_URL,
+            "https://example.com/page",
+        )
+        expect(text).toBe(`見て\n${ENTRY_URL}\nhttps://example.com/page`)
+    })
+
     it("[share-text/AC-3] truncateLimit指定ならskyshareUriありで省略する", () => {
         const text = buildIntentText(LONG_BODY, ENTRY_URL, undefined, {
             truncateLimit: INTENT_WEIGHTED_LIMIT,

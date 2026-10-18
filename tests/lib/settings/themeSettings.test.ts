@@ -43,7 +43,7 @@ describe("readThemeModeSetting", () => {
         expect(readThemeModeSetting("system")).toBe("dark")
     })
 
-    it("不正な値が保存されている場合はdefaultValueにフォールバックする", () => {
+    it("[app-settings/AC-2] 不正な値が保存されている場合はdefaultValueにフォールバックする", () => {
         const localStorage = createMemoryLocalStorage()
         localStorage.setItem("themeMode", "sepia")
         vi.stubGlobal("window", { localStorage })
@@ -56,7 +56,7 @@ describe("writeThemeModeSetting", () => {
         expect(() => writeThemeModeSetting("dark")).not.toThrow()
     })
 
-    it("保存した値をreadThemeModeSettingで読み取れる", () => {
+    it("[app-settings/AC-1] 保存した値をreadThemeModeSettingで読み取れる", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
         writeThemeModeSetting("dark")
@@ -69,14 +69,14 @@ describe("applyThemeMode", () => {
         expect(() => applyThemeMode("dark")).not.toThrow()
     })
 
-    it("light/darkの場合はdata-theme属性を設定する", () => {
+    it("[app-settings/AC-3] light/darkの場合はdata-theme属性を設定する", () => {
         const documentElement = { dataset: {} as Record<string, string> }
         vi.stubGlobal("document", { documentElement })
         applyThemeMode("dark")
         expect(documentElement.dataset.theme).toBe("dark")
     })
 
-    it("systemの場合はdata-theme属性を削除する", () => {
+    it("[app-settings/AC-4] systemの場合はdata-theme属性を削除する", () => {
         const removeAttribute = vi.fn()
         vi.stubGlobal("document", {
             documentElement: { dataset: { theme: "dark" }, removeAttribute },

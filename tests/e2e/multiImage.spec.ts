@@ -98,7 +98,7 @@ test.describe("複数画像の投稿フォーム", () => {
         }
     })
 
-    test("[entry-visual/AC-6] クロップダイアログには先頭4枚のスロットだけが表示される", async ({
+    test("[entry-visual/AC-6 image-crop/AC-3] クロップダイアログには先頭4枚のスロットだけが表示される", async ({
         page,
     }) => {
         const editor = await openComposer(page)

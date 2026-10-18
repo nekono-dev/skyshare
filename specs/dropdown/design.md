@@ -9,7 +9,37 @@
 | `src/util/listbox/navigation.ts`                  | 有効な選択肢間の移動と先頭一致検索   |
 | `src/styles/ui.module.css`                        | プルダウンを含む要素のクリップ解除   |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+プルダウン本体と補助モジュールの依存方向を示す。
+
+```mermaid
+flowchart LR
+  index --> dm["index.module"]
+  index --> navigation
+  ui["ui.module"] --> index
+```
+
+開閉とキー操作による選択の流れを示す。
+
+```mermaid
+sequenceDiagram
+  participant index
+  participant navigation
+  participant ext_user as 利用者
+  ext_user->>index: キー入力
+  alt 閉じている
+    index->>index: 開く
+  else 開いている
+    index->>navigation: nextEnabledIndex
+    navigation-->>index: 移動先
+    opt 文字キー
+      index->>navigation: findPrefixIndex
+    end
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: インターフェース (FR-11, FR-12)
 
@@ -86,6 +116,6 @@ keydown: isComposing または keyCode === 229 なら何もしない
 - パネルは `open` の間だけ描画し、ポータルを使わないため、サーバー描画では閉じたトリガーのみを出力する。
 - トリガーは既存の選択欄と同じ `ui["base-select"]` と、外枠の矢印を使う。`autoWidth` では選択中の表示内容を不可視のsizerに描画して幅を合わせる。
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

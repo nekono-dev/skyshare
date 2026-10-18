@@ -11,7 +11,47 @@
 | `src/lib/entry/draftList.ts`                                     | 下書き一覧の応答の整形                             |
 | `src/components/entry/DraftListPanel/index.tsx`                  | 下書きの一覧と復元                                 |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+投稿フォームの構成要素の依存方向を示す。
+
+```mermaid
+flowchart LR
+  tc["ThreadComposer/index"] --> tsf["ThreadSegmentForm/index"]
+  tc --> segments
+  tc --> submitThread
+  tc --> dlp["DraftListPanel/index"]
+  dlp --> draftList
+  submitThread --> segments
+  tsf --> segments
+```
+
+セグメント操作から送信までの流れと、失敗時の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant tc as ThreadComposer/index
+  participant segments
+  participant submitThread
+  participant ext_api as 投稿API
+  tc->>segments: createEmptySegment
+  tc->>segments: addSegment
+  opt 2件目以降
+    tc->>segments: canRemoveSegment
+    tc->>segments: removeSegment
+  end
+  tc->>submitThread: 送信内容の組み立て
+  submitThread->>ext_api: 1回だけ送信
+  alt 失敗またはentryなし
+    ext_api-->>tc: エラーコード
+    tc->>tc: 文言を表示し入力を残す
+  else 成功
+    ext_api-->>tc: 応答
+    tc->>tc: 共有処理を起動
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: セグメントの状態 (FR-1, FR-2, FR-5)
 
@@ -112,7 +152,7 @@ const resolveShareOptionsDefaultOpen = ({
 
 共有設定はマウント後に読み込まれるため、`Collapsible` の `key` を読み込み完了で切り替えて再マウントし、`defaultOpen` を実際の値で評価し直す。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象               | 処理                                               |
 | ------------------ | -------------------------------------------------- |

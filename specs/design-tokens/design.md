@@ -9,7 +9,36 @@
 | `src/styles/avatar.ui.module.css` | アバター寸法トークンの定義とスマホ幅の上書き               |
 | `src/styles/ui.module.css`        | フッターナビゲーション分の下余白クラス                     |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+スタイル定義ファイル間の依存方向を示す。
+
+```mermaid
+flowchart LR
+  ui["ui.module"] --> tokens
+  ui --> button["button.ui.module"]
+  ui --> avatar["avatar.ui.module"]
+  button --> tokens
+  avatar --> tokens
+```
+
+画面幅に応じたトークン値の上書きを示す。
+
+```mermaid
+sequenceDiagram
+  participant tokens
+  participant button as button.ui.module
+  participant avatar as avatar.ui.module
+  alt 幅が640px以上
+    tokens->>tokens: 既定値を適用
+  else 幅が639px以下
+    tokens->>tokens: スマホ幅の値で上書き
+    button->>button: ボタン寸法を上書き
+    avatar->>avatar: アバター寸法を上書き
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: トークンの上書き (FR-1, FR-2, FR-4)
 
@@ -27,6 +56,8 @@
 | `--size-avatar-footer`                               | 36px                            | 36px                             | `avatar.ui.module.css` |
 
 `--btn-padding-x` / `--btn-padding-y` は `--space-*` を参照するため、上書きに追従する。
+
+ボタンの高さは必ず `--size-button-md` / `lg` を参照する。アイコンボタンは幅と高さ、テキストボタン（`.text-button`）・折りたたみの開閉ボタン・サムネイルのバッジ・ライトボックスの操作ボタンは高さ（テキストボタンは `min-height`）に適用する。ボタン専用のコンポーネントCSSで `px` / `rem` の高さを直書きしない。
 
 ### D-2: 直書きの置換 (FR-3)
 
@@ -57,6 +88,6 @@
 }
 ```
 
-## 3. エラー処理
+## 4. エラー処理
 
 - なし

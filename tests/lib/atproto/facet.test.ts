@@ -22,16 +22,16 @@ describe("validateFacets", () => {
         expect(() => validateFacets("foo bar", [linkFacet(4, 7)])).not.toThrow()
     })
 
-    it("byteEndが本文のバイト長を超える場合はthrow", () => {
+    it("[post-record/AC-8] byteEndが本文のバイト長を超える場合はthrow", () => {
         expect(() => validateFacets("foo", [linkFacet(0, 100)])).toThrow()
     })
 
-    it("byteStartがbyteEnd以上の場合はthrow", () => {
+    it("[post-record/AC-9] byteStartがbyteEnd以上の場合はthrow", () => {
         expect(() => validateFacets("foo bar", [linkFacet(5, 5)])).toThrow()
         expect(() => validateFacets("foo bar", [linkFacet(6, 3)])).toThrow()
     })
 
-    it("マルチバイト文字はUTF-8バイト長で判定する(UTF-16長ではない)", () => {
+    it("[post-record/AC-10] マルチバイト文字はUTF-8バイト長で判定する(UTF-16長ではない)", () => {
         // "猫" はUTF-8で3バイト。UTF-16のcode unit長(1)ではなくバイト長(3)で判定する。
         expect(() => validateFacets("猫", [linkFacet(0, 3)])).not.toThrow()
         expect(() => validateFacets("猫", [linkFacet(0, 4)])).toThrow()

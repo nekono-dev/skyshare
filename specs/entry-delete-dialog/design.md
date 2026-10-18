@@ -13,7 +13,45 @@
 | `src/components/post/PostCard/useSkyshareEntryStatus.ts`  | タイムラインからの呼び出し               |
 | `src/lib/entry/guestDummyPosts.ts`                        | ゲスト表示の削除範囲の模擬データ         |
 
-## 2. 設計項目
+## 2. 関係図・ワークフロー
+
+削除ダイアログの部品の依存方向を示す。
+
+```mermaid
+flowchart LR
+  ec["EntryCard/index"] --> edc["EntryDeleteConfirmDialog/index"]
+  use["useSkyshareEntryStatus"] --> edc
+  edc --> resolveEntryDeleteScope
+  edc --> cd["ChoiceDialog/index"]
+  edc --> dpl["DeletePostListDialog/index"]
+  dpl --> dpi["DeletePostListItem/index"]
+  resolveEntryDeleteScope --> guestDummyPosts
+```
+
+削除範囲の判定結果による選択肢の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant edc as EntryDeleteConfirmDialog/index
+  participant resolveEntryDeleteScope
+  participant guestDummyPosts
+  participant dpl as DeletePostListDialog/index
+  edc->>resolveEntryDeleteScope: resolveEntryDeleteScope
+  opt ゲスト表示
+    edc->>guestDummyPosts: resolveGuestDeleteScope
+    guestDummyPosts-->>edc: GUEST_DELETE_SCOPES の値
+  end
+  alt deletable
+    resolveEntryDeleteScope-->>edc: 投稿一覧
+    edc->>dpl: 最終確認を表示
+  else legacy
+    resolveEntryDeleteScope-->>edc: 投稿を含む削除は不可
+  else unknown
+    resolveEntryDeleteScope-->>edc: 状態を確認できない
+  end
+```
+
+## 3. 設計項目
 
 ### D-1: 削除範囲の判定 (FR-7, NFR-1)
 
@@ -76,7 +114,7 @@ export const resolveGuestDeleteScope = (sourceUri: string): EntryDeleteScope =>
 
 ゲスト表示では、判定に `resolveGuestDeleteScope` を使い、削除APIを呼ばずに成功時と同じ状態遷移だけを行う。削除ボタンには作成・共有ボタンと別の `deleteDisabled` を使う。
 
-## 3. エラー処理
+## 4. エラー処理
 
 | 事象                  | 処理                                        |
 | --------------------- | ------------------------------------------- |

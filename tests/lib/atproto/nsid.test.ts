@@ -94,3 +94,15 @@ describe("entryAtUri / parseEntryAtUri", () => {
         ).toBeUndefined()
     })
 })
+
+describe("NSIDの導出の取り込み", () => {
+    it("[lexicon/AC-12] NSIDの導出はビルド時の取り込みで行い、実行時にファイルを読まない", () => {
+        const source = readFileSync("src/lib/atproto/nsid.ts", "utf-8")
+        // コメントを除いた本文だけを対象にする
+        const code = source
+            .replace(/\/\*[\s\S]*?\*\//g, "")
+            .replace(/^\s*\/\/.*$/gm, "")
+        expect(code).toMatch(/import\.meta\.glob[\s\S]*eager:\s*true/)
+        expect(code).not.toMatch(/node:fs|from\s+"fs"|readFile|fetch\(/)
+    })
+})

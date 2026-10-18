@@ -16,13 +16,13 @@ describe("parseLimit", () => {
         expect(parseLimit("  ")).toBeUndefined()
     })
 
-    it("1〜100の整数はそのまま number を返す", () => {
+    it("[api-codegen/AC-12] 1〜100の整数はそのまま number を返す", () => {
         expect(parseLimit("1")).toBe(1)
         expect(parseLimit("100")).toBe(100)
         expect(parseLimit("20")).toBe(20)
     })
 
-    it("範囲外・非整数は null を返す", () => {
+    it("[api-codegen/AC-13] 範囲外・非整数は null を返す", () => {
         expect(parseLimit("0")).toBeNull()
         expect(parseLimit("101")).toBeNull()
         expect(parseLimit("1.5")).toBeNull()
@@ -48,7 +48,7 @@ describe("convertHeaderToObj", () => {
 })
 
 describe("hasCookieHeader", () => {
-    it("cookie ヘッダがあれば true を返す", () => {
+    it("[api-codegen/AC-14] cookie ヘッダがあれば true を返す", () => {
         const request = new Request("https://example.com", {
             headers: { cookie: "atp_session=xxx" },
         })
@@ -62,7 +62,7 @@ describe("hasCookieHeader", () => {
 })
 
 describe("isMultipartFormData", () => {
-    it("multipart/form-data を含む Content-Type は true", () => {
+    it("[api-codegen/AC-15] multipart/form-data を含む Content-Type は true", () => {
         expect(
             isMultipartFormData("multipart/form-data; boundary=----xxx"),
         ).toBe(true)
