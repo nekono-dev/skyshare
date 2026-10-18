@@ -46,7 +46,7 @@ sequenceDiagram
   profile->>ext_pds: resolveDisplayName
   lists->>publicAgent: publicAtpAgent
   lists->>ext_pds: getOwnLists
-  repo->>ext_pds: listAllRecords
+  repo->>ext_pds: listRecordsSince
   loop カーソルがある間
     ext_pds-->>repo: レコードとカーソル
   end
@@ -86,11 +86,11 @@ export const uploadBlob = async (
 
 エージェントの生成を関数に分けるのは、テストでモジュールを差し替えて偽のエージェントを注入できるようにするためである。
 
-### D-2: 全件取得と参照 (FR-2, FR-3, FR-4, FR-5)
+### D-2: 範囲取得と参照 (FR-2, FR-3, FR-4, FR-5)
 
 ```ts
-export const listAllRecords = async (agent, params: { repo: string; collection: string }) =>
-  // limit 100 でカーソルを最後まで辿り、records を結合する。records が無いページは空として扱う
+export const listRecordsSince = async (agent, params: { repo: string; collection: string }, sinceMs: number) =>
+  // reverse: true・limit 100 でカーソルを辿り、records を結合する。ページ内が全件 sinceMs より古ければ打ち切る
 export const resolveDisplayName = async (agent, did: string, fallbackHandle: string): Promise<string> =>
   (await agent.getProfile({ actor: did })).data.displayName || fallbackHandle
 export type OwnedList = { uri: string; name: string }

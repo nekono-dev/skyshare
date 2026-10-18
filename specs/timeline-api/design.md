@@ -19,6 +19,7 @@
 flowchart LR
   entries --> get
   entries --> timelineThreads
+  entries -->|ENTRY_RANGE_MARGIN_MS| repo
   timelineThreads --> posts
   timelineThreads --> threadChain
   posts --> threadChain
@@ -30,6 +31,7 @@ flowchart LR
 sequenceDiagram
   participant entries
   participant timelineThreads
+  participant repo
   participant threadChain
   participant ext_bsky as Bluesky
   entries->>ext_bsky: フィードとentryの取得
@@ -37,6 +39,7 @@ sequenceDiagram
   timelineThreads->>threadChain: extractRepoDidFromAtUri
   timelineThreads->>threadChain: extractReplyRootUri
   alt 自分が起点
+    timelineThreads->>threadChain: buildThreadViewFromPosts
     timelineThreads->>ext_bsky: getPostThread
     alt 取得失敗
       timelineThreads->>timelineThreads: 単独の投稿にする
@@ -47,6 +50,9 @@ sequenceDiagram
     timelineThreads->>timelineThreads: 出力しない
   end
   timelineThreads-->>entries: ThreadGroup の配列
+  entries->>timelineThreads: resolveEntryRangeStartMs
+  entries->>repo: listRecordsSince
+  entries->>timelineThreads: attachSkyshareEntries
 ```
 
 ## 3. 設計項目

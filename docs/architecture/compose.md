@@ -17,8 +17,6 @@
 | 入力部品と寸法         | 内部   | 文字数つきの入力欄と、画面幅ごとの寸法トークンを提供する                                  | counted-text-input、browser-utils、design-tokens               |
 | 投稿フォーム           | 内部   | 単発とスレッドの投稿を同じフォームで作成して送信する                                      | thread-composer、post-body-editor、post-suggest、share-counter |
 | 返信と引用の制限       | 内部   | 返信できる相手と引用の可否を選び、既定値を端末に保存する                                  | post-gate                                                      |
-| 作り込み編集ツール     | 内部   | 編集の補助ツールをボタン列とパネルで提供する                                              | creator-page、editor-toolbox、creator-richtext                 |
-| 作り込み投稿項目       | 内部   | entry の見出し・カバー画像と任意のキーと値を指定させる                                    | creator-custom-param、creator-entry-manifest                   |
 | 添付メディア           | 内部   | 画像と動画を添付させ、画像の切り抜きを調整させる                                          | image-picker、image-crop、video-picker                         |
 | 代表画像とリンクカード | 内部   | 代表画像と見出しを生成し、リンクカードを取得して添え、entry の作成直後に OGP を先取りする | entry-visual、ogp-link-card                                    |
 | 動画アップロード       | 内部   | 動画用トークンを発行し、動画を直接送って変換を待つ                                        | video-upload                                                   |
@@ -36,7 +34,6 @@
 ```mermaid
 flowchart LR
   composer["投稿フォーム"] --> input["入力部品と寸法"]
-  composer --> tools["作り込み編集ツール"]
   composer --> media["添付メディア"]
   composer --> gate["返信と引用の制限"]
   composer --> visual["代表画像とリンクカード"]
@@ -44,7 +41,6 @@ flowchart LR
   composer --> entryapi["entry API"]
   composer --> listapi["一覧と下書きのAPI"]
   composer --> contract["API契約と生成"]
-  tools --> fields["作り込み投稿項目"]
   media --> video["動画アップロード"]
   video --> session["セッション管理"]
   video --> atproto["Bluesky連携層"]
@@ -101,29 +97,6 @@ sequenceDiagram
     entryapi-->>composer: entryのURL
   else 書き込みに失敗
     entryapi-->>composer: エラー
-  end
-```
-
-### 作り込みの投稿
-
-- 関与: 投稿フォーム, 作り込み編集ツール, 作り込み投稿項目, entry API
-
-作り込みの投稿は、指定した項目が検証を通るかどうかで結果が分岐する。
-
-```mermaid
-sequenceDiagram
-  participant composer as 投稿フォーム
-  participant tools as 作り込み編集ツール
-  participant fields as 作り込み投稿項目
-  participant entryapi as entry API
-  composer->>tools: ツールの一覧を渡す
-  tools->>fields: 項目のパネルを展開
-  fields-->>composer: 見出しとカバーと任意の項目
-  composer->>entryapi: 項目つきで投稿を作成
-  alt 項目が検証を通る
-    entryapi-->>composer: 作成の成功
-  else 項目が検証を通らない
-    entryapi-->>composer: 400 エラー
   end
 ```
 

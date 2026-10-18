@@ -21,6 +21,7 @@ flowchart LR
   slug["[slug]"] --> edv["EntryDetailView/index"]
   slug --> threadChain
   slug --> entry
+  slug --> entryPageCache
   edv --> pb["PostBody/index"]
   sample --> edv
 ```
