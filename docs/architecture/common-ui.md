@@ -7,14 +7,14 @@
 
 ## 2. 構成要素
 
-| 構成要素           | 種別 | 責務                                                    | 実装spec                                                    |
-| ------------------ | ---- | ------------------------------------------------------- | ----------------------------------------------------------- |
-| 利用者             | 外部 | ブラウザで設定ページを操作し、共有の操作を行う          | -                                                           |
-| 共有先SNS          | 外部 | 共有の投稿画面を開き、共有された URL のカードを生成する | -                                                           |
-| 共通UI部品         | 内部 | プルダウンと選択肢の見た目・操作・絞り込みを共通にする  | dropdown、dropdown-search、listbox-option、language-select  |
-| 表示言語           | 内部 | 表示言語を選び、日本語と英語の文言を切り替える          | i18n-locale、i18n-messages                                  |
-| アプリシェルと設定 | 内部 | ナビゲーション・ヘルプ・端末の設定画面を提供する        | app-navigation、help-page、app-settings                     |
-| 他SNS共有          | 内部 | 共有先の選択・共有文の組み立て・共有設定の保持を行う    | auto-popup、intent-share-dialog、share-text、share-settings |
+| 構成要素           | 種別 | 責務                                                                              | 実装spec                                                    |
+| ------------------ | ---- | --------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 利用者             | 外部 | ブラウザで設定ページを操作し、共有の操作を行う                                    | -                                                           |
+| 共有先SNS          | 外部 | X・タイッツー・Mastodon の共有の投稿画面を開き、共有された URL のカードを生成する | -                                                           |
+| 共通UI部品         | 内部 | プルダウンと選択肢の見た目・操作・絞り込みを共通にする                            | dropdown、dropdown-search、listbox-option、language-select  |
+| 表示言語           | 内部 | 表示言語を選び、日本語と英語の文言を切り替える                                    | i18n-locale、i18n-messages                                  |
+| アプリシェルと設定 | 内部 | ナビゲーション・ヘルプ・端末の設定画面を提供する                                  | app-navigation、help-page、app-settings                     |
+| 他SNS共有          | 内部 | 共有先の選択・共有文の組み立て・WebShare API の呼び出し・共有設定の保持を行う     | auto-popup、intent-share-dialog、share-text、share-settings |
 
 ## 3. システム構成
 
@@ -96,7 +96,7 @@ sequenceDiagram
 
 - 関与: 利用者, 他SNS共有, 共有先SNS
 
-他 SNS への共有は、自動ポップアップの設定で開き方が分岐する。
+他 SNS への共有は、自動ポップアップの設定とブラウザの WebShare API の成否で開き方が分岐する。
 
 ```mermaid
 sequenceDiagram
@@ -107,7 +107,10 @@ sequenceDiagram
   alt 自動ポップアップが有効
     share->>ext_sns: 選んだSNSの画面を開く
   else 自動ポップアップが無効
-    share-->>ext_user: 共有ダイアログを表示
+    share->>share: WebShare API で共有
+    opt WebShare が非対応か失敗
+      share->>ext_sns: Xの画面を開く
+    end
   end
 ```
 
