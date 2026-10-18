@@ -1,7 +1,7 @@
 {
   "name": "skyshare",
   // Set this to today's date
-  "compatibility_date": "2026-08-14",
+  "compatibility_date": "2026-10-18",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist/client/",
@@ -16,7 +16,6 @@
       "zone_name": "nekono.dev",
       "custom_domain": true,
       "enabled": true,
-      // 同じドメインでブランチ別プレビュー（<名前>.skyshare.nekono.dev）も配信する
       "previews_enabled": true,
     },
   ],
@@ -27,13 +26,8 @@
     "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
     "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
   },
-  // workers_dev / preview_urls は、独自ドメインの有効状況に合わせて CI の生成時に
-  // branch-release-workflow の wrangler-config が設定する（hack/render-deploy-config.mjs）。
-  // 独自ドメインを配信するため両方 false（旧方式の Version URL / --preview-alias は使わない）。
-  // ブランチ別プレビューは wrangler preview を使う
   "workers_dev": false,
   "preview_urls": false,
-  // wrangler preview の設定。トップレベルの vars は引き継がれないため、同じ値を明示する
   "previews": {
     "vars": {
       "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
