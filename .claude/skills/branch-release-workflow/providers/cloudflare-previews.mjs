@@ -11,6 +11,68 @@ const gte = (v, min) => {
   return true;
 };
 
+// JSONC（コメント・末尾カンマ入りの JSON）を読む。文字列の中身は変えない
+export function parseJsonc(text) {
+  let out = "";
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      let j = i + 1;
+      while (j < text.length && text[j] !== '"') j += text[j] === "\\" ? 2 : 1;
+      out += text.slice(i, j + 1);
+      i = j;
+    } else if (c === "/" && text[i + 1] === "/") {
+      while (i < text.length && text[i] !== "\n") i++;
+      out += "\n";
+    } else if (c === "/" && text[i + 1] === "*") {
+      i = text.indexOf("*/", i + 2);
+      if (i < 0) throw new Error("コメントが閉じていません");
+      i++;
+    } else out += c;
+  }
+  return JSON.parse(out.replace(/,(\s*[}\]])/g, "$1"));
+}
+
+// 有効な独自ドメイン（custom_domain: true で enabled: false でない route）があるか
+export function hasActiveCustomDomain(conf) {
+  const routes = [...(Array.isArray(conf.routes) ? conf.routes : []), ...(conf.route ? [conf.route] : [])];
+  return routes.some((r) => r && typeof r === "object" && r.custom_domain === true && r.enabled !== false);
+}
+
+// 独自ドメインの有効状況に応じて workers_dev / preview_urls を設定した設定文章を返す（コメントは保つ）。
+// 有効: トップレベルの両キーを false にする / 無効: 両方 true にする。
+// 省略しても deploy の結果は同じだが、毎回 wrangler が警告を出し既定値にも依存するため、明示する
+export function applyWorkersDev(text) {
+  const active = hasActiveCustomDomain(parseJsonc(text));
+  const value = String(!active);
+  let out = text;
+  for (const k of ["workers_dev", "preview_urls"]) {
+    const re = new RegExp(`^[ \\t]*"${k}"\\s*:\\s*(true|false)`, "gm");
+    const m = [...out.matchAll(re)].find((x) => depthAt(out, x.index) === 1); // トップレベルのキーだけ
+    if (m) out = out.slice(0, m.index) + m[0].replace(/(true|false)$/, value) + out.slice(m.index + m[0].length);
+    else {
+      const open = out.indexOf("{"); // 先頭のオブジェクトの直後に足す（末尾カンマは JSONC で許される）
+      out = `${out.slice(0, open + 1)}\n  "${k}": ${value},${out.slice(open + 1)}`;
+    }
+  }
+  parseJsonc(out); // 壊れた結果を書かない
+  return { active, text: out };
+}
+
+// 位置 pos の直前までの括弧の深さ（文字列とコメントは数えない）
+function depthAt(text, pos) {
+  let depth = 0;
+  for (let i = 0; i < pos; i++) {
+    const c = text[i];
+    if (c === '"') { i++; while (i < pos && text[i] !== '"') i += text[i] === "\\" ? 2 : 1; }
+    else if (c === "/" && text[i + 1] === "/") while (i < pos && text[i] !== "\n") i++;
+    else if (c === "/" && text[i + 1] === "*") i = text.indexOf("*/", i + 2) + 1;
+    else if (c === "{" || c === "[") depth++;
+    else if (c === "}" || c === "]") depth--;
+  }
+  return depth;
+}
+
 export function check(root, config) {
   const out = [];
   // wrangler 設定（wrangler.jsonc / json / toml、およびテンプレート）に previews_enabled があるか
@@ -18,6 +80,15 @@ export function check(root, config) {
   if (!files.length) out.push({ level: "warn", message: "wrangler の設定ファイルが見つかりません（生成物の場合は無視してよい）。" });
   else if (!files.some((f) => /previews_enabled\W+true/.test(readFileSync(join(root, f), "utf8"))))
     out.push({ level: "error", message: `${files.join(", ")} に previews_enabled: true が見つかりません。独自ドメインでプレビューを配信できません。` });
+  // 独自ドメインの有効状況と workers_dev / preview_urls の整合
+  for (const f of files.filter((f) => /\.jsonc?$/.test(f))) {
+    let conf;
+    try { conf = parseJsonc(readFileSync(join(root, f), "utf8")); } catch { continue; }
+    const active = hasActiveCustomDomain(conf);
+    for (const k of ["workers_dev", "preview_urls"])
+      if (conf[k] === active)
+        out.push({ level: "warn", message: `${f}: 有効な独自ドメインが${active ? "あるのに" : "ないのに"} ${k}: ${conf[k]} です。\`brw wrangler-config ${f} --write\` で直せます。` });
+  }
   // wrangler のバージョン
   const pkgPath = join(root, "package.json");
   if (existsSync(pkgPath)) {

@@ -12,3 +12,10 @@
 - 対応: D-3, D-4
 - [x] T-2.1: 宣言外の CI の警告と Cloudflare の検査を実装し、単体テストを追加する。
 - 検証: `node --check providers/cloudflare-previews.mjs && node tests/selftest.mjs`
+
+## Phase 3: workers.dev 関連キー
+
+- 対応: D-5
+- [x] T-3.1: 独自ドメインの有効判定と wrangler-config を実装し、検査の警告を追加する。
+- [x] T-3.2: AC-7, AC-8 の単体テストを追加し、SKILL.md に使い方を書く。
+- 検証: `node tests/selftest.mjs && node --check scripts/brw.mjs`

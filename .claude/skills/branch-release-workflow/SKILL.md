@@ -76,9 +76,12 @@ brw url [ブランチ]
 brw check                         # 宣言・workflow・provider 設定の整合検査
 brw gen-workflow [--write]        # provider の preview workflow 雛形（--write で .github/workflows/preview.yaml を作成。既存は上書きしない）
 brw cleanup <ブランチ> [--execute] # provider 固有の後始末（既定は表示のみ）
+brw wrangler-config [ファイル] [--write] # 独自ドメインの有効状況に応じて wrangler 設定の workers_dev / preview_urls を設定
 ```
 
 `check` は、宣言の `workBranches` / `protectedBranches` に含まれないのに push で CI が走るブランチ指定を警告し、provider ごとの設定（例: Cloudflare の `previews_enabled`、wrangler のバージョン）も調べる。
+
+`wrangler-config` は、wrangler 設定（既定 `wrangler.jsonc`。テンプレートや CI の生成物にも使える）の `routes` に有効な独自ドメイン（`custom_domain: true` で `enabled: false` でない）があれば `workers_dev` と `preview_urls` を `false` に、なければ両方を `true` にする（省略はしない）。`--write` を付けないと標準出力へ出すだけ。`check` は食い違いを警告する。詳細は `references/cloudflare-previews.md`。
 
 **機械判定できないこと**: workflow が本番向けか（`wrangler deploy` か preview か等）という意味と、リポジトリ外の設定（Cloudflare Pages の本番ブランチ等）。これらはユーザーに確認する。`check` の警告は workflow の `on.push.branches` の簡易解析に基づく。
 

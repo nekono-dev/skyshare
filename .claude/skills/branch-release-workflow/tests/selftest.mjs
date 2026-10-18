@@ -105,5 +105,42 @@ eq("preview/AC-5 既存の workflow の内容は変わらない", readFileSync(j
 const cl = run(withWf, "cleanup", "dev/foo");
 eq("preview/AC-6 実行指定なしはコマンドを表示するだけ", cl.status === 0 && cl.stdout.includes("wrangler preview delete --name dev-foo") && cl.stdout.includes("表示のみ"), true);
 
+// ---- preview: workers.dev 関連キー ----
+const withDomain = `{
+  // 名前
+  "name": "x",
+  "routes": [{ "pattern": "a.example.com", "custom_domain": true, "enabled": true, }],
+  "workers_dev": true, // 旧設定
+  "preview_urls": true,
+  "previews": { "workers_dev": true },
+}
+`;
+const noDomain = '{\n  "name": "x",\n  "routes": [{ "pattern": "a", "custom_domain": true, "enabled": false }],\n  "workers_dev": false\n}\n';
+const wcDir = mkdtempSync(join(tmpdir(), "brw-wc-"));
+const wcFile = join(wcDir, "wrangler.jsonc");
+writeFileSync(wcFile, withDomain);
+const wcShow = run(wcDir, "wrangler-config");
+eq("preview/AC-7 書き込み指定なしはファイルを変えない", readFileSync(wcFile, "utf8"), withDomain);
+eq("preview/AC-7 書き込み指定なしは変更後を標準出力へ出す", wcShow.stdout.includes('"preview_urls": false'), true);
+run(wcDir, "wrangler-config", "--write");
+eq("preview/AC-7 有効な独自ドメインがあれば両キーを false にし他は変えない", readFileSync(wcFile, "utf8"), withDomain.replace('"workers_dev": true,', '"workers_dev": false,').replace('"preview_urls": true,', '"preview_urls": false,'));
+eq("preview/AC-7 入れ子の previews 内のキーは変えない", readFileSync(wcFile, "utf8").includes('"previews": { "workers_dev": true }'), true);
+writeFileSync(wcFile, noDomain);
+run(wcDir, "wrangler-config", "--write");
+const wcOut = cloudflare.parseJsonc(readFileSync(wcFile, "utf8"));
+eq("preview/AC-7 有効な独自ドメインがなければ両方 true", [wcOut.workers_dev, wcOut.preview_urls], [true, true]);
+writeFileSync(wcFile, '{ "name": "x" }');
+run(wcDir, "wrangler-config", "--write");
+const wcAdded = cloudflare.parseJsonc(readFileSync(wcFile, "utf8"));
+eq("preview/AC-7 キーがなければ追加される", [wcAdded.name, wcAdded.workers_dev, wcAdded.preview_urls], ["x", true, true]);
+const wcDirty = (text) => { const w = mkdtempSync(join(tmpdir(), "brw-wc-")); writeFileSync(join(w, "wrangler.jsonc"), text); return cloudflare.check(w, { preview: {} }).filter((f) => f.level === "warn" && /workers_dev|preview_urls/.test(f.message)).length; };
+eq("preview/AC-8 有効な独自ドメインがあり workers_dev: true は警告", wcDirty(withDomain) >= 2, true);
+eq("preview/AC-8 無効な独自ドメインのみで workers_dev: false は警告", wcDirty(noDomain), 1);
+writeFileSync(wcFile, '{ "routes": [{ "pattern": "a", "custom_domain": true }] }');
+run(wcDir, "wrangler-config", "--write");
+const wcFalse = cloudflare.parseJsonc(readFileSync(wcFile, "utf8"));
+eq("preview/AC-7 有効な独自ドメインでキーがなければ false で追加される", [wcFalse.workers_dev, wcFalse.preview_urls], [false, false]);
+eq("preview/AC-8 有効な独自ドメインがありキーなしは警告しない", wcDirty('{ "routes": [{ "pattern": "a", "custom_domain": true }] }'), 0);
+
 console.log(failed ? `\n${failed} 件失敗` : "\nすべて成功");
 process.exit(failed ? 1 : 0);

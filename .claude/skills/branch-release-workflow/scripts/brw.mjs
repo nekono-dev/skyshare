@@ -6,14 +6,16 @@
 //   check                      宣言・workflow・provider 設定の整合検査
 //   gen-workflow [--write]     provider の preview workflow 雛形を出力（--write で .github/workflows/preview.yaml へ）
 //   cleanup <ブランチ> [--execute]  provider 固有の後始末（既定は表示のみ）
+//   wrangler-config [ファイル] [--write]  独自ドメインの有効状況に応じて wrangler 設定の workers_dev / preview_urls を設定
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   CONFIG_REL, checkName, currentBranch, git, globToRegExp, judgeBranch, loadConfig, matchesAny, repoRoot,
   scanWorkflows, shortRef, undeclaredCiBranches, aliasOf,
 } from "./lib.mjs";
 import { getProvider, previewUrl } from "../providers/index.mjs";
+import { applyWorkersDev } from "../providers/cloudflare-previews.mjs";
 
 // ---- フック用: シェルコマンドから git commit / push を抽出 --------------------------
 
@@ -219,10 +221,26 @@ function cleanup(args) {
   process.exit(spawnSync(c.cmd, c.args, { cwd: root, stdio: "inherit" }).status ?? 1);
 }
 
+// 宣言ファイルや git リポジトリには依存しない（CI の設定生成でも使えるようにするため）
+function wranglerConfig(args) {
+  const file = args.find((a) => !a.startsWith("--")) ?? "wrangler.jsonc";
+  if (!/\.jsonc?$/.test(file)) fail(`${file} は JSONC / JSON ではありません（toml は対象外です）。`);
+  if (!existsSync(file)) fail(`${file} が見つかりません。`);
+  let r;
+  try {
+    r = applyWorkersDev(readFileSync(file, "utf8"));
+  } catch (e) {
+    fail(`${file} を処理できません: ${e.message}`);
+  }
+  if (!args.includes("--write")) return process.stdout.write(r.text);
+  writeFileSync(file, r.text);
+  console.log(`${file}: 有効な独自ドメインが${r.active ? "あるため workers_dev / preview_urls を false にしました" : "ないため workers_dev / preview_urls を true にしました"}`);
+}
+
 const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
 if (isMain) {
   const [sub, ...rest] = process.argv.slice(2);
-  const cmds = { hook, create, url, check, "gen-workflow": genWorkflow, cleanup };
+  const cmds = { hook, create, url, check, "gen-workflow": genWorkflow, cleanup, "wrangler-config": wranglerConfig };
   if (!cmds[sub]) fail(`サブコマンドは ${Object.keys(cmds).join(" / ")} のいずれかです。`, 2);
   await cmds[sub](rest);
 }

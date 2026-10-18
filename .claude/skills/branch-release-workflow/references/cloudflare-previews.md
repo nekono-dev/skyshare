@@ -18,6 +18,23 @@
 - 独自ドメインの Preview には noindex が付かない。Cloudflare Access か `_headers` で対処する
 - Free プランは 100 Preview/Worker で、超過分は古いものから自動削除される
 
+## workers.dev の設定
+
+`workers_dev` と `preview_urls` は、省略せず明示する（独自ドメインが有効なら両方 `false`、無効なら両方 `true`）。`brw wrangler-config` が設定する。独自ドメインの有効判定は、`routes` の `custom_domain: true` で `enabled: false` でないもの。
+
+実機の確認結果（wrangler 4.147.0、`routes` に独自ドメインがある使い捨て Worker）:
+
+| 操作                                              | 結果                                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 両キー省略で初回 `wrangler deploy`                 | workers.dev・Preview URL とも無効                                                                 |
+| 両方 `true` で deploy                              | workers.dev・Preview URL とも有効                                                                 |
+| 有効な状態から両キー省略で deploy                  | 両方無効になる。`'workers_dev' is not in your Wrangler file, it will be disabled` の警告が毎回出る |
+| 両方 `false` で deploy                             | 両方無効。警告なし                                                                                |
+| `wrangler versions upload`                         | 省略・`false` のどちらでも状態を変えない（有効なままなら Version Preview URL が workers.dev に出る） |
+| `wrangler preview`                                 | 状態を変えない。workers.dev が有効なままだと Preview URL が workers.dev に出る                    |
+
+省略しても deploy の結果は `false` と同じだが、警告が出て wrangler の既定値に依存するため、明示する。また `wrangler preview` に `previews: {}` と、ルートの `previews_enabled: true`（と一度の deploy）が必要である。
+
 ## ハマりどころ
 
 既存の手動ワイルドカード DNS レコードや、同じホスト名のゾーンルートがあると、`previews_enabled` の有効化が `Hostname '*.xxx' already has externally managed DNS records`（コード 100117）で失敗する。先にそれらを削除する。

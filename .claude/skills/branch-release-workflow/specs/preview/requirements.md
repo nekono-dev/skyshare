@@ -13,6 +13,7 @@
 - 宣言と workflow・provider 設定の整合検査。
 - preview 用 workflow 雛形の生成。
 - provider 固有の後始末コマンドの提示と実行。
+- Cloudflare の wrangler 設定の workers.dev 関連キーの、独自ドメインの有効状況に応じた設定。
 
 ### 2.2 対象外
 
@@ -31,6 +32,8 @@
 - FR-4: Cloudflare の provider では、プレビューの有効化設定・wrangler のバージョン・workflow の有無を検査する。
 - FR-5: provider の workflow 雛形を出力し、既存のファイルは上書きしない。
 - FR-6: 後始末のコマンドは既定で表示だけを行い、実行を明示したときだけ実行する。
+- FR-7: Cloudflare の provider では、有効な独自ドメインの有無に応じて、wrangler 設定の workers.dev 関連キーを設定できる。
+- FR-8: Cloudflare の検査では、独自ドメインの有効状況と食い違う workers.dev 関連キーを警告する。
 
 ## 5. 非機能要件
 
@@ -44,3 +47,5 @@
 - AC-4 (FR-4): 有効化設定のない wrangler 設定に対し、Cloudflare の検査が誤りを報告する。
 - AC-5 (FR-5): preview 用の workflow ファイルが既にあるリポジトリで雛形の書き込みを指示すると、上書きされずに終了コード 1 で終わる。
 - AC-6 (FR-6): 後始末を実行指定なしで指示すると、コマンドが表示されるだけで実行されない。
+- AC-7 (FR-7): 有効な独自ドメインのある設定に書き込みを指示すると、workers.dev 関連キーが無効になる。
+- AC-8 (FR-8): 有効な独自ドメインがあるのに workers.dev が有効な設定に対し、Cloudflare の検査が警告を報告する。
