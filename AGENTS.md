@@ -23,7 +23,7 @@
 # ブランチ・プレビューの規則
 
 - 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に skill `remote-preview` の手順で開発ブランチ `dev/XXXX`（`XXXX` は小文字英数字とハイフンのみ・50文字以内）を作成すること。`git checkout -b` 等で直接作らない。
-- ユーザーが製造したコードの挙動を確認したい旨を示したら、`skyshare-preview-domain-proxy` 経由の `https://dev-XXXX.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
+- ユーザーが製造したコードの挙動を確認したい旨を示したら、`https://dev-XXXX.skyshare.nekono.dev`（Cloudflare Previews のカスタムドメイン）を案内すること。`*.workers.dev` のURLは案内しない。
 - 詳細は `.claude/skills/remote-preview/SKILL.md` を参照。
 
 # lib / util の使い分け

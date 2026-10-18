@@ -2,7 +2,7 @@
 # 開発ブランチに対応する「案内用プレビューURL」を表示するスクリプト。
 #
 # 責務:
-# - ブランチ名 dev/XXXX から、skyshare-preview-domain-proxy 経由の案内用URL
+# - ブランチ名 dev/XXXX から、Cloudflare Previews のカスタムドメインの案内用URL
 #   https://dev-XXXX.skyshare.nekono.dev を組み立てて表示する
 # - 命名規則に合わないブランチ（プレビューが発行されないもの）は異常終了する
 #

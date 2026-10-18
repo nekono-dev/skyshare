@@ -57,7 +57,7 @@ const requireEnv = name => {
 // テンプレート内の `"KEY": "値"` を置換する。キーが見つからない場合はテンプレート変更の検知のため異常終了する
 let wrangler = readFileSync("wrangler.template.jsonc", "utf8")
 for (const name of WRANGLER_VARS) {
-  const pattern = new RegExp(`("${name}"\\s*:\\s*)"[^"]*"`)
+  const pattern = new RegExp(`("${name}"\\s*:\\s*)"[^"]*"`, "g")
   if (!pattern.test(wrangler)) {
     console.error(`wrangler.template.jsonc に ${name} が見つかりません`)
     process.exit(1)

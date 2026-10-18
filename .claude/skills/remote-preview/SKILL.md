@@ -1,11 +1,11 @@
 ---
 name: remote-preview
-description: 新機能の実装・要望追加・要件追加などの開発依頼を受けて作業ブランチ（dev/XXXX）を作るとき、および、ユーザーが製造したコードの挙動を確認したい（プレビューを見たい、動作確認したい、実機で見たい、など）と言ったときに使う。開発ブランチの命名規則 dev/XXXX と、リモートプレビューURL（skyshare-preview-domain-proxy 経由の nekono.dev ドメイン）の案内ルールを定める。
+description: 新機能の実装・要望追加・要件追加などの開発依頼を受けて作業ブランチ（dev/XXXX）を作るとき、および、ユーザーが製造したコードの挙動を確認したい（プレビューを見たい、動作確認したい、実機で見たい、など）と言ったときに使う。開発ブランチの命名規則 dev/XXXX と、リモートプレビューURL（Cloudflare Previews の nekono.dev カスタムドメイン）の案内ルールを定める。
 ---
 
 # リモートプレビュー（dev/XXXX ブランチ）
 
-`dev/XXXX` ブランチへ push すると、GitHub Actions（`.github/workflows/preview.yaml`）が `wrangler versions upload --preview-alias dev-XXXX` を実行し、本番へは公開せずにプレビュー用 Version をアップロードする。同じブランチへ再 push しても alias が新しい Version を指すため、**URL は変わらず内容だけ最新になる**。URL は `skyshare-preview-domain-proxy`（別リポジトリ・別 Worker）が `*.skyshare.nekono.dev` で受けて workers.dev へ中継する。
+`dev/XXXX` ブランチへ push すると、GitHub Actions（`.github/workflows/preview.yaml`）が `wrangler preview --name dev-XXXX` を実行し、本番へは公開せずにブランチ別の Preview を作成・更新する。同じブランチへ再 push しても同じ Preview が更新されるため、**URL は変わらず内容だけ最新になる**。URL は Worker のカスタムドメイン（`previews_enabled: true`）が `*.skyshare.nekono.dev` で直接配信する（中継用の Worker は不要）。
 
 ## 1. 開発ブランチの作成（新機能・要望追加・要件追加の依頼時）
 
@@ -45,18 +45,17 @@ description: 新機能の実装・要望追加・要件追加などの開発依�
 
 ### 案内するURLの規則（必須）
 
-- 案内するのは、**`skyshare-preview-domain-proxy` 経由で疎通できる nekono.dev ドメインのURL**、すなわち `https://dev-XXXX.skyshare.nekono.dev` のみ
-- **`*.workers.dev` のURL や version-id 形式のURLを案内してはならない**（ジョブ Summary や wrangler の出力に出てきても、ユーザーには案内しない）
+- 案内するのは、**nekono.dev ドメインのURL**、すなわち `https://dev-XXXX.skyshare.nekono.dev` のみ
+- **`*.workers.dev` のURL（Preview URL・Unique Deployment URL）を案内してはならない**（ジョブ Summary や wrangler の出力に出てきても、ユーザーには案内しない）
 - push 直後は GitHub Actions のビルド・アップロードが完了するまで反映されない。ジョブの完了状況（`gh run list --workflow preview.yaml` など）を確認し、未完了ならその旨を伝える
 - ブランチが命名規則に合わず URL が発行されない場合は、その旨を伝え、規則に合うブランチへ移す（`create-dev-branch.sh` で作り直して cherry-pick など）ことを提案する
 
 ## 3. 注意点（案内時にユーザーへ補足してよい）
 
-- プレビューは本番 Worker と同じバインディング・Secrets を使う。レガシーバックエンドなど外部への書き込みは本番データに届く
+- Preview の変数は `wrangler.jsonc` の `previews` ブロックで決まる（トップレベルの `vars` は引き継がれない）。現状は本番と同じ値を入れているため、レガシーバックエンドなど外部への書き込みは本番データに届く
 - 同一ブランチへの連続 push では古い実行が中断され、最新の push だけが反映される
-- プレビューを行うには Worker が一度デプロイ済みで、`wrangler.jsonc` の `preview_urls` が `true` であること
+- プレビューを行うには Worker が一度デプロイ済みで、カスタムドメインの `previews_enabled` が `true` であること（wrangler 4.135.0 以上）
 
 ## 関連ファイル
 
 - `.github/workflows/preview.yaml` — push で Version をアップロードする CI
-- `../skyshare-preview-domain-proxy/` — `*.skyshare.nekono.dev` を workers.dev へ中継する別 Worker（デプロイは別途 `npm run deploy`）

@@ -14,7 +14,7 @@
     "build": "npm run build:pripare && npm run build:v2 && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
     "dev": "npm run build:pripare && PUBLIC_VERSION=$npm_package_version astro dev",
     "dev:build": "npm run build && wrangler dev --ip 0.0.0.0",
-    "prev": "npm run build && wrangler versions upload",
+    "prev": "npm run build && wrangler preview",
     "deploy": "npm run build && wrangler deploy",
     "format": "prettier --write .",
     "generate-types": "wrangler types",
@@ -62,7 +62,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11",
-    "wrangler": "^4.131.1",
+    "wrangler": "^4.135.0",
     "zod-openapi": "*"
   },
   "author": "nekono.dev"

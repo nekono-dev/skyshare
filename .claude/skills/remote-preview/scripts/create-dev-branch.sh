@@ -49,7 +49,7 @@ done
 # dev/ 接頭辞は付いていてもいなくてもよい
 suffix="${name#dev/}"
 
-# 命名規則の検証（preview.yaml / skyshare-preview-domain-proxy と同じ規則）
+# 命名規則の検証（preview.yaml と同じ規則）
 if ! printf '%s' "$suffix" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$' || [ "${#suffix}" -gt 50 ]; then
   echo "エラー: '$suffix' は命名規則に合いません。" >&2
   echo "  dev/XXXX の XXXX には小文字英数字とハイフンのみを使い、先頭末尾・連続のハイフンは不可、50文字以内にしてください。" >&2
