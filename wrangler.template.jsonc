@@ -27,8 +27,11 @@
     "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
     "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
   },
+  // workers_dev / preview_urls は、独自ドメインの有効状況に合わせて CI の生成時に
+  // branch-release-workflow の wrangler-config が設定する（hack/render-deploy-config.mjs）。
+  // 独自ドメインを配信するため両方 false（旧方式の Version URL / --preview-alias は使わない）。
+  // ブランチ別プレビューは wrangler preview を使う
   "workers_dev": false,
-  // 旧方式（Version URL / --preview-alias）は使わない。ブランチ別プレビューは wrangler preview を使う
   "preview_urls": false,
   // wrangler preview の設定。トップレベルの vars は引き継がれないため、同じ値を明示する
   "previews": {

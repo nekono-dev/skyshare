@@ -65,7 +65,11 @@ npm run deploy
 
 同じ検証用アカウントを同時に操作しないよう、実行は直列化される。検証専用のアカウントとアプリパスワードを使うこと。
 
-## PRブランチの動作確認（部分リリース）
+## PRブランチの動作確認（プレビュー）
+
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が `wrangler preview` を実行し、`https://dev-XXXX.skyshare.nekono.dev` で確認できる（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
+
+手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 
 ```sh
 npm run prev

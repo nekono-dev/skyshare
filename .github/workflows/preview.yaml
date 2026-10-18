@@ -6,7 +6,7 @@
 # - ブランチ名は dev/XXXX（XXXX は小文字英数字とハイフンのみ）のルールに合うものだけが対象
 # - URLはカスタムドメイン（wrangler.jsonc の previews_enabled）で配信される。ジョブの Summary に出力する
 #
-# 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは .claude/skills/branch-release-workflow（宣言: .claude/branch-release-workflow.json））。
+# 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは .claude/skills/branch-release-workflow）。
 # 前提: Worker が一度デプロイ済みで、カスタムドメインの previews_enabled が true であること（wrangler 4.135.0 以上）。
 name: preview
 
@@ -46,7 +46,7 @@ jobs:
       - run: npm ci
 
       # ブランチ名（dev/XXXX）から Preview 名（dev-XXXX）を作る。
-      # ブランチ命名ルール（.claude/skills/branch-release-workflow（宣言: .claude/branch-release-workflow.json） 参照）: XXXX は小文字英数字とハイフンのみ・先頭末尾はハイフン不可・
+      # ブランチ命名ルール（.claude/skills/branch-release-workflow 参照）: XXXX は小文字英数字とハイフンのみ・先頭末尾はハイフン不可・
       # 連続ハイフン不可・50文字以内。ルールに合わないブランチは警告を出してプレビューを行わない
       # （alias は DNS ラベルになるため。Worker名込みで63文字以内に収めるための上限）。
       - name: Resolve preview alias

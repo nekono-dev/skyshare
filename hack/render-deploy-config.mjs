@@ -3,10 +3,13 @@
 // 責務:
 // - wrangler.template.jsonc の vars を環境変数の値で置き換え、wrangler.jsonc を生成する
 //   （wrangler.jsonc は本番値を含むため .gitignore 対象。CIでは都度生成する）
+// - 生成した wrangler.jsonc の workers_dev / preview_urls を、独自ドメインの有効状況に合わせて設定する
+//   （branch-release-workflow スキルの wrangler-config。省略しない）
 // - _legacy/frontend/.env.production を生成する（こちらも .gitignore 対象）
 //
 // 使い方: node hack/render-deploy-config.mjs
 // 必須の環境変数が1つでも未設定/空の場合は、設定漏れによる誤デプロイを防ぐため異常終了する。
+import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 
 // wrangler.jsonc の vars に反映する環境変数（Cloudflare Worker の実行時変数）
@@ -66,6 +69,18 @@ for (const name of WRANGLER_VARS) {
   wrangler = wrangler.replace(pattern, (_match, head) => `${head}"${value}"`)
 }
 writeFileSync("wrangler.jsonc", wrangler)
+
+// 独自ドメインの有効状況に合わせて workers_dev / preview_urls を設定する
+execFileSync(
+  "node",
+  [
+    ".claude/skills/branch-release-workflow/scripts/brw.mjs",
+    "wrangler-config",
+    "wrangler.jsonc",
+    "--write",
+  ],
+  { stdio: "inherit" },
+)
 
 const legacyEnv = LEGACY_VARS.map(name => `${name}="${requireEnv(name)}"`).join(
   "\n",
