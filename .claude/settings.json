@@ -9,6 +9,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/skills/branch-release-workflow/scripts/brw.mjs\"; [ -f \"$f\" ] || exit 0; node \"$f\" hook"
+          }
+        ]
+      }
     ]
   }
 }

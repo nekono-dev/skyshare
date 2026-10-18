@@ -22,9 +22,11 @@
 
 # ブランチ・プレビューの規則
 
-- 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に skill `remote-preview` の手順で開発ブランチ `dev/XXXX`（`XXXX` は小文字英数字とハイフンのみ・50文字以内）を作成すること。`git checkout -b` 等で直接作らない。
-- ユーザーが製造したコードの挙動を確認したい旨を示したら、`https://dev-XXXX.skyshare.nekono.dev`（Cloudflare Previews のカスタムドメイン）を案内すること。`*.workers.dev` のURLは案内しない。
-- 詳細は `.claude/skills/remote-preview/SKILL.md` を参照。
+- ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、保護ブランチ `main`・`develop`）。
+- 保護ブランチと宣言外のブランチでの commit・push は、PreToolUse フック（`.claude/settings.json`）が拒否する。作業は `dev/XXXX` で行う。
+- 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作成すること。`git checkout -b` 等で直接作らない。
+- ユーザーが製造したコードの挙動を確認したい旨を示したら、`brw url` が返す `https://dev-XXXX.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
+- 詳細は `.claude/skills/branch-release-workflow/SKILL.md` を参照（`brw` は同ディレクトリの `scripts/brw.mjs`）。
 
 # lib / util の使い分け
 

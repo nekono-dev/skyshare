@@ -42,3 +42,6 @@ src/client/**/
 _legacy/**/.env.test
 _legacy/**/.env.test.*
 !_legacy/**/.env.test.template
+
+# 外部スキル（git clone で導入し、使い始めに git pull --ff-only で更新する）
+/.claude/skills/branch-release-workflow/
