@@ -14,7 +14,7 @@ git clone git@github.com.nekono:nekono-dev/branch-release-workflow.git <リポ�
 
 ## 更新
 
-スキルは使い始めるときに `git pull --ff-only` で自身を更新する（`node scripts/brw.mjs self-update`。[SKILL.md](SKILL.md) の「開始時のスキル更新」）。手動で行う場合は、スキルのディレクトリで `git pull --ff-only` を実行する。
+スキルは使い始めるときに `git pull --ff-only` で自身を更新する（[SKILL.md](SKILL.md) の「開始時のスキル更新」）。手動で行う場合は、スキルのディレクトリで `git pull --ff-only` を実行する。
 
 ## 開発
 

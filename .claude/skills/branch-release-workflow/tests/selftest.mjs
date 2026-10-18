@@ -2,11 +2,11 @@
 // 判定ロジックと各サブコマンドの自己テスト。一時 git リポジトリで実行する。 使い方: node tests/selftest.mjs
 // テスト名の「<spec名>/AC-n」は、仕様書の受け入れ条件との対応を表す。
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { judgeCommand, selfUpdate } from "../scripts/brw.mjs";
+import { judgeCommand } from "../scripts/brw.mjs";
 import { globToRegExp, loadConfig, parsePushBranches, undeclaredCiBranches, validateConfig } from "../scripts/lib.mjs";
 import { getProvider, previewUrl } from "../providers/index.mjs";
 import * as cloudflare from "../providers/cloudflare-previews.mjs";
@@ -68,37 +68,15 @@ eq("branch-guard/AC-5 命名規則違反は終了コード 1", bad.status, 1);
 eq("branch-guard/AC-5 命名規則違反はブランチを作らない", spawnSync("git", ["branch", "--list", "dev/*"], { cwd: created, encoding: "utf8" }).stdout.trim(), "");
 eq("branch-guard/AC-5 規則に合う名前は作成される", run(created, "create", "good-name", "--branch-only").status, 0);
 
-const plain = mkdtempSync(join(tmpdir(), "brw-copy-"));
-cpSync(join(root, "scripts"), join(plain, "scripts"), { recursive: true });
-const msg = selfUpdate(plain);
-eq("branch-guard/AC-6 作業ツリーでないスキルは更新できない旨と導入方法を返す", msg.startsWith("更新できません") && msg.includes("git clone"), true);
-
-// 自己更新: ローカルの bare リモートを使った早送り更新
-const bare = mkdtempSync(join(tmpdir(), "brw-bare-"));
-g(bare, "init", "-q", "--bare", "-b", "main");
-const work = mkRepo("main", null);
-g(work, "remote", "add", "origin", bare);
-g(work, "push", "-q", "-u", "origin", "main");
-const clone = join(mkdtempSync(join(tmpdir(), "brw-clone-")), "skill");
-execFileSync("git", ["clone", "-q", bare, clone]);
-eq("自己更新: 変更が無ければ最新", selfUpdate(clone), "スキルは最新です。");
-g(work, "commit", "-q", "--allow-empty", "-m", "next");
-g(work, "push", "-q");
-eq("自己更新: リモートが進んでいれば更新", selfUpdate(clone), "スキルを更新しました。SKILL.md を読み直してください。");
-g(clone, "commit", "-q", "--allow-empty", "-m", "local");
-g(work, "commit", "-q", "--allow-empty", "-m", "diverge");
-g(work, "push", "-q");
-eq("自己更新: 履歴が分岐していれば強制せず更新できない旨", selfUpdate(clone).startsWith("更新できません"), true);
-
 const t0 = Date.now();
 for (let i = 0; i < 16; i++) judgeCommand("git commit -m x", onDev);
-eq("branch-guard/AC-7 判定 16 件が 10 秒以内", Date.now() - t0 <= 10_000, true);
+eq("branch-guard/AC-6 判定 16 件が 10 秒以内", Date.now() - t0 <= 10_000, true);
 
 const imports = [];
 for (const dir of ["scripts", "providers"])
   for (const f of readdirSync(join(root, dir)))
     for (const m of readFileSync(join(root, dir, f), "utf8").matchAll(/from "([^"]+)"/g)) imports.push(m[1]);
-eq("branch-guard/AC-8 import は標準モジュールと相対パスのみ", imports.filter((m) => !m.startsWith("node:") && !m.startsWith(".")), []);
+eq("branch-guard/AC-7 import は標準モジュールと相対パスのみ", imports.filter((m) => !m.startsWith("node:") && !m.startsWith(".")), []);
 
 // ---- preview ----
 eq("preview/AC-1 斜線をハイフンにした alias のURLを算出", previewUrl({ preview: cfg.preview }, "dev/foo-bar"), "https://dev-foo-bar.example.com");

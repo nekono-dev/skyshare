@@ -6,11 +6,9 @@
 //   check                      宣言・workflow・provider 設定の整合検査
 //   gen-workflow [--write]     provider の preview workflow 雛形を出力（--write で .github/workflows/preview.yaml へ）
 //   cleanup <ブランチ> [--execute]  provider 固有の後始末（既定は表示のみ）
-//   self-update                スキル自身を git pull --ff-only で最新にする（失敗しても作業は続けられる）
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   CONFIG_REL, checkName, currentBranch, git, globToRegExp, judgeBranch, loadConfig, matchesAny, repoRoot,
   scanWorkflows, shortRef, undeclaredCiBranches, aliasOf,
@@ -221,24 +219,10 @@ function cleanup(args) {
   process.exit(spawnSync(c.cmd, c.args, { cwd: root, stdio: "inherit" }).status ?? 1);
 }
 
-export const SKILL_CLONE_URL = "git@github.com.nekono:nekono-dev/branch-release-workflow.git";
-
-// スキル自身の更新。戻り値は利用者へ伝える 1 行（失敗しても例外にせず、現在の版で作業を続けさせる）
-export function selfUpdate(dir = join(dirname(fileURLToPath(import.meta.url)), "..")) {
-  const skillDir = realpathSync(dir);
-  const top = git(skillDir, "rev-parse", "--show-toplevel");
-  if (!top || realpathSync(top) !== skillDir)
-    return `更新できません: スキルが git の作業ツリーではありません。git clone ${SKILL_CLONE_URL} <配置先> での導入を勧めます。`;
-  const before = git(skillDir, "rev-parse", "HEAD");
-  const r = spawnSync("git", ["-C", skillDir, "pull", "--ff-only"], { encoding: "utf8" });
-  if (r.status !== 0) return `更新できません: ${(r.stderr || r.stdout || "git pull が失敗しました").trim().split("\n")[0]}`;
-  return git(skillDir, "rev-parse", "HEAD") === before ? "スキルは最新です。" : "スキルを更新しました。SKILL.md を読み直してください。";
-}
-
 const isMain = process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
 if (isMain) {
   const [sub, ...rest] = process.argv.slice(2);
-  const cmds = { hook, create, url, check, "gen-workflow": genWorkflow, cleanup, "self-update": () => console.log(selfUpdate()) };
+  const cmds = { hook, create, url, check, "gen-workflow": genWorkflow, cleanup };
   if (!cmds[sub]) fail(`サブコマンドは ${Object.keys(cmds).join(" / ")} のいずれかです。`, 2);
   await cmds[sub](rest);
 }

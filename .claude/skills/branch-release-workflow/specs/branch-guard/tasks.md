@@ -7,9 +7,8 @@
 - [x] T-1.2: フックと push の送り先の解釈を実装し、判定の単体テストを受け入れ条件のタグ付きで追加する。
 - 検証: `node tests/selftest.mjs`
 
-## Phase 2: 作成と自己更新
+## Phase 2: 作成
 
-- 対応: D-4, D-5
+- 対応: D-4
 - [x] T-2.1: 作業ブランチの作成を実装する。
-- [x] T-2.2: 自己更新を実装し、一時リポジトリでの単体テストを追加する。
 - 検証: `node --check scripts/brw.mjs && node tests/selftest.mjs`
