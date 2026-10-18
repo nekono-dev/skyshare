@@ -1,7 +1,7 @@
 {
   "name": "skyshare",
   // Set this to today's date
-  "compatibility_date": "2026-10-18",
+  "compatibility_date": "2026-10-08",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist/client/",
