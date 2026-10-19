@@ -23,6 +23,7 @@
 | 他SNS共有              | 他機能 | 投稿の成功後に共有先の選択と共有の投稿画面の起動を行う                                    | -                                                              |
 | entry API              | 他機能 | 投稿と entry の作成・編集・削除を所有権つきで行う                                         | -                                                              |
 | 一覧と下書きのAPI      | 他機能 | 投稿の一覧と下書きの出し入れを行う                                                        | -                                                              |
+| 予約フォーム           | 他機能 | 実行日時の指定と認証情報の登録を受け、予約を作成する                                      | -                                                              |
 | API契約と生成          | 他機能 | API の入出力の定義からクライアントを生成して提供する                                      | -                                                              |
 | セッション管理         | 他機能 | 動画用の API で、セッションの再開と更新を行う                                             | -                                                              |
 | Bluesky連携層          | 他機能 | atproto の操作と投稿レコードの組み立てを担う                                              | -                                                              |
@@ -41,6 +42,7 @@ flowchart LR
   composer --> entryapi["entry API"]
   composer --> listapi["一覧と下書きのAPI"]
   composer --> contract["API契約と生成"]
+  composer --> schedule["予約フォーム"]
   media --> video["動画アップロード"]
   video --> session["セッション管理"]
   video --> atproto["Bluesky連携層"]

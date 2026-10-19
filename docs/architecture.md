@@ -3,7 +3,8 @@
 ## 1. 目的と範囲
 
 skyshare は、Bluesky へ投稿し、投稿から X のリンクカードで内容が伝わる entry を作って共有できる Web アプリである。
-利用者の投稿と entry は利用者自身の Bluesky PDS に保管し、skyshare は自前のデータベースを持たない。
+利用者の投稿と entry は利用者自身の Bluesky PDS に保管し、skyshare が自前で保管するのは実行前の予約と、その実行に必要な認証情報だけである。
+時刻を指定した予約投稿も扱う。
 旧バックエンドに保存された過去の投稿ページの閲覧と、投稿者本人による削除も扱う。
 Bluesky 以外の SNS への投稿の作成は対象外であり、共有先の SNS では共有の投稿画面を開くだけである。
 
@@ -20,10 +21,12 @@ Bluesky 以外の SNS への投稿の作成は対象外であり、共有先の 
 | Bluesky画像CDN      | 外部 | 投稿の画像を配信する                                                              | -                                                  |
 | 共有先SNS           | 外部 | X・タイッツー・Mastodon の共有の投稿画面を開き、共有された URL のカードを生成する | -                                                  |
 | PLC Directory       | 外部 | DID から DID ドキュメントを返す                                                   | -                                                  |
+| 定期実行トリガー    | 外部 | 1分ごとに予約の実行を起動する                                                     | -                                                  |
 | 画面の共通基盤      | 内部 | 共通の部品・表示言語・設定画面・他 SNS への共有を提供する                         | [画面の共通基盤](architecture/common-ui.md)        |
 | 投稿の作成          | 内部 | 投稿と entry を組み立て、添付と動画を整えて送信する                               | [投稿の作成](architecture/compose.md)              |
 | 投稿の管理          | 内部 | 投稿の一覧と下書きを扱い、entry を保存して削除する                                | [投稿の管理](architecture/manage.md)               |
 | アカウントとAPI基盤 | 内部 | ログインとセッションを保ち、Bluesky と API の契約を担う                           | [アカウントとAPI基盤](architecture/account-api.md) |
+| 予約投稿            | 内部 | 投稿に実行日時を指定して予約し、時刻が来ると利用者の Bluesky へ自動で投稿する     | [予約投稿](architecture/scheduled-post.md)         |
 | 公開ページの表示    | 内部 | entry と旧形式の投稿ページを表示し、共有カードを返す                              | [公開ページの表示](architecture/public-view.md)    |
 
 ## 3. システム構成
@@ -38,6 +41,8 @@ flowchart LR
   manage --> common
   manage --> base
   base --> common
+  schedule["予約投稿"] --> base
+  compose --> schedule
   view["公開ページの表示"] --> common
   view --> base
   view --> manage
@@ -64,6 +69,10 @@ flowchart LR
 | 旧ページの操作       | 利用 | 旧バックエンド      | 公開ページの表示    |
 | 画像の取得           | 利用 | Bluesky画像CDN      | 公開ページの表示    |
 | 共有画面の起動       | 利用 | 共有先SNS           | 画面の共通基盤      |
+| 予約の操作           | 提供 | 利用者              | 予約投稿            |
+| 定期起動             | 提供 | 定期実行トリガー    | 予約投稿            |
+| 予約用ログイン       | 利用 | Bluesky PDS         | 予約投稿            |
+| 予約の投稿           | 利用 | Bluesky PDS         | 予約投稿            |
 
 システム境界の内側のくくりと外部の要素は、IF の名前を付けた辺で結ぶ。
 
@@ -74,6 +83,7 @@ flowchart LR
     manage["投稿の管理"]
     common["画面の共通基盤"]
     base["アカウントとAPI基盤"]
+    schedule["予約投稿"]
     view["公開ページの表示"]
   end
   ext_user["利用者"] -->|投稿の操作| compose
@@ -93,6 +103,10 @@ flowchart LR
   view -->|旧ページの操作| ext_legacy["旧バックエンド"]
   view -->|画像の取得| ext_cdn["Bluesky画像CDN"]
   common -->|共有画面の起動| ext_sns
+  ext_user -->|予約の操作| schedule
+  ext_cron["定期実行トリガー"] -->|定期起動| schedule
+  schedule -->|予約用ログイン| ext_pds
+  schedule -->|予約の投稿| ext_pds
 ```
 
 ## 5. 機能
