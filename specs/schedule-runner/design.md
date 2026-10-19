@@ -109,7 +109,6 @@ export default {
 export const runScheduledPosts = async (env: Env, now: number): Promise<void>
 
 const MAX_EXTERNAL_CALLS = 40
-const STALE_SECONDS = 600
 ```
 
 | 順序 | 処理                                                                                                                                     |

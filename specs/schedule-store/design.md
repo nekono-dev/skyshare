@@ -5,6 +5,7 @@
 | パス                                   | 責務                                       |
 | -------------------------------------- | ------------------------------------------ |
 | `src/lib/schedule/types.ts`            | 予約の型・状態・上限値の定義               |
+| `src/lib/schedule/cfTypes.ts`          | D1 と R2 とバインディングの最小の型        |
 | `src/lib/schedule/store.ts`            | 予約と認証情報の保管、取り出し、状態の遷移 |
 | `src/lib/schedule/credentialCrypto.ts` | 認証情報の暗号化と復号                     |
 | `src/lib/schedule/imageStaging.ts`     | 添付画像の一時保管と削除                   |
@@ -16,6 +17,8 @@
 ```mermaid
 flowchart LR
   store --> types
+  store --> cfTypes
+  imageStaging --> cfTypes
   store --> credentialCrypto
   store --> imageStaging
   imageStaging --> types
@@ -38,6 +41,7 @@ sequenceDiagram
   store->>credentialCrypto: encryptToken
   store->>ext_d1: insertSchedule
   store->>ext_d1: saveCredential
+  store->>ext_d1: getCredentialStatus
   store->>ext_d1: countPending と getSchedule
   store->>ext_d1: listSchedules
   store->>ext_d1: deleteSchedule
@@ -54,7 +58,9 @@ sequenceDiagram
     store->>ext_d1: purgeIdleCredential
     store->>ext_d1: loadCredential
     store->>ext_d1: requeueStale
+    store->>ext_d1: STALE_SECONDS
     store->>ext_d1: purgeFinished
+    store->>ext_d1: FINISHED_RETENTION_SECONDS
   end
 ```
 
@@ -123,7 +129,7 @@ export const countPending = (db: D1Database, did: string): Promise<number>
 
 ```ts
 export const claimDueSchedules = (db: D1Database, now: number, limit: number): Promise<ScheduleRow[]>
-export const saveProgress = (db: D1Database, id: string, progress: Progress, attempts?: number): Promise<void>
+export const saveProgress = (db: D1Database, id: string, progress: Progress, now: number, attempts?: number): Promise<boolean>
 export const releaseSchedule = (db: D1Database, id: string, countAttempt: boolean, now: number): Promise<void>
 export const finishSchedule = (
     db: D1Database,
@@ -154,14 +160,14 @@ type Progress = {
 
 ```ts
 export const requeueStale = (db: D1Database, now: number, staleSeconds: number): Promise<number>
-export const purgeFinished = (db: D1Database, now: number, retentionSeconds: number): Promise<number>
+export const purgeFinished = (db: D1Database, now: number, retentionSeconds: number): Promise<ScheduleRow[]>
 
-const STALE_SECONDS = 600
-const FINISHED_RETENTION_SECONDS = 7 * 24 * 60 * 60
+export const STALE_SECONDS = 600
+export const FINISHED_RETENTION_SECONDS = 7 * 24 * 60 * 60
 ```
 
 - `requeueStale` は `running` で `updated_at` が `now - staleSeconds` より古い行を `pending` に戻し、`attempts` に1を加える。
-- `purgeFinished` は `posted` と `failed` で `finished_at` が保持期間より古い行を削除し、その行の画像のキーが残っていれば画像も削除する。
+- `purgeFinished` は `posted` と `failed` で `finished_at` が保持期間より古い行を削除し、削除した行を返す。画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
 
 ### D-5: 認証情報の暗号化と保管 (FR-4, FR-5, NFR-2)
 
@@ -169,7 +175,8 @@ const FINISHED_RETENTION_SECONDS = 7 * 24 * 60 * 60
 export const encryptToken = (secret: string, did: string, token: string): Promise<string>
 export const decryptToken = (secret: string, did: string, encrypted: string): Promise<string>
 
-export const saveCredential = (db: D1Database, secret: string, c: { did: string; service: string; token: string }): Promise<void>
+export const saveCredential = (db: D1Database, secret: string, c: { did: string; service: string; token: string }, now: number): Promise<void>
+export const getCredentialStatus = (db: D1Database, did: string): Promise<{ registered: boolean; updatedAt?: number }>
 export const loadCredential = (db: D1Database, secret: string, did: string): Promise<{ service: string; token: string } | null>
 export const purgeIdleCredential = (db: D1Database, did: string): Promise<boolean>
 ```
