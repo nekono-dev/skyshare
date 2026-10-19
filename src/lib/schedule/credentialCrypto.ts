@@ -30,10 +30,10 @@ const importKey = async (secret: string): Promise<CryptoKey> => {
     try {
         raw = fromBase64(secret)
     } catch {
-        throw new Error("暗号鍵が Base64 ではありません")
+        throw new Error("encryption key is not valid Base64")
     }
     if (raw.length !== KEY_BYTES) {
-        throw new Error("暗号鍵の長さが32バイトではありません")
+        throw new Error("encryption key must be 32 bytes")
     }
     return crypto.subtle.importKey("raw", raw, "AES-GCM", false, [
         "encrypt",

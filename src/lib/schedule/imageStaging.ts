@@ -17,7 +17,7 @@ export const putImages = async (
 ): Promise<string[]> => {
     const total = images.reduce((sum, img) => sum + img.bytes.byteLength, 0)
     if (total > MAX_IMAGE_BYTES_PER_SCHEDULE) {
-        throw new Error("画像の合計が上限を超えています")
+        throw new Error("total image size exceeds the limit")
     }
     const keys: string[] = []
     try {

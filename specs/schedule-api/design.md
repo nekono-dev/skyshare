@@ -2,21 +2,24 @@
 
 ## 1. 構成
 
-| パス                                                   | 責務                                         |
-| ------------------------------------------------------ | -------------------------------------------- |
-| `src/pages/v2/schedules.ts`                            | 予約の作成と一覧のハンドラ                   |
-| `src/pages/v2/schedules/[id].ts`                       | 予約の取消と削除のハンドラ                   |
-| `src/pages/v2/schedules/limits.ts`                     | 制限値の取得のハンドラ                       |
-| `src/pages/v2/schedules/credential.ts`                 | 予約用認証情報の取得・登録・削除のハンドラ   |
-| `src/lib/api/schema/v2/schedules/post.ts`              | 予約の作成の入力スキーマ                     |
-| `src/lib/api/schema/v2/schedules/get.ts`               | 予約の一覧のクエリと応答のスキーマ           |
-| `src/lib/api/schema/v2/schedules/limits/get.ts`        | 制限値の応答のスキーマ                       |
-| `src/lib/api/schema/v2/schedules/_id/delete.ts`        | 予約の取消のパスのスキーマ                   |
-| `src/lib/api/schema/v2/schedules/credential/get.ts`    | 認証情報の登録状態のスキーマ                 |
-| `src/lib/api/schema/v2/schedules/credential/put.ts`    | 認証情報の登録の入力スキーマ                 |
-| `src/lib/api/schema/v2/schedules/credential/delete.ts` | 認証情報の削除の応答のスキーマ               |
-| `src/lib/schedule/validateSchedule.ts`                 | 実行時刻の範囲と件数の検証、保管形式への変換 |
-| `src/lib/schedule/registerCredential.ts`               | アプリパスワードでのログインと登録前の検証   |
+| パス                                                   | 責務                                           |
+| ------------------------------------------------------ | ---------------------------------------------- |
+| `src/pages/v2/schedules.ts`                            | 予約の作成と一覧のハンドラ                     |
+| `src/pages/v2/schedules/[id].ts`                       | 予約の取消と削除のハンドラ                     |
+| `src/pages/v2/schedules/limits.ts`                     | 制限値の取得のハンドラ                         |
+| `src/pages/v2/schedules/credential.ts`                 | 予約用認証情報の取得・登録・削除のハンドラ     |
+| `src/lib/api/schema/v2/schedules/post.ts`              | 予約の作成の入力スキーマ                       |
+| `src/lib/api/schema/v2/schedules/get.ts`               | 予約の一覧のクエリと応答のスキーマ             |
+| `src/lib/api/schema/v2/schedules/limits/get.ts`        | 制限値の応答のスキーマ                         |
+| `src/lib/api/schema/v2/schedules/_id/delete.ts`        | 予約の取消のパスのスキーマ                     |
+| `src/lib/api/schema/v2/schedules/credential/get.ts`    | 認証情報の登録状態のスキーマ                   |
+| `src/lib/api/schema/v2/schedules/credential/put.ts`    | 認証情報の登録の入力スキーマ                   |
+| `src/lib/api/schema/v2/schedules/credential/delete.ts` | 認証情報の削除の応答のスキーマ                 |
+| `src/lib/schedule/validateSchedule.ts`                 | 実行時刻の範囲と件数の検証、保管形式への変換   |
+| `src/lib/schedule/scheduleLimits.ts`                   | 実行時刻の範囲と各上限の定数、制限値の組み立て |
+| `src/lib/schedule/scheduleResponse.ts`                 | 識別子つきのエラー応答と JSON 応答の組み立て   |
+| `src/lib/schedule/env.ts`                              | D1・R2・暗号鍵のバインディングの取得           |
+| `src/lib/schedule/registerCredential.ts`               | アプリパスワードでのログインと登録前の検証     |
 
 ## 2. 関係図・ワークフロー
 
@@ -28,15 +31,22 @@ flowchart LR
   schedules --> schedulesGet["schedules/get"]
   schedules --> validateSchedule
   schedules --> ext_store["予約ストア"]
+  schedules --> scheduleResponse
+  schedules --> env
+  validateSchedule --> scheduleLimits
   limits --> limitsGet["limits/get"]
   limits --> validateSchedule
   id["[id]"] --> idDelete["_id/delete"]
   id --> ext_store
+  id --> scheduleResponse
+  id --> env
   credential --> credentialGet["credential/get"]
   credential --> put
   credential --> credentialDelete["credential/delete"]
   credential --> registerCredential
   credential --> ext_store
+  credential --> scheduleResponse
+  credential --> env
   registerCredential --> ext_store
 ```
 
@@ -55,7 +65,7 @@ sequenceDiagram
   alt 範囲外
     validateSchedule-->>schedules: 400
   else 範囲内
-    schedules->>ext_store: loadCredential
+    schedules->>ext_store: getCredentialStatus
     alt 未登録
       schedules-->>schedules: 409
     else 登録済み
@@ -124,18 +134,19 @@ const SchedulePostItemSchema = z.union(EntryPostItemSchema.options.slice(0, 3))
 ### D-3: 実行時刻と件数の検証 (FR-2, FR-3, FR-9)
 
 ```ts
+// scheduleLimits.ts
 const MIN_LEAD_SECONDS = 5 * 60
 const MAX_LEAD_SECONDS = 30 * 24 * 60 * 60
 const MAX_PENDING_PER_ACCOUNT = 20
 
 export const validateRunAt = (runAt: string, nowSeconds: number): { ok: true; epoch: number } | { ok: false }
-export const toStoredPayload = (
+export const toStoredPayload = async (
     body: ScheduleRequestBody,
-): { payload: StoredPayload; images: { bytes: ArrayBuffer; mime: string }[] }
+): Promise<{ payload: StoredPayload; images: { bytes: ArrayBuffer; mime: string }[] }>
 ```
 
 - `validateRunAt` は ISO 8601 の日時を UNIX 秒に変換し、`now + MIN_LEAD_SECONDS` 以上かつ `now + MAX_LEAD_SECONDS` 以下を許可する。
-- 認証情報が未登録のアカウントは `loadCredential` が `null` を返すため、`ScheduleCredentialRequired` を返す。
+- 認証情報が未登録のアカウントは `getCredentialStatus` が未登録を返すため、`ScheduleCredentialRequired` を返す。
 - 検証の順序は、実行時刻 → 認証情報の登録 → 待機中の件数 → 画像の保管 → 予約の保存とする。画像を保管した後に保存が失敗したときは、保管した画像を削除する。
 
 ### D-4: 予約の一覧 (FR-7)
