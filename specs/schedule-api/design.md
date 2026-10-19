@@ -6,9 +6,11 @@
 | ------------------------------------------------------ | -------------------------------------------- |
 | `src/pages/v2/schedules.ts`                            | 予約の作成と一覧のハンドラ                   |
 | `src/pages/v2/schedules/[id].ts`                       | 予約の取消と削除のハンドラ                   |
+| `src/pages/v2/schedules/limits.ts`                     | 制限値の取得のハンドラ                       |
 | `src/pages/v2/schedules/credential.ts`                 | 予約用認証情報の取得・登録・削除のハンドラ   |
 | `src/lib/api/schema/v2/schedules/post.ts`              | 予約の作成の入力スキーマ                     |
 | `src/lib/api/schema/v2/schedules/get.ts`               | 予約の一覧のクエリと応答のスキーマ           |
+| `src/lib/api/schema/v2/schedules/limits/get.ts`        | 制限値の応答のスキーマ                       |
 | `src/lib/api/schema/v2/schedules/_id/delete.ts`        | 予約の取消のパスのスキーマ                   |
 | `src/lib/api/schema/v2/schedules/credential/get.ts`    | 認証情報の登録状態のスキーマ                 |
 | `src/lib/api/schema/v2/schedules/credential/put.ts`    | 認証情報の登録の入力スキーマ                 |
@@ -26,6 +28,8 @@ flowchart LR
   schedules --> schedulesGet["schedules/get"]
   schedules --> validateSchedule
   schedules --> ext_store["予約ストア"]
+  limits --> limitsGet["limits/get"]
+  limits --> validateSchedule
   id["[id]"] --> idDelete["_id/delete"]
   id --> ext_store
   credential --> credentialGet["credential/get"]
@@ -42,6 +46,7 @@ flowchart LR
 sequenceDiagram
   participant schedules
   participant validateSchedule
+  participant limits
   participant credential
   participant registerCredential
   participant ext_store as 予約ストア
@@ -59,6 +64,7 @@ sequenceDiagram
       schedules->>ext_store: insertSchedule
     end
   end
+  limits->>validateSchedule: getScheduleLimits
   credential->>registerCredential: registerScheduleCredential
   registerCredential->>ext_pds: createSession
   alt アプリパスワードで別アカウント
@@ -204,6 +210,23 @@ const CredentialStatusSchema = z.object({
 
 - 削除は `countPending` が0件のときだけ認証情報の行を削除し、1件以上のときは `ScheduleCredentialInUse` を返す。
 - 実行中の予約があるときも削除しない。
+
+### D-8: 制限値の提供 (FR-12)
+
+```ts
+// GET /v2/schedules/limits
+type ScheduleLimits = {
+    minLeadSeconds: number // MIN_LEAD_SECONDS
+    maxLeadSeconds: number // MAX_LEAD_SECONDS
+    maxPending: number // MAX_PENDING_PER_ACCOUNT
+    maxImageBytes: number // 保管の上限の定数
+    maxPosts: number // スレッドの投稿数の上限の定数
+}
+export const getScheduleLimits = (): ScheduleLimits
+```
+
+- 返す値は、作成の検証が参照する定数そのものとし、別の値を持たない。
+- 値は実行環境が変わらない限り変化しないため、応答は認証を要する以外に状態を持たない。
 
 ## 4. エラー処理
 

@@ -18,10 +18,11 @@
 
 ## Phase 3: 一覧と取消
 
-- 対応: D-4, D-5
+- 対応: D-4, D-5, D-8
 - [ ] T-3.1: `src/pages/v2/schedules.ts` に GET を実装する。
 - [ ] T-3.2: `src/pages/v2/schedules/[id].ts` に DELETE を実装する。
-- [ ] T-3.3: 受け入れ条件 AC-8 と AC-9 のテストをタグ付きで追加する。
+- [ ] T-3.3: `src/pages/v2/schedules/limits.ts` に制限値の取得を実装する。
+- [ ] T-3.4: 受け入れ条件 AC-8、AC-9、AC-17 のテストをタグ付きで追加する。
 - 検証: `npx vitest run tests/pages/v2/schedules.test.ts tests/pages/v2/schedulesId.test.ts`
 
 ## Phase 4: 認証情報

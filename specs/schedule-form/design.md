@@ -71,14 +71,15 @@ sequenceDiagram
 export const defaultRunAt = (now: Date): Date
 export const toLocalInputValue = (d: Date): string // "YYYY-MM-DDTHH:mm"（端末のタイムゾーン）
 export const toRunAtIso = (localValue: string): string // "+09:00" のような差を含む ISO 8601
-export const checkRunAt = (d: Date, now: Date): "ok" | "tooSoon" | "tooLate"
-
-const MIN_LEAD_MS = 5 * 60 * 1000
-const MAX_LEAD_MS = 30 * 24 * 60 * 60 * 1000
+export const checkRunAt = (
+    d: Date,
+    now: Date,
+    limits: { minLeadSeconds: number; maxLeadSeconds: number },
+): "ok" | "tooSoon" | "tooLate"
 ```
 
 - `defaultRunAt` は `now` の1時間後を、分を切り上げずに返す。
-- `checkRunAt` は `d - now` が `MIN_LEAD_MS` 未満なら `tooSoon`、`MAX_LEAD_MS` を超えるなら `tooLate` を返す。
+- `checkRunAt` は `d - now` が `minLeadSeconds` 未満なら `tooSoon`、`maxLeadSeconds` を超えるなら `tooLate` を返す。
 - `toRunAtIso` は `Date` の `getTimezoneOffset` から `+09:00` 形式のオフセットを組み立てる。
 
 ### D-2: 予約ダイアログ (FR-1, FR-6, NFR-1, NFR-4)
@@ -100,7 +101,7 @@ export const ScheduleDialog: (props: ScheduleDialogProps) => JSX.Element
 | Submitting  | 送信ボタンを無効にし、進行中の表示     | 成功で Done、失敗で Editing                               |
 | Done        | 一覧への案内のリンクと閉じるボタン     | 閉じる                                                    |
 
-- 認証情報の登録状態は、ダイアログを開くたびに取得する。
+- 認証情報の登録状態と制限値（`GET /v2/schedules/limits`）は、ダイアログを開くたびに取得する。範囲の数値は画面に持たず、取得した値だけを使う。
 - Submitting の間は送信の関数を呼ばない。状態の更新を待たずに重複を防ぐため、送信中を示す値を `useRef` でも持つ。
 - 成功したら `onScheduled` を呼び、呼び出し側が投稿フォームの入力を初期化する。
 - ボタンと入力欄は、共通 UI のクラスで高さと幅を44ピクセル以上にする。
@@ -179,9 +180,10 @@ type CredentialStatus = { registered: boolean; updatedAt?: string }
 
 ## 4. エラー処理
 
-| 事象                     | 処理                                                       |
-| ------------------------ | ---------------------------------------------------------- |
-| 一覧の取得に失敗         | 再読み込みのボタンとエラーの文言を表示する                 |
-| 作成に失敗               | Editing に戻し、入力した日時を保ったままエラーを表示する   |
-| 登録に失敗               | Registering のまま、パスワード欄を空にしてエラーを表示する |
-| 取消の時点で予約が実行中 | `schedule.error.running` を表示し、一覧を再取得する        |
+| 事象                     | 処理                                                         |
+| ------------------------ | ------------------------------------------------------------ |
+| 一覧の取得に失敗         | 再読み込みのボタンとエラーの文言を表示する                   |
+| 作成に失敗               | Editing に戻し、入力した日時を保ったままエラーを表示する     |
+| 登録に失敗               | Registering のまま、パスワード欄を空にしてエラーを表示する   |
+| 制限値の取得に失敗       | 送信ボタンを無効にし、再取得のボタンとエラーの文言を表示する |
+| 取消の時点で予約が実行中 | `schedule.error.running` を表示し、一覧を再取得する          |
