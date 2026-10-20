@@ -52,8 +52,22 @@ npm run deploy
 | Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
 | Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
 | Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
+| Variable | `SCHEDULE_D1_DATABASE_ID`        | 予約投稿用 D1 の database_id（UUID）。未登録だと仮の値になり、デプロイは失敗する |
 
 手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
+
+### 予約投稿の初期設定（初回のみ）
+
+予約投稿は Cloudflare の D1・R2・Cron Trigger を使う（いずれも無料枠の範囲）。初回のデプロイの前に、次を行う。
+
+```sh
+npx wrangler d1 create skyshare-schedule            # 出力された database_id を Variable `SCHEDULE_D1_DATABASE_ID` に登録する
+npx wrangler r2 bucket create skyshare-schedule-images
+npx wrangler r2 bucket lifecycle add skyshare-schedule-images expire-45d --expire-days 45   # 削除漏れの画像を自動で消す
+openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY                          # 予約用の認証情報の暗号鍵
+```
+
+D1 のマイグレーション（`migrations/`）は、デプロイ時に deploy.yaml が適用する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。
 
 ### E2E（e2e.yaml）
 

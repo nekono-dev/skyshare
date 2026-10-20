@@ -9,7 +9,10 @@
  * Cloudflare Workers 環境制約を遵守すること。
  */
 import { AppBskyFeedPost } from "@atproto/api"
-import { bskyCdnUrlgen } from "@/lib/entry/url"
+import { bskyCdnUrlgen, blobToCdnUrl, toCidString } from "@/lib/entry/url"
+
+// 互換のため、これらの関数は URL を扱うモジュールから再エクスポートする
+export { blobToCdnUrl, toCidString }
 import { parseEntryAtUri } from "@/lib/atproto/nsid"
 import { VIDEO_WATCH_BASE_URL } from "@/lib/video/postVideoLimits"
 
@@ -98,40 +101,6 @@ export const parseEntryLocator = (
         return { actor: compact[1], rkey: compact[2] }
     }
     return
-}
-
-export const toCidString = (ref: unknown): string | undefined => {
-    if (typeof ref === "string") return ref
-    if (ref && typeof ref === "object") {
-        const maybeLink = (ref as Record<string, unknown>)["$link"]
-        if (typeof maybeLink === "string") return maybeLink
-        if (
-            typeof (ref as { toString?: () => string }).toString === "function"
-        ) {
-            const value = (ref as { toString: () => string }).toString()
-            if (
-                typeof value === "string" &&
-                value.length > 0 &&
-                value !== "[object Object]"
-            ) {
-                return value
-            }
-        }
-    }
-    return
-}
-
-export const blobToCdnUrl = (
-    repoDid: string,
-    blob?: {
-        ref?: unknown
-        mimeType?: string
-    },
-): string | undefined => {
-    if (!blob) return
-    const ref = toCidString(blob.ref)
-    if (!ref) return
-    return bskyCdnUrlgen(repoDid, ref)
 }
 
 /**

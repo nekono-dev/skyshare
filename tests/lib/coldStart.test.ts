@@ -67,9 +67,10 @@ describe("予約投稿の API の静的importにatprotoを含めない", () => {
         "src/pages/v2/schedules/[id].ts",
         "src/pages/v2/schedules/limits.ts",
         "src/pages/v2/schedules/credential.ts",
+        "src/lib/schedule/runner.ts",
     ]
     it.each(entries)(
-        "schedule-api/AC-16: %s から静的に辿れる範囲に @atproto/* が無い",
+        "schedule-api/AC-16 schedule-runner/AC-16: %s から静的に辿れる範囲に @atproto/* が無い",
         async entryPath => {
             const result = await build({
                 entryPoints: [resolve(__dirname, "../../", entryPath)],

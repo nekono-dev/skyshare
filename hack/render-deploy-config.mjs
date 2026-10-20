@@ -68,6 +68,21 @@ for (const name of WRANGLER_VARS) {
   const value = requireEnv(name)
   wrangler = wrangler.replace(pattern, (_match, head) => `${head}"${value}"`)
 }
+// D1 の database_id。未設定のときはローカル開発・E2E 用の仮の値にする（本番では実在しない ID で
+// デプロイが失敗するため、誤って別のデータベースを使うことはない）
+const scheduleD1Id = (process.env.SCHEDULE_D1_DATABASE_ID ?? "").trim()
+if (scheduleD1Id === "") {
+  console.warn(
+    "SCHEDULE_D1_DATABASE_ID が未設定です。ローカル用の仮の値を使います（デプロイには GitHub の Variables への登録が必要です）",
+  )
+} else if (!/^[0-9a-f-]{36}$/.test(scheduleD1Id)) {
+  console.error("SCHEDULE_D1_DATABASE_ID が UUID 形式ではありません")
+  process.exit(1)
+}
+wrangler = wrangler.replace(
+  "SCHEDULE_D1_DATABASE_ID",
+  scheduleD1Id || "00000000-0000-0000-0000-000000000000",
+)
 writeFileSync("wrangler.jsonc", wrangler)
 
 // 独自ドメインの有効状況に合わせて workers_dev / preview_urls を設定する

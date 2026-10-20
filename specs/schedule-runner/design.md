@@ -81,14 +81,14 @@ stateDiagram-v2
 
 ```ts
 // src/worker.ts
-import { handle } from "@astrojs/cloudflare/utils/handler"
+import { handle } from "@astrojs/cloudflare/handler"
 
 export default {
   fetch: handle,
   async scheduled(
-    _event: ScheduledController,
-    env: Env,
-    ctx: ExecutionContext,
+    _event: unknown,
+    env: ScheduleEnv,
+    ctx: { waitUntil: (promise: Promise<unknown>) => void },
   ) {
     ctx.waitUntil(runScheduledPosts(env, Math.floor(Date.now() / 1000)))
   },
@@ -106,7 +106,11 @@ export default {
 ### D-2: 1回の定期実行の流れ (FR-1, FR-10, FR-11, NFR-1)
 
 ```ts
-export const runScheduledPosts = async (env: Env, now: number): Promise<void>
+export const runScheduledPosts = async (
+    env: ScheduleEnv,
+    now: number,
+    fetchImpl?: typeof fetch,
+): Promise<void>
 
 const MAX_EXTERNAL_CALLS = 40
 ```
@@ -124,7 +128,7 @@ const MAX_EXTERNAL_CALLS = 40
 ### D-3: 予算つきの通信クライアント (FR-5, FR-12, NFR-2, NFR-4, NFR-5)
 
 ```ts
-type Budget = { remaining: number }
+type Budget = { remaining: number; rateLimited: boolean }
 
 export const createBudget = (limit: number): Budget
 export const callXrpc = async (
@@ -133,6 +137,7 @@ export const callXrpc = async (
         service: string
         nsid: string
         method: "GET" | "POST"
+        params?: Record<string, string>
         token?: string
         body?: unknown | Uint8Array
         contentType?: string
@@ -155,29 +160,30 @@ export const callXrpc = async (
 
 ```ts
 export const executeSchedule = async (
-    env: Env,
+    env: ScheduleEnv,
     budget: Budget,
     row: ScheduleRow,
     now: number,
+    fetchImpl?: typeof fetch,
 ): Promise<"posted" | "released" | "failed">
 
 export const nextTid = (prev?: string): string
 ```
 
-| 段階 | 処理                                                                                                                                         | 進捗への反映 |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 1    | `loadCredential` で復号し、`refreshSession` で更新する。得た `refreshJwt` を `saveCredential` で保管してから先へ進む                         | なし         |
-| 2    | `rkeys` が空なら、投稿数だけ `nextTid` で採番して保存する                                                                                    | `rkeys`      |
-| 3    | `blobs` に無い画像を、R2 から読み `com.atproto.repo.uploadBlob` で送る                                                                       | `blobs`      |
-| 4    | `created` の次の投稿から、`buildBskyPostRecord` で組み立て `com.atproto.repo.createRecord` を `rkey` 指定で呼ぶ。`createdAt` は `now` とする | `created`    |
-| 5    | `gates` の次の投稿から、`buildThreadgateRecord` と `buildPostgateRecord` で組み立てた記録を、投稿と同じ `rkey` で作成する                    | `gates`      |
-| 6    | 作成指定があり `entryDone` が偽なら、`buildSkyshareEntryRecord` で先頭の投稿を派生元にした記録を作成する                                     | `entryDone`  |
-| 7    | `finishSchedule` で投稿済みにし、`removeImages` と `purgeIdleCredential` を呼ぶ                                                              | -            |
+| 段階 | 処理                                                                                                                                      | 進捗への反映 |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1    | `loadCredential` で復号し、`refreshSession` で更新する。得た `refreshJwt` を `saveCredential` で保管してから先へ進む                      | なし         |
+| 2    | `rkeys` が空なら、投稿数と entry の1件分だけ `nextTid` で採番して保存する                                                                 | `rkeys`      |
+| 3    | `blobs` に無い画像を、R2 から読み `com.atproto.repo.uploadBlob` で送る                                                                    | `blobs`      |
+| 4    | `created` の次の投稿から、`buildBskyPostRecord` で組み立て `com.atproto.repo.putRecord` を `rkey` 指定で呼ぶ。`createdAt` は `now` とする | `created`    |
+| 5    | `gates` の次の投稿から、`buildThreadgateRecord` と `buildPostgateRecord` で組み立てた記録を、投稿と同じ `rkey` で作成する                 | `gates`      |
+| 6    | 作成指定があり `entryDone` が偽なら、`buildSkyshareEntryRecord` で先頭の投稿を派生元にした記録を作成する                                  | `entryDone`  |
+| 7    | `finishSchedule` で投稿済みにし、`removeImages` と `purgeIdleCredential` を呼ぶ                                                           | -            |
 
 - 投稿の返信先は、先頭は指定された既存の投稿、2件目以降は先頭の投稿を `root`、直前の投稿を `parent` とする。
-- `createRecord` が「同じキーのレコードが既にある」と応答したときは、`com.atproto.repo.getRecord` で `cid` を取得して作成済みとして扱う。
+- すべてのレコードは `putRecord` で書き込む。進捗の保存前に中断して同じキーへ再び書き込んでも、レコードは上書きされるだけで1件のままである。
 - 各段階の進捗は、通信が1回成功するたびに `saveProgress` で保存する。
-- 投稿は 1 件ずつ `createRecord` で作成し、投稿全体の原子性は持たない。途中で失敗した予約は、進捗に従って再開する。
+- 投稿は 1 件ずつ `putRecord` で作成し、投稿全体の原子性は持たない。途中で失敗した予約は、進捗に従って再開する。
 - `tid.ts` の `nextTid` は、マイクロ秒の時刻と固定のクロック識別子から 13 文字の Base32 ソート可能な文字列を作り、`prev` 以下の値を返さない。
 
 ### D-5: 失敗の分類と再試行 (FR-7, FR-8, FR-9, FR-12)
@@ -199,6 +205,7 @@ const MAX_ATTEMPTS = 5
 | 認証情報の行が無い              | `CredentialMissing` で失敗                                                                         |
 | 復号に失敗                      | `CredentialInvalid` で失敗                                                                         |
 | 更新時に `Auth`                 | `CredentialExpired` で失敗                                                                         |
+| 更新以外の通信で `Auth`         | `attempts` に1を加えて待機中へ戻す（`Transient` と同じ扱い）                                       |
 | 作成時に `Invalid`              | `InvalidRecord` で失敗                                                                             |
 | 画像が R2 に無い                | `ImageMissing` で失敗                                                                              |
 | `Transient`                     | `attempts` に1を加えて待機中へ戻す。`attempts` が `MAX_ATTEMPTS` に達したら `RetryExceeded` で失敗 |
