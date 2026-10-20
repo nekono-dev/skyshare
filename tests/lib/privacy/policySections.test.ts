@@ -33,38 +33,45 @@ describe("buildPrivacyPolicy", () => {
     })
 
     it("[privacy-policy/AC-2] 取得する情報の節が、5つの区分をすべて持つ", () => {
-        const table = find("collected").blocks.find(b => b.kind === "table")
-        if (table?.kind !== "table") throw new Error("表がない")
-        expect(table.rows.map(r => r[0])).toEqual([
+        const list = find("collected").blocks.find(b => b.kind === "list")
+        if (list?.kind !== "list") throw new Error("箇条書きがない")
+        expect(list.items.map(i => i.split(":")[0])).toEqual([
             "ログイン",
-            "投稿とエントリ",
+            "投稿",
             "予約投稿",
-            "端末内の保存",
+            "端末内の設定",
             "アクセスログ",
         ])
-        for (const row of table.rows) {
-            expect(row).toHaveLength(3)
-            for (const cell of row) expect(cell).not.toBe("")
-        }
     })
 
-    it("[privacy-policy/AC-3] 外部への送信の節が、送信先ごとに送信する情報と目的を持つ", () => {
-        const table = find("external").blocks.find(b => b.kind === "table")
-        if (table?.kind !== "table") throw new Error("表がない")
-        expect(table.head).toHaveLength(3)
-        expect(table.rows.length).toBeGreaterThanOrEqual(9)
-        for (const row of table.rows) {
-            expect(row).toHaveLength(3)
-            for (const cell of row) expect(cell).not.toBe("")
-        }
+    it("[privacy-policy/AC-3] 外部への送信の節が、送信先ごとに送る情報と目的を持つ", () => {
+        const list = find("external").blocks.find(b => b.kind === "list")
+        if (list?.kind !== "list") throw new Error("箇条書きがない")
+        expect(list.items.length).toBeGreaterThanOrEqual(6)
+        for (const item of list.items) expect(item).toContain("。")
     })
 
     it("[privacy-policy/AC-4] 予約投稿の記載に、暗号化・保存期間・削除の方法が含まれる", () => {
         const text = allText()
-        expect(text).toContain("AES-GCM")
+        expect(text).toContain("暗号化して保管")
         expect(text).toContain("7日")
         expect(text).toContain("45日")
-        expect(text).toContain("一覧のページからいつでも削除")
+        expect(text).toContain("いつでも自分で削除")
+    })
+
+    it("[privacy-policy/AC-8] 表を使わず、箇条書きは1階層で、1文が長すぎない", () => {
+        for (const section of ja()) {
+            for (const block of section.blocks) {
+                expect(["text", "list"]).toContain(block.kind)
+                const lines = block.kind === "list" ? block.items : [block.text]
+                for (const line of lines) {
+                    for (const sentence of line.split("。")) {
+                        expect(sentence.length).toBeLessThanOrEqual(80)
+                    }
+                }
+            }
+        }
+        expect(allText()).not.toContain("AES")
     })
 
     it("[privacy-policy/AC-5] 記載の全体から、事業者名・連絡先・制定日が定数の値で参照される", () => {

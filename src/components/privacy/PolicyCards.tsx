@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - `buildPrivacyPolicy` が表示言語で組み立てた節を、設定ページと同じカード（base-card/base-padding）で縦に並べる。
- * - 節の本文は段落・箇条書き・表のいずれかで描画する。文言は持たず、辞書から得た値だけを表示する。
+ * - 節の本文は段落か箇条書き（1階層）で描画する。文言は持たず、辞書から得た値だけを表示する。
  */
 import {
   buildPrivacyPolicy,
@@ -16,45 +16,14 @@ import styles from "./PolicyCards.module.css"
 /** 節の本文1ブロックを、種別に応じた要素で描画する。 */
 const Block = ({ block }: { block: PolicyBlock }) => {
   if (block.kind === "text") return <p className={ui.text}>{block.text}</p>
-  if (block.kind === "list")
-    return (
-      <ul className={styles.list}>
-        {block.items.map(item => (
-          <li key={item} className={ui.text}>
-            {item}
-          </li>
-        ))}
-      </ul>
-    )
   return (
-    <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            {block.head.map(h => (
-              <th key={h} scope="col">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {block.rows.map(row => (
-            <tr key={row[0]}>
-              {row.map((cell, i) =>
-                i === 0 ? (
-                  <th key={cell} scope="row">
-                    {cell}
-                  </th>
-                ) : (
-                  <td key={cell}>{cell}</td>
-                ),
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul className={ui.list}>
+      {block.items.map(item => (
+        <li key={item} className={ui["list-item"]}>
+          {item}
+        </li>
+      ))}
+    </ul>
   )
 }
 

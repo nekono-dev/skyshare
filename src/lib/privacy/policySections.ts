@@ -10,9 +10,7 @@ import type { Translator } from "@/lib/i18n/translate"
 import { operator } from "./operator"
 
 export type PolicyBlock =
-    | { kind: "text"; text: string }
-    | { kind: "list"; items: string[] }
-    | { kind: "table"; head: string[]; rows: string[][] }
+    { kind: "text"; text: string } | { kind: "list"; items: string[] }
 
 export type PolicySection = {
     /** 表示言語や並び順に影響されない固定値 */
@@ -36,24 +34,6 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
         handle: operator.blueskyHandle,
     }
     const text = (s: string): PolicyBlock => ({ kind: "text", text: s })
-    const rows = <K extends string>(
-        ids: readonly K[],
-        cols: (id: K) => string[],
-    ) => ids.map(cols)
-
-    const collectedIds = ["login", "post", "schedule", "device", "log"] as const
-    const externalIds = [
-        "pds",
-        "appview",
-        "video",
-        "cdn",
-        "plc",
-        "ogp",
-        "legacy",
-        "cloudflare",
-        "sns",
-    ] as const
-
     return [
         {
             id: "operator",
@@ -76,24 +56,20 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
             blocks: [
                 text(t("privacy.collected.intro")),
                 {
-                    kind: "table",
-                    head: [
-                        t("privacy.collected.head.category"),
-                        t("privacy.collected.head.data"),
-                        t("privacy.collected.head.place"),
+                    kind: "list",
+                    items: [
+                        t("privacy.collected.login"),
+                        t("privacy.collected.post"),
+                        t("privacy.collected.schedule"),
+                        t("privacy.collected.device"),
+                        t("privacy.collected.log"),
                     ],
-                    rows: rows(collectedIds, id => [
-                        t(`privacy.collected.${id}.category`),
-                        t(`privacy.collected.${id}.data`),
-                        t(`privacy.collected.${id}.place`),
-                    ]),
                 },
                 {
                     kind: "list",
                     items: [
                         t("privacy.collected.note1"),
                         t("privacy.collected.note2"),
-                        t("privacy.collected.note3"),
                     ],
                 },
             ],
@@ -111,7 +87,6 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.purpose.item3"),
                         t("privacy.purpose.item4"),
                         t("privacy.purpose.item5"),
-                        t("privacy.purpose.item6"),
                     ],
                 },
             ],
@@ -122,17 +97,15 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
             blocks: [
                 text(t("privacy.external.intro")),
                 {
-                    kind: "table",
-                    head: [
-                        t("privacy.external.head.dest"),
-                        t("privacy.external.head.data"),
-                        t("privacy.external.head.purpose"),
+                    kind: "list",
+                    items: [
+                        t("privacy.external.bluesky"),
+                        t("privacy.external.plc"),
+                        t("privacy.external.ogp"),
+                        t("privacy.external.legacy"),
+                        t("privacy.external.cloudflare"),
+                        t("privacy.external.sns"),
                     ],
-                    rows: rows(externalIds, id => [
-                        t(`privacy.external.${id}.dest`),
-                        t(`privacy.external.${id}.data`),
-                        t(`privacy.external.${id}.purpose`),
-                    ]),
                 },
                 {
                     kind: "list",
@@ -156,8 +129,6 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.retention.item4"),
                         t("privacy.retention.item5"),
                         t("privacy.retention.item6"),
-                        t("privacy.retention.item7"),
-                        t("privacy.retention.item8"),
                     ],
                 },
             ],
@@ -190,7 +161,6 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.rights.item1"),
                         t("privacy.rights.item2"),
                         t("privacy.rights.item3"),
-                        t("privacy.rights.item4"),
                     ],
                 },
             ],
