@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react"
 import { putScheduleCredential } from "@/client/openapi/client"
 import { useT } from "@/lib/i18n/react"
+import { renderSlots } from "@/lib/i18n/rich"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { scheduleErrorKey } from "@/lib/schedule/scheduleErrorKey"
 import styles from "./index.module.css"
@@ -28,7 +29,7 @@ type Props = {
 }
 
 export const Component = ({ handle, onRegistered, onCancel }: Props) => {
-  const { t } = useT()
+  const { t, raw } = useT()
   const passwordRef = useRef<HTMLInputElement>(null)
   const submittingRef = useRef(false)
   const [busy, setBusy] = useState(false)
@@ -70,6 +71,15 @@ export const Component = ({ handle, onRegistered, onCancel }: Props) => {
       <p className={styles.note}>{t("schedule.credential.description")}</p>
       <p className={styles.warning}>{t("schedule.credential.warning")}</p>
       <p className={styles.note}>{t("schedule.credential.howto")}</p>
+      <p className={styles.note}>
+        {renderSlots(raw("privacy.scheduleNotice"), {
+          link: (
+            <a href="/privacy/#collected" target="_blank" rel="noreferrer">
+              {t("privacy.link")}
+            </a>
+          ),
+        })}
+      </p>
       <div>
         <label htmlFor="schedule-username">
           {t("schedule.credential.username")}

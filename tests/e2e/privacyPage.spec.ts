@@ -1,0 +1,23 @@
+/**
+ * プライバシーポリシーページ（PolicyCards）のヘッドレスブラウザによる確認。
+ *
+ * 責務と処理概要:
+ * - ログインなしで開けて、節の見出しがカードごとに表示されることを検証する。
+ */
+import { expect, test } from "@playwright/test"
+
+test("[privacy-policy/AC-7] ログインなしでページを開くと、節の見出しがカードごとに表示される", async ({
+    page,
+}) => {
+    await page.goto("/privacy/")
+    await expect(
+        page.getByRole("heading", { name: "プライバシーポリシー", level: 1 }),
+    ).toBeVisible()
+    await expect(
+        page.getByRole("heading", { name: "1. 事業者情報" }),
+    ).toBeVisible()
+    await expect(
+        page.getByRole("heading", { name: "4. 外部への送信と第三者への提供" }),
+    ).toBeVisible()
+    await expect(page.getByText("skyshare@nekono.dev").first()).toBeVisible()
+})

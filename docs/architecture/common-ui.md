@@ -13,7 +13,7 @@
 | 共有先SNS          | 外部 | X・タイッツー・Mastodon の共有の投稿画面を開き、共有された URL のカードを生成する | -                                                           |
 | 共通UI部品         | 内部 | プルダウンと選択肢の見た目・操作・絞り込みを共通にする                            | dropdown、dropdown-search、listbox-option、language-select  |
 | 表示言語           | 内部 | 表示言語を選び、日本語と英語の文言を切り替える                                    | i18n-locale、i18n-messages                                  |
-| アプリシェルと設定 | 内部 | ナビゲーション・ヘルプ・端末の設定画面を提供する                                  | app-navigation、help-page、app-settings                     |
+| アプリシェルと設定 | 内部 | ナビゲーション・ヘルプ・プライバシーポリシー・端末の設定画面を提供する            | app-navigation、help-page、privacy-policy、app-settings     |
 | 他SNS共有          | 内部 | 共有先の選択・共有文の組み立て・WebShare API の呼び出し・共有設定の保持を行う     | auto-popup、intent-share-dialog、share-text、share-settings |
 
 ## 3. システム構成
