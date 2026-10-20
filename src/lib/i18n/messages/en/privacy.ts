@@ -27,9 +27,8 @@ export const privacy = {
     "privacy.collected.log":
         "Access logs: time, URL, IP address, and browser type. Recorded by Cloudflare, which hosts the Service, for operation and troubleshooting.",
     "privacy.collected.analytics":
-        "Access analytics (old UI only): pages viewed, device and browser type, and approximate region. Collected with Google Analytics, which uses cookies.",
-    "privacy.collected.note1":
-        "The current screens (everything except the old UI) use no analytics or advertising.",
+        "Access analytics: pages viewed, device and browser type, and approximate region. Collected with Google Analytics, which uses cookies. It runs on every page, whether or not you are logged in.",
+    "privacy.collected.note1": "We do not serve advertising.",
     "privacy.collected.note2":
         "We do not collect special care-required information such as medical history or beliefs.",
     "privacy.purpose.title": "3. Purposes of use",
@@ -40,7 +39,7 @@ export const privacy = {
     "privacy.purpose.item4":
         "To provide the features you use, such as link display and sharing",
     "privacy.purpose.item5":
-        "To understand how the old UI is used and improve it",
+        "To understand how the Service is used and improve it",
     "privacy.purpose.item6": "To investigate problems and prevent misuse",
     "privacy.external.title": "4. Sending to external services",
     "privacy.external.intro":
@@ -56,13 +55,13 @@ export const privacy = {
     "privacy.external.cloudflare":
         "Cloudflare: communication with the Service and scheduled post data. To deliver and run the Service.",
     "privacy.external.google":
-        "Google (Google Analytics): how the old UI is viewed. To understand usage.",
+        "Google (Google Analytics): how pages are viewed. To understand usage.",
     "privacy.external.sns":
         "Sharing targets (X, Taittsuu, Mastodon): the text and URL to share. Only when you choose to share.",
     "privacy.external.note1":
         "Some destinations are in foreign countries such as the United States, whose rules may differ from Japan's.",
     "privacy.external.optout":
-        "Analytics on the old UI can be stopped with your browser's cookie settings or Google's opt-out add-on.",
+        "Analytics can be stopped with your browser's cookie settings or Google's opt-out add-on.",
     "privacy.external.note2":
         "Please see each service's own privacy policy for how it handles information.",
     "privacy.retention.title": "5. Retention",
@@ -79,7 +78,7 @@ export const privacy = {
     "privacy.retention.item6":
         "Access logs: kept by Cloudflare for a short period it sets.",
     "privacy.retention.item7":
-        "Analytics information (old UI only): kept according to Google's settings.",
+        "Analytics information: kept according to Google's settings.",
     "privacy.security.title": "6. Security",
     "privacy.security.item1": "Communication is encrypted.",
     "privacy.security.item2":
