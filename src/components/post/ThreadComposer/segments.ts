@@ -243,6 +243,10 @@ export const pendingVideoState = (
 export const hasPendingVideo = (segments: SegmentState[]): boolean =>
     pendingVideoState(segments) !== null
 
+/** 動画を持つセグメントがあるか。動画を含む投稿は予約できないため、予約の操作の可否に使う。 */
+export const hasVideoSegment = (segments: SegmentState[]): boolean =>
+    segments.some(segment => segment.videoEntry !== null)
+
 /**
  * 全セグメントが投稿条件を満たすか判定する（1件でも満たさなければ全体を投稿できない）。
  *

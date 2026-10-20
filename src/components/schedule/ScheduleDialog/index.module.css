@@ -1,0 +1,32 @@
+/* 非モーダルのダイアログ。パスワードマネージャの候補表示がトップレイヤーに隠れないよう、
+   showModal() を使わず、背面は巨大な box-shadow で暗くして画面中央へ固定する。 */
+:local(.dialog) {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  max-height: calc(100dvh - 2 * var(--space-3, 12px));
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: 0 0 0 100vmax rgba(31, 35, 40, 0.4);
+}
+
+:local(.content) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+  padding: var(--space-3, 12px);
+}
+
+:local(.error) {
+  color: #b00;
+}
+
+:local(.actions) {
+  display: flex;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+}

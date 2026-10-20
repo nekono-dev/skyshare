@@ -200,18 +200,21 @@ const buildPostItem = async (segment: SegmentState) => {
 }
 
 /**
- * ThreadComposer のセグメント配列を OpenAPI 契約に合わせて1回のリクエストで送信する。
+ * ThreadComposer のセグメント配列から、投稿の作成（`POST /v2/entry`）と予約の作成
+ * （`POST /v2/schedules`）に共通のリクエスト本文（`posts` とトップレベルの entry 指定）を組み立てる。
  *
  * Input:
  * - `params`: セグメント配列一式
  *
  * Output:
- * - 成功時 `{ ok: true, skyshareUri }`（先頭segmentが画像投稿以外なら空文字）、
- *   失敗時 `{ ok: false, message }`
+ * - 成功時 `{ ok: true, body, wantsSkyshareEntry }`、失敗時 `{ ok: false, messageKey }`
  */
-export const submitThread = async (
+export const buildThreadRequestBody = async (
     params: SubmitThreadParams,
-): Promise<SubmitThreadResult> => {
+): Promise<
+    | { ok: true; body: CreateEntryBody; wantsSkyshareEntry: boolean }
+    | { ok: false; messageKey: PlainMessageKey }
+> => {
     const { segments, manualImageAttach } = params
 
     // entry作成候補（画像投稿かつmanualImageAttachが無効）のうち、先頭のsegmentのみを
@@ -259,6 +262,25 @@ export const submitThread = async (
               }
             : {}),
     } as unknown as CreateEntryBody
+    return { ok: true, body, wantsSkyshareEntry }
+}
+
+/**
+ * ThreadComposer のセグメント配列を OpenAPI 契約に合わせて1回のリクエストで送信する。
+ *
+ * Input:
+ * - `params`: セグメント配列一式
+ *
+ * Output:
+ * - 成功時 `{ ok: true, skyshareUri }`（先頭segmentが画像投稿以外なら空文字）、
+ *   失敗時 `{ ok: false, message }`
+ */
+export const submitThread = async (
+    params: SubmitThreadParams,
+): Promise<SubmitThreadResult> => {
+    const built = await buildThreadRequestBody(params)
+    if (!built.ok) return built
+    const { body, wantsSkyshareEntry } = built
 
     const res = await createEntry(body)
     if (res.status !== 200) {

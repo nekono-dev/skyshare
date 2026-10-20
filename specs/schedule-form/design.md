@@ -2,23 +2,31 @@
 
 ## 1. 構成
 
-| パス                                      | 責務                                           |
-| ----------------------------------------- | ---------------------------------------------- |
-| `src/lib/schedule/runAtInput.ts`          | 日時の既定値・変換・範囲の判定                 |
-| `src/components/ScheduleDialog/index.tsx` | 予約日時の入力と認証情報の登録のダイアログ     |
-| `src/components/ScheduleList/index.tsx`   | 予約の一覧の表示と、取消・削除・認証情報の操作 |
-| `src/pages/schedules.astro`               | 予約の一覧のページ                             |
+| パス                                               | 責務                                           |
+| -------------------------------------------------- | ---------------------------------------------- |
+| `src/lib/schedule/runAtInput.ts`                   | 日時の既定値・変換・範囲の判定                 |
+| `src/lib/schedule/scheduleDialogState.ts`          | 予約ダイアログの状態の遷移                     |
+| `src/lib/schedule/scheduleErrorKey.ts`             | API のエラーと失敗の分類コードの文言キーの選択 |
+| `src/components/schedule/ScheduleDialog/index.tsx` | 予約日時の入力と送信のダイアログ               |
+| `src/components/schedule/CredentialForm/index.tsx` | 予約用の認証情報（アプリパスワード）の登録     |
+| `src/components/schedule/ScheduleList/index.tsx`   | 予約の一覧の表示と、取消・削除・認証情報の操作 |
+| `src/pages/schedules.astro`                        | 予約の一覧のページ                             |
 
 ## 2. 関係図・ワークフロー
 
-画面の部品が日時の判定と生成クライアントに依存する方向を示す。
+画面の部品が判定処理と生成クライアントに依存する方向を示す。
 
 ```mermaid
 flowchart LR
   schedules --> ScheduleList["ScheduleList/index"]
-  ScheduleDialog["ScheduleDialog/index"] --> runAtInput
-  ScheduleList --> runAtInput
+  ScheduleDialog["ScheduleDialog/index"] --> CredentialForm["CredentialForm/index"]
+  ScheduleDialog --> runAtInput
+  ScheduleDialog --> scheduleDialogState
+  ScheduleDialog --> scheduleErrorKey
+  CredentialForm --> scheduleErrorKey
+  ScheduleList --> scheduleErrorKey
   ScheduleDialog --> ext_client["生成クライアント"]
+  CredentialForm --> ext_client
   ScheduleList --> ext_client
   ext_composer["投稿フォーム"] --> ScheduleDialog
 ```
@@ -43,6 +51,7 @@ stateDiagram-v2
 sequenceDiagram
   participant ScheduleDialog as ScheduleDialog/index
   participant runAtInput
+  participant scheduleDialogState
   participant ScheduleList as ScheduleList/index
   participant ext_client as 生成クライアント
   ScheduleDialog->>runAtInput: defaultRunAt
@@ -51,16 +60,19 @@ sequenceDiagram
   alt 範囲外
     ScheduleDialog-->>ScheduleDialog: 送信を無効にする
   else 範囲内
+    ScheduleDialog->>scheduleDialogState: nextDialogState
     ScheduleDialog->>runAtInput: toRunAtIso
-    ScheduleDialog->>ext_client: 予約の作成
+    ScheduleDialog->>ext_client: createSchedule
   end
   ScheduleList->>ext_client: listSchedules
-  ScheduleList->>ScheduleList: confirmCancel
+  ScheduleList->>ScheduleList: resultUriToUrl
   alt 確認を承諾
     ScheduleList->>ext_client: deleteSchedule
   else 確認を拒否
     ScheduleList-->>ScheduleList: 何もしない
   end
+  ScheduleList->>ScheduleList: scheduleErrorKey
+  ScheduleList->>ScheduleList: failureMessageKey
 ```
 
 ## 3. 設計項目
@@ -79,19 +91,21 @@ export const checkRunAt = (
 ```
 
 - `defaultRunAt` は `now` の1時間後を、分を切り上げずに返す。
-- `checkRunAt` は `d - now` が `minLeadSeconds` 未満なら `tooSoon`、`maxLeadSeconds` を超えるなら `tooLate` を返す。
+- `checkRunAt` は `d - now` が `minLeadSeconds` 未満なら `tooSoon`、`maxLeadSeconds` を超えるなら `tooLate` を返す。解釈できない日時も `tooSoon` とする。
 - `toRunAtIso` は `Date` の `getTimezoneOffset` から `+09:00` 形式のオフセットを組み立てる。
+- 範囲の数値は画面に持たず、`checkRunAt` に渡す制限値は API の応答から得る。
 
 ### D-2: 予約ダイアログ (FR-1, FR-6, NFR-1, NFR-4)
 
 ```tsx
 type ScheduleDialogProps = {
   open: boolean
-  buildRequest: () => FormData // 投稿フォームの内容を予約の作成の入力に変換する
+  buildRequest: () => Promise<Omit<CreateScheduleBody, "runAt"> | null> // 投稿フォームの内容を予約の作成の入力に変換する
   onScheduled: (id: string) => void
   onClose: () => void
 }
-export const ScheduleDialog: (props: ScheduleDialogProps) => JSX.Element
+
+export const nextDialogState = (state: DialogState, event: DialogEvent): DialogState
 ```
 
 | 状態        | 表示                                   | 次の状態                                                  |
@@ -101,10 +115,11 @@ export const ScheduleDialog: (props: ScheduleDialogProps) => JSX.Element
 | Submitting  | 送信ボタンを無効にし、進行中の表示     | 成功で Done、失敗で Editing                               |
 | Done        | 一覧への案内のリンクと閉じるボタン     | 閉じる                                                    |
 
-- 認証情報の登録状態と制限値（`GET /v2/schedules/limits`）は、ダイアログを開くたびに取得する。範囲の数値は画面に持たず、取得した値だけを使う。
-- Submitting の間は送信の関数を呼ばない。状態の更新を待たずに重複を防ぐため、送信中を示す値を `useRef` でも持つ。
+- 開くたびに、制限値（`GET /v2/schedules/limits`）と認証情報の登録状態とアカウントのハンドルを取得する。制限値の取得に失敗したら、送信を無効にして再取得のボタンを出す。
+- 送信中の確定操作は `nextDialogState` が無視する。状態の更新を待たずに重複を防ぐため、送信中を示す値を `useRef` でも持つ。
 - 成功したら `onScheduled` を呼び、呼び出し側が投稿フォームの入力を初期化する。
-- ボタンと入力欄は、共通 UI のクラスで高さと幅を44ピクセル以上にする。
+- 非モーダルの `<dialog>` を `show()` で開き、開いている間だけ内容を描画する。
+- 画面幅が640ピクセル未満のとき、共通 UI のクラスがボタンと入力欄の高さを44ピクセル以上にする。
 
 ### D-3: 認証情報の登録フォーム (FR-4, FR-5, NFR-3)
 
@@ -118,13 +133,13 @@ type CredentialFormProps = {
 
 | 項目             | 内容                                                                                                                               |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| ダイアログの種別 | 非モーダル（`dialog.show()`）とし、開いたときにだけフォームを描画する                                                              |
+| ダイアログの種別 | 非モーダルとし、予約ダイアログが開いたときにだけフォームを描画する                                                                 |
 | 欄               | 可視のユーザー名欄（`autocomplete="username"`、`defaultValue` にハンドル）とパスワード欄（`autocomplete="current-password"`）の2つ |
 | 構成             | 同じフォームにほかのテキスト入力を置かない                                                                                         |
 | 文言             | メインパスワードを入力しない注意と、Bluesky の設定画面でアプリパスワードを作る手順を表示する                                       |
 | 送信             | `PUT /v2/schedules/credential` を呼び、成功したら `onRegistered` を呼ぶ                                                            |
 
-- パスワードの値は、送信後に状態から消す。ログ・URL・ストレージには出力しない。
+- パスワードは非制御入力で扱い、送信後に空に戻す。ログ・URL・ストレージには出力しない。
 - パスワード欄のラベルには「確認」「再入力」を含めない。
 
 ### D-4: 予約の一覧 (FR-7, FR-8, FR-9, NFR-1)
@@ -139,7 +154,7 @@ type ScheduleListItem = {
     lastError: string | null
     resultUri: string | null
 }
-export const confirmCancel = (item: ScheduleListItem): boolean
+export const resultUriToUrl = (uri: string): string | null // at://{did}/app.bsky.feed.post/{rkey} を bsky.app の URL に変換する
 ```
 
 | 状態     | 表示                                   | 操作             |
@@ -149,9 +164,9 @@ export const confirmCancel = (item: ScheduleListItem): boolean
 | 投稿済み | 先頭の投稿の Bluesky の URL へのリンク | 履歴の削除       |
 | 失敗     | 失敗の分類コードに対応する文言         | 履歴の削除       |
 
-- 取消と削除は `DELETE /v2/schedules/{id}` を呼び、成功したら行を一覧から除く。
+- 取消と削除は `DELETE /v2/schedules/{id}` を呼び、成功したら行を一覧から除く。取消の確認には共通の確認ダイアログを使う。
 - 一覧は `listSchedules` の `cursor` を使い、続きがあるときだけ「さらに表示」ボタンを置く。
-- 失敗の分類コードごとの文言は、辞書のキー `schedule.error.<コード>` で引く。
+- 失敗の分類コードごとの文言は、辞書のキー `schedule.failure.<コード>` で引く。未知のコードは汎用の文言にする。
 
 ### D-5: 認証情報の状態と削除 (FR-10)
 
@@ -160,10 +175,15 @@ type CredentialStatus = { registered: boolean; updatedAt?: string }
 ```
 
 - 一覧のページの上部に、`GET /v2/schedules/credential` の結果として登録状態を表示する。
-- 登録済みで待機中の予約が0件のときだけ、削除ボタンを有効にして `DELETE /v2/schedules/credential` を呼ぶ。
+- 登録済みで待機中と実行中の予約が0件のときだけ、削除ボタンを有効にして `DELETE /v2/schedules/credential` を呼ぶ。
 - 待機中の予約があるときは、削除ボタンを無効にして理由を表示する。
 
 ### D-6: エラー文言と言語 (FR-11, NFR-2)
+
+```ts
+export const scheduleErrorKey = (status: number, code?: string, context?: "credential"): PlainMessageKey
+export const failureMessageKey = (code: string | null): PlainMessageKey
+```
 
 | API の応答                       | 辞書のキー                          |
 | -------------------------------- | ----------------------------------- |

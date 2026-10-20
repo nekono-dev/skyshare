@@ -68,7 +68,9 @@ import IntentShareDialog, {
 import AutoPopupTargetSelect from "@/components/common/AutoPopupTargetSelect"
 import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
 import { runShareDispatch } from "./shareDispatch"
-import { submitThread } from "./submitThread"
+import ScheduleDialog from "@/components/schedule/ScheduleDialog"
+import type { CreateScheduleBody } from "@/client/openapi/model"
+import { buildThreadRequestBody, submitThread } from "./submitThread"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import { estimateSkyshareEntryUrl } from "@/lib/entry/estimateEntryUrl"
 import { resolveCounterTargets } from "@/lib/share/counterReserve"
@@ -79,6 +81,7 @@ import {
   canRemoveSegment,
   createEmptySegment,
   draftPostsToSegments,
+  hasVideoSegment,
   pendingVideoState,
   removeSegment,
   revokeImageEntry,
@@ -291,6 +294,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       undefined,
     )
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [scheduleOpen, setScheduleOpen] = useState(false)
     const [draftModalOpen, setDraftModalOpen] = useState(false)
     const [draftItems, setDraftItems] = useState<
       ReturnType<typeof normalizeDraftList>
@@ -549,6 +553,9 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 取り外し（キャンセル）した場合のみ、完了を待たずに投稿できる。
     const videoPending = pendingVideoState(segments)
     const canSubmit = areAllSegmentsPostable(segments) && videoPending === null
+    // 動画は予約に含められない（動画を含む投稿は予約ボタンを無効にする）
+    const hasVideo = hasVideoSegment(segments)
+    const canSchedule = canSubmit && !hasVideo
 
     /**
      * 投稿フォームの内容を API 契約に合わせて送信する。
@@ -778,6 +785,21 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 {t("post.composer.drafts")}
               </button>
               <button
+                type="button"
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                disabled={isSubmitting || guestMode || !canSchedule}
+                title={
+                  hasVideo
+                    ? t("schedule.unavailableVideo")
+                    : guestMode
+                      ? t("post.guestUnavailable")
+                      : undefined
+                }
+                onClick={() => setScheduleOpen(true)}
+              >
+                {t("schedule.button")}
+              </button>
+              <button
                 form={entryFormId}
                 className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
                 type="submit"
@@ -918,6 +940,26 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             )}
           </form>
         </div>
+
+        <ScheduleDialog
+          open={scheduleOpen}
+          buildRequest={async () => {
+            const built = await buildThreadRequestBody({
+              segments,
+              manualImageAttach: shareToggles.manualImageAttach,
+            })
+            return built.ok
+              ? (built.body as unknown as Omit<CreateScheduleBody, "runAt">)
+              : null
+          }}
+          onScheduled={() => {
+            segments.forEach(segment =>
+              recordUsedHashtagsToHistory(segment.text, accountDid),
+            )
+            resetInputFields(readPostGateDefaultSetting())
+          }}
+          onClose={() => setScheduleOpen(false)}
+        />
 
         <IntentShareDialog
           request={shareRequest}

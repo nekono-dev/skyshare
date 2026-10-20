@@ -124,6 +124,8 @@ const res = await createEntry(body) // 1回だけ送信する
 - 本文のリンク・メンション・ハッシュタグは `detectFacetsForSubmission` で送信直前に検出する。
 - entryを要求したのに応答に `skyshareEntry` が無い場合は失敗として扱う。
 - 状態は送信中・成功・失敗の3つとし、セグメントごとの進捗は表示しない。
+- 送信内容の組み立ては `buildThreadRequestBody` に切り出し、予約の作成も同じ本文を使う。
+- 動画のセグメントがあるときは `hasVideoSegment` が真になり、予約の操作を無効にする。日時の指定と認証は予約ダイアログが扱う。
 - 成功後の共有処理には、先頭のセグメントの本文・応答のentryのURL・先頭のセグメントのリンクカードのURLを渡す。
 
 ### D-4: 下書き (FR-9)

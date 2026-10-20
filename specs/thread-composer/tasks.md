@@ -15,6 +15,7 @@
 - [x] T-2.1: `submitThread.ts` でスレッド全体の送信とentryの要求を実装し、単体テストを追加する。
 - [x] T-2.2: 下書きの保存と復元をセグメント配列に対応させる。
 - [x] T-2.3: 共有文が先頭のセグメントの本文だけを含むことを確認するテストを追加する。
+- [x] T-2.4: 送信内容の組み立てを切り出し、予約の操作の可否と本文の一致を確認するテストを追加する。
 - 検証: `npx vitest run tests/components/post/ThreadComposer/submitThread.test.ts`
 
 ## Phase 3: 設定の配置
