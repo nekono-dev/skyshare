@@ -32,7 +32,7 @@ describe("buildPrivacyPolicy", () => {
         for (const s of ja()) expect(s.title).not.toBe("")
     })
 
-    it("[privacy-policy/AC-2] 取得する情報の節が、5つの区分をすべて持つ", () => {
+    it("[privacy-policy/AC-2] 取得する情報の節が、6つの区分をすべて持つ", () => {
         const list = find("collected").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
         expect(list.items.map(i => i.split(":")[0])).toEqual([
@@ -41,13 +41,15 @@ describe("buildPrivacyPolicy", () => {
             "予約投稿",
             "端末内の設定",
             "アクセスログ",
+            "アクセス解析（旧UI のみ）",
         ])
     })
 
     it("[privacy-policy/AC-3] 外部への送信の節が、送信先ごとに送る情報と目的を持つ", () => {
         const list = find("external").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
-        expect(list.items.length).toBeGreaterThanOrEqual(6)
+        expect(list.items.length).toBeGreaterThanOrEqual(7)
+        expect(list.items.join()).toContain("Google アナリティクス")
         for (const item of list.items) expect(item).toContain("。")
     })
 

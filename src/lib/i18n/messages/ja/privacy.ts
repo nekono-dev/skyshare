@@ -26,8 +26,10 @@ export const privacy = {
         "端末内の設定: 表示言語やテーマなどの設定。利用者のブラウザにだけ保存します。",
     "privacy.collected.log":
         "アクセスログ: 日時、URL、IP アドレス、ブラウザの種類。運用と不具合の調査のため、配信を委託する Cloudflare に記録されます。",
+    "privacy.collected.analytics":
+        "アクセス解析（旧UI のみ）: 閲覧したページ、端末やブラウザの種類、おおよその地域。Google アナリティクスで収集され、Cookie を使います。",
     "privacy.collected.note1":
-        "アクセス解析や広告、利用者を追跡する Cookie は使いません。",
+        "現行の画面（旧UI 以外）では、アクセス解析や広告の仕組みを使いません。",
     "privacy.collected.note2": "病歴や信条などの要配慮個人情報は取得しません。",
     "privacy.purpose.title": "3. 利用目的",
     "privacy.purpose.intro": "取得した情報は、次の目的にだけ使います。",
@@ -36,7 +38,8 @@ export const privacy = {
     "privacy.purpose.item3": "利用者が選んだ設定を保つため",
     "privacy.purpose.item4":
         "リンクの表示や共有など、操作された機能を提供するため",
-    "privacy.purpose.item5": "不具合の調査と不正利用の防止のため",
+    "privacy.purpose.item5": "旧UI の利用状況を把握し、改善に生かすため",
+    "privacy.purpose.item6": "不具合の調査と不正利用の防止のため",
     "privacy.external.title": "4. 外部への送信と第三者への提供",
     "privacy.external.intro":
         "運営者は、法令に基づく場合を除き、同意なく個人情報を第三者へ提供しません。機能のため、次の外部サービスへ情報を送ります（電気通信事業法の外部送信の公表を兼ねます）。",
@@ -50,10 +53,14 @@ export const privacy = {
         "旧バックエンド: 旧形式の投稿の識別子を送ります。過去の投稿ページの表示と、本人による削除のためです。",
     "privacy.external.cloudflare":
         "Cloudflare: 本サービスへの通信と予約のデータを預けます。サービスの配信と運用のためです。",
+    "privacy.external.google":
+        "Google（Google アナリティクス）: 旧UI での閲覧の状況を送ります。利用状況の把握のためです。",
     "privacy.external.sns":
         "共有先の SNS（X・タイッツー・Mastodon）: 共有する文章と URL を渡します。利用者が共有を選んだときだけです。",
     "privacy.external.note1":
         "送信先の一部は米国などの外国にあります。各国の制度は日本と異なる場合があります。",
+    "privacy.external.optout":
+        "旧UI のアクセス解析は、ブラウザの Cookie の設定や Google のオプトアウト用の拡張機能で止められます。",
     "privacy.external.note2":
         "各サービスでの取扱いは、それぞれのプライバシーポリシーをご確認ください。",
     "privacy.retention.title": "5. 保存期間",
@@ -68,6 +75,8 @@ export const privacy = {
         "予約用のログイン情報: 予約がなくなると削除します。いつでも自分で削除できます。",
     "privacy.retention.item6":
         "アクセスログ: Cloudflare が定める短い期間だけ残ります。",
+    "privacy.retention.item7":
+        "アクセス解析の情報（旧UI のみ）: Google の設定に従って保管されます。",
     "privacy.security.title": "6. 安全管理",
     "privacy.security.item1": "通信は暗号化して保護します。",
     "privacy.security.item2":

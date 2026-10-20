@@ -63,6 +63,7 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.collected.schedule"),
                         t("privacy.collected.device"),
                         t("privacy.collected.log"),
+                        t("privacy.collected.analytics"),
                     ],
                 },
                 {
@@ -87,6 +88,7 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.purpose.item3"),
                         t("privacy.purpose.item4"),
                         t("privacy.purpose.item5"),
+                        t("privacy.purpose.item6"),
                     ],
                 },
             ],
@@ -104,12 +106,14 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.external.ogp"),
                         t("privacy.external.legacy"),
                         t("privacy.external.cloudflare"),
+                        t("privacy.external.google"),
                         t("privacy.external.sns"),
                     ],
                 },
                 {
                     kind: "list",
                     items: [
+                        t("privacy.external.optout"),
                         t("privacy.external.note1"),
                         t("privacy.external.note2"),
                     ],
@@ -129,6 +133,7 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.retention.item4"),
                         t("privacy.retention.item5"),
                         t("privacy.retention.item6"),
+                        t("privacy.retention.item7"),
                     ],
                 },
             ],

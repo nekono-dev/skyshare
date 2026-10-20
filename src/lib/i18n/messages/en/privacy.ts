@@ -26,8 +26,10 @@ export const privacy = {
         "Settings on your device: settings such as language and theme. Saved only in your browser.",
     "privacy.collected.log":
         "Access logs: time, URL, IP address, and browser type. Recorded by Cloudflare, which hosts the Service, for operation and troubleshooting.",
+    "privacy.collected.analytics":
+        "Access analytics (old UI only): pages viewed, device and browser type, and approximate region. Collected with Google Analytics, which uses cookies.",
     "privacy.collected.note1":
-        "We do not use analytics, advertising, or cookies that track you.",
+        "The current screens (everything except the old UI) use no analytics or advertising.",
     "privacy.collected.note2":
         "We do not collect special care-required information such as medical history or beliefs.",
     "privacy.purpose.title": "3. Purposes of use",
@@ -37,7 +39,9 @@ export const privacy = {
     "privacy.purpose.item3": "To keep the settings you chose",
     "privacy.purpose.item4":
         "To provide the features you use, such as link display and sharing",
-    "privacy.purpose.item5": "To investigate problems and prevent misuse",
+    "privacy.purpose.item5":
+        "To understand how the old UI is used and improve it",
+    "privacy.purpose.item6": "To investigate problems and prevent misuse",
     "privacy.external.title": "4. Sending to external services",
     "privacy.external.intro":
         "Except where the law requires, we do not provide personal information to third parties without your consent. To provide features, we send information to the following services (this also serves as the notice of external transmission under the Telecommunications Business Act).",
@@ -51,10 +55,14 @@ export const privacy = {
         "Legacy backend: the identifier of an old-format post. To show past post pages and let the author delete them.",
     "privacy.external.cloudflare":
         "Cloudflare: communication with the Service and scheduled post data. To deliver and run the Service.",
+    "privacy.external.google":
+        "Google (Google Analytics): how the old UI is viewed. To understand usage.",
     "privacy.external.sns":
         "Sharing targets (X, Taittsuu, Mastodon): the text and URL to share. Only when you choose to share.",
     "privacy.external.note1":
         "Some destinations are in foreign countries such as the United States, whose rules may differ from Japan's.",
+    "privacy.external.optout":
+        "Analytics on the old UI can be stopped with your browser's cookie settings or Google's opt-out add-on.",
     "privacy.external.note2":
         "Please see each service's own privacy policy for how it handles information.",
     "privacy.retention.title": "5. Retention",
@@ -70,6 +78,8 @@ export const privacy = {
         "Login information for scheduling: deleted when no schedules remain. You can delete it any time yourself.",
     "privacy.retention.item6":
         "Access logs: kept by Cloudflare for a short period it sets.",
+    "privacy.retention.item7":
+        "Analytics information (old UI only): kept according to Google's settings.",
     "privacy.security.title": "6. Security",
     "privacy.security.item1": "Communication is encrypted.",
     "privacy.security.item2":
