@@ -61,7 +61,10 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           BRANCH_NAME: ${{ github.ref_name }}
           COMMIT_SHA: ${{ github.sha }}
-        run: npx wrangler deploy --tag "${COMMIT_SHA::7}" --message "staging: $BRANCH_NAME @ ${COMMIT_SHA::7}"
+        run: |
+          npx wrangler deploy \
+            --tag "${COMMIT_SHA::7}" \
+            --message "staging: $BRANCH_NAME @ ${COMMIT_SHA::7}"
 
       - name: Show staging URL
         env:
