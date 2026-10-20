@@ -42,17 +42,17 @@ npm run deploy
 
 `develop` ブランチへの push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査を通過した場合のみ Cloudflare Workers へデプロイする。`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
-| 種別     | 名前                             | 内容                                         |
-| -------- | -------------------------------- | -------------------------------------------- |
-| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン    |
-| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                    |
+| 種別     | 名前                             | 内容                                                                                                                      |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン                                                                                 |
+| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                                                                                                 |
 | Secret   | `SPEC_LINT_TOKEN`                | 仕様書の検査コマンド `spec-lint`（GitHub Packages）の取得用。`read:packages` 権限のトークン。Actions の Secret に登録する |
-| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント             |
-| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                             |
-| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
-| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
-| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
-| Variable | `SCHEDULE_D1_DATABASE_ID`        | 予約投稿用 D1 の database_id（UUID）。任意。未登録なら `wrangler.template.jsonc` の既定の本番用 D1 を使う |
+| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント                                                                                          |
+| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                                                                                                          |
+| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける）                                                                              |
+| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                                                                                                        |
+| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                                                                                              |
+| Variable | `SCHEDULE_D1_DATABASE_ID`        | 予約投稿用 D1 の database_id（UUID）。任意。未登録なら `wrangler.template.jsonc` の既定の本番用 D1 を使う                 |
 
 手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
 
@@ -63,10 +63,10 @@ npm run deploy
 本番用（`skyshare-schedule`・`skyshare-schedule-images`）とプレビュー用（末尾に `-preview`）の D1・R2 は作成済み。プレビューの暗号鍵は `wrangler preview base-config secret put SCHEDULE_ENC_KEY` で登録済みで、プレビューは `.github/workflows/preview.yaml` がマイグレーションも適用する。本番用は次の手順で用意する。
 
 ```sh
-npx wrangler d1 create skyshare-schedule            # 作成済み。作り直したときだけ database_id を Variable `SCHEDULE_D1_DATABASE_ID` に登録する
+npx wrangler d1 create skyshare-schedule # 作成済み。作り直したときだけ database_id を Variable `SCHEDULE_D1_DATABASE_ID` に登録する
 npx wrangler r2 bucket create skyshare-schedule-images
-npx wrangler r2 bucket lifecycle add skyshare-schedule-images expire-45d --expire-days 45   # 削除漏れの画像を自動で消す
-openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY                          # 予約用の認証情報の暗号鍵
+npx wrangler r2 bucket lifecycle add skyshare-schedule-images expire-45d --expire-days 45 # 削除漏れの画像を自動で消す
+openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY                        # 予約用の認証情報の暗号鍵
 ```
 
 D1 のマイグレーション（`migrations/`）は、デプロイ時に deploy.yaml が適用する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。
@@ -91,6 +91,14 @@ D1 のマイグレーション（`migrations/`）は、デプロイ時に deploy
 ```sh
 npm run prev
 ```
+
+### ステージング（Cron を含む確認）
+
+`wrangler preview` では Cron Trigger が動かないため、予約の自動投稿は独立した Worker `skyshare-staging`（`https://prev-skyshare.nekono.dev`）で確認する。`dev/**` へ push すると `.github/workflows/staging.yaml` が配備する（`node hack/render-deploy-config.mjs --staging` が、Worker 名・ドメイン・D1・R2 をステージング用に差し替える）。
+
+- 本番とは別の Worker・D1（`skyshare-schedule-preview`）・R2（`skyshare-schedule-images-preview`）を使い、本番のデータには触れない。
+- 配備先は 1 つだけなので、最後に push したブランチの内容になる。ブランチ別の確認は上のプレビューを使う。
+- 暗号鍵は `npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-staging` で登録済み（配備しても消えない）。
 
 ## 多言語対応（i18n）
 

@@ -7,7 +7,7 @@
 //   （branch-release-workflow スキルの wrangler-config。省略しない）
 // - _legacy/frontend/.env.production を生成する（こちらも .gitignore 対象）
 //
-// 使い方: node hack/render-deploy-config.mjs
+// 使い方: node hack/render-deploy-config.mjs [--staging]
 // 必須の環境変数が1つでも未設定/空の場合は、設定漏れによる誤デプロイを防ぐため異常終了する。
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
@@ -20,6 +20,13 @@ const WRANGLER_VARS = [
   "PUBLIC_OGP_EXTRACTOR_API",
   "PUBLIC_PLC_DIRECTORY_BASE_URL",
 ]
+
+const PROD_D1_ID = "60ca03d7-b17a-480d-bf74-50013ed7855b"
+// ステージング用（プレビューと同じ専用の D1・R2 を使う）
+const STAGING_HOST = "prev-skyshare.nekono.dev"
+const STAGING_D1_NAME = "skyshare-schedule-preview"
+const STAGING_D1_ID = "ee858bd4-d6d5-4be4-87d9-7e36e630e096"
+const STAGING_R2_NAME = "skyshare-schedule-images-preview"
 
 // _legacy/frontend のビルド時変数（.env.production）
 const LEGACY_VARS = [
@@ -77,8 +84,39 @@ if (scheduleD1Id !== "" && !/^[0-9a-f-]{36}$/.test(scheduleD1Id)) {
 }
 wrangler = wrangler.replace(
   "SCHEDULE_D1_DATABASE_ID",
-  scheduleD1Id || "60ca03d7-b17a-480d-bf74-50013ed7855b",
+  scheduleD1Id || PROD_D1_ID,
 )
+// ステージング（`--staging`）: 本番とは別の Worker・ドメイン・D1・R2 に向ける。
+// Cron Trigger は Worker 単位でしか動かず、`wrangler preview` では動かないため、
+// 予約の自動投稿を確認する用の独立した Worker として配備する（本番のデータには触れない）
+if (process.argv.includes("--staging")) {
+  const replaceFirst = (from, to) => {
+    if (!wrangler.includes(from)) {
+      console.error(`wrangler.template.jsonc に ${from} が見つかりません`)
+      process.exit(1)
+    }
+    // 先頭側（本番用の最上位の設定）だけを置き換える。previews ブロックは後ろにある
+    wrangler = wrangler.replace(from, () => to)
+  }
+  replaceFirst('"name": "skyshare"', '"name": "skyshare-staging"')
+  replaceFirst(
+    '"pattern": "skyshare.nekono.dev"',
+    `"pattern": "${STAGING_HOST}"`,
+  )
+  replaceFirst('"previews_enabled": true', '"previews_enabled": false')
+  replaceFirst(
+    '"database_name": "skyshare-schedule"',
+    `"database_name": "${STAGING_D1_NAME}"`,
+  )
+  replaceFirst(
+    `"database_id": "${scheduleD1Id || PROD_D1_ID}"`,
+    `"database_id": "${STAGING_D1_ID}"`,
+  )
+  replaceFirst(
+    '"bucket_name": "skyshare-schedule-images"',
+    `"bucket_name": "${STAGING_R2_NAME}"`,
+  )
+}
 writeFileSync("wrangler.jsonc", wrangler)
 
 // 独自ドメインの有効状況に合わせて workers_dev / preview_urls を設定する
