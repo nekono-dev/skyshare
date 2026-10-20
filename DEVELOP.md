@@ -52,7 +52,7 @@ npm run deploy
 | Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
 | Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
 | Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
-| Variable | `SCHEDULE_D1_DATABASE_ID`        | 予約投稿用 D1 の database_id（UUID）。未登録だと仮の値になり、デプロイは失敗する |
+| Variable | `SCHEDULE_D1_DATABASE_ID`        | 予約投稿用 D1 の database_id（UUID）。任意。未登録なら `wrangler.template.jsonc` の既定の本番用 D1 を使う |
 
 手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
 
@@ -60,8 +60,10 @@ npm run deploy
 
 予約投稿は Cloudflare の D1・R2・Cron Trigger を使う（いずれも無料枠の範囲）。初回のデプロイの前に、次を行う。
 
+本番用（`skyshare-schedule`・`skyshare-schedule-images`）とプレビュー用（末尾に `-preview`）の D1・R2 は作成済み。プレビューの暗号鍵は `wrangler preview base-config secret put SCHEDULE_ENC_KEY` で登録済みで、プレビューは `.github/workflows/preview.yaml` がマイグレーションも適用する。本番用は次の手順で用意する。
+
 ```sh
-npx wrangler d1 create skyshare-schedule            # 出力された database_id を Variable `SCHEDULE_D1_DATABASE_ID` に登録する
+npx wrangler d1 create skyshare-schedule            # 作成済み。作り直したときだけ database_id を Variable `SCHEDULE_D1_DATABASE_ID` に登録する
 npx wrangler r2 bucket create skyshare-schedule-images
 npx wrangler r2 bucket lifecycle add skyshare-schedule-images expire-45d --expire-days 45   # 削除漏れの画像を自動で消す
 openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY                          # 予約用の認証情報の暗号鍵

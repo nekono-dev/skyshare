@@ -50,6 +50,20 @@
   "workers_dev": false,
   "preview_urls": false,
   "previews": {
+    // プレビューは本番のデータと分けた専用の D1・R2 を使う（database_id は秘密情報ではない）
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "skyshare-schedule-preview",
+        "database_id": "ee858bd4-d6d5-4be4-87d9-7e36e630e096",
+      },
+    ],
+    "r2_buckets": [
+      {
+        "binding": "SCHEDULE_IMAGES",
+        "bucket_name": "skyshare-schedule-images-preview",
+      },
+    ],
     "vars": {
       "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
       "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",

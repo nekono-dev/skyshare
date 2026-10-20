@@ -73,6 +73,14 @@ jobs:
         if: steps.alias.outputs.valid == 'true'
         run: npm run build
 
+      # プレビュー専用の D1 に、未適用のマイグレーションを適用する（適用済みのものは再実行されない）
+      - name: Apply D1 migrations (preview)
+        if: steps.alias.outputs.valid == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node hack/apply-d1-migrations.mjs skyshare-schedule-preview ee858bd4-d6d5-4be4-87d9-7e36e630e096
+
       # wrangler preview はブランチ別の Preview を作成・更新する（本番のデプロイ状態は変えない）。
       # 同じ名前で再実行すると URL は変わらず中身だけ最新になる
       - name: Deploy preview
