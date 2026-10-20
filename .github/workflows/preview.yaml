@@ -74,8 +74,11 @@ jobs:
         run: npm run build
 
       # プレビュー専用の D1 に、未適用のマイグレーションを適用する（適用済みのものは再実行されない）
+      # CI の API トークンに D1 の編集権限が無い場合は失敗するが、適用済みのデータベースへの
+      # プレビューの更新を止めないよう、失敗しても続行する（失敗はログの警告で確認する）
       - name: Apply D1 migrations (preview)
         if: steps.alias.outputs.valid == 'true'
+        continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
