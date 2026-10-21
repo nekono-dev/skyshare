@@ -2,7 +2,7 @@
  * Cloudflare の配備設定の生成（`hack/render-deploy-config.mjs`）の検証。
  *
  * 責務と処理概要:
- * - 一時ディレクトリにテンプレートを置いてスクリプトを実行し、与えた値が設定に入ることと、
+ * - 一時ディレクトリにテンプレートを置いてスクリプトを実行し、与えたドメインが設定に入ることと、
  *   必須の値が欠けたときに異常終了することを確かめる（リポジトリの wrangler.jsonc には触れない）。
  */
 import { spawnSync } from "node:child_process"
@@ -27,10 +27,6 @@ const ENV = {
     PUBLIC_OGP_EXTRACTOR_API: "https://ogp.example.org",
     PUBLIC_PLC_DIRECTORY_BASE_URL: "https://plc.directory",
     SITE_HOST: "s.example.org",
-    ZONE_NAME: "example.org",
-    SCHEDULE_D1_DATABASE_ID: "11111111-1111-1111-1111-111111111111",
-    PREVIEW_D1_DATABASE_ID: "22222222-2222-2222-2222-222222222222",
-    SCHEDULE_R2_BUCKET: "op-images",
     STAGING_HOST: "st.example.org",
 }
 
@@ -61,35 +57,32 @@ const run = (env: Record<string, string>, args: string[] = []) => {
 }
 
 describe("render-deploy-config", () => {
-    it("[site-config/AC-7] 与えた配備先の値が設定に入り、必須の値が欠けると異常終了する", () => {
+    it("[site-config/AC-7] 与えたドメインが設定に入り、必須の値が欠けると異常終了する", () => {
         const { status, config } = run(ENV)
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare"')
         expect(config).toContain('"pattern": "s.example.org"')
-        expect(config).toContain('"zone_name": "example.org"')
-        expect(config).toContain(ENV.SCHEDULE_D1_DATABASE_ID)
-        expect(config).toContain(ENV.PREVIEW_D1_DATABASE_ID)
-        expect(config).toContain('"bucket_name": "op-images"')
+        expect(config).toContain('"database_name": "skyshare-schedule"')
+        expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
         expect(config).toContain('"previews_enabled": true')
+        expect(config).not.toContain(`"pattern": "SITE_HOST"`)
 
-        const { SCHEDULE_D1_DATABASE_ID: _id, ...missing } = ENV
+        const { SITE_HOST: _h, ...missing } = ENV
         const failed = run(missing)
         expect(failed.status).not.toBe(0)
-        expect(failed.stderr).toContain("SCHEDULE_D1_DATABASE_ID")
+        expect(failed.stderr).toContain("SITE_HOST")
     })
 
-    it("[site-config/AC-8] ステージングは別の Worker 名とドメインに、プレビュー用の D1・R2 を使う", () => {
+    it("[site-config/AC-8] ステージングは別の Worker 名とドメインに、本番と同じ D1・R2 を使う", () => {
         const { status, config } = run(ENV, ["--staging"])
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare-staging"')
         expect(config).toContain('"pattern": "st.example.org"')
-        expect(config).not.toContain(ENV.SCHEDULE_D1_DATABASE_ID)
-        expect(config).toContain(
-            '"bucket_name": "skyshare-schedule-images-preview"',
-        )
+        expect(config).toContain('"database_name": "skyshare-schedule"')
+        expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
         expect(config).toContain('"previews_enabled": false')
 
-        const { STAGING_HOST: _h, ...missing } = ENV
+        const { STAGING_HOST: _s, ...missing } = ENV
         expect(run(missing, ["--staging"]).status).not.toBe(0)
     })
 })

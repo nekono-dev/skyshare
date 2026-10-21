@@ -8,6 +8,7 @@
 #
 # 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは .claude/skills/branch-release-workflow）。
 # 前提: Worker が一度デプロイ済みで、カスタムドメインの previews_enabled が true であること（wrangler 4.135.0 以上）。
+# D1・R2 は本番と共用し、Preview base config のバインディングを使う。本番の D1 を共用するため、マイグレーションは適用しない。
 name: preview
 
 on:
@@ -30,14 +31,6 @@ env:
   PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
   # 運用者ごとの設定（DEVELOP.md の「運用者ごとの設定」）
   SITE_HOST: ${{ vars.SITE_HOST }}
-  ZONE_NAME: ${{ vars.ZONE_NAME }}
-  WORKER_NAME: ${{ vars.WORKER_NAME }}
-  SCHEDULE_D1_NAME: ${{ vars.SCHEDULE_D1_NAME }}
-  SCHEDULE_D1_DATABASE_ID: ${{ vars.SCHEDULE_D1_DATABASE_ID }}
-  SCHEDULE_R2_BUCKET: ${{ vars.SCHEDULE_R2_BUCKET }}
-  PREVIEW_D1_NAME: ${{ vars.PREVIEW_D1_NAME }}
-  PREVIEW_D1_DATABASE_ID: ${{ vars.PREVIEW_D1_DATABASE_ID }}
-  PREVIEW_R2_BUCKET: ${{ vars.PREVIEW_R2_BUCKET }}
   PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
   PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
   PUBLIC_OPERATOR_BLUESKY_HANDLE: ${{ vars.PUBLIC_OPERATOR_BLUESKY_HANDLE }}
@@ -88,16 +81,6 @@ jobs:
         if: steps.alias.outputs.valid == 'true'
         run: npm run build
 
-      # プレビュー専用の D1 に、未適用のマイグレーションを適用する（適用済みのものは再実行されない）
-      # CI の API トークンに D1 の編集権限が無い場合は失敗するが、適用済みのデータベースへの
-      # プレビューの更新を止めないよう、失敗しても続行する（失敗はログの警告で確認する）
-      - name: Apply D1 migrations (preview)
-        if: steps.alias.outputs.valid == 'true'
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node hack/apply-d1-migrations.mjs
 
       # wrangler preview はブランチ別の Preview を作成・更新する（本番のデプロイ状態は変えない）。
       # 同じ名前で再実行すると URL は変わらず中身だけ最新になる

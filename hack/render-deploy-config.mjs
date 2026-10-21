@@ -1,7 +1,7 @@
 // CI/CD(GitHub Actions)用に、デプロイ設定ファイルを環境変数から生成するスクリプト。
 //
 // 責務:
-// - wrangler.template.jsonc の vars と配備先（Worker 名・ドメイン・D1・R2）を環境変数の値で置き換え、wrangler.jsonc を生成する
+// - wrangler.template.jsonc の vars と公開するドメインを環境変数の値で置き換え、wrangler.jsonc を生成する
 //   （wrangler.jsonc は本番値を含むため .gitignore 対象。CIでは都度生成する）
 // - 生成した wrangler.jsonc の workers_dev / preview_urls を、独自ドメインの有効状況に合わせて設定する
 //   （branch-release-workflow スキルの wrangler-config。省略しない）
@@ -22,20 +22,7 @@ const WRANGLER_VARS = [
   "PUBLIC_PLC_DIRECTORY_BASE_URL",
 ]
 
-// wrangler.template.jsonc の配備先の値（運用者ごとに変わる）。
-// [環境変数名, 既定値]。既定値が null のものは必須
-const DEPLOY_VARS = [
-  ["WORKER_NAME", "skyshare"],
-  ["SITE_HOST", null],
-  ["ZONE_NAME", null],
-  ["SCHEDULE_D1_NAME", "skyshare-schedule"],
-  ["SCHEDULE_D1_DATABASE_ID", null],
-  ["SCHEDULE_R2_BUCKET", "skyshare-schedule-images"],
-  ["PREVIEW_D1_NAME", "skyshare-schedule-preview"],
-  ["PREVIEW_D1_DATABASE_ID", null],
-  ["PREVIEW_R2_BUCKET", "skyshare-schedule-images-preview"],
-]
-const UUID = /^[0-9a-f-]{36}$/
+// 公開するドメインの形式（スキームやパスを含めない）
 const HOST = /^[a-z0-9.-]+$/
 
 // _legacy/frontend のビルド時変数（.env.production）
@@ -85,54 +72,28 @@ for (const name of WRANGLER_VARS) {
   const value = requireEnv(name)
   wrangler = wrangler.replace(pattern, (_match, head) => `${head}"${value}"`)
 }
-// 配備先の値を決める。`--staging` では、本番とは別の Worker・ドメインに、プレビューと同じ D1・R2 を使う
+// 公開するドメインを決める。`--staging` では、本番とは別の Worker 名とドメインにする
 // （Cron Trigger は Worker 単位でしか動かず、`wrangler preview` では動かないため、
-// 予約の自動投稿を確認する用の独立した Worker として配備する。本番のデータには触れない）
-const deploy = Object.fromEntries(
-  DEPLOY_VARS.map(([name, fallback]) => [
-    name,
-    fallback === null
-      ? requireEnv(name)
-      : (process.env[name] ?? "").trim() || fallback,
-  ]),
-)
-for (const name of ["SCHEDULE_D1_DATABASE_ID", "PREVIEW_D1_DATABASE_ID"]) {
-  if (!UUID.test(deploy[name])) {
-    console.error(`${name} が UUID 形式ではありません`)
-    process.exit(1)
-  }
-}
+// 予約の自動投稿を確認する用の独立した Worker として配備する。D1・R2 は本番と共用する）
 const staging = process.argv.includes("--staging")
-if (staging) {
-  deploy.WORKER_NAME = `${deploy.WORKER_NAME}-staging`
-  deploy.SITE_HOST = requireEnv("STAGING_HOST")
-  deploy.SCHEDULE_D1_NAME = deploy.PREVIEW_D1_NAME
-  deploy.SCHEDULE_D1_DATABASE_ID = deploy.PREVIEW_D1_DATABASE_ID
-  deploy.SCHEDULE_R2_BUCKET = deploy.PREVIEW_R2_BUCKET
+const host = requireEnv(staging ? "STAGING_HOST" : "SITE_HOST")
+if (!HOST.test(host)) {
+  console.error("ドメイン名だけを指定してください（例: skyshare.example.com）")
+  process.exit(1)
 }
-for (const name of ["SITE_HOST", "ZONE_NAME"]) {
-  if (!HOST.test(deploy[name])) {
-    console.error(
-      `${name} はドメイン名だけを指定してください（例: example.com）`,
-    )
+// テンプレートの値を置き換える。見つからない場合はテンプレート変更の検知のため異常終了する
+const replaceOnce = (from, to) => {
+  if (!wrangler.includes(from)) {
+    console.error(`wrangler.template.jsonc に ${from} が見つかりません`)
     process.exit(1)
   }
+  wrangler = wrangler.replace(from, () => to)
 }
-// テンプレートの `"WORKER_NAME"` のような値を置き換える。見つからない場合はテンプレート変更の検知のため異常終了する
-for (const [name, value] of Object.entries(deploy)) {
-  const token = `"${name}"`
-  if (!wrangler.includes(token)) {
-    console.error(`wrangler.template.jsonc に ${token} が見つかりません`)
-    process.exit(1)
-  }
-  wrangler = wrangler.replaceAll(token, () => `"${value}"`)
-}
-// ステージングの Worker ではブランチ別のプレビューを作らない
+replaceOnce('"pattern": "SITE_HOST"', `"pattern": "${host}"`)
 if (staging) {
-  wrangler = wrangler.replace(
-    '"previews_enabled": true',
-    '"previews_enabled": false',
-  )
+  replaceOnce('"name": "skyshare"', '"name": "skyshare-staging"')
+  // ステージングの Worker ではブランチ別のプレビューを作らない
+  replaceOnce('"previews_enabled": true', '"previews_enabled": false')
 }
 writeFileSync("wrangler.jsonc", wrangler)
 

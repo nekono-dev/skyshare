@@ -1,10 +1,12 @@
-# dev/** ブランチへの push をトリガーに、独立したステージング用 Worker（<WORKER_NAME>-staging）へ配備する。
+# dev/** ブランチへの push をトリガーに、独立したステージング用 Worker（skyshare-staging）へ配備する。
 #
 # - Cron Trigger は `wrangler preview` では動かないため、予約の自動投稿を確認する用の別 Worker を使う
-# - 配備先は Variable `STAGING_HOST` のドメイン（本番とは別の Worker。D1・R2 はプレビューと共用し、本番のデータには触れない）
+# - 配備先は Variable `STAGING_HOST` のドメイン（本番とは別の Worker。D1・R2 は本番と共用する）
+# - 本番の D1 を共用するため、マイグレーションは適用しない（適用は deploy.yaml だけが行う）。
+#   Cron は本番の予約も実行するため、暗号鍵 SCHEDULE_ENC_KEY は本番と同じ値を登録する
 # - `STAGING_HOST` が未登録のリポジトリでは、ステージングを行わない
 # - 配備先は 1 つだけなので、最後に push したブランチの内容に置き換わる（ブランチ別のプレビューは preview.yaml）
-# - シークレット SCHEDULE_ENC_KEY は Worker に登録済み（`wrangler secret put SCHEDULE_ENC_KEY --name <WORKER_NAME>-staging`）。配備しても消えない
+# - シークレット SCHEDULE_ENC_KEY は Worker に登録済み（`wrangler secret put SCHEDULE_ENC_KEY --name skyshare-staging`）。配備しても消えない
 #
 # 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照）。
 name: staging
@@ -30,14 +32,6 @@ env:
   PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
   # 運用者ごとの設定（DEVELOP.md の「運用者ごとの設定」）
   SITE_HOST: ${{ vars.SITE_HOST }}
-  ZONE_NAME: ${{ vars.ZONE_NAME }}
-  WORKER_NAME: ${{ vars.WORKER_NAME }}
-  SCHEDULE_D1_NAME: ${{ vars.SCHEDULE_D1_NAME }}
-  SCHEDULE_D1_DATABASE_ID: ${{ vars.SCHEDULE_D1_DATABASE_ID }}
-  SCHEDULE_R2_BUCKET: ${{ vars.SCHEDULE_R2_BUCKET }}
-  PREVIEW_D1_NAME: ${{ vars.PREVIEW_D1_NAME }}
-  PREVIEW_D1_DATABASE_ID: ${{ vars.PREVIEW_D1_DATABASE_ID }}
-  PREVIEW_R2_BUCKET: ${{ vars.PREVIEW_R2_BUCKET }}
   PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
   PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
   PUBLIC_OPERATOR_BLUESKY_HANDLE: ${{ vars.PUBLIC_OPERATOR_BLUESKY_HANDLE }}
@@ -66,13 +60,6 @@ jobs:
       - name: Run build
         run: npm run build
 
-      # プレビューと共用の D1 に、未適用のマイグレーションを適用する（失敗しても配備は続ける。preview.yaml と同じ理由）
-      - name: Apply D1 migrations (staging)
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node hack/apply-d1-migrations.mjs
 
       - name: Deploy staging worker
         env:

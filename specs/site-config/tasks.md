@@ -12,8 +12,9 @@
 ## Phase 2: 配備設定とワークフロー
 
 - 対応: D-2
-- [x] T-2.1: `wrangler.template.jsonc` の運用者固有の値を置き換え用の値にし、`render-deploy-config.mjs` で置き換える。
-- [x] T-2.2: `apply-d1-migrations.mjs` をビルド結果から対象を読む形にし、ワークフローに値の受け渡しを加える。
-- [x] T-2.3: `DEVELOP.md` に運用者ごとの設定を記載する。
-- [x] T-2.4: 受け入れ条件 AC-7 から AC-9 のテストをタグ付きで追加する。
+- [x] T-2.1: `wrangler.template.jsonc` のドメインを置き換え用の値にし、`render-deploy-config.mjs` で置き換える。
+- [x] T-2.2: テンプレートから D1 の `database_id`・`zone_name`・previews の D1 と R2 を除く。
+- [x] T-2.3: プレビュー用のマイグレーション補助を削除し、ワークフローに値の受け渡しを加え、プレビューとステージングのマイグレーションをなくす。
+- [x] T-2.4: `DEVELOP.md` に運用者ごとの設定を記載する。
+- [x] T-2.5: 受け入れ条件 AC-7 から AC-9 のテストをタグ付きで追加する。
 - 検証: `npx vitest run tests/hack`

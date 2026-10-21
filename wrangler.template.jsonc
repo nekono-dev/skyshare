@@ -1,6 +1,6 @@
 {
-  // 大文字の値（WORKER_NAME など）は hack/render-deploy-config.mjs が環境変数で置き換える
-  "name": "WORKER_NAME",
+  // routes の pattern（SITE_HOST）は hack/render-deploy-config.mjs が環境変数で置き換える
+  "name": "skyshare",
   // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
   "main": "src/worker.ts",
   // Set this to today's date
@@ -14,19 +14,19 @@
   "triggers": {
     "crons": ["* * * * *"],
   },
-  // 予約の保管（D1）と添付画像の一時保管（R2）
+  // 予約の保管（D1）と添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
+  // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "SCHEDULE_D1_NAME",
-      "database_id": "SCHEDULE_D1_DATABASE_ID",
+      "database_name": "skyshare-schedule",
       "migrations_dir": "migrations",
     },
   ],
   "r2_buckets": [
     {
       "binding": "SCHEDULE_IMAGES",
-      "bucket_name": "SCHEDULE_R2_BUCKET",
+      "bucket_name": "skyshare-schedule-images",
     },
   ],
   "observability": {
@@ -35,7 +35,6 @@
   "routes": [
     {
       "pattern": "SITE_HOST",
-      "zone_name": "ZONE_NAME",
       "custom_domain": true,
       "enabled": true,
       "previews_enabled": true,
@@ -50,21 +49,9 @@
   },
   "workers_dev": false,
   "preview_urls": false,
+  // プレビューも本番の D1・R2 を共用する。プレビューは設定ファイルの D1 を ID なしでは使えないため、
+  // バインディング（DB・SCHEDULE_IMAGES）はダッシュボードの Preview base config に登録する（DEVELOP.md）
   "previews": {
-    // プレビューは本番のデータと分けた専用の D1・R2 を使う
-    "d1_databases": [
-      {
-        "binding": "DB",
-        "database_name": "PREVIEW_D1_NAME",
-        "database_id": "PREVIEW_D1_DATABASE_ID",
-      },
-    ],
-    "r2_buckets": [
-      {
-        "binding": "SCHEDULE_IMAGES",
-        "bucket_name": "PREVIEW_R2_BUCKET",
-      },
-    ],
     "vars": {
       "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
       "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",

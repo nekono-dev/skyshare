@@ -61,20 +61,14 @@ npm run deploy
 
 Skyshare は OSS のため、運用者ごとに変わる値はコードに書かず、GitHub の Variables（手元では環境変数）で渡す。別の運用者は、フォークして次の値を登録すれば同じコードを配備できる。必須の値が欠けると、`npm run build`（運営者情報）と `hack/render-deploy-config.mjs`（配備先）が異常終了する。開発時（`astro dev`・単体テスト）は、運営者情報が未設定でもダミー値で動く。
 
-配備先（`hack/render-deploy-config.mjs` が `wrangler.template.jsonc` の同名の値を置き換える）:
+配備先（`hack/render-deploy-config.mjs` が `wrangler.template.jsonc` の `SITE_HOST` を置き換える）:
 
-| 名前                      | 必須 | 内容                                                                                     |
-| ------------------------- | ---- | ---------------------------------------------------------------------------------------- |
-| `SITE_HOST`               | 必須 | 公開するドメイン（例: `skyshare.example.com`）。サイトの URL とプレビューの URL にも使う |
-| `ZONE_NAME`               | 必須 | `SITE_HOST` を含む Cloudflare のゾーン名（例: `example.com`）                            |
-| `WORKER_NAME`             | 任意 | Worker 名。既定は `skyshare`                                                             |
-| `SCHEDULE_D1_DATABASE_ID` | 必須 | 予約投稿用 D1 の database_id（UUID）                                                     |
-| `SCHEDULE_D1_NAME`        | 任意 | 予約投稿用 D1 の名前。既定は `skyshare-schedule`                                         |
-| `SCHEDULE_R2_BUCKET`      | 任意 | 予約の画像用 R2 のバケット名。既定は `skyshare-schedule-images`                          |
-| `PREVIEW_D1_DATABASE_ID`  | 必須 | プレビュー・ステージング用 D1 の database_id（UUID）                                     |
-| `PREVIEW_D1_NAME`         | 任意 | プレビュー用 D1 の名前。既定は `skyshare-schedule-preview`                               |
-| `PREVIEW_R2_BUCKET`       | 任意 | プレビュー用 R2 のバケット名。既定は `skyshare-schedule-images-preview`                  |
-| `STAGING_HOST`            | 任意 | ステージングのドメイン。未登録ならステージングを行わない                                 |
+| 名前           | 必須 | 内容                                                                                     |
+| -------------- | ---- | ---------------------------------------------------------------------------------------- |
+| `SITE_HOST`    | 必須 | 公開するドメイン（例: `skyshare.example.com`）。サイトの URL とプレビューの URL にも使う |
+| `STAGING_HOST` | 任意 | ステージングのドメイン。未登録ならステージングを行わない                                 |
+
+Worker 名（`skyshare`）、D1（`skyshare-schedule`）、R2（`skyshare-schedule-images`）の名前は固定である。名前は Cloudflare のアカウントごとなので、運用者が違っても衝突しない。D1 は `database_id` を書かず名前で解決する（`wrangler deploy` が同じ名前の D1 を探してつなぐ。CI の API トークンに D1 の権限が要る）。独自ドメインのゾーンは、ドメインから自動で決まる。
 
 運営者情報とアクセス解析（ビルド時に埋め込む。プライバシーポリシーと GA タグに使う。`src/lib/site/siteConfig.ts`）:
 
@@ -93,16 +87,23 @@ Skyshare は OSS のため、運用者ごとに変わる値はコードに書か
 
 予約投稿は Cloudflare の D1・R2・Cron Trigger を使う（いずれも無料枠の範囲）。初回のデプロイの前に、次を行う。
 
-本番用とプレビュー用（名前の末尾に `-preview`）の D1・R2 を作成し、D1 の database_id を Variables（`SCHEDULE_D1_DATABASE_ID`・`PREVIEW_D1_DATABASE_ID`）に登録する。プレビューの暗号鍵は `wrangler preview base-config secret put SCHEDULE_ENC_KEY` で登録し、プレビューのマイグレーションは `.github/workflows/preview.yaml` が適用する。本番用は次の手順で用意する（名前を変えた場合は読み替える）。
+本番の D1・R2 は、プレビューとステージングと共用する（プレビュー用の D1・R2 は作らない）。次の手順で用意する。
 
 ```sh
-npx wrangler d1 create skyshare-schedule # 表示された database_id を Variable `SCHEDULE_D1_DATABASE_ID` に登録する
+npx wrangler d1 create skyshare-schedule # database_id の登録は不要（名前で解決する）
 npx wrangler r2 bucket create skyshare-schedule-images
 npx wrangler r2 bucket lifecycle add skyshare-schedule-images expire-45d --expire-days 45 # 削除漏れの画像を自動で消す
-openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY                        # 予約用の認証情報の暗号鍵
+openssl rand -base64 32 > enc.key                                                         # 予約用の認証情報の暗号鍵
+npx wrangler secret put SCHEDULE_ENC_KEY < enc.key                                        # 本番
+npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-staging < enc.key                # ステージング（使う場合）
+npx wrangler preview base-config secret put SCHEDULE_ENC_KEY < enc.key                    # プレビュー
+rm enc.key
 ```
 
-D1 のマイグレーション（`migrations/`）は、デプロイ時に deploy.yaml が適用する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。
+- 暗号鍵は本番・ステージング・プレビューで同じ値にする。D1 を共用するため、違う鍵で保存した認証情報は他方で復号できず、予約が失敗する。
+- プレビューのバインディングは、ダッシュボードの Workers & Pages → `skyshare` → Settings → Preview base config で、`DB`（D1 `skyshare-schedule`）と `SCHEDULE_IMAGES`（R2 `skyshare-schedule-images`）を一度だけ登録する。`wrangler preview` は、`database_id` のない D1 を設定ファイルから使えないため。
+
+D1 のマイグレーション（`migrations/`）は、本番のデプロイ時に deploy.yaml だけが適用する。プレビューとステージングは本番の D1 を共用するため、適用しない（スキーマを変えるブランチは、先に develop へ取り込んでから確認する）。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。
 
 ### E2E（e2e.yaml）
 
@@ -127,11 +128,11 @@ npm run prev
 
 ### ステージング（Cron を含む確認）
 
-`wrangler preview` では Cron Trigger が動かないため、予約の自動投稿は独立した Worker `<WORKER_NAME>-staging`（Variable `STAGING_HOST` のドメイン）で確認する。`dev/**` へ push すると `.github/workflows/staging.yaml` が配備する（`node hack/render-deploy-config.mjs --staging` が、Worker 名・ドメイン・D1・R2 をステージング用に差し替える）。
+`wrangler preview` では Cron Trigger が動かないため、予約の自動投稿は独立した Worker `skyshare-staging`（Variable `STAGING_HOST` のドメイン）で確認する。`dev/**` へ push すると `.github/workflows/staging.yaml` が配備する（`node hack/render-deploy-config.mjs --staging` が、Worker 名とドメインをステージング用に差し替える）。
 
-- 本番とは別の Worker を使い、D1・R2 はプレビュー用を共用する。本番のデータには触れない。
+- D1・R2 は本番と共用する。ステージングの Cron は本番の予約も実行し、プレビューやステージングでの操作は本番のデータに残る。
 - 配備先は 1 つだけなので、最後に push したブランチの内容になる。ブランチ別の確認は上のプレビューを使う。
-- 暗号鍵は `npx wrangler secret put SCHEDULE_ENC_KEY --name <WORKER_NAME>-staging` で登録する（配備しても消えない）。
+- 暗号鍵は本番と同じ値を登録する（上の「予約投稿の初期設定」）。
 
 ## 多言語対応（i18n）
 
