@@ -25,6 +25,7 @@ describe("buildPrivacyPolicy", () => {
             "purpose",
             "external",
             "retention",
+            "security",
             "cookies",
             "rights",
             "revision",
@@ -32,27 +33,29 @@ describe("buildPrivacyPolicy", () => {
         for (const s of ja()) expect(s.title).not.toBe("")
     })
 
-    it("[privacy-policy/AC-2] 取得する情報の節が、5つの区分をすべて持つ", () => {
+    it("[privacy-policy/AC-2] 取得する情報の節が、6つの区分をすべて持つ", () => {
         const list = find("collected").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
         const keywords = [
             "ログイン",
             "予約投稿",
             "ブラウザにのみ",
-            "アクセスログ",
+            "アクセス",
             "Google アナリティクス",
+            "お問い合わせ",
         ]
         expect(list.items).toHaveLength(keywords.length)
         keywords.forEach((k, i) => expect(list.items[i]).toContain(k))
     })
 
-    it("[privacy-policy/AC-3] 第三者への提供の節が、提供する場合ごとに1項目を持つ", () => {
+    it("[privacy-policy/AC-3] 第三者への提供の節が、法令の例外を1項目ずつ持ち、利用者の操作による送信を区別する", () => {
         const list = find("external").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
-        expect(list.items.length).toBeGreaterThanOrEqual(4)
-        const joined = list.items.join()
-        for (const k of ["法令", "Bluesky", "Cloudflare", "Google"])
-            expect(joined).toContain(k)
+        expect(list.items).toHaveLength(3)
+        expect(list.items[0]).toContain("法令")
+        const note = find("external").blocks.at(-1)
+        if (note?.kind !== "text") throw new Error("注記がない")
+        expect(note.text).toContain("利用者の操作")
     })
 
     it("[privacy-policy/AC-4] 予約投稿の記載に、暗号化・保存期間・削除の方法が含まれる", () => {
@@ -76,6 +79,22 @@ describe("buildPrivacyPolicy", () => {
             }
         }
         expect(allText()).not.toContain("AES")
+    })
+
+    it("[privacy-policy/AC-9] 法令が公表を求める事項を記載する", () => {
+        const text = allText()
+        for (const k of [
+            "氏名と住所",
+            "苦情",
+            "相当の関連性",
+            "運営者本人に限ります",
+            "米国の Cloudflare",
+            "個人情報保護委員会",
+            "Google LLC",
+            "本人確認",
+            "手数料",
+        ])
+            expect(text).toContain(k)
     })
 
     it("[privacy-policy/AC-5] 記載の全体から、事業者名・連絡先・制定日が定数の値で参照される", () => {

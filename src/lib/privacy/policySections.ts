@@ -26,7 +26,7 @@ export type PolicySection = {
  * - `t`: 翻訳関数
  *
  * Output:
- * - 運営者・取得する情報・利用目的・第三者への提供・保存期間と安全管理・Cookie とアクセス解析・利用者の請求・改定の順の節
+ * - 運営者と窓口・取得する情報・利用目的・第三者への提供・保存期間・安全管理措置・Cookie とアクセス解析・開示等の請求・改定の順の節
  */
 export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
     const contact = {
@@ -41,59 +41,54 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
             title: t("privacy.operator.title"),
             blocks: [
                 text(t("privacy.lead", { operator: operator.name })),
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.operator.name", { operator: operator.name }),
-                        t("privacy.operator.contact", contact),
-                    ],
-                },
+                list(
+                    t("privacy.operator.name", { operator: operator.name }),
+                    t("privacy.operator.contact", contact),
+                ),
             ],
         },
         {
             id: "collected",
             title: t("privacy.collected.title"),
             blocks: [
-                text("privacy.collected.intro"),
+                text(t("privacy.collected.intro")),
                 list(
                     t("privacy.collected.login"),
                     t("privacy.collected.schedule"),
                     t("privacy.collected.device"),
                     t("privacy.collected.log"),
                     t("privacy.collected.analytics"),
+                    t("privacy.collected.inquiry"),
                 ),
-                text("privacy.collected.note"),
+                text(t("privacy.collected.note")),
             ],
         },
         {
             id: "purpose",
             title: t("privacy.purpose.title"),
             blocks: [
-                text("privacy.purpose.intro"),
+                text(t("privacy.purpose.intro")),
                 list(
                     t("privacy.purpose.item1"),
                     t("privacy.purpose.item2"),
                     t("privacy.purpose.item3"),
                     t("privacy.purpose.item4"),
+                    t("privacy.purpose.item5"),
                 ),
+                text(t("privacy.purpose.change")),
             ],
         },
         {
             id: "external",
             title: t("privacy.external.title"),
             blocks: [
-                text("privacy.external.intro"),
+                text(t("privacy.external.intro")),
                 list(
                     t("privacy.external.item1"),
                     t("privacy.external.item2"),
                     t("privacy.external.item3"),
-                    t("privacy.external.item4"),
                 ),
-                list(
-                    t("privacy.external.note1"),
-                    t("privacy.external.note2"),
-                    t("privacy.external.note3"),
-                ),
+                text(t("privacy.external.note")),
             ],
         },
         {
@@ -107,8 +102,22 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                     t("privacy.retention.item4"),
                     t("privacy.retention.item5"),
                     t("privacy.retention.item6"),
-                    t("privacy.retention.item7"),
                 ),
+            ],
+        },
+        {
+            id: "security",
+            title: t("privacy.security.title"),
+            blocks: [
+                text(t("privacy.security.intro")),
+                list(
+                    t("privacy.security.item1"),
+                    t("privacy.security.item2"),
+                    t("privacy.security.item3"),
+                    t("privacy.security.item4"),
+                    t("privacy.security.item5"),
+                ),
+                text(t("privacy.security.note")),
             ],
         },
         {
@@ -120,6 +129,7 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                     t("privacy.cookies.item2"),
                     t("privacy.cookies.item3"),
                     t("privacy.cookies.item4"),
+                    t("privacy.cookies.item5"),
                 ),
             ],
         },
@@ -127,9 +137,19 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
             id: "rights",
             title: t("privacy.rights.title"),
             blocks: [
-                text("privacy.rights.intro"),
-                text("privacy.rights.contact"),
-                list(t("privacy.rights.item1"), t("privacy.rights.item2")),
+                text(t("privacy.rights.intro")),
+                list(
+                    t("privacy.rights.item1"),
+                    t("privacy.rights.item2"),
+                    t("privacy.rights.item3"),
+                ),
+                list(
+                    t("privacy.rights.procedure1"),
+                    t("privacy.rights.procedure2"),
+                    t("privacy.rights.procedure3"),
+                    t("privacy.rights.procedure4"),
+                ),
+                list(t("privacy.rights.self1"), t("privacy.rights.self2")),
             ],
         },
         {

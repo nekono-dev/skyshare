@@ -14,7 +14,7 @@ test("[privacy-policy/AC-7] ログインなしでページを開くと、節の�
         page.getByRole("heading", { name: "プライバシーポリシー", level: 1 }),
     ).toBeVisible()
     await expect(
-        page.getByRole("heading", { name: "第1条（運営者）" }),
+        page.getByRole("heading", { name: "第1条（運営者と窓口）" }),
     ).toBeVisible()
     await expect(
         page.getByRole("heading", {
