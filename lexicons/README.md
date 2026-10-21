@@ -31,8 +31,10 @@ goat version v0.2.2-rev-83684f7
 ## Lintの実行
 
 ```sh
-goat lex lint ./lexicons/dev/nekono/skyshare/*
+npm run lint:lexicon
 ```
+
+`hack/lint-lexicon.sh`が`entry.json`の位置から独自lexiconを特定して`goat lex lint`を実行する。`npm test`（`tests/lexicons/`）とは別の検証で、CIの`verify`ジョブでは両方を実行する。
 
 ## LexiconのDNSチェック
 
@@ -50,7 +52,7 @@ Some lexicon NSIDs did not resolve via DNS:
 
 To make these resolve, add DNS TXT entries like:
 
-    _lexicon.skyshare.nekono.dev        TXT     "did=did:web:lex.example.com"
+    _lexicon.skyshare.nekono.dev        TXT     "did=did:web:skyshare.nekono.dev"
 
 (substituting your account DID for the example value)
 
@@ -84,5 +86,25 @@ Repo Rev: 3me24x4vhdk2m
 ```
 
 ```sh
-goat lex publish --did did:web:lex.example.com ./lexicons/dev/nekono/skyshare/
+goat lex publish ./lexicons/dev/
 ```
+
+```log
+ 🟢 dev.nekono.skyshare.defs
+ 🟢 dev.nekono.skyshare.entry
+```
+
+# 自ドメインへのNSID変更手順
+
+本アプリはlexicon JSONの`id`を唯一の定義元として、アプリケーションコードがNSIDを導出する。フォークして自ドメインで運用する場合は、アプリケーションコードを編集せず、次の手順でlexiconだけを変更する。
+
+1. `lexicons/` 配下のディレクトリを、新ドメインの逆順構造へ移動する（例: `lexicons/dev/nekono/skyshare/` → `lexicons/com/example/myapp/`）。
+2. `entry.json`・`defs.json`の`id`を新NSIDへ書き換える（`entry`は`<prefix>.entry`、`defs`は`<prefix>.defs`の形を守る）。
+3. `entry.json`内の`manifest`の`ref`（`<prefix>.defs#manifest`）を新NSIDへ書き換える。
+4. `npm test`でlexiconを検証する（`tests/lexicons/lexicons.test.ts`が、スキーマ構文・`$ref`の解決・ファイルパスとidの対応・entryレコードのバリデーションを確認する）。
+5. `npm run lint:lexicon`で検証し、DNS TXTレコード（`_lexicon.<authority>`）の設定と`goat lex publish`によるPDSへの公開を行う。
+
+注意:
+
+- `lexicons/`配下の`entry.json`は1つだけでなければならない（複数・0件の場合はアプリの起動・ビルドおよびテストがエラーになる）。
+- 旧NSIDで作成済みのレコードは自動では移行されない。

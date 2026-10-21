@@ -11,16 +11,32 @@
  */
 
 interface Props {
-    pageTitle: string
+    /** 動的なタイトル（Entry名など）。静的ページは `pageTitleKey` を使う。 */
+    pageTitle?: string
+    /** 静的ページのタイトル文言キー。表示言語で翻訳され、言語切り替え時にも再翻訳される。 */
+    pageTitleKey?: MessageKey
     cardPath: string
     robots: string[]
     avatarUrl?: string | null
     pageHeading?: string
     pageCaption?: string
 }
-import Metadatas from "@/components/Metadatas.astro"
-const { cardPath, pageTitle, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
-const favicon = "favicon.svg"
+import Metadatas from "@/components/layout/Metadatas.astro"
+import { createTranslator, type MessageKey } from "@/lib/i18n/translate"
+import { serviceName } from "@/vars"
+const { cardPath, pageTitle, pageTitleKey, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
+const locale = Astro.locals.locale
+// SSR 応答の Content-Type に charset が無いと、X のクローラーが meta charset を使わず
+// 日本語の OGP タイトルを誤読する恐れがあるため、ヘッダー側でも UTF-8 を明示する。
+Astro.response.headers.set("Content-Type", "text/html; charset=utf-8")
+// pageTitleKey の文言は `{service}` を含みうるためサービス名を渡す（含まない文言では無視される）。
+const resolvedPageTitle =
+    pageTitleKey !== undefined
+        ? createTranslator(locale).t(pageTitleKey, { service: serviceName } as never)
+        : (pageTitle ?? serviceName)
+// 相対パスだと /entries/{slug}/favicon.svg のようにページ階層ごとの別URLになり、
+// 静的アセットに無いため毎回 Worker が起動して 404 を返してしまう。必ずルート絶対パスで参照する。
+const favicon = "/favicon.svg"
 import ui from "@/styles/ui.module.css"
 import { ClientRouter } from "astro:transitions"
 
@@ -31,12 +47,35 @@ const hasNav = Astro.slots.has("nav") || Astro.slots.has("footer")
 const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
 ---
 
-<html lang="ja">
+<html lang={locale}>
     <head>
+        <meta charset="utf-8" />
+        <script is:inline>
+            try {
+                const themeMode = localStorage.getItem("themeMode")
+                if (themeMode === "light" || themeMode === "dark") {
+                    document.documentElement.dataset.theme = themeMode
+                }
+            } catch (error) {}
+            document.addEventListener("astro:before-swap", event => {
+                // 表示言語(<html lang>)も data-theme と同様、遷移先がサーバーの返した値で
+                // 置き換えてしまうため、遷移前に確定済みの言語をコピーして維持する。
+                if (document.documentElement.lang) {
+                    event.newDocument.documentElement.lang = document.documentElement.lang
+                }
+                const currentTheme = document.documentElement.dataset.theme
+                if (currentTheme) {
+                    event.newDocument.documentElement.dataset.theme = currentTheme
+                } else {
+                    delete event.newDocument.documentElement.dataset.theme
+                }
+            })
+        </script>
         <link rel="icon" href={favicon} />
         <Metadatas
             cardPath={cardPath}
-            pageTitle={pageTitle}
+            pageTitle={resolvedPageTitle}
+            pageTitleKey={pageTitleKey}
             robots={robots}
             avatarUrl={avatarUrl}
             pageHeading={pageHeading}
@@ -44,15 +83,23 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
         />
         <ClientRouter />
         <script>
+            // 表示言語ストアを読み込む（初回・ページ遷移のたびに言語を確定し、静的DOMを書き換える）。
+            import "@/lib/i18n/store"
+        </script>
+        <script>
             /**
-             * ホーム/Entry一覧/アカウント切り替えを横一列（Entry一覧=左, ホーム=中央, アカウント切り替え=右）
-             * とみなし、View Transitionsのslideアニメーションが実際の移動方向（左右）と一致するよう
+             * Entry一覧/ホーム/設定/アカウント切り替えをFooterNavの表示順で横一列
+             * （Entry一覧=左, ホーム, 設定, アカウント切り替え=右）とみなし、
+             * View Transitionsのslideアニメーションが実際の移動方向（左右）と一致するよう
              * `astro:before-preparation` イベントの `direction` を上書きする。
              *
              * 処理の趣旨:
              * - Astro標準の`direction`はブラウザの戻る/進むボタン（`navigationType === "traverse"`）
              *   でのみ履歴インデックスから正しく算出される。リンククリックによる遷移は常に"forward"
              *   扱いになるため、対象ページ同士の遷移ではここで明示的に上書きする。
+             * - 位置(position)はFooterNavの表示順（src/components/layout/nav/navItems.tsの
+             *   `footerNavItems`: Entry一覧 → ホーム → 設定 → アカウント）と一致させる必要がある。
+             *   ずれると実際のタブ位置とスライド方向が逆になる。
              *
              * Input:
              * - `astro:before-preparation` イベント（`from`/`to`はURL、`direction`は書き換え可能）
@@ -63,7 +110,8 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
             const pagePositions: Record<string, number> = {
                 "/entries": -1,
                 "/": 0,
-                "/accounts": 1,
+                "/settings": 1,
+                "/accounts": 2,
             }
             const normalizePathname = (pathname: string): string =>
                 pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname

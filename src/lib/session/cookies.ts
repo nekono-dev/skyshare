@@ -16,7 +16,7 @@ import { atpService } from "../../env"
 // Cloudflare Workers 環境では Node の `Buffer` が存在しないため
 // Web 標準 API (TextEncoder/TextDecoder + atob/btoa) を使って
 // UTF-8 対応の base64 encode/decode を行うユーティリティを提供する。
-function encodeBase64Utf8(str: string) {
+export function encodeBase64Utf8(str: string) {
     if (typeof Buffer !== "undefined")
         return Buffer.from(str).toString("base64")
     const bytes = new TextEncoder().encode(str)
@@ -26,7 +26,7 @@ function encodeBase64Utf8(str: string) {
     return (globalThis as any).btoa(binary)
 }
 
-function decodeBase64Utf8(b64: string) {
+export function decodeBase64Utf8(b64: string) {
     if (typeof Buffer !== "undefined")
         return Buffer.from(b64, "base64").toString("utf-8")
     const binary = (globalThis as any).atob(b64)
@@ -226,7 +226,9 @@ export function parseAccountsFromRequest(request: Request): PooledAccount[] {
     try {
         const parsed = decodeBase64Json(raw)
         if (!Array.isArray(parsed)) return []
-        return parsed.filter(isPooledAccount)
+        return parsed.filter((value): value is PooledAccount =>
+            isPooledAccount(value),
+        )
     } catch {
         return []
     }

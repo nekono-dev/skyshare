@@ -6,19 +6,25 @@ import {
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
 import { parseLimit } from "@/util/http"
-import { ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
+import { groupTimelineEntriesBySourceUri } from "@/lib/entry/posts"
 import {
-    groupTimelineEntriesBySourceUri,
-    normalizeTimelinePost,
-} from "@/lib/entry/posts"
+    attachSkyshareEntries,
+    buildTimelineThreads,
+    resolveEntryRangeStartMs,
+} from "@/lib/entry/timelineThreads"
+import { listRecordsSince } from "@/lib/atproto/repo"
 
 /**
  * Skyshare v2 entries API。
  *
  * 責務と処理概要:
  * - 自分の Bluesky 投稿一覧（`app.bsky.feed.getAuthorFeed`）を、紐づく
- *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ）と embed して返す、
- *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する。
+ *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ。表示する投稿の日時の範囲だけ
+ *   新しい順に取得する）と embed し、
+ *   バックエンド側で権威的にスレッド構造化（`buildTimelineThreads`）した
+ *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する
+ *   （`specs/timeline-api`）。
  * - skyshare entry 自体の一覧・作成・削除は `/v2/entry`・`/v2/entries/skyshare` を参照。
  *
  * 実装上の制約:
@@ -92,45 +98,15 @@ const fetchOwnAuthorFeed = async (
 }
 
 /**
- * dev.nekono.skyshare.entry を全件取得する。
- *
- * Input:
- * - `agent`: 認証済み AtpAgent
- * - `repo`: 取得対象 repo DID
- *
- * Output:
- * - listRecords の records 配列
- */
-const collectSkyshareEntries = async (agent: AtpAgent, repo: string) => {
-    const entries: any[] = []
-    let cursor: string | undefined
-
-    do {
-        const res = await agent.com.atproto.repo
-            .listRecords({
-                repo,
-                collection: ENTRY_COLLECTION,
-                cursor,
-                limit: 100,
-            })
-            .then(res => res.data)
-
-        entries.push(...(res.records ?? []))
-        cursor = res.cursor
-    } while (cursor)
-
-    return entries
-}
-
-/**
- * GET /v2/entries — 自分の Bluesky 投稿一覧を取得する。
+ * GET /v2/entries — 自分の Bluesky 投稿一覧を、スレッド構造化して取得する。
  *
  * Input:
  * - Cookie に `atp_session`
  * - Query に `limit` / `cursor`（任意）
  *
  * Output:
- * - `posts`: 投稿一覧。該当する投稿には `skyshareEntry` を付与する。
+ * - `threads`: スレッドグループ一覧（`buildTimelineThreads`が確定させる、
+ *   `{ rootPost, replies }`の配列）。該当する`rootPost`には `skyshareEntry` を付与する。
  * - `cursor`: 次ページ用 cursor（存在する場合のみ）
  */
 export const GET: APIRoute = async ({ request, locals }) => {
@@ -149,27 +125,37 @@ export const GET: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(401)
         }
 
-        const [feedRes, rawEntries] = await Promise.all([
-            fetchOwnAuthorFeed(agent, session.did, limit, cursor),
-            collectSkyshareEntries(agent, session.did),
-        ])
+        const feedRes = await fetchOwnAuthorFeed(
+            agent,
+            session.did,
+            limit,
+            cursor,
+        )
+        const builtThreads = await buildTimelineThreads(
+            agent,
+            session.did,
+            feedRes.feed,
+        )
 
-        const entriesBySourceUri = groupTimelineEntriesBySourceUri(rawEntries)
-        const posts = feedRes.feed
-            .map(feedItem => {
-                const sourceUri = feedItem?.post?.uri
-                const attachedEntry =
-                    typeof sourceUri === "string"
-                        ? entriesBySourceUri.get(sourceUri)
-                        : undefined
-                return normalizeTimelinePost(feedItem, attachedEntry)
-            })
-            .filter(post => post !== undefined)
+        // entryは表示する投稿の日時の範囲だけ取得する（保存済みの総数に依存させない）
+        const entryRangeStartMs = resolveEntryRangeStartMs(builtThreads)
+        const rawEntries =
+            entryRangeStartMs === undefined
+                ? []
+                : await listRecordsSince(
+                      agent,
+                      { repo: session.did, collection: ENTRY_COLLECTION },
+                      entryRangeStartMs,
+                  )
+        const threads = attachSkyshareEntries(
+            builtThreads,
+            groupTimelineEntriesBySourceUri(rawEntries),
+        )
 
         return new Response(
             JSON.stringify({
                 cursor: feedRes.cursor,
-                posts,
+                threads,
             }),
             {
                 status: 200,

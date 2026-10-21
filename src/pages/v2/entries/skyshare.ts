@@ -6,7 +6,7 @@ import {
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
 import { parseLimit } from "@/util/http"
-import { ENTRY_COLLECTION } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     normalizeTimelineEntry,
     type TimelineSkyshareEntry,
@@ -102,7 +102,7 @@ const fetchSkyshareEntries = async (
         .then(res => res.data)
 
     const pageEntries = (res.records ?? [])
-        .map(normalizeTimelineEntry)
+        .map(entry => normalizeTimelineEntry(entry))
         .filter((entry): entry is TimelineSkyshareEntry => entry !== undefined)
 
     const aliveSourceUris = await fetchAliveSourceUris(

@@ -13,48 +13,83 @@
 
 export const prerender = false
 
-import { AtpAgent, AppBskyFeedPost } from "@atproto/api"
+import ui from "@/styles/ui.module.css"
+import LocaleSelect from "@/components/common/LocaleSelect"
+import type { PlainMessageKey } from "@/lib/i18n/translate"
+import { AtpAgent, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
 import Baselayout from "@/layout/Baselayout.astro"
-import PostEngagementStats from "@/components/PostEngagementStats"
+import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
+import type { EntryPostView } from "@/components/entry/EntryDetailView/index.astro"
 import { serviceName } from "@/vars"
-import styles from "./[slug].module.css"
 import { atpService } from "@/env"
 import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
 import { resolvePdsServiceForDid } from "@/lib/atproto/did"
-import { parseEntryLocator, blobToCdnUrl, extractSourceImages, ENTRY_COLLECTION } from "@/lib/entry/entry"
-import type { EntryLike, SourceImage } from "@/lib/entry/entry"
+import {
+    parseEntryLocator,
+    blobToCdnUrl,
+    extractSourceImages,
+    extractEmbedVideo,
+    extractUnsupportedEmbedVideo,
+} from "@/lib/entry/entry"
+import type { EntryLike } from "@/lib/entry/entry"
+import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import { resolveXrpcStatus } from "@/lib/api/response"
+import { extractOwnedLinearReplyChain } from "@/lib/atproto/threadChain"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
 
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 
 const slug = Astro.params.slug
+
+// PostView（AppView算出のリアクション数を含む）から、投稿カード1件分の表示用データを作る。
+// リアクション数は各投稿自身の値（数値でなければ 0）を使う（specs/entry-detail）。
+const toEntryPostView = (post: AppBskyFeedDefs.PostView, repoDid: string, webUrl: string): EntryPostView => {
+    const record = post.record as AppBskyFeedPost.Main
+    const count = (value: unknown) => (typeof value === "number" ? value : 0)
+    return {
+        webUrl,
+        author: {
+            handle: post.author.handle,
+            displayName: post.author.displayName,
+            avatar: post.author.avatar,
+        },
+        createdAt: record.createdAt,
+        text: record.text,
+        images: extractSourceImages(record, repoDid),
+        video: extractEmbedVideo(record.embed, repoDid),
+        unsupportedVideo: extractUnsupportedEmbedVideo(record.embed, repoDid),
+        engagement: {
+            likeCount: count(post.likeCount),
+            repostCount: count(post.repostCount),
+            replyCount: count(post.replyCount),
+            quoteCount: count(post.quoteCount),
+        },
+    }
+}
 
 let statusCode = 200
 let pageTitle = `${serviceName} Entry`
 let cardPath = ""
 let sourceWebUrl = ""
 let sourceText = ""
-let sourceImages: SourceImage[] = []
-let likeCount = 0
-let repostCount = 0
-let replyCount = 0
-let quoteCount = 0
-let createdAtText = ""
+let createdAt = ""
+let posts: EntryPostView[] = []
 let manifestHeading = ""
 let manifestCaption = ""
-let notFoundReason = "entry not found"
+let metaDescription = ""
+let notFoundReasonKey: PlainMessageKey = "entry.detail.error404Body"
 let sourcePostAvailable = true
 
 // 入力パラメータ検証→レコード取得→表示用整形の順で段階的に失敗点を切り分ける。
 if (typeof slug === "undefined") {
     statusCode = 404
-    notFoundReason = "Entry is not found"
+    notFoundReasonKey = "entry.detail.error404Body"
 } else {
     const locator = parseEntryLocator(slug)
 
     if (!locator) {
         statusCode = 404
-        notFoundReason = "Entry is not found"
+        notFoundReasonKey = "entry.detail.error404Body"
     } else {
         const agent = new AtpAgent({ service: atpService })
         console.debug(`service: ${atpService}, locator: ${JSON.stringify(locator)}`)
@@ -93,7 +128,7 @@ if (typeof slug === "undefined") {
 
             if (!sourceUriFromEntry) {
                 statusCode = 404
-                notFoundReason = "Invalid skyshare entry"
+                notFoundReasonKey = "entry.detail.errorInvalid"
                 return 404
             }
             const parsedSourceUri = parseAtUri(sourceUriFromEntry)
@@ -106,17 +141,11 @@ if (typeof slug === "undefined") {
                     break
                 default:
                     statusCode = 500
-                    notFoundReason = "Invalid skyshare entry"
+                    notFoundReasonKey = "entry.detail.errorInvalid"
                     return 500
             }
 
-            createdAtText =
-                typeof entry.createdAt === "string"
-                    ? new Date(entry.createdAt).toLocaleString("ja-JP", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                      })
-                    : ""
+            createdAt = typeof entry.createdAt === "string" ? entry.createdAt : ""
 
             manifestHeading = typeof entry.manifest?.heading === "string" ? (entry.manifest as any).heading : ""
             manifestCaption = typeof entry.manifest?.caption === "string" ? (entry.manifest as any).caption : ""
@@ -139,27 +168,56 @@ if (typeof slug === "undefined") {
                 const sourcePostRecord = postView.record as AppBskyFeedPost.Main
 
                 sourceText = sourcePostRecord.text
-                sourceImages = extractSourceImages(sourcePostRecord, parsedSourceUri.repo)
-                likeCount = typeof postView.likeCount === "number" ? postView.likeCount : 0
-                repostCount = typeof postView.repostCount === "number" ? postView.repostCount : 0
-                replyCount = typeof postView.replyCount === "number" ? postView.replyCount : 0
-                quoteCount = typeof postView.quoteCount === "number" ? postView.quoteCount : 0
+                // 単発（またはスレッド抽出失敗時のフォールバック）は source 投稿1件分のカードにする。
+                posts = [toEntryPostView(postView, parsedSourceUri.repo, sourceWebUrl)]
+
+                // source投稿を起点に、entry所有者自身が投稿した後続投稿のみを直線的に辿る
+                // （specs/entry-detail）。取得・抽出に失敗しても500にはせず、
+                // 単一投稿のカード表示へフォールバックする。
+                try {
+                    const threadRes = await agent.app.bsky.feed.getPostThread({
+                        uri: sourceUriFromEntry,
+                        depth: MAX_THREAD_POST_COUNT,
+                    })
+                    if (AppBskyFeedDefs.isThreadViewPost(threadRes.data.thread)) {
+                        const chain = extractOwnedLinearReplyChain(
+                            threadRes.data.thread,
+                            entryRepoDid,
+                            MAX_THREAD_POST_COUNT,
+                        )
+                        if (chain.length > 1) {
+                            posts = chain.map(post => {
+                                const parsedPostUri = parseAtUri(post.uri)
+                                return toEntryPostView(
+                                    post,
+                                    entryRepoDid,
+                                    parsedPostUri ? bskyPostUrlgen(did, parsedPostUri.rkey) : sourceWebUrl,
+                                )
+                            })
+                        }
+                    }
+                } catch (error) {
+                    console.warn("entries/[slug] SSR: failed to fetch thread", {
+                        reason: error instanceof Error ? error.message : String(error),
+                        slug,
+                    })
+                }
             } else {
                 // 元投稿が削除済み等で AppView から取得できない場合は、500 にはせず
                 // entry に保存された manifest 情報のみで表示する。
                 sourcePostAvailable = false
             }
 
-            if (!manifestCaption && sourceText) {
-                manifestCaption = sourceText.slice(0, 280)
-            }
+            // メタ情報の説明文だけは、Entry自体のキャプションが無い場合に本文で補う。
+            // ヘッダーカードに本文が二重表示されないよう manifestCaption とは分離する。
+            metaDescription = manifestCaption || sourceText.slice(0, 280)
         } catch (error) {
             // entry レコード自体が見つからない場合（削除済み等）は RecordNotFound として
             // 404 を返す。source の Bluesky 投稿が見つからない場合は上の getPosts 分岐で
             // sourcePostAvailable = false として処理するため、ここには到達しない。
             statusCode = resolveXrpcStatus(error)
             if (statusCode === 404) {
-                notFoundReason = "Entry is not found"
+                notFoundReasonKey = "entry.detail.error404Body"
             }
             console.warn("entries/[slug] SSR failed", {
                 reason: error instanceof Error ? error.message : String(error),
@@ -177,79 +235,25 @@ Astro.response.status = statusCode
     cardPath={cardPath}
     pageTitle={pageTitle}
     pageHeading={manifestHeading}
-    pageCaption={manifestCaption}
+    pageCaption={metaDescription}
     robots={robots}
 >
-    {
-        statusCode === 200 ? (
-            <article class={styles.container}>
-                <header>
-                    <h1 class={styles.heading}>{manifestHeading}</h1>
-                </header>
-
-                {!sourcePostAvailable ? (
-                    <p class={styles["empty-message"]}>
-                        元の投稿は削除されているため、保存された内容のみを表示しています。
-                    </p>
-                ) : null}
-
-                {manifestCaption ? <p class={styles["body-text"]}>{manifestCaption}</p> : null}
-
-                <dl class={styles["meta-list"]}>
-                    <div>
-                        {sourcePostAvailable ? (
-                            <a href={sourceWebUrl} rel="noopener noreferrer" target="_blank">
-                                Blueskyの投稿を見る
-                            </a>
-                        ) : (
-                            "Blueskyの投稿は見つかりませんでした"
-                        )}
-                    </div>
-                    <div>投稿日時: {createdAtText ? createdAtText : "no data"}</div>
-                </dl>
-
-                {sourcePostAvailable ? (
-                    <PostEngagementStats
-                        client:visible
-                        likeCount={likeCount}
-                        repostCount={repostCount}
-                        replyCount={replyCount}
-                        quoteCount={quoteCount}
-                    />
-                ) : null}
-
-                {sourcePostAvailable ? (
-                    sourceImages.length > 0 ? (
-                        <section class={styles["image-grid"]} aria-label="source images">
-                            {sourceImages.map(image => (
-                                <figure class={styles["image-card"]}>
-                                    <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
-                                    {image.alt ? <figcaption>{image.alt}</figcaption> : null}
-                                </figure>
-                            ))}
-                        </section>
-                    ) : (
-                        <p class={styles["empty-message"]}>画像はありません。</p>
-                    )
-                ) : null}
-            </article>
-        ) : (
-            <section class={styles["error-pane"]}>
-                <h1>
-                    {statusCode === 404
-                        ? "Entry Not Found"
-                        : statusCode === 503
-                          ? "Service Temporarily Unavailable"
-                          : "Internal Server Error"}
-                </h1>
-                <p>
-                    {statusCode === 404
-                        ? notFoundReason
-                        : statusCode === 503
-                          ? "データ取得が混み合っています。しばらくして再度お試しください。"
-                          : "ページの生成中にエラーが発生しました。"}
-                </p>
-            </section>
-        )
-    }
+    <div class={ui.center}>
+        <div class={`${ui.page} ${ui["width-lg"]}`}>
+            <div class={ui["self-end"]}>
+                <LocaleSelect client:load showLabel />
+            </div>
+            <EntryDetailView
+                statusCode={statusCode}
+                notFoundReasonKey={notFoundReasonKey}
+                heading={manifestHeading}
+                caption={manifestCaption}
+                createdAt={createdAt}
+                sourcePostAvailable={sourcePostAvailable}
+                sourceUrl={sourceWebUrl}
+                visualUrl={cardPath}
+                posts={posts}
+            />
+        </div>
+    </div>
 </Baselayout>

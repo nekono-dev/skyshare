@@ -5,9 +5,12 @@
  * - HTTP ステータスからフロント向けの標準エラーレスポンスを生成する。
  * - atproto クライアントの例外を HTTP ステータスへ正規化する。
  * - ヘッダー変換等のドメイン非依存な処理は `@/util/http` を参照。
+ *
+ * 実装上の制約:
+ * - このモジュールは全リクエストで読み込まれるミドルウェアから参照されるため、`@atproto/*` を
+ *   importしない。importすると Worker の起動（cold start）のたびに atproto クライアント全体
+ *   （約1.3MB）の評価コスト（約70ms）がかかり、Workers 無料枠の CPU 上限を圧迫する。
  */
-
-import { XRPCError } from "@atproto/xrpc"
 
 /**
  * HTTP ステータスに対応する JSON エラーレスポンスを生成する。
@@ -43,6 +46,9 @@ export const errorResponseFromStatus = (status: number): Response => {
         case 404:
             message.error = "Not Found"
             break
+        case 409:
+            message.error = "Conflict"
+            break
         case 429:
             message.error = "Too Many Requests"
             break
@@ -64,6 +70,8 @@ export const errorResponseFromStatus = (status: number): Response => {
  *
  * 処理の趣旨:
  * - atproto クライアントのラッパー例外（cause に XRPCError を持つ）も辿って error code を抽出する。
+ * - `XRPCError` は文字列の `error` プロパティを必ず持つ（未指定ならHTTPステータス名）ため、
+ *   クラスを import せず `error` プロパティの有無で判定する。
  *
  * Input:
  * - `error`: unknown エラー
@@ -76,11 +84,6 @@ export const resolveXrpcStatus = (error: unknown): number => {
     let errorCode: string | undefined
 
     while (current !== undefined) {
-        if (current instanceof XRPCError) {
-            errorCode = current.error
-            break
-        }
-
         if (!current || typeof current !== "object") {
             break
         }
@@ -104,6 +107,7 @@ export const resolveXrpcStatus = (error: unknown): number => {
         case "ExpiredToken":
             return 401
         case "RateLimitExceeded":
+        case "DraftLimitReached":
             return 429
         case "BlobNotFound":
         case "RepoNotFound":
