@@ -1,19 +1,24 @@
-// D1 のマイグレーション（migrations/）を、指定したデータベースへ適用する。
+// D1 のマイグレーション（migrations/）を、プレビュー用のデータベースへ適用する。
 //
 // 責務:
 // - 一時的な wrangler 設定を作り、`wrangler d1 migrations apply --remote` を実行する
 //   （プレビュー用のデータベースは wrangler.jsonc のトップレベルのバインディングに無いため）。
+// - 対象のデータベースは、ビルド結果の設定（dist/server/wrangler.json）の previews から読む
+//   （運用者ごとの値をワークフローに書かないため。値は hack/render-deploy-config.mjs が環境変数から入れる）。
 //
-// 使い方: node hack/apply-d1-migrations.mjs <database_name> <database_id>
+// 使い方: node hack/apply-d1-migrations.mjs（npm run build の後に実行する）
 import { execFileSync } from "node:child_process"
-import { mkdtempSync, writeFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 
-const [name, id] = process.argv.slice(2)
+const built = JSON.parse(readFileSync("dist/server/wrangler.json", "utf8"))
+const target = built.previews?.d1_databases?.find(d => d.binding === "DB")
+const name = target?.database_name
+const id = target?.database_id
 if (!name || !id || !/^[0-9a-f-]{36}$/.test(id)) {
   console.error(
-    "使い方: node hack/apply-d1-migrations.mjs <database_name> <database_id>",
+    "dist/server/wrangler.json の previews に D1（DB）が見つかりません。先に npm run build を実行してください",
   )
   process.exit(1)
 }

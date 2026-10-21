@@ -14,6 +14,7 @@
 | 共通UI部品         | 内部 | プルダウンと選択肢の見た目・操作・絞り込みを共通にする                            | dropdown、dropdown-search、listbox-option、language-select  |
 | 表示言語           | 内部 | 表示言語を選び、日本語と英語の文言を切り替える                                    | i18n-locale、i18n-messages                                  |
 | アプリシェルと設定 | 内部 | ナビゲーション・ヘルプ・プライバシーポリシー・端末の設定画面を提供する            | app-navigation、help-page、privacy-policy、app-settings     |
+| 運用者ごとの設定   | 内部 | 運営者情報とアクセス解析の測定 ID を環境変数から受け取り、検査する                | site-config                                                 |
 | 他SNS共有          | 内部 | 共有先の選択・共有文の組み立て・WebShare API の呼び出し・共有設定の保持を行う     | auto-popup、intent-share-dialog、share-text、share-settings |
 
 ## 3. システム構成
@@ -25,6 +26,7 @@ flowchart LR
   shell["アプリシェルと設定"] --> ui["共通UI部品"]
   shell --> i18n["表示言語"]
   shell --> share["他SNS共有"]
+  shell --> site["運用者ごとの設定"]
 ```
 
 ## 4. 外部インターフェース

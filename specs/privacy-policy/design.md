@@ -2,12 +2,11 @@
 
 ## 1. 構成
 
-| パス                                     | 責務                                       |
-| ---------------------------------------- | ------------------------------------------ |
-| `src/lib/privacy/operator.ts`            | 事業者の名称・連絡先・制定日・改定日の定数 |
-| `src/lib/privacy/policySections.ts`      | 節の識別子と順序、本文の組み立て           |
-| `src/components/privacy/PolicyCards.tsx` | 節をカードとして並べて表示する             |
-| `src/pages/privacy.astro`                | プライバシーポリシーのページ               |
+| パス                                     | 責務                             |
+| ---------------------------------------- | -------------------------------- |
+| `src/lib/privacy/policySections.ts`      | 節の識別子と順序、本文の組み立て |
+| `src/components/privacy/PolicyCards.tsx` | 節をカードとして並べて表示する   |
+| `src/pages/privacy.astro`                | プライバシーポリシーのページ     |
 
 ## 2. 関係図・ワークフロー
 
@@ -17,7 +16,7 @@
 flowchart LR
   privacy --> PolicyCards
   PolicyCards --> policySections
-  policySections --> operator
+  policySections --> ext_siteConfig["運用者ごとの設定"]
   policySections --> ext_translate["翻訳関数"]
 ```
 
@@ -27,10 +26,10 @@ flowchart LR
 sequenceDiagram
   participant PolicyCards
   participant policySections
-  participant operator
+  participant ext_siteConfig as 運用者ごとの設定
   participant ext_translate as 翻訳関数
   PolicyCards->>policySections: buildPrivacyPolicy
-  policySections->>operator: 事業者情報の取得
+  policySections->>ext_siteConfig: 運営者情報と測定 ID の取得
   policySections->>ext_translate: 見出しと本文の取得
   alt 日本語
     ext_translate-->>policySections: 日本語の文言
@@ -42,19 +41,16 @@ sequenceDiagram
 
 ## 3. 設計項目
 
-### D-1: 事業者情報の定数 (FR-5)
+### D-1: 運営者情報の受け取り (FR-5, FR-10, FR-11)
 
 ```ts
-export const operator = {
-  name: "nekono",
-  email: "skyshare@nekono.dev",
-  blueskyHandle: "nekono.dev",
-  enactedAt: "2026-10-20",
-  revisedAt: "2026-10-20",
-} as const
+import { siteConfig, type SiteConfig } from "@/lib/site/siteConfig"
 ```
 
-- 本文は、事業者名・連絡先・日付を辞書のプレースホルダ（`{operator}`・`{email}`・`{handle}`・`{enactedAt}`・`{revisedAt}`）で受け取り、`buildPrivacyPolicy` が `operator` の値を渡す。
+- 運営者名・連絡先・日付と測定 ID は、運用者ごとの設定の `SiteConfig` で受け取る。
+- 本文は、運営者名・連絡先・日付を辞書のプレースホルダ（`{operator}`・`{email}`・`{handle}`・`{enactedAt}`・`{revisedAt}`）で受け取り、`buildPrivacyPolicy` が設定の値を渡す。
+- 測定 ID が null なら、取得する情報・保存期間・Cookie の条からアクセス解析の項目を除き、Cookie の条の見出しを「Cookie」だけにする。
+- ハンドルが null なら、窓口の文をメールアドレスだけの文（`privacy.operator.contactEmail`）にする。
 
 ### D-2: 節の組み立て (FR-1, FR-2, FR-3, FR-4, FR-6, FR-8, FR-9)
 
@@ -67,7 +63,10 @@ const SECTION_IDS = [
   "operator", "collected", "purpose", "external",
   "retention", "security", "cookies", "rights", "revision",
 ] as const
-export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[]
+export const buildPrivacyPolicy = (
+  t: Translator["t"],
+  config: SiteConfig = siteConfig,
+): PolicySection[]
 ```
 
 | 節 (`id`)   | 内容                                                                                     |

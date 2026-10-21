@@ -2,7 +2,7 @@
  * プライバシーポリシーの文言（日本語。正本）。
  * 本サービスが利用者から預かる情報に絞り、個人情報保護法が公表を求める事項（32条）を漏らさず書く。
  * 取得する情報・保存期間・委託先などの事実は実装に合わせ、変えたときは同じ変更で更新する。
- * `{operator}`/`{email}`/`{handle}`/`{enactedAt}`/`{revisedAt}` は `operator.ts` の値が入る。
+ * `{operator}`/`{email}`/`{handle}`/`{enactedAt}`/`{revisedAt}` は `lib/site/siteConfig.ts` の値が入る。
  */
 export const privacy = {
     "privacy.heading": "プライバシーポリシー",
@@ -13,6 +13,8 @@ export const privacy = {
         "本サービスの運営者は、{operator}（活動名）です。運営者の氏名と住所は、請求があれば遅滞なく回答します。",
     "privacy.operator.contact":
         "個人情報の取扱いに関するお問い合わせと苦情は、{email}または Bluesky の @{handle} で受け付けます。",
+    "privacy.operator.contactEmail":
+        "個人情報の取扱いに関するお問い合わせと苦情は、{email}で受け付けます。",
     "privacy.collected.title": "第2条（取得する情報）",
     "privacy.collected.intro": "本サービスは、次の情報を取得します。",
     "privacy.collected.login":
@@ -75,6 +77,7 @@ export const privacy = {
     "privacy.security.note":
         "予約には、メインのパスワードではなく、権限を限定したアプリパスワードをご利用ください。",
     "privacy.cookies.title": "第7条（Cookie とアクセス解析）",
+    "privacy.cookies.titleBasic": "第7条（Cookie）",
     "privacy.cookies.item1":
         "ログインの維持に Cookie を、設定の保存にブラウザの保存領域を使います。",
     "privacy.cookies.item2":

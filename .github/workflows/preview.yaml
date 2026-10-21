@@ -2,7 +2,7 @@
 #
 # - 本番へは公開しない（wrangler preview。本番の Worker / デプロイ済みバージョンは変わらない）
 # - ブランチ名から決めた Preview 名を付けるため、同じブランチに再 push しても
-#   プレビューURL（https://<名前>.skyshare.nekono.dev）は変わらず、中身だけ最新になる
+#   プレビューURL（https://<名前>.<SITE_HOST>）は変わらず、中身だけ最新になる
 # - ブランチ名は dev/XXXX（XXXX は小文字英数字とハイフンのみ）のルールに合うものだけが対象
 # - URLはカスタムドメイン（wrangler.jsonc の previews_enabled）で配信される。ジョブの Summary に出力する
 #
@@ -28,7 +28,22 @@ env:
   PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
   PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
   PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
+  # 運用者ごとの設定（DEVELOP.md の「運用者ごとの設定」）
+  SITE_HOST: ${{ vars.SITE_HOST }}
+  ZONE_NAME: ${{ vars.ZONE_NAME }}
+  WORKER_NAME: ${{ vars.WORKER_NAME }}
+  SCHEDULE_D1_NAME: ${{ vars.SCHEDULE_D1_NAME }}
   SCHEDULE_D1_DATABASE_ID: ${{ vars.SCHEDULE_D1_DATABASE_ID }}
+  SCHEDULE_R2_BUCKET: ${{ vars.SCHEDULE_R2_BUCKET }}
+  PREVIEW_D1_NAME: ${{ vars.PREVIEW_D1_NAME }}
+  PREVIEW_D1_DATABASE_ID: ${{ vars.PREVIEW_D1_DATABASE_ID }}
+  PREVIEW_R2_BUCKET: ${{ vars.PREVIEW_R2_BUCKET }}
+  PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
+  PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
+  PUBLIC_OPERATOR_BLUESKY_HANDLE: ${{ vars.PUBLIC_OPERATOR_BLUESKY_HANDLE }}
+  PUBLIC_PRIVACY_ENACTED_AT: ${{ vars.PUBLIC_PRIVACY_ENACTED_AT }}
+  PUBLIC_PRIVACY_REVISED_AT: ${{ vars.PUBLIC_PRIVACY_REVISED_AT }}
+  PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
 
 jobs:
   preview:
@@ -82,7 +97,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node hack/apply-d1-migrations.mjs skyshare-schedule-preview ee858bd4-d6d5-4be4-87d9-7e36e630e096
+        run: node hack/apply-d1-migrations.mjs
 
       # wrangler preview はブランチ別の Preview を作成・更新する（本番のデプロイ状態は変えない）。
       # 同じ名前で再実行すると URL は変わらず中身だけ最新になる
@@ -110,7 +125,7 @@ jobs:
             echo "### プレビューURL"
             echo ""
             echo "- ブランチ: \`$BRANCH_NAME\`"
-            echo "- URL: https://${PREVIEW_ALIAS}.skyshare.nekono.dev"
+            echo "- URL: https://${PREVIEW_ALIAS}.${SITE_HOST}"
             echo ""
             echo "同じブランチへ再 push しても URL は変わりません。"
           } >> "$GITHUB_STEP_SUMMARY"

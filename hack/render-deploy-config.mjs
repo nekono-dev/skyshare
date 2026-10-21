@@ -1,13 +1,14 @@
 // CI/CD(GitHub Actions)用に、デプロイ設定ファイルを環境変数から生成するスクリプト。
 //
 // 責務:
-// - wrangler.template.jsonc の vars を環境変数の値で置き換え、wrangler.jsonc を生成する
+// - wrangler.template.jsonc の vars と配備先（Worker 名・ドメイン・D1・R2）を環境変数の値で置き換え、wrangler.jsonc を生成する
 //   （wrangler.jsonc は本番値を含むため .gitignore 対象。CIでは都度生成する）
 // - 生成した wrangler.jsonc の workers_dev / preview_urls を、独自ドメインの有効状況に合わせて設定する
 //   （branch-release-workflow スキルの wrangler-config。省略しない）
 // - _legacy/frontend/.env.production を生成する（こちらも .gitignore 対象）
 //
 // 使い方: node hack/render-deploy-config.mjs [--staging]
+// 必要な環境変数は DEVELOP.md の「運用者ごとの設定」を参照。
 // 必須の環境変数が1つでも未設定/空の場合は、設定漏れによる誤デプロイを防ぐため異常終了する。
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
@@ -21,12 +22,21 @@ const WRANGLER_VARS = [
   "PUBLIC_PLC_DIRECTORY_BASE_URL",
 ]
 
-const PROD_D1_ID = "60ca03d7-b17a-480d-bf74-50013ed7855b"
-// ステージング用（プレビューと同じ専用の D1・R2 を使う）
-const STAGING_HOST = "prev-skyshare.nekono.dev"
-const STAGING_D1_NAME = "skyshare-schedule-preview"
-const STAGING_D1_ID = "ee858bd4-d6d5-4be4-87d9-7e36e630e096"
-const STAGING_R2_NAME = "skyshare-schedule-images-preview"
+// wrangler.template.jsonc の配備先の値（運用者ごとに変わる）。
+// [環境変数名, 既定値]。既定値が null のものは必須
+const DEPLOY_VARS = [
+  ["WORKER_NAME", "skyshare"],
+  ["SITE_HOST", null],
+  ["ZONE_NAME", null],
+  ["SCHEDULE_D1_NAME", "skyshare-schedule"],
+  ["SCHEDULE_D1_DATABASE_ID", null],
+  ["SCHEDULE_R2_BUCKET", "skyshare-schedule-images"],
+  ["PREVIEW_D1_NAME", "skyshare-schedule-preview"],
+  ["PREVIEW_D1_DATABASE_ID", null],
+  ["PREVIEW_R2_BUCKET", "skyshare-schedule-images-preview"],
+]
+const UUID = /^[0-9a-f-]{36}$/
+const HOST = /^[a-z0-9.-]+$/
 
 // _legacy/frontend のビルド時変数（.env.production）
 const LEGACY_VARS = [
@@ -75,46 +85,53 @@ for (const name of WRANGLER_VARS) {
   const value = requireEnv(name)
   wrangler = wrangler.replace(pattern, (_match, head) => `${head}"${value}"`)
 }
-// 予約投稿用 D1 の database_id。秘密情報ではないため、未設定のときは本番用の既定値を使う
-// （別のデータベースへ向けたいときだけ Variable `SCHEDULE_D1_DATABASE_ID` で上書きする）
-const scheduleD1Id = (process.env.SCHEDULE_D1_DATABASE_ID ?? "").trim()
-if (scheduleD1Id !== "" && !/^[0-9a-f-]{36}$/.test(scheduleD1Id)) {
-  console.error("SCHEDULE_D1_DATABASE_ID が UUID 形式ではありません")
-  process.exit(1)
-}
-wrangler = wrangler.replace(
-  "SCHEDULE_D1_DATABASE_ID",
-  scheduleD1Id || PROD_D1_ID,
+// 配備先の値を決める。`--staging` では、本番とは別の Worker・ドメインに、プレビューと同じ D1・R2 を使う
+// （Cron Trigger は Worker 単位でしか動かず、`wrangler preview` では動かないため、
+// 予約の自動投稿を確認する用の独立した Worker として配備する。本番のデータには触れない）
+const deploy = Object.fromEntries(
+  DEPLOY_VARS.map(([name, fallback]) => [
+    name,
+    fallback === null
+      ? requireEnv(name)
+      : (process.env[name] ?? "").trim() || fallback,
+  ]),
 )
-// ステージング（`--staging`）: 本番とは別の Worker・ドメイン・D1・R2 に向ける。
-// Cron Trigger は Worker 単位でしか動かず、`wrangler preview` では動かないため、
-// 予約の自動投稿を確認する用の独立した Worker として配備する（本番のデータには触れない）
-if (process.argv.includes("--staging")) {
-  const replaceFirst = (from, to) => {
-    if (!wrangler.includes(from)) {
-      console.error(`wrangler.template.jsonc に ${from} が見つかりません`)
-      process.exit(1)
-    }
-    // 先頭側（本番用の最上位の設定）だけを置き換える。previews ブロックは後ろにある
-    wrangler = wrangler.replace(from, () => to)
+for (const name of ["SCHEDULE_D1_DATABASE_ID", "PREVIEW_D1_DATABASE_ID"]) {
+  if (!UUID.test(deploy[name])) {
+    console.error(`${name} が UUID 形式ではありません`)
+    process.exit(1)
   }
-  replaceFirst('"name": "skyshare"', '"name": "skyshare-staging"')
-  replaceFirst(
-    '"pattern": "skyshare.nekono.dev"',
-    `"pattern": "${STAGING_HOST}"`,
-  )
-  replaceFirst('"previews_enabled": true', '"previews_enabled": false')
-  replaceFirst(
-    '"database_name": "skyshare-schedule"',
-    `"database_name": "${STAGING_D1_NAME}"`,
-  )
-  replaceFirst(
-    `"database_id": "${scheduleD1Id || PROD_D1_ID}"`,
-    `"database_id": "${STAGING_D1_ID}"`,
-  )
-  replaceFirst(
-    '"bucket_name": "skyshare-schedule-images"',
-    `"bucket_name": "${STAGING_R2_NAME}"`,
+}
+const staging = process.argv.includes("--staging")
+if (staging) {
+  deploy.WORKER_NAME = `${deploy.WORKER_NAME}-staging`
+  deploy.SITE_HOST = requireEnv("STAGING_HOST")
+  deploy.SCHEDULE_D1_NAME = deploy.PREVIEW_D1_NAME
+  deploy.SCHEDULE_D1_DATABASE_ID = deploy.PREVIEW_D1_DATABASE_ID
+  deploy.SCHEDULE_R2_BUCKET = deploy.PREVIEW_R2_BUCKET
+}
+for (const name of ["SITE_HOST", "ZONE_NAME"]) {
+  if (!HOST.test(deploy[name])) {
+    console.error(
+      `${name} はドメイン名だけを指定してください（例: example.com）`,
+    )
+    process.exit(1)
+  }
+}
+// テンプレートの `"WORKER_NAME"` のような値を置き換える。見つからない場合はテンプレート変更の検知のため異常終了する
+for (const [name, value] of Object.entries(deploy)) {
+  const token = `"${name}"`
+  if (!wrangler.includes(token)) {
+    console.error(`wrangler.template.jsonc に ${token} が見つかりません`)
+    process.exit(1)
+  }
+  wrangler = wrangler.replaceAll(token, () => `"${value}"`)
+}
+// ステージングの Worker ではブランチ別のプレビューを作らない
+if (staging) {
+  wrangler = wrangler.replace(
+    '"previews_enabled": true',
+    '"previews_enabled": false',
   )
 }
 writeFileSync("wrangler.jsonc", wrangler)

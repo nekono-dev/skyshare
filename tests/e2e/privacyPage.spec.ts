@@ -21,5 +21,8 @@ test("[privacy-policy/AC-7] ログインなしでページを開くと、節の�
             name: "第4条（第三者への提供）",
         }),
     ).toBeVisible()
-    await expect(page.getByText("skyshare@nekono.dev").first()).toBeVisible()
+    // 窓口のメールアドレスは運用者ごとの設定で変わるため、形式だけを確かめる
+    await expect(
+        page.getByText(/[^\s@]+@[^\s@]+\.[^\s@]+/).first(),
+    ).toBeVisible()
 })

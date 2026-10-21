@@ -1,6 +1,6 @@
 /**
  * Privacy policy text (English). A courtesy translation: the Japanese text is authoritative.
- * `{operator}`/`{email}`/`{handle}`/`{enactedAt}`/`{revisedAt}` are filled from `operator.ts`.
+ * `{operator}`/`{email}`/`{handle}`/`{enactedAt}`/`{revisedAt}` are filled from `lib/site/siteConfig.ts`.
  */
 import type { MessageEntries } from "../../translate"
 
@@ -13,6 +13,8 @@ export const privacy = {
         "The Service is operated by {operator} (a pseudonym). The Operator's name and address will be provided without delay upon request.",
     "privacy.operator.contact":
         "Inquiries and complaints about the handling of personal information are accepted at {email} or @{handle} on Bluesky.",
+    "privacy.operator.contactEmail":
+        "Inquiries and complaints about the handling of personal information are accepted at {email}.",
     "privacy.collected.title": "Article 2 (Information we collect)",
     "privacy.collected.intro":
         "The Service collects the following information.",
@@ -81,6 +83,7 @@ export const privacy = {
     "privacy.security.note":
         "For scheduled posts, please use an app password with limited permissions instead of your main password.",
     "privacy.cookies.title": "Article 7 (Cookies and analytics)",
+    "privacy.cookies.titleBasic": "Article 7 (Cookies)",
     "privacy.cookies.item1":
         "We use a cookie to keep you logged in, and browser storage to save your settings.",
     "privacy.cookies.item2":

@@ -1,5 +1,6 @@
 {
-  "name": "skyshare",
+  // 大文字の値（WORKER_NAME など）は hack/render-deploy-config.mjs が環境変数で置き換える
+  "name": "WORKER_NAME",
   // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
   "main": "src/worker.ts",
   // Set this to today's date
@@ -17,7 +18,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "skyshare-schedule",
+      "database_name": "SCHEDULE_D1_NAME",
       "database_id": "SCHEDULE_D1_DATABASE_ID",
       "migrations_dir": "migrations",
     },
@@ -25,7 +26,7 @@
   "r2_buckets": [
     {
       "binding": "SCHEDULE_IMAGES",
-      "bucket_name": "skyshare-schedule-images",
+      "bucket_name": "SCHEDULE_R2_BUCKET",
     },
   ],
   "observability": {
@@ -33,8 +34,8 @@
   },
   "routes": [
     {
-      "pattern": "skyshare.nekono.dev",
-      "zone_name": "nekono.dev",
+      "pattern": "SITE_HOST",
+      "zone_name": "ZONE_NAME",
       "custom_domain": true,
       "enabled": true,
       "previews_enabled": true,
@@ -50,18 +51,18 @@
   "workers_dev": false,
   "preview_urls": false,
   "previews": {
-    // プレビューは本番のデータと分けた専用の D1・R2 を使う（database_id は秘密情報ではない）
+    // プレビューは本番のデータと分けた専用の D1・R2 を使う
     "d1_databases": [
       {
         "binding": "DB",
-        "database_name": "skyshare-schedule-preview",
-        "database_id": "ee858bd4-d6d5-4be4-87d9-7e36e630e096",
+        "database_name": "PREVIEW_D1_NAME",
+        "database_id": "PREVIEW_D1_DATABASE_ID",
       },
     ],
     "r2_buckets": [
       {
         "binding": "SCHEDULE_IMAGES",
-        "bucket_name": "skyshare-schedule-images-preview",
+        "bucket_name": "PREVIEW_R2_BUCKET",
       },
     ],
     "vars": {

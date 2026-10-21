@@ -5,12 +5,24 @@
  * - 節の識別子・並び、取得する情報の区分、外部送信の組、予約投稿の記載、定数の参照、表示言語による違いを検証する。
  */
 import { describe, expect, it } from "vitest"
-import { operator } from "@/lib/privacy/operator"
 import { buildPrivacyPolicy } from "@/lib/privacy/policySections"
 import { createTranslator } from "@/lib/i18n/translate"
+import type { SiteConfig } from "@/lib/site/siteConfig"
 
-const ja = () => buildPrivacyPolicy(createTranslator("ja").t)
-const en = () => buildPrivacyPolicy(createTranslator("en").t)
+// 運用者ごとの設定の例（実行中のビルドの値に依存しないよう、テストで固定する）
+const config: SiteConfig = {
+    operator: {
+        name: "example-operator",
+        email: "privacy@example.org",
+        blueskyHandle: "example.org",
+    },
+    privacy: { enactedAt: "2030-01-02", revisedAt: "2030-03-04" },
+    analyticsId: "G-TEST123",
+}
+const operator = { ...config.operator, ...config.privacy }
+const ja = (c: SiteConfig = config) =>
+    buildPrivacyPolicy(createTranslator("ja").t, c)
+const en = () => buildPrivacyPolicy(createTranslator("en").t, config)
 const find = (id: string) => ja().find(s => s.id === id)!
 const allText = (sections = ja()) =>
     JSON.stringify(sections.map(s => [s.title, s.blocks]))
@@ -111,5 +123,23 @@ describe("buildPrivacyPolicy", () => {
         expect(en().map(s => s.id)).toEqual(ja().map(s => s.id))
         expect(en()[0]!.title).not.toBe(ja()[0]!.title)
         expect(allText(en())).not.toMatch(/\{\w+\}/)
+    })
+
+    it("[privacy-policy/AC-10] アクセス解析を使わない設定では、その記載を除く", () => {
+        const text = allText(ja({ ...config, analyticsId: null }))
+        expect(text).not.toContain("Google")
+        expect(text).toContain("第7条（Cookie）")
+        expect(allText()).toContain("Google アナリティクス")
+    })
+
+    it("[privacy-policy/AC-11] 窓口のハンドルが未設定なら、窓口はメールだけにする", () => {
+        const text = allText(
+            ja({
+                ...config,
+                operator: { ...config.operator, blueskyHandle: null },
+            }),
+        )
+        expect(text).toContain(config.operator.email)
+        expect(text).not.toContain("Bluesky の @")
     })
 })
