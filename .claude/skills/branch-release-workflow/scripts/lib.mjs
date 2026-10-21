@@ -77,6 +77,7 @@ export function validateConfig(c) {
     if (!PROVIDERS.includes(provider)) errs.push(`preview.provider は ${PROVIDERS.join(" / ")} のいずれかにしてください`);
     if (provider !== "none" && typeof p.urlTemplate !== "string") errs.push("preview.urlTemplate が必要です（{alias} を含める）");
     if (typeof p.urlTemplate === "string" && !p.urlTemplate.includes("{alias}")) errs.push("preview.urlTemplate には {alias} を含めてください");
+    if (p.aliasStripPrefix !== undefined && typeof p.aliasStripPrefix !== "string") errs.push("preview.aliasStripPrefix は文字列にしてください");
   }
   return errs;
 }
@@ -107,6 +108,12 @@ export function judgeBranch(config, branch) {
 
 // ブランチ名 → alias（DNS ラベルになるため "/" を "-" に置き換える）
 export const aliasOf = (branch) => branch.replace(/\//g, "-");
+
+// ブランチ名 → プレビュー名。宣言の preview.aliasStripPrefix（例: "dev/"）があれば、その接頭辞を除いてから alias にする
+export const previewAliasOf = (config, branch) => {
+  const prefix = config.preview?.aliasStripPrefix ?? "";
+  return aliasOf(prefix && branch.startsWith(prefix) ? branch.slice(prefix.length) : branch);
+};
 
 // 作業ブランチ名（dev/XXXX の XXXX 部分）が命名規則に合うか
 export function checkName(config, branch) {

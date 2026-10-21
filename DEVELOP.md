@@ -40,18 +40,28 @@ npm run deploy
 
 ## CI/CD（GitHub Actions）
 
-`develop` ブランチへの push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査を通過した場合のみ Cloudflare Workers へデプロイする。`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
+`main` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
 
-| 種別     | 名前                             | 内容                                         |
-| -------- | -------------------------------- | -------------------------------------------- |
-| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン    |
-| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                    |
+| ブランチ   | Worker                                  | ドメイン                   | 用途                                       |
+| ---------- | --------------------------------------- | -------------------------- | ------------------------------------------ |
+| `main`     | `skyshare`                              | `<SITE_HOST>`              | 本番。ブランチ別のプレビューは作らない     |
+| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | Cron を含む確認用の環境。D1・R2 も別にする |
+| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | ブランチごとの確認（Cron は動かない）      |
+
+- develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
+- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
+
+| 種別     | 名前                             | 内容                                                                                                                      |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン                                                                                 |
+| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                                                                                                 |
 | Secret   | `SPEC_LINT_TOKEN`                | 仕様書の検査コマンド `spec-lint`（GitHub Packages）の取得用。`read:packages` 権限のトークン。Actions の Secret に登録する |
-| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント             |
-| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                             |
-| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
-| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
-| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
+| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント                                                                                          |
+| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                                                                                                          |
+| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける）                                                                              |
+| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                                                                                                        |
+| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                                                                                              |
+| Variable | `SITE_HOST`                      | 公開するドメイン（例: `skyshare.example.com`）。develop とプレビューのドメインもここから決まる                            |
 
 手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
 
@@ -59,16 +69,16 @@ npm run deploy
 
 `.github/workflows/e2e.yaml` は deploy.yaml から呼び出され（手動実行も可）、単体テストの後に Playwright の全project（chromium・firefox・webkit・webkit-iphone、およびライブテスト）を実行する。verify と e2e の両方に成功した場合のみデプロイされる。
 
-| 種別     | 名前              | 内容                                                                                                |
-| -------- | ----------------- | --------------------------------------------------------------------------------------------------- |
-| Secret   | `E2E_ENV`         | `.env.e2e` の中身（`KEY=value` 形式・複数行）をそのまま登録する。未登録ならライブテストを除いて実行 |
-| Variable | `PUBLIC_*`（5件） | deploy.yaml と共通                                                                                  |
+| 種別     | 名前               | 内容                                                                                                |
+| -------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| Secret   | `E2E_ENV`          | `.env.e2e` の中身（`KEY=value` 形式・複数行）をそのまま登録する。未登録ならライブテストを除いて実行 |
+| Variable | deploy.yaml と共通 | `PUBLIC_*`（5件）と `SITE_HOST`                                                                     |
 
 同じ検証用アカウントを同時に操作しないよう、実行は直列化される。検証専用のアカウントとアプリパスワードを使うこと。
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が `wrangler preview` を実行し、`https://dev-XXXX.skyshare.nekono.dev` で確認できる（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 

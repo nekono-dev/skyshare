@@ -1,4 +1,6 @@
 {
+  // routes の pattern（SITE_HOST）は hack/render-deploy-config.mjs が環境変数で置き換える。
+  // `--develop` では Worker・D1・R2 の名前の末尾に -develop を付ける
   "name": "skyshare",
   // Set this to today's date
   "compatibility_date": "2026-10-08",
@@ -12,11 +14,10 @@
   },
   "routes": [
     {
-      "pattern": "skyshare.nekono.dev",
-      "zone_name": "nekono.dev",
+      "pattern": "SITE_HOST",
       "custom_domain": true,
       "enabled": true,
-      "previews_enabled": true,
+      "previews_enabled": false,
     },
   ],
   "vars": {
@@ -28,6 +29,7 @@
   },
   "workers_dev": false,
   "preview_urls": false,
+  // プレビューは develop の Worker（--develop）だけで作る。D1・R2 は hack/render-deploy-config.mjs が加える
   "previews": {
     "vars": {
       "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",

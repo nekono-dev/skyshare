@@ -19,7 +19,8 @@ const isDevServer = process.argv.includes("dev")
 export default defineConfig({
   output: "server",
   adapter: cloudflare({ imageService: "compile" }),
-  site: "https://skyshare.nekono.dev",
+  // 公開するドメイン（SITE_HOST）。未設定なら開発サーバーのアドレスを使う
+  site: `https://${process.env.SITE_HOST || "localhost:4321"}`,
   server: {
     port: 4321,
     host: true,
