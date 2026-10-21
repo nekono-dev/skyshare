@@ -35,14 +35,16 @@ describe("buildPrivacyPolicy", () => {
     it("[privacy-policy/AC-2] 取得する情報の節が、6つの区分をすべて持つ", () => {
         const list = find("collected").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
-        expect(list.items.map(i => i.split(":")[0])).toEqual([
+        const keywords = [
             "ログイン",
             "投稿",
             "予約投稿",
-            "端末内の設定",
+            "ブラウザにのみ",
             "アクセスログ",
-            "アクセス解析",
-        ])
+            "Google アナリティクス",
+        ]
+        expect(list.items).toHaveLength(keywords.length)
+        keywords.forEach((k, i) => expect(list.items[i]).toContain(k))
     })
 
     it("[privacy-policy/AC-3] 外部への送信の節が、送信先ごとに送る情報と目的を持つ", () => {
