@@ -97,6 +97,8 @@ jobs:
 
   deploy:
     needs: [verify, e2e]
+    # 手動実行で他のブランチを選んでも、本番や develop 環境へ配備しない
+    if: github.ref_name == 'main' || github.ref_name == 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
