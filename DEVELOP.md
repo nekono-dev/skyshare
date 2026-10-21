@@ -83,6 +83,43 @@ Worker 名（`skyshare`）、D1（`skyshare-schedule`）、R2（`skyshare-schedu
 
 プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は、このリポジトリの実装（Cloudflare での配信と保管、予約投稿の保存期間など）に合わせて書いてある。実装を変えて運用する場合は、本文も見直すこと。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう、変えない。
 
+### フォークして動かす
+
+フォークした自分のリポジトリと Cloudflare のアカウントで動かす手順。GitHub への登録は `gh` コマンドで行う。
+
+1. Cloudflare に、公開するドメインのゾーンを追加しておく。
+2. Cloudflare の API トークンを作る。テンプレート「Edit Cloudflare Workers」を使い、権限にアカウントの「D1 編集」を加える（D1 を名前で探すことと、マイグレーションに使う）。
+3. 下の「予約投稿の初期設定」で、D1・R2・暗号鍵を用意する。
+4. `gh` を入れてログインする。
+
+```sh
+gh auth login  # GitHub.com → HTTPS → ブラウザで認証
+gh auth status # ログインできたか確認する
+```
+
+5. Variables を登録する。雛形をコピーして値を書き換え、まとめて登録する（コピーした `github-variables.env` は `.gitignore` 対象）。
+
+```sh
+cp hack/github-variables.env.example github-variables.env
+$EDITOR github-variables.env
+gh variable set -f github-variables.env -R <owner>/<repo>
+gh variable list -R <owner>/<repo>  # 登録できたか確認する
+```
+
+6. Secrets を登録する。値は対話の入力で渡し、シェルの履歴やファイルに残さない。
+
+```sh
+gh secret set CLOUDFLARE_API_TOKEN -R <owner>/<repo>   # 手順 2 のトークン
+gh secret set CLOUDFLARE_ACCOUNT_ID -R <owner>/<repo>  # Cloudflare のアカウント ID
+gh secret set E2E_ENV -R <owner>/<repo> < .env.e2e     # 任意。実アカウントのライブテストを行う場合
+```
+
+7. Actions → deploy → Run workflow で `dry_run` を外して実行するか、`develop` に push して本番へ配備する。
+8. 1回配備した後、ダッシュボードの Preview base config にバインディングを登録する（下の「予約投稿の初期設定」）。以降、`dev/XXXX` への push でプレビューとステージングが作られる。
+
+- `-R <owner>/<repo>` は、remote が SSH の別名（`git@github.com.<別名>:...`）のときに `gh` がリポジトリを判別できないため付ける。
+- 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
+
 ### 予約投稿の初期設定（初回のみ）
 
 予約投稿は Cloudflare の D1・R2・Cron Trigger を使う（いずれも無料枠の範囲）。初回のデプロイの前に、次を行う。
