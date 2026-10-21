@@ -18,7 +18,7 @@ test("[privacy-policy/AC-7] ログインなしでページを開くと、節の�
     ).toBeVisible()
     await expect(
         page.getByRole("heading", {
-            name: "第4条（外部への送信と第三者への提供）",
+            name: "第4条（第三者への提供）",
         }),
     ).toBeVisible()
     await expect(page.getByText("skyshare@nekono.dev").first()).toBeVisible()

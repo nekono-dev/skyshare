@@ -25,19 +25,18 @@ describe("buildPrivacyPolicy", () => {
             "purpose",
             "external",
             "retention",
-            "security",
+            "cookies",
             "rights",
             "revision",
         ])
         for (const s of ja()) expect(s.title).not.toBe("")
     })
 
-    it("[privacy-policy/AC-2] 取得する情報の節が、6つの区分をすべて持つ", () => {
+    it("[privacy-policy/AC-2] 取得する情報の節が、5つの区分をすべて持つ", () => {
         const list = find("collected").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
         const keywords = [
             "ログイン",
-            "投稿",
             "予約投稿",
             "ブラウザにのみ",
             "アクセスログ",
@@ -47,12 +46,13 @@ describe("buildPrivacyPolicy", () => {
         keywords.forEach((k, i) => expect(list.items[i]).toContain(k))
     })
 
-    it("[privacy-policy/AC-3] 外部への送信の節が、送信先ごとに送る情報と目的を持つ", () => {
+    it("[privacy-policy/AC-3] 第三者への提供の節が、提供する場合ごとに1項目を持つ", () => {
         const list = find("external").blocks.find(b => b.kind === "list")
         if (list?.kind !== "list") throw new Error("箇条書きがない")
-        expect(list.items.length).toBeGreaterThanOrEqual(7)
-        expect(list.items.join()).toContain("Google アナリティクス")
-        for (const item of list.items) expect(item).toContain("。")
+        expect(list.items.length).toBeGreaterThanOrEqual(4)
+        const joined = list.items.join()
+        for (const k of ["法令", "Bluesky", "Cloudflare", "Google"])
+            expect(joined).toContain(k)
     })
 
     it("[privacy-policy/AC-4] 予約投稿の記載に、暗号化・保存期間・削除の方法が含まれる", () => {

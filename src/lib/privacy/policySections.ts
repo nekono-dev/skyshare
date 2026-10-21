@@ -26,7 +26,7 @@ export type PolicySection = {
  * - `t`: 翻訳関数
  *
  * Output:
- * - 事業者情報・取得する情報・利用目的・外部への送信・保存期間・安全管理・利用者の権利・改定の順の節
+ * - 運営者・取得する情報・利用目的・第三者への提供・保存期間と安全管理・Cookie とアクセス解析・利用者の請求・改定の順の節
  */
 export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
     const contact = {
@@ -34,6 +34,7 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
         handle: operator.blueskyHandle,
     }
     const text = (s: string): PolicyBlock => ({ kind: "text", text: s })
+    const list = (...items: string[]): PolicyBlock => ({ kind: "list", items })
     return [
         {
             id: "operator",
@@ -47,127 +48,88 @@ export const buildPrivacyPolicy = (t: Translator["t"]): PolicySection[] => {
                         t("privacy.operator.contact", contact),
                     ],
                 },
-                text(t("privacy.operator.definition")),
             ],
         },
         {
             id: "collected",
             title: t("privacy.collected.title"),
             blocks: [
-                text(t("privacy.collected.intro")),
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.collected.login"),
-                        t("privacy.collected.post"),
-                        t("privacy.collected.schedule"),
-                        t("privacy.collected.device"),
-                        t("privacy.collected.log"),
-                        t("privacy.collected.analytics"),
-                    ],
-                },
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.collected.note1"),
-                        t("privacy.collected.note2"),
-                    ],
-                },
+                text("privacy.collected.intro"),
+                list(
+                    t("privacy.collected.login"),
+                    t("privacy.collected.schedule"),
+                    t("privacy.collected.device"),
+                    t("privacy.collected.log"),
+                    t("privacy.collected.analytics"),
+                ),
+                text("privacy.collected.note"),
             ],
         },
         {
             id: "purpose",
             title: t("privacy.purpose.title"),
             blocks: [
-                text(t("privacy.purpose.intro")),
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.purpose.item1"),
-                        t("privacy.purpose.item2"),
-                        t("privacy.purpose.item3"),
-                        t("privacy.purpose.item4"),
-                        t("privacy.purpose.item5"),
-                        t("privacy.purpose.item6"),
-                    ],
-                },
+                text("privacy.purpose.intro"),
+                list(
+                    t("privacy.purpose.item1"),
+                    t("privacy.purpose.item2"),
+                    t("privacy.purpose.item3"),
+                    t("privacy.purpose.item4"),
+                ),
             ],
         },
         {
             id: "external",
             title: t("privacy.external.title"),
             blocks: [
-                text(t("privacy.external.intro")),
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.external.bluesky"),
-                        t("privacy.external.plc"),
-                        t("privacy.external.ogp"),
-                        t("privacy.external.legacy"),
-                        t("privacy.external.cloudflare"),
-                        t("privacy.external.google"),
-                        t("privacy.external.sns"),
-                    ],
-                },
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.external.optout"),
-                        t("privacy.external.note1"),
-                        t("privacy.external.note2"),
-                    ],
-                },
+                text("privacy.external.intro"),
+                list(
+                    t("privacy.external.item1"),
+                    t("privacy.external.item2"),
+                    t("privacy.external.item3"),
+                    t("privacy.external.item4"),
+                ),
+                list(
+                    t("privacy.external.note1"),
+                    t("privacy.external.note2"),
+                    t("privacy.external.note3"),
+                ),
             ],
         },
         {
             id: "retention",
             title: t("privacy.retention.title"),
             blocks: [
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.retention.item1"),
-                        t("privacy.retention.item2"),
-                        t("privacy.retention.item3"),
-                        t("privacy.retention.item4"),
-                        t("privacy.retention.item5"),
-                        t("privacy.retention.item6"),
-                        t("privacy.retention.item7"),
-                    ],
-                },
+                list(
+                    t("privacy.retention.item1"),
+                    t("privacy.retention.item2"),
+                    t("privacy.retention.item3"),
+                    t("privacy.retention.item4"),
+                    t("privacy.retention.item5"),
+                    t("privacy.retention.item6"),
+                    t("privacy.retention.item7"),
+                ),
             ],
         },
         {
-            id: "security",
-            title: t("privacy.security.title"),
+            id: "cookies",
+            title: t("privacy.cookies.title"),
             blocks: [
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.security.item1"),
-                        t("privacy.security.item2"),
-                        t("privacy.security.item3"),
-                        t("privacy.security.item4"),
-                        t("privacy.security.item5"),
-                    ],
-                },
+                list(
+                    t("privacy.cookies.item1"),
+                    t("privacy.cookies.item2"),
+                    t("privacy.cookies.item3"),
+                    t("privacy.cookies.item4"),
+                ),
             ],
         },
         {
             id: "rights",
             title: t("privacy.rights.title"),
             blocks: [
-                text(t("privacy.rights.intro")),
-                text(t("privacy.rights.contact", contact)),
-                {
-                    kind: "list",
-                    items: [
-                        t("privacy.rights.item1"),
-                        t("privacy.rights.item2"),
-                        t("privacy.rights.item3"),
-                    ],
-                },
+                text("privacy.rights.intro"),
+                text("privacy.rights.contact"),
+                list(t("privacy.rights.item1"), t("privacy.rights.item2")),
             ],
         },
         {
