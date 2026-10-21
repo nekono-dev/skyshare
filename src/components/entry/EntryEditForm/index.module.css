@@ -1,0 +1,27 @@
+.field-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+  text-align: left;
+}
+
+.error-text {
+  margin: 0;
+  color: var(--color-red-text);
+  font-size: var(--font-size-sm);
+}
+
+/* スマホレイアウト時、PostFormと同様にダイアログを画面上部に固定配置し
+  スマホレイアウト時、PostFormと同様に横幅いっぱいに広げる。 */
+@media (max-width: 639px) {
+  .edit-form-backdrop {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+  .edit-form-content {
+    width: 100%;
+    max-width: 100%;
+  }
+}

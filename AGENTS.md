@@ -1,8 +1,38 @@
+## Conversation Guidelines
+
+- 常に日本語で会話する
+- 技術的な説明も日本語で行う
+- コード内のコメントは日本語で記述
+- エラーメッセージの解説は日本語で
+- README.mdなどのドキュメントも日本語で作成
+
 # 注意事項
 
 - 本システムは Cloudflare Workers 環境で動作するため、Nodejs 固有の API は使用できず、バージョンもCloudflareの扱えるNodejsの最新バージョン: 22.16.0に固定される。
+- 無料枠のCPU上限（10ms）を守るため、`src/middleware.ts` から静的に辿れる範囲（`lib/session/bskySessionRefresh.ts`・`lib/api/response.ts` など）で `@atproto/*` を静的にimportしない。全リクエストで読み込まれるため、Workerの起動（cold start）のたびに約70msの評価コストがかかる。atprotoを使う処理は、使う時点で動的import（`await import()`）する。`tests/lib/coldStart.test.ts` が検査する。
 - 特に指示がない場合、作業は `(root)/src/` 配下のコードを対象とする。`_legacy`を対象とする作業の場合は明示的に示す。曖昧な場合は確認すること。
-- APIは OpenAPI 定義を作成し、クライアントを生成して利用すること。クライアントは `npm run codegen` ですべて生成できる。また、OpenAPIのスキーマはhackスクリプトにより`src/client/openapi/schemas`に生成されるため、validation工程に利用する。
+- APIはコードファーストで実装すること。各エンドポイントのZodスキーマ（バリデーション用途と兼用、`src/lib/api/schema/` が単一の真実の源）を同ディレクトリ配下にURLパスと対応するディレクトリ構成で定義し、`src/pages/**` のAPIルートハンドラはそのスキーマを直接importして `.safeParse()` で検証する。`hack/build-openapi-document.ts` がこれらのスキーマからOpenAPI 3.1ドキュメントを組み立て、`orval` がそれを入力にフロントエンド用クライアント（`src/client/openapi/client.ts` 等）を生成する。すべて `npm run codegen` で実行できる。
+  - 1エンドポイントにつきスキーマは1つ。バリデーション用とOpenAPIドキュメント生成用でスキーマを分けないこと（multipart+anyOfのような複雑なケースでも例外にしない）。
+  - 共通のエラーレスポンス（400/401/404/429/500等）は `Common.errorResponses(statuses, schema?)` を `operation.responses` にスプレッドし、`ResponseBody400Schema = Common.CommonErrorSchema` のような重複定義を書かないこと。
+  - スキーマの書き方・ディレクトリ構成・multipart+anyOfの扱い方の詳細は `openapi/README.md` を参照すること。
+- テスト・型検査（`npm test` / `npx tsc --noEmit`）の前に、CI（`.github/workflows/deploy.yaml`）と同じく次の準備が必要。`lexicons/com/atproto/repo/strongRef.json` は `atproto` サブモジュールへのシンボリックリンクであり、`src/client/` 配下は `npm run codegen` の生成物で git 管理外のため、準備を欠くとテストが失敗する。Claude Code のクラウドセッションでは `.claude/hooks/session-start.sh` が開始時に自動実行する。
+  - `git submodule update --init --depth 1 atproto`
+  - `npm install`（CI では `npm ci`）
+  - `npm run codegen`
+
+# 仕様駆動開発
+
+- 仕様駆動開発は skill `spec-driven-development` に従う。スキルはリポジトリに同梱せず、環境側（`~/.claude/skills/spec-driven-development`）に導入する（導入・更新手順は https://github.com/nekono-dev/spec-driven-development の README）。
+- 仕様書（`specs/`・`docs/architecture*`・`poc/`）の検査は `npm run lint:spec`（`spec-lint`）で行う。`spec-lint` はグローバルに導入する（`npm install -g @nekono-dev/spec-lint`。GitHub Packages の認証が必要）。
+- 整形はリポジトリ側の prettier（`.prettierrc` のプラグインを使うため）で検査・修正する（`npx prettier --write specs docs`）。`spec-lint` は `--no-format` で実行する。
+
+# ブランチ・プレビューの規則
+
+- ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、保護ブランチ `main`・`develop`）。
+- 保護ブランチと宣言外のブランチでの commit・push は、PreToolUse フック（`.claude/settings.json`）が拒否する。作業は `dev/XXXX` で行う。
+- 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作成すること。`git checkout -b` 等で直接作らない。
+- ユーザーが製造したコードの挙動を確認したい旨を示したら、`brw url` が返す `https://dev-XXXX.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
+- 詳細は `.claude/skills/branch-release-workflow/SKILL.md` を参照（`brw` は同ディレクトリの `scripts/brw.mjs`）。
 
 # lib / util の使い分け
 
@@ -37,6 +67,7 @@
 
 # コーディング規則
 
+- 共通UIスタイル（`src/styles/ui.module.css` とその `@import` 先）は `@layer ui` に入れている。各コンポーネントの `index.module.css` はレイヤー外に書くこと（レイヤー外は常にレイヤー内より優先されるため、`ui["base-card"]` 等と固有クラスを併用して padding 等を上書きしても、本番ビルドのCSS出力順に左右されない）。コンポーネント側で `@layer` を宣言しないこと（例外: 共通UIのクラスに上書きされる前提の既定値を持つ `Overlay` のように、`ui["width-*"]` 等を `className` で受け取るコンポーネントは、既定値を `@layer ui { :where(.xxx) { ... } }` の形で `ui` レイヤー内に詳細度 0 で書く。レイヤー外に書くと ui 側が負け、別レイヤーを作って `@layer a, b;` で順序を宣言する方式はバンドラが宣言を分割して順序が崩れるため使わない）。共通UI側で「`className` で渡される利用側のクラスを上書きする」ことを前提にしたルール（例: 可変幅プルダウンの `width: 0; min-width: 100%`）は、レイヤー外の利用側に負けるため `ui` に置かず、受け側コンポーネントのCSS（`.trigger.trigger-auto` のようにクラスを重ねて詳細度を上げる）に置く。共通UIのCSSファイルを追加する場合は `ui.module.css` で `@import "./xxx.css" layer(ui);` とすること。
 - CSSモジュールによるクラス設定は `${xx.yy}` ではなく `${xx["yyy"]}` とすること
 - Reactコンポーネンは必ずアロー式で示し、デフォルトエクスポートを行うこと。
   ex:
@@ -46,6 +77,9 @@
   }
   export default Component
   ```
+- `map(fn)` `filter(fn)` `some(fn)` `find(fn)` `reduce(fn)` のように、組み込みメソッドから複数の引数が暗黙的に渡されるコールバックについては、関数参照を直接渡さないこと。アロー関数を使用し、呼び出す関数に渡す引数を明示すること。
+  - 悪い例: `items.map(toShareFile)`
+  - 良い例: `items.map((item, index) => toShareFile(item, index))`
 
 # コード理解負債改善規定
 

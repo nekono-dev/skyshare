@@ -43,7 +43,9 @@ import { plcDirectoryBaseUrl } from "@/env"
  * - 入力: `{ service: [{ id: "#atproto_pds", type: "AtprotoPersonalDataServer", serviceEndpoint: "https://example.social" }] }`
  * - 出力: `"https://example.social"`
  */
-const readPdsServiceFromDidDoc = (didDoc: unknown): string | undefined => {
+export const readPdsServiceFromDidDoc = (
+    didDoc: unknown,
+): string | undefined => {
     if (!didDoc || typeof didDoc !== "object") return
 
     const services = (didDoc as { service?: unknown }).service

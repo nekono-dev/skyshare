@@ -1,0 +1,12 @@
+/*
+  削除予定投稿の一覧領域。
+  スレッド（2件以上）では高さを固定してスクロールさせ、件数が増えても各行が潰れず、
+  確定・キャンセルのボタンが画面内に残るようにする。単発（1件）は内容の高さに合わせる。
+  行の縮みを避けるため、スクロール領域自体は flex にせず、内側の ComponentList に任せる。
+*/
+.post-list-fixed {
+  flex-shrink: 0;
+  height: min(40vh, 360px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

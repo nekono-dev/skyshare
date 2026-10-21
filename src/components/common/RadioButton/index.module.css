@@ -1,0 +1,62 @@
+/**
+ * RadioButton のスタイル定義。
+ *
+ * 設計方針:
+ * - カードの外枠（境界線・背景・角丸・選択時の強調色）は共通コンポーネント側
+ *   （`src/styles/button.ui.module.css`、`ui["base-card"]`+`ui["selectable-card"]`）
+ *   に委譲し、ここではラジオ固有の丸印（`.dot`）のみを定義する。
+ * - 色・サイズ・余白は src/styles/tokens.css のトークンのみを使い、直接値を避ける。
+ * - アクセシビリティ（focus-visible によるフォーカス可視化）を担保する。
+ */
+
+/* ラジオカードは横並び配置（呼び出し元の行コンテナ内で等幅に伸縮する）。 */
+.option {
+  flex: 1 1 0;
+}
+
+/* ネイティブ input を視覚的に隠す。フォーカスリングはカード経由で表示する。 */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* フォーカス可視化: キーボード操作時のみ表示する */
+.input:focus-visible ~ .dot {
+  outline: 2px solid var(--color-bluesky);
+  outline-offset: 2px;
+}
+
+/* ラジオの丸印（外枠+選択時のドット） */
+.dot {
+  position: relative;
+  display: inline-block;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  border: 2px solid var(--color-muted);
+  border-radius: var(--radius-button-max);
+  background: var(--color-card-bg);
+}
+
+.input:checked ~ .dot {
+  border-color: var(--color-bluesky);
+}
+
+.input:checked ~ .dot::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: var(--radius-button-max);
+  background: var(--color-bluesky);
+}
+
+.label-text {
+  white-space: normal;
+}

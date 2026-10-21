@@ -1,0 +1,76 @@
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 隣接する行の間にのみ区切り線を引く（先頭行には付けない）。
+   ComponentList が各行をラッパー要素で包むため、線は行(.row)側に引く。
+   description が省略された行(.no-border)には引かない。 */
+.list > div + div > .row:not(.no-border) {
+  border-top: 1px solid var(--color-border);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-0);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* 右端の操作部(プルダウン・トグル)は内容幅を保ち、縮むのは説明文側だけにする。
+   縮めると操作部の中身がカードからはみ出して切れる。
+   操作部を持たない行(renderControl が null)では説明文側が末尾要素になるため除外する。 */
+.toggle-row > :last-child:not(.text) {
+  flex: 0 0 auto;
+}
+
+.text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  cursor: pointer;
+}
+
+.label {
+  font-size: var(--font-size-md);
+}
+
+.description {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted);
+}
+
+.text-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.text-input-wrapper {
+  position: relative;
+}
+
+/* 入力欄右端のチェックマーク。テキスト入力欄自体は変更しないため、外側から重ねて配置する */
+.text-input-check {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  transform: translateY(-50%);
+  color: var(--color-success-text);
+  font-size: var(--font-size-md);
+  pointer-events: none;
+}
+
+.text-input-error {
+  font-size: var(--font-size-sm);
+  color: var(--color-red-text);
+}

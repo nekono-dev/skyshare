@@ -13,8 +13,13 @@
  * - `/v2/bsky/session`（GET/POST/PUT）と `/v2/bsky/session/{did}`（DELETE）は、
  *   アカウント追加・切り替え・ログアウトという通常と異なるセッション操作を行うため対象外とする
  *   （各エンドポイントが目的に応じて個別にセッションを取り扱う）。
+ *
+ * 実装上の制約:
+ * - このミドルウェアは全リクエストで読み込まれる。`@atproto/api`（約1.3MB）を静的に importすると、
+ *   対象外のリクエスト（entry詳細のキャッシュHITや静的アセットの404など）でも Worker の起動
+ *   （cold start）のたびに評価コスト（約70ms）がかかり、無料枠の CPU 上限を圧迫する。
+ *   このため `agentFactory` は対象パスで認証処理を始める時点で動的に importする。
  */
-import { AtpAgent } from "@atproto/api"
 import type { MiddlewareHandler } from "astro"
 import {
     parseSessionFromRequest,
@@ -34,7 +39,7 @@ import {
  * Output:
  * - `/v2/` 配下かつ `/v2/bsky/session` 系でなければ `true`
  */
-const isManagedByThisMiddleware = (pathname: string): boolean => {
+export const isManagedByThisMiddleware = (pathname: string): boolean => {
     if (!pathname.startsWith("/v2/")) return false
     if (pathname === "/v2/bsky/session") return false
     if (pathname.startsWith("/v2/bsky/session/")) return false
@@ -69,7 +74,8 @@ export const refreshBskySession: MiddlewareHandler = async (context, next) => {
         return errorResponseFromStatus(401)
     }
 
-    const agent = new AtpAgent({ service })
+    const { createAtpAgent } = await import("@/lib/atproto/agentFactory")
+    const agent = createAtpAgent(service)
     try {
         await agent.resumeSession({
             refreshJwt: session.refreshJwt,

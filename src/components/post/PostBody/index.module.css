@@ -1,0 +1,61 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.author-block {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.author-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.author-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.author-name-row strong {
+  overflow-wrap: anywhere;
+}
+
+.handle,
+.created-at {
+  color: var(--color-text-muted);
+}
+
+.created-at {
+  margin: var(--space-0) 0 0;
+  font-size: var(--font-size-sm);
+}
+
+.created-at-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.created-at-link:hover {
+  text-decoration: underline;
+}
+
+.text {
+  min-width: 0;
+  margin: 0;
+  margin-left: var(--space-2);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+
+.engagement {
+  margin-top: var(--space-1);
+}

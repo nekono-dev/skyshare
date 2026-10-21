@@ -1,0 +1,81 @@
+/**
+ * ImagePicker のスタイル定義。
+ *
+ * 設計方針:
+ * - 色・サイズ・余白は src/styles/tokens.css のトークンのみを使い、直接値を避ける。
+ */
+
+/*
+  リンクカード用画像（1200x630）と同じ比率・配置で個別画像を並べるグリッド。
+  枚数ごとの分割パターンは src/lib/image/postImageProcessing.ts の getSlotDefs と同一にし、
+  実際にBlueskyへ投稿されるリンクカード画像の見た目と一致させる。
+*/
+.thumb-grid {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  margin-top: var(--space-2);
+}
+
+.layout1 {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  grid-template-areas: "slot0";
+}
+
+.layout2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr;
+  grid-template-areas: "slot0 slot1";
+}
+
+.layout3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot0 slot2";
+}
+
+.layout4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "slot0 slot1"
+    "slot2 slot3";
+}
+
+/* 5枚目以降（visual対象外）の画像を並べる行。visual合成グリッドの下に配置する。 */
+.extra-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.extra-thumb {
+  aspect-ratio: 1200 / 630;
+  border-radius: var(--radius-sm);
+}
+
+.slot-excluded-badge {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  line-height: 18px;
+}
+
+.overflow-notice {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-red-text);
+}

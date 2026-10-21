@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
-import { AtpAgent } from "@atproto/api"
 
+import { createAtpAgent } from "@/lib/atproto/agentFactory"
 import {
     makeSessionSetCookie,
     makeAccountsSetCookie,
@@ -10,14 +10,14 @@ import {
     upsertPooledAccount,
     MAX_POOLED_ACCOUNTS,
 } from "@/lib/session/cookies.js"
-import * as PostSchema from "@/client/openapi/schemas/v2/bsky/session/post"
-import * as PutSchema from "@/client/openapi/schemas/v2/bsky/session/put"
+import * as PostSchema from "@/lib/api/schema/v2/bsky/session/post"
+import * as PutSchema from "@/lib/api/schema/v2/bsky/session/put"
 
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
 } from "@/lib/api/response.js"
-import { convertHeaderToObj } from "@/util/http"
+import { hasCookieHeader } from "@/util/http"
 import { atpService } from "@/env.js"
 
 /**
@@ -37,36 +37,6 @@ import { atpService } from "@/env.js"
  *   これが無いとログイン前に取得した 401/空一覧のレスポンスがブラウザ/CDNにキャッシュされ、
  *   ログイン直後もキャッシュされた古い応答が返り続ける不具合が起きる。
  */
-
-/**
- * Cookie ヘッダの存在を検証する。
- *
- * Input:
- * - `request`: HTTP リクエスト
- *
- * Output:
- * - cookie があれば `true`
- */
-const hasCookieHeader = (request: Request): boolean => {
-    const headers = convertHeaderToObj(request.headers)
-    return typeof headers.cookie === "string" && headers.cookie.length > 0
-}
-
-/**
- * 汎用のエラーレスポンスを生成する（`errorResponseFromStatus` では表現できない具体的な文言用）。
- *
- * Input:
- * - `status`: HTTP ステータス
- * - `message`: エラーメッセージ
- *
- * Output:
- * - `{ error: message }` を持つ `Response`
- */
-const errorResponse = (status: number, message: string): Response =>
-    new Response(JSON.stringify({ error: message }), {
-        status,
-        headers: { "content-type": "application/json" },
-    })
 
 /**
  * アカウントの表示用メタデータ(displayName/avatarUrl)を取得する。
@@ -91,7 +61,7 @@ const fetchProfileMeta = async (
     did: string,
 ): Promise<{ displayName?: string; avatarUrl?: string }> => {
     try {
-        const agent = new AtpAgent({ service: atpService })
+        const agent = createAtpAgent(atpService)
         const profile = await agent.getProfile({ actor: did })
         return {
             displayName: profile.data.displayName,
@@ -209,7 +179,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         const password = body.data.password
         const service = body.data.service || "https://bsky.social"
 
-        const agent = new AtpAgent({ service })
+        const agent = createAtpAgent(service)
         const response = await agent.login({
             identifier,
             password,
@@ -230,10 +200,9 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             currentSession.did !== session.did
         ) {
             if (pool.length >= MAX_POOLED_ACCOUNTS) {
-                return errorResponse(
-                    400,
-                    "連携できるアカウント数の上限に達しています。先に他のアカウントをログアウトしてください。",
-                )
+                // アカウント数の上限到達。利用者向けの文言はサーバーでは返さず、
+                // 状態の競合を表す 409 をクライアントが表示言語の文言へ対応づける。
+                return errorResponseFromStatus(409)
             }
             pool = upsertPooledAccount(
                 pool,
@@ -307,7 +276,7 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
         // refreshSession を実行するため、これ自体がトークンの有効性チェックになる。
         // refreshJwt が失効していれば XRPCError（401相当）が投げられ、成功時は
         // ローテーション後の新しいトークン対が agent.session に反映される。
-        const agent = new AtpAgent({ service: target.service })
+        const agent = createAtpAgent(target.service)
         try {
             await agent.resumeSession({
                 refreshJwt: target.session.refreshJwt,

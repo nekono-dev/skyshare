@@ -7,14 +7,19 @@
  * - 画像 URL は CDN URL に展開し、一覧 UI でそのまま表示できる形にする。
  */
 
-import { AppBskyEmbedImages, AppBskyFeedPost } from "@atproto/api"
-import { blobToCdnUrl, toCidString } from "@/lib/entry/entry"
+import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
+import {
+    blobToCdnUrl,
+    extractEmbedImages,
+    extractEmbedVideo,
+    extractUnsupportedEmbedVideo,
+} from "@/lib/entry/entry"
 import {
     bskyPostUrlgen,
     parseAtUri,
     skyshareEntryUrlgen,
 } from "@/lib/entry/url"
-import type { SourceImage } from "@/lib/entry/entry"
+import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
 
 export type TimelinePostAuthor = {
     did: string
@@ -45,7 +50,27 @@ export type TimelinePost = {
     author: TimelinePostAuthor
     text: string
     images: SourceImage[]
+    /** 動画投稿（`app.bsky.embed.video`）の動画。画像とは排他 */
+    video?: SourceVideo
+    /** 利用不可の動画（`recordWithMedia` 内の動画）。再生・entry化の対象外 */
+    unsupportedVideo?: SourceVideo
     skyshareEntry?: TimelineSkyshareEntry
+}
+
+/**
+ * entry 作成の素材（画像または再生可能な動画）を持つ投稿か。
+ * `unsupportedVideo` は含めない（entry 作成の対象外）。
+ */
+export const hasEntryMedia = (post: TimelinePost): boolean =>
+    post.images.length > 0 || !!post.video
+
+/**
+ * Timeline一覧上の1スレッドグループ。`buildTimelineThreads`（`@/lib/entry/timelineThreads`）が
+ * バックエンドで権威的に解決・確定させる（`specs/timeline-api`）。
+ */
+export type ThreadGroup = {
+    rootPost: TimelinePost
+    replies: TimelinePost[] // 古い→新しい順。0件なら単独投稿
 }
 
 type RawTimelineEntry = {
@@ -85,34 +110,7 @@ type RawTimelineEntry = {
 export const extractTimelinePostImages = (
     postRecord: AppBskyFeedPost.Main,
     sourceRepoDid: string,
-): SourceImage[] => {
-    const embedded = postRecord.embed
-
-    if (embedded?.$type !== "app.bsky.embed.images") {
-        return []
-    }
-
-    const imagesRecord = embedded as AppBskyEmbedImages.Main
-    if (!Array.isArray(imagesRecord.images)) {
-        return []
-    }
-
-    return imagesRecord.images
-        .map(image => {
-            const url = blobToCdnUrl(sourceRepoDid, image.image)
-            const cid = toCidString(image.image?.ref)
-            if (!url || !cid) {
-                return undefined
-            }
-
-            return {
-                url,
-                alt: typeof image.alt === "string" ? image.alt : "",
-                cid,
-            }
-        })
-        .filter((image): image is SourceImage => image !== undefined)
-}
+): SourceImage[] => extractEmbedImages(postRecord.embed, sourceRepoDid)
 
 /**
  * Skyshare entry を投稿一覧用の表示データへ変換する。
@@ -231,6 +229,13 @@ export const normalizeTimelinePost = (
         ? extractTimelinePostImages(postRecord, post.author.did)
         : []
 
+    const video = postRecord
+        ? extractEmbedVideo(postRecord.embed, post.author.did)
+        : undefined
+    const unsupportedVideo = postRecord
+        ? extractUnsupportedEmbedVideo(postRecord.embed, post.author.did)
+        : undefined
+
     return {
         uri: post.uri,
         cid: post.cid,
@@ -250,6 +255,30 @@ export const normalizeTimelinePost = (
         },
         text,
         images,
+        ...(video ? { video } : {}),
+        ...(unsupportedVideo ? { unsupportedVideo } : {}),
         skyshareEntry,
     }
 }
+
+/**
+ * `app.bsky.feed.getPostThread`が返す`PostView`を`TimelinePost`へ変換する。
+ * `buildTimelineThreads`（`@/lib/entry/timelineThreads`）が、スレッドのroot・返信
+ * 双方を権威的に解決する際に使う（`specs/timeline-api`）。
+ *
+ * 処理の趣旨:
+ * - `getPostThread`が返す`PostView`には`FeedViewPost.reply`（enriched view）が無いため、
+ *   `{ post }`のみを渡して`normalizeTimelinePost`を呼ぶ。reply chain情報自体は
+ *   `TimelinePost`が持たない（`ThreadGroup`という形で表現するため）。
+ *
+ * Input:
+ * - `post`: `extractOwnedLinearReplyChain`が返す`PostView`
+ * - `skyshareEntry`: 同一`source.uri`に紐づくskyshare entry（あれば）
+ *
+ * Output:
+ * - `TimelinePost`。最小要件不足時は`undefined`（`normalizeTimelinePost`と同じ基準）。
+ */
+export const normalizePostViewToTimelinePost = (
+    post: AppBskyFeedDefs.PostView,
+    skyshareEntry?: TimelineSkyshareEntry,
+): TimelinePost | undefined => normalizeTimelinePost({ post }, skyshareEntry)

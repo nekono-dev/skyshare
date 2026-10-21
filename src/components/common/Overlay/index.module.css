@@ -1,0 +1,47 @@
+:root {
+  --overlay-z: 60;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  justify-content: center;
+  z-index: var(--overlay-z);
+}
+
+/* 配置(align-items)の既定値は `ui` レイヤーの中で :where() により詳細度 0 にする。
+   backdropClassName 側（.postform-backdrop の align-items: flex-start など、レイヤー外）が
+   必ず優先されるようにする。 */
+@layer ui {
+  :where(.backdrop) {
+    align-items: center;
+  }
+}
+
+.content {
+  max-height: calc(100% - 48px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--color-card-bg);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+/* 幅の既定値は、共通UI（ui.width-*）と同じ `ui` レイヤーの中で :where() により詳細度 0 にする。
+   同一レイヤー内では詳細度が優先されるため、contentClassName に渡される ui.width-* が
+   CSSの記述順（バンドル時の import 順）に関係なく必ず優先される。
+   レイヤー外に書くと ui.width-* が負け、ダイアログ幅が既定値に戻る。
+   また別レイヤー（例: defaults）を作り `@layer a, b;` で順序を宣言する方式は、バンドラが
+   宣言を分割して順序が崩れるため使わないこと。 */
+@layer ui {
+  :where(.content) {
+    width: 100%;
+    max-width: 640px;
+  }
+}

@@ -1,0 +1,11 @@
+.panel {
+  position: fixed;
+  /*
+   * PostFormはPostLauncherのモーダル(Overlay, z-index: var(--overlay-z)=60)内にも
+   * 直接(page変体)にも描画される。Overlay内で表示される際にフローティングパネルが
+   * 隠れないよう、FooterNav(50)・PostLauncherのFAB(55)・Overlay/PostFormのdrag-overlay(60)
+   * より上、Loading(70, 全画面ローディング)より下に固定する。
+   * --overlay-zはOverlay/index.module.cssの:rootで定義される。
+   */
+  z-index: calc(var(--overlay-z, 60) + 5);
+}

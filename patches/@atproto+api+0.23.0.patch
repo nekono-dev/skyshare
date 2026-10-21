@@ -1,0 +1,44 @@
+diff --git a/node_modules/@atproto/api/dist/agent.js b/node_modules/@atproto/api/dist/agent.js
+index 3c81334..ef2cf89 100644
+--- a/node_modules/@atproto/api/dist/agent.js
++++ b/node_modules/@atproto/api/dist/agent.js
+@@ -3,7 +3,7 @@ import { TID, retry } from '@atproto/common-web';
+ import { AtUri, currentDatetimeString, ensureValidDidRegex, toDatetimeString, } from '@atproto/syntax';
+ import { XrpcClient, buildFetchHandler, } from '@atproto/xrpc';
+ import { AppBskyActorDefs, AppBskyActorProfile, AppNS, ChatNS, ComAtprotoRepoPutRecord, ComNS, ToolsNS, } from './client/index.js';
+-import { schemas } from './client/lexicons.js';
++import { lexicons as sharedLexicons } from './client/lexicons.js';
+ import { BSKY_LABELER_DID } from './const.js';
+ import { DEFAULT_LABEL_SETTINGS } from './moderation/const/labels.js';
+ import { interpretLabelValueDefinitions } from './moderation/index.js';
+@@ -69,7 +69,7 @@ export class Agent extends XrpcClient {
+                 .filter(Boolean)
+                 .join(', '));
+             return this.sessionManager.fetchHandler(url, { ...init, headers });
+-        }, schemas);
++        }, sharedLexicons);
+         //#endregion
+         this.com = new ComNS(this);
+         this.app = new AppNS(this);
+diff --git a/node_modules/@atproto/api/dist/atp-agent.js b/node_modules/@atproto/api/dist/atp-agent.js
+index 93c33dc..5a3d3a8 100644
+--- a/node_modules/@atproto/api/dist/atp-agent.js
++++ b/node_modules/@atproto/api/dist/atp-agent.js
+@@ -2,7 +2,7 @@ import { getPdsEndpoint, isValidDidDoc } from '@atproto/common-web';
+ import { ResponseType, XRPCError, XrpcClient, errorResponseBody, } from '@atproto/xrpc';
+ import { Agent } from './agent.js';
+ import { ComAtprotoServerNS, } from './client/index.js';
+-import { schemas } from './client/lexicons.js';
++import { lexicons as sharedLexicons } from './client/lexicons.js';
+ const ReadableStream = globalThis.ReadableStream;
+ /**
+  * A wrapper around the {@link Agent} class that uses credential based session
+@@ -107,7 +107,7 @@ export class CredentialSession {
+         // codegen.
+         new XrpcClient((url, init) => {
+             return (0, this.fetch)(new URL(url, this.serviceUrl), init);
+-        }, schemas));
++        }, sharedLexicons));
+     }
+     get did() {
+         return this.session?.did;

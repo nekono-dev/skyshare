@@ -1,0 +1,93 @@
+/* position: relative なカードのフッター(toolbar)は z-index: auto の
+   positioned要素としてこのボタンと同じスタッキング層で競合し、DOM順序次第では
+   スクロール中のカードのフッターがこのボタンより上に乗ってタップを奪ってしまう。
+   FooterNav(z-index: 50)より上、モーダル系オーバーレイ(60〜70)より下に固定する。 */
+.launcher-delta {
+  position: fixed;
+  right: var(--space-4);
+  bottom: calc(var(--nav-bar-height) + var(--space-4));
+  box-shadow: var(--shadow-primary);
+  z-index: 55;
+}
+
+/* デスクトップ(サイドバーレイアウト)専用ボタン。Sidebar の #sidebar-action へ
+   Portal で描画され、サイドバーの flex column にナビ項目と同列で自然に並ぶため、
+   位置指定は不要(サイズ調整のみ)。 */
+.sidebar-action {
+  display: none;
+}
+
+.sidebar-action-icon {
+  display: none;
+}
+
+/* スマホレイアウト時、PostForm は画面上部に固定配置する。
+   Overlay の backdrop は既定で align-items: center のため、フォームの領域が
+   （画像添付や詳細オプション展開などで）拡大すると上下均等に広がり、上端が
+   上方向へ動いてしまう。align-items: flex-start に切り替えて上端を固定し、
+   領域拡大が下方向にのみ起こるようにする。 */
+@media (max-width: 639px) {
+  .postform-backdrop {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+}
+
+/* アイコンのみサイドバー段階(Sidebar側の640px境界と対応):
+   フローティングボタンを隠し、代わりにフローティングボタンと同じペンアイコンを
+   丸ボタンでサイドバー内に表示する。ラベルを表示する余白は無い。 */
+@media (min-width: 640px) {
+  .launcher-delta {
+    display: none;
+  }
+
+  .sidebar-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--size-button-md);
+    height: var(--size-button-md);
+    margin: var(--space-2) auto 0;
+    padding: 0;
+    border-radius: var(--radius-button-max);
+  }
+
+  .sidebar-action-icon {
+    display: block;
+  }
+
+  .sidebar-action-label {
+    display: none;
+  }
+}
+
+/* フルサイドバー段階(Sidebar側の848px境界と対応。根拠は tokens.css 参照):
+   サイドバーがフルラベル表示に戻るのに合わせ、他のnav項目(.item)と同様に
+   ペンアイコン+テキストラベルを横並びで表示する */
+@media (min-width: 848px) {
+  .sidebar-action {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    width: 100%;
+    height: auto;
+    margin-top: 0;
+    box-sizing: border-box;
+    text-align: left;
+    /* サイドバーの他のnav項目(.item, 848px時点)と大きさを揃える */
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-md);
+    border-radius: var(--radius-pill);
+  }
+
+  .sidebar-action-icon {
+    display: block;
+    width: var(--size-icon-sm);
+    height: var(--size-icon-sm);
+  }
+
+  .sidebar-action-label {
+    display: inline;
+  }
+}

@@ -12,12 +12,17 @@ pnpm-debug.log*
 .env
 .env.staging
 .env.production
+# 認証情報を含み得るenvファイル（developの.gitignoreと同じ記述）
+.env.local
+.env.*.local
+.env.e2e
 
 # macOS-specific files
 .DS_Store
 
 # Gen clients
 src/client/**/
+/openapi/generated.json
 
 # Astro build
 .astro
@@ -25,3 +30,19 @@ src/client/**/
 .wrangler
 /wrangler.jsonc
 /.memo
+
+# Playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+# E2E（実アカウントのライブテスト）
+/.env.e2e
+/playwright/.auth
+
+# 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
+.env.local
+.env.*.local
+_legacy/**/.env.test
+_legacy/**/.env.test.*
+!_legacy/**/.env.test.template

@@ -1,0 +1,20 @@
+.empty-state,
+.error-state {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.error-state {
+  color: var(--color-danger-text);
+}
+
+.timeline-list {
+  margin-top: var(--space-2);
+  gap: var(--space-2);
+}
+
+.guest-notice {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}

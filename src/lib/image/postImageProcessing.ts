@@ -1,4 +1,5 @@
 import type { Area } from "react-easy-crop"
+import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 
 /**
  * 投稿画像の切り抜き・合成・圧縮を扱う画像処理ユーティリティ群。
@@ -67,8 +68,7 @@ export const loadImage = (url: string) =>
     new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image()
         image.onload = () => resolve(image)
-        image.onerror = () =>
-            reject(new Error("画像の読み込みに失敗しました。"))
+        image.onerror = () => reject(new Error("Failed to load the image."))
         image.src = url
     })
 
@@ -309,7 +309,7 @@ const canvasToJpegBlob = (canvas: HTMLCanvasElement, quality: number) =>
         canvas.toBlob(
             blob => {
                 if (!blob) {
-                    reject(new Error("画像の変換に失敗しました。"))
+                    reject(new Error("Failed to convert the image."))
                     return
                 }
                 resolve(blob)
@@ -336,7 +336,7 @@ const canvasToPngBlob = (canvas: HTMLCanvasElement) =>
     new Promise<Blob>((resolve, reject) => {
         canvas.toBlob(blob => {
             if (!blob) {
-                reject(new Error("画像の変換に失敗しました。"))
+                reject(new Error("Failed to convert the image."))
                 return
             }
             resolve(blob)
@@ -506,7 +506,7 @@ const renderImageAtLongSide = (
     const context = canvas.getContext("2d")
 
     if (!context) {
-        throw new Error("キャンバスの初期化に失敗しました。")
+        throw new Error("Failed to initialize the canvas.")
     }
 
     context.imageSmoothingEnabled = true
@@ -536,7 +536,7 @@ const renderImageAtLongSide = (
  * - 入力: `{ type: "image/jpeg", size: 800000 }`
  * - 出力: `true`
  */
-const canUsePostImageAsIs = (blob: Blob): boolean =>
+export const canUsePostImageAsIs = (blob: Blob): boolean =>
     (blob.type === "image/jpeg" || blob.type === "image/png") &&
     blob.size <= POST_IMAGE_BYTE_BUDGET
 
@@ -576,7 +576,7 @@ export const createOgpThumbnailFromBlob = async (
             const context = canvas.getContext("2d")
 
             if (!context) {
-                throw new Error("キャンバスの初期化に失敗しました。")
+                throw new Error("Failed to initialize the canvas.")
             }
 
             context.imageSmoothingEnabled = true
@@ -606,6 +606,16 @@ export const createOgpThumbnailFromBlob = async (
 }
 
 /**
+ * 合成済みの画像の上に重ねて描く処理（動画の再生ボタン等）。
+ * `scale` は「出力長辺 / `TARGET_WIDTH`」。縮小描画のたびに呼ばれるため、
+ * 呼び出し側は `scale` を掛けた寸法で描く。
+ */
+export type CompositeOverlay = (
+    context: CanvasRenderingContext2D,
+    scale: number,
+) => void
+
+/**
  * スロット定義・クロップ座標に沿って複数画像を1枚のサムネイルへ合成する。
  *
  * 想定する入力形状(最小要件):
@@ -633,15 +643,18 @@ export const createOgpThumbnailFromBlob = async (
 const composeThumbnailBlob = async (
     imageUrls: string[],
     cropStates: SlotCropState[],
+    overlay?: CompositeOverlay,
 ): Promise<{ thumbnailBlob: Blob; images: HTMLImageElement[] }> => {
-    const slotDefs = getSlotDefs(Math.min(4, Math.max(1, imageUrls.length)))
+    const slotDefs = getSlotDefs(
+        Math.min(VISUAL_IMAGE_COUNT, Math.max(1, imageUrls.length)),
+    )
     const targetUrls = imageUrls.slice(0, slotDefs.length)
-    const images = await Promise.all(targetUrls.map(loadImage))
+    const images = await Promise.all(targetUrls.map(url => loadImage(url)))
 
     const crops = slotDefs.map((_, index) => {
         const crop = cropStates[index]?.cropPixels
         if (!crop || !images[index]) {
-            throw new Error("画像の切り抜き範囲が不正です。")
+            throw new Error("The image crop area is invalid.")
         }
         return crop
     })
@@ -655,7 +668,7 @@ const composeThumbnailBlob = async (
         const context = canvas.getContext("2d")
 
         if (!context) {
-            throw new Error("キャンバスの初期化に失敗しました。")
+            throw new Error("Failed to initialize the canvas.")
         }
 
         context.imageSmoothingEnabled = true
@@ -676,6 +689,8 @@ const composeThumbnailBlob = async (
             )
         })
 
+        overlay?.(context, scale)
+
         return canvas
     }
 
@@ -692,11 +707,12 @@ const composeThumbnailBlob = async (
  * 複数画像を OGP レイアウトへ合成し、投稿用画像セットを生成する。
  *
  * 想定する入力形状(最小要件):
- * - `imageUrls` は 1〜4 枚分を想定（5枚以上は先頭4枚のみ使用）
- * - `cropStates[index].cropPixels` は各画像に対応する切り抜き領域を持つ
+ * - `imageUrls` は 1〜`MAX_POST_IMAGES` 枚分。visual（合成サムネイル）には先頭4枚のみ使い、
+ *   5枚目以降は原本 Blob の処理のみ行う
+ * - `cropStates[index].cropPixels` は先頭4枚それぞれの切り抜き領域を持つ（5枚目以降は不要）
  *
  * 処理の趣旨:
- * - `composeThumbnailBlob` で合成サムネイルを生成しつつ、並行して原本 Blob を取得する。
+ * - `composeThumbnailBlob` で先頭4枚から合成サムネイルを生成しつつ、並行して全画像の原本 Blob を取得する。
  * - 同時に各画像について `canUsePostImageAsIs` で圧縮要否を判定し、既に投稿条件を
  *   満たす画像（JPEG/PNG かつ予算内）は元Blobをそのまま採用、満たさない画像のみ
  *   個別リサイズ+圧縮して原本配列として返す。
@@ -707,24 +723,25 @@ const composeThumbnailBlob = async (
  * - `cropStates`: 画像ごとのクロップ状態配列
  *
  * Output:
- * - `originalBlobs`: 個別処理済み画像（圧縮対象外は元Blobそのもの）
+ * - `originalBlobs`: 全画像分の個別処理済み画像（圧縮対象外は元Blobそのもの）
  * - `thumbnailBlob`: 合成サムネイル
  *
  * 例:
- * - 入力: 2枚の画像URL + 2件の cropPixels
- * - 出力: 2件の originalBlobs と 1件の thumbnailBlob
+ * - 入力: 5枚の画像URL + 先頭4件の cropPixels
+ * - 出力: 5件の originalBlobs と 1件の thumbnailBlob（先頭4枚由来）
  */
 export const createProcessedImages = async (
     imageUrls: string[],
     cropStates: SlotCropState[],
 ) => {
-    const targetUrls = imageUrls.slice(
-        0,
-        getSlotDefs(Math.min(4, Math.max(1, imageUrls.length))).length,
-    )
-    const [{ thumbnailBlob, images }, sourceBlobs] = await Promise.all([
-        composeThumbnailBlob(imageUrls, cropStates),
-        Promise.all(targetUrls.map(url => fetch(url).then(res => res.blob()))),
+    // visual の素材は先頭 VISUAL_IMAGE_COUNT 枚のみ。原本（投稿に添付する画像）は全枚数を処理する。
+    const [{ thumbnailBlob }, sourceBlobs, images] = await Promise.all([
+        composeThumbnailBlob(
+            imageUrls.slice(0, VISUAL_IMAGE_COUNT),
+            cropStates.slice(0, VISUAL_IMAGE_COUNT),
+        ),
+        Promise.all(imageUrls.map(url => fetch(url).then(res => res.blob()))),
+        Promise.all(imageUrls.map(url => loadImage(url))),
     ])
 
     // 既に投稿条件（JPEG/PNG かつ予算内）を満たす画像は圧縮対象外として元Blobをそのまま採用し、
@@ -747,6 +764,34 @@ export const createProcessedImages = async (
 }
 
 /**
+ * 指定のクロップ状態で画像を合成し、サムネイルだけを生成する。
+ *
+ * 処理の趣旨:
+ * - 動画投稿の visual 調整のように、原本画像の処理（`createProcessedImages` の
+ *   `originalBlobs`）が不要で、合成サムネイルだけが必要な場合に使う。
+ *
+ * Input:
+ * - `imageUrls`: 元画像 URL 配列
+ * - `cropStates`: 画像ごとのクロップ状態配列（`cropPixels` が欠けていると throw する）
+ * - `overlay`: 合成後に重ねて描く処理（任意）
+ *
+ * Output:
+ * - 合成サムネイル Blob
+ */
+export const createCroppedThumbnail = async (
+    imageUrls: string[],
+    cropStates: SlotCropState[],
+    overlay?: CompositeOverlay,
+): Promise<Blob> => {
+    const { thumbnailBlob } = await composeThumbnailBlob(
+        imageUrls,
+        cropStates,
+        overlay,
+    )
+    return thumbnailBlob
+}
+
+/**
  * クロップ編集を行わなかった場合の「デフォルト配置」で複数画像をサムネイルへ合成する。
  *
  * 処理の趣旨:
@@ -760,6 +805,7 @@ export const createProcessedImages = async (
  *
  * Input:
  * - `imageUrls`: 元画像 URL 配列
+ * - `overlay`: 合成後に重ねて描く処理（任意。動画の再生ボタン等）
  *
  * Output:
  * - 合成済みサムネイル Blob
@@ -770,10 +816,13 @@ export const createProcessedImages = async (
  */
 export const createDefaultThumbnail = async (
     imageUrls: string[],
+    overlay?: CompositeOverlay,
 ): Promise<Blob> => {
-    const slotDefs = getSlotDefs(Math.min(4, Math.max(1, imageUrls.length)))
+    const slotDefs = getSlotDefs(
+        Math.min(VISUAL_IMAGE_COUNT, Math.max(1, imageUrls.length)),
+    )
     const targetUrls = imageUrls.slice(0, slotDefs.length)
-    const sizes = await Promise.all(targetUrls.map(loadImageSize))
+    const sizes = await Promise.all(targetUrls.map(url => loadImageSize(url)))
     const cropStates: SlotCropState[] = sizes.map((size, index) => ({
         crop: { x: 0, y: 0 },
         zoom: 1,
@@ -785,6 +834,10 @@ export const createDefaultThumbnail = async (
         ),
     }))
 
-    const { thumbnailBlob } = await composeThumbnailBlob(targetUrls, cropStates)
+    const { thumbnailBlob } = await composeThumbnailBlob(
+        targetUrls,
+        cropStates,
+        overlay,
+    )
     return thumbnailBlob
 }

@@ -1,0 +1,68 @@
+---
+/**
+ * デスクトップ専用の常設サイドバーナビゲーション(Post一覧・Entry一覧・アカウント切り替え)。
+ *
+ * 責務と処理概要:
+ * - 画面幅640px以上でのみ表示する(640px未満はFooterNavが担当、このコンポーネントは
+ *   display:noneで非表示のままDOMには常に存在する)。
+ * - 640px〜847px(ミニサイドバー): アイコンの丸ボタンのみを縦に並べる。
+ * - 848px以上(フルサイドバー): アイコン+ラベル付きのフル表示。
+ * - 実際の幅・位置は src/styles/ui.module.css の .shell (CSS Grid) が1列目として
+ *   決定するため、このコンポーネント自身は width/left を一切指定しない。
+ * - `Astro.url.pathname` から現在地を判定し、該当リンクへ `aria-current` を付与する。
+ * - `transition:persist` によりView Transitions中もDOMを再生成せず保持する。
+ *   保持されたDOMのaria-currentは src/components/nav/syncActiveState.ts が同期し直す。
+ */
+import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
+import { sidebarNavItems, normalizePathname, isActiveHref } from "@/components/layout/nav/navItems"
+import NavIcon from "@/components/layout/nav/NavIcon.astro"
+import { createTranslator } from "@/lib/i18n/translate"
+
+const current = normalizePathname(Astro.url.pathname)
+// 文言は描画時の表示言語で出し、言語変更・ページ遷移後は data-i18n 系属性を目印にクライアントが書き換える。
+const { t } = createTranslator(Astro.locals.locale)
+// URLに `?guest` が付いている場合、ナビゲーション遷移後もゲスト表示を維持できるよう
+// 各リンクのhrefにも引き継ぐ。ただしこのコンポーネントは prerender されるページに
+// 埋め込まれておりビルド時には実際のリクエストURLが分からないため、ここでは付与できない。
+// 実際の付与は `@/components/layout/nav/syncGuestModeQuery`(クライアント実行)が担う。
+---
+
+<nav
+    class={styles.nav}
+    aria-label={t("nav.main")}
+    data-i18n-aria-label="nav.main"
+    data-nav="sidebar"
+    transition:persist="sidebar-nav"
+>
+    {
+        sidebarNavItems.map(item => (
+            <a
+                href={item.href}
+                class={`${styles.item} ${ui["text-muted"]}`}
+                data-nav-key={item.key}
+                aria-current={isActiveHref(item.href, current) ? "page" : undefined}
+                aria-label={t(item.ariaLabelKey)}
+                data-i18n-aria-label={item.ariaLabelKey}
+            >
+                <span
+                    class={`${styles["item-icon"]} ${ui["base-button"]} ${ui["nontext-button"]} ${item.key === "accounts" ? ui["lg-button"] : ui["md-button"]}`}
+                    aria-hidden="true"
+                >
+                    <NavIcon navKey={item.key} />
+                </span>
+                <span class={styles["item-label"]} data-i18n={item.labelKey}>
+                    {t(item.labelKey)}
+                </span>
+            </a>
+        ))
+    }
+    {/* サイドバー表示時、PostLauncher がここへ「新規投稿」ボタンを Portal で描画する */}
+    <div id="sidebar-action"></div>
+</nav>
+
+<script>
+    import "@/components/layout/nav/syncActiveState"
+    import "@/components/layout/nav/syncAccountAvatar"
+    import "@/components/layout/nav/syncGuestModeQuery"
+</script>

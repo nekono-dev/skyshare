@@ -1,0 +1,645 @@
+import { useT } from "@/lib/i18n/react"
+import type { DeferredMessage } from "@/lib/i18n/translate"
+import {
+  forwardRef,
+  useEffect,
+  useId,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type RefObject,
+} from "react"
+import { createPortal } from "react-dom"
+import ImageCropDialog from "@/components/image/ImageCropDialog"
+import ImageAltDialog from "@/components/image/ImageAltDialog"
+import Loading from "@/components/common/Loading"
+import MediaThumb from "@/components/common/MediaThumb"
+import type { Area } from "react-easy-crop"
+import {
+  computeCropAroundCenter,
+  computeInitialCrop,
+  createProcessedImages,
+  getSlotDefs,
+  loadImageSize,
+} from "@/lib/image/postImageProcessing"
+import {
+  MAX_POST_IMAGES,
+  VISUAL_IMAGE_COUNT,
+} from "@/lib/image/postImageLimits"
+import { computeCroppedImageStyle } from "@/lib/image/croppedImageStyle"
+import ui from "@/styles/ui.module.css"
+import styles from "./index.module.css"
+import pic from "@/images/image.svg"
+
+/**
+ * 投稿画像の選択とクロップ調整を担うコンポーネント。
+ *
+ * 責務と処理概要:
+ * - ファイル入力から最大 `MAX_POST_IMAGES` 枚の画像を受け取り、スロット情報を管理する。
+ * - visual（合成サムネイル）の対象は先頭 `VISUAL_IMAGE_COUNT` 枚のみ。5枚目以降は
+ *   クロップ対象外として扱い、プレビューに「Visual対象外」ラベルを付ける。
+ * - 初期クロップを算出して投稿用画像を生成し、親へ `ImageEntry` を通知する。
+ * - クロップダイアログで再調整した結果を反映する。
+ * - 各画像を個別サムネイルとして表示し、個別削除・alt編集を提供する。
+ */
+
+export type SlotCropState = {
+  crop: { x: number; y: number }
+  zoom: number
+  cropPixels: Area | null
+}
+
+export type ImageSlot = {
+  objectUrl: string
+  fileName: string
+  naturalWidth?: number
+  naturalHeight?: number
+  cropState: SlotCropState
+  alt: string
+  file?: File
+}
+
+export type ImageEntry = {
+  originalBlobs: Blob[]
+  thumbnailBlob: Blob
+  originalPreviews: string[]
+  thumbnailPreview: string
+  sourceFileNames: string[]
+  meta?: { width?: number; height?: number; alt: string }[]
+}
+
+type Props = {
+  value: ImageEntry | null
+  onChange: (entry: ImageEntry | null) => void
+  disabled?: boolean
+  /**
+   * 個別画像プレビューのグリッドを描画するポータル先。
+   * 画像追加ボタン列は内容量に合わせて幅を縮める領域に置かれるため、
+   * プレビューグリッドはそこに直接描画せず、フォーム全幅を使えるこの
+   * コンテナへポータルする。
+   */
+  previewContainerRef?: RefObject<HTMLDivElement | null>
+}
+
+/**
+ * 親（PostForm のペースト/ドロップ処理など）からファイルを追加投入するための命令的ハンドル。
+ */
+export type ImagePickerHandle = {
+  addFiles: (files: File[]) => void | Promise<void>
+  /** 「サムネ調整」ダイアログを開く（画像が無ければ何もしない） */
+  openCropDialog: () => void
+}
+
+/**
+ * 画像ピッカー UI を描画する。
+ *
+ * Input:
+ * - `value`: 現在の画像エントリ
+ * - `onChange`: 画像エントリ更新通知
+ * - `disabled`: 操作可否
+ *
+ * Output:
+ * - 画像追加・個別サムネイル（削除/alt編集）UI と、命令的ハンドル経由で開くクロップダイアログ
+ *
+ * 例:
+ * - 入力: `{ value: null, disabled: false }`
+ * - 出力: 画像追加ボタン（「サムネ調整」ボタンは `ThumbnailAdjustButton` として親が置く）
+ */
+export const Component = forwardRef<ImagePickerHandle, Props>(
+  function ImagePicker(
+    { value, onChange, disabled = false, previewContainerRef },
+    ref,
+  ) {
+    const translator = useT()
+    const { t } = translator
+    const [slots, setSlots] = useState<ImageSlot[]>([])
+    const [showCropDialog, setShowCropDialog] = useState(false)
+    const [altDialogIndex, setAltDialogIndex] = useState<number | null>(null)
+    const [isPreparingPreview, setIsPreparingPreview] = useState(false)
+    const [overflowNotice, setOverflowNotice] =
+      useState<DeferredMessage | null>(null)
+    const [previewContainer, setPreviewContainer] =
+      useState<HTMLDivElement | null>(null)
+    const slotsRef = useRef<ImageSlot[]>([])
+    const inputId = useId()
+
+    // previewContainerRef の DOM ノードは PostForm 側の初回コミットで確定するため、
+    // マウント後に一度読み取ってポータル先として state 化する。
+    useEffect(() => {
+      setPreviewContainer(previewContainerRef?.current ?? null)
+    }, [previewContainerRef])
+
+    /**
+     * 指定スロット群の object URL を解放する。
+     *
+     * Input:
+     * - `targetSlots`: 解放対象スロット配列
+     *
+     * Output:
+     * - 返り値なし（URL 解放を副作用として実行）
+     */
+    const revokeSlotUrls = (targetSlots: ImageSlot[]) => {
+      targetSlots.forEach(slot => {
+        try {
+          URL.revokeObjectURL(slot.objectUrl)
+        } catch (error) {}
+      })
+    }
+
+    useEffect(() => {
+      slotsRef.current = slots
+    }, [slots])
+
+    useEffect(() => {
+      return () => {
+        revokeSlotUrls(slotsRef.current)
+      }
+    }, [])
+
+    useEffect(() => {
+      if (value === null && slotsRef.current.length > 0) {
+        revokeSlotUrls(slotsRef.current)
+        setSlots([])
+      }
+    }, [value])
+
+    /**
+     * 現在スロット群から投稿用 `ImageEntry` を生成して親へ通知する。
+     *
+     * Input:
+     * - `nextSlots`: 反映後スロット配列
+     *
+     * Output:
+     * - 返り値なし（`onChange` で `ImageEntry | null` を通知）
+     *
+     * 例:
+     * - 入力: 2件のスロット
+     * - 出力: 2件の `originalBlobs` と1件の `thumbnailBlob` を持つ `ImageEntry`
+     */
+    const createEntryFromSlots = async (nextSlots: ImageSlot[]) => {
+      if (nextSlots.length === 0) {
+        onChange(null)
+        return
+      }
+
+      const cropStates = nextSlots.map(slot => slot.cropState)
+      const { originalBlobs, thumbnailBlob } = await createProcessedImages(
+        nextSlots.map(slot => slot.objectUrl),
+        cropStates,
+      )
+
+      onChange({
+        originalBlobs,
+        thumbnailBlob,
+        originalPreviews: originalBlobs.map(blob => URL.createObjectURL(blob)),
+        thumbnailPreview: URL.createObjectURL(thumbnailBlob),
+        sourceFileNames: nextSlots.map(slot => slot.fileName),
+        meta: nextSlots.map(slot => ({
+          width: slot.naturalWidth,
+          height: slot.naturalHeight,
+          alt: slot.alt,
+        })),
+      })
+    }
+
+    /**
+     * 現在のレイアウト定義に合わせて各スロットの初期クロップを再計算する。
+     *
+     * 処理の趣旨:
+     * - 画像枚数変化でスロット比率が変わるため、既存中心点をなるべく維持して切り抜き領域を再配置する。
+     *
+     * Input:
+     * - `sourceSlots`: 再計算対象スロット
+     * - `defs`: 現在枚数に対応するスロット定義
+     *
+     * Output:
+     * - 再計算済みスロット配列
+     */
+    const normalizeSlotsForLayout = (
+      sourceSlots: ImageSlot[],
+      defs: ReturnType<typeof getSlotDefs>,
+    ) =>
+      sourceSlots.map((slot, index) => {
+        const def = defs[index]
+        if (!def || !slot.naturalWidth || !slot.naturalHeight) {
+          return slot
+        }
+
+        const currentCrop = slot.cropState.cropPixels
+        const centerX = currentCrop
+          ? currentCrop.x + currentCrop.width / 2
+          : slot.naturalWidth / 2
+        const centerY = currentCrop
+          ? currentCrop.y + currentCrop.height / 2
+          : slot.naturalHeight / 2
+
+        const cropPixels = computeCropAroundCenter(
+          slot.naturalWidth,
+          slot.naturalHeight,
+          def.w,
+          def.h,
+          centerX,
+          centerY,
+        )
+
+        return {
+          ...slot,
+          cropState: {
+            crop: { x: 0, y: 0 },
+            zoom: 1,
+            cropPixels,
+          },
+        }
+      })
+
+    /**
+     * ファイル群を追加し、スロットとプレビューを更新する。
+     *
+     * 処理の趣旨:
+     * - ファイル入力の change だけでなく、ペースト/ドロップ由来のファイル追加からも
+     *   共通して呼べるようにする。
+     * - 追加可能枚数（最大 `MAX_POST_IMAGES`）を超える入力を切り詰め、超過を通知する。
+     * - 5枚目以降のスロットは visual のクロップ対象外のため、`cropPixels` は null のままにする。
+     * - 画像サイズ取得に失敗してもフォールバックでスロットは維持し、全体処理を止めない。
+     *
+     * Input:
+     * - `newFiles`: 追加対象ファイル配列
+     *
+     * Output:
+     * - 返り値なし（state 更新と `onChange` 通知を実行）
+     */
+    const addFiles = async (newFiles: File[]) => {
+      if (newFiles.length === 0) return
+
+      const allowed = Math.max(0, MAX_POST_IMAGES - slots.length)
+      const take = newFiles.slice(0, allowed)
+      setOverflowNotice(
+        newFiles.length > allowed
+          ? {
+              format: translator =>
+                translator.t("image.picker.overflow", {
+                  max: MAX_POST_IMAGES,
+                }),
+            }
+          : null,
+      )
+      if (take.length === 0) return
+
+      const urls = take.map(f => ({
+        url: URL.createObjectURL(f),
+        name: f.name,
+        file: f,
+      }))
+
+      // 追加後の総枚数に対するスロット定義を算出する。
+      const newCount = slots.length + urls.length
+      const defs = getSlotDefs(newCount)
+
+      const addedSlots: ImageSlot[] = []
+      for (let i = 0; i < urls.length; i++) {
+        const idx = slots.length + i
+        const { url, name, file } = urls[i]
+        try {
+          const size = await loadImageSize(url)
+          // idx >= VISUAL_IMAGE_COUNT では def が undefined（visual対象外）
+          const def = defs[idx]
+          const cropPixels = def
+            ? computeInitialCrop(size.width, size.height, def.w, def.h)
+            : null
+          addedSlots.push({
+            objectUrl: url,
+            fileName: name,
+            naturalWidth: size.width,
+            naturalHeight: size.height,
+            cropState: { crop: { x: 0, y: 0 }, zoom: 1, cropPixels },
+            alt: "",
+            file,
+          })
+        } catch (err) {
+          // サイズ取得失敗時もスロットだけは残して後続調整を可能にする。
+          addedSlots.push({
+            objectUrl: url,
+            fileName: name,
+            cropState: { crop: { x: 0, y: 0 }, zoom: 1, cropPixels: null },
+            alt: "",
+            file,
+          })
+        }
+      }
+
+      const nextSlots = normalizeSlotsForLayout(
+        slots.concat(addedSlots).slice(0, MAX_POST_IMAGES),
+        defs,
+      )
+      setSlots(nextSlots)
+
+      setIsPreparingPreview(true)
+      try {
+        await createEntryFromSlots(nextSlots)
+      } catch (error) {
+        console.error(error)
+        onChange(null)
+      } finally {
+        setIsPreparingPreview(false)
+      }
+    }
+
+    /**
+     * ファイル選択イベントを処理する。
+     *
+     * Input:
+     * - `event`: `<input type="file">` の change イベント
+     *
+     * Output:
+     * - 返り値なし（`addFiles` へ委譲）
+     */
+    const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+      const input = event.currentTarget
+      const newFiles = input.files ? Array.from(input.files) : []
+      input.value = ""
+      await addFiles(newFiles)
+    }
+
+    /**
+     * クロップダイアログを開く。
+     *
+     * 失敗時の方針:
+     * - スロット未登録時は何もせず return する。
+     */
+    const handleOpenCrop = () => {
+      if (slots.length === 0) return
+      setShowCropDialog(true)
+    }
+
+    useImperativeHandle(ref, () => ({
+      addFiles,
+      openCropDialog: handleOpenCrop,
+    }))
+
+    /**
+     * クロップ確定結果を state と `ImageEntry` に反映する。
+     *
+     * Input:
+     * - `originalBlobs`: 個別画像 Blob 配列
+     * - `thumbnailBlob`: サムネイル Blob
+     * - `newStates`: 各スロットの新しいクロップ状態
+     *
+     * Output:
+     * - 返り値なし（`slots`/`onChange`/ダイアログ状態を更新）
+     */
+    const handleCropConfirm = async (
+      originalBlobs: Blob[],
+      thumbnailBlob: Blob,
+      newStates: SlotCropState[],
+    ) => {
+      // ダイアログが扱うのは先頭 VISUAL_IMAGE_COUNT 枚のみ。5枚目以降の cropState は変更しない。
+      const nextSlots = slots.map((s, i) => ({
+        ...s,
+        cropState:
+          i < VISUAL_IMAGE_COUNT ? (newStates[i] ?? s.cropState) : s.cropState,
+      }))
+      setSlots(nextSlots)
+      setShowCropDialog(false)
+
+      // ダイアログの originalBlobs は先頭4枚分のみのため、5枚以上のときは全画像分を作り直す。
+      if (nextSlots.length > VISUAL_IMAGE_COUNT) {
+        setIsPreparingPreview(true)
+        try {
+          await createEntryFromSlots(nextSlots)
+        } catch (error) {
+          console.error(error)
+          onChange(null)
+        } finally {
+          setIsPreparingPreview(false)
+        }
+        return
+      }
+
+      onChange({
+        originalBlobs,
+        thumbnailBlob,
+        originalPreviews: originalBlobs.map(b => URL.createObjectURL(b)),
+        thumbnailPreview: URL.createObjectURL(thumbnailBlob),
+        sourceFileNames: nextSlots.map(s => s.fileName),
+        meta: nextSlots.map(s => ({
+          width: s.naturalWidth,
+          height: s.naturalHeight,
+          alt: s.alt,
+        })),
+      })
+    }
+
+    /**
+     * 指定インデックスの画像を1枚だけ削除する。
+     *
+     * 処理の趣旨:
+     * - 残った画像の枚数に応じてスロットレイアウト（クロップ範囲）を再計算し、
+     *   合成サムネイルも残存画像から作り直す。
+     *
+     * Input:
+     * - `index`: 削除対象スロットの index
+     *
+     * Output:
+     * - 返り値なし（state 更新と `onChange` 通知を実行）
+     */
+    const removeImage = async (index: number) => {
+      const target = slots[index]
+      if (!target) return
+
+      revokeSlotUrls([target])
+      setOverflowNotice(null)
+      const remaining = slots.filter((_, i) => i !== index)
+
+      if (remaining.length === 0) {
+        setSlots([])
+        setShowCropDialog(false)
+        onChange(null)
+        return
+      }
+
+      const defs = getSlotDefs(remaining.length)
+      const nextSlots = normalizeSlotsForLayout(remaining, defs)
+      setSlots(nextSlots)
+
+      setIsPreparingPreview(true)
+      try {
+        await createEntryFromSlots(nextSlots)
+      } catch (error) {
+        console.error(error)
+        onChange(null)
+      } finally {
+        setIsPreparingPreview(false)
+      }
+    }
+
+    /**
+     * 指定インデックスの画像の alt テキストを更新する。
+     *
+     * 処理の趣旨:
+     * - alt はサーバー送信用メタデータにのみ影響し、画像そのもの（blob/プレビュー）は
+     *   変わらないため、Blob の再生成は行わずスロットと `ImageEntry.meta` だけを更新する。
+     *
+     * Input:
+     * - `index`: 対象スロットの index
+     * - `alt`: 新しい alt テキスト
+     *
+     * Output:
+     * - 返り値なし（state 更新と `onChange` 通知を実行）
+     */
+    const updateAlt = (index: number, alt: string) => {
+      const nextSlots = slots.map((s, i) => (i === index ? { ...s, alt } : s))
+      setSlots(nextSlots)
+
+      if (!value) return
+      onChange({
+        ...value,
+        meta: nextSlots.map(s => ({
+          width: s.naturalWidth,
+          height: s.naturalHeight,
+          alt: s.alt,
+        })),
+      })
+    }
+
+    /**
+     * 個別画像のプレビュー1件分（削除・alt編集ボタン付き）を描画する。
+     *
+     * 処理の趣旨:
+     * - index が `VISUAL_IMAGE_COUNT` 以上の画像は visual に使われないため、
+     *   「Visual対象外」ラベルを重ねて利用者に伝える。
+     *
+     * Input:
+     * - `slot`: 対象スロット
+     * - `index`: 全スロット中の index
+     *
+     * Output:
+     * - プレビュー要素
+     */
+    const renderThumbItem = (slot: ImageSlot, index: number) => {
+      const isExcluded = index >= VISUAL_IMAGE_COUNT
+      return (
+        <MediaThumb
+          key={slot.objectUrl}
+          style={isExcluded ? undefined : { gridArea: `slot${index}` }}
+          className={isExcluded ? styles["extra-thumb"] : undefined}
+          testId="image-thumb"
+          removeAriaLabel={t("image.picker.removeAria", { index: index + 1 })}
+          altAriaLabel={t("image.picker.altAria", { index: index + 1 })}
+          altFilled={!!slot.alt}
+          onRemove={() => removeImage(index)}
+          onEditAlt={() => setAltDialogIndex(index)}
+          disabled={disabled}
+        >
+          <img
+            src={slot.objectUrl}
+            alt=""
+            style={computeCroppedImageStyle(
+              slot.cropState.cropPixels,
+              slot.naturalWidth,
+              slot.naturalHeight,
+            )}
+          />
+          {isExcluded && (
+            <span className={styles["slot-excluded-badge"]}>
+              {t("image.picker.excludedFromVisual")}
+            </span>
+          )}
+        </MediaThumb>
+      )
+    }
+
+    return (
+      <section>
+        {isPreparingPreview && (
+          <Loading message={t("image.picker.preparing")} />
+        )}
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <label
+            htmlFor={inputId}
+            className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
+            aria-label={t("image.picker.addAria")}
+            aria-disabled={disabled}
+            style={{ cursor: disabled ? "default" : "pointer" }}
+          >
+            <img
+              src={pic.src}
+              width={18}
+              height={18}
+              style={{
+                width: "var(--size-icon-button)",
+                height: "var(--size-icon-button)",
+              }}
+              alt=""
+            />
+          </label>
+
+          <input
+            id={inputId}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+            disabled={disabled}
+          />
+        </div>
+
+        {overflowNotice && (
+          <p role="status" className={styles["overflow-notice"]}>
+            {overflowNotice.format(translator)}
+          </p>
+        )}
+
+        {slots.length > 0 &&
+          previewContainer &&
+          createPortal(
+            <>
+              <div
+                className={`${styles["thumb-grid"]} ${styles[`layout${Math.min(slots.length, VISUAL_IMAGE_COUNT)}`]}`}
+              >
+                {slots
+                  .slice(0, VISUAL_IMAGE_COUNT)
+                  .map((slot, index) => renderThumbItem(slot, index))}
+              </div>
+              {slots.length > VISUAL_IMAGE_COUNT && (
+                <div className={styles["extra-grid"]}>
+                  {slots
+                    .slice(VISUAL_IMAGE_COUNT)
+                    .map((slot, offset) =>
+                      renderThumbItem(slot, VISUAL_IMAGE_COUNT + offset),
+                    )}
+                </div>
+              )}
+            </>,
+            previewContainer,
+          )}
+
+        {showCropDialog && (
+          <ImageCropDialog
+            imageUrls={slots.slice(0, VISUAL_IMAGE_COUNT).map(s => s.objectUrl)}
+            initialCropStates={slots.slice(0, VISUAL_IMAGE_COUNT).map(s => ({
+              crop: s.cropState.crop,
+              zoom: s.cropState.zoom,
+              cropPixels: s.cropState.cropPixels ?? null,
+            }))}
+            onCancel={() => setShowCropDialog(false)}
+            onConfirm={handleCropConfirm}
+          />
+        )}
+
+        {altDialogIndex !== null && slots[altDialogIndex] && (
+          <ImageAltDialog
+            open
+            onClose={() => setAltDialogIndex(null)}
+            value={slots[altDialogIndex].alt}
+            onChange={next => updateAlt(altDialogIndex, next)}
+            disabled={disabled}
+          />
+        )}
+      </section>
+    )
+  },
+)
+
+export default Component
