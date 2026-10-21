@@ -30,7 +30,7 @@ const ENV = {
     PUBLIC_PLC_DIRECTORY_BASE_URL: "https://plc.directory",
     SITE_HOST: "s.example.org",
 }
-// develop 用 D1 の ID（偽の npx が `wrangler d1 info` の結果として返す）
+// develop 用 D1 の ID（偽の npx が `wrangler d1 list` の結果として返す）
 const DEVELOP_D1_ID = "33333333-3333-3333-3333-333333333333"
 
 let dir = ""
@@ -42,12 +42,12 @@ beforeEach(() => {
     )
     symlinkSync(path.join(ROOT, ".claude"), path.join(dir, ".claude"))
     mkdirSync(path.join(dir, "_legacy/frontend"), { recursive: true })
-    // Cloudflare へ問い合わせないよう、`npx wrangler d1 info` を偽のコマンドに置き換える
+    // Cloudflare へ問い合わせないよう、`npx wrangler d1 list` を偽のコマンドに置き換える
     mkdirSync(path.join(dir, "bin"))
     const fake = path.join(dir, "bin/npx")
     writeFileSync(
         fake,
-        `#!/bin/sh\necho '{"uuid":"${DEVELOP_D1_ID}","name":"'"$4"'"}'\n`,
+        `#!/bin/sh\necho '[{"uuid":"${"0".repeat(8)}-0000-0000-0000-000000000000","name":"skyshare-schedule"},{"uuid":"${DEVELOP_D1_ID}","name":"skyshare-schedule-develop"}]'\n`,
     )
     chmodSync(fake, 0o755)
 })

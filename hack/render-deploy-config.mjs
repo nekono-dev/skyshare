@@ -108,21 +108,25 @@ if (develop) {
   )
   // プレビューは database_id のない D1 を使えないため、名前から引いた ID を previews に入れる
   // （ID は運用者ごとに違うのでリポジトリに書かない。CI の API トークンに D1 の権限が要る）
-  const info = JSON.parse(
-    execFileSync("npx", ["wrangler", "d1", "info", d1Name, "--json"], {
+  // `wrangler d1 info <名前>` は設定ファイルに無い D1 を名前で引けないため、一覧から名前で探す
+  const list = JSON.parse(
+    execFileSync("npx", ["wrangler", "d1", "list", "--json"], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "inherit"],
     }),
   )
-  if (!/^[0-9a-f-]{36}$/.test(info.uuid ?? "")) {
-    console.error(`D1 ${d1Name} の ID を取得できません`)
+  const uuid = list.find(db => db.name === d1Name)?.uuid ?? ""
+  if (!/^[0-9a-f-]{36}$/.test(uuid)) {
+    console.error(
+      `D1 ${d1Name} が見つかりません（先に wrangler d1 create で作成する）`,
+    )
     process.exit(1)
   }
   replaceOnce(
     '  "previews": {\n',
     `  "previews": {
     "d1_databases": [
-      { "binding": "DB", "database_name": "${d1Name}", "database_id": "${info.uuid}" },
+      { "binding": "DB", "database_name": "${d1Name}", "database_id": "${uuid}" },
     ],
     "r2_buckets": [{ "binding": "SCHEDULE_IMAGES", "bucket_name": "${r2Name}" }],
 `,
