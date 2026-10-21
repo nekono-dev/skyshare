@@ -49,7 +49,9 @@ npm run deploy
 | `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | ブランチごとの確認（Cron は動かない）      |
 
 - develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
-- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
+- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。
+
+`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
 | 種別     | 名前                             | 内容                                                                                                                      |
 | -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
