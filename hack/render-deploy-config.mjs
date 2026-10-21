@@ -7,7 +7,7 @@
 //   （branch-release-workflow スキルの wrangler-config。省略しない）
 // - _legacy/frontend/.env.production を生成する（こちらも .gitignore 対象）
 //
-// 使い方: node hack/render-deploy-config.mjs [--staging]
+// 使い方: node hack/render-deploy-config.mjs [--develop]
 // 必要な環境変数は DEVELOP.md の「運用者ごとの設定」を参照。
 // 必須の環境変数が1つでも未設定/空の場合は、設定漏れによる誤デプロイを防ぐため異常終了する。
 import { execFileSync } from "node:child_process"
@@ -72,13 +72,15 @@ for (const name of WRANGLER_VARS) {
   const value = requireEnv(name)
   wrangler = wrangler.replace(pattern, (_match, head) => `${head}"${value}"`)
 }
-// 公開するドメインを決める。`--staging` では、本番とは別の Worker 名とドメインにする
-// （Cron Trigger は Worker 単位でしか動かず、`wrangler preview` では動かないため、
-// 予約の自動投稿を確認する用の独立した Worker として配備する。D1・R2 は本番と共用する）
-const staging = process.argv.includes("--staging")
-const host = requireEnv(staging ? "STAGING_HOST" : "SITE_HOST")
-if (!HOST.test(host)) {
-  console.error("ドメイン名だけを指定してください（例: skyshare.example.com）")
+// 配備先を決める。既定は本番（main）。`--develop` では develop 用の別の Worker にする。
+// develop の Worker は Cron が動く確認用の環境で、dev/* のプレビューもこの Worker の独自ドメイン配下に作る。
+// D1・R2 は develop 専用（本番の予約に触れない）。名前は固定で、運用者ごとの値は SITE_HOST だけ
+const develop = process.argv.includes("--develop")
+const siteHost = requireEnv("SITE_HOST")
+if (!HOST.test(siteHost)) {
+  console.error(
+    "SITE_HOST はドメイン名だけを指定してください（例: skyshare.example.com）",
+  )
   process.exit(1)
 }
 // テンプレートの値を置き換える。見つからない場合はテンプレート変更の検知のため異常終了する
@@ -89,11 +91,44 @@ const replaceOnce = (from, to) => {
   }
   wrangler = wrangler.replace(from, () => to)
 }
-replaceOnce('"pattern": "SITE_HOST"', `"pattern": "${host}"`)
-if (staging) {
-  replaceOnce('"name": "skyshare"', '"name": "skyshare-staging"')
-  // ステージングの Worker ではブランチ別のプレビューを作らない
-  replaceOnce('"previews_enabled": true', '"previews_enabled": false')
+if (develop) {
+  const d1Name = "skyshare-schedule-develop"
+  const r2Name = "skyshare-schedule-images-develop"
+  replaceOnce('"name": "skyshare"', '"name": "skyshare-develop"')
+  replaceOnce('"pattern": "SITE_HOST"', `"pattern": "develop.${siteHost}"`)
+  // dev/* のプレビュー（<名前>.develop.<SITE_HOST>）を、この Worker の独自ドメインで配信する
+  replaceOnce('"previews_enabled": false', '"previews_enabled": true')
+  replaceOnce(
+    '"database_name": "skyshare-schedule"',
+    `"database_name": "${d1Name}"`,
+  )
+  replaceOnce(
+    '"bucket_name": "skyshare-schedule-images"',
+    `"bucket_name": "${r2Name}"`,
+  )
+  // プレビューは database_id のない D1 を使えないため、名前から引いた ID を previews に入れる
+  // （ID は運用者ごとに違うのでリポジトリに書かない。CI の API トークンに D1 の権限が要る）
+  const info = JSON.parse(
+    execFileSync("npx", ["wrangler", "d1", "info", d1Name, "--json"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "inherit"],
+    }),
+  )
+  if (!/^[0-9a-f-]{36}$/.test(info.uuid ?? "")) {
+    console.error(`D1 ${d1Name} の ID を取得できません`)
+    process.exit(1)
+  }
+  replaceOnce(
+    '  "previews": {\n',
+    `  "previews": {
+    "d1_databases": [
+      { "binding": "DB", "database_name": "${d1Name}", "database_id": "${info.uuid}" },
+    ],
+    "r2_buckets": [{ "binding": "SCHEDULE_IMAGES", "bucket_name": "${r2Name}" }],
+`,
+  )
+} else {
+  replaceOnce('"pattern": "SITE_HOST"', `"pattern": "${siteHost}"`)
 }
 writeFileSync("wrangler.jsonc", wrangler)
 

@@ -2,7 +2,7 @@
 // 詳細は references/cloudflare-previews.md を参照。
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { aliasOf } from "../scripts/lib.mjs";
+import { previewAliasOf } from "../scripts/lib.mjs";
 
 const MIN_WRANGLER = [4, 135, 0];
 
@@ -139,7 +139,7 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # ブランチ名から Preview 名を作る（"/" を "-" にする）。宣言の namePattern / 文字数に合わなければスキップする
+      # ブランチ名から Preview 名を作る（宣言の aliasStripPrefix を除き、"/" を "-" にする）。宣言の namePattern / 文字数に合わなければスキップする
       - name: Resolve preview alias
         id: alias
         env:
@@ -147,7 +147,8 @@ jobs:
         run: |
           if printf '%s' "$BRANCH_NAME" | grep -Eq '${pattern}' && [ "\${#BRANCH_NAME}" -le ${config.maxNameLength} ]; then
             echo "valid=true" >> "$GITHUB_OUTPUT"
-            echo "alias=\${BRANCH_NAME//\\//-}" >> "$GITHUB_OUTPUT"
+            name="\${BRANCH_NAME#${config.preview.aliasStripPrefix ?? ""}}"
+            echo "alias=\${name//\\//-}" >> "$GITHUB_OUTPUT"
           else
             echo "valid=false" >> "$GITHUB_OUTPUT"
             echo "::warning::ブランチ名 '$BRANCH_NAME' は命名規則に合わないため、プレビューをスキップします"
@@ -179,4 +180,4 @@ jobs:
 `;
 }
 
-export const cleanup = (config, branch) => ({ cmd: "npx", args: ["wrangler", "preview", "delete", "--name", aliasOf(branch)] });
+export const cleanup = (config, branch) => ({ cmd: "npx", args: ["wrangler", "preview", "delete", "--name", previewAliasOf(config, branch)] });

@@ -15,7 +15,7 @@
     "crons": ["* * * * *"],
   },
   // 予約の保管（D1）と添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
-  // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい
+  // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい（develop は末尾に -develop）
   "d1_databases": [
     {
       "binding": "DB",
@@ -37,7 +37,7 @@
       "pattern": "SITE_HOST",
       "custom_domain": true,
       "enabled": true,
-      "previews_enabled": true,
+      "previews_enabled": false,
     },
   ],
   "vars": {
@@ -49,8 +49,7 @@
   },
   "workers_dev": false,
   "preview_urls": false,
-  // プレビューも本番の D1・R2 を共用する。プレビューは設定ファイルの D1 を ID なしでは使えないため、
-  // バインディング（DB・SCHEDULE_IMAGES）はダッシュボードの Preview base config に登録する（DEVELOP.md）
+  // プレビューは develop の Worker（--develop）だけで作る。D1・R2 は hack/render-deploy-config.mjs が加える
   "previews": {
     "vars": {
       "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",

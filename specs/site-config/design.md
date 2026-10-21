@@ -94,24 +94,18 @@ export const siteConfig: SiteConfig
 ### D-2: サイトの URL と配備設定 (FR-5, FR-6, FR-7, FR-8)
 
 - `astro.config.mjs` の検査は `astro build` のときだけ行い、開発サーバーでは行わない。
-- `hack/render-deploy-config.mjs` は、テンプレートの routes の `"pattern": "SITE_HOST"` を次の値で置き換える。
+- `hack/render-deploy-config.mjs` は、配備先ごとにテンプレートを次のように置き換える。運用者ごとの値は `SITE_HOST` だけである。
 
-| 変数           | 必須 | 用途                                         |
-| -------------- | ---- | -------------------------------------------- |
-| `SITE_HOST`    | 必須 | 本番のドメイン                               |
-| `STAGING_HOST` | 任意 | ステージングのドメイン（未設定なら行わない） |
-
-| 資源       | 名前                       | 共用                           |
-| ---------- | -------------------------- | ------------------------------ |
-| Worker     | `skyshare`                 | ステージングは `-staging`      |
-| D1（`DB`） | `skyshare-schedule`        | 本番・プレビュー・ステージング |
-| R2         | `skyshare-schedule-images` | 本番・プレビュー・ステージング |
+| 配備先                 | Worker             | ドメイン              | D1・R2                                                          | プレビュー |
+| ---------------------- | ------------------ | --------------------- | --------------------------------------------------------------- | ---------- |
+| 本番（既定、main）     | `skyshare`         | `<SITE_HOST>`         | `skyshare-schedule`・`skyshare-schedule-images`                 | 無効       |
+| develop（`--develop`） | `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-schedule-develop`・`skyshare-schedule-images-develop` | 有効       |
 
 - D1 は `database_id` を書かない。`wrangler deploy` が同じ名前の D1 を探してつなぎ、マイグレーションも名前で解決する。
 - 独自ドメインの routes に `zone_name` を書かない（ドメインからゾーンが決まる）。
-- プレビューは設定ファイルの `database_id` のない D1 を使えないため、プレビューのバインディングはダッシュボードの Preview base config に置き、テンプレートの `previews` には D1・R2 を書かない。
-- ステージングでは、Worker 名に `-staging` を付け、ドメインを `STAGING_HOST` にし、ブランチ別のプレビューを無効にする。
-- 本番の D1 を共用するため、プレビューとステージングのワークフローはマイグレーションを適用しない。暗号鍵は本番・プレビュー・ステージングで同じ値にする。
+- `--develop` では、`wrangler d1 info` で develop 用 D1 の ID を引き、`previews` の D1・R2 に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。
+- dev/\* のプレビューは develop の Worker に作り、名前はブランチ名から `dev/` を除いたもの（46文字以内）にする。
+- 暗号鍵は、develop とそのプレビューで同じ値にする（D1 を共用するため）。
 
 ## 4. エラー処理
 

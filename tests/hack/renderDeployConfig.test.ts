@@ -7,12 +7,14 @@
  */
 import { spawnSync } from "node:child_process"
 import {
+    chmodSync,
     copyFileSync,
     mkdirSync,
     mkdtempSync,
     readFileSync,
     rmSync,
     symlinkSync,
+    writeFileSync,
 } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -27,8 +29,9 @@ const ENV = {
     PUBLIC_OGP_EXTRACTOR_API: "https://ogp.example.org",
     PUBLIC_PLC_DIRECTORY_BASE_URL: "https://plc.directory",
     SITE_HOST: "s.example.org",
-    STAGING_HOST: "st.example.org",
 }
+// develop 用 D1 の ID（偽の npx が `wrangler d1 info` の結果として返す）
+const DEVELOP_D1_ID = "33333333-3333-3333-3333-333333333333"
 
 let dir = ""
 beforeEach(() => {
@@ -39,6 +42,14 @@ beforeEach(() => {
     )
     symlinkSync(path.join(ROOT, ".claude"), path.join(dir, ".claude"))
     mkdirSync(path.join(dir, "_legacy/frontend"), { recursive: true })
+    // Cloudflare へ問い合わせないよう、`npx wrangler d1 info` を偽のコマンドに置き換える
+    mkdirSync(path.join(dir, "bin"))
+    const fake = path.join(dir, "bin/npx")
+    writeFileSync(
+        fake,
+        `#!/bin/sh\necho '{"uuid":"${DEVELOP_D1_ID}","name":"'"$4"'"}'\n`,
+    )
+    chmodSync(fake, 0o755)
 })
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
@@ -47,7 +58,13 @@ const run = (env: Record<string, string>, args: string[] = []) => {
         process.execPath,
         [path.join(ROOT, "hack/render-deploy-config.mjs"), ...args],
         // 実行環境の値が混ざらないよう、PATH だけを引き継ぐ
-        { cwd: dir, env: { PATH: process.env.PATH ?? "", ...env } },
+        {
+            cwd: dir,
+            env: {
+                PATH: `${path.join(dir, "bin")}:${process.env.PATH}`,
+                ...env,
+            },
+        },
     )
     const config =
         result.status === 0
@@ -64,8 +81,9 @@ describe("render-deploy-config", () => {
         expect(config).toContain('"pattern": "s.example.org"')
         expect(config).toContain('"database_name": "skyshare-schedule"')
         expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
-        expect(config).toContain('"previews_enabled": true')
+        expect(config).toContain('"previews_enabled": false')
         expect(config).not.toContain(`"pattern": "SITE_HOST"`)
+        expect(config).not.toContain(DEVELOP_D1_ID)
 
         const { SITE_HOST: _h, ...missing } = ENV
         const failed = run(missing)
@@ -73,16 +91,18 @@ describe("render-deploy-config", () => {
         expect(failed.stderr).toContain("SITE_HOST")
     })
 
-    it("[site-config/AC-8] ステージングは別の Worker 名とドメインに、本番と同じ D1・R2 を使う", () => {
-        const { status, config } = run(ENV, ["--staging"])
+    it("[site-config/AC-8] develop は別の Worker 名とドメインに、develop 用の D1・R2 を使い、プレビューを有効にする", () => {
+        const { status, config } = run(ENV, ["--develop"])
         expect(status).toBe(0)
-        expect(config).toContain('"name": "skyshare-staging"')
-        expect(config).toContain('"pattern": "st.example.org"')
-        expect(config).toContain('"database_name": "skyshare-schedule"')
-        expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
-        expect(config).toContain('"previews_enabled": false')
-
-        const { STAGING_HOST: _s, ...missing } = ENV
-        expect(run(missing, ["--staging"]).status).not.toBe(0)
+        expect(config).toContain('"name": "skyshare-develop"')
+        expect(config).toContain('"pattern": "develop.s.example.org"')
+        expect(config).toContain('"previews_enabled": true')
+        expect(config).toContain('"database_name": "skyshare-schedule-develop"')
+        expect(config).toContain(
+            '"bucket_name": "skyshare-schedule-images-develop"',
+        )
+        expect(config).not.toContain('"database_name": "skyshare-schedule"')
+        // プレビューの D1 は名前から引いた ID で指定する
+        expect(config).toContain(`"database_id": "${DEVELOP_D1_ID}"`)
     })
 })
