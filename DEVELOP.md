@@ -42,10 +42,14 @@ npm run deploy
 
 `main` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
 
-| ブランチ  | Worker             | ドメイン              | D1・R2                                                          | 用途                                     |
-| --------- | ------------------ | --------------------- | --------------------------------------------------------------- | ---------------------------------------- |
-| `main`    | `skyshare`         | `<SITE_HOST>`         | `skyshare-schedule`・`skyshare-schedule-images`                 | 本番                                     |
-| `develop` | `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-schedule-develop`・`skyshare-schedule-images-develop` | Cron を含む確認。dev/\* のプレビューの親 |
+| ブランチ   | Worker                                  | ドメイン                   | D1・R2                                                          | 用途                                   |
+| ---------- | --------------------------------------- | -------------------------- | --------------------------------------------------------------- | -------------------------------------- |
+| `main`     | `skyshare`                              | `<SITE_HOST>`              | `skyshare-schedule`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
+| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-schedule-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
+| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                                  | ブランチごとの確認（Cron は動かない）  |
+
+- develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
+- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。
 
 `wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
@@ -164,7 +168,7 @@ rm enc.key
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内）（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 

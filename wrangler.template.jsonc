@@ -1,5 +1,6 @@
 {
-  // routes の pattern（SITE_HOST）は hack/render-deploy-config.mjs が環境変数で置き換える
+  // routes の pattern（SITE_HOST）は hack/render-deploy-config.mjs が環境変数で置き換える。
+  // `--develop` では Worker・D1・R2 の名前の末尾に -develop を付ける
   "name": "skyshare",
   // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
   "main": "src/worker.ts",

@@ -8,7 +8,7 @@
 #
 # 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは .claude/skills/branch-release-workflow）。
 # 前提: Worker が一度デプロイ済みで、カスタムドメインの previews_enabled が true であること（wrangler 4.135.0 以上）。
-# D1・R2 は develop 用を共用する。マイグレーションは develop への配備（deploy.yaml）で適用する。
+# D1・R2 がある場合は develop 用を共用する。マイグレーションは develop への配備（deploy.yaml）で適用する。
 # 前提: develop の Worker が一度デプロイ済みであること（Preview は既存の Worker に作られる）。
 name: preview
 
@@ -82,8 +82,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node hack/render-deploy-config.mjs --develop
+      # サイトの URL（共有リンクなど）をプレビューのドメインにする
       - name: Run build
         if: steps.alias.outputs.valid == 'true'
+        env:
+          SITE_HOST: ${{ steps.alias.outputs.alias }}.develop.${{ vars.SITE_HOST }}
         run: npm run build
 
 

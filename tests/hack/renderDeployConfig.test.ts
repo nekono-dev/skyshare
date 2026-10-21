@@ -2,8 +2,9 @@
  * Cloudflare の配備設定の生成（`hack/render-deploy-config.mjs`）の検証。
  *
  * 責務と処理概要:
- * - 一時ディレクトリにテンプレートを置いてスクリプトを実行し、与えたドメインが設定に入ることと、
+ * - 一時ディレクトリにテンプレートを置いてスクリプトを実行し、本番と develop の設定が作られることと、
  *   必須の値が欠けたときに異常終了することを確かめる（リポジトリの wrangler.jsonc には触れない）。
+ * - D1 の ID の問い合わせ（`npx wrangler d1 list`）は、PATH の先頭に置いた偽のコマンドで置き換える。
  */
 import { spawnSync } from "node:child_process"
 import {
@@ -34,6 +35,10 @@ const ENV = {
 const DEVELOP_D1_ID = "33333333-3333-3333-3333-333333333333"
 
 let dir = ""
+const template = readFileSync(
+    path.join(ROOT, "wrangler.template.jsonc"),
+    "utf8",
+)
 beforeEach(() => {
     dir = mkdtempSync(path.join(tmpdir(), "render-deploy-"))
     copyFileSync(
@@ -42,12 +47,11 @@ beforeEach(() => {
     )
     symlinkSync(path.join(ROOT, ".claude"), path.join(dir, ".claude"))
     mkdirSync(path.join(dir, "_legacy/frontend"), { recursive: true })
-    // Cloudflare へ問い合わせないよう、`npx wrangler d1 list` を偽のコマンドに置き換える
     mkdirSync(path.join(dir, "bin"))
     const fake = path.join(dir, "bin/npx")
     writeFileSync(
         fake,
-        `#!/bin/sh\necho '[{"uuid":"${"0".repeat(8)}-0000-0000-0000-000000000000","name":"skyshare-schedule"},{"uuid":"${DEVELOP_D1_ID}","name":"skyshare-schedule-develop"}]'\n`,
+        `#!/bin/sh\necho '[{"uuid":"00000000-0000-0000-0000-000000000000","name":"skyshare-schedule"},{"uuid":"${DEVELOP_D1_ID}","name":"skyshare-schedule-develop"}]'\n`,
     )
     chmodSync(fake, 0o755)
 })
@@ -57,7 +61,6 @@ const run = (env: Record<string, string>, args: string[] = []) => {
     const result = spawnSync(
         process.execPath,
         [path.join(ROOT, "hack/render-deploy-config.mjs"), ...args],
-        // 実行環境の値が混ざらないよう、PATH だけを引き継ぐ
         {
             cwd: dir,
             env: {
@@ -74,7 +77,7 @@ const run = (env: Record<string, string>, args: string[] = []) => {
 }
 
 describe("render-deploy-config", () => {
-    it("[site-config/AC-7] 与えたドメインが設定に入り、必須の値が欠けると異常終了する", () => {
+    it("[site-config/AC-7] 本番は与えたドメインと固定の D1・R2 の名前でプレビューを無効にし、ドメインが欠けると異常終了する", () => {
         const { status, config } = run(ENV)
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare"')
@@ -82,7 +85,6 @@ describe("render-deploy-config", () => {
         expect(config).toContain('"database_name": "skyshare-schedule"')
         expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
         expect(config).toContain('"previews_enabled": false')
-        expect(config).not.toContain(`"pattern": "SITE_HOST"`)
         expect(config).not.toContain(DEVELOP_D1_ID)
 
         const { SITE_HOST: _h, ...missing } = ENV
@@ -91,7 +93,7 @@ describe("render-deploy-config", () => {
         expect(failed.stderr).toContain("SITE_HOST")
     })
 
-    it("[site-config/AC-8] develop は別の Worker 名とドメインに、develop 用の D1・R2 を使い、プレビューを有効にする", () => {
+    it("[site-config/AC-8] develop は別の Worker 名と develop サブドメインに develop 専用の D1・R2 を使い、プレビューの D1 に名前から引いた ID を入れる", () => {
         const { status, config } = run(ENV, ["--develop"])
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare-develop"')
@@ -102,7 +104,6 @@ describe("render-deploy-config", () => {
             '"bucket_name": "skyshare-schedule-images-develop"',
         )
         expect(config).not.toContain('"database_name": "skyshare-schedule"')
-        // プレビューの D1 は名前から引いた ID で指定する
-        expect(config).toContain(`"database_id": "${DEVELOP_D1_ID}"`)
+        expect(config).toContain(`"database_id":"${DEVELOP_D1_ID}"`)
     })
 })

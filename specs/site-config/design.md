@@ -103,7 +103,7 @@ export const siteConfig: SiteConfig
 
 - D1 は `database_id` を書かない。`wrangler deploy` が同じ名前の D1 を探してつなぎ、マイグレーションも名前で解決する。
 - 独自ドメインの routes に `zone_name` を書かない（ドメインからゾーンが決まる）。
-- `--develop` では、`wrangler d1 info` で develop 用 D1 の ID を引き、`previews` の D1・R2 に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。
+- `--develop` では、テンプレートにある D1・R2 の名前の末尾に `-develop` を付け、D1 の一覧から名前で develop 用 D1 の ID を引いて `previews` の D1・R2 に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。
 - dev/\* のプレビューは develop の Worker に作り、名前はブランチ名から `dev/` を除いたもの（46文字以内）にする。
 - 暗号鍵は、develop とそのプレビューで同じ値にする（D1 を共用するため）。
 
