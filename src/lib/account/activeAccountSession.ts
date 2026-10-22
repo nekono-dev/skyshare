@@ -122,6 +122,18 @@ export const getActiveAccountDisplayName = async (): Promise<string | null> => {
 }
 
 /**
+ * アクティブアカウントのハンドルを返す。取得できなければ null。
+ * 予約用の認証情報の登録フォームで、ユーザー名欄の初期値に使う。
+ */
+export const getActiveAccountHandle = async (): Promise<string | null> => {
+    const res = await getSessionOnce()
+    if (res.status !== 200) return null
+
+    const active = res.data.accounts.find(account => account.isActive)
+    return active?.handle ?? null
+}
+
+/**
  * キャッシュを破棄する。ページ遷移（astro:page-load）等、セッション状態が
  * 変わり得るタイミングで呼び出し、次回取得を再度ネットワークから行わせる。
  */

@@ -4,10 +4,12 @@
  * 責務と処理概要:
  * - 親から渡された `items`（取得済みの下書き配列）を `ComponentList` と `NavigationBar` で
  *   5 件単位に区切って表示する、完全にローカルなページングを行う。
+ * - 読み込み中は予約の一覧と同じローディング表示（スピナー）を出す。
  * - 1件選択時は親へ選択イベントを委譲する。
  */
 import { useFormat, useT } from "@/lib/i18n/react"
 import { useEffect, useState } from "react"
+import Loading from "@/components/common/Loading"
 import ComponentList from "@/components/common/ComponentList"
 import type { CursorPaginationViewModel } from "@/components/common/ComponentList"
 import NavigationBar from "@/components/common/NavigationBar"
@@ -121,12 +123,11 @@ const DraftListPanel = ({
 
   return (
     <div>
-      {loading || error || empty ? (
+      {loading ? (
+        <Loading message={t("post.composer.loadingDrafts")} />
+      ) : error || empty ? (
         <p className={error ? styles["error-state"] : styles["empty-state"]}>
-          {error ??
-            (loading
-              ? t("common.loading")
-              : (emptyText ?? t("entry.draft.empty")))}
+          {error ?? emptyText ?? t("entry.draft.empty")}
         </p>
       ) : (
         <ComponentList

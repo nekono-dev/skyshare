@@ -9,9 +9,8 @@
  *   従来通りこのファイルが直接 atproto を呼び出す。
  */
 import type { AtpAgent } from "@atproto/api"
-import { blobToCdnUrl } from "@/lib/entry/entry"
 import { ENTRY_COLLECTION, MANIFEST_TYPE } from "@/lib/atproto/nsid"
-import { skyshareEntryUrlgen } from "@/lib/entry/url"
+import { blobToCdnUrl, skyshareEntryUrlgen } from "@/lib/entry/url"
 
 type RepoUpdateAgent = {
     com: {

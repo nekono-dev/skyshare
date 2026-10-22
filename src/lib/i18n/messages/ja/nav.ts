@@ -13,5 +13,6 @@ export const nav = {
     "pageTitle.accounts": "アカウント切り替え | {service}",
     "pageTitle.settings": "設定 | {service}",
     "pageTitle.help": "ヘルプ | {service}",
+    "pageTitle.privacy": "プライバシーポリシー | {service}",
     "pageTitle.jump": "移動しています... - {service}",
 } as const

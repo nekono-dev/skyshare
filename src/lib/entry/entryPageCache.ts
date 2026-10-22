@@ -51,8 +51,8 @@ export const isEntryDetailPath = (pathname: string): boolean =>
  * - クエリ文字列を取り除き、言語を `locale` パラメータとして付けた GET の `Request`
  *
  * 例:
- * - 入力: `https://skyshare.nekono.dev/entries/x/?utm=1`, `"ja"`
- * - 出力: `https://skyshare.nekono.dev/entries/x/?locale=ja`
+ * - 入力: `https://skyshare.example.com/entries/x/?utm=1`, `"ja"`
+ * - 出力: `https://skyshare.example.com/entries/x/?locale=ja`
  */
 export const entryPageCacheKey = (url: URL, locale: string): Request => {
     const key = new URL(url.pathname, url.origin)

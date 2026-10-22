@@ -2,6 +2,8 @@
   // routes の pattern（SITE_HOST）は hack/render-deploy-config.mjs が環境変数で置き換える。
   // `--develop` では Worker・D1・R2 の名前の末尾に -develop を付ける
   "name": "skyshare",
+  // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
+  "main": "src/worker.ts",
   // Set this to today's date
   "compatibility_date": "2026-10-08",
   "compatibility_flags": ["nodejs_compat"],
@@ -9,6 +11,25 @@
     "directory": "./dist/client/",
     "binding": "ASSETS",
   },
+  // 予約投稿を実行時刻に実行する定期実行（無料枠で使える最短の1分間隔）
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+  // 予約の保管（D1）と添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
+  // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい（develop は末尾に -develop）
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "skyshare-schedule",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SCHEDULE_IMAGES",
+      "bucket_name": "skyshare-schedule-images",
+    },
+  ],
   "observability": {
     "enabled": true,
   },

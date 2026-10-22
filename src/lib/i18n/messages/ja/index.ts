@@ -11,6 +11,8 @@ import { image } from "./image"
 import { nav } from "./nav"
 import { page } from "./page"
 import { post } from "./post"
+import { privacy } from "./privacy"
+import { schedule } from "./schedule"
 import { settings } from "./settings"
 import { video } from "./video"
 
@@ -24,6 +26,8 @@ export const ja = {
     ...nav,
     ...page,
     ...post,
+    ...privacy,
+    ...schedule,
     ...settings,
     ...video,
 } as const

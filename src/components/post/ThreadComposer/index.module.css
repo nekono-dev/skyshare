@@ -1,3 +1,25 @@
+/* スマホレイアウト時、下書き・予約の一覧も投稿フォームと同様に画面上部に固定する
+   （PostLauncher の postform-backdrop と同じ理由。一覧の高さが変わっても上端を動かさない）。 */
+@media (max-width: 639px) {
+  .draft-list-backdrop {
+    align-items: flex-start;
+    padding-top: 0;
+  }
+}
+
+/* 投稿フォーム上部のキャンセル・下書き・予約・投稿のボタン。
+   スマホ幅では文字と左右の余白を少し小さくし、文字やボタンが折り返されないようにする。 */
+.header-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .header-button {
+    font-size: var(--font-size-sm);
+    padding-inline: var(--space-2);
+  }
+}
+
 .draft-list-overlay {
   max-height: 80vh;
   overflow: hidden;
