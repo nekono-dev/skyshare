@@ -112,7 +112,7 @@ export const privacy = {
     "privacy.rights.procedure4":
         "We respond to requests without delay in accordance with the law.",
     "privacy.rights.self1":
-        'You can change or cancel scheduled posts and delete their history from "Drafts & scheduled" in the post form. Turning off scheduled posts in Settings immediately deletes the login information and pending scheduled posts.',
+        'You can change or cancel scheduled posts and delete their history from “Drafts & scheduled” in the post form. Turning off scheduled posts in Settings immediately deletes the login information and pending scheduled posts.',
     "privacy.rights.self2":
         "Settings saved on your device can be deleted yourself from your browser settings.",
     "privacy.revision.title": "Article 9 (Revision)",
