@@ -109,11 +109,12 @@ test.describe("intentShare", () => {
         const select = page.getByRole("combobox", {
             name: LABEL_AUTO_POPUP_TARGET,
         })
+        // ポップアップを開く設定も詳細オプションの中にある
+        await openMoreOptions(page)
         await expect(popup).not.toBeChecked()
         await expect(select).toHaveCount(0)
 
         await popup.setChecked(true, { force: true })
-        await openMoreOptions(page)
         await expect(select).toBeVisible()
         await expect(select).toContainText("X")
         // 詳細オプションの先頭に配置される（ラベルが先頭のトグルより前にある）。
@@ -148,7 +149,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("[thread-composer/AC-12] 自動ポップアップ先の設定値は、詳細オプションを初期状態で開く理由にならない", async ({
+    test("[thread-composer/AC-12] 詳細オプションの中の設定をONにしても、詳細オプションは初期状態で閉じている", async ({
         page,
     }) => {
         for (const target of ["ask", "x", "taittsuu", "mastodon"]) {
@@ -158,15 +159,24 @@ test.describe("intentShare", () => {
                     "true",
                 )
                 window.localStorage.setItem("autoPopupTarget", value)
+                window.localStorage.setItem("truncateIntentText", "true")
+                window.localStorage.setItem("pinnedFormDisabled", "true")
             }, target)
             await page.goto("/post/?guest")
             await waitHydrated(page)
+            const trigger = page.getByRole("button", { name: "詳細オプション" })
+            await expect(trigger).toHaveAttribute("aria-expanded", "false")
+            // 保存値の読み込みを待っても閉じたままである
+            await openMoreOptions(page)
             await expect(
                 page.getByRole("switch", { name: LABEL_POPUP }),
             ).toBeChecked()
             await expect(
-                page.getByRole("button", { name: "詳細オプション" }),
-            ).toHaveAttribute("aria-expanded", "false")
+                page.getByRole("switch", { name: LABEL_TRUNCATE }),
+            ).toBeChecked()
+            await page.reload()
+            await waitHydrated(page)
+            await expect(trigger).toHaveAttribute("aria-expanded", "false")
         }
     })
 
@@ -340,10 +350,10 @@ test.describe("intentShare", () => {
         await page.goto("/post/?guest")
         await waitHydrated(page)
         // 保存値が画面に反映されるまで待ってから、警告の有無を確認する
+        await openMoreOptions(page)
         await expect(
             page.getByRole("switch", { name: LABEL_POPUP }),
         ).toBeChecked()
-        await openMoreOptions(page)
         await expect(
             page.getByRole("switch", { name: LABEL_TRUNCATE }),
         ).toBeVisible()
@@ -608,9 +618,13 @@ test.describe("intentShare", () => {
             .poll(() => readStorage(page, "truncateIntentText"))
             .toBe("true")
 
-        // ONの場合、リロード後は詳細オプションが初期状態で開く。
+        // ONでも、リロード後の詳細オプションは閉じたままで、開くと値が保持されている。
         await page.reload()
         await waitHydrated(page)
+        await expect(
+            page.getByRole("button", { name: "詳細オプション" }),
+        ).toHaveAttribute("aria-expanded", "false")
+        await openMoreOptions(page)
         await expect(
             page.getByRole("switch", { name: LABEL_TRUNCATE }),
         ).toBeChecked()

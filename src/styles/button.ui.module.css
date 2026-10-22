@@ -51,9 +51,9 @@
   --color-red-strong-button-color: var(--color-white);
 
   /* 無効化ボタン（disabled属性 / aria-disabled="true" の両方に使う共通配色） */
-  --color-disabled-button-bg: var(--color-gray);
+  --color-disabled-button-bg: var(--color-disabled-bg);
   --color-disabled-button-border: var(--border-color-muted);
-  --color-disabled-button-color: var(--color-text-muted);
+  --color-disabled-button-color: var(--color-text-disabled);
 
   /* Size tokens */
   --size-button-md: 40px;
@@ -72,15 +72,20 @@
   }
 }
 
-/* グレーボタンの文字色はダークモードでは --color-black 固定だと背景（--color-gray）に
+/* グレー・タイッツーのボタンの文字色はダークモードでは --color-black 固定だと背景に
    埋もれて読めなくなるため、テーマに追従する --color-text に差し替える */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --color-gray-button-color: var(--color-text);
+    --color-taittsuu-button-color: var(--color-text);
+    /* 黒のボタン（X）は暗い面に埋もれるため、淡い枠で輪郭を示す */
+    --color-black-button-border: rgba(255, 255, 255, 0.24);
   }
 }
 :root[data-theme="dark"] {
   --color-gray-button-color: var(--color-text);
+  --color-taittsuu-button-color: var(--color-text);
+  --color-black-button-border: rgba(255, 255, 255, 0.24);
 }
 
 /* 
@@ -102,6 +107,8 @@
   サイズ
     .md-button: 中サイズのボタンスタイル
     .lg-button: 大サイズのボタンスタイル
+    .compact-button: 横幅の限られたツールバー用。.text-button と併用し、スマホ幅でだけ
+      文字を一段小さくして折り返しを防ぐ（左右の余白は文字の縮小に合わせて縮め、形を保つ）
 */
 
 :local(.base-button) {
@@ -246,6 +253,26 @@
 :local(.lg-button) {
   width: var(--size-button-lg);
   height: var(--size-button-lg);
+}
+
+/* 横幅の限られたツールバーのテキストボタン（投稿フォーム上部・添付の追加操作）。
+   .text-button と重ねて詳細度を上げ、記述順に左右されずに上書きする。
+   スマホ幅では文字を --font-size-md から --font-size-sm へ縮め、左右の余白も同じ比率
+   （16/18）で縮めて、背景のあるボタンの形を他のボタンと揃える。
+   白系統は背景が見えず余白が形に表れないため、詰めて横幅を確保する。 */
+:local(.text-button):local(.compact-button) {
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  :local(.text-button):local(.compact-button) {
+    font-size: var(--font-size-sm);
+    padding-inline: calc(var(--btn-padding-x) * 0.875);
+  }
+
+  :local(.text-button):local(.compact-button):local(.white-button) {
+    padding-inline: var(--space-1);
+  }
 }
 
 /* トグルボタン関連 */

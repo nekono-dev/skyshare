@@ -280,6 +280,8 @@ const Component: React.FC<Props> = ({
     },
     disabled,
   })
+  // 画像か動画を添付しているか（サムネ調整のボタンを出す条件）
+  const hasMedia = !!segment.imageEntry || !!segment.videoEntry
 
   const autoGrowText = variant === "page"
   const {
@@ -529,29 +531,6 @@ const Component: React.FC<Props> = ({
                 }
                 previewContainerRef={imagePreviewContainerRef}
               />
-              {(segment.imageEntry || segment.videoEntry) && (
-                <ThumbnailAdjustButton
-                  disabled={disabled}
-                  onClick={() =>
-                    segment.videoEntry
-                      ? videoPickerRef.current?.openCropDialog()
-                      : imagePickerRef.current?.openCropDialog()
-                  }
-                />
-              )}
-              <span
-                title={
-                  segment.videoEntry
-                    ? t("video.picker.exclusiveWithVideo")
-                    : undefined
-                }
-                style={{ display: "inline-flex" }}
-              >
-                <OgpFetchButton
-                  ogpFetch={ogpFetch}
-                  disabled={disabled || !!segment.videoEntry}
-                />
-              </span>
             </div>
 
             <div
@@ -586,6 +565,39 @@ const Component: React.FC<Props> = ({
               />
             </div>
           </div>
+          {/* 添付に応じて現れる追加操作は、現れたときに上の行の並びを崩さないよう別の行に置く */}
+          {(hasMedia || ogpFetch.detectedUrl) && (
+            <div
+              className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-left"]} ${ui["toolbar-wrap"]}`}
+              data-testid={`thread-segment-${index}-media-actions`}
+            >
+              {hasMedia && (
+                <ThumbnailAdjustButton
+                  disabled={disabled}
+                  className={ui["compact-button"]}
+                  onClick={() =>
+                    segment.videoEntry
+                      ? videoPickerRef.current?.openCropDialog()
+                      : imagePickerRef.current?.openCropDialog()
+                  }
+                />
+              )}
+              <span
+                title={
+                  segment.videoEntry
+                    ? t("video.picker.exclusiveWithVideo")
+                    : undefined
+                }
+                style={{ display: "inline-flex" }}
+              >
+                <OgpFetchButton
+                  ogpFetch={ogpFetch}
+                  disabled={disabled || !!segment.videoEntry}
+                  className={ui["compact-button"]}
+                />
+              </span>
+            </div>
+          )}
           {submitBlockedReason && (
             <p
               role="status"

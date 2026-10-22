@@ -1,5 +1,13 @@
+/* 背面の減光。Overlay の背景と同じ濃さにする（弱いとダークで背面のカードに溶け込む） */
+:local(.backdrop) {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.6);
+}
+
 /* 非モーダルのダイアログ。パスワードマネージャの候補表示がトップレイヤーに隠れないよう、
-   showModal() を使わず、背面は巨大な box-shadow で暗くして画面中央へ固定する。
+   showModal() を使わず、減光の上の画面中央へ固定する。
    狭い画面でもはみ出さないよう、幅と高さを画面の内側に収め、収まらない分は縦に流す。 */
 :local(.dialog) {
   position: fixed;
@@ -14,7 +22,8 @@
   padding: 0;
   border: none;
   background: transparent;
-  box-shadow: 0 0 0 100vmax rgba(31, 35, 40, 0.4);
+  /* ネイティブの dialog は文字色が UA の既定値（CanvasText）になるため、テーマの文字色に揃える */
+  color: var(--color-text);
 }
 
 :local(.content) {

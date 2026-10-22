@@ -94,6 +94,7 @@ export const removeSegment = (segments: SegmentState[], index: number): SegmentS
 - 条件付きの描画で入力部品をアンマウントすると、`ImagePicker` の内部stateが消えて添付済みの画像のプレビューが失われるため、`hidden` で切り替える。
 - 簡略表示は `imageEntry.thumbnailPreview` を読み取り専用で表示し、`canRemoveSegment(index)` のときだけ削除ボタンを出す。
 - ツールボックス（返信・引用の設定、言語、画像添付、自己ラベル）は、アバターの列の下まで含めた全幅に置く。アバターの縦線は先頭行の範囲に限る。
+- 添付の行は、左に画像・動画、右に予約・スレッドへの追加・言語を置く。添付に応じて現れる追加操作（サムネ調整・リンクカードを取得）は、現れたときに添付の行の並びを崩さないよう、その下の別の行に置き、画像か動画か本文の URL があるときだけ描画する。追加操作のボタンには `compact-button` を付ける。
 
 ### D-3: 送信 (FR-7, FR-8, FR-10)
 
@@ -151,26 +152,18 @@ export const scheduleDetailToSegments = (
 - 画像は `originalBlobs` に保管された画像を、`meta` に `imagesMeta` を入れ、`thumbnailBlob` は `detail.visual` の画像があればそれ、無ければ先頭の画像とする。プレビューは `URL.createObjectURL` で作る。
 - リンクカードは `ogMeta` と `ogImage` の画像から `OgpResult` を作り、`gate` は `postGate` に、`selfLabels` は `selfLabel` に戻す。
 - 下書き・予約の画面は `Overlay` の中に `TabButtons`（下書き・予約）を置き、下書きのタブに `DraftListPanel`、予約のタブに `ScheduleList` を描画する。開くたびに下書きのタブを選ぶ。
-- 画面幅が640ピクセル未満のとき、この `Overlay` の背景に `align-items: flex-start` を指定して上端を固定する（投稿フォームの `postform-backdrop` と同じ理由で、一覧の高さが変わっても上端を動かさない）。投稿フォーム上部のキャンセル・下書き・予約・投稿のボタンには `header-button` を付け、この幅で文字を `--font-size-sm`、左右の余白を `--space-2` にし、常に `white-space: nowrap` とする。
+- 画面幅が640ピクセル未満のとき、この `Overlay` の背景に `align-items: flex-start` を指定して上端を固定する（投稿フォームの `postform-backdrop` と同じ理由で、一覧の高さが変わっても上端を動かさない）。投稿フォーム上部のキャンセル・下書き・予約・投稿のボタンには `compact-button`（スマホ幅で文字と左右余白を縮める共通のボタンのクラス）を付ける。
+- 下書き・予約の画面の見出し行は「閉じる」を絶対配置するため、行に `min-height: var(--size-button-md)` を指定して、カードの `overflow: hidden` でボタンの上端が切れないようにする。
 - `DraftListPanel` は `loading` が真の間、`Loading` のスピナーを表示する（取得中に全面を覆うスピナーは出さない）。
 
 ### D-5: 設定の配置 (FR-11)
 
-| 領域           | 並び順                                                                                                                                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 主トグル       | ポップアップを開く設定 → 画像を自分で添付                                                                                                                                                        |
-| 詳細オプション | 自動ポップアップするSNS（ポップアップを開く設定がONのときだけ） → 長文を省略して共有（`disabled={isSubmitting \|\| manualImageAttach}`） → 返信・引用の設定を保存 → 投稿フォームを固定表示しない |
+| 領域           | 並び順                                                                                                                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 主トグル       | 画像を自分で添付                                                                                                                                                                                                          |
+| 詳細オプション | ポップアップを開く設定 → 自動ポップアップするSNS（ポップアップを開く設定がONのときだけ） → 長文を省略して共有（`disabled={isSubmitting \|\| manualImageAttach}`） → 返信・引用の設定を保存 → 投稿フォームを固定表示しない |
 
-```ts
-const resolveShareOptionsDefaultOpen = ({
-  optionsList,
-}: {
-  optionsList: boolean[]
-}) => optionsList.some(Boolean)
-// optionsList: [pinnedFormDisabled, shareToggles.truncateIntentText]
-```
-
-共有設定はマウント後に読み込まれるため、`Collapsible` の `key` を読み込み完了で切り替えて再マウントし、`defaultOpen` を実際の値で評価し直す。
+詳細オプションの `Collapsible` には `defaultOpen` を渡さず、設定値によらず閉じた状態で表示する（フォームの情報の密度を下げるため）。
 
 ## 4. エラー処理
 

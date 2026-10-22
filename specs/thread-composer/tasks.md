@@ -19,7 +19,7 @@
 - [x] T-2.5: `segments.ts` に `scheduleDetailToSegments` を実装し、AC-16 の単体テストをタグ付きで追加する。
 - [x] T-2.6: 下書きのボタンを下書き・予約に改め、タブで下書きと予約を切り替え、AC-15 のテストを追加する。
 - [x] T-2.7: 下書き・予約の画面の背景をスマホ幅で上端に固定し、`DraftListPanel` の読み込み中表示をスピナーに改め、投稿フォーム上部のボタンの文字と余白をスマホ幅で小さくする。
-- [x] T-2.8: 受け入れ条件 AC-17、AC-18 の E2E をタグ付きで追加する。
+- [x] T-2.8: 受け入れ条件 AC-17 から AC-20 の E2E をタグ付きで追加し、添付の追加操作を別の行に分け、下書き・予約の見出し行の高さを確保する。
 - 検証: `npx vitest run tests/components/post/ThreadComposer/submitThread.test.ts tests/components/post/ThreadComposer/segments.test.ts`
 - E2E: `tests/e2e/tabButtons.spec.ts` 下書き・予約のボタンを押して予約のタブに切り替える → 下書きのタブが初めに選ばれ、予約のタブで予約の一覧が表示される
 
@@ -27,5 +27,6 @@
 
 - 対応: D-5
 - [x] T-3.1: 主トグルと詳細オプションを配置し、初期の開閉を判定する。
+- [x] T-3.2: ポップアップを開く設定を詳細オプションへ移し、詳細オプションを常に閉じた状態で表示する。
 - 検証: `npm run build`
-- E2E: `tests/e2e/intentShare.spec.ts` 長文を省略して共有をONにして投稿フォームを開く → 詳細オプションが開いた状態で表示される
+- E2E: `tests/e2e/intentShare.spec.ts` 長文を省略して共有をONにして投稿フォームを開く → 詳細オプションが閉じた状態で表示される

@@ -195,23 +195,6 @@ const recordUsedHashtagsToHistory = (
 }
 
 /**
- * 共有オプション折りたたみの初期開閉状態を決める。
- *
- * Input:
- * - `optionsList`: 共有系トグルの現在値一覧
- *
- * Output:
- * - 初回表示時に折りたたみを開くべきなら `true`
- */
-const resolveShareOptionsDefaultOpen = ({
-  optionsList,
-}: {
-  optionsList: boolean[]
-}) => {
-  return optionsList.some(Boolean)
-}
-
-/**
  * 投稿フォーム本体（スレッド投稿対応）を描画する。
  *
  * Input:
@@ -262,20 +245,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const estimatedEntryUrl = willCreateEntry
       ? estimateSkyshareEntryUrl(accountDid)
       : null
-    // useShareToggles はハイドレーション不一致を避けるため、マウント直後は
-    // 共有系トグルを全てfalse固定で返し、実際の値はマウント後のuseEffectで非同期に
-    // 反映する。Collapsible の defaultOpen は初回マウント時のみ評価される
-    // （内部 state の初期化関数のため）ので、そのままでは常にfalseの仮値を見て
-    // 折りたたんだ状態になってしまう。トグルの読み込み完了を検知して
-    // Collapsible の key を変えることで、正しい値が揃った時点で再マウント
-    // させ、defaultOpen を正しく再評価させる。
-    const [shareTogglesReady, setShareTogglesReady] = useState(false)
-    useEffect(() => {
-      setShareTogglesReady(true)
-    }, [])
     // SSRは常にfalseでレンダリングするため、初期stateもfalse固定にし、実際の設定値は
-    // マウント後のuseEffectで反映する（shareTogglesReadyと同じ理由によるhydration
-    // mismatch対策）。
+    // マウント後のuseEffectで反映する（hydration mismatch対策）。
     const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
     useEffect(() => {
       setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
@@ -356,12 +327,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const rootSegment = segments[0]
     const hasTextInput = segments.some(s => s.text.trim().length > 0)
     const isThread = segments.length > 1
-
-    const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
-      // 自動ポップアップするSNS（およびそれを表示する条件のPopupIntentInsteadOfWebshare）は、
-      // 折りたたみを初期状態で開く理由にしない。
-      optionsList: [pinnedFormDisabled, shareToggles.truncateIntentText],
-    })
 
     /**
      * 投稿フォームの入力項目（全セグメント・下書き紐付け）のみを初期状態へ戻す。
@@ -976,7 +941,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             style={{ maxHeight: "80vh", overflow: "hidden" }}
           >
             <div
-              className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]}`}
+              className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]} ${styles["draft-list-header"]}`}
             >
               <button
                 type="button"
@@ -1136,7 +1101,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               {(variant === "dialog" || hasTextInput) && (
                 <button
                   type="button"
-                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["header-button"]}`}
+                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["compact-button"]}`}
                   aria-label={t("common.cancel")}
                   disabled={isSubmitting}
                   onClick={requestClose}
@@ -1148,7 +1113,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             <div className={`${ui["base-component"]}`}>
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["header-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["compact-button"]}`}
                 disabled={isSubmitting || guestMode}
                 title={guestMode ? t("post.guestUnavailable") : undefined}
                 onClick={() => {
@@ -1159,7 +1124,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               </button>
               <button
                 form={entryFormId}
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${styles["header-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${ui["compact-button"]}`}
                 type="submit"
                 disabled={isSubmitting || !canSubmitNow}
                 data-testid="composer-submit"
@@ -1256,17 +1221,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
 
             <div className={`${ui["base-padding"]} ${ui["toggle-box"]}`}>
               <ToggleSwitch
-                checked={shareToggles.popupIntentInsteadOfWebshare}
-                disabled={isSubmitting}
-                label={renderSlots(raw("post.composer.popupInstead"), {
-                  share: <InlineIcon name="share" />,
-                  popup: <InlineIcon name="popup" />,
-                })}
-                onCheckedChange={
-                  shareToggles.onPopupIntentInsteadOfWebshareChange
-                }
-              />
-              <ToggleSwitch
                 checked={shareToggles.manualImageAttach}
                 disabled={isSubmitting}
                 label={t("post.composer.manualImageAttach")}
@@ -1275,12 +1229,20 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             </div>
 
             <div className={ui["base-component"]}>
-              <Collapsible
-                key={shareTogglesReady ? "loaded" : "loading"}
-                label={t("post.composer.moreOptions")}
-                defaultOpen={defaultOpenShareOptions}
-              >
+              {/* 情報の密度を下げるため、設定値によらず常に閉じた状態で表示する */}
+              <Collapsible label={t("post.composer.moreOptions")}>
                 <div className={ui["toggle-box"]}>
+                  <ToggleSwitch
+                    checked={shareToggles.popupIntentInsteadOfWebshare}
+                    disabled={isSubmitting}
+                    label={renderSlots(raw("post.composer.popupInstead"), {
+                      share: <InlineIcon name="share" />,
+                      popup: <InlineIcon name="popup" />,
+                    })}
+                    onCheckedChange={
+                      shareToggles.onPopupIntentInsteadOfWebshareChange
+                    }
+                  />
                   {shareToggles.popupIntentInsteadOfWebshare && (
                     <div className={styles["auto-popup-target-row"]}>
                       <label htmlFor={`${entryFormId}-auto-popup-target`}>
