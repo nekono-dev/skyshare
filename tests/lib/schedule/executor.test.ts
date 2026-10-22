@@ -27,10 +27,7 @@ const png = (n = 3) => ({ bytes: new ArrayBuffer(n), mime: "image/png" })
 
 const schedule = async (id: string, payload: StoredPayload, imageCount = 0) => {
     const keys = imageCount
-        ? await putImages(
-              r2,
-              DID,
-              id,
+        ? await putImages(r2, DID, id, "g",
               Array.from({ length: imageCount }, () => png()),
           )
         : []
@@ -243,7 +240,7 @@ describe("executeSchedule", () => {
         expect(row.lastError).toBe("RetryExceeded")
     })
 
-    test("schedule-runner/AC-8: 認証が失効した予約は再試行されず、失敗と分類コードが記録される", async () => {
+    test("schedule-runner/AC-8: 認証が失効した予約は再試行されず、失敗と分類コードが記録され、認証情報が削除される", async () => {
         await schedule("s1", { posts: [{ text: "a" }] }, 1)
         pds.override = c =>
             c.nsid === "com.atproto.server.refreshSession"
@@ -257,6 +254,7 @@ describe("executeSchedule", () => {
         expect(row.status).toBe("failed")
         expect(row.lastError).toBe("CredentialExpired")
         expect(r2.objects.size).toBe(0)
+        expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
     test("認証情報が無い・画像が欠けている・入力が不正な予約は失敗になる", async () => {
@@ -321,8 +319,8 @@ describe("executeSchedule", () => {
             new RegExp(`^at://${DID}/app.bsky.feed.post/`),
         )
         expect(r2.objects.size).toBe(0)
-        // 待機中の予約が無くなったので、認証情報も削除される
-        expect(await loadCredential(db, KEY, DID)).toBeNull()
+        // 認証情報は次の予約で使うため、成功しても削除しない
+        expect(await loadCredential(db, KEY, DID)).not.toBeNull()
     })
 
     test("schedule-runner/AC-12: レート制限を受けたら以降の通信を止め、予約は回数を数えずに待機に戻る", async () => {

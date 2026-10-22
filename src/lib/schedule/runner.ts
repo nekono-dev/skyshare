@@ -7,6 +7,7 @@
  * 3. 取り出した順に実行する。外部への通信の予算は全体で共有し、予算が尽きるか
  *    レート制限を受けたら、残りの予約は実行せず進捗を保ったまま待機中へ戻す。
  * 4. 終了から保持期間を過ぎた予約を削除し、残っている画像を削除する。
+ * 5. 予約がなく、最後の使用から30日を過ぎた認証情報を削除する。
  *
  * 実装上の制約:
  * - atproto のライブラリを読み込まない。1件の失敗で実行全体を止めない。
@@ -15,11 +16,13 @@ import type { ScheduleEnv } from "./cfTypes"
 import { executeSchedule } from "./executor"
 import { removeImages } from "./imageStaging"
 import {
+    CREDENTIAL_IDLE_SECONDS,
     FINISHED_RETENTION_SECONDS,
     STALE_SECONDS,
     claimDueSchedules,
+    parseKeys,
     purgeFinished,
-    purgeIdleCredential,
+    purgeIdleCredentials,
     releaseSchedule,
     requeueStale,
 } from "./store"
@@ -72,12 +75,12 @@ export const runScheduledPosts = async (
             FINISHED_RETENTION_SECONDS,
         )
         for (const row of purged) {
-            const keys = JSON.parse(row.imageKeys) as string[]
-            await removeImages(env.SCHEDULE_IMAGES, keys).catch(() => {})
+            await removeImages(
+                env.SCHEDULE_IMAGES,
+                parseKeys(row.imageKeys),
+            ).catch(() => {})
         }
-        for (const did of new Set(purged.map(row => row.did))) {
-            await purgeIdleCredential(env.DB, did)
-        }
+        await purgeIdleCredentials(env.DB, now, CREDENTIAL_IDLE_SECONDS)
     } catch {
         console.error("runScheduledPosts: purge failed")
     }

@@ -5,9 +5,12 @@ import {
     claimDueSchedules,
     finishSchedule,
     insertSchedule,
+    CREDENTIAL_IDLE_SECONDS,
+    deleteCredential,
     loadCredential,
-    purgeIdleCredential,
+    purgeIdleCredentials,
     saveCredential,
+    touchCredential,
 } from "@/lib/schedule/store"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)))
@@ -53,8 +56,10 @@ describe("credentialCrypto", () => {
         await expect(encryptToken("***", DID, "t")).rejects.toThrow()
     })
 
-    test("schedule-store/AC-6: 待機中の予約が残る間は認証情報を削除せず、0件で削除する", async () => {
+    test("schedule-store/AC-6: 待機中の予約が残るか最後の使用から30日以内なら削除されず、どちらにも当たらないと削除される", async () => {
         const db = createFakeD1()
+        const now = 100 * 24 * 60 * 60
+        const idle = CREDENTIAL_IDLE_SECONDS
         await saveCredential(db, KEY, { did: DID, service: "s", token: "t" }, 1)
         await insertSchedule(db, {
             id: "s1",
@@ -64,11 +69,40 @@ describe("credentialCrypto", () => {
             imageKeys: [],
             now: 0,
         })
-        expect(await purgeIdleCredential(db, DID)).toBe(false)
+        // 待機中の予約が残る
+        expect(await purgeIdleCredentials(db, now, idle)).toBe(0)
+        // 実行中の予約が残る
         await claimDueSchedules(db, 10, 5)
-        expect(await purgeIdleCredential(db, DID)).toBe(false)
+        expect(await purgeIdleCredentials(db, now, idle)).toBe(0)
         await finishSchedule(db, "s1", { status: "posted" }, 11)
-        expect(await purgeIdleCredential(db, DID)).toBe(true)
+        // 最後の使用から30日以内
+        await touchCredential(db, DID, now - idle + 1)
+        expect(await purgeIdleCredentials(db, now, idle)).toBe(0)
+        // どちらにも当たらない
+        await touchCredential(db, DID, now - idle - 1)
+        expect(await purgeIdleCredentials(db, now, idle)).toBe(1)
         expect(await loadCredential(db, KEY, DID)).toBeNull()
+    })
+
+    test("schedule-store/AC-16: 所有アカウントの指示で、待機中の予約が残っていても認証情報が削除される", async () => {
+        const db = createFakeD1()
+        await saveCredential(db, KEY, { did: DID, service: "s", token: "t" }, 1)
+        await saveCredential(
+            db,
+            KEY,
+            { did: "did:plc:other", service: "s", token: "t" },
+            1,
+        )
+        await insertSchedule(db, {
+            id: "s1",
+            did: DID,
+            runAt: 1,
+            payload: "{}",
+            imageKeys: [],
+            now: 0,
+        })
+        await deleteCredential(db, DID)
+        expect(await loadCredential(db, KEY, DID)).toBeNull()
+        expect(await loadCredential(db, KEY, "did:plc:other")).not.toBeNull()
     })
 })

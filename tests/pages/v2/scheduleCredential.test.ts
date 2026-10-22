@@ -9,7 +9,15 @@ vi.mock("@/lib/schedule/env", () => ({
 }))
 
 import { DELETE, GET, PUT } from "@/pages/v2/schedules/credential"
-import { insertSchedule, saveCredential } from "@/lib/schedule/store"
+import {
+    claimDueSchedules,
+    countPending,
+    finishSchedule,
+    getSchedule,
+    insertSchedule,
+    saveCredential,
+} from "@/lib/schedule/store"
+import { putImages } from "@/lib/schedule/imageStaging"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(3)))
 const DID = "did:plc:aaaa"
@@ -45,22 +53,44 @@ describe("/v2/schedules/credential", () => {
         expect(JSON.stringify(body)).not.toContain("TOKEN-VALUE-XYZ")
     })
 
-    test("schedule-api/AC-11: 待機中の予約があると削除は409、ないと成功する", async () => {
+    test("schedule-api/AC-11: 削除で待機中の予約と画像が消え、実行中の予約があると409になる", async () => {
+        const r2 = holder.env as { SCHEDULE_IMAGES: ReturnType<typeof createFakeR2> }
         await saveCredential(db, KEY, { did: DID, service: "s", token: "t" }, 1)
-        await insertSchedule(db, {
-            id: "s1",
-            did: DID,
-            runAt: 1,
-            payload: "{}",
-            imageKeys: [],
-            now: 0,
-        })
+        const keys = await putImages(r2.SCHEDULE_IMAGES, DID, "p1", "g", [
+            { bytes: new ArrayBuffer(2), mime: "image/png" },
+        ])
+        for (const [id, imageKeys] of [
+            ["p1", keys],
+            ["p2", []],
+            ["busy", []],
+        ] as const) {
+            await insertSchedule(db, {
+                id,
+                did: DID,
+                runAt: id === "busy" ? 1 : 9e9,
+                payload: "{}",
+                imageKeys: [...imageKeys],
+                now: 0,
+            })
+        }
+        // 実行中の予約がある間は、何も消さずに409
+        await claimDueSchedules(db, 10, 5)
         const busy = await call(DELETE)
         expect(busy.status).toBe(409)
-        expect((await busy.json()).error).toBe("ScheduleCredentialInUse")
-        await db.prepare("DELETE FROM scheduled_posts").run()
-        expect((await call(DELETE)).status).toBe(200)
+        expect((await busy.json()).error).toBe("ScheduleRunning")
+        expect(await countPending(db, DID)).toBe(2)
+        expect((await (await call(GET)).json()).registered).toBe(true)
+
+        // 実行が終われば、待機中の予約を取り消して認証情報を削除する
+        await finishSchedule(db, "busy", { status: "posted" }, 11)
+        const ok = await call(DELETE)
+        expect(ok.status).toBe(200)
+        expect(await ok.json()).toEqual({ registered: false, cancelled: 2 })
+        expect(await countPending(db, DID)).toBe(0)
+        expect(r2.SCHEDULE_IMAGES.objects.size).toBe(0)
         expect((await (await call(GET)).json()).registered).toBe(false)
+        // 投稿済みの履歴は残る
+        expect(await getSchedule(db, DID, "busy")).not.toBeNull()
     })
 
     test("schedule-api/AC-14: 未認証は401、不正な本文は400で、キャッシュを禁止する", async () => {

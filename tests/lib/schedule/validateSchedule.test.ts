@@ -10,11 +10,11 @@ const iso = (offsetSeconds: number) =>
     new Date((NOW + offsetSeconds) * 1000).toISOString()
 
 describe("validateRunAt", () => {
-    test("schedule-api/AC-3: 4分後と31日後は範囲外、10分後と30日後は範囲内", () => {
+    test("schedule-api/AC-3: 4分後と15日後は範囲外、10分後と14日後は範囲内", () => {
         expect(validateRunAt(iso(4 * 60), NOW).ok).toBe(false)
-        expect(validateRunAt(iso(31 * 86400), NOW).ok).toBe(false)
+        expect(validateRunAt(iso(15 * 86400), NOW).ok).toBe(false)
         expect(validateRunAt(iso(10 * 60), NOW).ok).toBe(true)
-        expect(validateRunAt(iso(30 * 86400), NOW).ok).toBe(true)
+        expect(validateRunAt(iso(14 * 86400), NOW).ok).toBe(true)
         expect(validateRunAt(iso(5 * 60), NOW).ok).toBe(true)
         expect(validateRunAt("not-a-date", NOW).ok).toBe(false)
     })
@@ -35,8 +35,8 @@ describe("getScheduleLimits", () => {
     test("schedule-api/AC-17: 検証に使う値と同じ範囲と上限を返す", () => {
         const limits = getScheduleLimits()
         expect(limits.minLeadSeconds).toBe(300)
-        expect(limits.maxLeadSeconds).toBe(30 * 86400)
-        expect(limits.maxPending).toBe(20)
+        expect(limits.maxLeadSeconds).toBe(14 * 86400)
+        expect(limits.maxPending).toBe(5)
         expect(limits.maxImageBytes).toBe(10_000_000)
         expect(limits.maxPosts).toBe(100)
         // 検証の境界が、返した値と一致する

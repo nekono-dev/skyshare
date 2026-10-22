@@ -28,6 +28,9 @@ import { operation as bskyDraftsDelete } from "./v2/bsky/drafts/delete"
 import { operation as schedulesGet } from "./v2/schedules/get"
 import { operation as schedulesPost } from "./v2/schedules/post"
 import { operation as schedulesDeleteById } from "./v2/schedules/_id/delete"
+import { operation as schedulesGetById } from "./v2/schedules/_id/get"
+import { operation as schedulesPutById } from "./v2/schedules/_id/put"
+import { operation as scheduleImageGet } from "./v2/schedules/_id/images/_index/get"
 import { operation as scheduleLimitsGet } from "./v2/schedules/limits/get"
 import { operation as scheduleCredentialGet } from "./v2/schedules/credential/get"
 import { operation as scheduleCredentialPut } from "./v2/schedules/credential/put"
@@ -55,7 +58,12 @@ export const paths: ZodOpenApiPathsObject = {
         delete: bskyDraftsDelete,
     },
     "/v2/schedules/": { get: schedulesGet, post: schedulesPost },
-    "/v2/schedules/{id}/": { delete: schedulesDeleteById },
+    "/v2/schedules/{id}/": {
+        get: schedulesGetById,
+        put: schedulesPutById,
+        delete: schedulesDeleteById,
+    },
+    "/v2/schedules/{id}/images/{index}/": { get: scheduleImageGet },
     "/v2/schedules/limits/": { get: scheduleLimitsGet },
     "/v2/schedules/credential/": {
         get: scheduleCredentialGet,

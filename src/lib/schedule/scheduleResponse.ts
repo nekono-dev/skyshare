@@ -6,8 +6,7 @@
  * - すべての応答に `cache-control: no-store` を付ける。
  */
 
-export type ScheduleErrorCode =
-    "ScheduleCredentialRequired" | "ScheduleRunning" | "ScheduleCredentialInUse"
+export type ScheduleErrorCode = "ScheduleCredentialRequired" | "ScheduleRunning"
 
 export const jsonResponse = (body: unknown, status = 200): Response =>
     new Response(JSON.stringify(body), {

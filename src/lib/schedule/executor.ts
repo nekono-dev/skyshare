@@ -23,9 +23,9 @@ import type { ScheduleEnv } from "./cfTypes"
 import { removeImages } from "./imageStaging"
 import { nextTid } from "./tid"
 import {
+    deleteCredential,
     finishSchedule,
     loadCredential,
-    purgeIdleCredential,
     releaseSchedule,
     saveCredential,
     saveProgress,
@@ -301,9 +301,10 @@ export const executeSchedule = async (
         }
     }
 
+    // 終了した予約の画像を消す。認証情報は他の予約や次の予約で使うため、ここでは消さない
+    // （未使用の認証情報は定期実行の後片付けが30日後に削除する）。
     const cleanup = async () => {
         await removeImages(env.SCHEDULE_IMAGES, imageKeys).catch(() => {})
-        await purgeIdleCredential(env.DB, row.did)
     }
 
     try {
@@ -320,6 +321,10 @@ export const executeSchedule = async (
                 { status: "failed", lastError: action.code },
                 now,
             )
+            // 認証の失効が分かった認証情報は使えないため削除し、設定の表示をオフに戻す
+            if (action.code === "CredentialExpired") {
+                await deleteCredential(env.DB, row.did)
+            }
             await cleanup()
             return "failed"
         }

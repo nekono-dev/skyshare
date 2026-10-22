@@ -141,7 +141,7 @@ npx wrangler d1 create skyshare-schedule # database_id の登録は不要（名�
 npx wrangler d1 create skyshare-schedule-develop
 for b in skyshare-schedule-images skyshare-schedule-images-develop; do
   npx wrangler r2 bucket create "$b"
-  npx wrangler r2 bucket lifecycle add "$b" expire-45d --expire-days 45 -y # 削除漏れの画像を自動で消す
+  npx wrangler r2 bucket lifecycle add "$b" expire-15d --expire-days 15 -y # 削除漏れの画像を自動で消す（予約は14日後までのため15日）
 done
 # 予約用の認証情報の暗号鍵。本番と develop は別の鍵でよい（D1 が別のため）
 openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare

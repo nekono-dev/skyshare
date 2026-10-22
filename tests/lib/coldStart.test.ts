@@ -65,6 +65,7 @@ describe("予約投稿の API の静的importにatprotoを含めない", () => {
     const entries = [
         "src/pages/v2/schedules.ts",
         "src/pages/v2/schedules/[id].ts",
+        "src/pages/v2/schedules/[id]/images/[index].ts",
         "src/pages/v2/schedules/limits.ts",
         "src/pages/v2/schedules/credential.ts",
         "src/lib/schedule/runner.ts",

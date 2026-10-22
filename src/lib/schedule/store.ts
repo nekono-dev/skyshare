@@ -2,7 +2,7 @@
  * 予約投稿の保管（D1）。
  *
  * 責務と処理概要:
- * - 予約の保存・取得・一覧・削除・件数を、常に所有アカウント（did）を条件に含めて行う。
+ * - 予約の保存・取得・一覧・置き換え・削除・件数を、常に所有アカウント（did）を条件に含めて行う。
  * - 実行時刻が到来した待機中の予約を、1文の更新で実行中へ遷移させて取り出す。
  *   同時に走る別の実行と同じ予約を取り合わない。
  * - 実行の進捗の保存・待機への戻し・終了の記録・停止した予約の回収・履歴の削除を行う。
@@ -137,6 +137,91 @@ export const deleteSchedule = async (
         .bind(did, id)
         .all<DbRow>()
     return results[0] ? toScheduleRow(results[0]) : null
+}
+
+/**
+ * 自分の待機中の予約を置き換える（問い合わせ2回）。
+ *
+ * 処理の趣旨:
+ * - 置き換え前の画像のキーを呼び出し側が削除できるよう、先に行を読む。
+ * - 更新は `status = 'pending'` の行に限る。読んでから更新するまでに実行が始まった予約は
+ *   更新0件になり、null を返す（実行中の予約の内容を書き換えない）。
+ * - 内容が変わるため、実行の進捗と再試行の回数は初期値に戻す。
+ *
+ * Input:
+ * - `did` `id`: 所有アカウントと予約の識別子
+ * - `next`: 新しい実行時刻（UNIX 秒）・保管用の本文・画像のキー
+ * - `now`: 現在時刻（UNIX 秒）
+ *
+ * Output: 置き換えたら `{ previousImageKeys }`、待機中の自分の予約が無ければ null
+ *
+ * Example: `await updatePendingSchedule(db, did, "s1", { runAt, payload, imageKeys }, now)`
+ */
+export const updatePendingSchedule = async (
+    db: D1Database,
+    did: string,
+    id: string,
+    next: { runAt: number; payload: string; imageKeys: string[] },
+    now: number,
+): Promise<{ previousImageKeys: string[] } | null> => {
+    const current = await getSchedule(db, did, id)
+    if (!current || current.status !== "pending") return null
+    const result = await db
+        .prepare(
+            `UPDATE scheduled_posts
+             SET run_at = ?, payload = ?, image_keys = ?, progress = '{}',
+                 attempts = 0, updated_at = ?
+             WHERE did = ? AND id = ? AND status = 'pending'`,
+        )
+        .bind(
+            next.runAt,
+            next.payload,
+            JSON.stringify(next.imageKeys),
+            now,
+            did,
+            id,
+        )
+        .run()
+    if (changesOf(result) === 0) return null
+    return { previousImageKeys: parseKeys(current.imageKeys) }
+}
+
+/**
+ * 自分の待機中の予約をすべて削除し、削除した行を返す（問い合わせ1回）。
+ * 画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
+ *
+ * Input: `did`: 所有アカウント
+ * Output: 削除した行の配列（実行中・投稿済み・失敗の行は残る）
+ * Example: `const rows = await deletePendingSchedules(db, did)`
+ */
+export const deletePendingSchedules = async (
+    db: D1Database,
+    did: string,
+): Promise<ScheduleRow[]> => {
+    const { results } = await db
+        .prepare(
+            `DELETE FROM scheduled_posts
+             WHERE did = ? AND status = 'pending' RETURNING *`,
+        )
+        .bind(did)
+        .all<DbRow>()
+    return results.map(toScheduleRow)
+}
+
+/**
+ * 行の `image_keys`（JSON 文字列）をキーの配列にする。壊れた値は空配列とみなす。
+ *
+ * Input: `'["schedules/d/s/g/0"]'` → Output: `["schedules/d/s/g/0"]`
+ */
+export const parseKeys = (imageKeys: string): string[] => {
+    try {
+        const keys: unknown = JSON.parse(imageKeys)
+        return Array.isArray(keys)
+            ? keys.filter((k): k is string => typeof k === "string")
+            : []
+    } catch {
+        return []
+    }
 }
 
 /** 自分の待機中の予約の件数。 */
@@ -354,22 +439,68 @@ export const getCredentialStatus = async (
 }
 
 /**
- * 待機中も実行中の予約もないときだけ、アカウントの認証情報を削除して true を返す。
- * 判定と削除を1文で行い、予約の作成との競合で必要な認証情報を消さないようにする。
+ * 認証情報の最後の使用の時刻（`updated_at`）を現在時刻にする。
+ * 予約の作成と置き換えのたびに呼び、使われ続けている認証情報を未使用の削除から外す。
+ *
+ * Input: `did`、`now`（UNIX 秒）
+ * Output: なし（行が無ければ何もしない）
+ * Example: `await touchCredential(db, did, now)`
  */
-export const purgeIdleCredential = async (
+export const touchCredential = async (
     db: D1Database,
     did: string,
-): Promise<boolean> => {
+    now: number,
+): Promise<void> => {
+    await db
+        .prepare("UPDATE schedule_credentials SET updated_at = ? WHERE did = ?")
+        .bind(now, did)
+        .run()
+}
+
+/**
+ * 予約の有無によらず、アカウントの認証情報を削除する。
+ * 利用者が予約投稿を無効にしたときと、実行で認証の失効が分かったときに使う。
+ *
+ * Input: `did`
+ * Output: なし
+ * Example: `await deleteCredential(db, did)`
+ */
+export const deleteCredential = async (
+    db: D1Database,
+    did: string,
+): Promise<void> => {
+    await db
+        .prepare("DELETE FROM schedule_credentials WHERE did = ?")
+        .bind(did)
+        .run()
+}
+
+/**
+ * 最後の使用から `idleSeconds` を過ぎ、待機中も実行中の予約もないアカウントの認証情報を削除する。
+ * 判定と削除を1文で行い、予約の作成との競合で必要な認証情報を消さないようにする。
+ *
+ * Input: `now`（UNIX 秒）、`idleSeconds`（未使用とみなす秒数）
+ * Output: 削除した件数
+ * Example: `await purgeIdleCredentials(db, now, CREDENTIAL_IDLE_SECONDS)`
+ */
+export const purgeIdleCredentials = async (
+    db: D1Database,
+    now: number,
+    idleSeconds: number,
+): Promise<number> => {
     const result = await db
         .prepare(
             `DELETE FROM schedule_credentials
-             WHERE did = ? AND NOT EXISTS (
+             WHERE updated_at < ? AND NOT EXISTS (
                SELECT 1 FROM scheduled_posts
-               WHERE did = ? AND status IN ('pending', 'running')
+               WHERE scheduled_posts.did = schedule_credentials.did
+                 AND status IN ('pending', 'running')
              )`,
         )
-        .bind(did, did)
+        .bind(now - idleSeconds)
         .run()
-    return changesOf(result) > 0
+    return changesOf(result)
 }
+
+/** 予約がないまま、この秒数だけ使われなかった認証情報を削除する（30日） */
+export const CREDENTIAL_IDLE_SECONDS = 30 * 24 * 60 * 60

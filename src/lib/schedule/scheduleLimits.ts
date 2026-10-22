@@ -9,8 +9,8 @@ import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
 import { MAX_IMAGE_BYTES_PER_SCHEDULE } from "./types"
 
 export const MIN_LEAD_SECONDS = 5 * 60
-export const MAX_LEAD_SECONDS = 30 * 24 * 60 * 60
-export const MAX_PENDING_PER_ACCOUNT = 20
+export const MAX_LEAD_SECONDS = 14 * 24 * 60 * 60
+export const MAX_PENDING_PER_ACCOUNT = 5
 
 export type ScheduleLimits = {
     minLeadSeconds: number

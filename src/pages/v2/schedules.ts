@@ -1,29 +1,18 @@
 import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus } from "@/lib/api/response.js"
-import { convertHeaderToObj, isMultipartFormData } from "@/util/http"
-import { formDataToObject } from "@/util/formData"
-import { validateFacets } from "@/lib/atproto/facet"
-import { validateImageMetadata } from "@/lib/atproto/embed"
-import { isReplyRefOwnedBySelf } from "@/lib/atproto/post"
+import { convertHeaderToObj } from "@/util/http"
 import * as PostSchema from "@/lib/api/schema/v2/schedules/post"
 import * as GetSchema from "@/lib/api/schema/v2/schedules/get"
 import { getScheduleEnv } from "@/lib/schedule/env"
-import { MAX_PENDING_PER_ACCOUNT } from "@/lib/schedule/scheduleLimits"
-import { putImages, removeImages } from "@/lib/schedule/imageStaging"
+import { removeImages } from "@/lib/schedule/imageStaging"
 import {
     codeErrorResponse,
     jsonResponse,
     toIso,
 } from "@/lib/schedule/scheduleResponse"
-import {
-    countPending,
-    getCredentialStatus,
-    insertSchedule,
-    listSchedules,
-} from "@/lib/schedule/store"
-import { MAX_IMAGE_BYTES_PER_SCHEDULE } from "@/lib/schedule/types"
-import { toStoredPayload, validateRunAt } from "@/lib/schedule/validateSchedule"
+import { parseScheduleBody, stageSchedule } from "@/lib/schedule/stageSchedule"
+import { insertSchedule, listSchedules } from "@/lib/schedule/store"
 import type { StoredPayload } from "@/lib/schedule/validateSchedule"
 
 /**
@@ -45,8 +34,8 @@ const PREVIEW_LENGTH = 100
 /**
  * POST /v2/schedules — 予約を作成する。
  *
- * 検証の順序: 入力 → 実行時刻 → 認証情報の登録 → 待機中の件数 → 画像の保管 → 予約の保存。
- * 画像の保管後に保存が失敗したときは、保管した画像を削除する。
+ * 検証の順序: 入力 → 実行時刻 → 認証情報の登録 → 待機中の件数 → 画像の保管 → 予約の保存
+ * （入力から画像の保管までは `stageSchedule` が行う）。保存が失敗したときは、保管した画像を削除する。
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
@@ -58,96 +47,40 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const { session } = locals
         if (!session) return errorResponseFromStatus(401)
 
-        if (!isMultipartFormData(request.headers.get("content-type"))) {
-            return errorResponseFromStatus(400)
-        }
-        let formData: FormData
-        try {
-            formData = await request.formData()
-        } catch {
-            return errorResponseFromStatus(400)
-        }
-
-        const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
-        if (Array.isArray(raw.posts)) {
-            for (const item of raw.posts as Record<string, unknown>[]) {
-                if (
-                    typeof item.text === "string" &&
-                    item.text.trim().length === 0
-                ) {
-                    delete item.text
-                }
-            }
-        }
-        const body = PostSchema.RequestBodySchema.safeParse(raw)
-        if (!body.success) return errorResponseFromStatus(400)
-
-        // 投稿内容の検証（投稿の作成と同じ規則）
-        if (!isReplyRefOwnedBySelf(body.data.reply, session.did)) {
-            return errorResponseFromStatus(400)
-        }
-        if (body.data.createEntry === true && !body.data.visual) {
-            return errorResponseFromStatus(400)
-        }
-        for (const item of body.data.posts) {
-            const images = "images" in item ? item.images : undefined
-            const imagesMeta =
-                "imagesMeta" in item ? item.imagesMeta : undefined
-            try {
-                validateImageMetadata(images, imagesMeta)
-                validateFacets(item.text ?? "", item.facets)
-            } catch {
-                return errorResponseFromStatus(400)
-            }
-        }
+        const body = await parseScheduleBody(request, session.did)
+        if (!body) return errorResponseFromStatus(400)
 
         const now = Math.floor(Date.now() / 1000)
-        const runAt = validateRunAt(body.data.runAt, now)
-        if (!runAt.ok) return errorResponseFromStatus(400)
-
         const env = await getScheduleEnv()
-        const credential = await getCredentialStatus(env.DB, session.did)
-        if (!credential.registered) {
-            return codeErrorResponse(409, "ScheduleCredentialRequired")
-        }
-        if (
-            (await countPending(env.DB, session.did)) >= MAX_PENDING_PER_ACCOUNT
-        ) {
-            return errorResponseFromStatus(429)
-        }
-
-        const { payload, images } = await toStoredPayload(body.data)
-        const total = images.reduce((sum, img) => sum + img.bytes.byteLength, 0)
-        if (total > MAX_IMAGE_BYTES_PER_SCHEDULE) {
-            return errorResponseFromStatus(400)
-        }
-
         const id = crypto.randomUUID()
-        let keys: string[]
-        try {
-            keys = await putImages(env.SCHEDULE_IMAGES, session.did, id, images)
-        } catch (err) {
-            console.error("schedules POST: putImages failed", err)
-            return errorResponseFromStatus(500)
+        const staged = await stageSchedule(env, session.did, id, body, now, {
+            countPending: true,
+        })
+        if (!staged.ok) {
+            return staged.error
+                ? codeErrorResponse(staged.status, staged.error)
+                : errorResponseFromStatus(staged.status)
         }
         try {
             await insertSchedule(env.DB, {
                 id,
                 did: session.did,
-                runAt: runAt.epoch,
-                payload: JSON.stringify(payload),
-                imageKeys: keys,
+                runAt: staged.runAt,
+                payload: staged.payload,
+                imageKeys: staged.imageKeys,
                 now,
             })
         } catch (err) {
             console.error("schedules POST: insertSchedule failed", err)
-            await removeImages(env.SCHEDULE_IMAGES, keys).catch(() => {})
+            await removeImages(env.SCHEDULE_IMAGES, staged.imageKeys).catch(
+                () => {},
+            )
             return errorResponseFromStatus(500)
         }
 
         const res: PostSchema.ResponseBody200Type = {
             id,
-            runAt: toIso(runAt.epoch),
+            runAt: toIso(staged.runAt),
         }
         return jsonResponse(res)
     } catch (err) {

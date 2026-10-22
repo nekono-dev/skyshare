@@ -4,6 +4,7 @@ import { createFakeD1 } from "../../helpers/fakeD1"
 import {
     claimDueSchedules,
     countPending,
+    deletePendingSchedules,
     deleteSchedule,
     finishSchedule,
     getSchedule,
@@ -13,6 +14,7 @@ import {
     releaseSchedule,
     requeueStale,
     saveProgress,
+    updatePendingSchedule,
 } from "@/lib/schedule/store"
 import { emptyProgress } from "@/lib/schedule/types"
 
@@ -140,6 +142,76 @@ describe("schedule store", () => {
         await add(db, "s1", 10)
         await getSchedule(db, A, "s1")
         expect(db.queryCount - before).toBeLessThanOrEqual(3)
+        const beforeUpdate = db.queryCount
+        await updatePendingSchedule(
+            db,
+            A,
+            "s1",
+            { runAt: 20, payload: "{}", imageKeys: [] },
+            1,
+        )
+        expect(db.queryCount - beforeUpdate).toBeLessThanOrEqual(3)
+    })
+
+    test("schedule-store/AC-15: 一括削除で自分の待機中の予約だけが消え、他人の予約と自分の投稿済みは残る", async () => {
+        const db = createFakeD1()
+        await add(db, "done", 1)
+        await claimDueSchedules(db, 10, 5)
+        await finishSchedule(db, "done", { status: "posted" }, 11)
+        await add(db, "p1", 100)
+        await add(db, "p2", 200)
+        await add(db, "other", 100, B)
+        const deleted = await deletePendingSchedules(db, A)
+        expect(deleted.map(r => r.id).sort()).toEqual(["p1", "p2"])
+        expect(await getSchedule(db, A, "done")).not.toBeNull()
+        expect(await getSchedule(db, B, "other")).not.toBeNull()
+        expect(await countPending(db, A)).toBe(0)
+    })
+
+    test("schedule-store/AC-17: 待機中の予約は置き換えられ、実行中の予約は置き換わらない", async () => {
+        const db = createFakeD1()
+        await insertSchedule(db, {
+            id: "s1",
+            did: A,
+            runAt: 100,
+            payload: '{"v":1}',
+            imageKeys: ["old/0"],
+            now: 0,
+        })
+        const replaced = await updatePendingSchedule(
+            db,
+            A,
+            "s1",
+            { runAt: 300, payload: '{"v":2}', imageKeys: ["new/0"] },
+            5,
+        )
+        expect(replaced).toEqual({ previousImageKeys: ["old/0"] })
+        const row = await getSchedule(db, A, "s1")
+        expect(row?.runAt).toBe(300)
+        expect(row?.payload).toBe('{"v":2}')
+        expect(JSON.parse(row!.imageKeys)).toEqual(["new/0"])
+        // 他人の予約は置き換わらない
+        expect(
+            await updatePendingSchedule(
+                db,
+                B,
+                "s1",
+                { runAt: 1, payload: "{}", imageKeys: [] },
+                6,
+            ),
+        ).toBeNull()
+        // 実行中になった予約は置き換わらない
+        await claimDueSchedules(db, 400, 5)
+        expect(
+            await updatePendingSchedule(
+                db,
+                A,
+                "s1",
+                { runAt: 900, payload: '{"v":3}', imageKeys: [] },
+                7,
+            ),
+        ).toBeNull()
+        expect((await getSchedule(db, A, "s1"))?.payload).toBe('{"v":2}')
     })
 
     test("schedule-store/AC-14: 戻すと進捗が保たれ、回数は指定のときだけ増える", async () => {

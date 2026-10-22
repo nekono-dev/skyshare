@@ -12,6 +12,7 @@ import {
     saveCredential,
     saveProgress,
     finishSchedule,
+    touchCredential,
 } from "@/lib/schedule/store"
 import { emptyProgress } from "@/lib/schedule/types"
 
@@ -31,10 +32,7 @@ const add = async (
     images = 0,
 ) => {
     const keys = images
-        ? await putImages(
-              r2,
-              DID,
-              id,
+        ? await putImages(r2, DID, id, "g",
               Array.from({ length: images }, () => ({
                   bytes: new ArrayBuffer(2),
                   mime: "image/png",
@@ -133,16 +131,30 @@ describe("runScheduledPosts", () => {
         expect((await getSchedule(db, DID, "fresh"))?.status).toBe("running")
     })
 
-    test("schedule-runner/AC-11: 終了から7日を超えた予約が削除され、待機中も実行中もなくなったアカウントの認証情報が削除される", async () => {
+    test("schedule-runner/AC-11: 終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが削除される", async () => {
         const week = 7 * 24 * 60 * 60
+        const month = 30 * 24 * 60 * 60
         await add("old", NOW - 10)
         await claimDueSchedules(db, NOW, 5)
         await saveProgress(db, "old", emptyProgress(), NOW)
         await finishSchedule(db, "old", { status: "posted" }, NOW - week - 10)
-        expect(await loadCredential(db, KEY, DID)).not.toBeNull()
+        // 最後の使用から30日以内の認証情報は残る
+        await touchCredential(db, DID, NOW - month + 60)
         await run()
         expect(await getSchedule(db, DID, "old")).toBeNull()
+        expect(await loadCredential(db, KEY, DID)).not.toBeNull()
+        // 30日を超えると削除される
+        await touchCredential(db, DID, NOW - month - 60)
+        await run()
         expect(await loadCredential(db, KEY, DID)).toBeNull()
+    })
+
+    test("30日を超えて使われていなくても、待機中の予約が残る認証情報は削除されない", async () => {
+        const month = 30 * 24 * 60 * 60
+        await add("future", NOW + 3600)
+        await touchCredential(db, DID, NOW - month - 60)
+        await run()
+        expect(await loadCredential(db, KEY, DID)).not.toBeNull()
     })
 
     test("暗号鍵が未設定なら何も実行せず、予約は待機のまま残る", async () => {

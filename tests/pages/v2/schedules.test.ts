@@ -20,6 +20,7 @@ import {
     saveCredential,
     insertSchedule,
     countPending,
+    getCredentialStatus,
 } from "@/lib/schedule/store"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(3)))
@@ -101,7 +102,7 @@ describe("POST /v2/schedules", () => {
         expect(await countPending(db, DID)).toBe(0)
     })
 
-    test("schedule-api/AC-3: 4分後と31日後は400、10分後と30日後は成功する", async () => {
+    test("schedule-api/AC-3: 4分後と15日後は400、10分後と14日後は成功する", async () => {
         await withCredential()
         expect(
             (
@@ -115,7 +116,7 @@ describe("POST /v2/schedules", () => {
             (
                 await call(
                     POST,
-                    postRequest(textForm({ runAt: runAtIn(31 * 86400) })),
+                    postRequest(textForm({ runAt: runAtIn(15 * 86400) })),
                 )
             ).status,
         ).toBe(400)
@@ -131,7 +132,7 @@ describe("POST /v2/schedules", () => {
             (
                 await call(
                     POST,
-                    postRequest(textForm({ runAt: runAtIn(30 * 86400 - 5) })),
+                    postRequest(textForm({ runAt: runAtIn(14 * 86400 - 5) })),
                 )
             ).status,
         ).toBe(200)
@@ -151,20 +152,30 @@ describe("POST /v2/schedules", () => {
         expect(r2.objects.size).toBe(0)
     })
 
-    test("schedule-api/AC-10: 待機中が20件のアカウントの21件目は429になる", async () => {
+    test("schedule-api/AC-10: 待機中が5件のアカウントの6件目は、1件の投稿でも3件のスレッドでも429になる", async () => {
         await withCredential()
-        for (let i = 0; i < 20; i++) {
-            await insertSchedule(db, {
-                id: `s${i}`,
-                did: DID,
-                runAt: 9e9,
-                payload: "{}",
-                imageKeys: [],
-                now: 0,
-            })
+        // 3件のスレッドも1件と数える
+        expect(
+            (await call(POST, postRequest(textForm({ posts: 3 })))).status,
+        ).toBe(200)
+        for (let i = 0; i < 4; i++) {
+            expect((await call(POST, postRequest(textForm()))).status).toBe(
+                200,
+            )
         }
+        expect(await countPending(db, DID)).toBe(5)
         expect((await call(POST, postRequest(textForm()))).status).toBe(429)
-        expect(await countPending(db, DID)).toBe(20)
+        expect(
+            (await call(POST, postRequest(textForm({ posts: 3 })))).status,
+        ).toBe(429)
+        expect(await countPending(db, DID)).toBe(5)
+    })
+
+    test("作成すると、認証情報の最後の使用の時刻が更新される", async () => {
+        await withCredential()
+        await call(POST, postRequest(textForm()))
+        const status = await getCredentialStatus(db, DID)
+        expect(status.updatedAt).toBeGreaterThan(1)
     })
 
     test("schedule-api/AC-12: 成功すると200と識別子と実行時刻が返る", async () => {
@@ -282,8 +293,8 @@ describe("GET /v2/schedules/limits", () => {
         expect(ok.status).toBe(200)
         expect(await ok.json()).toEqual({
             minLeadSeconds: 300,
-            maxLeadSeconds: 2592000,
-            maxPending: 20,
+            maxLeadSeconds: 1209600,
+            maxPending: 5,
             maxImageBytes: 10000000,
             maxPosts: 100,
         })
