@@ -16,7 +16,11 @@
 - [x] T-2.2: 下書きの保存と復元をセグメント配列に対応させる。
 - [x] T-2.3: 共有文が先頭のセグメントの本文だけを含むことを確認するテストを追加する。
 - [x] T-2.4: 送信内容の組み立てを切り出し、予約の操作の可否と本文の一致を確認するテストを追加する。
-- 検証: `npx vitest run tests/components/post/ThreadComposer/submitThread.test.ts`
+- [ ] T-2.5: 予約の状態による送信先とボタンの文言とキャンセルの分岐を `ThreadComposer` に組み込む。
+- [ ] T-2.6: `segments.ts` に `scheduleDetailToSegments` を実装し、AC-16 の単体テストをタグ付きで追加する。
+- [ ] T-2.7: 下書きのボタンを下書き・予約に改め、タブで下書きと予約を切り替え、AC-15 のテストを追加する。
+- 検証: `npx vitest run tests/components/post/ThreadComposer/submitThread.test.ts tests/components/post/ThreadComposer/segments.test.ts`
+- E2E: `tests/e2e/threadComposer.spec.ts` 下書き・予約のボタンを押して予約のタブに切り替える → 下書きのタブが初めに選ばれ、予約のタブで予約の一覧が表示される
 
 ## Phase 3: 設定の配置
 

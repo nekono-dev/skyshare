@@ -22,7 +22,8 @@ Bluesky 以外の SNS への投稿の作成は対象外であり、共有先の 
 | 共有先SNS           | 外部 | X・タイッツー・Mastodon の共有の投稿画面を開き、共有された URL のカードを生成する | -                                                  |
 | PLC Directory       | 外部 | DID から DID ドキュメントを返す                                                   | -                                                  |
 | 定期実行トリガー    | 外部 | 1分ごとに予約の実行を起動する                                                     | -                                                  |
-| 画面の共通基盤      | 内部 | 共通の部品・表示言語・設定画面・他 SNS への共有を提供する                         | [画面の共通基盤](architecture/common-ui.md)        |
+| 画面の共通基盤      | 内部 | 共通の部品・表示言語・運用者ごとの設定・他 SNS への共有を提供する                 | [画面の共通基盤](architecture/common-ui.md)        |
+| アプリシェル        | 内部 | ナビゲーション・ヘルプ・ポリシーと、端末と機能の設定画面を提供する                | [アプリシェル](architecture/app-shell.md)          |
 | 投稿の作成          | 内部 | 投稿と entry を組み立て、添付と動画を整えて送信する                               | [投稿の作成](architecture/compose.md)              |
 | 投稿の管理          | 内部 | 投稿の一覧と下書きを扱い、entry を保存して削除する                                | [投稿の管理](architecture/manage.md)               |
 | アカウントとAPI基盤 | 内部 | ログインとセッションを保ち、Bluesky と API の契約を担う                           | [アカウントとAPI基盤](architecture/account-api.md) |
@@ -43,6 +44,8 @@ flowchart LR
   base --> common
   schedule["予約投稿"] --> base
   compose --> schedule
+  shell["アプリシェル"] --> common
+  shell --> schedule
   view["公開ページの表示"] --> common
   view --> base
   view --> manage
@@ -54,7 +57,7 @@ flowchart LR
 | -------------------- | ---- | ------------------- | ------------------- |
 | 投稿の操作           | 提供 | 利用者              | 投稿の作成          |
 | 一覧の操作           | 提供 | 利用者              | 投稿の管理          |
-| 端末設定の操作       | 提供 | 利用者              | 画面の共通基盤      |
+| 端末設定の操作       | 提供 | 利用者              | アプリシェル        |
 | ログイン             | 提供 | 利用者              | アカウントとAPI基盤 |
 | entry閲覧            | 提供 | 利用者              | 公開ページの表示    |
 | カード取得           | 提供 | 共有先SNS           | 公開ページの表示    |
@@ -82,13 +85,14 @@ flowchart LR
     compose["投稿の作成"]
     manage["投稿の管理"]
     common["画面の共通基盤"]
+    shell["アプリシェル"]
     base["アカウントとAPI基盤"]
     schedule["予約投稿"]
     view["公開ページの表示"]
   end
   ext_user["利用者"] -->|投稿の操作| compose
   ext_user -->|一覧の操作| manage
-  ext_user -->|端末設定の操作| common
+  ext_user -->|端末設定の操作| shell
   ext_user -->|ログイン| base
   ext_user -->|entry閲覧| view
   ext_sns["共有先SNS"] -->|カード取得| view

@@ -59,6 +59,7 @@ sequenceDiagram
     executor->>ext_store: saveProgress
   end
   runner->>ext_store: purgeFinished
+  runner->>ext_store: purgeIdleCredentials
 ```
 
 予約の状態の遷移を示す。
@@ -121,6 +122,7 @@ const MAX_EXTERNAL_CALLS = 40
 | 2    | `claimDueSchedules` で到来した予約を最大5件取り出す                                                                                      |
 | 3    | 取り出した順に `executeSchedule` を呼ぶ。通信の予算が尽きるかレート制限を受けたら、以降の予約は実行せず `releaseSchedule` で待機中へ戻す |
 | 4    | `purgeFinished` で終了から7日を過ぎた予約を削除する                                                                                      |
+| 5    | `purgeIdleCredentials` に `CREDENTIAL_IDLE_SECONDS` を渡し、予約がなく30日使われていない認証情報を削除する                               |
 
 - 1回の実行で使う予算は、取り出した予約の全体で共有する。
 - 例外が実行全体を中断させないよう、予約ごとに `try` で囲み、分類できない例外は一時的な失敗として扱う。
@@ -178,7 +180,7 @@ export const nextTid = (prev?: string): string
 | 4    | `created` の次の投稿から、`buildBskyPostRecord` で組み立て `com.atproto.repo.putRecord` を `rkey` 指定で呼ぶ。`createdAt` は `now` とする | `created`    |
 | 5    | `gates` の次の投稿から、`buildThreadgateRecord` と `buildPostgateRecord` で組み立てた記録を、投稿と同じ `rkey` で作成する                 | `gates`      |
 | 6    | 作成指定があり `entryDone` が偽なら、`buildSkyshareEntryRecord` で先頭の投稿を派生元にした記録を作成する                                  | `entryDone`  |
-| 7    | `finishSchedule` で投稿済みにし、`removeImages` と `purgeIdleCredential` を呼ぶ                                                           | -            |
+| 7    | `finishSchedule` で投稿済みにし、`removeImages` を呼ぶ                                                                                    | -            |
 
 - 投稿の返信先は、先頭は指定された既存の投稿、2件目以降は先頭の投稿を `root`、直前の投稿を `parent` とする。
 - すべてのレコードは `putRecord` で書き込む。進捗の保存前に中断して同じキーへ再び書き込んでも、レコードは上書きされるだけで1件のままである。
@@ -204,7 +206,7 @@ const MAX_ATTEMPTS = 5
 | ------------------------------- | -------------------------------------------------------------------------------------------------- |
 | 認証情報の行が無い              | `CredentialMissing` で失敗                                                                         |
 | 復号に失敗                      | `CredentialInvalid` で失敗                                                                         |
-| 更新時に `Auth`                 | `CredentialExpired` で失敗                                                                         |
+| 更新時に `Auth`                 | `CredentialExpired` で失敗し、`deleteCredential` で認証情報を削除する                              |
 | 更新以外の通信で `Auth`         | `attempts` に1を加えて待機中へ戻す（`Transient` と同じ扱い）                                       |
 | 作成時に `Invalid`              | `InvalidRecord` で失敗                                                                             |
 | 画像が R2 に無い                | `ImageMissing` で失敗                                                                              |

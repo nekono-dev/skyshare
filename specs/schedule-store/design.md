@@ -45,6 +45,9 @@ sequenceDiagram
   store->>ext_d1: countPending と getSchedule
   store->>ext_d1: listSchedules
   store->>ext_d1: deleteSchedule
+  store->>ext_d1: updatePendingSchedule
+  store->>ext_d1: deletePendingSchedules
+  store->>imageStaging: getImage
   store->>ext_d1: claimDueSchedules
   alt 到来した予約がない
     ext_d1-->>store: 空の配列
@@ -55,12 +58,15 @@ sequenceDiagram
     store->>ext_d1: releaseSchedule
     store->>ext_d1: finishSchedule
     store->>imageStaging: removeImages
-    store->>ext_d1: purgeIdleCredential
+    store->>ext_d1: touchCredential
     store->>ext_d1: loadCredential
     store->>ext_d1: requeueStale
     store->>ext_d1: STALE_SECONDS
     store->>ext_d1: purgeFinished
     store->>ext_d1: FINISHED_RETENTION_SECONDS
+    store->>ext_d1: purgeIdleCredentials
+    store->>ext_d1: CREDENTIAL_IDLE_SECONDS
+    store->>ext_d1: deleteCredential
   end
 ```
 
@@ -107,7 +113,7 @@ CREATE TABLE schedule_credentials (
 );
 ```
 
-### D-2: 予約の保存・取得・削除 (FR-2, NFR-3)
+### D-2: 予約の保存・取得・置き換え・削除 (FR-2, FR-11, NFR-3)
 
 ```ts
 export const insertSchedule = (db: D1Database, row: NewSchedule): Promise<void>
@@ -119,11 +125,21 @@ export const listSchedules = (
 ): Promise<{ items: ScheduleRow[]; cursor?: string }>
 export const deleteSchedule = (db: D1Database, did: string, id: string): Promise<ScheduleRow | null>
 export const countPending = (db: D1Database, did: string): Promise<number>
+export const updatePendingSchedule = (
+    db: D1Database,
+    did: string,
+    id: string,
+    next: { runAt: number; payload: string; imageKeys: string[] },
+    now: number,
+): Promise<{ previousImageKeys: string[] } | null>
+export const deletePendingSchedules = (db: D1Database, did: string): Promise<ScheduleRow[]>
 ```
 
 - すべての問い合わせは `WHERE did = ?` を含める。
 - `deleteSchedule` は `running` 以外の行だけを削除してその行を返し、呼び出し側が画像のキーを使って削除する。実行中の行は削除せず `null` を返す。
 - 一覧のカーソルは最後の行の `(run_at, id)` を base64 にした値とする。
+- `updatePendingSchedule` は、`getSchedule` で置き換え前の画像のキーを読み、`UPDATE ... WHERE did = ? AND id = ? AND status = 'pending'` で `run_at`・`payload`・`image_keys`・`updated_at` を置き換え、`progress` と `attempts` を初期値へ戻す。更新が0件なら `null` を返す。
+- `deletePendingSchedules` は `DELETE ... WHERE did = ? AND status = 'pending' RETURNING *` の1文で削除し、削除した行を返す。画像の削除は呼び出し側が行う。
 
 ### D-3: 取り出しと進捗 (FR-3, FR-7, FR-10, NFR-1)
 
@@ -178,7 +194,11 @@ export const decryptToken = (secret: string, did: string, encrypted: string): Pr
 export const saveCredential = (db: D1Database, secret: string, c: { did: string; service: string; token: string }, now: number): Promise<void>
 export const getCredentialStatus = (db: D1Database, did: string): Promise<{ registered: boolean; updatedAt?: number }>
 export const loadCredential = (db: D1Database, secret: string, did: string): Promise<{ service: string; token: string } | null>
-export const purgeIdleCredential = (db: D1Database, did: string): Promise<boolean>
+export const touchCredential = (db: D1Database, did: string, now: number): Promise<void>
+export const deleteCredential = (db: D1Database, did: string): Promise<void>
+export const purgeIdleCredentials = (db: D1Database, now: number, idleSeconds: number): Promise<number>
+
+export const CREDENTIAL_IDLE_SECONDS = 30 * 24 * 60 * 60
 ```
 
 | 項目     | 値                                                                        |
@@ -189,24 +209,34 @@ export const purgeIdleCredential = (db: D1Database, did: string): Promise<boolea
 | AAD      | アカウントの DID（別アカウントの行への差し替えで復号に失敗させる）        |
 | 保管形式 | `Base64(IV ‖ 暗号文)`                                                     |
 
-`purgeIdleCredential` は、`pending` と `running` の予約が0件のときだけ行を削除して `true` を返す。
+- 認証情報の行の `updated_at` を最後の使用の時刻とする。使用は、登録（`saveCredential`）・予約の作成と置き換え（`touchCredential`）・実行でのトークンの更新（`saveCredential`）の3つとする。
+- `purgeIdleCredentials` は、`updated_at` が `now - idleSeconds` より古く、同じ DID の `pending` と `running` の予約が無い行を1文で削除し、削除した件数を返す。
+- `deleteCredential` は、予約の有無によらず行を削除する。
 
-### D-6: 添付画像の一時保管 (FR-6, NFR-1)
+### D-6: 添付画像の一時保管 (FR-6, FR-12, NFR-1, NFR-4)
 
 ```ts
 export const putImages = (
     bucket: R2Bucket,
     did: string,
     id: string,
+    generation: string, // 保存のたびに変える世代。Date.now() の36進数
     images: { bytes: ArrayBuffer; mime: string }[],
 ): Promise<string[]>
 export const removeImages = (bucket: R2Bucket, keys: string[]): Promise<void>
+export const getImage = (
+    bucket: R2Bucket,
+    did: string,
+    keys: string[],
+    index: number,
+): Promise<{ bytes: ArrayBuffer; mime: string } | null>
 ```
 
-- キーは `schedules/{did}/{id}/{番号}` とする。
+- キーは `schedules/{did}/{id}/{世代}/{番号}` とする。置き換えで新しい画像を書いてから古い画像を消すため、世代で同じ予約の新旧のキーを分ける。
 - 画像の合計バイト数が `MAX_IMAGE_BYTES_PER_SCHEDULE` を超えるときは、書き込まずに例外を投げる。
 - 途中で書き込みに失敗したときは、書き込み済みのキーを削除してから例外を投げる。
-- バケットには、保管から45日を過ぎたオブジェクトを削除するライフサイクルルールを設定し、削除漏れの保管を残さない。
+- `getImage` は、`keys[index]` が `schedules/{did}/` で始まるときだけ読み出し、範囲外の番号・別アカウントのキー・存在しないオブジェクトでは `null` を返す。
+- バケットには、保管から15日を過ぎたオブジェクトを削除するライフサイクルルール（`--expire-days 15`）を設定し、削除漏れの保管を残さない。予約は14日後までのため、置き換えのたびに画像を書き直す限り、待機中の予約の画像はルールで消えない。
 
 ## 4. エラー処理
 
