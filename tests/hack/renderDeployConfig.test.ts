@@ -34,15 +34,6 @@ const ENV = {
 // develop 用 D1 の ID（偽の npx が `wrangler d1 list` の結果として返す）
 const DEVELOP_D1_ID = "33333333-3333-3333-3333-333333333333"
 
-// D1・R2 を持つテンプレート（リポジトリのテンプレートに D1・R2 を加えたもの）
-const withStorage = (template: string) =>
-    template.replace(
-        '  "observability": {',
-        `  "d1_databases": [{ "binding": "DB", "database_name": "app-db" }],
-  "r2_buckets": [{ "binding": "IMAGES", "bucket_name": "app-images" }],
-  "observability": {`,
-    )
-
 let dir = ""
 const template = readFileSync(
     path.join(ROOT, "wrangler.template.jsonc"),
@@ -60,7 +51,7 @@ beforeEach(() => {
     const fake = path.join(dir, "bin/npx")
     writeFileSync(
         fake,
-        `#!/bin/sh\necho '[{"uuid":"00000000-0000-0000-0000-000000000000","name":"app-db"},{"uuid":"${DEVELOP_D1_ID}","name":"app-db-develop"}]'\n`,
+        `#!/bin/sh\necho '[{"uuid":"00000000-0000-0000-0000-000000000000","name":"skyshare-schedule"},{"uuid":"${DEVELOP_D1_ID}","name":"skyshare-schedule-develop"}]'\n`,
     )
     chmodSync(fake, 0o755)
 })
@@ -86,12 +77,15 @@ const run = (env: Record<string, string>, args: string[] = []) => {
 }
 
 describe("render-deploy-config", () => {
-    it("本番は与えたドメインでプレビューを無効にし、ドメインが欠けると異常終了する", () => {
+    it("[site-config/AC-7] 本番は与えたドメインと固定の D1・R2 の名前でプレビューを無効にし、ドメインが欠けると異常終了する", () => {
         const { status, config } = run(ENV)
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare"')
         expect(config).toContain('"pattern": "s.example.org"')
+        expect(config).toContain('"database_name": "skyshare-schedule"')
+        expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
         expect(config).toContain('"previews_enabled": false')
+        expect(config).not.toContain(DEVELOP_D1_ID)
 
         const { SITE_HOST: _h, ...missing } = ENV
         const failed = run(missing)
@@ -99,24 +93,17 @@ describe("render-deploy-config", () => {
         expect(failed.stderr).toContain("SITE_HOST")
     })
 
-    it("develop は別の Worker 名と develop サブドメインにし、プレビューを有効にする", () => {
+    it("[site-config/AC-8] develop は別の Worker 名と develop サブドメインに develop 専用の D1・R2 を使い、プレビューの D1 に名前から引いた ID を入れる", () => {
         const { status, config } = run(ENV, ["--develop"])
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare-develop"')
         expect(config).toContain('"pattern": "develop.s.example.org"')
         expect(config).toContain('"previews_enabled": true')
-    })
-
-    it("develop は D1・R2 を develop 専用の名前にし、プレビューの D1 に名前から引いた ID を入れる", () => {
-        writeFileSync(
-            path.join(dir, "wrangler.template.jsonc"),
-            withStorage(template),
+        expect(config).toContain('"database_name": "skyshare-schedule-develop"')
+        expect(config).toContain(
+            '"bucket_name": "skyshare-schedule-images-develop"',
         )
-        const { status, config } = run(ENV, ["--develop"])
-        expect(status).toBe(0)
-        expect(config).toContain('"database_name": "app-db-develop"')
-        expect(config).toContain('"bucket_name": "app-images-develop"')
-        expect(config).not.toContain('"database_name": "app-db"')
+        expect(config).not.toContain('"database_name": "skyshare-schedule"')
         expect(config).toContain(`"database_id":"${DEVELOP_D1_ID}"`)
     })
 })

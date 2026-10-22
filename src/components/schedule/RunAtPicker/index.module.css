@@ -1,0 +1,21 @@
+:local(.content) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+:local(.error) {
+  color: var(--color-red-text);
+}
+
+:local(.actions) {
+  display: flex;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+:local(.icon) {
+  width: var(--size-icon-button);
+  height: var(--size-icon-button);
+}

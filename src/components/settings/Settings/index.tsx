@@ -3,6 +3,7 @@
  *
  * 責務と処理概要:
  * - 投稿フォーム関連のトグル設定を `SettingList` でグループごとに一覧表示する。
+ * - 投稿フォームのグループの末尾に、予約投稿の有効化のスイッチ（`ScheduleSetting`）を置く。
  * - 各設定値の state・永続化・連動ルールは `lib/settings/useShareToggles` および
  *   `lib/settings/shareSettings` に委譲し、本体は表示用データの組み立てに専念する。
  * - Astroページ（`src/pages/settings.astro`）からも `SettingsDialog` からも同じ内容を
@@ -19,6 +20,7 @@ import InlineIcon from "@/components/common/InlineIcon"
 import LocaleSelect from "@/components/common/LocaleSelect"
 import ThemeModeSelect from "@/components/common/ThemeModeSelect"
 import PostGateDialog from "@/components/post/PostGateDialog"
+import ScheduleSetting from "@/components/schedule/ScheduleSetting"
 import SettingList, {
   type SettingListItem,
 } from "@/components/settings/SettingList"
@@ -323,6 +325,8 @@ export const Settings = () => {
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
         <h2 className={ui.subject}>{t("settings.postForm.title")}</h2>
         <SettingList items={postFormItems} />
+        {/* 予約投稿の有効化はサーバーの登録状態に従うため、端末の設定とは別の部品が扱う */}
+        <ScheduleSetting />
       </section>
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
         <h2 className={ui.subject}>{t("settings.gate.title")}</h2>

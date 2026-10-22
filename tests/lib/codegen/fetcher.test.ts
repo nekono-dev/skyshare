@@ -64,4 +64,26 @@ describe("customFetcher", () => {
         expect(res.data).toBeInstanceOf(Blob)
         expect(res.data.size).toBe(3)
     })
+
+    it("[api-codegen/AC-6] 予約の画像の取得の応答も Blob で返り、エラーの JSON は解釈される", async () => {
+        respond(new Uint8Array([9, 9]), {
+            status: 200,
+            headers: { "content-type": "image/jpeg" },
+        })
+        const ok = await customFetcher<{ data: Blob }>(
+            "/v2/schedules/s1/images/0/",
+            {},
+        )
+        expect(ok.data).toBeInstanceOf(Blob)
+        respond(JSON.stringify({ error: "Not Found" }), {
+            status: 404,
+            headers: { "content-type": "application/json" },
+        })
+        const ng = await customFetcher<{ data: unknown; status: number }>(
+            "/v2/schedules/s1/images/9/",
+            {},
+        )
+        expect(ng.status).toBe(404)
+        expect(ng.data).toEqual({ error: "Not Found" })
+    })
 })

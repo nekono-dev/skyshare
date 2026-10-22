@@ -40,6 +40,7 @@ sequenceDiagram
     tc->>segments: canRemoveSegment
     tc->>segments: removeSegment
   end
+  tc->>segments: scheduleDetailToSegments
   tc->>submitThread: 送信内容の組み立て
   submitThread->>ext_api: 1回だけ送信
   alt 失敗またはentryなし
@@ -124,17 +125,36 @@ const res = await createEntry(body) // 1回だけ送信する
 - 本文のリンク・メンション・ハッシュタグは `detectFacetsForSubmission` で送信直前に検出する。
 - entryを要求したのに応答に `skyshareEntry` が無い場合は失敗として扱う。
 - 状態は送信中・成功・失敗の3つとし、セグメントごとの進捗は表示しない。
+- 送信内容の組み立ては `buildThreadRequestBody` に切り出し、予約の作成と置き換えも同じ本文を使う。
+- 予約の状態 `scheduleMode` を保持し、`submitTarget(scheduleMode)` が `post` なら `createEntry`、それ以外は `submitSchedule` に本文を渡す。投稿のボタンの文言は `submitLabelKey` で決める。
+- 動画のセグメントがあるときは `hasVideoSegment` が真になり、カレンダーのボタンを無効にする。カレンダーのボタンは編集中のセグメントのツールボックスの、スレッドに追加のボタンの左に `runAtPicker` として渡す。
+- キャンセルは `cancelAction(scheduleMode, hasUnsavedDraftChanges())` で、閉じる・下書きの保存の確認・予約の編集の3択に分ける。
 - 成功後の共有処理には、先頭のセグメントの本文・応答のentryのURL・先頭のセグメントのリンクカードのURLを渡す。
 
-### D-4: 下書き (FR-9)
+### D-4: 下書きと予約の書き戻し (FR-9, FR-12, NFR-2)
 
-| 方向 | 変換                                                                                       |
-| ---- | ------------------------------------------------------------------------------------------ |
-| 保存 | `segmentsToDraftPosts(segments)` → `{ text, labels? }[]` を下書きAPIの `posts` に送る      |
-| 復元 | `draftPostsToSegments(posts, languageCode)` → 画像・動画・リンクカードが空のセグメント配列 |
-| 一覧 | `draftList.ts` が `{ id, posts, updatedAt }` に整形する                                    |
+| 方向 | 変換                                                                                              |
+| ---- | ------------------------------------------------------------------------------------------------- |
+| 保存 | `segmentsToDraftPosts(segments)` → `{ text, labels? }[]` を下書きAPIの `posts` に送る             |
+| 復元 | `draftPostsToSegments(posts, languageCode)` → 画像・動画・リンクカードが空のセグメント配列        |
+| 一覧 | `draftList.ts` が `{ id, posts, updatedAt }` に整形する                                           |
+| 予約 | `scheduleDetailToSegments(detail, images, languageCode)` → 画像とリンクカードを含むセグメント配列 |
 
-### D-5: 設定の配置 (FR-11, FR-12)
+```ts
+export const scheduleDetailToSegments = (
+  detail: ScheduleDetail,
+  images: Blob[], // images[n] は番号 n の画像
+  languageCode: string, // langs が無い投稿に使う
+): SegmentState[]
+```
+
+- 画像は `originalBlobs` に保管された画像を、`meta` に `imagesMeta` を入れ、`thumbnailBlob` は `detail.visual` の画像があればそれ、無ければ先頭の画像とする。プレビューは `URL.createObjectURL` で作る。
+- リンクカードは `ogMeta` と `ogImage` の画像から `OgpResult` を作り、`gate` は `postGate` に、`selfLabels` は `selfLabel` に戻す。
+- 下書き・予約の画面は `Overlay` の中に `TabButtons`（下書き・予約）を置き、下書きのタブに `DraftListPanel`、予約のタブに `ScheduleList` を描画する。開くたびに下書きのタブを選ぶ。
+- 画面幅が640ピクセル未満のとき、この `Overlay` の背景に `align-items: flex-start` を指定して上端を固定する（投稿フォームの `postform-backdrop` と同じ理由で、一覧の高さが変わっても上端を動かさない）。投稿フォーム上部のキャンセル・下書き・予約・投稿のボタンには `header-button` を付け、この幅で文字を `--font-size-sm`、左右の余白を `--space-2` にし、常に `white-space: nowrap` とする。
+- `DraftListPanel` は `loading` が真の間、`Loading` のスピナーを表示する（取得中に全面を覆うスピナーは出さない）。
+
+### D-5: 設定の配置 (FR-11)
 
 | 領域           | 並び順                                                                                                                                                                                           |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

@@ -14,8 +14,14 @@
 - 対応: D-3, D-4
 - [x] T-2.1: `submitThread.ts` でスレッド全体の送信とentryの要求を実装し、単体テストを追加する。
 - [x] T-2.2: 下書きの保存と復元をセグメント配列に対応させる。
-- [x] T-2.3: 共有文が先頭のセグメントの本文だけを含むことを確認するテストを追加する。
-- 検証: `npx vitest run tests/components/post/ThreadComposer/submitThread.test.ts`
+- [x] T-2.3: 共有文が先頭のセグメントの本文だけを含むことと、送信内容の組み立てが予約の操作の可否と本文の一致を満たすことを確認するテストを追加する。
+- [x] T-2.4: 予約の状態による送信先とボタンの文言とキャンセルの分岐を `ThreadComposer` に組み込む。
+- [x] T-2.5: `segments.ts` に `scheduleDetailToSegments` を実装し、AC-16 の単体テストをタグ付きで追加する。
+- [x] T-2.6: 下書きのボタンを下書き・予約に改め、タブで下書きと予約を切り替え、AC-15 のテストを追加する。
+- [x] T-2.7: 下書き・予約の画面の背景をスマホ幅で上端に固定し、`DraftListPanel` の読み込み中表示をスピナーに改め、投稿フォーム上部のボタンの文字と余白をスマホ幅で小さくする。
+- [x] T-2.8: 受け入れ条件 AC-17、AC-18 の E2E をタグ付きで追加する。
+- 検証: `npx vitest run tests/components/post/ThreadComposer/submitThread.test.ts tests/components/post/ThreadComposer/segments.test.ts`
+- E2E: `tests/e2e/tabButtons.spec.ts` 下書き・予約のボタンを押して予約のタブに切り替える → 下書きのタブが初めに選ばれ、予約のタブで予約の一覧が表示される
 
 ## Phase 3: 設定の配置
 
