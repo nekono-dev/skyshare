@@ -1,5 +1,12 @@
+import { createElement } from "react"
+import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, test } from "vitest"
-import { nextTabKey, type TabItem } from "@/components/common/TabButtons"
+import TabButtons, {
+    nextTabKey,
+    panelId,
+    tabId,
+    type TabItem,
+} from "@/components/common/TabButtons"
 
 const items: TabItem<"a" | "b" | "c">[] = [
     { key: "a", label: "A" },
@@ -32,5 +39,42 @@ describe("nextTabKey", () => {
         ]
         expect(nextTabKey(none, "x", "ArrowRight")).toBe("x")
         expect(nextTabKey(none, "x", "Home")).toBe("x")
+    })
+})
+
+describe("TabButtons の描画", () => {
+    const render = (value: "a" | "b" | "c") =>
+        renderToStaticMarkup(
+            createElement(TabButtons<"a" | "b" | "c">, {
+                idPrefix: "t",
+                ariaLabel: "切り替え",
+                items,
+                value,
+                onChange: () => {},
+            }),
+        )
+
+    test("tab-buttons/AC-2: 無効なタブは押せない状態で描画される", () => {
+        const html = render("a")
+        expect(html).toMatch(/id="t-tab-b"[^>]*disabled=""/)
+        expect(html).not.toMatch(/id="t-tab-a"[^>]*disabled=""/)
+    })
+
+    test("tab-buttons/AC-5: タブリストの役割を持ち、各タブが対応するタブパネルを参照し、選択中だけが選択状態になる", () => {
+        const html = render("c")
+        expect(html).toContain('role="tablist"')
+        expect(html).toContain('aria-label="切り替え"')
+        expect(html.match(/role="tab"/g)).toHaveLength(3)
+        expect(html).toContain(
+            `id="${tabId("t", "c")}" aria-controls="${panelId("t", "c")}" aria-selected="true"`,
+        )
+        expect(html.match(/aria-selected="true"/g)).toHaveLength(1)
+    })
+
+    test("tab-buttons/AC-6: 選択中のタブだけがフォーカスの順序に含まれる", () => {
+        const html = render("a")
+        expect(html.match(/tabindex="0"/gi)).toHaveLength(1)
+        expect(html.match(/tabindex="-1"/gi)).toHaveLength(2)
+        expect(html).toMatch(/id="t-tab-a"[^>]*tabindex="0"/i)
     })
 })

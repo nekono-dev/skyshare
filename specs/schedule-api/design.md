@@ -180,6 +180,7 @@ export const stageSchedule = async (
 ```
 
 - `validateRunAt` は ISO 8601 の日時を UNIX 秒に変換し、`now + MIN_LEAD_SECONDS` 以上かつ `now + MAX_LEAD_SECONDS` 以下を許可する。
+- multipart の解析と投稿内容の検証は、作成と置き換えで共通の `parseScheduleBody(request, did)` が行い、不正な入力は null を返して 400 にする。
 - `stageSchedule` の順序は、実行時刻 → 認証情報の登録（`getCredentialStatus`、未登録は `ScheduleCredentialRequired`）→ 待機中の件数（作成のときだけ）→ 画像の保管 → `touchCredential` とする。
 - 待機中の件数は `countPending` が返す予約の行数で数え、投稿の件数を数えない。
 - 画像は `putImages` に世代 `Date.now().toString(36)` を渡して保管する。呼び出し側の保存が失敗したときは、保管した画像を削除する。

@@ -197,6 +197,8 @@ type RunAtPickerProps = {
   disabled: boolean
   disabledReason?: string // ボタンの title に出す
   onChange: (next: Date | null) => void
+  open?: boolean // 実行日時の行からも開けるよう、開閉を呼び出し側が持てる
+  onOpenChange?: (open: boolean) => void
 }
 ```
 
@@ -225,7 +227,7 @@ export const submitTarget = (mode: ScheduleMode):
   | { kind: "create"; runAt: Date }
   | { kind: "update"; id: string; runAt: Date }
 export const submitLabelKey = (mode: ScheduleMode, isThread: boolean): PlainMessageKey
-export const cancelAction = (mode: ScheduleMode, hasUnsavedChanges: boolean): "close" | "draftConfirm" | "editChoice"
+export const cancelAction = (mode: ScheduleMode, hasUnsavedChanges: boolean, hasText: boolean): "close" | "draftConfirm" | "editChoice"
 ```
 
 | 状態       | 投稿のボタン     | キャンセル                                    |

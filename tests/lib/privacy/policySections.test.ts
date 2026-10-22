@@ -74,8 +74,9 @@ describe("buildPrivacyPolicy", () => {
         const text = allText()
         expect(text).toContain("暗号化して保管")
         expect(text).toContain("7日")
-        expect(text).toContain("45日")
-        expect(text).toContain("いつでも自分で削除")
+        expect(text).toContain("15日")
+        expect(text).toContain("30日")
+        expect(text).toContain("予約投稿を無効にすると")
     })
 
     it("[privacy-policy/AC-8] 表を使わず、箇条書きは1階層で、1文が長すぎない", () => {

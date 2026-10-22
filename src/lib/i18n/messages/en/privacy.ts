@@ -61,9 +61,9 @@ export const privacy = {
     "privacy.retention.item2":
         "A scheduled post is deleted 7 days after it runs. If you cancel it, it is deleted immediately.",
     "privacy.retention.item3":
-        "Scheduled images are deleted when the post runs or is canceled. Unused images are deleted after 45 days.",
+        "Scheduled images are deleted when the post runs or is canceled. Any images left behind are deleted 15 days after they are stored.",
     "privacy.retention.item4":
-        "Login information for scheduled posts is deleted when no scheduled posts remain. You can also delete it yourself at any time.",
+        "Login information for scheduled posts is deleted when no posts are pending and 30 days have passed since a post was last scheduled, changed, or run. It is also deleted once we find the app password no longer works.",
     "privacy.retention.item5":
         "Access logs are kept only for the period set by Cloudflare.",
     "privacy.retention.item6":
@@ -112,7 +112,7 @@ export const privacy = {
     "privacy.rights.procedure4":
         "We respond to requests without delay in accordance with the law.",
     "privacy.rights.self1":
-        "You can cancel scheduled posts and delete history or saved login information yourself from the scheduled posts page.",
+        'You can change or cancel scheduled posts and delete their history from "Drafts & scheduled" in the post form. Turning off scheduled posts in Settings immediately deletes the login information and pending scheduled posts.',
     "privacy.rights.self2":
         "Settings saved on your device can be deleted yourself from your browser settings.",
     "privacy.revision.title": "Article 9 (Revision)",
