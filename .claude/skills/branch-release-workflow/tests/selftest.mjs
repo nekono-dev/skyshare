@@ -80,6 +80,10 @@ eq("branch-guard/AC-7 import は標準モジュールと相対パスのみ", imp
 
 // ---- preview ----
 eq("preview/AC-1 斜線をハイフンにした alias のURLを算出", previewUrl({ preview: cfg.preview }, "dev/foo-bar"), "https://dev-foo-bar.example.com");
+const stripCfg = { preview: { ...cfg.preview, provider: "cloudflare-previews", aliasStripPrefix: "dev/" } };
+eq("preview/AC-9 接頭辞を除いた alias のURLを算出", previewUrl(stripCfg, "dev/foo-bar"), "https://foo-bar.example.com");
+eq("preview/AC-9 後始末の名前も接頭辞を除く", getProvider(stripCfg).cleanup(stripCfg, "dev/foo-bar").args.at(-1), "foo-bar");
+eq("preview/AC-9 接頭辞が文字列でなければ不正", validateConfig({ ...cfg, preview: { ...cfg.preview, aliasStripPrefix: 1 } }).length, 1);
 eq("preview/AC-2 provider none ではURLが無い", previewUrl({ preview: { provider: "none" } }, "dev/foo"), null);
 eq("preview/AC-2 provider none では後始末が無い", getProvider({ preview: { provider: "none" } }).cleanup({}, "dev/foo"), null);
 
