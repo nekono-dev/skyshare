@@ -3,7 +3,7 @@ import { createFakeD1 } from "../../helpers/fakeD1"
 import { decryptToken, encryptToken } from "@/lib/schedule/credentialCrypto"
 import {
     claimDueSchedules,
-    finishSchedule,
+    failSchedule,
     insertSchedule,
     CREDENTIAL_IDLE_SECONDS,
     deleteCredential,
@@ -74,7 +74,7 @@ describe("credentialCrypto", () => {
         // 実行中の予約が残る
         await claimDueSchedules(db, 10, 5)
         expect(await purgeIdleCredentials(db, now, idle)).toBe(0)
-        await finishSchedule(db, "s1", { status: "posted" }, 11)
+        await failSchedule(db, "s1", "InvalidRecord", 11)
         // 最後の使用から30日以内
         await touchCredential(db, DID, now - idle + 1)
         expect(await purgeIdleCredentials(db, now, idle)).toBe(0)

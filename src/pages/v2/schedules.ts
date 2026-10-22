@@ -127,7 +127,6 @@ export const GET: APIRoute = async ({ url, locals }) => {
                         PREVIEW_LENGTH,
                     ),
                     lastError: row.lastError,
-                    resultUri: row.resultUri,
                 }
             }),
             ...(cursor ? { cursor } : {}),

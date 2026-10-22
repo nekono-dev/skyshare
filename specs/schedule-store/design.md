@@ -56,7 +56,7 @@ sequenceDiagram
     store->>credentialCrypto: decryptToken
     store->>ext_d1: saveProgress
     store->>ext_d1: releaseSchedule
-    store->>ext_d1: finishSchedule
+    store->>ext_d1: failSchedule/completeSchedule
     store->>imageStaging: removeImages
     store->>ext_d1: touchCredential
     store->>ext_d1: loadCredential
@@ -75,7 +75,7 @@ sequenceDiagram
 ### D-1: 予約の型と状態 (FR-1, NFR-1)
 
 ```ts
-type ScheduleStatus = "pending" | "running" | "posted" | "failed"
+type ScheduleStatus = "pending" | "running" | "failed"
 
 type ScheduleRow = {
   id: string // TID
@@ -87,7 +87,6 @@ type ScheduleRow = {
   progress: string // 実行の進捗の JSON
   attempts: number
   lastError: string | null // 失敗の分類コード
-  resultUri: string | null // 先頭の投稿の at:// URI
   updatedAt: number
   finishedAt: number | null
 }
@@ -96,7 +95,7 @@ const CLAIM_LIMIT = 5
 const MAX_IMAGE_BYTES_PER_SCHEDULE = 10 * 1000 * 1000
 ```
 
-データベースのスキーマは次のとおりとする。
+データベースのスキーマは次のとおりとする。適用済みの移行は書き換えないため、`status` の CHECK の `posted` と `result_uri` 列は残るが、コードは使わない（成功した予約は行ごと削除する）。
 
 ```sql
 CREATE TABLE scheduled_posts (
@@ -147,12 +146,8 @@ export const deletePendingSchedules = (db: D1Database, did: string): Promise<Sch
 export const claimDueSchedules = (db: D1Database, now: number, limit: number): Promise<ScheduleRow[]>
 export const saveProgress = (db: D1Database, id: string, progress: Progress, now: number, attempts?: number): Promise<boolean>
 export const releaseSchedule = (db: D1Database, id: string, countAttempt: boolean, now: number): Promise<void>
-export const finishSchedule = (
-    db: D1Database,
-    id: string,
-    result: { status: "posted" | "failed"; resultUri?: string; lastError?: string },
-    now: number,
-): Promise<void>
+export const failSchedule = (db: D1Database, id: string, lastError: string, now: number): Promise<void>
+export const completeSchedule = (db: D1Database, id: string): Promise<void>
 
 type Progress = {
     rkeys: string[] // 投稿ごとに事前採番した TID
@@ -168,7 +163,8 @@ type Progress = {
 | 取得 | `UPDATE ... SET status='running', updated_at=? WHERE id IN (SELECT id ... WHERE status='pending' AND run_at<=? ORDER BY run_at LIMIT ?) RETURNING *` の1文で取り出しと遷移を行う |
 | 進捗 | `status='running'` の行だけを更新し、`updated_at` を更新する                                                                                                                     |
 | 戻し | `status='running'` の行だけを `pending` に戻し、`countAttempt` が真のときだけ `attempts` に1を加える。`progress` は変えない                                                      |
-| 終了 | `status` と `finished_at` を設定し、`running` の行だけを更新する                                                                                                                 |
+| 失敗 | `status` を `failed` にして `last_error` と `finished_at` を設定し、`running` の行だけを更新する。内容と画像は書き戻せるよう残す                                                 |
+| 完了 | `running` の行だけを削除する。成功した予約は履歴に残さない                                                                                                                       |
 
 `limit` は `CLAIM_LIMIT` を超えた値を渡されても `CLAIM_LIMIT` に丸める。
 
@@ -183,7 +179,7 @@ export const FINISHED_RETENTION_SECONDS = 7 * 24 * 60 * 60
 ```
 
 - `requeueStale` は `running` で `updated_at` が `now - staleSeconds` より古い行を `pending` に戻し、`attempts` に1を加える。
-- `purgeFinished` は `posted` と `failed` で `finished_at` が保持期間より古い行を削除し、削除した行を返す。画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
+- `purgeFinished` は `failed` で `finished_at` が保持期間より古い行を削除し、削除した行を返す。画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
 
 ### D-5: 認証情報の暗号化と保管 (FR-4, FR-5, NFR-2)
 

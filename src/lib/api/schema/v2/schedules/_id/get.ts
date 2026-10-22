@@ -1,5 +1,5 @@
 /**
- * GET /v2/schedules/{id}/ — 自分の待機中の予約の内容を、編集のために取得する。
+ * GET /v2/schedules/{id}/ — 自分の待機中または失敗の予約の内容を、フォームへの書き戻しのために取得する。
  *
  * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  * 画像は番号だけを返し、バイト列は GET /v2/schedules/{id}/images/{index}/ で取得する。
@@ -28,6 +28,8 @@ export const ScheduleDetailPostSchema = z
 export const ResponseBody200Schema = z
     .object({
         id: z.string(),
+        /** pending は待機中の予約（編集して置き換える）、failed は失敗した予約（書き戻して新規に送る） */
+        status: z.enum(["pending", "failed"]),
         runAt: z.string(),
         posts: z.array(ScheduleDetailPostSchema),
         reply: Common.CommonReplyRefSchema.optional(),
@@ -41,7 +43,7 @@ export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>
 
 export const operation: ZodOpenApiOperationObject = {
     operationId: "getSchedule",
-    summary: "Get the content of an own pending scheduled post for editing",
+    summary: "Get the content of an own pending or failed scheduled post to restore it into the form",
     requestParams: { path: PathParamsSchema },
     responses: {
         "200": {

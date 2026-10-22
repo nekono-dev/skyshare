@@ -11,7 +11,7 @@ import {
     loadCredential,
     saveCredential,
     saveProgress,
-    finishSchedule,
+    failSchedule,
     touchCredential,
 } from "@/lib/schedule/store"
 import { emptyProgress } from "@/lib/schedule/types"
@@ -69,9 +69,7 @@ describe("runScheduledPosts", () => {
         await add("future", NOW + 3600)
         await run()
         for (let i = 1; i <= 5; i++)
-            expect((await getSchedule(db, DID, `due${i}`))?.status).toBe(
-                "posted",
-            )
+            expect(await getSchedule(db, DID, `due${i}`)).toBeNull()
         expect((await getSchedule(db, DID, "due6"))?.status).toBe("pending")
         expect((await getSchedule(db, DID, "due7"))?.status).toBe("pending")
         expect((await getSchedule(db, DID, "future"))?.status).toBe("pending")
@@ -108,7 +106,7 @@ describe("runScheduledPosts", () => {
         // 持ち越された予約は、次の実行で続きから完了する
         for (let n = 0; n < 5; n++) await run()
         for (let i = 1; i <= 5; i++)
-            expect((await getSchedule(db, DID, `s${i}`))?.status).toBe("posted")
+            expect(await getSchedule(db, DID, `s${i}`)).toBeNull()
         expect(pds.records.size).toBe(5)
     })
 
@@ -137,7 +135,7 @@ describe("runScheduledPosts", () => {
         await add("old", NOW - 10)
         await claimDueSchedules(db, NOW, 5)
         await saveProgress(db, "old", emptyProgress(), NOW)
-        await finishSchedule(db, "old", { status: "posted" }, NOW - week - 10)
+        await failSchedule(db, "old", "InvalidRecord", NOW - week - 10)
         // 最後の使用から30日以内の認証情報は残る
         await touchCredential(db, DID, NOW - month + 60)
         await run()

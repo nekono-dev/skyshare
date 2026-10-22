@@ -253,7 +253,8 @@ describe("executeSchedule", () => {
         const row = (await getSchedule(db, DID, "s1"))!
         expect(row.status).toBe("failed")
         expect(row.lastError).toBe("CredentialExpired")
-        expect(r2.objects.size).toBe(0)
+        // 失敗した予約の画像は、フォームへ書き戻せるよう残す
+        expect(r2.objects.size).toBe(1)
         expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
@@ -297,7 +298,7 @@ describe("executeSchedule", () => {
         )
     })
 
-    test("schedule-runner/AC-9: 成功した予約は投稿済みになり、先頭の投稿の URI が記録され、画像が削除される", async () => {
+    test("schedule-runner/AC-9: 成功した予約は履歴に残らず行ごと削除され、画像が削除される", async () => {
         await schedule(
             "s1",
             {
@@ -313,11 +314,7 @@ describe("executeSchedule", () => {
         )
         const { outcome } = await exec("s1")
         expect(outcome).toBe("posted")
-        const row = (await getSchedule(db, DID, "s1"))!
-        expect(row.status).toBe("posted")
-        expect(row.resultUri).toMatch(
-            new RegExp(`^at://${DID}/app.bsky.feed.post/`),
-        )
+        expect(await getSchedule(db, DID, "s1")).toBeNull()
         expect(r2.objects.size).toBe(0)
         // 認証情報は次の予約で使うため、成功しても削除しない
         expect(await loadCredential(db, KEY, DID)).not.toBeNull()

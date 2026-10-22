@@ -273,7 +273,7 @@ describe("GET /v2/schedules", () => {
         ).json()
         expect(p2.items.map((i: { id: string }) => i.id)).toEqual(["a3"])
         expect(p2.cursor).toBeUndefined()
-        const none = await (await get("?status=posted")).json()
+        const none = await (await get("?status=failed")).json()
         expect(none.items).toHaveLength(0)
     })
 

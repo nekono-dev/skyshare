@@ -107,12 +107,11 @@ const setDefaultRunAt = async (page: Page) => {
     await expect(dialog).toBeHidden()
 }
 
-test("[schedule-form/AC-5] 予約投稿が無効のときと動画を添付したときは、カレンダーのボタンが押せない", async ({
+test("[schedule-form/AC-5] 予約投稿が無効のときは、カレンダーのボタンが押せない", async ({
     page,
 }) => {
     test.setTimeout(90_000)
-    const { state } = await mockScheduleApi(page, { registered: false })
-    await mockVideo(page)
+    await mockScheduleApi(page, { registered: false })
     await page.goto("/post/")
     await typeBody(page, "本文")
     await expect(pickerButton(page)).toBeDisabled()
@@ -120,22 +119,51 @@ test("[schedule-form/AC-5] 予約投稿が無効のときと動画を添付し�
         "title",
         "予約投稿は、設定で有効にすると使えます。",
     )
+})
 
-    state.registered = true
-    await page.reload()
-    await typeBody(page, "本文")
-    await expect(pickerButton(page)).toBeEnabled({ timeout: 30_000 })
-    await page
+/** 動画のファイル入力 */
+const videoInput = (page: Page) =>
+    page
         .getByTestId("thread-segment-0")
         .locator('input[type="file"][accept*="video/quicktime"]')
         .first()
-        .setInputFiles(SAMPLE)
+
+test("[schedule-form/AC-24 schedule-form/AC-25] 動画つきでカレンダーのボタンを押すと確認が出て、キャンセルでは動画が残り、解除を選ぶと動画が外れて日時の指定が開き、設定中は動画のボタンが押せない", async ({
+    page,
+}) => {
+    test.setTimeout(90_000)
+    await mockScheduleApi(page)
+    await mockVideo(page)
+    await page.goto("/post/")
+    await typeBody(page, "本文")
+    await expect(pickerButton(page)).toBeEnabled({ timeout: 30_000 })
+    await videoInput(page).setInputFiles(SAMPLE)
     await expect(page.getByTestId("video-preview")).toBeVisible()
-    await expect(pickerButton(page)).toBeDisabled()
-    await expect(pickerButton(page)).toHaveAttribute(
-        "title",
-        "動画を含む投稿は予約できません。",
-    )
+
+    const conflict = page.getByRole("dialog", {
+        name: "動画つきの投稿は予約できません",
+    })
+    // キャンセルでは動画が残り、日時の指定は開かない
+    await pickerButton(page).click()
+    await expect(conflict).toBeVisible()
+    await conflict.getByRole("button", { name: "キャンセル" }).click()
+    await expect(conflict).toBeHidden()
+    await expect(pickerDialog(page)).toBeHidden()
+    await expect(page.getByTestId("video-preview")).toBeVisible()
+
+    // 解除を選ぶと動画が外れ、日時の指定が開く
+    await pickerButton(page).click()
+    await conflict
+        .getByRole("button", { name: "動画の登録を解除して予約する" })
+        .click()
+    await expect(page.getByTestId("video-preview")).toHaveCount(0)
+    const dialog = pickerDialog(page)
+    await expect(dialog).toBeVisible()
+
+    // 日時の設定中は動画を追加できない
+    await dialog.getByRole("button", { name: "設定" }).click()
+    await expect(dialog).toBeHidden()
+    await expect(videoInput(page)).toBeDisabled()
 })
 
 test("[schedule-form/AC-2 schedule-form/AC-6 schedule-form/AC-7] 予約投稿が有効なら押せ、既定値は翌日の同時刻で、範囲外では設定できない", async ({

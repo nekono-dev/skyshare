@@ -12,7 +12,7 @@ import { DELETE, GET, PUT } from "@/pages/v2/schedules/credential"
 import {
     claimDueSchedules,
     countPending,
-    finishSchedule,
+    failSchedule,
     getSchedule,
     insertSchedule,
     saveCredential,
@@ -82,7 +82,7 @@ describe("/v2/schedules/credential", () => {
         expect((await (await call(GET)).json()).registered).toBe(true)
 
         // 実行が終われば、待機中の予約を取り消して認証情報を削除する
-        await finishSchedule(db, "busy", { status: "posted" }, 11)
+        await failSchedule(db, "busy", "InvalidRecord", 11)
         const ok = await call(DELETE)
         expect(ok.status).toBe(200)
         expect(await ok.json()).toEqual({ registered: false, cancelled: 2 })

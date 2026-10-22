@@ -12,7 +12,7 @@
 | `src/components/schedule/ScheduleSetting/index.tsx`  | 設定の予約投稿のスイッチと、有効化と無効化の確認           |
 | `src/components/schedule/CredentialDialog/index.tsx` | 予約用の認証情報（アプリパスワード）の入力のダイアログ     |
 | `src/components/schedule/RunAtPicker/index.tsx`      | カレンダーのボタンと実行日時の指定のダイアログ             |
-| `src/components/schedule/ScheduleList/index.tsx`     | 予約のタブの一覧と、選択・取消・履歴の削除                 |
+| `src/components/schedule/ScheduleList/index.tsx`     | 予約のタブの一覧と、選択・書き戻し・履歴の削除             |
 
 ## 2. 関係図・ワークフロー
 
@@ -101,7 +101,6 @@ sequenceDiagram
   submitSchedule->>submitSchedule: scheduleErrorKey
   ScheduleList->>ext_client: listSchedules
   ScheduleList->>ScheduleList: failureMessageKey
-  ScheduleList->>ScheduleList: resultUriToUrl
   ScheduleList->>ext_composer: onSelect
   ext_composer->>submitSchedule: fetchScheduleForEdit
   submitSchedule->>ext_client: getSchedule と getScheduleImage
@@ -198,7 +197,7 @@ type RunAtPickerProps = {
   disabledReason?: string // ボタンの title に出す
   onChange: (next: Date | null) => void
   open?: boolean // 実行日時の行からも開けるよう、開閉を呼び出し側が持てる
-  onOpenChange?: (open: boolean) => void
+  onOpenChange?: (open: boolean) => void // 開く要求（next が true）を呼び出し側が横取りして確認を挟める
 }
 ```
 
@@ -212,6 +211,8 @@ type RunAtPickerProps = {
 | 実行日時の行 | 呼び出し側が `formatRunAtLabel` で「{日時}に予約」と表示し、行を押すとダイアログを開く        |
 
 - 画面幅が640ピクセル未満のとき、共通 UI のクラスがボタンと入力欄の高さを44ピクセル以上にする。
+- 動画を含むときにボタンを押すと、投稿フォームは日時の指定を開かず、`ChoiceDialog` で「動画の登録を解除して予約する」「キャンセル」を出す。解除を選ぶと、全セグメントの動画を外し（アップロード中の動画は `VideoPicker` が値の消失を検知して中断する）、日時の指定を開く。
+- 実行日時の設定中（`scheduledRunAt !== null`）は、各セグメントの `VideoPicker` を無効にし、理由を title に出す。動画の取り外しの操作は、この状態では動画が無いため不要である。
 
 ### D-6: 投稿フォームの予約の状態 (FR-6, FR-7, FR-11, FR-12)
 
@@ -238,6 +239,7 @@ export const cancelAction = (mode: ScheduleMode, hasUnsavedChanges: boolean, has
 | `detached` | 投稿・すべて投稿 | 本文があれば常に `draftConfirm`               |
 
 - `applyRunAtChange` は、`editing` で `null` を受けたときだけ `cancelScheduleId` に識別子を入れて `detached` へ移る。`editing` で日時を受けたら識別子を保ったまま日時だけを変える。
+- `restoredFailedId`（失敗の予約から書き戻した入力のときの履歴の識別子）は `ScheduleMode` と別に持つ。書き戻しは `plain` の状態で入力を戻し、投稿または予約に成功したときに `cancelSchedule(restoredFailedId)` を呼んで履歴を削除する（失敗しても操作は妨げない）。フォームの初期化・下書きの適用・待機中の予約の書き戻しで `null` に戻す。
 - `editChoice` は `ChoiceDialog` で「予約を取り消す」（`deleteSchedule` の後に初期化）・「予約を残して閉じる」（初期化）・「編集を続ける」を出す。
 
 ### D-7: 予約の送信と編集用の内容の取得 (FR-7, FR-10, NFR-4)
@@ -256,24 +258,22 @@ export const fetchScheduleForEdit = async (id: string): Promise<
 
 - `submitSchedule` は `create` で `createSchedule`、`update` で `updateSchedule` を、`toRunAtIso(runAt)` を加えて1回だけ呼ぶ。送信中は呼び出し側が `useRef` の印で2回目を無視する。
 - 成功したら呼び出し側が「予約しました」を表示し、ハッシュタグの履歴を記録して投稿フォームを初期化する。他の SNS への共有は行わない。
-- `fetchScheduleForEdit` は `getSchedule` の後、`detail` の画像の番号の数だけ `getScheduleImage` を並行に呼ぶ。1つでも失敗したら全体を失敗にする。
+- `fetchScheduleForEdit` は待機中と失敗の予約を取得でき、`detail.status` で区別する。`getSchedule` の後、`detail` の画像の番号の数だけ `getScheduleImage` を並行に呼ぶ。1つでも失敗したら全体を失敗にする。
 
 ### D-8: 予約のタブ (FR-8, FR-9, NFR-1)
 
 ```tsx
 type ScheduleListProps = {
   active: boolean // タブが選ばれたときに取得する
-  onSelect: (id: string) => void // 待機中の行を押したとき
+  onSelect: (id: string) => void // 待機中の行を押したとき、または失敗の行の「フォームに書き戻す」を押したとき
 }
-export const resultUriToUrl = (uri: string): string | null // at://{did}/app.bsky.feed.post/{rkey} を bsky.app の URL に変換する
 ```
 
-| 状態     | 表示                                   | 操作                   |
-| -------- | -------------------------------------- | ---------------------- |
-| 待機中   | 実行時刻、本文の冒頭、件数             | 行を押すと `onSelect`  |
-| 実行中   | 実行時刻、進行中の表示                 | なし                   |
-| 投稿済み | 先頭の投稿の Bluesky の URL へのリンク | 履歴の削除（確認つき） |
-| 失敗     | 失敗の分類コードに対応する文言         | 履歴の削除（確認つき） |
+| 状態   | 表示                           | 操作                                                        |
+| ------ | ------------------------------ | ----------------------------------------------------------- |
+| 待機中 | 実行時刻、本文の冒頭、件数     | 行を押すと `onSelect`                                       |
+| 実行中 | 実行時刻、進行中の表示         | なし                                                        |
+| 失敗   | 失敗の分類コードに対応する文言 | 「フォームに書き戻す」で `onSelect`、履歴の削除（確認つき） |
 
 - `listSchedules` を `cursor` で続けて取得し、続きがあるときだけ「さらに表示」ボタンを置く。削除は `DELETE /v2/schedules/{id}` を呼び、成功したら行を除く。
 

@@ -6,12 +6,7 @@
  * - 保管と実行が共有する上限値を定義する。
  */
 
-export const SCHEDULE_STATUSES = [
-    "pending",
-    "running",
-    "posted",
-    "failed",
-] as const
+export const SCHEDULE_STATUSES = ["pending", "running", "failed"] as const
 export type ScheduleStatus = (typeof SCHEDULE_STATUSES)[number]
 
 /** 1回の取り出しで実行中にする予約の最大件数 */
@@ -30,7 +25,6 @@ export type ScheduleRow = {
     progress: string
     attempts: number
     lastError: string | null
-    resultUri: string | null
     updatedAt: number
     finishedAt: number | null
 }

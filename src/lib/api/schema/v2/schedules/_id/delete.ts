@@ -13,7 +13,7 @@ export type PathParamsType = z.infer<typeof PathParamsSchema>
 export const operation: ZodOpenApiOperationObject = {
     operationId: "deleteSchedule",
     summary:
-        "Cancel a pending scheduled post, or delete the history of a posted or failed one",
+        "Cancel a pending scheduled post, or delete the history of a failed one",
     requestParams: { path: PathParamsSchema },
     responses: {
         "200": { description: "Success" },

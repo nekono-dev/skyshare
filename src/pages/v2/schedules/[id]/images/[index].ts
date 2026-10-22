@@ -8,11 +8,11 @@ import { codeErrorResponse } from "@/lib/schedule/scheduleResponse"
 import { getSchedule, parseKeys } from "@/lib/schedule/store"
 
 /**
- * GET /v2/schedules/{id}/images/{index} — 自分の待機中の予約に添付した画像を番号で返す。
+ * GET /v2/schedules/{id}/images/{index} — 自分の待機中または失敗の予約に添付した画像を番号で返す。
  *
  * 責務と処理概要:
  * - 予約の編集で、投稿フォームへ画像を書き戻すために使う。
- * - 他のアカウントの予約・存在しない予約・終了した予約・範囲外の番号は 404、実行中の予約は 409。
+ * - 他のアカウントの予約・存在しない予約・待機中でも失敗でもない予約・範囲外の番号は 404、実行中の予約は 409。
  * - 応答の content-type は保管時の値とし、キャッシュを禁止する。
  *
  * 実装上の制約:
@@ -32,7 +32,9 @@ export const GET: APIRoute = async ({ params, locals }) => {
         if (row.status === "running") {
             return codeErrorResponse(409, "ScheduleRunning")
         }
-        if (row.status !== "pending") return errorResponseFromStatus(404)
+        if (row.status !== "pending" && row.status !== "failed") {
+            return errorResponseFromStatus(404)
+        }
 
         const image = await getImage(
             env.SCHEDULE_IMAGES,

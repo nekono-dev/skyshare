@@ -25,9 +25,9 @@ import type { StoredPayload } from "@/lib/schedule/validateSchedule"
  * Skyshare v2 schedules/{id} API（1件の予約）。
  *
  * 責務と処理概要:
- * - GET: 自分の待機中の予約の内容を、編集のために返す（画像は番号だけ）。
+ * - GET: 自分の待機中または失敗の予約の内容を、フォームへの書き戻しのために返す（画像は番号だけ）。
  * - PUT: 自分の待機中の予約を、作成と同じ入力で実行時刻・内容・画像ごと置き換える。
- * - DELETE: 待機中の予約を取り消す。投稿済み・失敗の予約は履歴として削除する。
+ * - DELETE: 待機中の予約を取り消す。失敗の予約は履歴として削除する。
  * - 他のアカウントの予約と存在しない予約は 404、実行中の予約は 409（ScheduleRunning）を返す。
  *
  * 実装上の制約:
@@ -35,7 +35,7 @@ import type { StoredPayload } from "@/lib/schedule/validateSchedule"
  */
 
 /**
- * GET /v2/schedules/{id} — 待機中の予約の内容を返す。投稿済み・失敗は 404、実行中は 409。
+ * GET /v2/schedules/{id} — 待機中または失敗の予約の内容を返す。実行中は 409。
  * 保管した本文から facets を除いて返す（facets は画面側が送信の直前に検出し直す）。
  */
 export const GET: APIRoute = async ({ params, locals }) => {
@@ -52,7 +52,10 @@ export const GET: APIRoute = async ({ params, locals }) => {
         if (row.status === "running") {
             return codeErrorResponse(409, "ScheduleRunning")
         }
-        if (row.status !== "pending") return errorResponseFromStatus(404)
+        // 待機中と失敗だけが内容を返せる（成功した予約は履歴に残さない）
+        if (row.status !== "pending" && row.status !== "failed") {
+            return errorResponseFromStatus(404)
+        }
 
         let payload: StoredPayload = { posts: [] }
         try {
@@ -62,6 +65,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
         }
         const res: GetSchema.ResponseBody200Type = {
             id: row.id,
+            status: row.status,
             runAt: toIso(row.runAt),
             posts: payload.posts.map(post => {
                 // facets は返さない。分割代入で取り除く
@@ -176,7 +180,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 }
 
 /**
- * DELETE /v2/schedules/{id} — 待機中の予約を取り消す。投稿済み・失敗の予約は履歴として削除する。
+ * DELETE /v2/schedules/{id} — 待機中の予約を取り消す。失敗の予約は履歴として削除する。
  * 保管した画像も削除する。認証情報は予約投稿を無効にするまで残す。
  */
 export const DELETE: APIRoute = async ({ params, locals }) => {
@@ -199,7 +203,10 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
         if (!deleted) return codeErrorResponse(409, "ScheduleRunning")
 
         try {
-            await removeImages(env.SCHEDULE_IMAGES, parseKeys(deleted.imageKeys))
+            await removeImages(
+                env.SCHEDULE_IMAGES,
+                parseKeys(deleted.imageKeys),
+            )
         } catch (err) {
             console.error("schedules DELETE: removeImages failed", err)
         }

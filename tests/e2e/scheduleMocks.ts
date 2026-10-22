@@ -25,11 +25,10 @@ export const PNG_1PX = Buffer.from(
 export type ScheduleItem = {
     id: string
     runAt: string
-    status: "pending" | "running" | "posted" | "failed"
+    status: "pending" | "running" | "failed"
     postCount: number
     preview: string
     lastError: string | null
-    resultUri: string | null
 }
 
 export type MockState = {

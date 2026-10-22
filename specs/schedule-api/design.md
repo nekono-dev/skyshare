@@ -190,7 +190,7 @@ export const stageSchedule = async (
 ```ts
 // GET /v2/schedules?status=pending&limit=20&cursor=...
 const QuerySchema = z.object({
-  status: z.enum(["pending", "running", "posted", "failed"]).optional(),
+  status: z.enum(["pending", "running", "failed"]).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   cursor: z.string().min(1).optional(),
 })
@@ -198,11 +198,10 @@ const QuerySchema = z.object({
 type ScheduleListItem = {
   id: string
   runAt: string
-  status: "pending" | "running" | "posted" | "failed"
+  status: "pending" | "running" | "failed"
   postCount: number
   preview: string // 先頭の投稿の本文の先頭100文字
   lastError: string | null
-  resultUri: string | null
 }
 ```
 
@@ -214,11 +213,11 @@ type ScheduleListItem = {
 | 予約の状態       | 処理                                                           | 応答 |
 | ---------------- | -------------------------------------------------------------- | ---- |
 | 待機中           | `deleteSchedule` で行を削除し、`removeImages` で画像を削除する | 200  |
-| 投稿済み・失敗   | `deleteSchedule` で行を削除する                                | 200  |
+| 失敗             | `deleteSchedule` で行と画像を削除する                          | 200  |
 | 実行中           | 何も変更せず `ScheduleRunning` を返す                          | 409  |
 | 存在しない・他人 | 何も変更しない                                                 | 404  |
 
-状態の確認と削除の間に実行が始まる競合を避けるため、削除は `status` が待機中・投稿済み・失敗の行に限定した条件つきの文で行う。
+状態の確認と削除の間に実行が始まる競合を避けるため、削除は `status` が待機中・失敗の行に限定した条件つきの文で行う。
 
 ### D-6: 予約用認証情報の登録 (FR-4, FR-5)
 
@@ -285,6 +284,7 @@ export const getScheduleLimits = (): ScheduleLimits
 // GET /v2/schedules/{id}
 type ScheduleDetail = {
   id: string
+  status: "pending" | "failed" // 待機中は編集して置き換え、失敗は書き戻して新規に送る
   runAt: string
   posts: {
     text?: string
@@ -307,9 +307,9 @@ type ScheduleDetail = {
 
 | 予約の状態       | 内容と画像の応答         |
 | ---------------- | ------------------------ |
-| 待機中           | 200                      |
+| 待機中・失敗     | 200                      |
 | 実行中           | `ScheduleRunning` の 409 |
-| 投稿済み・失敗   | 404                      |
+| 上記以外         | 404                      |
 | 存在しない・他人 | 404                      |
 
 - 内容は保管した `payload` をそのまま返し、`facets` は含めない。画像は `getImage` に行の `imageKeys` を渡して読む。

@@ -1,5 +1,5 @@
 /**
- * GET /v2/schedules/{id}/images/{index}/ — 自分の待機中の予約に添付した画像を、番号で取得する。
+ * GET /v2/schedules/{id}/images/{index}/ — 自分の待機中または失敗の予約に添付した画像を、番号で取得する。
  *
  * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  * 応答の content-type は保管時の値（image/png など）とする。

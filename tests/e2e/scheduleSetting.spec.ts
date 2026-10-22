@@ -16,7 +16,6 @@ const pending = (id: string): ScheduleItem => ({
     postCount: 1,
     preview: `本文-${id}`,
     lastError: null,
-    resultUri: null,
 })
 
 const scheduleSwitch = (page: Page) =>

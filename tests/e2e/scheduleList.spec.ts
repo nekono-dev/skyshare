@@ -2,7 +2,7 @@
  * 下書き・予約の画面の予約のタブ（ScheduleList）と、予約の編集のヘッドレスブラウザによる確認。
  *
  * 責務と処理概要:
- * - 予約の API を差し替え、予約のタブの並び・失敗の理由・投稿へのリンク・履歴の削除・
+ * - 予約の API を差し替え、予約のタブの並び・失敗の理由・失敗の予約の書き戻し・履歴の削除・
  *   予約の書き戻し（画像を含む）・置き換え・編集中のキャンセルの3択・日時の解除による取消・
  *   狭い画面の寸法を検証する。
  */
@@ -17,7 +17,6 @@ const item = (
     postCount: 1,
     preview: `本文-${over.id}`,
     lastError: null,
-    resultUri: null,
     ...over,
 })
 
@@ -36,12 +35,6 @@ const ITEMS: ScheduleItem[] = [
         status: "failed",
         runAt: "2027-03-02T10:00:00.000Z",
         lastError: "CredentialExpired",
-    }),
-    item({
-        id: "c",
-        status: "posted",
-        runAt: "2027-03-03T10:00:00.000Z",
-        resultUri: "at://did:plc:me/app.bsky.feed.post/3kabc",
     }),
 ]
 
@@ -91,7 +84,7 @@ const editSchedule = async (page: Page, preview: string) => {
 const editor = (page: Page) => page.locator("[data-post-body-editor]").first()
 const submitButton = (page: Page) => page.getByTestId("composer-submit")
 
-test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時刻の順に並び、失敗の理由とリンクが出て、履歴を削除できる", async ({
+test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時刻の順に並び、失敗の理由が出て、履歴を削除できる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -100,20 +93,18 @@ test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時�
     const list = await openSchedulesTab(page)
 
     const rows = list.locator("[data-status]")
-    await expect(rows).toHaveCount(3)
+    await expect(rows).toHaveCount(2)
     await expect(rows.nth(0)).toHaveAttribute("data-status", "pending")
     await expect(rows.nth(0)).toContainText("待機中")
     await expect(rows.nth(0)).toContainText("本文-a")
     await expect(rows.nth(0)).toContainText("2件の投稿")
     await expect(rows.nth(1)).toHaveAttribute("data-status", "failed")
-    await expect(rows.nth(2)).toHaveAttribute("data-status", "posted")
 
     await expect(
         rows.nth(1).getByText("アプリパスワードが使えなくなっていました"),
     ).toBeVisible()
-    await expect(
-        rows.nth(2).getByRole("link", { name: "投稿を見る" }),
-    ).toHaveAttribute("href", "https://bsky.app/profile/did:plc:me/post/3kabc")
+    // 成功した予約は履歴に残らないため、投稿へのリンクは出ない
+    await expect(list.getByRole("link", { name: "投稿を見る" })).toHaveCount(0)
 
     await rows.nth(1).getByRole("button", { name: "履歴を削除" }).click()
     await page
@@ -263,6 +254,47 @@ test("[schedule-form/AC-18] 編集中に日時を解除すると確認なしで�
     ).toBeVisible()
 })
 
+test("[schedule-form/AC-26] 失敗の予約を書き戻すと日時の無い新規の入力として戻り、予約に成功すると元の履歴の削除が呼ばれる", async ({
+    page,
+}) => {
+    test.setTimeout(90_000)
+    const { calls } = await mockScheduleApi(page, {
+        items: [
+            item({
+                id: "f1",
+                status: "failed",
+                preview: "書き戻す本文",
+                lastError: "InvalidRecord",
+            }),
+        ],
+        details: {
+            f1: { ...detailWithImage("f1"), status: "failed" },
+        },
+    })
+    await page.goto("/post/")
+    const list = await openSchedulesTab(page)
+    await list.getByRole("button", { name: "フォームに書き戻す" }).click()
+    await expect(
+        page.getByText("予約をフォームに読み込みました。"),
+    ).toBeVisible()
+    // 内容が戻り、日時は未設定のまま投稿のボタンになる
+    await expect(editor(page)).toContainText("書き戻す本文")
+    await expect(submitButton(page)).toHaveText("投稿")
+    await expect(page.getByTestId("schedule-run-at-label")).toHaveCount(0)
+    expect(calls.deletes).toHaveLength(0)
+
+    // 日時を設定して予約すると、作成の後に元の失敗の履歴が削除される
+    await page.getByTestId("schedule-picker-button").click()
+    await page
+        .getByRole("dialog", { name: "予約日時" })
+        .getByRole("button", { name: "設定" })
+        .click()
+    await submitButton(page).click()
+    await expect(page.getByText("予約しました。")).toBeVisible()
+    expect(calls.creates).toHaveLength(1)
+    await expect.poll(() => calls.deletes).toEqual(["f1"])
+})
+
 test.describe("狭い画面", () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
@@ -276,7 +308,7 @@ test.describe("狭い画面", () => {
         const controls = [
             list.getByRole("button", { name: /本文-a/ }),
             list.getByRole("button", { name: "履歴を削除" }).first(),
-            list.getByRole("link", { name: "投稿を見る" }),
+            list.getByRole("button", { name: "フォームに書き戻す" }),
             page.getByRole("tab", { name: "予約" }),
         ]
         for (const control of controls) {

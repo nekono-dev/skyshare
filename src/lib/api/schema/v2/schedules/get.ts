@@ -9,7 +9,7 @@ import * as Common from "../../common"
 
 export const QuerySchema = z
     .object({
-        status: z.enum(["pending", "running", "posted", "failed"]).optional(),
+        status: z.enum(["pending", "running", "failed"]).optional(),
         limit: z.coerce.number().int().min(1).max(50).default(20),
         cursor: z.string().min(1).optional(),
     })
@@ -20,11 +20,10 @@ export const ScheduleListItemSchema = z
     .object({
         id: z.string(),
         runAt: z.string(),
-        status: z.enum(["pending", "running", "posted", "failed"]),
+        status: z.enum(["pending", "running", "failed"]),
         postCount: z.number().int(),
         preview: z.string(),
         lastError: z.string().nullable(),
-        resultUri: z.string().nullable(),
     })
     .strict()
 export type ScheduleListItemType = z.infer<typeof ScheduleListItemSchema>

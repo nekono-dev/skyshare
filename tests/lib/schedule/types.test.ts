@@ -8,11 +8,10 @@ import {
 } from "@/lib/schedule/types"
 
 describe("schedule types", () => {
-    test("schedule-store/AC-1: 状態は4種で、4種以外の行は保存できない", async () => {
+    test("schedule-store/AC-1: 状態は3種で、3種以外の行は保存できない", async () => {
         expect([...SCHEDULE_STATUSES]).toEqual([
             "pending",
             "running",
-            "posted",
             "failed",
         ])
         const db = createFakeD1()

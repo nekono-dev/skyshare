@@ -6,7 +6,8 @@ import {
     countPending,
     deletePendingSchedules,
     deleteSchedule,
-    finishSchedule,
+    completeSchedule,
+    failSchedule,
     getSchedule,
     insertSchedule,
     listSchedules,
@@ -100,34 +101,30 @@ describe("schedule store", () => {
         expect((await getSchedule(db, A, "fresh"))?.status).toBe("running")
     })
 
-    test("schedule-store/AC-10: 終了から7日を超えた投稿済みと失敗だけが削除される", async () => {
+    test("schedule-store/AC-10: 失敗から7日を超えた予約だけが削除される", async () => {
         const db = createFakeD1()
         const week = 7 * 24 * 60 * 60
-        await add(db, "posted-old", 1)
-        await add(db, "failed-old", 2)
-        await add(db, "posted-new", 3)
-        await add(db, "pending", 4)
-        await claimDueSchedules(db, 10, 3)
-        await finishSchedule(
-            db,
-            "posted-old",
-            { status: "posted", resultUri: "at://x" },
-            100,
-        )
-        await finishSchedule(
-            db,
-            "failed-old",
-            { status: "failed", lastError: "E" },
-            100,
-        )
-        await finishSchedule(db, "posted-new", { status: "posted" }, 100 + week)
+        await add(db, "failed-old", 1)
+        await add(db, "failed-new", 2)
+        await add(db, "pending", 3)
+        await claimDueSchedules(db, 10, 2)
+        await failSchedule(db, "failed-old", "E", 100)
+        await failSchedule(db, "failed-new", "E", 100 + week)
         const purged = await purgeFinished(db, 100 + week + 1, week)
-        expect(purged.map(r => r.id).sort()).toEqual([
-            "failed-old",
-            "posted-old",
-        ])
-        expect(await getSchedule(db, A, "posted-new")).not.toBeNull()
+        expect(purged.map(r => r.id)).toEqual(["failed-old"])
+        expect(await getSchedule(db, A, "failed-new")).not.toBeNull()
         expect(await getSchedule(db, A, "pending")).not.toBeNull()
+    })
+
+    test("成功した予約は完了で行ごと削除され、実行中でない予約は削除されない", async () => {
+        const db = createFakeD1()
+        await add(db, "run", 1)
+        await add(db, "wait", 2)
+        await claimDueSchedules(db, 1, 1)
+        await completeSchedule(db, "wait")
+        expect(await getSchedule(db, A, "wait")).not.toBeNull()
+        await completeSchedule(db, "run")
+        expect(await getSchedule(db, A, "run")).toBeNull()
     })
 
     test("schedule-store/AC-11: 1回の取り出しは5件まで", async () => {
@@ -153,11 +150,11 @@ describe("schedule store", () => {
         expect(db.queryCount - beforeUpdate).toBeLessThanOrEqual(3)
     })
 
-    test("schedule-store/AC-15: 一括削除で自分の待機中の予約だけが消え、他人の予約と自分の投稿済みは残る", async () => {
+    test("schedule-store/AC-15: 一括削除で自分の待機中の予約だけが消え、他人の予約と自分の失敗は残る", async () => {
         const db = createFakeD1()
         await add(db, "done", 1)
         await claimDueSchedules(db, 10, 5)
-        await finishSchedule(db, "done", { status: "posted" }, 11)
+        await failSchedule(db, "done", "E", 11)
         await add(db, "p1", 100)
         await add(db, "p2", 200)
         await add(db, "other", 100, B)

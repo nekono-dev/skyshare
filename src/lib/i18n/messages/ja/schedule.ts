@@ -22,6 +22,11 @@ export const schedule = {
         "現在から{minutes}分後以降の日時を指定してください。",
     "schedule.range.tooLate":
         "現在から{days}日後までの日時を指定してください。",
+    "schedule.videoConflict.title": "動画つきの投稿は予約できません",
+    "schedule.videoConflict.message":
+        "動画を含む投稿は予約できません。動画の登録を解除すると予約できます。",
+    "schedule.videoConflict.remove": "動画の登録を解除して予約する",
+    "schedule.videoConflict.cancel": "キャンセル",
     "schedule.editCancel.title": "予約の編集をやめます",
     "schedule.editCancel.cancelSchedule": "予約を取り消す",
     "schedule.editCancel.keep": "予約を残して閉じる",
@@ -54,7 +59,7 @@ export const schedule = {
     "schedule.list.postCount": "{count}件の投稿",
     "schedule.list.edit": "この予約を編集する",
     "schedule.list.deleteHistory": "履歴を削除",
-    "schedule.list.viewPost": "投稿を見る",
+    "schedule.list.restore": "フォームに書き戻す",
     "schedule.list.more": "さらに表示",
     "schedule.list.reload": "再読み込み",
     "schedule.list.loadFailed": "予約の一覧を取得できませんでした。",
@@ -64,7 +69,6 @@ export const schedule = {
     "schedule.list.deleteConfirm": "削除する",
     "schedule.status.pending": "待機中",
     "schedule.status.running": "実行中",
-    "schedule.status.posted": "投稿済み",
     "schedule.status.failed": "失敗",
     "schedule.error.invalid": "予約の内容が正しくありません。",
     "schedule.error.passwordRejected":

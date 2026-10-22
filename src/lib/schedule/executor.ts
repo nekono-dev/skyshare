@@ -24,7 +24,8 @@ import { removeImages } from "./imageStaging"
 import { nextTid } from "./tid"
 import {
     deleteCredential,
-    finishSchedule,
+    completeSchedule,
+    failSchedule,
     loadCredential,
     releaseSchedule,
     saveCredential,
@@ -301,8 +302,9 @@ export const executeSchedule = async (
         }
     }
 
-    // 終了した予約の画像を消す。認証情報は他の予約や次の予約で使うため、ここでは消さない
+    // 投稿を終えた予約の画像を消す。認証情報は他の予約や次の予約で使うため、ここでは消さない
     // （未使用の認証情報は定期実行の後片付けが30日後に削除する）。
+    // 失敗した予約の画像は、フォームへ書き戻せるよう残す（履歴の保持期間の後片付けで消す）。
     const cleanup = async () => {
         await removeImages(env.SCHEDULE_IMAGES, imageKeys).catch(() => {})
     }
@@ -315,40 +317,24 @@ export const executeSchedule = async (
         const action = err.action
         if (action.type === "abandon") return "released"
         if (action.type === "fail") {
-            await finishSchedule(
-                env.DB,
-                row.id,
-                { status: "failed", lastError: action.code },
-                now,
-            )
+            await failSchedule(env.DB, row.id, action.code, now)
             // 認証の失効が分かった認証情報は使えないため削除し、設定の表示をオフに戻す
             if (action.code === "CredentialExpired") {
                 await deleteCredential(env.DB, row.did)
             }
-            await cleanup()
             return "failed"
         }
         // 一時的な失敗は、回数の上限に達したら失敗にする
         if (action.countAttempt && row.attempts + 1 >= MAX_ATTEMPTS) {
-            await finishSchedule(
-                env.DB,
-                row.id,
-                { status: "failed", lastError: "RetryExceeded" },
-                now,
-            )
-            await cleanup()
+            await failSchedule(env.DB, row.id, "RetryExceeded", now)
             return "failed"
         }
         await releaseSchedule(env.DB, row.id, action.countAttempt, now)
         return "released"
     }
 
-    await finishSchedule(
-        env.DB,
-        row.id,
-        { status: "posted", resultUri: progress.created[0]!.uri },
-        now,
-    )
+    // 成功した予約は履歴に残さない
+    await completeSchedule(env.DB, row.id)
     await cleanup()
     return "posted"
 }

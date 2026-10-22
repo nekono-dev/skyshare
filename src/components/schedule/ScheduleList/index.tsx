@@ -17,11 +17,12 @@ import ui from "@/styles/ui.module.css"
  * 下書き・予約の画面の「予約」タブの中身。
  *
  * 責務と処理概要:
- * - タブが選ばれるたびに予約の一覧を取得し、待機中と履歴（実行中・投稿済み・失敗）に分けて、
+ * - タブが選ばれるたびに予約の一覧を取得し、待機中と履歴（実行中・失敗）に分けて、
  *   それぞれ実行時刻の昇順（API の並び順）に、状態・実行時刻・本文の冒頭・投稿の件数を表示する。
+ *   成功した予約は履歴に残らないため表示しない。
  * - 待機中の行を押すと `onSelect` を呼び、呼び出し側（投稿フォーム）が内容を書き戻して編集を始める。
- * - 失敗の予約には分類コードに対応する文言を、投稿済みの予約には先頭の投稿へのリンクを表示し、
- *   終了した予約は確認の後に履歴から削除できる。
+ * - 失敗の予約には分類コードに対応する文言を表示し、「フォームに書き戻す」で `onSelect` を呼ぶ。
+ *   失敗の履歴は確認の後に削除できる。
  * - 続きがあるときだけ「さらに表示」を置く。
  */
 
@@ -30,19 +31,8 @@ type Item = ListSchedules200ItemsItem
 type Props = {
   /** タブが選ばれているか。選ばれるたびに一覧を取得し直す */
   active: boolean
-  /** 待機中の予約が選ばれたとき */
+  /** 待機中の予約、または失敗の予約の書き戻しが選ばれたとき */
   onSelect: (id: string) => void
-}
-
-/**
- * `at://{did}/app.bsky.feed.post/{rkey}` を bsky.app の投稿の URL に変換する。
- *
- * Example: `resultUriToUrl("at://did:plc:a/app.bsky.feed.post/3k")` → `"https://bsky.app/profile/did:plc:a/post/3k"`
- * 失敗時: 形式が違えば null
- */
-export const resultUriToUrl = (uri: string): string | null => {
-  const m = uri.match(/^at:\/\/([^/]+)\/app\.bsky\.feed\.post\/([^/]+)$/)
-  return m ? `https://bsky.app/profile/${m[1]}/post/${m[2]}` : null
 }
 
 export const Component = ({ active, onSelect }: Props) => {
@@ -172,44 +162,38 @@ export const Component = ({ active, onSelect }: Props) => {
             {t("schedule.list.historyTitle")}
           </h3>
           <ul className={styles.list}>
-            {history.map(item => {
-              const url = item.resultUri ? resultUriToUrl(item.resultUri) : null
-              return (
-                <li
-                  key={item.id}
-                  className={`${ui["base-card"]} ${styles.item}`}
-                  data-status={item.status}
-                >
-                  {summary(item)}
-                  {item.status === "failed" && (
-                    <div className={styles.error}>
-                      {t(failureMessageKey(item.lastError))}
-                    </div>
-                  )}
-                  {item.status !== "running" && (
-                    <div className={styles.actions}>
-                      {item.status === "posted" && url && (
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={btn("blue")}
-                        >
-                          {t("schedule.list.viewPost")}
-                        </a>
-                      )}
-                      <button
-                        type="button"
-                        className={btn("white")}
-                        onClick={() => setDeleteTarget(item)}
-                      >
-                        {t("schedule.list.deleteHistory")}
-                      </button>
-                    </div>
-                  )}
-                </li>
-              )
-            })}
+            {history.map(item => (
+              <li
+                key={item.id}
+                className={`${ui["base-card"]} ${styles.item}`}
+                data-status={item.status}
+              >
+                {summary(item)}
+                {item.status === "failed" && (
+                  <div className={styles.error}>
+                    {t(failureMessageKey(item.lastError))}
+                  </div>
+                )}
+                {item.status === "failed" && (
+                  <div className={styles.actions}>
+                    <button
+                      type="button"
+                      className={btn("blue")}
+                      onClick={() => onSelect(item.id)}
+                    >
+                      {t("schedule.list.restore")}
+                    </button>
+                    <button
+                      type="button"
+                      className={btn("white")}
+                      onClick={() => setDeleteTarget(item)}
+                    >
+                      {t("schedule.list.deleteHistory")}
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
           </ul>
         </>
       )}

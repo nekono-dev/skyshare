@@ -5,7 +5,7 @@
  * - 予約の保存・取得・一覧・置き換え・削除・件数を、常に所有アカウント（did）を条件に含めて行う。
  * - 実行時刻が到来した待機中の予約を、1文の更新で実行中へ遷移させて取り出す。
  *   同時に走る別の実行と同じ予約を取り合わない。
- * - 実行の進捗の保存・待機への戻し・終了の記録・停止した予約の回収・履歴の削除を行う。
+ * - 実行の進捗の保存・待機への戻し・失敗の記録と成功した予約の削除・停止した予約の回収・失敗履歴の削除を行う。
  * - 予約用の認証情報の保管は、同じファイルの後半（認証情報の節）にある。
  */
 import { decryptToken, encryptToken } from "./credentialCrypto"
@@ -30,7 +30,6 @@ const toScheduleRow = (r: DbRow): ScheduleRow => ({
     progress: r.progress as string,
     attempts: Number(r.attempts),
     lastError: (r.last_error as string | null) ?? null,
-    resultUri: (r.result_uri as string | null) ?? null,
     updatedAt: Number(r.updated_at),
     finishedAt: r.finished_at == null ? null : Number(r.finished_at),
 })
@@ -308,32 +307,39 @@ export const releaseSchedule = async (
         .run()
 }
 
-/** 実行中の予約を投稿済みまたは失敗として終了する。 */
-export const finishSchedule = async (
+/**
+ * 実行中の予約を失敗として終了する。
+ * 失敗の予約は、利用者がフォームへ書き戻せるよう内容と画像を残す（履歴の保持期間で削除する）。
+ */
+export const failSchedule = async (
     db: D1Database,
     id: string,
-    result: {
-        status: "posted" | "failed"
-        resultUri?: string
-        lastError?: string
-    },
+    lastError: string,
     now: number,
 ): Promise<void> => {
     await db
         .prepare(
             `UPDATE scheduled_posts
-             SET status = ?, result_uri = ?, last_error = ?,
-                 updated_at = ?, finished_at = ?
+             SET status = 'failed', last_error = ?, updated_at = ?, finished_at = ?
              WHERE id = ? AND status = 'running'`,
         )
-        .bind(
-            result.status,
-            result.resultUri ?? null,
-            result.lastError ?? null,
-            now,
-            now,
-            id,
+        .bind(lastError, now, now, id)
+        .run()
+}
+
+/**
+ * 実行中の予約を、投稿を終えたものとして削除する。
+ * 成功した予約は履歴に残さない。実行中でなければ（別の実行に回収された）何もしない。
+ */
+export const completeSchedule = async (
+    db: D1Database,
+    id: string,
+): Promise<void> => {
+    await db
+        .prepare(
+            "DELETE FROM scheduled_posts WHERE id = ? AND status = 'running'",
         )
+        .bind(id)
         .run()
 }
 
@@ -358,7 +364,7 @@ export const requeueStale = async (
 }
 
 /**
- * 終了（投稿済み・失敗）から retentionSeconds を過ぎた予約を削除し、削除した行を返す。
+ * 失敗から retentionSeconds を過ぎた予約を削除し、削除した行を返す。
  * 呼び出し側は、返った行の画像のキーが残っていれば画像を削除する。
  */
 export const purgeFinished = async (
@@ -369,7 +375,7 @@ export const purgeFinished = async (
     const { results } = await db
         .prepare(
             `DELETE FROM scheduled_posts
-             WHERE status IN ('posted', 'failed') AND finished_at < ?
+             WHERE status = 'failed' AND finished_at < ?
              RETURNING *`,
         )
         .bind(now - retentionSeconds)

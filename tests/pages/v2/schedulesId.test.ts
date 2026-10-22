@@ -13,7 +13,7 @@ import { GET as GET_IMAGE } from "@/pages/v2/schedules/[id]/images/[index]"
 import { POST } from "@/pages/v2/schedules"
 import {
     claimDueSchedules,
-    finishSchedule,
+    failSchedule,
     getSchedule,
     insertSchedule,
     loadCredential,
@@ -73,7 +73,7 @@ describe("DELETE /v2/schedules/{id}", () => {
         await add("done")
         await add("busy")
         await claimDueSchedules(db, 10, 5)
-        await finishSchedule(db, "done", { status: "posted" }, 11)
+        await failSchedule(db, "done", "InvalidRecord", 11)
         expect((await del("done")).status).toBe(200)
         const busy = await del("busy")
         expect(busy.status).toBe(409)
@@ -178,7 +178,7 @@ describe("GET /v2/schedules/{id}", () => {
         expect((await getImageOf(id, "1")).status).toBe(404)
     })
 
-    test("schedule-api/AC-19: 他人の予約と投稿済みの予約の内容の取得は404になる", async () => {
+    test("schedule-api/AC-19: 他人の予約と、待機中でも失敗でもない予約の内容の取得は404になる", async () => {
         const id = await create(threadForm({}))
         expect((await getDetail(id, "did:plc:other")).status).toBe(404)
         expect((await getImageOf(id, "0", "did:plc:other")).status).toBe(404)
@@ -188,6 +188,20 @@ describe("GET /v2/schedules/{id}", () => {
             .run()
         expect((await getDetail(id)).status).toBe(404)
         expect((await getImageOf(id, "0")).status).toBe(404)
+    })
+
+    test("失敗した予約は内容と画像を取得でき、状態は failed になる", async () => {
+        const id = await create(threadForm({}))
+        await db
+            .prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?")
+            .bind(id)
+            .run()
+        const res = await getDetail(id)
+        expect(res.status).toBe(200)
+        expect((await res.json()).status).toBe("failed")
+        expect((await getImageOf(id, "0")).status).toBe(200)
+        // 失敗した予約は置き換えられない（書き戻した内容は新規に送る）
+        expect((await put(id, threadForm({}))).status).toBe(404)
     })
 
     test("実行中の予約の内容の取得は409になる", async () => {

@@ -76,6 +76,8 @@ type Props = {
   onAddSegment: () => void
   /** スレッドに追加のボタンの左に置く、予約の日時の指定のボタン（編集中のセグメントだけに渡す） */
   runAtPicker?: React.ReactNode
+  /** 予約の実行日時が設定されているか。設定中は動画を添付できない */
+  scheduled?: boolean
   onRemove: () => void
   onChange: (next: SegmentState) => void
   onRequestSubmit: () => void
@@ -194,6 +196,7 @@ const Component: React.FC<Props> = ({
   submitBlockedReason,
   onAddSegment,
   runAtPicker,
+  scheduled = false,
   onRemove,
   onChange,
   onRequestSubmit,
@@ -510,14 +513,19 @@ const Component: React.FC<Props> = ({
                 value={segment.videoEntry}
                 onChange={entry => update({ videoEntry: entry })}
                 disabled={
-                  disabled || !!segment.imageEntry || !!segment.ogpResult
+                  disabled ||
+                  !!segment.imageEntry ||
+                  !!segment.ogpResult ||
+                  scheduled
                 }
                 disabledReason={
                   segment.imageEntry
                     ? t("video.picker.exclusiveWithImage")
                     : segment.ogpResult
                       ? t("video.picker.exclusiveWithOgp")
-                      : undefined
+                      : scheduled
+                        ? t("video.picker.exclusiveWithSchedule")
+                        : undefined
                 }
                 previewContainerRef={imagePreviewContainerRef}
               />

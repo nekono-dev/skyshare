@@ -214,6 +214,7 @@ describe("scheduleDetailToSegments", () => {
         const segments = scheduleDetailToSegments(
             {
                 id: "s1",
+                status: "pending",
                 runAt: "2027-03-02T10:00:00.000Z",
                 posts: [
                     {
@@ -269,6 +270,7 @@ describe("scheduleDetailToSegments", () => {
         const [segment] = scheduleDetailToSegments(
             {
                 id: "s1",
+                status: "pending",
                 runAt: "2027-03-02T10:00:00.000Z",
                 posts: [
                     {

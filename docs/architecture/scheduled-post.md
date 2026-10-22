@@ -154,7 +154,7 @@ sequenceDiagram
   alt 通信の予算が尽きた
     runner->>store: 進捗を保って待機へ戻す
   else すべて作成できた
-    runner->>store: 投稿済みの記録と画像の削除
+    runner->>store: 予約の削除と画像の削除
   end
 ```
 

@@ -327,6 +327,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const [editChoiceOpen, setEditChoiceOpen] = useState(false)
     const [editChoiceBusy, setEditChoiceBusy] = useState(false)
     const [scheduleLoading, setScheduleLoading] = useState(false)
+    // 動画つきの投稿に予約の日時を設定しようとしたときの確認
+    const [videoConflictOpen, setVideoConflictOpen] = useState(false)
+    // 失敗した予約から書き戻した入力のとき、その履歴の識別子。送信に成功したら履歴を削除する
+    const [restoredFailedId, setRestoredFailedId] = useState<string | null>(
+      null,
+    )
     // 下書き・予約の画面のタブ。開くたびに下書きのタブへ戻す
     const [draftTab, setDraftTab] = useState<"drafts" | "schedules">("drafts")
     // 送信中の2回目の確定操作を、state の反映を待たずに無視するための印
@@ -384,6 +390,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       setActiveIndex(0)
       setLoadedDraft(null)
       setScheduleMode(initialScheduleMode)
+      setRestoredFailedId(null)
     }
 
     /**
@@ -446,8 +453,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       })
       // 下書きは予約と結び付かないため、予約の状態を通常の入力へ戻す（予約そのものは残る）
       setScheduleMode(initialScheduleMode)
+      setRestoredFailedId(null)
       setStatus(deferMessage("post.composer.draftApplied"))
       setStatusColor("green")
+    }
+
+    /**
+     * 失敗した予約から書き戻した入力の送信に成功したとき、元の失敗の履歴をバックグラウンドで削除する。
+     * 失敗しても利用者の操作は妨げない（履歴は保持期間の後片付けで消える）。
+     */
+    const deleteRestoredFailedSilently = () => {
+      if (!restoredFailedId) return
+      void cancelSchedule(restoredFailedId)
     }
 
     /**
@@ -618,7 +635,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     }
 
     /**
-     * 予約のタブで選んだ待機中の予約を、内容と画像ごとフォームへ戻して編集中にする。
+     * 予約のタブで選んだ予約を、内容と画像ごとフォームへ戻す。待機中の予約は編集中にし、
+     * 失敗した予約は日時の無い新規の入力として戻す（送信に成功したら元の履歴を削除する）。
      * 取得に失敗したら、フォームを変えずに文言を表示する。
      *
      * Input:
@@ -647,7 +665,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         setActiveIndex(0)
         setLanguageCode(nextSegments[0]!.languageCode)
         setLoadedDraft(null)
-        setScheduleMode(editScheduleMode(id, loaded.runAt))
+        if (loaded.detail.status === "failed") {
+          // 失敗した予約は、日時の無い新規の入力として戻す（送信に成功したら元の履歴を削除する）
+          setScheduleMode(initialScheduleMode)
+          setRestoredFailedId(id)
+        } else {
+          setScheduleMode(editScheduleMode(id, loaded.runAt))
+          setRestoredFailedId(null)
+        }
         setStatus(deferMessage("schedule.applied"))
         setStatusColor("green")
       } finally {
@@ -697,20 +722,19 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 取り外し（キャンセル）した場合のみ、完了を待たずに投稿できる。
     const videoPending = pendingVideoState(segments)
     const canSubmit = areAllSegmentsPostable(segments) && videoPending === null
-    // 動画は予約に含められない（動画を含む投稿はカレンダーのボタンを無効にする）
+    // 動画は予約に含められない（動画を含む投稿でカレンダーのボタンを押すと、
+    // 動画の登録を解除するかをたずねる。予約の日時の設定中は動画のボタンを無効にする）
     const hasVideo = hasVideoSegment(segments)
     const scheduleAvailable =
       !guestMode && scheduleRegistered === true && scheduleLimits !== null
     // カレンダーのボタンを押せない理由。押せるときは undefined
     const scheduleUnavailableReason = guestMode
       ? t("post.guestUnavailable")
-      : hasVideo
-        ? t("schedule.unavailableVideo")
-        : scheduleRegistered !== true
-          ? t("schedule.unavailableDisabled")
-          : scheduleLimits === null
-            ? t("schedule.unavailableLimits")
-            : undefined
+      : scheduleRegistered !== true
+        ? t("schedule.unavailableDisabled")
+        : scheduleLimits === null
+          ? t("schedule.unavailableLimits")
+          : undefined
     const target = submitTarget(scheduleMode)
     const scheduledRunAt = runAtOf(scheduleMode)
     // 予約として送信するときは、動画を含む投稿を送れない
@@ -763,6 +787,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           recordUsedHashtagsToHistory(segment.text, accountDid),
         )
         if (loadedDraft) void deleteDraftSilently(loadedDraft.id)
+        deleteRestoredFailedSilently()
         let nextRootPostGate = rootSegment.postGate
         if (syncGateDefaultAfterPost) {
           writePostGateDefaultSetting(rootSegment.postGate)
@@ -875,6 +900,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             void deleteDraftSilently(loadedDraft.id)
             setLoadedDraft(null)
           }
+          deleteRestoredFailedSilently()
         }
 
         segments.forEach(segment =>
@@ -933,9 +959,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
 
     return (
       <>
-        {draftListLoading && (
-          <Loading overlay message={t("post.composer.loadingDrafts")} />
-        )}
         {scheduleLoading && (
           <Loading overlay message={t("schedule.loadingEdit")} />
         )}
@@ -943,6 +966,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         <Overlay
           open={draftModalOpen}
           onClose={() => setDraftModalOpen(false)}
+          backdropClassName={styles["draft-list-backdrop"]}
           contentClassName={`${ui["width-lg"]} ${styles["draft-list-overlay"]}`}
         >
           <div
@@ -1013,7 +1037,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           open={editChoiceOpen}
           onClose={() => setEditChoiceOpen(false)}
           ariaLabel={t("schedule.editCancel.title")}
-          description={t("schedule.editCancel.title")}
           loading={
             editChoiceBusy ? { message: t("schedule.sending") } : undefined
           }
@@ -1041,6 +1064,41 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               variant: "blue",
               disabled: editChoiceBusy,
               onClick: () => setEditChoiceOpen(false),
+            },
+          ]}
+        />
+
+        <ChoiceDialog
+          open={videoConflictOpen}
+          onClose={() => setVideoConflictOpen(false)}
+          ariaLabel={t("schedule.videoConflict.title")}
+          description={t("schedule.videoConflict.message")}
+          buttons={[
+            {
+              key: "removeVideo",
+              label: t("schedule.videoConflict.remove"),
+              variant: "red",
+              onClick: () => {
+                // 動画を外してから、予約の日時の指定を開く（アップロード中の動画は中断される）
+                segments.forEach(segment =>
+                  revokeVideoEntry(segment.videoEntry),
+                )
+                setSegments(prev =>
+                  prev.map(segment =>
+                    segment.videoEntry
+                      ? { ...segment, videoEntry: null }
+                      : segment,
+                  ),
+                )
+                setVideoConflictOpen(false)
+                setRunAtPickerOpen(true)
+              },
+            },
+            {
+              key: "cancel",
+              label: t("schedule.videoConflict.cancel"),
+              variant: "gray",
+              onClick: () => setVideoConflictOpen(false),
             },
           ]}
         />
@@ -1078,7 +1136,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               {(variant === "dialog" || hasTextInput) && (
                 <button
                   type="button"
-                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["header-button"]}`}
                   aria-label={t("common.cancel")}
                   disabled={isSubmitting}
                   onClick={requestClose}
@@ -1090,7 +1148,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             <div className={`${ui["base-component"]}`}>
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${styles["header-button"]}`}
                 disabled={isSubmitting || guestMode}
                 title={guestMode ? t("post.guestUnavailable") : undefined}
                 onClick={() => {
@@ -1101,7 +1159,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               </button>
               <button
                 form={entryFormId}
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${styles["header-button"]}`}
                 type="submit"
                 disabled={isSubmitting || !canSubmitNow}
                 data-testid="composer-submit"
@@ -1162,18 +1220,19 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                     <RunAtPicker
                       value={scheduledRunAt}
                       limits={scheduleLimits}
-                      disabled={
-                        isSubmitting ||
-                        !scheduleAvailable ||
-                        (hasVideo && scheduledRunAt === null)
-                      }
+                      disabled={isSubmitting || !scheduleAvailable}
                       disabledReason={scheduleUnavailableReason}
                       open={runAtPickerOpen}
-                      onOpenChange={setRunAtPickerOpen}
+                      onOpenChange={next =>
+                        next && hasVideo && scheduledRunAt === null
+                          ? setVideoConflictOpen(true)
+                          : setRunAtPickerOpen(next)
+                      }
                       onChange={next => void handleRunAtChange(next)}
                     />
                   ) : undefined
                 }
+                scheduled={scheduledRunAt !== null}
                 counterTargets={counterTargets}
                 estimatedEntryUrl={estimatedEntryUrl}
               />

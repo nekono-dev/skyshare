@@ -24,6 +24,11 @@ export const schedule = {
     "schedule.range.tooSoon":
         "Choose a time at least {minutes} minutes from now.",
     "schedule.range.tooLate": "Choose a time within {days} days from now.",
+    "schedule.videoConflict.title": "Posts with a video can't be scheduled",
+    "schedule.videoConflict.message":
+        "A post with a video can't be scheduled. Remove the video to schedule it.",
+    "schedule.videoConflict.remove": "Remove the video and schedule",
+    "schedule.videoConflict.cancel": "Cancel",
     "schedule.editCancel.title": "Stop editing the scheduled post",
     "schedule.editCancel.cancelSchedule": "Cancel the scheduled post",
     "schedule.editCancel.keep": "Keep it scheduled and close",
@@ -57,7 +62,7 @@ export const schedule = {
     "schedule.list.postCount": "{count} posts",
     "schedule.list.edit": "Edit this scheduled post",
     "schedule.list.deleteHistory": "Delete history",
-    "schedule.list.viewPost": "View post",
+    "schedule.list.restore": "Restore to form",
     "schedule.list.more": "Show more",
     "schedule.list.reload": "Reload",
     "schedule.list.loadFailed": "Could not load the scheduled posts.",
@@ -67,7 +72,6 @@ export const schedule = {
     "schedule.list.deleteConfirm": "Delete",
     "schedule.status.pending": "Pending",
     "schedule.status.running": "Running",
-    "schedule.status.posted": "Posted",
     "schedule.status.failed": "Failed",
     "schedule.error.invalid": "The scheduled post is not valid.",
     "schedule.error.passwordRejected":

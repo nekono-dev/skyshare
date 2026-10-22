@@ -180,7 +180,7 @@ export const nextTid = (prev?: string): string
 | 4    | `created` の次の投稿から、`buildBskyPostRecord` で組み立て `com.atproto.repo.putRecord` を `rkey` 指定で呼ぶ。`createdAt` は `now` とする | `created`    |
 | 5    | `gates` の次の投稿から、`buildThreadgateRecord` と `buildPostgateRecord` で組み立てた記録を、投稿と同じ `rkey` で作成する                 | `gates`      |
 | 6    | 作成指定があり `entryDone` が偽なら、`buildSkyshareEntryRecord` で先頭の投稿を派生元にした記録を作成する                                  | `entryDone`  |
-| 7    | `finishSchedule` で投稿済みにし、`removeImages` を呼ぶ                                                                                    | -            |
+| 7    | `completeSchedule` で行を削除し、`removeImages` を呼ぶ                                                                                    | -            |
 
 - 投稿の返信先は、先頭は指定された既存の投稿、2件目以降は先頭の投稿を `root`、直前の投稿を `parent` とする。
 - すべてのレコードは `putRecord` で書き込む。進捗の保存前に中断して同じキーへ再び書き込んでも、レコードは上書きされるだけで1件のままである。
@@ -212,9 +212,9 @@ const MAX_ATTEMPTS = 5
 | 画像が R2 に無い                | `ImageMissing` で失敗                                                                              |
 | `Transient`                     | `attempts` に1を加えて待機中へ戻す。`attempts` が `MAX_ATTEMPTS` に達したら `RetryExceeded` で失敗 |
 | `BudgetExceeded`、`RateLimited` | `attempts` を変えずに待機中へ戻す                                                                  |
-| すべての段階が成功              | 投稿済みにし、先頭の投稿の URI を記録する                                                          |
+| すべての段階が成功              | 行を削除する（成功した予約は履歴に残さない）                                                       |
 
-- 失敗の記録には分類コードだけを保存し、応答の本文を保存しない。
+- 失敗の記録には分類コードだけを保存し、応答の本文を保存しない。`failSchedule` は画像を削除せず、フォームへの書き戻しに使えるよう残す（履歴の削除で行と画像を消す）。
 
 ## 4. エラー処理
 
