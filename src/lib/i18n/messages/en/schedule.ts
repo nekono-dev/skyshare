@@ -2,75 +2,93 @@
 import type { MessageEntries } from "../../translate"
 
 export const schedule = {
-    "schedule.button": "Schedule",
-    "schedule.listLink": "Scheduled posts",
+    "schedule.submit": "Schedule",
+    "schedule.submitAll": "Schedule all",
     "schedule.unavailableVideo": "Posts with a video cannot be scheduled.",
-    "schedule.dialog.title": "Schedule post",
-    "schedule.dialog.runAt": "Post at",
-    "schedule.dialog.submit": "Schedule",
-    "schedule.dialog.sending": "Scheduling…",
-    "schedule.dialog.done": "Scheduled.",
-    "schedule.dialog.goList": "View scheduled posts",
-    "schedule.dialog.close": "Close",
-    "schedule.dialog.cancel": "Cancel",
-    "schedule.dialog.limitsFailed": "Could not load the scheduling limits.",
-    "schedule.dialog.reload": "Reload",
+    "schedule.unavailableDisabled":
+        "Turn on scheduled posts in Settings to use scheduling.",
+    "schedule.unavailableLimits": "Could not load the scheduling limits.",
+    "schedule.sending": "Scheduling…",
+    "schedule.created": "Scheduled.",
+    "schedule.updated": "The scheduled post was updated.",
+    "schedule.cancelled": "The scheduled post was cancelled.",
+    "schedule.loadingEdit": "Loading the scheduled post…",
+    "schedule.applied": "Loaded the scheduled post into the form.",
+    "schedule.runAtLabel": "Scheduled for {date}",
+    "schedule.picker.button": "Set a schedule",
+    "schedule.picker.title": "Schedule",
+    "schedule.picker.runAt": "Post at",
+    "schedule.picker.set": "Set",
+    "schedule.picker.clear": "Clear",
+    "schedule.picker.close": "Close",
     "schedule.range.tooSoon":
         "Choose a time at least {minutes} minutes from now.",
     "schedule.range.tooLate": "Choose a time within {days} days from now.",
-    "schedule.credential.title": "Authentication for scheduling",
-    "schedule.credential.description":
-        "The server posts on your behalf at the chosen time, so you log in once for scheduling. Your password is not stored; only the refresh token obtained by logging in is stored encrypted.",
+    "schedule.editCancel.title": "Stop editing the scheduled post",
+    "schedule.editCancel.cancelSchedule": "Cancel the scheduled post",
+    "schedule.editCancel.keep": "Keep it scheduled and close",
+    "schedule.editCancel.continue": "Keep editing",
+    "schedule.setting.label": "Scheduled posts",
+    "schedule.setting.description":
+        "Post at a time you choose. Turning this on registers an app password.",
+    "schedule.setting.disableTitle": "Turn off scheduled posts",
+    "schedule.setting.disableMessage":
+        "{count} pending scheduled posts will also be cancelled. Continue?",
+    "schedule.setting.disableMessageNone":
+        "The registered app password information will be deleted. Continue?",
+    "schedule.setting.disableConfirm": "Turn off",
+    "schedule.setting.disabled": "Scheduled posts were turned off.",
+    "schedule.setting.disabledWithCancel":
+        "Scheduled posts were turned off and {count} scheduled posts were cancelled.",
+    "schedule.credential.title": "Turn on scheduled posts",
     "schedule.credential.warning":
-        "Do not enter your main password. Enter an app password.",
+        "Enter an app password, not your main password.",
     "schedule.credential.howto":
-        "You can create an app password in Bluesky under Settings → Privacy and security → App passwords.",
+        "Create an app password in Bluesky under Settings → Privacy and security.",
+    "schedule.credential.privacy":
+        "See the {link} for how the stored information is handled.",
     "schedule.credential.username": "Username",
     "schedule.credential.password": "App password",
-    "schedule.credential.submit": "Register and schedule",
-    "schedule.credential.registered": "Scheduling authentication: registered",
-    "schedule.credential.notRegistered":
-        "Scheduling authentication: not registered",
-    "schedule.credential.delete": "Delete credential",
-    "schedule.credential.deleteBlocked":
-        "It cannot be deleted while a scheduled post is waiting or running.",
-    "schedule.list.title": "Scheduled posts",
+    "schedule.credential.submit": "Register",
+    "schedule.credential.cancel": "Cancel",
     "schedule.list.empty": "No scheduled posts.",
-    "schedule.list.postCount": "{count} post(s)",
-    "schedule.list.cancel": "Cancel",
+    "schedule.list.pendingTitle": "Pending",
+    "schedule.list.historyTitle": "History",
+    "schedule.list.postCount": "{count} posts",
+    "schedule.list.edit": "Edit this scheduled post",
     "schedule.list.deleteHistory": "Delete history",
     "schedule.list.viewPost": "View post",
     "schedule.list.more": "Show more",
     "schedule.list.reload": "Reload",
-    "schedule.list.loadFailed": "Could not load scheduled posts.",
-    "schedule.list.cancelTitle": "Cancel scheduled post",
-    "schedule.list.cancelMessage": "Cancel this scheduled post?",
-    "schedule.list.cancelConfirm": "Cancel post",
-    "schedule.status.pending": "Waiting",
+    "schedule.list.loadFailed": "Could not load the scheduled posts.",
+    "schedule.list.deleteTitle": "Delete history",
+    "schedule.list.deleteMessage":
+        "This scheduled post will be removed from the history. Continue?",
+    "schedule.list.deleteConfirm": "Delete",
+    "schedule.status.pending": "Pending",
     "schedule.status.running": "Running",
     "schedule.status.posted": "Posted",
     "schedule.status.failed": "Failed",
     "schedule.error.invalid": "The scheduled post is not valid.",
     "schedule.error.passwordRejected":
-        "Could not log in. Check the app password.",
+        "Could not log in. Check your app password.",
+    "schedule.error.notFound":
+        "The scheduled post was not found. It may have already run or been cancelled.",
     "schedule.error.credentialRequired":
-        "Authentication for scheduling is required.",
-    "schedule.error.running": "It is running and cannot be changed.",
-    "schedule.error.credentialInUse":
-        "The credential cannot be deleted while a scheduled post is waiting or running.",
+        "Scheduled posts are turned off. Turn them on in Settings.",
+    "schedule.error.running": "It is running and cannot be changed now.",
     "schedule.error.tooMany":
-        "You have reached the limit of scheduled posts. Cancel some first.",
-    "schedule.error.server": "Could not process the scheduled post.",
+        "You have reached the limit of scheduled posts. Cancel ones you no longer need first.",
+    "schedule.error.server": "Failed to process the scheduled post.",
     "schedule.failure.CredentialMissing":
-        "The credential for scheduling was not found.",
+        "Scheduled posts were turned off, so the post was not made.",
     "schedule.failure.CredentialInvalid":
         "The credential for scheduling could not be read.",
     "schedule.failure.CredentialExpired":
-        "The authentication for scheduling had expired.",
-    "schedule.failure.InvalidRecord": "The post content was rejected.",
-    "schedule.failure.ImageMissing": "The attached image was not found.",
+        "The app password no longer worked. Turn scheduled posts on again in Settings.",
+    "schedule.failure.InvalidRecord": "The post content was not accepted.",
+    "schedule.failure.ImageMissing": "An attached image was not found.",
     "schedule.failure.RetryExceeded":
         "Temporary failures continued and the post was not made.",
     "schedule.failure.unknown": "The post was not made.",
-    "pageTitle.schedules": "Scheduled posts | {service}",
 } satisfies MessageEntries

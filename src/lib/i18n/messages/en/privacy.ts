@@ -121,6 +121,4 @@ export const privacy = {
     "privacy.revision.dates":
         "Enacted: {enactedAt} / Last revised: {revisedAt}",
     "privacy.link": "Privacy Policy",
-    "privacy.scheduleNotice":
-        "See the {link} for how the information stored for scheduling is handled.",
 } satisfies MessageEntries

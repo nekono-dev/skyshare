@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, test } from "vitest"
 import {
     addSegment,
     canRemoveSegment,
@@ -8,6 +8,7 @@ import {
     isSegmentPostable,
     pendingVideoState,
     removeSegment,
+    scheduleDetailToSegments,
     segmentsToDraftPosts,
     type SegmentState,
     type VideoEntry,
@@ -193,5 +194,93 @@ describe("pendingVideoState / hasPendingVideo", () => {
 
     it("取り外す（videoEntry が null）と解消する", () => {
         expect(pendingVideoState([withVideo(null), withVideo(null)])).toBeNull()
+    })
+})
+
+describe("scheduleDetailToSegments", () => {
+    test("thread-composer/AC-16: 予約の内容から本文・画像と代替テキスト・リンクカード・制限・自己ラベル・言語が戻る", () => {
+        const img0 = new Blob(["a"], { type: "image/png" })
+        const img1 = new Blob(["b"], { type: "image/png" })
+        const og = new Blob(["og"], { type: "image/jpeg" })
+        const visual = new Blob(["v"], { type: "image/jpeg" })
+        const gate = {
+            replyAudience: "nobody" as const,
+            allowMentioned: false,
+            allowFollower: false,
+            allowFollowing: false,
+            listUris: [],
+            allowQuote: false,
+        }
+        const segments = scheduleDetailToSegments(
+            {
+                id: "s1",
+                runAt: "2027-03-02T10:00:00.000Z",
+                posts: [
+                    {
+                        text: "first",
+                        langs: ["en"],
+                        selfLabels: "nudity",
+                        gate,
+                        images: [0, 1],
+                        imagesMeta: [
+                            { width: 10, height: 20, alt: "代替A" },
+                            { width: 30, height: 40, alt: "" },
+                        ],
+                    },
+                    {
+                        text: "second",
+                        ogMeta: {
+                            title: "T",
+                            description: "D",
+                            url: "https://example.com/",
+                        },
+                        ogImage: 2,
+                    },
+                ],
+                createEntry: true,
+                visual: 3,
+            },
+            [img0, img1, og, visual],
+            "ja",
+        )
+        expect(segments).toHaveLength(2)
+        const [a, b] = segments
+        expect(a!.text).toBe("first")
+        expect(a!.languageCode).toBe("en")
+        expect(a!.selfLabel).toBe("nudity")
+        expect(a!.postGate).toEqual(gate)
+        expect(a!.imageEntry?.originalBlobs).toEqual([img0, img1])
+        expect(a!.imageEntry?.thumbnailBlob).toBe(visual)
+        expect(a!.imageEntry?.meta).toEqual([
+            { width: 10, height: 20, alt: "代替A" },
+            { width: 30, height: 40, alt: "" },
+        ])
+        expect(b!.languageCode).toBe("ja")
+        expect(b!.imageEntry).toBeNull()
+        expect(b!.ogpResult).toEqual({
+            meta: { title: "T", description: "D" },
+            imageBlob: og,
+            sourceUrl: "https://example.com/",
+        })
+    })
+
+    test("代表画像が無い予約では、先頭の画像を代表画像にする", () => {
+        const img = new Blob(["a"], { type: "image/png" })
+        const [segment] = scheduleDetailToSegments(
+            {
+                id: "s1",
+                runAt: "2027-03-02T10:00:00.000Z",
+                posts: [
+                    {
+                        text: "x",
+                        images: [0],
+                        imagesMeta: [{ width: 1, height: 1, alt: "" }],
+                    },
+                ],
+            },
+            [img],
+            "ja",
+        )
+        expect(segment!.imageEntry?.thumbnailBlob).toBe(img)
     })
 })

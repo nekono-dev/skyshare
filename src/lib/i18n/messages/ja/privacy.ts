@@ -109,6 +109,4 @@ export const privacy = {
         "法令の変更や機能の追加に応じて、このポリシーを改定することがあります。改定後の内容は、このページに掲載した時点から効力を生じます。",
     "privacy.revision.dates": "制定日: {enactedAt}／最終改定日: {revisedAt}",
     "privacy.link": "プライバシーポリシー",
-    "privacy.scheduleNotice":
-        "予約のために保管する情報の扱いは、{link}をご確認ください。",
 } as const

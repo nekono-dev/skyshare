@@ -2,12 +2,15 @@
  * ThreadComposer のセグメント配列（スレッド投稿の各投稿単位）を扱う純粋関数群。
  *
  * 責務と処理概要:
- * - Reactの外側で完結する、セグメントの追加・削除・下書き変換ロジックのみを持つ
+ * - Reactの外側で完結する、セグメントの追加・削除・下書き変換・予約の書き戻しのロジックのみを持つ
  *   （DOM・API呼び出し・Reactの state 更新には一切触れない）。
  * - `specs/thread-composer`の決定により、先頭（1件目）segmentは
  *   スレッドの起点のため削除できない。2件目以降は編集中かどうかに関わらずいつでも削除できる。
  */
-import type { CreateEntryBodySelfLabels } from "@/client/openapi/model"
+import type {
+    CreateEntryBodySelfLabels,
+    ScheduleDetail,
+} from "@/client/openapi/model"
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { OgpResult } from "@/components/image/OgpFetchButton"
 import { DEFAULT_POST_GATE_VALUE, type PostGateValue } from "@/lib/atproto/gate"
@@ -310,3 +313,92 @@ export const draftPostsToSegments = (
         ogpResult: null,
         videoEntry: null,
     }))
+
+/**
+ * 予約の内容（`GET /v2/schedules/{id}`）と画像を、投稿フォームのセグメント配列に戻す。
+ *
+ * 処理の趣旨:
+ * - 画像は保管された（送信用に加工済みの）画像を `originalBlobs` に、`imagesMeta` を `meta` に入れる。
+ *   代表画像は、予約に代表画像があればそれを、無ければ先頭の画像を `thumbnailBlob` にする。
+ * - リンクカードは `ogMeta` と `ogImage` の画像から作る。画像があるときはリンクカードより画像を優先する。
+ * - 返信と引用の制限・自己ラベル・言語を戻す。`langs` が無い投稿は `languageCode` を使う。
+ * - 画像が欠けた番号は、その画像を除いて戻す（呼び出し側は全画像の取得の成功を確かめてから呼ぶ）。
+ *
+ * Input:
+ * - `detail`: 予約の内容
+ * - `images`: 番号ごとの画像（`images[n]` が番号 n の画像）
+ * - `languageCode`: 言語の指定が無い投稿に使う言語
+ *
+ * Output: セグメント配列（1件以上）
+ *
+ * Example:
+ * - `scheduleDetailToSegments({ posts: [{ text: "a", images: [0], imagesMeta: [...] }] }, [blob], "ja")`
+ *   → 画像1枚を持つ1件のセグメント
+ */
+export const scheduleDetailToSegments = (
+    detail: ScheduleDetail,
+    images: Blob[],
+    languageCode: string,
+): SegmentState[] => {
+    const visualBlob =
+        detail.visual !== undefined ? images[detail.visual] : undefined
+    const segments = detail.posts.map((post, index): SegmentState => {
+        const blobs = (post.images ?? [])
+            .map(n => images[n])
+            .filter((blob): blob is Blob => blob instanceof Blob)
+        // 代表画像は先頭の画像つきのセグメントだけが使う（送信の組み立てと同じ規則）
+        const thumbnailBlob =
+            blobs.length > 0
+                ? ((index === firstImageIndex(detail)
+                      ? visualBlob
+                      : undefined) ?? blobs[0]!)
+                : undefined
+        const imageEntry: ImageEntry | null =
+            blobs.length > 0 && thumbnailBlob
+                ? {
+                      originalBlobs: blobs,
+                      thumbnailBlob,
+                      originalPreviews: blobs.map(blob =>
+                          URL.createObjectURL(blob),
+                      ),
+                      thumbnailPreview: URL.createObjectURL(thumbnailBlob),
+                      sourceFileNames: blobs.map((_, i) => `image-${i + 1}`),
+                      meta: blobs.map((_, i) => ({
+                          width: post.imagesMeta?.[i]?.width,
+                          height: post.imagesMeta?.[i]?.height,
+                          alt: post.imagesMeta?.[i]?.alt ?? "",
+                      })),
+                  }
+                : null
+        const ogBlob =
+            post.ogImage !== undefined ? images[post.ogImage] : undefined
+        const ogpResult: OgpResult | null =
+            !imageEntry && post.ogMeta && ogBlob
+                ? {
+                      meta: {
+                          title: post.ogMeta.title,
+                          description: post.ogMeta.description,
+                      },
+                      imageBlob: ogBlob,
+                      sourceUrl: post.ogMeta.url,
+                  }
+                : null
+        return {
+            id: createSegmentId(),
+            text: post.text ?? "",
+            languageCode: post.langs?.[0] ?? languageCode,
+            selfLabel: post.selfLabels as CreateEntryBodySelfLabels | undefined,
+            postGate: post.gate
+                ? { ...DEFAULT_POST_GATE_VALUE, ...post.gate }
+                : DEFAULT_POST_GATE_VALUE,
+            imageEntry,
+            ogpResult,
+            videoEntry: null,
+        }
+    })
+    return segments.length > 0 ? segments : [createEmptySegment(languageCode)]
+}
+
+/** 画像を持つ最初の投稿の位置。無ければ -1 */
+const firstImageIndex = (detail: ScheduleDetail): number =>
+    detail.posts.findIndex(post => (post.images?.length ?? 0) > 0)

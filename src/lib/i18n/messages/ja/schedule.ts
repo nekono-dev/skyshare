@@ -1,49 +1,67 @@
 /** 予約投稿の文言（日本語）。 */
 export const schedule = {
-    "schedule.button": "予約",
-    "schedule.listLink": "予約一覧",
+    "schedule.submit": "予約",
+    "schedule.submitAll": "すべて予約",
     "schedule.unavailableVideo": "動画を含む投稿は予約できません。",
-    "schedule.dialog.title": "投稿を予約",
-    "schedule.dialog.runAt": "投稿する日時",
-    "schedule.dialog.submit": "予約する",
-    "schedule.dialog.sending": "予約しています…",
-    "schedule.dialog.done": "予約しました。",
-    "schedule.dialog.goList": "予約一覧を見る",
-    "schedule.dialog.close": "閉じる",
-    "schedule.dialog.cancel": "キャンセル",
-    "schedule.dialog.limitsFailed": "予約の制限値を取得できませんでした。",
-    "schedule.dialog.reload": "再取得",
+    "schedule.unavailableDisabled": "予約投稿は、設定で有効にすると使えます。",
+    "schedule.unavailableLimits": "予約の制限値を取得できませんでした。",
+    "schedule.sending": "予約しています…",
+    "schedule.created": "予約しました。",
+    "schedule.updated": "予約を更新しました。",
+    "schedule.cancelled": "予約を取り消しました。",
+    "schedule.loadingEdit": "予約を読み込んでいます…",
+    "schedule.applied": "予約をフォームに読み込みました。",
+    "schedule.runAtLabel": "{date}に予約",
+    "schedule.picker.button": "予約日時を指定",
+    "schedule.picker.title": "予約日時",
+    "schedule.picker.runAt": "投稿する日時",
+    "schedule.picker.set": "設定",
+    "schedule.picker.clear": "解除",
+    "schedule.picker.close": "閉じる",
     "schedule.range.tooSoon":
         "現在から{minutes}分後以降の日時を指定してください。",
     "schedule.range.tooLate":
         "現在から{days}日後までの日時を指定してください。",
-    "schedule.credential.title": "予約用の認証",
-    "schedule.credential.description":
-        "指定した時刻にサーバーが代わりに投稿するため、予約専用にログインします。パスワードは保存されず、ログインで得た更新用のトークンだけが暗号化して保管されます。",
+    "schedule.editCancel.title": "予約の編集をやめます",
+    "schedule.editCancel.cancelSchedule": "予約を取り消す",
+    "schedule.editCancel.keep": "予約を残して閉じる",
+    "schedule.editCancel.continue": "編集を続ける",
+    "schedule.setting.label": "予約投稿",
+    "schedule.setting.description":
+        "日時を指定して投稿できます。有効にするとアプリパスワードを登録します。",
+    "schedule.setting.disableTitle": "予約投稿を無効にする",
+    "schedule.setting.disableMessage":
+        "待機中の予約{count}件も取り消されます。よろしいですか。",
+    "schedule.setting.disableMessageNone":
+        "登録したアプリパスワードの情報を削除します。よろしいですか。",
+    "schedule.setting.disableConfirm": "無効にする",
+    "schedule.setting.disabled": "予約投稿を無効にしました。",
+    "schedule.setting.disabledWithCancel":
+        "予約投稿を無効にし、{count}件の予約を取り消しました。",
+    "schedule.credential.title": "予約投稿を有効にする",
     "schedule.credential.warning":
-        "メインのパスワードは入力しないでください。アプリパスワードを入力します。",
+        "メインのパスワードではなく、アプリパスワードを入力してください。",
     "schedule.credential.howto":
-        "アプリパスワードは、Blueskyの「設定」→「プライバシーとセキュリティ」→「アプリパスワード」で作成できます。",
+        "アプリパスワードは Bluesky の「設定」→「プライバシーとセキュリティ」で作成できます。",
+    "schedule.credential.privacy": "保管する情報の扱いは{link}をご覧ください。",
     "schedule.credential.username": "ユーザー名",
     "schedule.credential.password": "アプリパスワード",
-    "schedule.credential.submit": "登録して予約する",
-    "schedule.credential.registered": "予約用の認証: 登録済み",
-    "schedule.credential.notRegistered": "予約用の認証: 未登録",
-    "schedule.credential.delete": "認証情報を削除",
-    "schedule.credential.deleteBlocked":
-        "待機中または実行中の予約があるため、削除できません。",
-    "schedule.list.title": "予約一覧",
+    "schedule.credential.submit": "登録する",
+    "schedule.credential.cancel": "キャンセル",
     "schedule.list.empty": "予約はありません。",
+    "schedule.list.pendingTitle": "待機中",
+    "schedule.list.historyTitle": "履歴",
     "schedule.list.postCount": "{count}件の投稿",
-    "schedule.list.cancel": "取消",
+    "schedule.list.edit": "この予約を編集する",
     "schedule.list.deleteHistory": "履歴を削除",
     "schedule.list.viewPost": "投稿を見る",
     "schedule.list.more": "さらに表示",
     "schedule.list.reload": "再読み込み",
     "schedule.list.loadFailed": "予約の一覧を取得できませんでした。",
-    "schedule.list.cancelTitle": "予約の取消",
-    "schedule.list.cancelMessage": "この予約を取り消します。よろしいですか。",
-    "schedule.list.cancelConfirm": "取り消す",
+    "schedule.list.deleteTitle": "履歴の削除",
+    "schedule.list.deleteMessage":
+        "この予約の履歴を削除します。よろしいですか。",
+    "schedule.list.deleteConfirm": "削除する",
     "schedule.status.pending": "待機中",
     "schedule.status.running": "実行中",
     "schedule.status.posted": "投稿済み",
@@ -51,23 +69,23 @@ export const schedule = {
     "schedule.error.invalid": "予約の内容が正しくありません。",
     "schedule.error.passwordRejected":
         "ログインできませんでした。アプリパスワードを確認してください。",
-    "schedule.error.credentialRequired": "予約用の認証が必要です。",
+    "schedule.error.notFound":
+        "予約が見つかりませんでした。すでに実行されたか、取り消された可能性があります。",
+    "schedule.error.credentialRequired":
+        "予約投稿が無効です。設定で予約投稿を有効にしてください。",
     "schedule.error.running": "実行中のため操作できません。",
-    "schedule.error.credentialInUse":
-        "待機中または実行中の予約があるため、認証情報を削除できません。",
     "schedule.error.tooMany":
         "予約の件数が上限に達しています。先に不要な予約を取り消してください。",
     "schedule.error.server": "予約の処理に失敗しました。",
     "schedule.failure.CredentialMissing":
-        "予約用の認証情報が見つかりませんでした。",
+        "予約投稿が無効になっていたため、投稿できませんでした。",
     "schedule.failure.CredentialInvalid":
         "予約用の認証情報を読み出せませんでした。",
     "schedule.failure.CredentialExpired":
-        "予約用の認証の有効期限が切れていました。",
+        "アプリパスワードが使えなくなっていました。設定で予約投稿を有効にし直してください。",
     "schedule.failure.InvalidRecord": "投稿の内容が受け付けられませんでした。",
     "schedule.failure.ImageMissing": "添付した画像が見つかりませんでした。",
     "schedule.failure.RetryExceeded":
         "一時的な失敗が続き、投稿できませんでした。",
     "schedule.failure.unknown": "投稿できませんでした。",
-    "pageTitle.schedules": "予約一覧 | {service}",
 } as const

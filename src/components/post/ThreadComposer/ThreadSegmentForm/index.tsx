@@ -74,6 +74,8 @@ type Props = {
   /** 投稿ボタンが押せない理由（動画のアップロード待ち等）。無ければ null */
   submitBlockedReason: PlainMessageKey | null
   onAddSegment: () => void
+  /** スレッドに追加のボタンの左に置く、予約の日時の指定のボタン（編集中のセグメントだけに渡す） */
+  runAtPicker?: React.ReactNode
   onRemove: () => void
   onChange: (next: SegmentState) => void
   onRequestSubmit: () => void
@@ -191,6 +193,7 @@ const Component: React.FC<Props> = ({
   canAddSegment,
   submitBlockedReason,
   onAddSegment,
+  runAtPicker,
   onRemove,
   onChange,
   onRequestSubmit,
@@ -546,6 +549,7 @@ const Component: React.FC<Props> = ({
             <div
               className={`${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-right"]} ${ui["toolbar-wrap"]} ${ui["toolbar-auto-width"]}`}
             >
+              {runAtPicker}
               <button
                 type="button"
                 className={`${ui["base-button"]} ${ui["white-button"]} ${ui["nontext-button"]} ${ui["md-button"]}`}
