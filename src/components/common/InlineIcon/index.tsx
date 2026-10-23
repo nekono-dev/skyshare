@@ -9,15 +9,24 @@
  */
 import crosspostIcon from "@/images/crosspost.svg"
 import hashtagIcon from "@/images/hashtag.svg"
+import imageIcon from "@/images/image.svg"
 import mastodonIcon from "@/images/mastodon.svg"
 import shareIcon from "@/images/share.svg"
 import taittsuuIcon from "@/images/taittsuu.png"
 import xIcon from "@/images/twitter.svg"
+import videoIcon from "@/images/video.svg"
 import styles from "./index.module.css"
 
 /** InlineIconで表示できるアイコンの種類 */
 export type InlineIconName =
-  "share" | "popup" | "x" | "taittsuu" | "mastodon" | "hashtag"
+  | "share"
+  | "popup"
+  | "x"
+  | "taittsuu"
+  | "mastodon"
+  | "hashtag"
+  | "image"
+  | "video"
 
 const icons: Record<InlineIconName, ImageMetadata> = {
   share: shareIcon,
@@ -26,6 +35,8 @@ const icons: Record<InlineIconName, ImageMetadata> = {
   taittsuu: taittsuuIcon,
   mastodon: mastodonIcon,
   hashtag: hashtagIcon,
+  image: imageIcon,
+  video: videoIcon,
 }
 
 type Props = {

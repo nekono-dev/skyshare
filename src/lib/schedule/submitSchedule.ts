@@ -13,6 +13,7 @@ import {
     deleteSchedule,
     getSchedule,
     getScheduleImage,
+    listSchedules,
     updateSchedule,
 } from "@/client/openapi/client"
 import type {
@@ -150,5 +151,20 @@ export const fetchScheduleForEdit = async (
     } catch {
         console.error("fetchScheduleForEdit: request failed")
         return { ok: false, messageKey: "error.network" }
+    }
+}
+
+/**
+ * 自分の待機中の予約の件数を取得する（予約の枠の表示に使う）。
+ *
+ * Output: 件数。取得に失敗したら null
+ * Example: `await fetchPendingCount()` → `3`
+ */
+export const fetchPendingCount = async (): Promise<number | null> => {
+    try {
+        const res = await listSchedules({ status: "pending", limit: 50 })
+        return res.status === 200 ? res.data.items.length : null
+    } catch {
+        return null
     }
 }

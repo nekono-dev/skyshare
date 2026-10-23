@@ -16,6 +16,10 @@ export const LIMITS = {
     maxPosts: 100,
 }
 
+/** 認可の開始が返す、認可の画面の URL（テストではこの住所への遷移を差し替える） */
+export const AUTHORIZE_URL =
+    "https://auth.example/oauth/authorize?client_id=x&request_uri=urn%3Ar%3A1"
+
 /** 1x1 の PNG（予約の画像の取得の応答に使う） */
 export const PNG_1PX = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
@@ -33,6 +37,10 @@ export type ScheduleItem = {
 
 export type MockState = {
     registered: boolean
+    /** 許可が無効になり、再度の許可が必要（登録ありのまま） */
+    reauthRequired?: boolean
+    /** 許可の有効期限の目安（ISO 8601） */
+    expiresAt?: string
     items: ScheduleItem[]
     /** GET /v2/schedules/{id} の応答（識別子ごと） */
     details: Record<string, unknown>
@@ -40,13 +48,20 @@ export type MockState = {
     submitStatus?: number
     submitBody?: object
     delayMs?: number
+    /** 認可の完了の結果（省略時は ok。ok なら登録済みになる） */
+    completionResult?: string
 }
 
 export type Calls = {
     creates: Request[]
     updates: Request[]
     deletes: string[]
-    credentialPuts: unknown[]
+    /** 認可の開始（POST /v2/schedules/credential/authorization/）の回数 */
+    authorizationStarts: number
+    /** 認可の開始に送られた本文（戻り先のパス） */
+    authorizationStartBodies: unknown[]
+    /** 認可の完了（POST …/authorization/completion/）に送られた本文 */
+    authorizationCompletions: unknown[]
     credentialDeletes: number
 }
 
@@ -76,7 +91,9 @@ export const mockScheduleApi = async (
         creates: [],
         updates: [],
         deletes: [],
-        credentialPuts: [],
+        authorizationStarts: 0,
+        authorizationStartBodies: [],
+        authorizationCompletions: [],
         credentialDeletes: 0,
     }
 
@@ -106,12 +123,23 @@ export const mockScheduleApi = async (
 
         if (path === "/v2/schedules/limits") return route.fulfill(json(LIMITS))
 
-        if (path === "/v2/schedules/credential") {
-            if (method === "PUT") {
-                calls.credentialPuts.push(request.postDataJSON())
+        if (path === "/v2/schedules/credential/authorization/completion") {
+            calls.authorizationCompletions.push(request.postDataJSON())
+            const result = state.completionResult ?? "ok"
+            if (result === "ok") {
                 state.registered = true
-                return route.fulfill(json({ registered: true }))
+                state.reauthRequired = false
             }
+            return route.fulfill(json({ result }))
+        }
+
+        if (path === "/v2/schedules/credential/authorization") {
+            calls.authorizationStarts += 1
+            calls.authorizationStartBodies.push(request.postDataJSON())
+            return route.fulfill(json({ url: AUTHORIZE_URL }))
+        }
+
+        if (path === "/v2/schedules/credential") {
             if (method === "DELETE") {
                 calls.credentialDeletes += 1
                 const cancelled = state.items.filter(
@@ -121,7 +149,13 @@ export const mockScheduleApi = async (
                 state.registered = false
                 return route.fulfill(json({ registered: false, cancelled }))
             }
-            return route.fulfill(json({ registered: state.registered }))
+            return route.fulfill(
+                json({
+                    registered: state.registered,
+                    reauthRequired: state.reauthRequired ?? false,
+                    ...(state.expiresAt ? { expiresAt: state.expiresAt } : {}),
+                }),
+            )
         }
 
         if (path === "/v2/schedules") {

@@ -150,10 +150,20 @@ openssl rand -base64 32 > enc.key
 npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key
 npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key
 rm enc.key
+# Bluesky の OAuth（confidential client）の署名鍵。develop とプレビューは同じ鍵にする
+node hack/generate-oauth-key.mjs | npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare
+node hack/generate-oauth-key.mjs > oauth.key
+npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare-develop < oauth.key
+npx wrangler preview base-config secret put SCHEDULE_OAUTH_KEY --worker-name skyshare-develop < oauth.key
+rm oauth.key
 ```
 
+- 予約の許可は Bluesky の OAuth で得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は設定のページから `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、公開された https の配信元でしか許可を得られない（ローカルでは試せない）。
+- 許可を得た配信元の client_id は認可の情報と一緒に保管し、Cron の実行はそれでトークンを更新する。プレビューで許可した認可の情報は、そのプレビューが消えると更新できなくなる。
+- 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
+
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
-- D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。
+- D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。`migrations/0003_schedule_oauth.sql` は、アプリパスワード方式で登録された認証情報を削除する（利用者は設定で許可し直す）。`0004_schedule_reauth.sql` は、許可の時刻と再度の許可が必要な印の列を加える。
 
 ### E2E（e2e.yaml）
 

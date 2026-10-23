@@ -21,6 +21,7 @@ import {
     insertSchedule,
     countPending,
     getCredentialStatus,
+    markCredentialReauth,
 } from "@/lib/schedule/store"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(3)))
@@ -138,7 +139,7 @@ describe("POST /v2/schedules", () => {
         ).toBe(200)
     })
 
-    test("schedule-api/AC-4: 認証情報が未登録だと409になり、予約も画像も保存されない", async () => {
+    test("schedule-api/AC-4: 認証情報が未登録か再度の許可が必要だと、識別子つきの409になり、予約も画像も保存されない", async () => {
         const fd = textForm()
         fd.append("posts[0][images]", new Blob(["x"], { type: "image/png" }))
         fd.set(
@@ -150,6 +151,13 @@ describe("POST /v2/schedules", () => {
         expect((await res.json()).error).toBe("ScheduleCredentialRequired")
         expect(await countPending(db, DID)).toBe(0)
         expect(r2.objects.size).toBe(0)
+
+        await withCredential()
+        await markCredentialReauth(db, DID)
+        const reauth = await call(POST, postRequest(textForm()))
+        expect(reauth.status).toBe(409)
+        expect((await reauth.json()).error).toBe("ScheduleReauthRequired")
+        expect(await countPending(db, DID)).toBe(0)
     })
 
     test("schedule-api/AC-10: 待機中が5件のアカウントの6件目は、1件の投稿でも3件のスレッドでも429になる", async () => {
@@ -159,9 +167,7 @@ describe("POST /v2/schedules", () => {
             (await call(POST, postRequest(textForm({ posts: 3 })))).status,
         ).toBe(200)
         for (let i = 0; i < 4; i++) {
-            expect((await call(POST, postRequest(textForm()))).status).toBe(
-                200,
-            )
+            expect((await call(POST, postRequest(textForm()))).status).toBe(200)
         }
         expect(await countPending(db, DID)).toBe(5)
         expect((await call(POST, postRequest(textForm()))).status).toBe(429)
@@ -175,7 +181,7 @@ describe("POST /v2/schedules", () => {
         await withCredential()
         await call(POST, postRequest(textForm()))
         const status = await getCredentialStatus(db, DID)
-        expect(status.updatedAt).toBeGreaterThan(1)
+        expect(status.registered && status.updatedAt).toBeGreaterThan(1)
     })
 
     test("schedule-api/AC-12: 成功すると200と識別子と実行時刻が返る", async () => {

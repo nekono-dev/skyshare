@@ -33,7 +33,10 @@ export const notifyScheduleCredentialChange = (): void => {
  * - `enabled`: 偽（ゲストの表示）のときは通信しない
  *
  * Output:
- * - `registered`: 登録済みなら true。取得前・取得の失敗・ゲストは null
+ * - `registered`: 登録済みなら true。取得前・取得の失敗・ゲストは null。
+ *   再度の許可が必要なときも true（設定のスイッチをオフに戻さない）
+ * - `reauthRequired`: 許可が無効になり、再度の許可が必要なら true
+ * - `expiresAt`: 許可の有効期限の目安。無い・再度の許可が必要なときは null
  * - `limits`: 制限値。取得前と取得の失敗は null
  * - `reload`: 登録状態を取得し直す
  *
@@ -43,10 +46,14 @@ export const useScheduleAvailability = (
     enabled: boolean,
 ): {
     registered: boolean | null
+    reauthRequired: boolean
+    expiresAt: Date | null
     limits: ScheduleLimits | null
     reload: () => void
 } => {
     const [registered, setRegistered] = useState<boolean | null>(null)
+    const [reauthRequired, setReauthRequired] = useState(false)
+    const [expiresAt, setExpiresAt] = useState<Date | null>(null)
     const [limits, setLimits] = useState<ScheduleLimits | null>(null)
     const [version, setVersion] = useState(0)
     const reload = useCallback(() => setVersion(v => v + 1), [])
@@ -62,7 +69,15 @@ export const useScheduleAvailability = (
             try {
                 const res = await getScheduleCredential()
                 if (cancelled) return
-                setRegistered(res.status === 200 ? res.data.registered : null)
+                if (res.status !== 200) {
+                    setRegistered(null)
+                    return
+                }
+                setRegistered(res.data.registered)
+                setReauthRequired(res.data.reauthRequired)
+                setExpiresAt(
+                    res.data.expiresAt ? new Date(res.data.expiresAt) : null,
+                )
             } catch {
                 if (!cancelled) setRegistered(null)
             }
@@ -100,5 +115,5 @@ export const useScheduleAvailability = (
         }
     }, [enabled, reload])
 
-    return { registered, limits, reload }
+    return { registered, reauthRequired, expiresAt, limits, reload }
 }

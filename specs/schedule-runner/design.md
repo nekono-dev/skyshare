@@ -7,7 +7,7 @@
 | `src/worker.ts`                  | Worker のエントリ。画面と API は Astro に任せ、定期実行を受ける |
 | `src/lib/schedule/runner.ts`     | 1回の定期実行の流れ。復帰・取り出し・実行・後片付けを行う       |
 | `src/lib/schedule/executor.ts`   | 1件の予約を進捗に従って段階的に実行する                         |
-| `src/lib/schedule/xrpcClient.ts` | 通信回数の予算つきの XRPC クライアント                          |
+| `src/lib/schedule/xrpcClient.ts` | 通信回数の予算つきの XRPC クライアント（DPoP の証明を付ける）   |
 | `src/lib/schedule/tid.ts`        | レコードキーに使う TID の採番                                   |
 
 ## 2. 関係図・ワークフロー
@@ -21,6 +21,8 @@ flowchart LR
   runner --> executor
   runner --> xrpcClient
   executor --> xrpcClient
+  executor --> ext_oauth["予約の OAuth"]
+  xrpcClient --> ext_oauth
   executor --> tid
   runner --> ext_store["予約ストア"]
   executor --> ext_store
@@ -35,6 +37,7 @@ sequenceDiagram
   participant runner
   participant executor
   participant xrpcClient
+  participant ext_oauth as 予約の OAuth
   participant ext_store as 予約ストア
   participant ext_pds as PDS
   runner->>runner: runScheduledPosts
@@ -43,9 +46,10 @@ sequenceDiagram
   runner->>xrpcClient: createBudget
   runner->>executor: executeSchedule
   executor->>executor: nextTid
-  executor->>xrpcClient: callXrpc
-  xrpcClient->>ext_pds: refreshSession
+  executor->>ext_oauth: refreshTokens
   executor->>ext_store: saveCredential
+  executor->>xrpcClient: callXrpc
+  xrpcClient->>ext_pds: DPoP の証明つきの要求
   alt 予算が尽きた
     xrpcClient-->>executor: BudgetExceeded
     executor->>ext_store: releaseSchedule
@@ -54,12 +58,13 @@ sequenceDiagram
     xrpcClient-->>runner: RateLimited
     executor->>ext_store: releaseSchedule
   else 恒久的な失敗
-    executor->>ext_store: finishSchedule
+    executor->>ext_store: failSchedule
   else 作成に成功
     executor->>ext_store: saveProgress
   end
   runner->>ext_store: purgeFinished
   runner->>ext_store: purgeIdleCredentials
+  runner->>ext_store: purgeReauthMarkers
 ```
 
 予約の状態の遷移を示す。
@@ -122,7 +127,7 @@ const MAX_EXTERNAL_CALLS = 40
 | 2    | `claimDueSchedules` で到来した予約を最大5件取り出す                                                                                      |
 | 3    | 取り出した順に `executeSchedule` を呼ぶ。通信の予算が尽きるかレート制限を受けたら、以降の予約は実行せず `releaseSchedule` で待機中へ戻す |
 | 4    | `purgeFinished` で終了から7日を過ぎた予約を削除する                                                                                      |
-| 5    | `purgeIdleCredentials` に `CREDENTIAL_IDLE_SECONDS` を渡し、予約がなく30日使われていない認証情報を削除する                               |
+| 5    | `purgeIdleCredentials` で予約がなく30日使われない認証情報を印に替え、`purgeReauthMarkers` で180日を過ぎた印を削除する                    |
 
 - 1回の実行で使う予算は、取り出した予約の全体で共有する。
 - 例外が実行全体を中断させないよう、予約ごとに `try` で囲み、分類できない例外は一時的な失敗として扱う。
@@ -141,6 +146,7 @@ export const callXrpc = async (
         method: "GET" | "POST"
         params?: Record<string, string>
         token?: string
+        dpop?: { session: DpopSession; accessToken: string } // 指定すると DPoP の方式で送る
         body?: unknown | Uint8Array
         contentType?: string
     },
@@ -156,6 +162,7 @@ export const callXrpc = async (
 | 5xx、ネットワークエラー             | `Transient`      |
 
 - 通信のたびに `budget.remaining` を1減らし、`fetch` の URL は `${service}/xrpc/${nsid}` とする。
+- `dpop` があれば `Authorization: DPoP <token>` と、`htm`・`htu`・`ath`（アクセストークンの SHA-256）と覚えている nonce を入れた DPoP の証明を付ける。401 の `use_dpop_nonce` には、応答の `DPoP-Nonce` を覚えて1回だけやり直し、やり直しも予算から1減らす。
 - ライブラリは使わず、標準の `fetch` だけで通信する。ログには `nsid` と `kind` だけを出力する。
 
 ### D-4: 1件の予約の段階実行 (FR-2, FR-3, FR-4, FR-6, NFR-3)
@@ -172,15 +179,15 @@ export const executeSchedule = async (
 export const nextTid = (prev?: string): string
 ```
 
-| 段階 | 処理                                                                                                                                      | 進捗への反映 |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| 1    | `loadCredential` で復号し、`refreshSession` で更新する。得た `refreshJwt` を `saveCredential` で保管してから先へ進む                      | なし         |
-| 2    | `rkeys` が空なら、投稿数と entry の1件分だけ `nextTid` で採番して保存する                                                                 | `rkeys`      |
-| 3    | `blobs` に無い画像を、R2 から読み `com.atproto.repo.uploadBlob` で送る                                                                    | `blobs`      |
-| 4    | `created` の次の投稿から、`buildBskyPostRecord` で組み立て `com.atproto.repo.putRecord` を `rkey` 指定で呼ぶ。`createdAt` は `now` とする | `created`    |
-| 5    | `gates` の次の投稿から、`buildThreadgateRecord` と `buildPostgateRecord` で組み立てた記録を、投稿と同じ `rkey` で作成する                 | `gates`      |
-| 6    | 作成指定があり `entryDone` が偽なら、`buildSkyshareEntryRecord` で先頭の投稿を派生元にした記録を作成する                                  | `entryDone`  |
-| 7    | `completeSchedule` で行を削除し、`removeImages` を呼ぶ                                                                                    | -            |
+| 段階 | 処理                                                                                                                                                                               | 進捗への反映 |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| 1    | `loadCredential` で復号し、`refreshTokens` で OAuth の更新用トークンからアクセストークンを得る（予算を消費する）。回転した更新用トークンを `saveCredential` で保管してから先へ進む | なし         |
+| 2    | `rkeys` が空なら、投稿数と entry の1件分だけ `nextTid` で採番して保存する                                                                                                          | `rkeys`      |
+| 3    | `blobs` に無い画像を、R2 から読み `com.atproto.repo.uploadBlob` で送る                                                                                                             | `blobs`      |
+| 4    | `created` の次の投稿から、`buildBskyPostRecord` で組み立て `com.atproto.repo.putRecord` を `rkey` 指定で呼ぶ。`createdAt` は `now` とする                                          | `created`    |
+| 5    | `gates` の次の投稿から、`buildThreadgateRecord` と `buildPostgateRecord` で組み立てた記録を、投稿と同じ `rkey` で作成する                                                          | `gates`      |
+| 6    | 作成指定があり `entryDone` が偽なら、`buildSkyshareEntryRecord` で先頭の投稿を派生元にした記録を作成する                                                                           | `entryDone`  |
+| 7    | `completeSchedule` で行を削除し、`removeImages` を呼ぶ                                                                                                                             | -            |
 
 - 投稿の返信先は、先頭は指定された既存の投稿、2件目以降は先頭の投稿を `root`、直前の投稿を `parent` とする。
 - すべてのレコードは `putRecord` で書き込む。進捗の保存前に中断して同じキーへ再び書き込んでも、レコードは上書きされるだけで1件のままである。
@@ -205,8 +212,10 @@ const MAX_ATTEMPTS = 5
 | 事象                            | 処理                                                                                               |
 | ------------------------------- | -------------------------------------------------------------------------------------------------- |
 | 認証情報の行が無い              | `CredentialMissing` で失敗                                                                         |
-| 復号に失敗                      | `CredentialInvalid` で失敗                                                                         |
-| 更新時に `Auth`                 | `CredentialExpired` で失敗し、`deleteCredential` で認証情報を削除する                              |
+| 復号に失敗・旧形式の認証情報    | `CredentialInvalid` で失敗                                                                         |
+| 更新時に `invalid_grant`        | `CredentialExpired` で失敗し、`markCredentialReauth` で認証情報を印に替える                        |
+| 認証情報が印だけ                | 通信せずに `CredentialExpired` で失敗する                                                          |
+| 更新の応答の `sub` が違う       | `CredentialInvalid` で失敗                                                                         |
 | 更新以外の通信で `Auth`         | `attempts` に1を加えて待機中へ戻す（`Transient` と同じ扱い）                                       |
 | 作成時に `Invalid`              | `InvalidRecord` で失敗                                                                             |
 | 画像が R2 に無い                | `ImageMissing` で失敗                                                                              |

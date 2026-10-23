@@ -8,6 +8,9 @@ import {
     deleteSchedule,
     completeSchedule,
     failSchedule,
+    purgeOAuthStates,
+    saveOAuthState,
+    takeOAuthState,
     getSchedule,
     insertSchedule,
     listSchedules,
@@ -244,5 +247,43 @@ describe("schedule store", () => {
             (await listSchedules(db, A, { limit: 10, status: "pending" }))
                 .items,
         ).toHaveLength(2)
+    })
+})
+
+describe("認可の途中の状態", () => {
+    const SECRET = btoa(String.fromCharCode(...new Uint8Array(32).fill(4)))
+    test("schedule-store/AC-20: 所有アカウントで10分以内に1回だけ取り出せ、別のアカウント・2回目・期限後には取り出せない", async () => {
+        const db = createFakeD1()
+        const save = (state: string, now: number) =>
+            saveOAuthState(
+                db,
+                SECRET,
+                { state, did: A, data: '{"verifier":"V"}' },
+                now,
+            )
+        await save("s1", 100)
+        // 平文では保管しない
+        const row = await db
+            .prepare(
+                "SELECT data_enc FROM schedule_oauth_states WHERE state = ?",
+            )
+            .bind("s1")
+            .first<{ data_enc: string }>()
+        expect(row!.data_enc).not.toContain("verifier")
+        expect(await takeOAuthState(db, SECRET, "s1", A, 200)).toBe(
+            '{"verifier":"V"}',
+        )
+        expect(await takeOAuthState(db, SECRET, "s1", A, 200)).toBeNull()
+
+        await save("s2", 100)
+        expect(await takeOAuthState(db, SECRET, "s2", B, 200)).toBeNull()
+
+        await save("s3", 100)
+        expect(
+            await takeOAuthState(db, SECRET, "s3", A, 100 + 10 * 60 + 1),
+        ).toBeNull()
+
+        await save("s4", 100)
+        expect(await purgeOAuthStates(db, 100 + 10 * 60 + 1)).toBe(1)
     })
 })

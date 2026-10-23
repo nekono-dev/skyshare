@@ -23,6 +23,9 @@ import {
     parseKeys,
     purgeFinished,
     purgeIdleCredentials,
+    purgeReauthMarkers,
+    REAUTH_MARKER_KEEP_SECONDS,
+    purgeOAuthStates,
     releaseSchedule,
     requeueStale,
 } from "./store"
@@ -81,6 +84,8 @@ export const runScheduledPosts = async (
             ).catch(() => {})
         }
         await purgeIdleCredentials(env.DB, now, CREDENTIAL_IDLE_SECONDS)
+        await purgeReauthMarkers(env.DB, now, REAUTH_MARKER_KEEP_SECONDS)
+        await purgeOAuthStates(env.DB, now)
     } catch {
         console.error("runScheduledPosts: purge failed")
     }

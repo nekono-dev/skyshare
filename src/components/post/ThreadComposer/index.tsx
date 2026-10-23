@@ -82,6 +82,7 @@ import { runShareDispatch } from "./shareDispatch"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import TabButtons, { panelId, tabId } from "@/components/common/TabButtons"
 import RunAtPicker from "@/components/schedule/RunAtPicker"
+import CredentialDialog from "@/components/schedule/CredentialDialog"
 import ScheduleList from "@/components/schedule/ScheduleList"
 import type { CreateScheduleBody } from "@/client/openapi/model"
 import { formatRunAtLabel } from "@/lib/schedule/runAtInput"
@@ -97,6 +98,7 @@ import {
 } from "@/lib/schedule/scheduleMode"
 import {
   cancelSchedule,
+  fetchPendingCount,
   fetchScheduleForEdit,
   submitSchedule,
 } from "@/lib/schedule/submitSchedule"
@@ -301,11 +303,22 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const [scheduleMode, setScheduleMode] =
       useState<ScheduleMode>(initialScheduleMode)
     const [runAtPickerOpen, setRunAtPickerOpen] = useState(false)
+    // 日時の指定を開くたびに取得する、待機中の予約の件数（取得前・失敗は null）
+    const [pendingCount, setPendingCount] = useState<number | null>(null)
+    useEffect(() => {
+      if (!runAtPickerOpen) return
+      let cancelled = false
+      setPendingCount(null)
+      void fetchPendingCount().then(count => {
+        if (!cancelled) setPendingCount(count)
+      })
+      return () => {
+        cancelled = true
+      }
+    }, [runAtPickerOpen])
     const [editChoiceOpen, setEditChoiceOpen] = useState(false)
     const [editChoiceBusy, setEditChoiceBusy] = useState(false)
     const [scheduleLoading, setScheduleLoading] = useState(false)
-    // 動画つきの投稿に予約の日時を設定しようとしたときの確認
-    const [videoConflictOpen, setVideoConflictOpen] = useState(false)
     // 失敗した予約から書き戻した入力のとき、その履歴の識別子。送信に成功したら履歴を削除する
     const [restoredFailedId, setRestoredFailedId] = useState<string | null>(
       null,
@@ -315,8 +328,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 送信中の2回目の確定操作を、state の反映を待たずに無視するための印
     const submittingRef = useRef(false)
     const locale = useLocale()
-    const { registered: scheduleRegistered, limits: scheduleLimits } =
-      useScheduleAvailability(!guestMode)
+    const {
+      registered: scheduleRegistered,
+      reauthRequired: scheduleReauthRequired,
+      expiresAt: scheduleExpiresAt,
+      limits: scheduleLimits,
+    } = useScheduleAvailability(!guestMode)
     const [draftModalOpen, setDraftModalOpen] = useState(false)
     const [draftItems, setDraftItems] = useState<
       ReturnType<typeof normalizeDraftList>
@@ -328,6 +345,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const [draftSaveConfirmOpen, setDraftSaveConfirmOpen] = useState(false)
     // 予約投稿が無効のときにカレンダーのボタンを押した際の、設定への案内
     const [setupGuideOpen, setSetupGuideOpen] = useState(false)
+    // 許可が無効になったときにカレンダーのボタンを押した際の、再度の許可のダイアログ
+    const [reauthOpen, setReauthOpen] = useState(false)
     // 下書き保存の確認の後に移るページ。null のときは、確認の後にフォームを閉じるだけ
     const [pendingNavigation, setPendingNavigation] = useState<string | null>(
       null,
@@ -510,25 +529,36 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const finishAfterDraftConfirm = () => {
       setDraftSaveConfirmOpen(false)
       closeForm()
-      if (pendingNavigation) {
-        const to = pendingNavigation
-        setPendingNavigation(null)
-        goTo(to)
-      }
+      goToPendingNavigation()
     }
 
     /**
-     * 他のページへ移る。未保存の本文があれば、下書き保存の確認を挟んでから移る。
+     * 他のページへ移る。閉じるときと同じ確認（予約の編集中は3択、未保存の本文があれば
+     * 下書き保存の確認）を挟んでから移り、作成中の内容を不意に失わないようにする。
      *
      * Input:
-     * - `to`: 移る先の URL またはパス
+     * - `to`: 移る先の URL またはパス（再度の許可では Bluesky の認可の画面）
      */
     const requestNavigation = (to: string) => {
-      if (hasUnsavedDraftChanges()) {
-        setPendingNavigation(to)
-        setDraftSaveConfirmOpen(true)
+      const action = cancelAction(
+        scheduleMode,
+        hasUnsavedDraftChanges(),
+        hasTextInput,
+      )
+      if (action === "close") {
+        goTo(to)
         return
       }
+      setPendingNavigation(to)
+      if (action === "editChoice") setEditChoiceOpen(true)
+      else setDraftSaveConfirmOpen(true)
+    }
+
+    /** 確認の後に移る先が決まっていれば、そのページへ移る */
+    const goToPendingNavigation = () => {
+      if (!pendingNavigation) return
+      const to = pendingNavigation
+      setPendingNavigation(null)
       goTo(to)
     }
 
@@ -630,6 +660,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         const result = await cancelSchedule(scheduleMode.id)
         setEditChoiceOpen(false)
         if (!result.ok) {
+          setPendingNavigation(null)
           setStatus(deferMessage(result.messageKey))
           setStatusColor("#b00")
           return
@@ -637,6 +668,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         closeForm()
         setStatus(deferMessage("schedule.cancelled"))
         setStatusColor("green")
+        goToPendingNavigation()
       } finally {
         setEditChoiceBusy(false)
       }
@@ -756,19 +788,26 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 取り外し（キャンセル）した場合のみ、完了を待たずに投稿できる。
     const videoPending = pendingVideoState(segments)
     const canSubmit = areAllSegmentsPostable(segments) && videoPending === null
-    // 動画は予約に含められない（動画を含む投稿でカレンダーのボタンを押すと、
-    // 動画の登録を解除するかをたずねる。予約の日時の設定中は動画のボタンを無効にする）
+    // 動画は予約に含められない（動画を含む間はカレンダーのボタンを無効にし、
+    // 予約の日時の設定中は動画のボタンを無効にする）
     const hasVideo = hasVideoSegment(segments)
     const scheduleAvailable =
-      !guestMode && scheduleRegistered === true && scheduleLimits !== null
+      !guestMode &&
+      scheduleRegistered === true &&
+      !scheduleReauthRequired &&
+      scheduleLimits !== null
     // カレンダーのボタンを押せない理由。押せるときは undefined
     const scheduleUnavailableReason = guestMode
       ? t("post.guestUnavailable")
-      : scheduleRegistered !== true
-        ? t("schedule.unavailableDisabled")
-        : scheduleLimits === null
-          ? t("schedule.unavailableLimits")
-          : undefined
+      : hasVideo
+        ? t("schedule.unavailableVideo")
+        : scheduleRegistered !== true
+          ? t("schedule.unavailableDisabled")
+          : scheduleReauthRequired
+            ? t("schedule.unavailableReauth")
+            : scheduleLimits === null
+              ? t("schedule.unavailableLimits")
+              : undefined
     const target = submitTarget(scheduleMode)
     const scheduledRunAt = runAtOf(scheduleMode)
     // 予約として送信するときは、動画を含む投稿を送れない
@@ -1069,7 +1108,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
 
         <ChoiceDialog
           open={editChoiceOpen}
-          onClose={() => setEditChoiceOpen(false)}
+          onClose={() => {
+            setEditChoiceOpen(false)
+            setPendingNavigation(null)
+          }}
           ariaLabel={t("schedule.editCancel.title")}
           loading={
             editChoiceBusy ? { message: t("schedule.sending") } : undefined
@@ -1090,6 +1132,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               onClick: () => {
                 setEditChoiceOpen(false)
                 closeForm()
+                goToPendingNavigation()
               },
             },
             {
@@ -1097,42 +1140,10 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               label: t("schedule.editCancel.continue"),
               variant: "blue",
               disabled: editChoiceBusy,
-              onClick: () => setEditChoiceOpen(false),
-            },
-          ]}
-        />
-
-        <ChoiceDialog
-          open={videoConflictOpen}
-          onClose={() => setVideoConflictOpen(false)}
-          ariaLabel={t("schedule.videoConflict.title")}
-          description={t("schedule.videoConflict.message")}
-          buttons={[
-            {
-              key: "removeVideo",
-              label: t("schedule.videoConflict.remove"),
-              variant: "red",
               onClick: () => {
-                // 動画を外してから、予約の日時の指定を開く（アップロード中の動画は中断される）
-                segments.forEach(segment =>
-                  revokeVideoEntry(segment.videoEntry),
-                )
-                setSegments(prev =>
-                  prev.map(segment =>
-                    segment.videoEntry
-                      ? { ...segment, videoEntry: null }
-                      : segment,
-                  ),
-                )
-                setVideoConflictOpen(false)
-                setRunAtPickerOpen(true)
+                setEditChoiceOpen(false)
+                setPendingNavigation(null)
               },
-            },
-            {
-              key: "cancel",
-              label: t("schedule.videoConflict.cancel"),
-              variant: "gray",
-              onClick: () => setVideoConflictOpen(false),
             },
           ]}
         />
@@ -1159,6 +1170,17 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               onClick: () => setSetupGuideOpen(false),
             },
           ]}
+        />
+
+        <CredentialDialog
+          open={reauthOpen}
+          reauth
+          onClose={() => setReauthOpen(false)}
+          navigate={url => {
+            // 認可の画面へ移る前に、作成中の内容の扱いを確かめる
+            setReauthOpen(false)
+            requestNavigation(url)
+          }}
         />
 
         <DraftSaveConfirmDialog
@@ -1282,20 +1304,35 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       value={scheduledRunAt}
                       limits={scheduleAvailable ? scheduleLimits : null}
                       disabled={
-                        isSubmitting || (guestMode && !scheduleAvailable)
+                        isSubmitting ||
+                        (guestMode && !scheduleAvailable) ||
+                        (hasVideo && scheduledRunAt === null)
                       }
                       disabledReason={scheduleUnavailableReason}
                       onUnavailable={
-                        // 予約投稿が無効（未登録）のときだけ、設定への案内を出す
-                        !guestMode && scheduleRegistered === false
-                          ? () => setSetupGuideOpen(true)
-                          : undefined
+                        // 予約投稿が無効（未登録）のときは設定への案内を、許可が無効になった
+                        // ときはこの画面のまま再度の許可のダイアログを出す
+                        guestMode
+                          ? undefined
+                          : scheduleRegistered === false
+                            ? () => setSetupGuideOpen(true)
+                            : scheduleRegistered === true &&
+                                scheduleReauthRequired
+                              ? () => setReauthOpen(true)
+                              : undefined
                       }
                       open={runAtPickerOpen}
-                      onOpenChange={next =>
-                        next && hasVideo && scheduledRunAt === null
-                          ? setVideoConflictOpen(true)
-                          : setRunAtPickerOpen(next)
+                      onOpenChange={setRunAtPickerOpen}
+                      expiresAt={scheduleAvailable ? scheduleExpiresAt : null}
+                      slots={
+                        pendingCount !== null && scheduleLimits
+                          ? {
+                              used: pendingCount,
+                              max: scheduleLimits.maxPending,
+                              // 編集中の予約は、すでに枠を使っている
+                              consumes: scheduleMode.kind !== "editing",
+                            }
+                          : null
                       }
                       onChange={next => void handleRunAtChange(next)}
                     />
@@ -1314,7 +1351,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
                   data-testid="schedule-run-at-label"
                   disabled={isSubmitting}
-                  onClick={() => setRunAtPickerOpen(true)}
+                  onClick={() =>
+                    // 許可が無効になっているときは、日時の指定の代わりに再度の許可を案内する
+                    scheduleReauthRequired
+                      ? setReauthOpen(true)
+                      : setRunAtPickerOpen(true)
+                  }
                 >
                   {t("schedule.runAtLabel", {
                     date: formatRunAtLabel(scheduledRunAt, locale),

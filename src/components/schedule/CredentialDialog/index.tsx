@@ -1,63 +1,55 @@
-import React, { useEffect, useRef, useState } from "react"
-import { createPortal } from "react-dom"
-import { putScheduleCredential } from "@/client/openapi/client"
+import { useEffect, useRef, useState } from "react"
+import { startScheduleAuthorization } from "@/client/openapi/client"
+import Overlay from "@/components/common/Overlay"
 import { getActiveAccountHandle } from "@/lib/account/activeAccountSession"
 import { useT } from "@/lib/i18n/react"
 import { renderSlots } from "@/lib/i18n/rich"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
-import { scheduleErrorKey } from "@/lib/schedule/scheduleErrorKey"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
 /**
- * 予約用の認証情報（アプリパスワード）の入力のダイアログ。
+ * 予約投稿を有効にするダイアログ（Bluesky の OAuth の認可へ送る）。
  *
  * 責務と処理概要:
- * - 設定で予約投稿をオンにしたときに開き、`PUT /v2/schedules/credential` で登録する。
- * - 文言は、メインパスワードを入力しない注意・アプリパスワードの作成場所・プライバシーポリシーへの
- *   リンクの3行だけにする（詳しい説明はプライバシーポリシーに任せる）。
- * - 可視のユーザー名欄（`autocomplete="username"`）とパスワード欄（`current-password`）を
- *   同じフォームに1組だけ置き、パスワードマネージャの自動入力の対象にする。
- * - パスワードは非制御入力で扱い、送信後に空に戻す。ログ・URL・ストレージには出さない。
- *
- * 利用上の制約:
- * - 非モーダルの `<dialog>`（`show()`）で開き、開いている間だけフォームを描画する。
- *   トップレイヤーに置くとパスワードマネージャの候補が隠れるため、`showModal()` は使わない。
- * - 呼び出し側のカード（`overflow: hidden`）の中では背面の減光が描画されないため、
- *   `Overlay` と同じく `document.body` 直下へポータルで描画し、減光は専用の要素で敷く。
+ * - 設定で予約投稿をオンにしたときに開き、何をどのアカウントで許可するかを示す。
+ * - ユーザー名・パスワードの入力欄は置かない。認可するアカウントは、ログイン中のアカウントに決まる。
+ * - 許可が無効になったとき（`reauth`）は、再度の許可が必要である旨の見出しと文にする。
+ * - 「Bluesky で許可する」で `POST /v2/schedules/credential/authorization` に今のページのパスを
+ *   渡して呼び、返った認可の画面の URL へ移る。認可の画面から戻ると今のページが開き、
+ *   全ページ共通の `AuthorizationReturn` が完了と結果の表示を行う。
+ * - 投稿フォームから開いたときは、移る前に作成中の内容の扱いを確かめられるよう、
+ *   移る処理（`navigate`）を投稿フォームが差し替える。
+ * - スマホ幅では、投稿フォームと同様に画面の上部に固定する。
  */
 
 type Props = {
   open: boolean
-  /** 登録に成功したとき。呼び出し側がダイアログを閉じる */
-  onRegistered: () => void
   onClose: () => void
+  /** 許可が無効になった後の再度の許可として開く */
+  reauth?: boolean
+  /** 認可の画面へ移る。テストで差し替えられるよう、既定は `location.assign` */
+  navigate?: (url: string) => void
 }
 
-export const Component = ({ open, onRegistered, onClose }: Props) => {
+export const Component = ({
+  open,
+  onClose,
+  reauth = false,
+  navigate = url => window.location.assign(url),
+}: Props) => {
   const { t, raw } = useT()
-  const dialogRef = useRef<HTMLDialogElement>(null)
-  const passwordRef = useRef<HTMLInputElement>(null)
-  const submittingRef = useRef(false)
-  const [busy, setBusy] = useState(false)
   const [handle, setHandle] = useState("")
+  const [busy, setBusy] = useState(false)
   const [errorKey, setErrorKey] = useState<PlainMessageKey | "">("")
-  // ポータル先の document.body はクライアントでだけ参照できる（SSR では描画しない）
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const startingRef = useRef(false)
 
-  // open に合わせて非モーダルのダイアログを開閉する（ポータルの描画後に参照できる）
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (open && !dialog.open) dialog.show()
-    if (!open && dialog.open) dialog.close()
-  }, [open, mounted])
-
-  // 開くたびにエラーを消し、ユーザー名欄の初期値（ログイン中のハンドル）を取得する
+  // 開くたびにエラーを消し、許可するアカウント（ログイン中のハンドル）を取得する
   useEffect(() => {
     if (!open) return
     setErrorKey("")
+    startingRef.current = false
+    setBusy(false)
     let cancelled = false
     void getActiveAccountHandle()
       .then(own => {
@@ -69,133 +61,114 @@ export const Component = ({ open, onRegistered, onClose }: Props) => {
     }
   }, [open])
 
-  /**
-   * アプリパスワードを登録する。送信中の2回目の送信は無視する。
-   * 失敗したらダイアログを開いたまま、パスワード欄を空にしてエラーを表示する。
-   */
-  const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (submittingRef.current) return
-    submittingRef.current = true
+  /** 認可を開始し、認可の画面へ移る。2回目の押下は無視する */
+  const start = async () => {
+    if (startingRef.current) return
+    startingRef.current = true
     setBusy(true)
     setErrorKey("")
     try {
-      const password = passwordRef.current?.value ?? ""
-      const res = await putScheduleCredential({ password })
+      // 認可の画面から戻ったときに、許可を始めたこのページを開く
+      const res = await startScheduleAuthorization({
+        returnTo: `${window.location.pathname}${window.location.search}`,
+      })
       if (res.status !== 200) {
         setErrorKey(
-          scheduleErrorKey(
-            res.status,
-            "error" in res.data ? res.data.error : undefined,
-            "credential",
-          ),
+          res.status === 401
+            ? "error.unauthorized"
+            : "schedule.credential.startFailed",
         )
         return
       }
-      onRegistered()
+      navigate(res.data.url)
+      // 画面が移るまでは押せないままにする
+      return
     } catch {
-      console.error("CredentialDialog: registration failed")
       setErrorKey("error.network")
-    } finally {
-      if (passwordRef.current) passwordRef.current.value = ""
-      submittingRef.current = false
-      setBusy(false)
     }
+    startingRef.current = false
+    setBusy(false)
   }
 
-  if (!mounted) return null
-  return createPortal(
-    <>
-      {open && <div className={styles.backdrop} aria-hidden="true" />}
-      <dialog
-        ref={dialogRef}
-        className={styles.dialog}
-        aria-label={t("schedule.credential.title")}
+  // 失敗で戻ったときは、再び押せるようにする
+  useEffect(() => {
+    if (errorKey) {
+      startingRef.current = false
+      setBusy(false)
+    }
+  }, [errorKey])
+
+  return (
+    <Overlay
+      open={open}
+      onClose={() => {
+        if (!busy) onClose()
+      }}
+      backdropClassName={styles.backdrop}
+      contentClassName={ui["width-sm"]}
+    >
+      <div
+        className={`${ui["base-card"]} ${styles.content}`}
+        role="dialog"
+        aria-label={t(
+          reauth
+            ? "schedule.credential.reauthTitle"
+            : "schedule.credential.title",
+        )}
         data-testid="schedule-credential-dialog"
-        onClose={onClose}
-        onKeyDown={e => {
-          if (e.key === "Escape" && !busy) onClose()
-        }}
       >
-        {open ? (
-          <form
-            className={`${ui["base-card"]} ${styles.content}`}
-            onSubmit={e => void onSubmit(e)}
+        <h2 className={ui.subject}>
+          {t(
+            reauth
+              ? "schedule.credential.reauthTitle"
+              : "schedule.credential.title",
+          )}
+        </h2>
+        <p className={styles.note}>
+          {t(
+            reauth
+              ? "schedule.credential.reauthIntro"
+              : "schedule.credential.intro",
+          )}
+        </p>
+        <p className={styles.note}>{t("schedule.credential.scope")}</p>
+        {handle && (
+          <p className={styles.note} data-testid="schedule-credential-account">
+            {t("schedule.credential.account", { handle: `@${handle}` })}
+          </p>
+        )}
+        <p className={styles.note}>
+          {renderSlots(raw("schedule.credential.privacy"), {
+            link: (
+              <a href="/privacy/#collected" target="_blank" rel="noreferrer">
+                {t("privacy.link")}
+              </a>
+            ),
+          })}
+        </p>
+        <div className={styles.error} aria-live="polite">
+          {errorKey ? t(errorKey) : ""}
+        </div>
+        <div className={styles.actions}>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void start()}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
           >
-            <h2 className={ui.subject}>{t("schedule.credential.title")}</h2>
-            <p className={styles.warning}>{t("schedule.credential.warning")}</p>
-            <p className={styles.note}>{t("schedule.credential.howto")}</p>
-            <p className={styles.note}>
-              {renderSlots(raw("schedule.credential.privacy"), {
-                link: (
-                  <a
-                    href="/privacy/#collected"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {t("privacy.link")}
-                  </a>
-                ),
-              })}
-            </p>
-            <div>
-              <label htmlFor="schedule-username">
-                {t("schedule.credential.username")}
-              </label>
-              <div className={ui["base-input-box"]}>
-                <input
-                  className={ui["base-input-field"]}
-                  id="schedule-username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  defaultValue={handle}
-                  key={handle}
-                />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="schedule-password">
-                {t("schedule.credential.password")}
-              </label>
-              <div className={ui["base-input-box"]}>
-                <input
-                  className={ui["base-input-field"]}
-                  id="schedule-password"
-                  name="current-password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  ref={passwordRef}
-                  disabled={busy}
-                />
-              </div>
-            </div>
-            <div className={styles.error} aria-live="polite">
-              {errorKey ? t(errorKey) : ""}
-            </div>
-            <div className={styles.actions}>
-              <button
-                type="submit"
-                disabled={busy}
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-              >
-                {t("schedule.credential.submit")}
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onClose}
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
-              >
-                {t("schedule.credential.cancel")}
-              </button>
-            </div>
-          </form>
-        ) : null}
-      </dialog>
-    </>,
-    document.body,
+            {t("schedule.credential.submit")}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+          >
+            {t("schedule.credential.cancel")}
+          </button>
+        </div>
+      </div>
+    </Overlay>
   )
 }
 export default Component

@@ -1,7 +1,13 @@
 /**
- * PDS の XRPC を模した fetch。呼び出しを記録し、書き込まれたレコードを保持する。
+ * PDS の XRPC と、その認可サーバーのトークンの端点を模した fetch。
+ * 呼び出しを記録し、書き込まれたレコードを保持する。
+ *
+ * - `https://pds/oauth/token` への要求は `nsid: "oauth.token"` として記録し、フォームの項目を `body` に入れる。
+ *   更新用トークンの要求には、新しいアクセストークンと回転した更新用トークンを返す。
+ * - XRPC の要求の `token` には、`Bearer` と `DPoP` のどちらの方式でも、トークンの値だけを入れる。
+ *   `dpop` には、送られた DPoP の証明を入れる。
  */
-export type PdsCall = { nsid: string; body: any; token?: string }
+export type PdsCall = { nsid: string; body: any; token?: string; dpop?: string }
 
 export type FakePds = {
     fetch: typeof fetch
@@ -20,29 +26,33 @@ export const createFakePds = (did: string): FakePds => {
         calls: [],
         records: new Map(),
         fetch: (async (url: string, init: RequestInit) => {
-            const nsid = new URL(url).pathname.replace("/xrpc/", "")
+            const path = new URL(url).pathname
+            const isToken = path === "/oauth/token"
+            const nsid = isToken ? "oauth.token" : path.replace("/xrpc/", "")
             const raw = init.body
+            const headers = (init.headers ?? {}) as Record<string, string>
             const body =
                 raw instanceof Uint8Array || raw instanceof ArrayBuffer
                     ? { bytes: (raw as ArrayBuffer).byteLength }
-                    : raw
-                      ? JSON.parse(raw as string)
-                      : undefined
-            const token = (
-                init.headers as Record<string, string>
-            )?.authorization?.replace("Bearer ", "")
-            const call = { nsid, body, token }
+                    : isToken
+                      ? Object.fromEntries(new URLSearchParams(raw as string))
+                      : raw
+                        ? JSON.parse(raw as string)
+                        : undefined
+            const token = headers.authorization?.replace(/^(Bearer|DPoP) /, "")
+            const call = { nsid, body, token, dpop: headers.dpop }
             pds.calls.push(call)
             const overridden = await pds.override?.(call, pds.calls.length)
             if (overridden) return overridden
             const json = (o: object) =>
                 new Response(JSON.stringify(o), { status: 200 })
             switch (nsid) {
-                case "com.atproto.server.refreshSession":
+                case "oauth.token":
                     return json({
-                        did,
-                        accessJwt: "ACCESS",
-                        refreshJwt: "NEW-REFRESH",
+                        access_token: "ACCESS",
+                        refresh_token: "NEW-REFRESH",
+                        token_type: "DPoP",
+                        sub: did,
                     })
                 case "com.atproto.repo.uploadBlob":
                     return json({

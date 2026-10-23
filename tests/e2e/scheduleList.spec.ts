@@ -101,7 +101,7 @@ test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時�
     await expect(rows.nth(1)).toHaveAttribute("data-status", "failed")
 
     await expect(
-        rows.nth(1).getByText("アプリパスワードが使えなくなっていました"),
+        rows.nth(1).getByText("Bluesky での予約投稿の許可が無効になっていました"),
     ).toBeVisible()
     // 成功した予約は履歴に残らないため、投稿へのリンクは出ない
     await expect(list.getByRole("link", { name: "投稿を見る" })).toHaveCount(0)

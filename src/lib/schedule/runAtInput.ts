@@ -89,6 +89,18 @@ export const checkRunAt = (
  * Output: 表示言語の書式の文字列
  * Example: `formatRunAtLabel(d, "ja")` → `"10月23日(金) 14:00"`
  */
+/**
+ * 許可の有効期限の目安の日付を、表示言語の書式（年月日）にする。
+ *
+ * Example: `formatExpiryDate(new Date("2027-03-01T05:00:00Z"), "ja")` → `"2027/3/1"`（端末のタイムゾーン）
+ */
+export const formatExpiryDate = (d: Date, locale: string): string =>
+    new Intl.DateTimeFormat(locale, {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+    }).format(d)
+
 export const formatRunAtLabel = (d: Date, locale: string): string =>
     new Intl.DateTimeFormat(locale, {
         month: "short",

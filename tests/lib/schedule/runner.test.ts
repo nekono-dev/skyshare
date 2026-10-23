@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, test } from "vitest"
 import { createFakeD1 } from "../../helpers/fakeD1"
 import { createFakeR2 } from "../../helpers/fakeR2"
 import { createFakePds } from "../../helpers/fakePds"
+import {
+    createTestClientSecret,
+    createTestCredentialToken,
+} from "../../helpers/oauthTestKeys"
 import { MAX_EXTERNAL_CALLS, runScheduledPosts } from "@/lib/schedule/runner"
 import { putImages } from "@/lib/schedule/imageStaging"
 import {
@@ -22,7 +26,12 @@ const NOW = 1_800_000_000
 
 let db: ReturnType<typeof createFakeD1>
 let r2: ReturnType<typeof createFakeR2>
-let env: { DB: typeof db; SCHEDULE_IMAGES: typeof r2; SCHEDULE_ENC_KEY: string }
+let env: {
+    DB: typeof db
+    SCHEDULE_IMAGES: typeof r2
+    SCHEDULE_ENC_KEY: string
+    SCHEDULE_OAUTH_KEY: string
+}
 let pds: ReturnType<typeof createFakePds>
 
 const add = async (
@@ -32,7 +41,11 @@ const add = async (
     images = 0,
 ) => {
     const keys = images
-        ? await putImages(r2, DID, id, "g",
+        ? await putImages(
+              r2,
+              DID,
+              id,
+              "g",
               Array.from({ length: images }, () => ({
                   bytes: new ArrayBuffer(2),
                   mime: "image/png",
@@ -54,11 +67,20 @@ beforeEach(async () => {
     db = createFakeD1()
     r2 = createFakeR2()
     pds = createFakePds(DID)
-    env = { DB: db, SCHEDULE_IMAGES: r2, SCHEDULE_ENC_KEY: KEY }
+    env = {
+        DB: db,
+        SCHEDULE_IMAGES: r2,
+        SCHEDULE_ENC_KEY: KEY,
+        SCHEDULE_OAUTH_KEY: await createTestClientSecret(),
+    }
     await saveCredential(
         db,
         KEY,
-        { did: DID, service: "https://pds", token: "R" },
+        {
+            did: DID,
+            service: "https://pds",
+            token: await createTestCredentialToken("R"),
+        },
         1,
     )
 })
@@ -129,7 +151,7 @@ describe("runScheduledPosts", () => {
         expect((await getSchedule(db, DID, "fresh"))?.status).toBe("running")
     })
 
-    test("schedule-runner/AC-11: 終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが削除される", async () => {
+    test("schedule-runner/AC-11: 終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが取り出せなくなる", async () => {
         const week = 7 * 24 * 60 * 60
         const month = 30 * 24 * 60 * 60
         await add("old", NOW - 10)

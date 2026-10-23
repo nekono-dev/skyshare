@@ -2,17 +2,18 @@
 
 ## 1. 構成
 
-| パス                                                 | 責務                                                       |
-| ---------------------------------------------------- | ---------------------------------------------------------- |
-| `src/lib/schedule/runAtInput.ts`                     | 日時の既定値・変換・範囲の判定・表示の文字列               |
-| `src/lib/schedule/useScheduleAvailability.ts`        | 認証情報の登録状態と制限値の取得と、変更の通知の購読       |
-| `src/lib/schedule/scheduleMode.ts`                   | 投稿フォームの予約の状態の遷移と、送信先とキャンセルの判定 |
-| `src/lib/schedule/submitSchedule.ts`                 | 予約の作成と置き換えの呼び出しと、編集用の内容の取得       |
-| `src/lib/schedule/scheduleErrorKey.ts`               | API のエラーと失敗の分類コードの文言キーの選択             |
-| `src/components/schedule/ScheduleSetting/index.tsx`  | 設定の予約投稿のスイッチと、有効化と無効化の確認           |
-| `src/components/schedule/CredentialDialog/index.tsx` | 予約用の認証情報（アプリパスワード）の入力のダイアログ     |
-| `src/components/schedule/RunAtPicker/index.tsx`      | カレンダーのボタンと実行日時の指定のダイアログ             |
-| `src/components/schedule/ScheduleList/index.tsx`     | 予約のタブの一覧と、選択・書き戻し・履歴の削除             |
+| パス                                                    | 責務                                                       |
+| ------------------------------------------------------- | ---------------------------------------------------------- |
+| `src/lib/schedule/runAtInput.ts`                        | 日時の既定値・変換・範囲の判定・表示の文字列               |
+| `src/lib/schedule/useScheduleAvailability.ts`           | 認証情報の登録状態と制限値の取得と、変更の通知の購読       |
+| `src/lib/schedule/scheduleMode.ts`                      | 投稿フォームの予約の状態の遷移と、送信先とキャンセルの判定 |
+| `src/lib/schedule/submitSchedule.ts`                    | 予約の作成と置き換えの呼び出しと、編集用の内容の取得       |
+| `src/lib/schedule/scheduleErrorKey.ts`                  | API のエラーと失敗の分類コードの文言キーの選択             |
+| `src/components/schedule/ScheduleSetting/index.tsx`     | 設定の予約投稿のスイッチと、有効化と無効化の確認           |
+| `src/components/schedule/CredentialDialog/index.tsx`    | Bluesky での予約投稿の許可への案内のダイアログ             |
+| `src/components/schedule/RunAtPicker/index.tsx`         | カレンダーのボタンと実行日時の指定のダイアログ             |
+| `src/components/schedule/ScheduleList/index.tsx`        | 予約のタブの一覧と、選択・書き戻し・履歴の削除             |
+| `src/components/schedule/AuthorizationReturn/index.tsx` | 許可の画面から戻ったときの完了と結果の表示（全ページ共通） |
 
 ## 2. 関係図・ワークフロー
 
@@ -31,6 +32,9 @@ flowchart LR
   RunAtPicker --> runAtInput
   ScheduleList --> scheduleErrorKey
   CredentialDialog --> scheduleErrorKey
+  ext_composer --> CredentialDialog
+  ext_layout["共通のレイアウト"] --> AuthorizationReturn["AuthorizationReturn/index"]
+  AuthorizationReturn --> ext_client
   submitSchedule --> scheduleErrorKey
   submitSchedule --> runAtInput
   useScheduleAvailability --> ext_client["生成クライアント"]
@@ -64,6 +68,7 @@ stateDiagram-v2
 sequenceDiagram
   participant ScheduleSetting as ScheduleSetting/index
   participant CredentialDialog as CredentialDialog/index
+  participant AuthorizationReturn as AuthorizationReturn/index
   participant useScheduleAvailability
   participant ext_composer as 投稿フォーム
   participant RunAtPicker as RunAtPicker/index
@@ -75,12 +80,21 @@ sequenceDiagram
   useScheduleAvailability->>ext_client: getScheduleCredential
   alt オンにする
     ScheduleSetting->>CredentialDialog: 開く
-    CredentialDialog->>ext_client: putScheduleCredential
-    ScheduleSetting->>useScheduleAvailability: notifyScheduleCredentialChange
+    CredentialDialog->>ext_client: startScheduleAuthorization
+    CredentialDialog->>CredentialDialog: 認可の画面へ移る
+    AuthorizationReturn->>ext_client: completeScheduleAuthorization
+    AuthorizationReturn->>AuthorizationReturn: authResultKey
+    AuthorizationReturn->>useScheduleAvailability: notifyScheduleCredentialChange
   else オフにする
     ScheduleSetting->>ext_client: deleteScheduleCredential
   end
   useScheduleAvailability->>useScheduleAvailability: SCHEDULE_CREDENTIAL_EVENT
+  ext_composer->>submitSchedule: fetchPendingCount
+  alt 許可が無効
+    ext_composer->>CredentialDialog: 再度の許可として開く
+    CredentialDialog->>ext_composer: navigate（移る前の確認）
+  end
+  RunAtPicker->>RunAtPicker: formatExpiryDate
   RunAtPicker->>RunAtPicker: defaultRunAt
   RunAtPicker->>RunAtPicker: toLocalInputValue
   RunAtPicker->>RunAtPicker: checkRunAt
@@ -129,7 +143,9 @@ export const formatRunAtLabel = (d: Date, locale: string): string // Intl.DateTi
 export const SCHEDULE_CREDENTIAL_EVENT = "skyshare:schedule-credential-change"
 export const notifyScheduleCredentialChange = (): void // window へ CustomEvent を送る
 export const useScheduleAvailability = (enabled: boolean): {
-  registered: boolean | null // 取得前と取得の失敗は null
+  registered: boolean | null // 取得前と取得の失敗は null。再度の許可が必要なときも true
+  reauthRequired: boolean
+  expiresAt: Date | null // 許可の有効期限の目安
   limits: ScheduleLimits | null
   reload: () => void
 }
@@ -137,17 +153,18 @@ export const useScheduleAvailability = (enabled: boolean): {
 
 - `enabled` が偽（ゲストの表示）のときは通信せず `registered: null` を返す。
 - マウント時と `astro:page-load` と `SCHEDULE_CREDENTIAL_EVENT` のたびに `getScheduleCredential` を呼ぶ。`getScheduleLimits` は最初に `registered` が真になったときに1回だけ呼ぶ。
-- 投稿フォームは `registered === true && limits !== null` のときだけ予約投稿を有効とみなす。
+- 投稿フォームは `registered === true && !reauthRequired && limits !== null` のときだけ予約投稿を有効とみなす。
 
 ### D-3: 設定の予約投稿のスイッチ (FR-1, FR-2)
 
-| 操作             | 処理                                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------- |
-| 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする           |
-| オンにする       | `CredentialDialog` を開く。登録に成功したら `notifyScheduleCredentialChange` を呼び、閉じたらオフのままにする |
-| オフにする       | `listSchedules({ status: "pending", limit: 50 })` の件数を `ConfirmDialog` の文言に入れて確認する             |
-| オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` を表示して `notifyScheduleCredentialChange` を呼ぶ      |
-| オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                           |
+| 操作             | 処理                                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする      |
+| オンにする       | `CredentialDialog` を開く。閉じたらオフのままにする                                                      |
+| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を `reauth` で開く    |
+| オフにする       | `listSchedules({ status: "pending", limit: 50 })` の件数を `ConfirmDialog` の文言に入れて確認する        |
+| オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` を表示して `notifyScheduleCredentialChange` を呼ぶ |
+| オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                      |
 
 ```tsx
 // 設定の投稿フォームのグループの末尾に置く
@@ -166,27 +183,25 @@ export const useScheduleAvailability = (enabled: boolean): {
 />
 ```
 
-### D-4: 認証情報の入力のダイアログ (FR-3, NFR-3, NFR-5)
+### D-4: 許可の案内のダイアログ (FR-3, NFR-3, NFR-5)
 
 ```tsx
 type CredentialDialogProps = {
   open: boolean
-  handle: string // ログイン中のアカウントのハンドル
-  onRegistered: () => void
   onClose: () => void
+  reauth?: boolean // 許可が無効になった後の再度の許可として、見出しと文を替える
+  navigate?: (url: string) => void // 認可の画面へ移る。既定は location.assign。投稿フォームは移る前の確認を挟む
 }
 ```
 
-| 項目   | 内容                                                                                                                               |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 種別   | 非モーダルの `<dialog>` を `show()` で開き、開いている間だけフォームを描画する                                                     |
-| 欄     | 可視のユーザー名欄（`autocomplete="username"`、`defaultValue` にハンドル）とパスワード欄（`autocomplete="current-password"`）の2つ |
-| 文言   | 注意の1文と作成場所の1文と、`/privacy/` へのリンクの3行だけを置く                                                                  |
-| 大きさ | `max-height: calc(100dvh - 2rem)`・`max-width: calc(100vw - 2rem)`・`overflow-y: auto` とする                                      |
-| 送信   | `PUT /v2/schedules/credential` を呼び、成功したら `onRegistered` を呼んで閉じる                                                    |
+| 項目   | 内容                                                                                                                   |
+| ------ | ---------------------------------------------------------------------------------------------------------------------- |
+| 種別   | `Overlay` の中の `role="dialog"`。入力欄は置かない                                                                     |
+| 文言   | 何を許可するか・許可する範囲・`@ハンドル` で許可すること（`getActiveAccountHandle`）・`/privacy/` へのリンク           |
+| 許可   | `startScheduleAuthorization({ returnTo })` に今のページのパスを渡し、返った URL へ移る。失敗は文言を表示して再び押せる |
+| 大きさ | `Overlay` の内容の最大の高さに従い、収まらない分は縦に流す                                                             |
 
-- パスワードは非制御入力で扱い、送信後に空に戻す。ログ・URL・ストレージには出力しない。ラベルには「確認」「再入力」を含めない。
-- `@media (max-width: 639px)` では `inset: 0 0 auto 0` と上の余白で画面の上部へ固定する（画面の中央に置くと、パスワードの入力で出る画面上のキーボードがダイアログを覆うため）。
+- `@media (max-width: 639px)` では `Overlay` の背景に `align-items: flex-start` を指定し、画面の上部に固定する（投稿フォームと同じ）。
 
 ### D-5: 実行日時の指定 (FR-4, FR-5, FR-6, NFR-1)
 
@@ -198,21 +213,27 @@ type RunAtPickerProps = {
   disabledReason?: string // ボタンの title に出す
   onChange: (next: Date | null) => void
   open?: boolean // 実行日時の行からも開けるよう、開閉を呼び出し側が持てる
-  onOpenChange?: (open: boolean) => void // 開く要求（next が true）を呼び出し側が横取りして確認を挟める
+  onOpenChange?: (open: boolean) => void
+  slots?: ScheduleSlots | null // 待機中の予約の枠。取得前と取得の失敗は null で、表示しない
 }
+export type ScheduleSlots = { used: number; max: number; consumes: boolean } // consumes はこの予約が新たに枠を使うか
+export const fetchPendingCount = async (): Promise<number | null> // 待機中の予約の件数（submitSchedule に置く）
 ```
 
-| 要素         | 内容                                                                                          |
-| ------------ | --------------------------------------------------------------------------------------------- |
-| ボタン       | カレンダーのアイコンの `nontext-button`。`value` があるとき `aria-pressed` と強調の配色にする |
-| ダイアログ   | `Overlay` の中に `<input type="datetime-local">` と「設定」「解除」「閉じる」を置く           |
-| 既定値       | `value ?? defaultRunAt(new Date())` を開くたびに入力欄へ入れる                                |
-| 設定         | `checkRunAt` が `ok` のときだけ押せ、`onChange(日時)` を呼ぶ。範囲外は理由の文言を表示する    |
-| 解除         | `value` があるときだけ表示し、`onChange(null)` を呼ぶ                                         |
-| 実行日時の行 | 呼び出し側が `formatRunAtLabel` で「{日時}に予約」と表示し、行を押すとダイアログを開く        |
+| 要素         | 内容                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------- |
+| ボタン       | カレンダーのアイコンの `nontext-button`。`value` があるとき `aria-pressed` と強調の配色にする      |
+| ダイアログ   | `Overlay` の中に `<input type="datetime-local">` と「設定」「解除」「閉じる」を置く                |
+| 既定値       | `value ?? defaultRunAt(new Date())` を開くたびに入力欄へ入れる                                     |
+| 設定         | `checkRunAt` が `ok` のときだけ押せ、`onChange(日時)` を呼ぶ。範囲外は理由の文言を表示する         |
+| 解除         | `value` があるときだけ表示し、`onChange(null)` を呼ぶ                                              |
+| 実行日時の行 | 呼び出し側が `formatRunAtLabel` で「{日時}に予約」と表示し、行を押すとダイアログを開く             |
+| 枠の棒       | `slots.max` 個のマスを並べ、使用済みを塗り、`consumes` のとき次の1マスを淡く塗る（`role="meter"`） |
+| 枠の空き     | `consumes` で空きが無ければ、理由の文言を表示して「設定」を押せない                                |
 
 - 画面幅が640ピクセル未満のとき、共通 UI のクラスがボタンと入力欄の高さを44ピクセル以上にする。
-- 動画を含むときにボタンを押すと、投稿フォームは日時の指定を開かず、`ChoiceDialog` で「動画の登録を解除して予約する」「キャンセル」を出す。解除を選ぶと、全セグメントの動画を外し（アップロード中の動画は `VideoPicker` が値の消失を検知して中断する）、日時の指定を開く。
+- 動画を含むときはボタンを無効にし、title に理由を出す（確認のダイアログは出さない）。動画を予約できないことは、設定の予約投稿の注で案内する。
+- 投稿フォームは日時の指定を開くたびに `fetchPendingCount` を呼び、編集中の予約では `consumes` を偽にして渡す（すでに枠を使っているため）。
 - 実行日時の設定中（`scheduledRunAt !== null`）は、各セグメントの `VideoPicker` を無効にし、理由を title に出す。動画の取り外しの操作は、この状態では動画が無いため不要である。
 
 ### D-6: 投稿フォームの予約の状態 (FR-6, FR-7, FR-11, FR-12)
@@ -297,14 +318,32 @@ export const failureMessageKey = (code: string | null): PlainMessageKey // 未�
 
 - 辞書は日本語と英語の両方に同じキー集合で `schedule` 名前空間として持つ。`schedule.error.credentialRequired` は設定で予約投稿を有効にする案内の文言とする。
 
+### D-10: 再度の許可と許可の画面からの戻り (FR-1, FR-3, FR-4, FR-11)
+
+```ts
+export const authResultKey = (result: string): PlainMessageKey // AuthorizationReturn に置く。ok・Denied・AccountMismatch・SessionRequired と、その他の失敗
+export const formatExpiryDate = (d: Date, locale: string): string // 有効期限の目安の年月日
+```
+
+| 場面               | 処理                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| 許可が無効         | カレンダーのボタンと実行日時の行は、日時の指定の代わりに `CredentialDialog` を `reauth` で開く                            |
+| 認可の画面へ移る前 | `navigate` を投稿フォームの `requestNavigation` にし、`cancelAction` に従い3択か下書きの保存の確認を挟んでから移る        |
+| 戻り               | 共通のレイアウトの `AuthorizationReturn` が `#scheduleAuthorization=1&…` を読んで住所から消し、完了を呼んで結果を表示する |
+| 有効期限の目安     | `RunAtPicker` の `expiresAt` に渡し、予約するたびに延びる旨とともに `formatExpiryDate` の日付を示す                       |
+
+- 戻りは別のサイトからの遷移で、`SameSite=Strict` のセッションの cookie が届かない。完了は戻ったページから呼び、cookie を届ける。
+- `AuthorizationReturn` は全ページに置くため、生成クライアントは戻りの項目があるときだけ動的に読み込む。完了が401なら `SessionRequired`、通信の失敗は汎用の失敗として表示する。
+- 他のページへのリンクでの移動も、同じ `cancelAction` の確認に従う（予約の編集中は3択）。
+
 ## 4. エラー処理
 
-| 事象                         | 処理                                                           |
-| ---------------------------- | -------------------------------------------------------------- |
-| 一覧の取得に失敗             | 再読み込みのボタンとエラーの文言を表示する                     |
-| 作成・置き換えに失敗         | 状態と入力と日時を保ったまま、エラーの文言を表示する           |
-| 登録に失敗                   | ダイアログを開いたまま、パスワード欄を空にしてエラーを表示する |
-| 制限値の取得に失敗           | カレンダーのボタンを無効にし、title に取得の失敗の文言を出す   |
-| 編集用の内容の取得に失敗     | 投稿フォームを変えず、エラーの文言を表示する                   |
-| 日時の解除での取消に失敗     | 状態を `editing` に戻して日時を残し、エラーの文言を表示する    |
-| 置き換えの時点で予約が実行中 | `schedule.error.running` を表示し、状態を `detached` にする    |
+| 事象                         | 処理                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| 一覧の取得に失敗             | 再読み込みのボタンとエラーの文言を表示する                   |
+| 作成・置き換えに失敗         | 状態と入力と日時を保ったまま、エラーの文言を表示する         |
+| 認可の開始に失敗             | ダイアログを開いたまま、エラーの文言を表示する               |
+| 制限値の取得に失敗           | カレンダーのボタンを無効にし、title に取得の失敗の文言を出す |
+| 編集用の内容の取得に失敗     | 投稿フォームを変えず、エラーの文言を表示する                 |
+| 日時の解除での取消に失敗     | 状態を `editing` に戻して日時を残し、エラーの文言を表示する  |
+| 置き換えの時点で予約が実行中 | `schedule.error.running` を表示し、状態を `detached` にする  |

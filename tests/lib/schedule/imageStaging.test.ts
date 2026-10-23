@@ -97,7 +97,9 @@ describe("imageStaging", () => {
 
     test("schedule-store/AC-19: 画像のバケットに保管から15日で削除するライフサイクルの手順が記載されている", () => {
         const doc = readFileSync("DEVELOP.md", "utf8")
-        expect(doc).toMatch(/r2 bucket lifecycle add "\$b" expire-15d --expire-days 15/)
+        expect(doc).toMatch(
+            /r2 bucket lifecycle add "\$b" expire-15d --expire-days 15/,
+        )
         expect(doc).not.toMatch(/--expire-days 45/)
     })
 })

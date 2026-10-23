@@ -2,29 +2,44 @@
 
 ## 1. 構成
 
-| パス                                                       | 責務                                             |
-| ---------------------------------------------------------- | ------------------------------------------------ |
-| `src/pages/v2/schedules.ts`                                | 予約の作成と一覧のハンドラ                       |
-| `src/pages/v2/schedules/[id].ts`                           | 予約の内容の取得・置き換え・取消・削除のハンドラ |
-| `src/pages/v2/schedules/[id]/images/[index].ts`            | 予約の画像の取得のハンドラ                       |
-| `src/pages/v2/schedules/limits.ts`                         | 制限値の取得のハンドラ                           |
-| `src/pages/v2/schedules/credential.ts`                     | 予約用認証情報の取得・登録・削除のハンドラ       |
-| `src/lib/api/schema/v2/schedules/post.ts`                  | 予約の作成の入力スキーマ                         |
-| `src/lib/api/schema/v2/schedules/get.ts`                   | 予約の一覧のクエリと応答のスキーマ               |
-| `src/lib/api/schema/v2/schedules/limits/get.ts`            | 制限値の応答のスキーマ                           |
-| `src/lib/api/schema/v2/schedules/_id/delete.ts`            | 予約の取消のパスのスキーマ                       |
-| `src/lib/api/schema/v2/schedules/_id/get.ts`               | 予約の内容の応答のスキーマ                       |
-| `src/lib/api/schema/v2/schedules/_id/put.ts`               | 予約の置き換えの入力スキーマ                     |
-| `src/lib/api/schema/v2/schedules/_id/images/_index/get.ts` | 予約の画像の取得のパスと応答のスキーマ           |
-| `src/lib/api/schema/v2/schedules/credential/get.ts`        | 認証情報の登録状態のスキーマ                     |
-| `src/lib/api/schema/v2/schedules/credential/put.ts`        | 認証情報の登録の入力スキーマ                     |
-| `src/lib/api/schema/v2/schedules/credential/delete.ts`     | 認証情報の削除の応答のスキーマ                   |
-| `src/lib/schedule/validateSchedule.ts`                     | 実行時刻の範囲と件数の検証、保管形式への変換     |
-| `src/lib/schedule/stageSchedule.ts`                        | 作成と置き換えに共通の検証と画像の保管           |
-| `src/lib/schedule/scheduleLimits.ts`                       | 実行時刻の範囲と各上限の定数、制限値の組み立て   |
-| `src/lib/schedule/scheduleResponse.ts`                     | 識別子つきのエラー応答と JSON 応答の組み立て     |
-| `src/lib/schedule/env.ts`                                  | D1・R2・暗号鍵のバインディングの取得             |
-| `src/lib/schedule/registerCredential.ts`                   | アプリパスワードでのログインと登録前の検証       |
+| パス                                                                          | 責務                                             |
+| ----------------------------------------------------------------------------- | ------------------------------------------------ |
+| `src/pages/v2/schedules.ts`                                                   | 予約の作成と一覧のハンドラ                       |
+| `src/pages/v2/schedules/[id].ts`                                              | 予約の内容の取得・置き換え・取消・削除のハンドラ |
+| `src/pages/v2/schedules/[id]/images/[index].ts`                               | 予約の画像の取得のハンドラ                       |
+| `src/pages/v2/schedules/limits.ts`                                            | 制限値の取得のハンドラ                           |
+| `src/pages/v2/schedules/credential.ts`                                        | 予約用認証情報の取得・削除のハンドラ             |
+| `src/pages/v2/schedules/credential/authorization.ts`                          | OAuth の認可の開始のハンドラ                     |
+| `src/pages/v2/schedules/credential/authorization/completion.ts`               | OAuth の認可の完了のハンドラ                     |
+| `src/pages/oauth/callback.ts`                                                 | 認可の戻りを設定のページのフラグメントへ転送     |
+| `src/lib/schedule/oauth/callbackFragment.ts`                                  | 戻りの項目とフラグメントの相互変換               |
+| `src/pages/oauth/client-metadata.json.ts`                                     | OAuth のクライアントのメタデータ                 |
+| `src/pages/oauth/jwks.json.ts`                                                | OAuth のクライアントの公開鍵の一覧               |
+| `src/lib/api/schema/v2/schedules/post.ts`                                     | 予約の作成の入力スキーマ                         |
+| `src/lib/api/schema/v2/schedules/get.ts`                                      | 予約の一覧のクエリと応答のスキーマ               |
+| `src/lib/api/schema/v2/schedules/limits/get.ts`                               | 制限値の応答のスキーマ                           |
+| `src/lib/api/schema/v2/schedules/_id/delete.ts`                               | 予約の取消のパスのスキーマ                       |
+| `src/lib/api/schema/v2/schedules/_id/get.ts`                                  | 予約の内容の応答のスキーマ                       |
+| `src/lib/api/schema/v2/schedules/_id/put.ts`                                  | 予約の置き換えの入力スキーマ                     |
+| `src/lib/api/schema/v2/schedules/_id/images/_index/get.ts`                    | 予約の画像の取得のパスと応答のスキーマ           |
+| `src/lib/api/schema/v2/schedules/credential/get.ts`                           | 認証情報の登録状態のスキーマ                     |
+| `src/lib/api/schema/v2/schedules/credential/authorization/post.ts`            | 認可の開始の応答のスキーマ                       |
+| `src/lib/api/schema/v2/schedules/credential/authorization/completion/post.ts` | 認可の完了の入力と応答のスキーマ                 |
+| `src/lib/api/schema/v2/schedules/credential/delete.ts`                        | 認証情報の削除の応答のスキーマ                   |
+| `src/lib/schedule/validateSchedule.ts`                                        | 実行時刻の範囲と件数の検証、保管形式への変換     |
+| `src/lib/schedule/stageSchedule.ts`                                           | 作成と置き換えに共通の検証と画像の保管           |
+| `src/lib/schedule/scheduleLimits.ts`                                          | 実行時刻の範囲と各上限の定数、制限値の組み立て   |
+| `src/lib/schedule/scheduleResponse.ts`                                        | 識別子つきのエラー応答と JSON 応答の組み立て     |
+| `src/lib/schedule/env.ts`                                                     | D1・R2・暗号鍵のバインディングの取得             |
+| `src/lib/schedule/oauth/flow.ts`                                              | 認可の開始・完了、トークンの更新・取消           |
+| `src/lib/schedule/oauth/client.ts`                                            | クライアントの識別子・権限・メタデータ・証明     |
+| `src/lib/schedule/oauth/discovery.ts`                                         | DID からの PDS と認可サーバーの探索              |
+| `src/lib/schedule/oauth/dpop.ts`                                              | DPoP の証明と nonce                              |
+| `src/lib/schedule/oauth/jose.ts`                                              | ES256 の JWT の署名と鍵                          |
+| `src/lib/schedule/oauth/tokenRequest.ts`                                      | 認可サーバーへのフォームの要求とやり直し         |
+| `src/lib/schedule/oauth/storedCredential.ts`                                  | 保管する認可の情報の形                           |
+| `src/lib/schedule/oauth/returnPath.ts`                                        | 許可を始めたページのパスの cookie での受け渡し   |
+| `src/lib/schedule/credentialExpiry.ts`                                        | 許可の有効期限の目安の計算                       |
 
 ## 2. 関係図・ワークフロー
 
@@ -32,7 +47,7 @@
 
 ```mermaid
 flowchart LR
-  schedules --> post
+  schedules --> schedulesPost["schedules/post"]
   schedules --> schedulesGet["schedules/get"]
   schedules --> stageSchedule
   schedules --> scheduleResponse
@@ -45,30 +60,43 @@ flowchart LR
   limits --> validateSchedule
   id["[id]"] --> idDelete["_id/delete"]
   id --> idGet["_id/get"]
-  id --> idPut["_id/put"]
+  id --> idPut["put"]
   id --> stageSchedule
   id --> scheduleResponse
   id --> env
   image["[index]"] --> imageGet["_index/get"]
   image --> ext_store
   image --> scheduleResponse
+  credentialExpiry --> ext_store
 ```
 
-認証情報のハンドラがスキーマと登録処理に依存する方向を示す。
+認証情報と OAuth の認可のハンドラ・戻り先が、スキーマと認可の処理に依存する方向を示す（応答の組み立てと環境の取得は上の図と同じ）。
 
 ```mermaid
 flowchart LR
   credential --> credentialGet["credential/get"]
-  credential --> credentialPut["credential/put"]
   credential --> credentialDelete["credential/delete"]
-  credential --> registerCredential
+  credential --> flow
   credential --> ext_store["予約ストア"]
-  credential --> scheduleResponse
-  credential --> env
-  registerCredential --> ext_store
+  authorization --> authorizationPost["authorization/post"]
+  authorization --> flow
+  completion --> completionPost["completion/post"]
+  completion --> flow
+  callback --> callbackFragment
+  callback --> returnPath
+  metadata["client-metadata.json"] --> client
+  jwks["jwks.json"] --> client
+  flow --> client
+  flow --> discovery
+  flow --> dpop
+  flow --> tokenRequest
+  flow --> storedCredential
+  flow --> ext_store
+  client --> jose
+  dpop --> jose
 ```
 
-作成と置き換えの検証順序と、置き換えの競合と認証情報の登録の分岐を示す。
+作成と置き換えの検証順序と、置き換えの競合と認証情報の削除を示す。
 
 ```mermaid
 sequenceDiagram
@@ -78,9 +106,11 @@ sequenceDiagram
   participant validateSchedule
   participant limits
   participant credential
-  participant registerCredential
+  participant authorization
+  participant callback
+  participant completion
+  participant flow
   participant ext_store as 予約ストア
-  participant ext_pds as PDS
   schedules->>stageSchedule: stageSchedule
   id->>stageSchedule: stageSchedule
   stageSchedule->>validateSchedule: validateRunAt
@@ -97,15 +127,18 @@ sequenceDiagram
     end
   end
   schedules->>ext_store: insertSchedule
-  credential->>registerCredential: registerScheduleCredential
-  registerCredential->>ext_pds: createSession
-  alt アプリパスワードで別アカウント
-    registerCredential-->>credential: 400
-  else 検証に成功
-    registerCredential->>ext_store: saveCredential
-  end
   credential->>ext_store: deletePendingSchedules
+  authorization->>flow: startAuthorization
+  flow->>ext_store: saveOAuthState
+  callback->>callback: toAuthorizationFragment
+  completion->>flow: completeAuthorization
+  alt 戻りまたはトークンの持ち主が違う
+    flow-->>completion: 失敗の分類
+  else 照合に成功
+    flow->>ext_store: saveCredential
+  end
   limits->>validateSchedule: getScheduleLimits
+  credential->>credential: estimateCredentialExpiry
 ```
 
 ## 3. 設計項目
@@ -125,7 +158,7 @@ sequenceDiagram
 - すべての応答に `cache-control: no-store` を付け、エラーの本文は `{ error: string }` とする。
 - `error` の値は機械可読の識別子とし、409 は `ScheduleCredentialRequired`・`ScheduleRunning` の2種を返し分ける。
 - 入力スキーマは `src/lib/api/schema/v2/schedules/` 配下に定義し、ハンドラはそのスキーマを `safeParse()` に直接渡す。OpenAPI 文書は同じスキーマから生成する。
-- ハンドラが静的に読み込むのは Zod・予約ストア・`fetch` のみとし、`@atproto/*` は静的にも動的にも読み込まない。ログには予約の識別子と分類コードだけを出力し、パスワードとトークンを含む値を出力しない。
+- ハンドラが静的に読み込むのは Zod・予約ストア・`fetch` のみとし、`@atproto/*` は静的にも動的にも読み込まない。ログには予約の識別子と分類コードだけを出力し、トークン・認可コード・鍵を含む値を出力しない。
 
 ### D-2: 予約の作成 (FR-1)
 
@@ -219,39 +252,56 @@ type ScheduleListItem = {
 
 状態の確認と削除の間に実行が始まる競合を避けるため、削除は `status` が待機中・失敗の行に限定した条件つきの文で行う。
 
-### D-6: 予約用認証情報の登録 (FR-4, FR-5)
+### D-6: 予約用認証情報の OAuth による登録 (FR-4, FR-5)
+
+予約の実行はブラウザが無い時刻に行うため、confidential client（クライアントの秘密鍵を持ち、`private_key_jwt` でトークンを得る）として認可を受ける。更新用トークンは長く有効で、回転するたびに保管し直す。
 
 ```ts
-// PUT /v2/schedules/credential
-const RequestBodySchema = z.object({ password: z.string().min(1) }).strict()
-
-export const registerScheduleCredential = async (
-    db: D1Database,
-    secret: string,
-    session: { did: string; service: string },
-    password: string,
-): Promise<{ ok: true } | { ok: false; status: 400 | 401 | 429 | 500 }>
+// POST /v2/schedules/credential/authorization { returnTo? } -> { url }（認可の画面）。returnTo は cookie に入れる
+// GET  /oauth/callback?code&state&iss -> 303 /settings/#scheduleAuthorization=1&code&state&iss
+// POST /v2/schedules/credential/authorization/completion { code?, state?, iss?, error? } -> { result: "ok" | CompleteFailure }
+export const startAuthorization = (env, input: { origin: string; did: string; now: number }): Promise<{ ok: true; url: string } | { ok: false; status: 500 | 502 }>
+export const completeAuthorization = (env, input: { origin: string; did: string; now: number; query: { code?; state?; iss?; error? } }): Promise<{ ok: true } | { ok: false; code: CompleteFailure }>
+type CompleteFailure = "Denied" | "StateInvalid" | "IssuerMismatch" | "AccountMismatch" | "TokenFailed" | "NotConfigured"
 ```
 
-| 手順 | 処理                                                                                                                                  | 失敗時                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| 1    | `${service}/xrpc/com.atproto.server.createSession` へ `{ identifier: did, password }` を `fetch` で送る                               | 401・429 は同じ値、その他は 500 |
-| 2    | 応答の `did` が `session.did` と一致することを確認する                                                                                | 400                             |
-| 3    | `accessJwt` の本体を Base64URL で復号し、`scope` が `com.atproto.appPass` または `com.atproto.appPassPrivileged` であることを確認する | 400                             |
-| 4    | `refreshJwt` を `saveCredential` で暗号化して保存する。`accessJwt` は保存せず破棄する                                                 | 500                             |
+| 手順 | 開始（POST）                                                                                                                                       |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | ログイン中のアカウントの DID を、PLC ディレクトリ（`did:web` は自身の `did.json`）で解決し、実際の PDS を得る                                      |
+| 2    | PDS の `/.well-known/oauth-protected-resource` から認可サーバーを選び、そのメタデータの `issuer`・PAR・DPoP の ES256・`private_key_jwt` を確かめる |
+| 3    | DPoP の鍵（P-256）・`state`・PKCE の verifier を作り、`login_hint` にログイン中の DID を入れて PAR を送る                                          |
+| 4    | verifier・DPoP の鍵・端点・クライアントの識別子を `saveOAuthState` で暗号化して10分保つ。認可の画面の URL を返す                                   |
 
-- パスワードはメモリ上でのみ扱い、保存・ログ出力・応答のいずれにも含めない。
-- 登録で得たセッションは、利用者のブラウザのセッションとは独立した系統であり、ブラウザ側のトークンの更新と互いに無効化し合わない。
+| 手順 | 完了（POST）                                                                                                   | 失敗の分類        |
+| ---- | -------------------------------------------------------------------------------------------------------------- | ----------------- |
+| 1    | `takeOAuthState` で `state` を取り出して消す。ログイン中のアカウントのものでなければ無効                       | `StateInvalid`    |
+| 2    | `error` が付いていれば、保管せずに終える                                                                       | `Denied`          |
+| 3    | `iss` が開始時の認可サーバーと一致することを確かめる                                                           | `IssuerMismatch`  |
+| 4    | 認可コードと verifier を、開始時と同じ DPoP の鍵とクライアントの証明を添えてトークンに替える                   | `TokenFailed`     |
+| 5    | トークンの `sub` がログイン中のアカウントと一致することを確かめる                                              | `AccountMismatch` |
+| 6    | 更新用トークン・DPoP の鍵・端点・クライアントの識別子を1つの JSON にして `saveCredential` で暗号化して保管する | -                 |
+
+- クライアントの識別子は `${origin}/oauth/client-metadata.json`、戻り先は `${origin}/oauth/callback/` とし、プレビューと develop と本番がそれぞれ別のクライアントになる。Cron の更新ではオリジンが無いため、保管した識別子を使う。
+- 戻りは別のサイトからの遷移で、`SameSite=Strict` のセッションの cookie が届かない。戻り先はセッションを使わず、既知の項目だけを設定のページのフラグメントへ移して転送する。フラグメントはサーバーにもアクセス解析にも送られない。完了は設定のページが同じサイトから呼ぶ。
+- 開始の `returnTo` は、`/` で始まり `//`・`\\`・`#`・制御文字を含まない512文字以内のパスに限り、`Path=/oauth/callback/`・`SameSite=Lax`・10分の cookie に入れる。戻り先はこの cookie のパス（無い・不正なら `/settings/`）へ転送し、cookie を消す。
+- 作成と置き換えは、未登録なら `ScheduleCredentialRequired`、再度の許可が必要なら `ScheduleReauthRequired` の409にする。
+- 要求する権限は `atproto`・投稿・返信と引用の制限・entry の各コレクションの作成と上書き（`repo:<collection>?action=create&action=update`）・画像（`blob:image/*`）に限る。
+- 認可サーバーと PDS が `use_dpop_nonce` を返したら、受け取った nonce で1回だけやり直す。
+- クライアントの秘密鍵は Worker のシークレット `SCHEDULE_OAUTH_KEY`（`kid` を含む P-256 の JWK）に置き、`/oauth/jwks.json` で公開部分を出す。未設定なら開始は 500 になる。
+- WebCrypto と `fetch` だけで実装し、atproto のライブラリを使わない（予約の実行と共有するため）。ログには端点の応答のステータスだけを出す。
 
 ### D-7: 認証情報の状態確認と削除 (FR-9)
 
 ```ts
-// GET /v2/schedules/credential -> { registered: boolean, updatedAt?: string }
+// GET /v2/schedules/credential -> { registered, reauthRequired, updatedAt?, expiresAt? }
 // DELETE /v2/schedules/credential -> 200 { cancelled: number } | 409
 const CredentialStatusSchema = z.object({
-  registered: z.boolean(),
+  registered: z.boolean(), // 再度の許可が必要な印だけのときも true
+  reauthRequired: z.boolean(),
   updatedAt: z.iso.datetime().optional(),
+  expiresAt: z.iso.datetime().optional(), // 再度の許可が必要なときは付けない
 })
+export const estimateCredentialExpiry = (s: { authorizedAt: number; updatedAt: number; latestRunAt: number | null }): number
 const DeleteResponseSchema = z.object({ cancelled: z.number().int() })
 ```
 
@@ -259,7 +309,11 @@ const DeleteResponseSchema = z.object({ cancelled: z.number().int() })
 | ---- | ----------------------------------------------------------------------------------- |
 | 1    | `listSchedules` に `status: "running"` を渡し、1件以上なら `ScheduleRunning` の 409 |
 | 2    | `deletePendingSchedules` で待機中の予約を削除し、各行の画像を `removeImages` で削除 |
-| 3    | `deleteCredential` で認証情報を削除し、取り消した件数を `cancelled` で返す          |
+| 3    | 保管した更新用トークンを、認可サーバーの取消の端点で取り消す（失敗しても続ける）    |
+| 4    | `deleteCredential` で認証情報を削除し、取り消した件数を `cancelled` で返す          |
+
+- 有効期限の目安は、本サービスが未使用の許可を印に替える時点（最後の使用か最も遅い待機中の実行時刻から30日）と、Bluesky の認可サーバーが confidential client の許可を失効させる時点（許可から2年）の早い方とする。最後の更新から3か月の失効は30日より後のため考えない。
+- 認可サーバーはトークンの応答で更新用トークンの期限を返さないため、atproto の参照実装の定数から見積もる。Bluesky の設定での取消は含まない。
 
 ### D-8: 制限値の提供 (FR-10)
 

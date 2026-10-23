@@ -4,6 +4,8 @@ export const schedule = {
     "schedule.submitAll": "すべて予約",
     "schedule.unavailableVideo": "動画を含む投稿は予約できません。",
     "schedule.unavailableDisabled": "予約投稿は、設定で有効にすると使えます。",
+    "schedule.unavailableReauth":
+        "Bluesky での許可が無効になりました。押すと、もう一度許可できます。",
     "schedule.unavailableLimits": "予約の制限値を取得できませんでした。",
     "schedule.sending": "予約しています…",
     "schedule.created": "予約しました。",
@@ -14,7 +16,7 @@ export const schedule = {
     "schedule.runAtLabel": "{date}に予約",
     "schedule.setupGuide.title": "予約投稿を有効にしていません",
     "schedule.setupGuide.message":
-        "予約投稿を使うには、設定で予約投稿を有効にして、アプリパスワードを登録してください。",
+        "予約投稿を使うには、設定で予約投稿を有効にして、Bluesky で予約投稿を許可してください。",
     "schedule.setupGuide.open": "設定を開く",
     "schedule.setupGuide.close": "閉じる",
     "schedule.picker.button": "予約日時を指定",
@@ -23,40 +25,69 @@ export const schedule = {
     "schedule.picker.set": "設定",
     "schedule.picker.clear": "解除",
     "schedule.picker.close": "閉じる",
+    "schedule.picker.slotsLabel": "待機中の予約の枠",
+    "schedule.picker.slotsRemaining": "残り{remaining}件（{max}件まで）",
+    "schedule.picker.slotsFull":
+        "待機中の予約が上限に達しています。不要な予約を取り消すと予約できます。",
+    "schedule.picker.expiresAt":
+        "許可の有効期限の目安: {date}（予約するたびに延びます）",
     "schedule.range.tooSoon":
         "現在から{minutes}分後以降の日時を指定してください。",
     "schedule.range.tooLate":
         "現在から{days}日後までの日時を指定してください。",
-    "schedule.videoConflict.title": "動画つきの投稿は予約できません",
-    "schedule.videoConflict.message":
-        "動画を含む投稿は予約できません。動画の登録を解除すると予約できます。",
-    "schedule.videoConflict.remove": "動画の登録を解除して予約する",
-    "schedule.videoConflict.cancel": "キャンセル",
     "schedule.editCancel.title": "予約の編集をやめます",
     "schedule.editCancel.cancelSchedule": "予約を取り消す",
     "schedule.editCancel.keep": "予約を残して閉じる",
     "schedule.editCancel.continue": "編集を続ける",
     "schedule.setting.label": "予約投稿",
     "schedule.setting.description":
-        "日時を指定して投稿できます。有効にするとアプリパスワードを登録します。",
+        "日時を指定して投稿できます。有効にすると、Bluesky で予約投稿の権限を許可します。",
+    "schedule.setting.mediaNote":
+        "{image}の予約投稿のみ対応しており、{video}については対応していません。",
+    "schedule.setting.mediaImageAlt": "画像",
+    "schedule.setting.mediaVideoAlt": "動画",
+    "schedule.setting.chronoskyLead":
+        "より本格的な予約投稿には、Bluesky の予約投稿サービス{link}をご利用ください。",
+    "schedule.setting.chronoskyName": "Chronosky",
+    "schedule.setting.chronoskyAria":
+        "Chronosky（Bluesky の予約投稿サービス、新しいタブで開く）",
     "schedule.setting.disableTitle": "予約投稿を無効にする",
     "schedule.setting.disableMessage":
         "待機中の予約{count}件も取り消されます。よろしいですか。",
     "schedule.setting.disableMessageNone":
-        "登録したアプリパスワードの情報を削除します。よろしいですか。",
+        "Bluesky での予約投稿の許可を取り消し、保管した認可の情報を削除します。よろしいですか。",
     "schedule.setting.disableConfirm": "無効にする",
     "schedule.setting.disabled": "予約投稿を無効にしました。",
+    "schedule.setting.reauthRequired":
+        "Bluesky での許可が無効になっています。予約するには、もう一度許可してください。",
+    "schedule.setting.reauthButton": "もう一度許可する",
     "schedule.setting.disabledWithCancel":
         "予約投稿を無効にし、{count}件の予約を取り消しました。",
     "schedule.credential.title": "予約投稿を有効にする",
-    "schedule.credential.warning":
-        "メインのパスワードではなく、アプリパスワードを入力してください。",
-    "schedule.credential.howto":
-        "アプリパスワードは Bluesky の「設定」→「プライバシーとセキュリティ」で作成できます。",
+    "schedule.credential.reauthTitle": "もう一度 Bluesky で許可する",
+    "schedule.credential.reauthIntro":
+        "Bluesky での予約投稿の許可が無効になりました。予約するには、もう一度許可してください。許可の画面から戻ると、このページに戻ります。",
     "schedule.credential.privacy": "保管する情報の扱いは{link}をご覧ください。",
-    "schedule.credential.username": "ユーザー名",
-    "schedule.credential.password": "アプリパスワード",
-    "schedule.credential.submit": "登録する",
+    "schedule.credential.intro":
+        "Bluesky の画面で、予約した日時に Skyshare があなたの代わりに投稿することを許可します。",
+    "schedule.credential.scope":
+        "許可するのは、投稿・返信と引用の設定・Skyshare のリンクの作成と、画像のアップロードだけです。",
+    "schedule.credential.account":
+        "{handle} で許可します。別のアカウントで使うときは、先にそのアカウントへ切り替えてください。",
+    "schedule.credential.startFailed":
+        "Bluesky の許可の画面を開けませんでした。時間をおいて、もう一度お試しください。",
+    "schedule.authResult.ok": "予約投稿を有効にしました。",
+    "schedule.authResult.title": "Bluesky での予約投稿の許可",
+    "schedule.authResult.close": "閉じる",
+    "schedule.authResult.Denied":
+        "Bluesky で許可されなかったため、予約投稿は無効のままです。",
+    "schedule.authResult.AccountMismatch":
+        "ログイン中とは別のアカウントで許可されたため、有効にしませんでした。同じアカウントで許可してください。",
+    "schedule.authResult.SessionRequired":
+        "ログインの期限が切れていたため、有効にできませんでした。ログインし直してから、もう一度お試しください。",
+    "schedule.authResult.failed":
+        "予約投稿を有効にできませんでした。時間をおいて、もう一度お試しください。",
+    "schedule.credential.submit": "Bluesky で許可する",
     "schedule.credential.cancel": "キャンセル",
     "schedule.list.empty": "予約はありません。",
     "schedule.list.pendingTitle": "待機中",
@@ -76,12 +107,12 @@ export const schedule = {
     "schedule.status.running": "実行中",
     "schedule.status.failed": "失敗",
     "schedule.error.invalid": "予約の内容が正しくありません。",
-    "schedule.error.passwordRejected":
-        "ログインできませんでした。アプリパスワードを確認してください。",
     "schedule.error.notFound":
         "予約が見つかりませんでした。すでに実行されたか、取り消された可能性があります。",
     "schedule.error.credentialRequired":
         "予約投稿が無効です。設定で予約投稿を有効にしてください。",
+    "schedule.error.reauthRequired":
+        "Bluesky での許可が無効になっています。もう一度許可してください。",
     "schedule.error.running": "実行中のため操作できません。",
     "schedule.error.tooMany":
         "予約の件数が上限に達しています。先に不要な予約を取り消してください。",
@@ -89,9 +120,9 @@ export const schedule = {
     "schedule.failure.CredentialMissing":
         "予約投稿が無効になっていたため、投稿できませんでした。",
     "schedule.failure.CredentialInvalid":
-        "予約用の認証情報を読み出せませんでした。",
+        "予約用の認可の情報を読み出せませんでした。設定で予約投稿を有効にし直してください。",
     "schedule.failure.CredentialExpired":
-        "アプリパスワードが使えなくなっていました。設定で予約投稿を有効にし直してください。",
+        "Bluesky での予約投稿の許可が無効になっていました。設定で予約投稿を有効にし直してください。",
     "schedule.failure.InvalidRecord": "投稿の内容が受け付けられませんでした。",
     "schedule.failure.ImageMissing": "添付した画像が見つかりませんでした。",
     "schedule.failure.RetryExceeded":

@@ -7,8 +7,12 @@ import {
     insertSchedule,
     CREDENTIAL_IDLE_SECONDS,
     deleteCredential,
+    getCredentialStatus,
     loadCredential,
+    markCredentialReauth,
     purgeIdleCredentials,
+    purgeReauthMarkers,
+    REAUTH_MARKER_KEEP_SECONDS,
     saveCredential,
     touchCredential,
 } from "@/lib/schedule/store"
@@ -56,7 +60,7 @@ describe("credentialCrypto", () => {
         await expect(encryptToken("***", DID, "t")).rejects.toThrow()
     })
 
-    test("schedule-store/AC-6: 待機中の予約が残るか最後の使用から30日以内なら削除されず、どちらにも当たらないと削除される", async () => {
+    test("schedule-store/AC-6: 待機中の予約が残るか最後の使用から30日以内なら残り、どちらにも当たらないと再度の許可が必要な印になり、印は180日を超えると削除される", async () => {
         const db = createFakeD1()
         const now = 100 * 24 * 60 * 60
         const idle = CREDENTIAL_IDLE_SECONDS
@@ -78,10 +82,79 @@ describe("credentialCrypto", () => {
         // 最後の使用から30日以内
         await touchCredential(db, DID, now - idle + 1)
         expect(await purgeIdleCredentials(db, now, idle)).toBe(0)
-        // どちらにも当たらない
+        // どちらにも当たらない: 認証情報は消え、再度の許可が必要な印が残る
         await touchCredential(db, DID, now - idle - 1)
         expect(await purgeIdleCredentials(db, now, idle)).toBe(1)
         expect(await loadCredential(db, KEY, DID)).toBeNull()
+        const raw = await db
+            .prepare("SELECT token_enc FROM schedule_credentials WHERE did = ?")
+            .bind(DID)
+            .first<{ token_enc: string }>()
+        expect(raw?.token_enc).toBe("")
+        expect(await getCredentialStatus(db, DID)).toMatchObject({
+            registered: true,
+            reauthRequired: true,
+        })
+        // 印に替えた行は、もう一度は数えない
+        expect(await purgeIdleCredentials(db, now, idle)).toBe(0)
+        // 印は最後の使用から180日以内なら残り、超えると削除される
+        const keep = REAUTH_MARKER_KEEP_SECONDS
+        expect(await purgeReauthMarkers(db, now - idle - 1 + keep, keep)).toBe(
+            0,
+        )
+        expect(
+            await purgeReauthMarkers(db, now - idle - 1 + keep + 2, keep),
+        ).toBe(1)
+        expect(await getCredentialStatus(db, DID)).toEqual({
+            registered: false,
+        })
+    })
+
+    test("schedule-store/AC-21: 失効を記録すると取り出せず再度の許可が必要と返り、許可を得て保管し直すと印が外れて許可の時刻が更新される", async () => {
+        const db = createFakeD1()
+        await saveCredential(
+            db,
+            KEY,
+            { did: DID, service: "s", token: "t" },
+            100,
+            { authorized: true },
+        )
+        // トークンの回転による保管し直しでは、許可の時刻を保つ
+        await saveCredential(
+            db,
+            KEY,
+            { did: DID, service: "s", token: "t2" },
+            200,
+        )
+        expect(await getCredentialStatus(db, DID)).toEqual({
+            registered: true,
+            reauthRequired: false,
+            updatedAt: 200,
+            authorizedAt: 100,
+            latestRunAt: null,
+        })
+        await markCredentialReauth(db, DID)
+        expect(await loadCredential(db, KEY, DID)).toBeNull()
+        expect(await getCredentialStatus(db, DID)).toMatchObject({
+            registered: true,
+            reauthRequired: true,
+            updatedAt: 200,
+        })
+        await saveCredential(
+            db,
+            KEY,
+            { did: DID, service: "s", token: "t3" },
+            300,
+            { authorized: true },
+        )
+        expect(await loadCredential(db, KEY, DID)).toEqual({
+            service: "s",
+            token: "t3",
+        })
+        expect(await getCredentialStatus(db, DID)).toMatchObject({
+            reauthRequired: false,
+            authorizedAt: 300,
+        })
     })
 
     test("schedule-store/AC-16: 所有アカウントの指示で、待機中の予約が残っていても認証情報が削除される", async () => {

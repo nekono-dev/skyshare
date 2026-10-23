@@ -2,7 +2,7 @@
  * 予約投稿の API エラーを、表示言語の文言キーへ変換する。
  *
  * 責務と処理概要:
- * - 409 は `error` の識別子で 2 種に分ける。それ以外はステータスで決める。
+ * - 409 は `error` の識別子で 3 種に分ける。それ以外はステータスで決める。
  * - サーバーの `error` 文字列は画面に表示しない。
  */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
@@ -10,18 +10,18 @@ import type { PlainMessageKey } from "@/lib/i18n/translate"
 export const scheduleErrorKey = (
     status: number,
     code?: string,
-    context?: "credential",
 ): PlainMessageKey => {
     switch (status) {
         case 400:
             return "schedule.error.invalid"
         case 401:
-            return context === "credential"
-                ? "schedule.error.passwordRejected"
-                : "error.unauthorized"
+            return "error.unauthorized"
         case 409:
             if (code === "ScheduleCredentialRequired") {
                 return "schedule.error.credentialRequired"
+            }
+            if (code === "ScheduleReauthRequired") {
+                return "schedule.error.reauthRequired"
             }
             if (code === "ScheduleRunning") return "schedule.error.running"
             return "error.conflict"

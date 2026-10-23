@@ -83,9 +83,7 @@ describe("エラー文言", () => {
         expect(scheduleErrorKey(409, "ScheduleRunning")).toBe(
             "schedule.error.running",
         )
-        expect(scheduleErrorKey(401, undefined, "credential")).toBe(
-            "schedule.error.passwordRejected",
-        )
+        expect(scheduleErrorKey(401)).toBe("error.unauthorized")
         expect(scheduleErrorKey(404)).toBe("schedule.error.notFound")
         expect(scheduleErrorKey(429)).toBe("schedule.error.tooMany")
         expect(scheduleErrorKey(500)).toBe("schedule.error.server")
@@ -103,6 +101,26 @@ describe("エラー文言", () => {
                 .sort()
         expect(keys(en)).toEqual(keys(ja))
         expect(keys(ja).length).toBeGreaterThan(40)
+    })
+
+    test("schedule-guide/AC-3: 予約投稿の案内の文言が日本語と英語の両方にある", () => {
+        for (const key of [
+            "schedule.setting.mediaNote",
+            "schedule.setting.chronoskyLead",
+            "schedule.setting.chronoskyName",
+            "schedule.setting.chronoskyAria",
+            "schedule.setting.mediaImageAlt",
+            "schedule.setting.mediaVideoAlt",
+        ]) {
+            expect((ja as Record<string, string>)[key]).toBeTruthy()
+            expect((en as Record<string, string>)[key]).toBeTruthy()
+        }
+        // 文中のアイコンとリンクの差し込み口がそろっている
+        for (const dict of [ja, en] as Record<string, string>[]) {
+            expect(dict["schedule.setting.mediaNote"]).toContain("{image}")
+            expect(dict["schedule.setting.mediaNote"]).toContain("{video}")
+            expect(dict["schedule.setting.chronoskyLead"]).toContain("{link}")
+        }
     })
 
     test("文言の置換が働く", () => {

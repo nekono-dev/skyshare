@@ -66,8 +66,15 @@ sequenceDiagram
     store->>ext_d1: FINISHED_RETENTION_SECONDS
     store->>ext_d1: purgeIdleCredentials
     store->>ext_d1: CREDENTIAL_IDLE_SECONDS
+    store->>ext_d1: markCredentialReauth
+    store->>ext_d1: purgeReauthMarkers
+    store->>ext_d1: REAUTH_MARKER_KEEP_SECONDS
     store->>ext_d1: deleteCredential
+    store->>ext_d1: purgeOAuthStates
   end
+  store->>ext_d1: saveOAuthState
+  store->>ext_d1: takeOAuthState
+  store->>ext_d1: OAUTH_STATE_TTL_SECONDS
 ```
 
 ## 3. 設計項目
@@ -108,7 +115,8 @@ CREATE TABLE scheduled_posts (
 CREATE INDEX scheduled_posts_due ON scheduled_posts (status, run_at);
 CREATE INDEX scheduled_posts_owner ON scheduled_posts (did, status);
 CREATE TABLE schedule_credentials (
-  did TEXT PRIMARY KEY, service TEXT NOT NULL, token_enc TEXT NOT NULL, updated_at INTEGER NOT NULL
+  did TEXT PRIMARY KEY, service TEXT NOT NULL, token_enc TEXT NOT NULL, updated_at INTEGER NOT NULL,
+  authorized_at INTEGER NOT NULL DEFAULT 0, reauth_required INTEGER NOT NULL DEFAULT 0 -- 0004 で追加
 );
 ```
 
@@ -187,14 +195,20 @@ export const FINISHED_RETENTION_SECONDS = 7 * 24 * 60 * 60
 export const encryptToken = (secret: string, did: string, token: string): Promise<string>
 export const decryptToken = (secret: string, did: string, encrypted: string): Promise<string>
 
-export const saveCredential = (db: D1Database, secret: string, c: { did: string; service: string; token: string }, now: number): Promise<void>
-export const getCredentialStatus = (db: D1Database, did: string): Promise<{ registered: boolean; updatedAt?: number }>
+export const saveCredential = (db: D1Database, secret: string, c: { did: string; service: string; token: string }, now: number, opts?: { authorized?: boolean }): Promise<void>
+export const getCredentialStatus = (db: D1Database, did: string): Promise<CredentialStatus> // 登録ありなら reauthRequired・updatedAt・authorizedAt・latestRunAt
 export const loadCredential = (db: D1Database, secret: string, did: string): Promise<{ service: string; token: string } | null>
 export const touchCredential = (db: D1Database, did: string, now: number): Promise<void>
 export const deleteCredential = (db: D1Database, did: string): Promise<void>
 export const purgeIdleCredentials = (db: D1Database, now: number, idleSeconds: number): Promise<number>
+export const markCredentialReauth = (db: D1Database, did: string): Promise<void>
+export const purgeReauthMarkers = (db: D1Database, now: number, retentionSeconds: number): Promise<number>
+export const saveOAuthState = (db: D1Database, secret: string, s: { state: string; did: string; data: string }, now: number): Promise<void>
+export const takeOAuthState = (db: D1Database, secret: string, state: string, did: string, now: number): Promise<string | null>
+export const purgeOAuthStates = (db: D1Database, now: number): Promise<number>
 
 export const CREDENTIAL_IDLE_SECONDS = 30 * 24 * 60 * 60
+export const OAUTH_STATE_TTL_SECONDS = 10 * 60
 ```
 
 | 項目     | 値                                                                        |
@@ -206,8 +220,13 @@ export const CREDENTIAL_IDLE_SECONDS = 30 * 24 * 60 * 60
 | 保管形式 | `Base64(IV ‖ 暗号文)`                                                     |
 
 - 認証情報の行の `updated_at` を最後の使用の時刻とする。使用は、登録（`saveCredential`）・予約の作成と置き換え（`touchCredential`）・実行でのトークンの更新（`saveCredential`）の3つとする。
-- `purgeIdleCredentials` は、`updated_at` が `now - idleSeconds` より古く、同じ DID の `pending` と `running` の予約が無い行を1文で削除し、削除した件数を返す。
+- `purgeIdleCredentials` は、`updated_at` が `now - idleSeconds` より古く、同じ DID の `pending` と `running` の予約が無い行を1文で印（`token_enc` を空、`reauth_required = 1`）に替え、件数を返す。
+- `markCredentialReauth` は失効が分かった行を印に替える。印の行は `loadCredential` で返さず、`getCredentialStatus` では登録ありで返す。
+- `purgeReauthMarkers` は、`updated_at` が `now - retentionSeconds`（180日）より古く予約の無い印の行を削除する。
+- `saveCredential` は印を外す。`authorized` が真のときだけ `authorized_at` を `now` にし、トークンの回転では保つ。
 - `deleteCredential` は、予約の有無によらず行を削除する。
+- 認証情報の `token` には、OAuth の更新用トークン・DPoP の鍵・認可サーバーの端点・クライアントの識別子をまとめた JSON の文字列を入れ、`service` には PDS の URL を入れる。
+- 認可の途中の状態は `schedule_oauth_states`（`state`・`did`・`data_enc`・`created_at`）に、認証情報と同じ方式で暗号化して保管する。`takeOAuthState` は `DELETE ... RETURNING` の1文で取り出して消し、別の DID と `OAUTH_STATE_TTL_SECONDS` を過ぎた行は null にする。`purgeOAuthStates` は定期実行の後片付けで期限を過ぎた行を消す。
 
 ### D-6: 添付画像の一時保管 (FR-6, FR-12, NFR-1, NFR-4)
 

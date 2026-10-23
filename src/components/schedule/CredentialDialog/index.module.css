@@ -1,29 +1,9 @@
-/* 背面の減光。Overlay の背景と同じ濃さにする（弱いとダークで背面のカードに溶け込む） */
-:local(.backdrop) {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  background: rgba(0, 0, 0, 0.6);
-}
-
-/* 非モーダルのダイアログ。パスワードマネージャの候補表示がトップレイヤーに隠れないよう、
-   showModal() を使わず、減光の上の画面中央へ固定する。
-   狭い画面でもはみ出さないよう、幅と高さを画面の内側に収め、収まらない分は縦に流す。 */
-:local(.dialog) {
-  position: fixed;
-  inset: 0;
-  margin: auto;
-  width: min(480px, calc(100vw - 2rem));
-  max-width: calc(100vw - 2rem);
-  height: fit-content;
-  max-height: calc(100dvh - 2rem);
-  overflow-y: auto;
-  z-index: 1000;
-  padding: 0;
-  border: none;
-  background: transparent;
-  /* ネイティブの dialog は文字色が UA の既定値（CanvasText）になるため、テーマの文字色に揃える */
-  color: var(--color-text);
+/* スマホ幅では、投稿フォームと同様に画面の上部へ固定する（Overlay の背景の配置を上寄せにする） */
+@media (max-width: 639px) {
+  :local(.backdrop) {
+    align-items: flex-start;
+    padding-top: var(--space-1);
+  }
 }
 
 :local(.content) {
@@ -39,27 +19,16 @@
   font-size: var(--font-size-sm);
 }
 
-:local(.warning) {
-  margin: 0;
-  font-size: var(--font-size-sm);
+:local(.error) {
   color: var(--color-red-text);
 }
 
-:local(.error) {
-  color: var(--color-red-text);
+:local(.error):empty {
+  display: none;
 }
 
 :local(.actions) {
   display: flex;
   gap: var(--space-2, 8px);
   flex-wrap: wrap;
-}
-
-/* スマホ幅では、投稿フォームと同様に画面の上部へ固定する。画面の中央に置くと、
-   アプリパスワードの入力で表示される画面上のキーボードがダイアログを覆うため。 */
-@media (max-width: 639px) {
-  :local(.dialog) {
-    inset: 0 0 auto 0;
-    margin: var(--space-1) auto 0;
-  }
 }

@@ -94,7 +94,8 @@ export type StageResult =
  *
  * Output:
  * - 成功: `{ ok: true, runAt, payload, imageKeys }`。保存に失敗したら呼び出し側が画像を消す
- * - 失敗: 範囲外・容量超過は 400、未登録は 409（ScheduleCredentialRequired）、上限は 429、保管の失敗は 500
+ * - 失敗: 範囲外・容量超過は 400、未登録は 409（ScheduleCredentialRequired）、
+ *   再度の許可が必要なら 409（ScheduleReauthRequired）、上限は 429、保管の失敗は 500
  *
  * Example: `await stageSchedule(env, did, id, body, now, { countPending: true })`
  */
@@ -112,6 +113,9 @@ export const stageSchedule = async (
     const credential = await getCredentialStatus(env.DB, did)
     if (!credential.registered) {
         return { ok: false, status: 409, error: "ScheduleCredentialRequired" }
+    }
+    if (credential.reauthRequired) {
+        return { ok: false, status: 409, error: "ScheduleReauthRequired" }
     }
     // 件数は予約の行数で数える（スレッドも1件）
     if (

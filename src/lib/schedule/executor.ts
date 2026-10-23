@@ -2,7 +2,8 @@
  * 1件の予約を、進捗に従って段階的に実行する。
  *
  * 責務と処理概要:
- * - 予約用の認証情報でセッションを更新し、更新後の更新用トークンを投稿より先に保管する。
+ * - 予約用の OAuth の認可（更新用トークンと DPoP の鍵）でアクセストークンを得て、
+ *   回転した更新用トークンを投稿より先に保管する。PDS への要求には DPoP の証明を付ける。
  * - 画像のアップロード → 投稿の先頭からの順次作成 → 投稿ごとの制限の作成 → entry の作成の順に進める。
  * - 通信が1回成功するたびに進捗を保存する。通信の予算が尽きる・レート制限を受ける・
  *   一時的に失敗するときは、進捗を保ったまま待機中へ戻して次の実行に持ち越す。
@@ -21,9 +22,13 @@ import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import { buildSkyshareEntryRecord } from "@/lib/entry/skyshareRecord"
 import type { ScheduleEnv } from "./cfTypes"
 import { removeImages } from "./imageStaging"
+import { parseCredential, serializeCredential } from "./oauth/storedCredential"
+import { type DpopSession } from "./oauth/dpop"
+import { refreshTokens } from "./oauth/flow"
 import { nextTid } from "./tid"
 import {
-    deleteCredential,
+    getCredentialStatus,
+    markCredentialReauth,
     completeSchedule,
     failSchedule,
     loadCredential,
@@ -107,64 +112,93 @@ export const executeSchedule = async (
         if (!ok) throw new Stop({ type: "abandon" })
     }
 
-    const call = async (
-        service: string,
-        token: string,
-        nsid: string,
-        body: unknown,
-        contentType?: string,
-        authCode?: FailureCode,
-    ) => {
+    // 投稿の前に得る、PDS への要求の宛先と認証
+    let service = ""
+    let auth: { session: DpopSession; accessToken: string } | null = null
+
+    const call = async (nsid: string, body: unknown, contentType?: string) => {
         const result = await callXrpc(
             budget,
-            { service, nsid, method: "POST", token, body, contentType },
+            {
+                service,
+                nsid,
+                method: "POST",
+                dpop: auth ?? undefined,
+                body,
+                contentType,
+            },
             fetchImpl,
         )
-        if (!result.ok) throw stopFor(result.kind, authCode)
+        if (!result.ok) throw stopFor(result.kind)
         return result.json
     }
 
     const run = async (): Promise<void> => {
-        // 1. セッションの更新。更新後のトークンを、投稿より先に保管する
-        let credential
+        // 1. アクセストークンの取得。回転した更新用トークンを、投稿より先に保管する
+        let stored
         try {
-            credential = await loadCredential(
-                env.DB,
-                env.SCHEDULE_ENC_KEY,
-                row.did,
-            )
+            stored = await loadCredential(env.DB, env.SCHEDULE_ENC_KEY, row.did)
         } catch {
             throw fail("CredentialInvalid")
         }
-        if (!credential) throw fail("CredentialMissing")
-        const { service } = credential
+        if (!stored) {
+            // 許可の失効が分かった後の予約は、再度の許可が要ることを示して失敗にする
+            const status = await getCredentialStatus(env.DB, row.did)
+            throw fail(
+                status.registered && status.reauthRequired
+                    ? "CredentialExpired"
+                    : "CredentialMissing",
+            )
+        }
+        const credential = parseCredential(stored.token)
+        // 旧形式（アプリパスワード）の認証情報は使えない
+        if (!credential) throw fail("CredentialInvalid")
+        service = stored.service
 
-        const refreshed = await call(
-            service,
-            credential.token,
-            "com.atproto.server.refreshSession",
-            undefined,
-            undefined,
-            "CredentialExpired",
+        const refreshed = await refreshTokens(
+            env,
+            {
+                did: row.did,
+                credential,
+                now,
+                onRequest: () => {
+                    if (budget.remaining <= 0) return false
+                    budget.remaining -= 1
+                    return true
+                },
+            },
+            fetchImpl,
         )
-        if (
-            typeof refreshed?.accessJwt !== "string" ||
-            typeof refreshed?.refreshJwt !== "string" ||
-            refreshed?.did !== row.did
-        ) {
-            throw fail("CredentialInvalid")
+        if (!refreshed.ok) {
+            switch (refreshed.kind) {
+                case "Expired":
+                    throw fail("CredentialExpired")
+                case "RateLimited":
+                    budget.rateLimited = true
+                    throw release(false)
+                case "BudgetExceeded":
+                    throw release(false)
+                case "Transient":
+                    throw release(true)
+                default:
+                    throw fail("CredentialInvalid")
+            }
         }
         try {
             await saveCredential(
                 env.DB,
                 env.SCHEDULE_ENC_KEY,
-                { did: row.did, service, token: refreshed.refreshJwt },
+                {
+                    did: row.did,
+                    service,
+                    token: serializeCredential(refreshed.credential),
+                },
                 now,
             )
         } catch {
             throw release(true)
         }
-        const access: string = refreshed.accessJwt
+        auth = { session: refreshed.dpop, accessToken: refreshed.accessToken }
 
         // 2. レコードキーの採番
         if (progress.rkeys.length === 0) {
@@ -192,8 +226,6 @@ export const executeSchedule = async (
             const object = key ? await env.SCHEDULE_IMAGES.get(key) : null
             if (!object) throw fail("ImageMissing")
             const json = await call(
-                service,
-                access,
                 "com.atproto.repo.uploadBlob",
                 await object.arrayBuffer(),
                 object.httpMetadata?.contentType ?? "application/octet-stream",
@@ -205,7 +237,7 @@ export const executeSchedule = async (
 
         const createdAt = new Date(now * 1000).toISOString()
         const put = (collection: string, rkey: string, record: unknown) =>
-            call(service, access, "com.atproto.repo.putRecord", {
+            call("com.atproto.repo.putRecord", {
                 repo: row.did,
                 collection,
                 rkey,
@@ -318,9 +350,10 @@ export const executeSchedule = async (
         if (action.type === "abandon") return "released"
         if (action.type === "fail") {
             await failSchedule(env.DB, row.id, action.code, now)
-            // 認証の失効が分かった認証情報は使えないため削除し、設定の表示をオフに戻す
+            // 認証の失効が分かった認証情報は使えないため消し、再度の許可が必要である印を残す
+            // （設定のスイッチはオフに戻さず、再度の許可を案内する）
             if (action.code === "CredentialExpired") {
-                await deleteCredential(env.DB, row.did)
+                await markCredentialReauth(env.DB, row.did)
             }
             return "failed"
         }

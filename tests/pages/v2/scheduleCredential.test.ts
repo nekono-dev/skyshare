@@ -8,14 +8,16 @@ vi.mock("@/lib/schedule/env", () => ({
     getScheduleEnv: async () => holder.env,
 }))
 
-import { DELETE, GET, PUT } from "@/pages/v2/schedules/credential"
+import { DELETE, GET } from "@/pages/v2/schedules/credential"
 import {
     claimDueSchedules,
     countPending,
     failSchedule,
     getSchedule,
     insertSchedule,
+    markCredentialReauth,
     saveCredential,
+    CREDENTIAL_IDLE_SECONDS,
 } from "@/lib/schedule/store"
 import { putImages } from "@/lib/schedule/imageStaging"
 
@@ -40,7 +42,10 @@ beforeEach(() => {
 
 describe("/v2/schedules/credential", () => {
     test("schedule-api/AC-11: 登録状態の取得が登録の有無を返す", async () => {
-        expect(await (await call(GET)).json()).toEqual({ registered: false })
+        expect(await (await call(GET)).json()).toEqual({
+            registered: false,
+            reauthRequired: false,
+        })
         await saveCredential(
             db,
             KEY,
@@ -53,8 +58,29 @@ describe("/v2/schedules/credential", () => {
         expect(JSON.stringify(body)).not.toContain("TOKEN-VALUE-XYZ")
     })
 
+    test("schedule-api/AC-23: 登録状態に許可の有効期限の目安が付き、再度の許可が必要なときは登録ありのまま目安を返さない", async () => {
+        await saveCredential(
+            db,
+            KEY,
+            { did: DID, service: "s", token: "t" },
+            100,
+            { authorized: true },
+        )
+        const body = await (await call(GET)).json()
+        expect(body).toMatchObject({ registered: true, reauthRequired: false })
+        expect(body.expiresAt).toBe(
+            new Date((100 + CREDENTIAL_IDLE_SECONDS) * 1000).toISOString(),
+        )
+        await markCredentialReauth(db, DID)
+        const reauth = await (await call(GET)).json()
+        expect(reauth).toMatchObject({ registered: true, reauthRequired: true })
+        expect(reauth.expiresAt).toBeUndefined()
+    })
+
     test("schedule-api/AC-11: 削除で待機中の予約と画像が消え、実行中の予約があると409になる", async () => {
-        const r2 = holder.env as { SCHEDULE_IMAGES: ReturnType<typeof createFakeR2> }
+        const r2 = holder.env as {
+            SCHEDULE_IMAGES: ReturnType<typeof createFakeR2>
+        }
         await saveCredential(db, KEY, { did: DID, service: "s", token: "t" }, 1)
         const keys = await putImages(r2.SCHEDULE_IMAGES, DID, "p1", "g", [
             { bytes: new ArrayBuffer(2), mime: "image/png" },
@@ -93,12 +119,11 @@ describe("/v2/schedules/credential", () => {
         expect(await getSchedule(db, DID, "busy")).not.toBeNull()
     })
 
-    test("schedule-api/AC-14: 未認証は401、不正な本文は400で、キャッシュを禁止する", async () => {
-        const unauth = await call(GET, {}, {})
-        expect(unauth.status).toBe(401)
-        expect(unauth.headers.get("cache-control")).toBe("no-store")
-        const bad = await call(PUT, { method: "PUT", body: "{}" })
-        expect(bad.status).toBe(400)
-        expect(bad.headers.get("cache-control")).toBe("no-store")
+    test("schedule-api/AC-14: 未認証は401で、キャッシュを禁止する", async () => {
+        for (const handler of [GET, DELETE]) {
+            const unauth = await call(handler, { method: "GET" }, {})
+            expect(unauth.status).toBe(401)
+            expect(unauth.headers.get("cache-control")).toBe("no-store")
+        }
     })
 })

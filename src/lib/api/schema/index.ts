@@ -33,7 +33,8 @@ import { operation as schedulesPutById } from "./v2/schedules/_id/put"
 import { operation as scheduleImageGet } from "./v2/schedules/_id/images/_index/get"
 import { operation as scheduleLimitsGet } from "./v2/schedules/limits/get"
 import { operation as scheduleCredentialGet } from "./v2/schedules/credential/get"
-import { operation as scheduleCredentialPut } from "./v2/schedules/credential/put"
+import { operation as scheduleAuthorizationPost } from "./v2/schedules/credential/authorization/post"
+import { operation as scheduleAuthorizationCompletionPost } from "./v2/schedules/credential/authorization/completion/post"
 import { operation as scheduleCredentialDelete } from "./v2/schedules/credential/delete"
 import { operation as bskyImagesGet } from "./v2/bsky/images/get"
 import { operation as bskyVideoUploadTokenPost } from "./v2/bsky/video/upload-token/post"
@@ -67,8 +68,13 @@ export const paths: ZodOpenApiPathsObject = {
     "/v2/schedules/limits/": { get: scheduleLimitsGet },
     "/v2/schedules/credential/": {
         get: scheduleCredentialGet,
-        put: scheduleCredentialPut,
         delete: scheduleCredentialDelete,
+    },
+    "/v2/schedules/credential/authorization/": {
+        post: scheduleAuthorizationPost,
+    },
+    "/v2/schedules/credential/authorization/completion/": {
+        post: scheduleAuthorizationCompletionPost,
     },
     "/v2/bsky/images/": { get: bskyImagesGet },
     "/v2/bsky/video/upload-token/": { post: bskyVideoUploadTokenPost },

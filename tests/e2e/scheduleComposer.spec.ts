@@ -128,7 +128,7 @@ const videoInput = (page: Page) =>
         .locator('input[type="file"][accept*="video/quicktime"]')
         .first()
 
-test("[schedule-form/AC-24 schedule-form/AC-25] 動画つきでカレンダーのボタンを押すと確認が出て、キャンセルでは動画が残り、解除を選ぶと動画が外れて日時の指定が開き、設定中は動画のボタンが押せない", async ({
+test("[schedule-form/AC-24] 動画を添付すると、カレンダーのボタンが押せず、理由が示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -139,31 +139,62 @@ test("[schedule-form/AC-24 schedule-form/AC-25] 動画つきでカレンダー�
     await expect(pickerButton(page)).toBeEnabled({ timeout: 30_000 })
     await videoInput(page).setInputFiles(SAMPLE)
     await expect(page.getByTestId("video-preview")).toBeVisible()
+    await expect(pickerButton(page)).toBeDisabled()
+    await expect(pickerButton(page)).toHaveAttribute(
+        "title",
+        "動画を含む投稿は予約できません。",
+    )
+    // 確認のダイアログは出さない
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+})
 
-    const conflict = page.getByRole("dialog", {
-        name: "動画つきの投稿は予約できません",
-    })
-    // キャンセルでは動画が残り、日時の指定は開かない
-    await pickerButton(page).click()
-    await expect(conflict).toBeVisible()
-    await conflict.getByRole("button", { name: "キャンセル" }).click()
-    await expect(conflict).toBeHidden()
-    await expect(pickerDialog(page)).toBeHidden()
-    await expect(page.getByTestId("video-preview")).toBeVisible()
-
-    // 解除を選ぶと動画が外れ、日時の指定が開く
-    await pickerButton(page).click()
-    await conflict
-        .getByRole("button", { name: "動画の登録を解除して予約する" })
-        .click()
-    await expect(page.getByTestId("video-preview")).toHaveCount(0)
-    const dialog = pickerDialog(page)
-    await expect(dialog).toBeVisible()
-
-    // 日時の設定中は動画を追加できない
-    await dialog.getByRole("button", { name: "設定" }).click()
-    await expect(dialog).toBeHidden()
+test("[schedule-form/AC-25] 実行日時を設定すると、動画のボタンが押せない", async ({
+    page,
+}) => {
+    test.setTimeout(90_000)
+    await mockScheduleApi(page)
+    await page.goto("/post/")
+    await typeBody(page, "本文")
+    await setDefaultRunAt(page)
     await expect(videoInput(page)).toBeDisabled()
+})
+
+const pendingItem = (id: string) => ({
+    id,
+    runAt: "2027-03-01T10:00:00.000Z",
+    status: "pending" as const,
+    postCount: 1,
+    preview: id,
+    lastError: null,
+})
+
+test("[schedule-form/AC-29] 日時の指定に待機中の予約の枠が棒で示され、空きが無いと設定できない", async ({
+    page,
+}) => {
+    test.setTimeout(90_000)
+    const { state } = await mockScheduleApi(page, {
+        items: ["a", "b", "c"].map(pendingItem),
+    })
+    await page.goto("/post/")
+    await typeBody(page, "本文")
+    let dialog = await openPicker(page)
+    const slots = dialog.getByRole("meter", { name: "待機中の予約の枠" })
+    await expect(slots).toHaveAttribute("aria-valuenow", "3")
+    await expect(slots).toHaveAttribute("aria-valuemax", "5")
+    await expect(dialog.getByText("残り2件（5件まで）")).toBeVisible()
+    const marks = await slots
+        .locator("span")
+        .evaluateAll(els => els.map(el => el.getAttribute("data-state")))
+    expect(marks).toEqual(["used", "used", "used", "next", "free"])
+    await dialog.getByRole("button", { name: "閉じる" }).click()
+
+    // 空きが無いと、新しい予約の日時は設定できない
+    state.items = ["a", "b", "c", "d", "e"].map(pendingItem)
+    dialog = await openPicker(page)
+    await expect(
+        dialog.getByText("待機中の予約が上限に達しています"),
+    ).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "設定" })).toBeDisabled()
 })
 
 test("[schedule-form/AC-2 schedule-form/AC-6 schedule-form/AC-7] 予約投稿が有効なら押せ、既定値は翌日の同時刻で、範囲外では設定できない", async ({

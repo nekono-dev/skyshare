@@ -1,4 +1,7 @@
 import { useState } from "react"
+import chronoskyLogo from "@/images/chronosky.svg"
+import InlineIcon from "@/components/common/InlineIcon"
+import { renderSlots } from "@/lib/i18n/rich"
 import {
   deleteScheduleCredential,
   listSchedules,
@@ -6,6 +9,8 @@ import {
 import ConfirmDialog from "@/components/common/ConfirmDialog"
 import CredentialDialog from "@/components/schedule/CredentialDialog"
 import SettingList from "@/components/settings/SettingList"
+import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
 import { isGuestModeRequested } from "@/lib/guestMode"
 import { useT } from "@/lib/i18n/react"
 import { deferMessage, type DeferredMessage } from "@/lib/i18n/translate"
@@ -20,18 +25,24 @@ import {
  *
  * 責務と処理概要:
  * - スイッチの状態は、サーバーの予約用の認証情報の登録の有無に従う（端末には保存しない）。
- * - オンにすると認証情報の入力のダイアログを開き、登録に成功したときだけオンになる。
+ * - オンにすると Bluesky の認可へ送るダイアログを開く。認可の画面から戻ったときの完了と
+ *   結果の表示は、全ページ共通の `AuthorizationReturn` が行い、登録状態の変更を知らせる。
+ * - 許可が無効になっても（再度の許可が必要な印）スイッチはオンのまま、再度の許可を案内し、
+ *   ボタンから同じダイアログを再度の許可として開く。
  * - オフにすると待機中の予約の件数を示して確認し、承諾されたら待機中の予約を取り消して
  *   認証情報を削除する。実行中の予約があるときは削除されず、理由を表示する。
  * - 登録・削除の後は、同じページの投稿フォームへ変更を知らせる。
  * - ゲストの表示と、登録状態の取得前・取得の失敗の間は、スイッチを押せない。
+ * - スイッチの下に、予約できる投稿の注（画像は可・動画は不可をアイコンで示す）と、
+ *   本格的な予約投稿サービス（Chronosky）への案内をロゴつきで置く。
  */
 
 export const Component = () => {
   const translator = useT()
-  const { t } = translator
+  const { t, raw } = translator
   const guestMode = isGuestModeRequested()
-  const { registered, reload } = useScheduleAvailability(!guestMode)
+  const { registered, reauthRequired, reload } =
+    useScheduleAvailability(!guestMode)
   const [credentialOpen, setCredentialOpen] = useState(false)
   const [disableCount, setDisableCount] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
@@ -123,6 +134,61 @@ export const Component = () => {
           },
         ]}
       />
+      {registered === true && reauthRequired && (
+        <div className={styles.reauth} data-testid="schedule-reauth">
+          <p role="status">{t("schedule.setting.reauthRequired")}</p>
+          <button
+            type="button"
+            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${ui["compact-button"]}`}
+            disabled={busy}
+            onClick={() => {
+              setStatus(null)
+              setCredentialOpen(true)
+            }}
+          >
+            {t("schedule.setting.reauthButton")}
+          </button>
+        </div>
+      )}
+      <p className={styles.note} data-testid="schedule-media-note">
+        {renderSlots(raw("schedule.setting.mediaNote"), {
+          image: (
+            <InlineIcon
+              name="image"
+              alt={t("schedule.setting.mediaImageAlt")}
+            />
+          ),
+          video: (
+            <InlineIcon
+              name="video"
+              alt={t("schedule.setting.mediaVideoAlt")}
+            />
+          ),
+        })}
+      </p>
+      <p className={styles.chronosky} data-testid="schedule-chronosky">
+        <img
+          src={chronoskyLogo.src}
+          width={24}
+          height={24}
+          alt=""
+          className={styles["chronosky-logo"]}
+        />
+        <span>
+          {renderSlots(raw("schedule.setting.chronoskyLead"), {
+            link: (
+              <a
+                href="https://chronosky.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t("schedule.setting.chronoskyAria")}
+              >
+                {t("schedule.setting.chronoskyName")}
+              </a>
+            ),
+          })}
+        </span>
+      </p>
       {status && (
         <p
           role="status"
@@ -134,10 +200,7 @@ export const Component = () => {
       )}
       <CredentialDialog
         open={credentialOpen}
-        onRegistered={() => {
-          setCredentialOpen(false)
-          changed()
-        }}
+        reauth={reauthRequired}
         onClose={() => setCredentialOpen(false)}
       />
       <ConfirmDialog

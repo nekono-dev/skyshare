@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 import { createFakeD1 } from "../../helpers/fakeD1"
 import { createFakeR2 } from "../../helpers/fakeR2"
 import { createFakePds } from "../../helpers/fakePds"
+import {
+    createTestClientSecret,
+    createTestCredentialToken,
+} from "../../helpers/oauthTestKeys"
 import { executeSchedule } from "@/lib/schedule/executor"
 import { putImages } from "@/lib/schedule/imageStaging"
 import {
@@ -10,9 +14,11 @@ import {
     insertSchedule,
     loadCredential,
     saveCredential,
+    getCredentialStatus,
 } from "@/lib/schedule/store"
 import type { StoredPayload } from "@/lib/schedule/validateSchedule"
 import { createBudget } from "@/lib/schedule/xrpcClient"
+import { parseCredential } from "@/lib/schedule/oauth/storedCredential"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(5)))
 const DID = "did:plc:aaaa"
@@ -20,14 +26,23 @@ const NOW = 1_800_000_000
 
 let db: ReturnType<typeof createFakeD1>
 let r2: ReturnType<typeof createFakeR2>
-let env: { DB: typeof db; SCHEDULE_IMAGES: typeof r2; SCHEDULE_ENC_KEY: string }
+let env: {
+    DB: typeof db
+    SCHEDULE_IMAGES: typeof r2
+    SCHEDULE_ENC_KEY: string
+    SCHEDULE_OAUTH_KEY: string
+}
 let pds: ReturnType<typeof createFakePds>
 
 const png = (n = 3) => ({ bytes: new ArrayBuffer(n), mime: "image/png" })
 
 const schedule = async (id: string, payload: StoredPayload, imageCount = 0) => {
     const keys = imageCount
-        ? await putImages(r2, DID, id, "g",
+        ? await putImages(
+              r2,
+              DID,
+              id,
+              "g",
               Array.from({ length: imageCount }, () => png()),
           )
         : []
@@ -55,11 +70,20 @@ beforeEach(async () => {
     db = createFakeD1()
     r2 = createFakeR2()
     pds = createFakePds(DID)
-    env = { DB: db, SCHEDULE_IMAGES: r2, SCHEDULE_ENC_KEY: KEY }
+    env = {
+        DB: db,
+        SCHEDULE_IMAGES: r2,
+        SCHEDULE_ENC_KEY: KEY,
+        SCHEDULE_OAUTH_KEY: await createTestClientSecret(),
+    }
     await saveCredential(
         db,
         KEY,
-        { did: DID, service: "https://pds", token: "OLD-REFRESH" },
+        {
+            did: DID,
+            service: "https://pds",
+            token: await createTestCredentialToken("OLD-REFRESH"),
+        },
         1,
     )
 })
@@ -95,7 +119,7 @@ describe("executeSchedule", () => {
                 : c.nsid,
         )
         expect(order).toEqual([
-            "com.atproto.server.refreshSession",
+            "oauth.token",
             "com.atproto.repo.uploadBlob",
             "com.atproto.repo.uploadBlob",
             "app.bsky.feed.post",
@@ -146,8 +170,20 @@ describe("executeSchedule", () => {
                 : null
         const { outcome } = await exec("s1")
         expect(outcome).toBe("released")
-        expect((await loadCredential(db, KEY, DID))?.token).toBe("NEW-REFRESH")
-        expect(pds.calls[0]!.token).toBe("OLD-REFRESH")
+        // 回転した更新用トークンが保管され、トークンの要求は古い更新用トークンで行われる
+        const stored = parseCredential(
+            (await loadCredential(db, KEY, DID))!.token,
+        )
+        expect(stored?.refreshToken).toBe("NEW-REFRESH")
+        expect(pds.calls[0]!.nsid).toBe("oauth.token")
+        expect(pds.calls[0]!.body.grant_type).toBe("refresh_token")
+        expect(pds.calls[0]!.body.refresh_token).toBe("OLD-REFRESH")
+        // PDS への要求は、DPoP の方式でアクセストークンと証明を送る
+        const post = pds.calls.find(
+            c => c.nsid === "com.atproto.repo.putRecord",
+        )
+        expect(post?.token).toBe("ACCESS")
+        expect(post?.dpop).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/)
     })
 
     test("schedule-runner/AC-5: 通信の上限に達した予約は進捗を保って戻り、次の実行で続きから完了する", async () => {
@@ -223,7 +259,7 @@ describe("executeSchedule", () => {
     test("schedule-runner/AC-7: 一時的な失敗は4回目まで待機に戻り、5回続くと失敗になる", async () => {
         await schedule("s1", { posts: [{ text: "a" }] })
         pds.override = c =>
-            c.nsid === "com.atproto.server.refreshSession"
+            c.nsid === "oauth.token"
                 ? new Response("{}", { status: 503 })
                 : null
         for (let i = 1; i <= 4; i++) {
@@ -240,11 +276,11 @@ describe("executeSchedule", () => {
         expect(row.lastError).toBe("RetryExceeded")
     })
 
-    test("schedule-runner/AC-8: 認証が失効した予約は再試行されず、失敗と分類コードが記録され、認証情報が削除される", async () => {
+    test("schedule-runner/AC-8: 認証が失効した予約は再試行されず、失敗と分類コードが記録され、認証情報が消えて再度の許可が必要な印が残る", async () => {
         await schedule("s1", { posts: [{ text: "a" }] }, 1)
         pds.override = c =>
-            c.nsid === "com.atproto.server.refreshSession"
-                ? new Response(JSON.stringify({ error: "ExpiredToken" }), {
+            c.nsid === "oauth.token"
+                ? new Response(JSON.stringify({ error: "invalid_grant" }), {
                       status: 400,
                   })
                 : null
@@ -256,6 +292,20 @@ describe("executeSchedule", () => {
         // 失敗した予約の画像は、フォームへ書き戻せるよう残す
         expect(r2.objects.size).toBe(1)
         expect(await loadCredential(db, KEY, DID)).toBeNull()
+        // 設定のスイッチをオフに戻さないよう、登録ありのまま再度の許可が必要と示す
+        expect(await getCredentialStatus(db, DID)).toMatchObject({
+            registered: true,
+            reauthRequired: true,
+        })
+
+        // 失効が分かった後の予約は、通信せずに同じ分類で失敗する
+        await schedule("s2", { posts: [{ text: "b" }] })
+        pds.calls.length = 0
+        expect((await exec("s2")).outcome).toBe("failed")
+        expect((await getSchedule(db, DID, "s2"))?.lastError).toBe(
+            "CredentialExpired",
+        )
+        expect(pds.calls).toHaveLength(0)
     })
 
     test("認証情報が無い・画像が欠けている・入力が不正な予約は失敗になる", async () => {
@@ -269,7 +319,11 @@ describe("executeSchedule", () => {
         await saveCredential(
             db,
             KEY,
-            { did: DID, service: "https://pds", token: "T" },
+            {
+                did: DID,
+                service: "https://pds",
+                token: await createTestCredentialToken("T"),
+            },
             3,
         )
         await schedule(
@@ -358,5 +412,43 @@ describe("executeSchedule", () => {
             expect(everything).not.toContain(secret)
         }
         expect(row.lastError).toBe("InvalidRecord")
+    })
+})
+
+describe("PDS への DPoP の要求", () => {
+    test("schedule-runner/AC-18: PDS が nonce を求めたら、受け取った nonce を証明に入れて1回だけやり直す", async () => {
+        await schedule("s1", { posts: [{ text: "a" }] })
+        let asked = false
+        pds.override = c => {
+            if (c.nsid !== "com.atproto.repo.putRecord" || asked) return null
+            asked = true
+            return new Response(JSON.stringify({ error: "use_dpop_nonce" }), {
+                status: 401,
+                headers: {
+                    "www-authenticate": 'DPoP error="use_dpop_nonce"',
+                    "dpop-nonce": "pds-nonce",
+                },
+            })
+        }
+        const { outcome } = await exec("s1")
+        expect(outcome).toBe("posted")
+        const puts = pds.calls.filter(
+            c => c.nsid === "com.atproto.repo.putRecord",
+        )
+        expect(puts).toHaveLength(2)
+        const payload = (jwt: string) =>
+            JSON.parse(
+                Buffer.from(
+                    jwt.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/"),
+                    "base64",
+                ).toString(),
+            )
+        expect(payload(puts[0]!.dpop!).nonce).toBeUndefined()
+        expect(payload(puts[1]!.dpop!)).toMatchObject({
+            nonce: "pds-nonce",
+            htm: "POST",
+            htu: "https://pds/xrpc/com.atproto.repo.putRecord",
+        })
+        expect(typeof payload(puts[1]!.dpop!).ath).toBe("string")
     })
 })
