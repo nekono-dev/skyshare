@@ -16,6 +16,7 @@
 | OGP抽出サービス        | 外部   | URL からページの題名・説明・画像を返す                                                    | -                                                              |
 | 入力部品と寸法         | 内部   | 文字数つきの入力欄とタブと、画面幅ごとの寸法トークンを提供する                            | counted-text-input、browser-utils、design-tokens、tab-buttons  |
 | 投稿フォーム           | 内部   | 単発とスレッドの投稿を同じフォームで作成して送信する                                      | thread-composer、post-body-editor、post-suggest、share-counter |
+| 投稿フォームの遷移     | 内部   | 作成中の離脱を確認し、無効な予約から設定へ案内する                                        | composer-navigation                                            |
 | 返信と引用の制限       | 内部   | 返信できる相手と引用の可否を選び、既定値を端末に保存する                                  | post-gate                                                      |
 | 添付メディア           | 内部   | 画像と動画を添付させ、画像の切り抜きを調整させる                                          | image-picker、image-crop、video-picker                         |
 | 代表画像とリンクカード | 内部   | 代表画像と見出しを生成し、リンクカードを取得して添え、entry の作成直後に OGP を先取りする | entry-visual、ogp-link-card                                    |
@@ -43,6 +44,7 @@ flowchart LR
   composer --> listapi["一覧と下書きのAPI"]
   composer --> contract["API契約と生成"]
   composer --> schedule["予約フォーム"]
+  composer --> navigation["投稿フォームの遷移"]
   media --> video["動画アップロード"]
   video --> session["セッション管理"]
   video --> atproto["Bluesky連携層"]

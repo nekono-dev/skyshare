@@ -18,6 +18,10 @@
  *   状態の遷移・送信先・キャンセルの動作の判定は `lib/schedule/scheduleMode` が決める。
  * - 下書き・予約: 下書きの一覧と予約の一覧をタブで切り替える画面を開き、選んだ下書きか
  *   予約の内容をセグメントへ戻す。
+ * - 予約投稿が無効のときにカレンダーのボタンを押すと、設定で有効にする案内を出し、
+ *   「設定を開く」で設定のページへ移る。
+ * - 作成中（未保存の本文がある）にリンクで他のページへ移ろうとしたときは、移動を止めて
+ *   下書き保存の確認（保存して移る・破棄して移る・編集を続ける）を出す。
  */
 import { useLocale, useT } from "@/lib/i18n/react"
 import { renderSlots } from "@/lib/i18n/rich"
@@ -26,6 +30,8 @@ import {
   type DeferredMessage,
   type PlainMessageKey,
 } from "@/lib/i18n/translate"
+import { navigate } from "astro:transitions/client"
+import { navigatingLinkTarget } from "@/util/links"
 import React, {
   forwardRef,
   useEffect,
@@ -320,6 +326,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       useState<PlainMessageKey | null>(null)
     const [loadedDraft, setLoadedDraft] = useState<LoadedDraft | null>(null)
     const [draftSaveConfirmOpen, setDraftSaveConfirmOpen] = useState(false)
+    // 予約投稿が無効のときにカレンダーのボタンを押した際の、設定への案内
+    const [setupGuideOpen, setSetupGuideOpen] = useState(false)
+    // 下書き保存の確認の後に移るページ。null のときは、確認の後にフォームを閉じるだけ
+    const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+      null,
+    )
     const [isSavingDraft, setIsSavingDraft] = useState(false)
     const formRef = useRef<HTMLDivElement>(null)
     const entryFormRef = useRef<HTMLFormElement>(null)
@@ -484,6 +496,65 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     }
 
     /**
+     * 他のページへ移る。同じオリジンならページ遷移（`navigate`）、別のオリジンなら通常の遷移にする。
+     */
+    const goTo = (to: string) => {
+      const url = new URL(to, window.location.href)
+      if (url.origin === window.location.origin) void navigate(url.href)
+      else window.location.assign(url.href)
+    }
+
+    /**
+     * 下書き保存の確認を済ませた後の動作。フォームを閉じ、移る先が決まっていればそのページへ移る。
+     */
+    const finishAfterDraftConfirm = () => {
+      setDraftSaveConfirmOpen(false)
+      closeForm()
+      if (pendingNavigation) {
+        const to = pendingNavigation
+        setPendingNavigation(null)
+        goTo(to)
+      }
+    }
+
+    /**
+     * 他のページへ移る。未保存の本文があれば、下書き保存の確認を挟んでから移る。
+     *
+     * Input:
+     * - `to`: 移る先の URL またはパス
+     */
+    const requestNavigation = (to: string) => {
+      if (hasUnsavedDraftChanges()) {
+        setPendingNavigation(to)
+        setDraftSaveConfirmOpen(true)
+        return
+      }
+      goTo(to)
+    }
+
+    // 作成中にリンクを押して別のページへ移ろうとしたら、移動を止めて下書き保存の確認を出す。
+    // Astro のページ遷移の通知（astro:before-preparation）は、取り消すと全体の再読み込みに
+    // 切り替わり、入力が失われるため使わず、遷移を始める前のクリックを捕まえる。
+    // ブラウザの戻る・進む、再読み込み、タブを閉じる操作は対象にしない。
+    // クリックの購読はマウント中ずっと同じ関数で行うため、最新の状態は ref 経由で参照する。
+    const requestNavigationRef = useRef(requestNavigation)
+    requestNavigationRef.current = requestNavigation
+    const hasUnsavedRef = useRef(hasUnsavedDraftChanges)
+    hasUnsavedRef.current = hasUnsavedDraftChanges
+    useEffect(() => {
+      const onClick = (event: MouseEvent) => {
+        const to = navigatingLinkTarget(event, window.location)
+        if (!to || !hasUnsavedRef.current()) return
+        // Astro のリンクの処理（バブリング段階）へ届く前に止める
+        event.preventDefault()
+        event.stopPropagation()
+        requestNavigationRef.current(to.href)
+      }
+      document.addEventListener("click", onClick, true)
+      return () => document.removeEventListener("click", onClick, true)
+    }, [])
+
+    /**
      * 下書きを保存(新規作成/更新)してからフォームを閉じる。
      *
      * Input:
@@ -506,8 +577,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           return
         }
 
-        setDraftSaveConfirmOpen(false)
-        closeForm()
+        finishAfterDraftConfirm()
       } catch (error) {
         console.error("ThreadComposer: failed to save draft", error)
         setStatus(deferMessage("post.composer.draftSaveFailed"))
@@ -521,8 +591,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
      * 下書きを保存せずフォームを閉じる。
      */
     const handleDiscardDraftAndClose = () => {
-      setDraftSaveConfirmOpen(false)
-      closeForm()
+      finishAfterDraftConfirm()
     }
 
     /**
@@ -1068,12 +1137,39 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           ]}
         />
 
+        <ChoiceDialog
+          open={setupGuideOpen}
+          onClose={() => setSetupGuideOpen(false)}
+          ariaLabel={t("schedule.setupGuide.title")}
+          description={t("schedule.setupGuide.message")}
+          buttons={[
+            {
+              key: "openSettings",
+              label: t("schedule.setupGuide.open"),
+              variant: "blue",
+              onClick: () => {
+                setSetupGuideOpen(false)
+                requestNavigation("/settings/")
+              },
+            },
+            {
+              key: "close",
+              label: t("schedule.setupGuide.close"),
+              variant: "gray",
+              onClick: () => setSetupGuideOpen(false),
+            },
+          ]}
+        />
+
         <DraftSaveConfirmDialog
           open={draftSaveConfirmOpen}
           isSaving={isSavingDraft}
           onSave={handleSaveDraftAndClose}
           onDiscard={handleDiscardDraftAndClose}
-          onContinueEditing={() => setDraftSaveConfirmOpen(false)}
+          onContinueEditing={() => {
+            setDraftSaveConfirmOpen(false)
+            setPendingNavigation(null)
+          }}
         />
 
         <div
@@ -1184,9 +1280,17 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   index === activeIndex ? (
                     <RunAtPicker
                       value={scheduledRunAt}
-                      limits={scheduleLimits}
-                      disabled={isSubmitting || !scheduleAvailable}
+                      limits={scheduleAvailable ? scheduleLimits : null}
+                      disabled={
+                        isSubmitting || (guestMode && !scheduleAvailable)
+                      }
                       disabledReason={scheduleUnavailableReason}
+                      onUnavailable={
+                        // 予約投稿が無効（未登録）のときだけ、設定への案内を出す
+                        !guestMode && scheduleRegistered === false
+                          ? () => setSetupGuideOpen(true)
+                          : undefined
+                      }
                       open={runAtPickerOpen}
                       onOpenChange={next =>
                         next && hasVideo && scheduledRunAt === null

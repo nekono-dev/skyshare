@@ -18,7 +18,7 @@
 - [x] T-2.1: `src/lib/schedule/useScheduleAvailability.ts` に登録状態と制限値の取得と通知の購読を実装する。
 - [x] T-2.2: 認証情報の入力を `src/components/schedule/CredentialDialog/index.tsx` に移し、文言を3行に絞る。
 - [x] T-2.3: `src/components/schedule/ScheduleSetting/index.tsx` を実装し、設定の投稿フォームのグループに置く。
-- [x] T-2.4: 受け入れ条件 AC-1 から AC-4、AC-21、AC-23 の E2E をタグ付きで追加する。
+- [x] T-2.4: 受け入れ条件 AC-1 から AC-4、AC-21、AC-23、AC-27 の E2E をタグ付きで追加する。
 - 検証: `npx tsc --noEmit`
 - E2E: `tests/e2e/scheduleSetting.spec.ts` 設定の予約投稿をオンにしてアプリパスワードを登録し、次にオフにする → 登録後にオンになり、オフの確認を承諾するとオフになる
 

@@ -12,6 +12,11 @@ export const schedule = {
     "schedule.loadingEdit": "予約を読み込んでいます…",
     "schedule.applied": "予約をフォームに読み込みました。",
     "schedule.runAtLabel": "{date}に予約",
+    "schedule.setupGuide.title": "予約投稿を有効にしていません",
+    "schedule.setupGuide.message":
+        "予約投稿を使うには、設定で予約投稿を有効にして、アプリパスワードを登録してください。",
+    "schedule.setupGuide.open": "設定を開く",
+    "schedule.setupGuide.close": "閉じる",
     "schedule.picker.button": "予約日時を指定",
     "schedule.picker.title": "予約日時",
     "schedule.picker.runAt": "投稿する日時",

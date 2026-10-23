@@ -186,6 +186,7 @@ type CredentialDialogProps = {
 | 送信   | `PUT /v2/schedules/credential` を呼び、成功したら `onRegistered` を呼んで閉じる                                                    |
 
 - パスワードは非制御入力で扱い、送信後に空に戻す。ログ・URL・ストレージには出力しない。ラベルには「確認」「再入力」を含めない。
+- `@media (max-width: 639px)` では `inset: 0 0 auto 0` と上の余白で画面の上部へ固定する（画面の中央に置くと、パスワードの入力で出る画面上のキーボードがダイアログを覆うため）。
 
 ### D-5: 実行日時の指定 (FR-4, FR-5, FR-6, NFR-1)
 

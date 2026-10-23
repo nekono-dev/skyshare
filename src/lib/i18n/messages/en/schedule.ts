@@ -15,6 +15,11 @@ export const schedule = {
     "schedule.loadingEdit": "Loading the scheduled post…",
     "schedule.applied": "Loaded the scheduled post into the form.",
     "schedule.runAtLabel": "Scheduled for {date}",
+    "schedule.setupGuide.title": "Scheduled posts are not enabled",
+    "schedule.setupGuide.message":
+        "To schedule a post, turn on scheduled posts in Settings and register an app password.",
+    "schedule.setupGuide.open": "Open Settings",
+    "schedule.setupGuide.close": "Close",
     "schedule.picker.button": "Set a schedule",
     "schedule.picker.title": "Schedule",
     "schedule.picker.runAt": "Post at",

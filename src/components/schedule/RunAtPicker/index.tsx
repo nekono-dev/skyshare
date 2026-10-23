@@ -22,6 +22,8 @@ import ui from "@/styles/ui.module.css"
  * - サーバーが示す範囲の外の日時では「設定」を押せず、理由を表示する。
  * - 日時が設定されている間は、ボタンを強調の配色と `aria-pressed` で示す。
  * - 日時の保持と、設定・解除の結果の扱いは呼び出し側（投稿フォーム）が行う。
+ * - `onUnavailable` が渡されたときは、予約投稿を使えない状態でもボタンを押せる（見た目は無効のまま
+ *   `aria-disabled`）ようにして、押したときに呼び出し側が使えるようにする方法を案内できるようにする。
  *
  * 利用例:
  * `<RunAtPicker value={runAt} limits={limits} disabled={!enabled} onChange={next => ...} />`
@@ -34,6 +36,8 @@ type Props = {
   disabled: boolean
   /** ボタンを押せない理由（title に出す） */
   disabledReason?: string
+  /** 予約投稿を使えない状態（無効・制限値の未取得）でボタンを押したとき。渡すと押せる無効表示にする */
+  onUnavailable?: () => void
   onChange: (next: Date | null) => void
   /** 開く操作を外から行うための状態（フォーム内の実行日時の行から開く） */
   open?: boolean
@@ -45,6 +49,7 @@ export const Component = ({
   limits,
   disabled,
   disabledReason,
+  onUnavailable,
   onChange,
   open: openProp,
   onOpenChange,
@@ -57,7 +62,9 @@ export const Component = ({
     onOpenChange?.(next)
   }
   const [input, setInput] = useState("")
+  // 押せない状態。onUnavailable があれば、disabled 属性ではなく aria-disabled で見た目だけを無効にする
   const unavailable = disabled || limits === null
+  const soft = unavailable && !disabled && onUnavailable !== undefined
 
   // 開くたびに（ボタンからでも実行日時の行からでも）、設定済みの日時か既定値を入力欄へ入れる
   useEffect(() => {
@@ -90,9 +97,10 @@ export const Component = ({
         aria-label={t("schedule.picker.button")}
         aria-pressed={value !== null}
         title={unavailable ? disabledReason : t("schedule.picker.button")}
-        disabled={unavailable}
+        disabled={unavailable && !soft}
+        aria-disabled={soft ? true : undefined}
         data-testid="schedule-picker-button"
-        onClick={() => setOpen(true)}
+        onClick={() => (soft ? onUnavailable?.() : setOpen(true))}
       >
         <img
           src={value ? calendarWhiteIcon.src : calendarIcon.src}
