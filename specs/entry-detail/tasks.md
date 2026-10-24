@@ -33,8 +33,8 @@
 ## Phase 5: 埋め込みの表示
 
 - 対応: D-5
-- [ ] T-5.1: `postEmbedView.ts` を実装し、単体テストを受け入れ条件のタグ付きで追加する。
-- [ ] T-5.2: `PostLinkCard`・`PostQuote` を作成し、`PostBody` と `[slug].astro` に組み込む。
-- [ ] T-5.3: サンプルページにリンクカードと引用の投稿を加え、E2Eテストを追加する。
+- [x] T-5.1: `postEmbedView.ts` を実装し、単体テストを受け入れ条件のタグ付きで追加する。
+- [x] T-5.2: `PostLinkCard`・`PostQuote` を作成し、`PostBody` と `[slug].astro` に組み込む。
+- [x] T-5.3: サンプルページにリンクカードと引用の投稿を加え、E2Eテストを追加する。
 - 検証: `npx vitest run tests/lib/entry/postEmbedView.test.ts`
 - E2E: `tests/e2e/entryEmbed.spec.ts` サンプルページを開く → リンクカードと引用の枠が表示され、それぞれ新しいタブでリンク先を開く

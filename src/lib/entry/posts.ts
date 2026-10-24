@@ -20,6 +20,10 @@ import {
     skyshareEntryUrlgen,
 } from "@/lib/entry/url"
 import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
+import {
+    normalizePostFacets,
+    type PostFacet,
+} from "@/lib/atproto/richTextSegments"
 
 export type TimelinePostAuthor = {
     did: string
@@ -49,6 +53,8 @@ export type TimelinePost = {
     indexedAt: string
     author: TimelinePostAuthor
     text: string
+    /** 本文の注釈（メンション・URL・ハッシュタグ）。本文のリンク表示と共有文のURLの除去に使う */
+    facets?: PostFacet[]
     images: SourceImage[]
     /** 動画投稿（`app.bsky.embed.video`）の動画。画像とは排他 */
     video?: SourceVideo
@@ -225,6 +231,7 @@ export const normalizeTimelinePost = (
 
     const postRecord = post.record as AppBskyFeedPost.Main | undefined
     const text = typeof postRecord?.text === "string" ? postRecord.text : ""
+    const facets = normalizePostFacets(postRecord?.facets)
     const images = postRecord
         ? extractTimelinePostImages(postRecord, post.author.did)
         : []
@@ -254,6 +261,7 @@ export const normalizeTimelinePost = (
                     : undefined,
         },
         text,
+        ...(facets.length > 0 ? { facets } : {}),
         images,
         ...(video ? { video } : {}),
         ...(unsupportedVideo ? { unsupportedVideo } : {}),

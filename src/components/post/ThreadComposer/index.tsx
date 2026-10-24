@@ -54,7 +54,8 @@ import InlineIcon from "@/components/common/InlineIcon"
 import Loading from "@/components/common/Loading"
 import Overlay from "@/components/common/Overlay"
 import ToggleSwitch from "@/components/common/ToggleSwitch"
-import { extractTagsFromFacets } from "@/lib/atproto/richtext"
+import { detectLinkFacets, extractTagsFromFacets } from "@/lib/atproto/richtext"
+import { resolveShareBody } from "@/lib/share/shareBody"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 import { addHashtagsToHistory } from "@/lib/settings/hashtagHistorySettings"
 import { normalizeDraftList } from "@/lib/entry/draftList"
@@ -986,10 +987,20 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           recordUsedHashtagsToHistory(segment.text, accountDid),
         )
 
-        const dispatch = await runShareDispatch({
+        // 「Skyshareのリンクカードを優先表示」が有効で skyshare URL を共有する場合は、
+        // 本文のURLを共有文から取り除く（自動ポップアップ・WebShare・投稿先選択ダイアログ共通）。
+        const shareBody = resolveShareBody({
           text: rootSegment.text,
-          skyshareUri,
+          facets: skyshareUri === "" ? [] : detectLinkFacets(rootSegment.text),
+          entryUrl: skyshareUri,
           linkCardUrl: rootSegment.ogpResult?.sourceUrl ?? "",
+          preferSkyshareLinkCard: shareToggles.effectivePreferSkyshareLinkCard,
+        })
+
+        const dispatch = await runShareDispatch({
+          text: shareBody.text,
+          skyshareUri,
+          linkCardUrl: shareBody.linkCardUrl,
           imageEntry: rootSegment.imageEntry,
           manualImageAttach: shareToggles.manualImageAttach,
           truncateIntentText: shareToggles.truncateIntentText,
@@ -1013,9 +1024,9 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         // 入力欄は結果に関わらず常にクリアする（skyshare URLはダイアログ側が保持する）。
         if (dispatch.openShareDialog) {
           const request: IntentShareRequest = {
-            postText: rootSegment.text,
+            postText: shareBody.text,
             entryUrl: skyshareUri === "" ? null : skyshareUri,
-            linkCardUrl: rootSegment.ogpResult?.sourceUrl ?? "",
+            linkCardUrl: shareBody.linkCardUrl,
           }
           if (onShareRequest) {
             onShareRequest(request)
@@ -1385,6 +1396,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 disabled={isSubmitting}
                 label={t("post.composer.manualImageAttach")}
                 onCheckedChange={shareToggles.onManualImageAttachChange}
+              />
+              <ToggleSwitch
+                checked={shareToggles.preferSkyshareLinkCard}
+                disabled={isSubmitting || shareToggles.manualImageAttach}
+                label={t("post.composer.linkCardPriority")}
+                onCheckedChange={shareToggles.onPreferSkyshareLinkCardChange}
               />
             </div>
 

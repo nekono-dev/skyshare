@@ -38,6 +38,12 @@ export const guest = {
     "guest.threadD.entryHeading": "スレッドDサンプルEntry",
     "guest.threadD.entryCaption": "ゲスト表示用の旧仕様ダミーEntryです。",
     "guest.threadD.rootText": "スレッドD・1件目（ルート、画像なし）です。",
+    "guest.threadE.rootText":
+        "スレッドE・1件目（ルート、画像なし）です。スレッド全体がSkyshareの対象外です。",
+    "guest.threadE.tailText": "スレッドE・2件目（画像なし）です。",
+    "guest.richText.text":
+        "ハッシュタグ・メンション・URLを含む投稿の表示です。 #skyshare @guest.demo {url}",
+    "guest.richText.entryHeading": "リンク付きサンプルEntry",
     "guest.unknown.text":
         "Bluesky投稿の状態を確認できない場合の表示確認用の投稿です。",
     "guest.unknown.entryHeading": "判定不能サンプルEntry",

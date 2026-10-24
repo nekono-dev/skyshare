@@ -48,7 +48,7 @@ const cardOf = (page: Page, text: string): Locator =>
     page.locator("article", { hasText: text })
 
 const SAMPLE_VIDEO_TEXT = "スレッド4件目です。動画が付いています。"
-const SAMPLE_UNSUPPORTED_TEXT = "スレッド5件目（末尾投稿）です。"
+const SAMPLE_UNSUPPORTED_TEXT = "スレッド5件目です。"
 const TIMELINE_VIDEO_TEXT = "動画を添付した投稿の表示です。"
 const TIMELINE_UNSUPPORTED_TEXT = "引用投稿に動画が添付された投稿の表示です。"
 

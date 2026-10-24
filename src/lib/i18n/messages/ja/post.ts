@@ -10,6 +10,8 @@ export const post = {
     "post.launcher.new": "新規投稿",
 
     "post.card.openBluesky": "Bluesky で開く",
+    "post.quote.open": "Blueskyで引用元の投稿を開く",
+    "post.quote.unavailable": "引用元の投稿は表示できません",
     "post.card.webShare": "Web Share APIで共有",
     "post.card.openEntry": "Entryを開く",
     "post.card.creatingEntry": "Entryを作成中...",
@@ -104,6 +106,7 @@ export const post = {
     "post.composer.popupInstead": "{share}の代わりにポップアップ{popup}を開く",
     "post.composer.manualImageAttach":
         "画像を自分で添付する（URLを発行しない）",
+    "post.composer.linkCardPriority": "Skyshareのリンクカードを優先表示",
     "post.composer.counterLabel.taittsuu": "ﾀｲｯﾂｰ",
     "post.composer.truncateIntentText": "長文を省略して共有",
     "post.composer.moreOptions": "詳細オプション",
