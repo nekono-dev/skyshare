@@ -153,6 +153,7 @@ done
 
 - Worker のシークレット（予約用の認証情報の暗号鍵 `SCHEDULE_ENC_KEY` と、Bluesky の OAuth の署名鍵 `OAUTH_CLIENT_KEY`）は手で登録しない。`hack/ensure-worker-secrets.mjs` が、本番・develop への配備（deploy.yaml）の後と、プレビューの配備（preview.yaml）の前に、未登録のものだけを生成して登録する。登録済みの値は上書きしない。
   - develop とプレビューの基本設定（`wrangler preview base-config`）は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）。本番は別の値になる。
+  - 既にあるプレビューは、作られた時点の基本設定のシークレットを持ち続ける。必要なシークレットが欠けているプレビューは、preview.yaml が配備の前に削除し、同じ名前（同じ URL）で基本設定から作り直す。
   - 片方にだけ登録済みのとき、`OAUTH_CLIENT_KEY` は作り直して両方へ登録する（古い鍵の予約の許可は、利用者が許可し直す）。`SCHEDULE_ENC_KEY` は作り直すと保管済みの認証情報を復号できなくなるため、CI を失敗させる。このときは、手で両方を同じ値にそろえる（`openssl rand -base64 32 > enc.key` の後、`npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key` と `npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key` を実行し、`enc.key` を消す）。
   - 鍵を替えたいときは、配信先からシークレットを削除して配備し直す（`npx wrangler secret delete <名前> --name <Worker 名>`。develop ではプレビューの基本設定からも消す）。
 - ログイン（`/login/` とアカウントの追加）と予約の許可は、同じ Bluesky の OAuth のクライアントで得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は許可を始めたページから、ログインは `/v2/bsky/session/authorization/completion/`、予約は `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、本番とプレビューでは公開された https の配信元が必要になる。

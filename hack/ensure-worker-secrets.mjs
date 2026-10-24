@@ -10,7 +10,11 @@
 // - OAUTH_CLIENT_KEY: 作り直して両方へ登録する。古い鍵で得た予約の許可は、利用者が許可し直す
 // - SCHEDULE_ENC_KEY: 作り直すと保管済みの認証情報が復号できなくなるため、登録せずに失敗で終える（手で対処する）
 //
-// 使い方: node hack/ensure-worker-secrets.mjs [--develop]（render-deploy-config.mjs の後に実行する）
+// 既にある Preview は、作られた時点の基本設定のシークレットを持ち続ける（後から基本設定に足しても届かず、値も読み出せない）。
+// `--preview <名前>` を付けると、その Preview に必要なシークレットが欠けているとき Preview を削除する。
+// 直後の `wrangler preview` が、同じ名前（同じ URL）で基本設定から作り直す。
+//
+// 使い方: node hack/ensure-worker-secrets.mjs [--develop [--preview <名前>]]（render-deploy-config.mjs の後に実行する）
 // 生成した値は wrangler の標準入力にだけ渡し、標準出力・ログ・ファイルには出さない。
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
@@ -54,6 +58,20 @@ export const planSecretWrites = (names, present, regeneratable) => {
 }
 
 /**
+ * Preview に欠けている、必要なシークレットの名前を返す。
+ *
+ * Input:
+ * - `names`: 必要なシークレットの名前の配列
+ * - `preview`: Preview の登録済みの名前の集合。Preview がまだ無ければ null
+ *
+ * Output: 欠けている名前の配列（Preview が無ければ空。作るときに基本設定から全部入るため）
+ *
+ * 例: `missingInPreview(["A", "B"], new Set(["A"]))` → `["B"]`
+ */
+export const missingInPreview = (names, preview) =>
+  preview ? names.filter(name => !preview.has(name)) : []
+
+/**
  * wrangler.jsonc（render-deploy-config.mjs の出力）から Worker 名を読む。最初の `"name"` が Worker 名である。
  */
 export const readWorkerName = content => {
@@ -75,6 +93,54 @@ const wrangler = (args, input) => {
     )
   }
   return res.stdout
+}
+
+/** wrangler を実行し、終了コードと出力をそのまま返す（失敗を呼び出し側で判断するとき） */
+const tryWrangler = args =>
+  spawnSync("npx", ["wrangler", ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+
+/**
+ * Preview に必要なシークレットが欠けていれば、Preview を削除する。
+ *
+ * 失敗時の方針: Preview が無い（"not found"）なら何もしない。それ以外の一覧の失敗は例外にする。
+ */
+const recreatePreviewIfStale = (worker, previewName, names) => {
+  const res = tryWrangler([
+    "preview",
+    "secret",
+    "list",
+    "--name",
+    previewName,
+    "--worker-name",
+    worker,
+    "--json",
+  ])
+  if (res.status !== 0 && /not found/i.test(res.stderr)) return
+  if (res.status !== 0) {
+    throw new Error(
+      `Preview ${previewName} のシークレットを読めません: ${res.stderr}`,
+    )
+  }
+  const missing = missingInPreview(
+    names,
+    new Set(JSON.parse(res.stdout).map(s => s.name)),
+  )
+  if (missing.length === 0) return
+  wrangler([
+    "preview",
+    "delete",
+    "--name",
+    previewName,
+    "--worker-name",
+    worker,
+    "-y",
+  ])
+  console.log(
+    `Preview ${previewName} に ${missing.join(", ")} が無いため削除しました（この後の配備で基本設定から作り直します）`,
+  )
 }
 
 /** 配信先ごとの、一覧と登録の wrangler の引数 */
@@ -133,6 +199,16 @@ const main = async () => {
   }
   if (writes.length === 0 && errors.length === 0) {
     console.log("シークレットはすべて登録済みです")
+  }
+  const previewIndex = process.argv.indexOf("--preview")
+  if (
+    previewIndex >= 0 &&
+    kinds.includes("previewBase") &&
+    errors.length === 0
+  ) {
+    const previewName = process.argv[previewIndex + 1]
+    if (!previewName) throw new Error("--preview に Preview の名前が必要です")
+    recreatePreviewIfStale(worker, previewName, Object.keys(GENERATORS))
   }
   if (errors.length > 0) {
     console.error(

@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from "vitest"
 import {
+    missingInPreview,
     planSecretWrites,
     readWorkerName,
 } from "../../hack/ensure-worker-secrets.mjs"
@@ -41,6 +42,19 @@ describe("planSecretWrites", () => {
             writes: [{ name: "OAUTH_CLIENT_KEY", targets: [0, 1] }],
             errors: ["SCHEDULE_ENC_KEY"],
         })
+    })
+})
+
+describe("missingInPreview", () => {
+    it("既にある Preview に欠けている名前だけを返し、まだ無い Preview は対象にしない", () => {
+        expect(
+            missingInPreview(
+                NAMES,
+                new Set(["SCHEDULE_ENC_KEY", "SCHEDULE_OAUTH_KEY"]),
+            ),
+        ).toEqual(["OAUTH_CLIENT_KEY"])
+        expect(missingInPreview(NAMES, new Set(NAMES))).toEqual([])
+        expect(missingInPreview(NAMES, null)).toEqual([])
     })
 })
 
