@@ -2,15 +2,16 @@
 
 ## 1. 構成
 
-| パス                                                  | 責務                                   |
-| ----------------------------------------------------- | -------------------------------------- |
-| `src/components/account/AccountSwitcher/index.tsx`    | アカウントの一覧・切り替え・ログアウト |
-| `src/components/account/AccountSwitchPanel/index.tsx` | 一覧と再ログインの統括                 |
-| `src/components/account/LoginForm/index.tsx`          | ログインのフォーム                     |
-| `src/components/account/LoginIntro/index.tsx`         | ログインの案内                         |
-| `src/pages/login.astro`                               | ログインのページ                       |
-| `src/pages/accounts.astro`                            | アカウントのページ                     |
-| `src/pages/app.astro`                                 | 旧パスの転送                           |
+| パス                                                        | 責務                                   |
+| ----------------------------------------------------------- | -------------------------------------- |
+| `src/components/account/AccountSwitcher/index.tsx`          | アカウントの一覧・切り替え・ログアウト |
+| `src/components/account/AccountSwitchPanel/index.tsx`       | 一覧と再ログインの統括                 |
+| `src/components/account/LoginForm/index.tsx`                | ログインのフォーム                     |
+| `src/components/account/LoginIntro/index.tsx`               | ログインの案内                         |
+| `src/components/account/LoginAuthorizationReturn/index.tsx` | 認可の画面からの戻りの完了と結果の表示 |
+| `src/pages/login.astro`                                     | ログインのページ                       |
+| `src/pages/accounts.astro`                                  | アカウントのページ                     |
+| `src/pages/app.astro`                                       | 旧パスの転送                           |
 
 ## 2. 関係図・ワークフロー
 
@@ -20,7 +21,11 @@
 flowchart LR
   login --> LoginForm["LoginForm/index"]
   login --> LoginIntro["LoginIntro/index"]
+  login --> Return["LoginAuthorizationReturn/index"]
   accounts --> Panel["AccountSwitchPanel/index"]
+  accounts --> Return
+  LoginForm --> ext_tabs["タブの部品"]
+  Return --> ext_session
   Panel --> Switcher["AccountSwitcher/index"]
   Panel --> LoginForm
   Switcher --> ext_session["セッションAPI"]
@@ -44,6 +49,31 @@ sequenceDiagram
     ext_session-->>Switcher: 401
     Switcher->>Panel: 再ログインを通知
     Panel->>LoginForm: ハンドルを渡す
+  end
+```
+
+OAuth のタブでの開始から、戻りでの完了と結果の分岐を示す。
+
+```mermaid
+sequenceDiagram
+  participant LoginForm as LoginForm/index
+  participant Return as LoginAuthorizationReturn/index
+  participant ext_session as セッションAPI
+  participant ext_as as 認可の画面
+  LoginForm->>ext_session: 開始を依頼
+  alt 開始に失敗
+    ext_session-->>LoginForm: 500 か 502
+    LoginForm->>LoginForm: 失敗の文言
+  else 住所を受け取る
+    LoginForm->>ext_as: 遷移
+    ext_as-->>Return: フラグメントつきで戻る
+    Return->>Return: 住所から項目を消す
+    Return->>ext_session: 完了を依頼
+    alt ok
+      Return->>Return: トップへ遷移
+    else 失敗の分類か 409
+      Return->>Return: loginResultKey
+    end
   end
 ```
 
@@ -71,12 +101,13 @@ sequenceDiagram
 
 ### D-3: ログインのフォーム (FR-6)
 
-| 項目       | 内容                                                               |
-| ---------- | ------------------------------------------------------------------ |
-| 入力       | ハンドル（前後の空白を除く）とアプリパスワード                     |
-| 成功       | 成功の文言を出し、一定時間の後にトップへ遷移する                   |
-| 失敗       | ステータスから表示言語の文言を選んで出す。サーバーの文言は出さない |
-| 通信の例外 | 接続失敗の文言を出す                                               |
+| 項目       | 内容                                                                     |
+| ---------- | ------------------------------------------------------------------------ |
+| タブ       | OAuth（初期）とアプリパスワード。選んだタブの中身だけを描画する          |
+| 入力       | アプリパスワードのタブで、ハンドル（前後の空白を除く）とアプリパスワード |
+| 成功       | 成功の文言を出し、一定時間の後にトップへ遷移する                         |
+| 失敗       | ステータスから表示言語の文言を選んで出す。サーバーの文言は出さない       |
+| 通信の例外 | 接続失敗の文言を出す                                                     |
 
 ### D-4: ページと案内 (FR-7, FR-8)
 
@@ -85,6 +116,34 @@ sequenceDiagram
 | ログインのページ | フォームと案内を表示する。静的に生成する                   |
 | 案内             | 旧UIのリンク（`/legacy/`）とゲスト表示のリンクを含むカード |
 | 旧パス           | ログインのページへリダイレクトする                         |
+
+### D-5: OAuth のタブと戻り (FR-9, FR-10, FR-11, FR-12)
+
+```ts
+type Props = { initialHandle?: string } // LoginForm。再ログインでは OAuth の開始の loginHint にも使う
+type LoginTab = "oauth" | "password"
+// LoginForm の OAuth のタブのボタン
+const startOAuth = async () => {
+  const res = await startSessionAuthorization({ returnTo: window.location.pathname, loginHint: initialHandle })
+  if (res.status === 200) window.location.href = res.data.url
+  else setMessageKey(errorMessageKeyFromStatus(res.status, "login"))
+}
+// LoginAuthorizationReturn
+export const loginResultKey = (result: string): PlainMessageKey
+```
+
+| 完了の応答                           | 表示                                                             |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| 200 `ok`                             | 成功の文言を出し、未ログインの記録を消して一定時間の後にトップへ |
+| 200 `Denied`                         | 許可しなかった旨                                                 |
+| 200 `StateInvalid`・`IssuerMismatch` | やり直しを促す旨                                                 |
+| 200 `AccountUnverified`              | Bluesky がホスティングするアカウントだけが使える旨               |
+| 200 その他の分類・通信の例外         | 汎用の失敗                                                       |
+| 409                                  | アカウント数の上限                                               |
+
+- OAuth のタブは、認可の画面でハンドルとパスワードを入れる旨の説明と、ボタンだけを持つ。ボタンは開始の依頼中は押せなくする。
+- 戻りの部品は、用途がログインのフラグメントを読んだら、再読み込みで同じ項目を送らないよう先に `history.replaceState` で住所から消し、完了を依頼する。結果は選択肢のダイアログで表示する。
+- 戻りの部品はログインのページとアカウントのページに置く。開始の `returnTo` は開始したページのパスとする。
 
 ## 4. エラー処理
 
