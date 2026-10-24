@@ -139,3 +139,12 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # 配備先の Worker（develop ではプレビューの基本設定も）に、未登録のシークレット（OAUTH_CLIENT_KEY など）を生成して登録する。
+      # 登録済みの値は上書きしない。初回の配備で Worker ができてから登録できるよう、配備の後に行う
+      - name: Ensure worker secrets
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        run: node hack/ensure-worker-secrets.mjs $TARGET_FLAG
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TARGET_FLAG: ${{ github.ref_name == 'develop' && '--develop' || '' }}

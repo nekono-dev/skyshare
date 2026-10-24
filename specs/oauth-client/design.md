@@ -146,7 +146,7 @@ export const getOAuthClientSecret = (): Promise<string | undefined> // Worker �
 | それ以外（本番・確認用） | `${origin}/oauth/client-metadata.json`                        | `${origin}/oauth/callback/`             | 秘密鍵で署名した60秒の `private_key_jwt` |
 
 - メタデータは `scope` に `CLIENT_SCOPE` を載せ、`token_endpoint_auth_method: "private_key_jwt"`・`dpop_bound_access_tokens: true`・`jwks_uri` を持つ。応答は `public, max-age=300` でキャッシュさせる。
-- 秘密鍵は Worker のシークレット `OAUTH_CLIENT_KEY` に、`kid` を含む P-256 の JWK の JSON で置く。生成は `hack/generate-oauth-key.mjs` で行う。
+- 秘密鍵は Worker のシークレット `OAUTH_CLIENT_KEY` に、`kid` を含む P-256 の JWK の JSON で置く。生成は `hack/generate-oauth-key.mjs` で行い、配備先への登録は CI が `hack/ensure-worker-secrets.mjs` で未登録のときだけ行う（develop とプレビューの基本設定は同じ値）。
 - `clientAuthParams` は、ループバックの識別子なら秘密鍵の有無によらず `{ client_id }` を返し、それ以外で秘密鍵が無ければ null を返す。保管した識別子で更新するときも、識別子から判定する。
 
 ### D-2: 認可サーバーの探索と PDS の解決 (FR-4, FR-5)

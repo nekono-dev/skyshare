@@ -14,7 +14,7 @@ import { pathToFileURL } from "node:url"
 import { generateOauthKey } from "./generate-oauth-key.mjs"
 
 /** 自動生成するシークレットと、その生成関数 */
-const GENERATORS = {
+export const GENERATORS = {
   SCHEDULE_ENC_KEY: async () => randomBytes(32).toString("base64"),
   OAUTH_CLIENT_KEY: generateOauthKey,
 }
