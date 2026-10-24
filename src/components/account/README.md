@@ -16,4 +16,4 @@ graph TD
   class commonExt external;
 ```
 
-外部カテゴリへの依存の内訳: `common`: AccountSwitcher(ComponentList)、LoginForm(TabButtons)、LoginAuthorizationReturn(ChoiceDialog)
+外部カテゴリへの依存の内訳: `common`: AccountSwitcher(ComponentList)、LoginForm(Collapsible)、LoginAuthorizationReturn(ChoiceDialog)

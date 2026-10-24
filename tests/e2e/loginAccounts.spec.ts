@@ -8,7 +8,7 @@
  *   戻りでの完了と結果の表示を検証する。
  */
 import { expect, test, type Page } from "@playwright/test"
-import { choosePasswordTab } from "./fixtures"
+import { openPasswordLogin } from "./fixtures"
 
 const ACCOUNTS = [
     {
@@ -105,7 +105,7 @@ test("[login-accounts/AC-3] 切り替えがセッション切れで拒否され�
     await expect(
         page.getByRole("heading", { name: "@other.bsky.social に再ログイン" }),
     ).toBeVisible()
-    await choosePasswordTab(page)
+    await openPasswordLogin(page)
     await expect(page.locator("#username")).toHaveValue("other.bsky.social")
 })
 
@@ -149,7 +149,7 @@ test("[login-accounts/AC-6] ハンドルとパスワードを送信してログ�
     test.setTimeout(90_000)
     const calls = await mockSessionApi(page)
     await page.goto("/login/")
-    await choosePasswordTab(page)
+    await openPasswordLogin(page)
     await expect(async () => {
         await page.locator("#username").fill("me.bsky.social")
         await page.locator("#password").fill("app-password")
@@ -224,23 +224,23 @@ const mockOAuthApi = async (
     return calls
 }
 
-test("[login-accounts/AC-9] ログインのページを開くと OAuth のタブが選ばれ、アプリパスワードのタブに切り替えるとハンドルとパスワードの入力欄が表示される", async ({
+test("[login-accounts/AC-9] ログインのページを開くと OAuth のボタンだけが表示され、従来形式でのログインを開くとハンドルとパスワードの入力欄が表示される", async ({
     page,
 }) => {
     await page.goto("/login/")
     await expect(
-        page.getByRole("tab", { name: "Bluesky でログイン" }),
-    ).toHaveAttribute("aria-selected", "true")
-    await expect(
         page.getByRole("button", { name: "Bluesky でログイン" }),
     ).toBeVisible()
-    // OAuth のタブにはユーザー名の入力欄が無い
+    const toggle = page.getByRole("button", { name: "従来形式でのログイン" })
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    // 閉じている間はユーザー名の入力欄が無い
     await expect(page.locator("#username")).toHaveCount(0)
-    await choosePasswordTab(page)
+    await openPasswordLogin(page)
+    await expect(toggle).toHaveAttribute("aria-expanded", "true")
     await expect(page.locator("#password")).toBeVisible()
 })
 
-test("[login-accounts/AC-10] OAuth のタブのボタンを押すとログインの開始が依頼され、返った住所へ遷移する", async ({
+test("[login-accounts/AC-10] OAuth のボタンを押すとログインの開始が依頼され、返った住所へ遷移する", async ({
     page,
 }) => {
     test.setTimeout(90_000)

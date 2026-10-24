@@ -103,8 +103,8 @@ sequenceDiagram
 
 | 項目       | 内容                                                                     |
 | ---------- | ------------------------------------------------------------------------ |
-| タブ       | OAuth（初期）とアプリパスワード。選んだタブの中身だけを描画する          |
-| 入力       | アプリパスワードのタブで、ハンドル（前後の空白を除く）とアプリパスワード |
+| 構成       | OAuth のボタンと、アプリパスワードの入力を包む折りたたみ（初めは閉じる） |
+| 入力       | 折りたたみの中で、ハンドル（前後の空白を除く）とアプリパスワード         |
 | 成功       | 成功の文言を出し、一定時間の後にトップへ遷移する                         |
 | 失敗       | ステータスから表示言語の文言を選んで出す。サーバーの文言は出さない       |
 | 通信の例外 | 接続失敗の文言を出す                                                     |
@@ -117,12 +117,11 @@ sequenceDiagram
 | 案内             | 旧UIのリンク（`/legacy/`）とゲスト表示のリンクを含むカード |
 | 旧パス           | ログインのページへリダイレクトする                         |
 
-### D-5: OAuth のタブと戻り (FR-9, FR-10, FR-11, FR-12)
+### D-5: OAuth のボタンと戻り (FR-9, FR-10, FR-11, FR-12)
 
 ```ts
 type Props = { initialHandle?: string } // LoginForm。再ログインでは OAuth の開始の loginHint にも使う
-type LoginTab = "oauth" | "password"
-// LoginForm の OAuth のタブのボタン
+// LoginForm の OAuth のボタン
 const startOAuth = async () => {
   const res = await startSessionAuthorization({ returnTo: window.location.pathname, loginHint: initialHandle })
   if (res.status === 200) window.location.href = res.data.url
@@ -141,7 +140,8 @@ export const loginResultKey = (result: string): PlainMessageKey
 | 200 その他の分類・通信の例外         | 汎用の失敗                                                       |
 | 409                                  | アカウント数の上限                                               |
 
-- OAuth のタブは、認可の画面でハンドルとパスワードを入れる旨の説明と、ボタンだけを持つ。ボタンは開始の依頼中は押せなくする。
+- OAuth は説明文を持たず、ボタンだけを置く。ボタンは開始の依頼中は押せなくする。
+- アプリパスワードの入力は、共通の折りたたみ（`Collapsible`。見出しは文言 `account.login.passwordToggle`）の中に置く。閉じている間は入力欄を描画しない。フォーム自体がカードという構造は保つ。
 - 戻りの部品は、用途がログインのフラグメントを読んだら、再読み込みで同じ項目を送らないよう先に `history.replaceState` で住所から消し、完了を依頼する。結果は選択肢のダイアログで表示する。
 - 戻りの部品はログインのページとアカウントのページに置く。開始の `returnTo` は開始したページのパスとする。
 

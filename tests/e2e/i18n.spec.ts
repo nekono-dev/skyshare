@@ -6,7 +6,7 @@
  * - 英語環境は `test.use({ locale: "en-US" })`、日本語環境は既定（playwright.config.ts の `ja-JP`）。
  * - ゲスト表示（`?guest`）で実アカウント不要。
  */
-import { choosePasswordTab, expect, test } from "./fixtures"
+import { openPasswordLogin, expect, test } from "./fixtures"
 import { type Locator, type Page } from "@playwright/test"
 
 test.describe("英語ブラウザ", () => {
@@ -336,8 +336,8 @@ test.describe("APIエラーの表示（ログイン）", () => {
                 await page.goto("/login/", { timeout: 60_000 })
                 const form = page.locator("#login-form")
                 await expect(form).toBeVisible({ timeout: 60_000 })
-                // 既定は OAuth のタブのため、アプリパスワードのタブへ切り替える
-                await choosePasswordTab(form)
+                // アプリパスワードのフォームは折りたたまれているため開く
+                await openPasswordLogin(form)
 
                 await form.locator("#username").fill("someone.bsky.social")
                 await form.locator("#password").fill("password")
@@ -454,11 +454,11 @@ test.describe("ログイン画面の言語切り替え", () => {
         await page.getByRole("option", { name: "English" }).click()
 
         await expect(page.locator("html")).toHaveAttribute("lang", "en")
-        // 既定の OAuth のタブの文言が英語になり、アプリパスワードのタブも英語で表示される
+        // OAuth のボタンの文言が英語になり、折りたたみを開いたアプリパスワードのフォームも英語で表示される
         await expect(
             page.getByRole("button", { name: "Log in with Bluesky" }),
         ).toBeVisible()
-        await choosePasswordTab(page)
+        await openPasswordLogin(page)
         await expect(page.getByLabel("Handle (the part after @)")).toBeVisible()
         await expect(
             page.getByRole("button", { name: "Log in", exact: true }),
@@ -493,8 +493,8 @@ test.describe("表示後のメッセージと言語の自称表記", () => {
         await page.goto("/login/", { timeout: 60_000 })
         const form = page.locator("#login-form")
         await expect(form).toBeVisible({ timeout: 60_000 })
-        // 既定は OAuth のタブのため、アプリパスワードのタブへ切り替える
-        await choosePasswordTab(form)
+        // アプリパスワードのフォームは折りたたまれているため開く
+        await openPasswordLogin(form)
         await form.locator("#username").fill("someone.bsky.social")
         await form.locator("#password").fill("password")
         await expect(async () => {
@@ -560,7 +560,7 @@ test.describe("複数のタブ・リクエスト", () => {
         await loginTab.goto("/login/", { timeout: 60_000 })
         await expect(loginTab.locator("html")).toHaveAttribute("lang", "ja")
         await expect(
-            loginTab.getByRole("tab", { name: "アプリパスワード" }),
+            loginTab.getByRole("button", { name: "従来形式でのログイン" }),
         ).toBeVisible({ timeout: 60_000 })
 
         await settingsTab.goto("/settings/?guest", { timeout: 60_000 })
@@ -575,7 +575,7 @@ test.describe("複数のタブ・リクエスト", () => {
         // 日本語で開いていたもう一方のタブが、再読み込みなしで英語になる
         await expect(loginTab.locator("html")).toHaveAttribute("lang", "en")
         await expect(
-            loginTab.getByRole("tab", { name: "App password" }),
+            loginTab.getByRole("button", { name: "Classic login" }),
         ).toBeVisible()
     })
 

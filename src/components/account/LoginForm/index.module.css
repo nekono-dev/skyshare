@@ -5,3 +5,10 @@
   flex-direction: column;
   gap: calc(var(--space-2, 8px));
 }
+
+/* 折りたたみの中のアプリパスワードのフォーム */
+:local(.password) {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-2, 8px));
+}

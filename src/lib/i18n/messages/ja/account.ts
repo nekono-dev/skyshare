@@ -6,11 +6,7 @@ export const account = {
     "account.login.submit": "ログイン",
     "account.login.progress": "ログイン中…",
     "account.login.success": "ログイン成功。リダイレクトします…",
-    "account.login.tabsAria": "ログインの方法",
-    "account.login.tabOAuth": "Bluesky でログイン",
-    "account.login.tabPassword": "アプリパスワード",
-    "account.login.oauthHint":
-        "Bluesky の画面へ移動し、ハンドルとパスワードを入力して許可します。Bluesky がホスティングするアカウント（bsky.social など）に対応しています。",
+    "account.login.passwordToggle": "従来形式でのログイン",
     "account.login.oauthSubmit": "Bluesky でログイン",
     "account.login.oauthRedirecting": "Bluesky の画面へ移動します…",
     "account.oauthResult.title": "Bluesky でのログイン",

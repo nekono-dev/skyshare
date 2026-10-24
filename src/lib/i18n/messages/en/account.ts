@@ -8,11 +8,7 @@ export const account = {
     "account.login.submit": "Log in",
     "account.login.progress": "Logging in…",
     "account.login.success": "Logged in. Redirecting…",
-    "account.login.tabsAria": "Login method",
-    "account.login.tabOAuth": "Log in with Bluesky",
-    "account.login.tabPassword": "App password",
-    "account.login.oauthHint":
-        "You will be taken to Bluesky to enter your handle and password and approve access. Works with accounts hosted by Bluesky (such as bsky.social).",
+    "account.login.passwordToggle": "Classic login",
     "account.login.oauthSubmit": "Log in with Bluesky",
     "account.login.oauthRedirecting": "Taking you to Bluesky…",
     "account.oauthResult.title": "Log in with Bluesky",
