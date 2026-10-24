@@ -24,14 +24,14 @@
 
 実機の確認結果（wrangler 4.147.0、`routes` に独自ドメインがある使い捨て Worker）:
 
-| 操作                               | 結果                                                                                                 |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| 両キー省略で初回 `wrangler deploy` | workers.dev・Preview URL とも無効                                                                    |
-| 両方 `true` で deploy              | workers.dev・Preview URL とも有効                                                                    |
-| 有効な状態から両キー省略で deploy  | 両方無効になる。`'workers_dev' is not in your Wrangler file, it will be disabled` の警告が毎回出る   |
-| 両方 `false` で deploy             | 両方無効。警告なし                                                                                   |
-| `wrangler versions upload`         | 省略・`false` のどちらでも状態を変えない（有効なままなら Version Preview URL が workers.dev に出る） |
-| `wrangler preview`                 | 状態を変えない。workers.dev が有効なままだと Preview URL が workers.dev に出る                       |
+| 操作                                              | 結果                                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 両キー省略で初回 `wrangler deploy`                 | workers.dev・Preview URL とも無効                                                                 |
+| 両方 `true` で deploy                              | workers.dev・Preview URL とも有効                                                                 |
+| 有効な状態から両キー省略で deploy                  | 両方無効になる。`'workers_dev' is not in your Wrangler file, it will be disabled` の警告が毎回出る |
+| 両方 `false` で deploy                             | 両方無効。警告なし                                                                                |
+| `wrangler versions upload`                         | 省略・`false` のどちらでも状態を変えない（有効なままなら Version Preview URL が workers.dev に出る） |
+| `wrangler preview`                                 | 状態を変えない。workers.dev が有効なままだと Preview URL が workers.dev に出る                    |
 
 省略しても deploy の結果は `false` と同じだが、警告が出て wrangler の既定値に依存するため、明示する。また `wrangler preview` に `previews: {}` と、ルートの `previews_enabled: true`（と一度の deploy）が必要である。
 
