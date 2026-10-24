@@ -251,3 +251,47 @@ describe("動画投稿の TimelinePost", () => {
         ).toBe(false)
     })
 })
+
+describe("normalizeTimelinePost の注釈", () => {
+    it("[post-rich-text/AC-5] 注釈を持つ投稿を一覧用に変換すると、投稿に注釈が含まれる", () => {
+        const facets = [
+            {
+                $type: "app.bsky.richtext.facet",
+                index: { byteStart: 0, byteEnd: 4 },
+                features: [
+                    { $type: "app.bsky.richtext.facet#tag", tag: "cat" },
+                ],
+            },
+        ]
+        const post = normalizeTimelinePost({
+            post: {
+                uri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+                cid: "bafypost",
+                indexedAt: "2026-01-01T00:00:00Z",
+                author: { did: "did:plc:abc", handle: "alice.bsky.social" },
+                record: { text: "#cat", facets },
+            },
+        })
+        expect(post?.facets).toEqual([
+            {
+                index: { byteStart: 0, byteEnd: 4 },
+                features: [
+                    { $type: "app.bsky.richtext.facet#tag", tag: "cat" },
+                ],
+            },
+        ])
+    })
+
+    it("注釈の無い投稿は facets を持たない", () => {
+        const post = normalizeTimelinePost({
+            post: {
+                uri: "at://did:plc:abc/app.bsky.feed.post/3labc",
+                cid: "bafypost",
+                indexedAt: "2026-01-01T00:00:00Z",
+                author: { did: "did:plc:abc", handle: "alice.bsky.social" },
+                record: { text: "plain" },
+            },
+        })
+        expect(post).not.toHaveProperty("facets")
+    })
+})

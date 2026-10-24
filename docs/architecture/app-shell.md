@@ -15,7 +15,7 @@
 | 共通UI部品           | 他機能 | プルダウンと選択肢の見た目と操作を共通にする                       | -                                         |
 | 表示言語             | 他機能 | 表示言語を選び、日本語と英語の文言を切り替える                     | -                                         |
 | 運用者ごとの設定     | 他機能 | 運営者情報と測定 ID を環境変数から受け取って検査する               | -                                         |
-| 他SNS共有            | 他機能 | 共有先の選択と共有文の組み立てと共有設定の保持を行う               | -                                         |
+| 共有設定             | 他機能 | 共有の設定を端末に保持し、共有文へ適用する                         | -                                         |
 | 予約フォーム         | 他機能 | 設定に置く予約投稿のスイッチと、予約用の認証情報の入力を提供する   | -                                         |
 
 ## 3. システム構成
@@ -29,7 +29,7 @@ flowchart LR
   nav --> site["運用者ごとの設定"]
   settings --> ui["共通UI部品"]
   settings --> i18n
-  settings --> share["他SNS共有"]
+  settings --> share["共有設定"]
   settings --> schedule["予約フォーム"]
 ```
 
@@ -75,7 +75,7 @@ sequenceDiagram
 
 ### 端末設定の変更
 
-- 関与: 利用者, 設定画面, 他SNS共有
+- 関与: 利用者, 設定画面, 共有設定
 
 端末設定の変更は、保存領域が使えるかどうかで保存の可否が分岐する。
 
@@ -83,7 +83,7 @@ sequenceDiagram
 sequenceDiagram
   participant ext_user as 利用者
   participant settings as 設定画面
-  participant share as 他SNS共有
+  participant share as 共有設定
   ext_user->>settings: 設定ページを開く
   settings->>share: 共有設定の読み出し
   share-->>settings: 保存値か既定値

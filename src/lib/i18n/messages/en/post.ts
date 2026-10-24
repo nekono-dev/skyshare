@@ -8,6 +8,8 @@ export const post = {
     "post.launcher.new": "New post",
 
     "post.card.openBluesky": "Open in Bluesky",
+    "post.quote.open": "Open the quoted post in Bluesky",
+    "post.quote.unavailable": "The quoted post is unavailable",
     "post.card.webShare": "Share with the Web Share API",
     "post.card.openEntry": "Open Entry",
     "post.card.creatingEntry": "Creating Entry...",
@@ -102,6 +104,7 @@ export const post = {
     "post.composer.submit": "Post",
     "post.composer.popupInstead": "Open a popup {popup} instead of {share}",
     "post.composer.manualImageAttach": "Attach images manually (no URL)",
+    "post.composer.linkCardPriority": "Prefer the Skyshare link card",
     "post.composer.counterLabel.taittsuu": "Taittsuu",
     "post.composer.truncateIntentText": "Truncate long text when sharing",
     "post.composer.moreOptions": "More options",

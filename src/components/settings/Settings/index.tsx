@@ -271,6 +271,15 @@ export const Settings = () => {
       onCheckedChange: shareToggles.onManualImageAttachChange,
     },
     {
+      key: "preferSkyshareLinkCard",
+      label: t("settings.linkCardPriority.label"),
+      description: t("settings.linkCardPriority.description"),
+      checked: shareToggles.preferSkyshareLinkCard,
+      // 画像を自分で添付がONの間は skyshare URL を共有文に含めないため、適用対象が無い
+      disabled: shareToggles.manualImageAttach,
+      onCheckedChange: shareToggles.onPreferSkyshareLinkCardChange,
+    },
+    {
       key: "truncateIntentText",
       label: t("settings.truncateIntentText.label"),
       description: t("settings.truncateIntentText.description"),

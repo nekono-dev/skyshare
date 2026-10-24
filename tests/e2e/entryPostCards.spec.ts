@@ -5,12 +5,12 @@
 import { expect, test } from "./fixtures"
 
 test.describe("Entry詳細ページの投稿カード", () => {
-    test("[entry-detail/AC-1 entry-detail/AC-6 entry-detail/AC-7] スレッドサンプル: 5カードが順に並び、連結線があり、リアクションは各カード別", async ({
+    test("[entry-detail/AC-1 entry-detail/AC-6 entry-detail/AC-7] スレッドサンプル: 6カードが順に並び、連結線があり、リアクションは各カード別", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
         const items = page.locator("ol > li")
-        await expect(items).toHaveCount(5)
+        await expect(items).toHaveCount(6)
         const ys = await Promise.all(
             [0, 1, 2].map(async i => (await items.nth(i).boundingBox())!.y),
         )
@@ -24,12 +24,13 @@ test.describe("Entry詳細ページの投稿カード", () => {
         const likes = await items.evaluateAll(els =>
             els.map(el => el.querySelector("dl")?.textContent ?? ""),
         )
-        expect(new Set(likes).size).toBe(5)
+        expect(new Set(likes).size).toBe(6)
         expect(likes[0]).toContain("11")
         expect(likes[1]).toContain("22")
         expect(likes[2]).toContain("33")
         expect(likes[3]).toContain("44")
         expect(likes[4]).toContain("55")
+        expect(likes[5]).toContain("66")
         // ヘッダーカードにはリアクション数が無い
         await expect(
             page.locator("section dl[aria-label='Blueskyでのリアクション数']"),

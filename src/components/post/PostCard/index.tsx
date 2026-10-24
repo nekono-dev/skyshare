@@ -6,6 +6,8 @@
  * - `skyshareEntry` が付与されている場合は元画像・動画の代わりにその visual を1枚、拡大なしで表示し、
  *   Entry ページへのリンクを出す。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
+ * - 投稿先選択ダイアログ・WebShareの共有文は、「Skyshareのリンクカードを優先表示」に従って
+ *   本文のURLを取り除く（`resolveShareBody`、`specs/link-card-priority`）。
  * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
  *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
  */
@@ -30,6 +32,8 @@ import shareIcon from "@/images/share.svg"
 import PostBody from "@/components/post/PostBody"
 import { TARGET_WIDTH, TARGET_HEIGHT } from "@/lib/image/postImageProcessing"
 import type { SourceImage } from "@/lib/entry/entry"
+import { resolveShareBody } from "@/lib/share/shareBody"
+import { readEffectiveLinkCardPriority } from "@/lib/settings/shareSettings"
 
 type PostCardProps = {
   item: TimelinePost
@@ -72,11 +76,12 @@ type PostCardProps = {
    */
   entrySourcePost?: TimelinePost
   /**
-   * trueの場合、スレッドの中間投稿（ルート以外）として扱い、Entry作成対象外でも
-   * カードをグレーアウトしない。中間投稿はスレッドの一部として表示されるため、
-   * 単独投稿のように「対象外」であることを視覚的に強調しない。
+   * カードの中身のコントラストを下げるか（`specs/timeline`）。
+   * - `undefined`（既定）: 投稿自身がEntryを持たず作成対象にも該当しない（`display.kind === "ineligible"`）ときに下げる。
+   * - `true`/`false`: 呼び出し側の判定に従う。`ThreadCard`がスレッドの返信のカードに、
+   *   グループ全体が作成対象外か（どの投稿も画像・動画・entryを持たないか）を渡す。
    */
-  threadReply?: boolean
+  muted?: boolean
 }
 
 /**
@@ -99,7 +104,7 @@ const Component = ({
   postCreateEntryButton,
   entryVisualSourcePost,
   entrySourcePost,
-  threadReply = false,
+  muted,
 }: PostCardProps) => {
   const { t } = useT()
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
@@ -174,10 +179,9 @@ const Component = ({
     : (entryVisualImages ?? item.images)
   const imagesInteractive = entryVisualImages === undefined
   // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
-  // ただしスレッドの中間投稿（`threadReply`）はグレーアウトしない。
-  // この判定は投稿自身の適格性のみに基づくため、postCreateEntryButtonによる
-  // ボタン抑制（下記actionsDisplay）とは独立して評価する。
-  const isSkyshareIneligible = display.kind === "ineligible" && !threadReply
+  // スレッドの返信は呼び出し側（`ThreadCard`）がグループ単位で判定した`muted`に従う。
+  // この判定はpostCreateEntryButtonによるボタン抑制（下記actionsDisplay）とは独立して評価する。
+  const isSkyshareIneligible = muted ?? display.kind === "ineligible"
 
   // postCreateEntryButton===false（スレッド内で事後entry作成の対象に選ばれなかった
   // 画像投稿）の場合のみ、ボタン表示用のdisplayを「作成対象外」に差し替える。
@@ -195,6 +199,7 @@ const Component = ({
         author={item.author}
         createdAt={item.indexedAt}
         text={item.text}
+        facets={item.facets}
         images={galleryImages}
         video={video}
         unsupportedVideo={unsupportedVideo}
@@ -289,7 +294,14 @@ const Component = ({
         request={
           shareDialogOpen
             ? {
-                postText: item.text,
+                // 「Skyshareのリンクカードを優先表示」はダイアログを開くたびに最新の保存値で判定する
+                postText: resolveShareBody({
+                  text: item.text,
+                  facets: item.facets ?? [],
+                  entryUrl: entryWebUrl ?? null,
+                  linkCardUrl: "",
+                  preferSkyshareLinkCard: readEffectiveLinkCardPriority(),
+                }).text,
                 entryUrl: entryWebUrl ?? null,
                 linkCardUrl: "",
               }

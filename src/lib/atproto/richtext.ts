@@ -1,6 +1,11 @@
 import { RichText } from "@atproto/api"
 import type * as Components from "@/lib/api/schema/common"
 import { publicAtpAgent } from "./publicAgent"
+import {
+    filterLinkFacets,
+    normalizePostFacets,
+    type PostFacet,
+} from "./richTextSegments"
 
 /**
  * RichText の facets / features からリンク URI を抽出するユーティリティ。
@@ -249,7 +254,39 @@ const detectFacetsForSubmission = async (
     return rt.facets as Components.CommonFacetsType | undefined
 }
 
+/**
+ * 投稿本文からURL（link）のfacetsだけを、通信せずに検出する。
+ *
+ * 処理の趣旨:
+ * - 共有文から本文のURLを取り除く範囲を求めるために使う（`specs/link-card-priority`）。
+ *   URLの検出にはメンションの did 解決が不要なため、`detectFacetsWithoutResolution` を使う。
+ *
+ * Input:
+ * - `text`: 投稿本文
+ *
+ * Output:
+ * - link の feature を持つ facets。該当なしなら空配列
+ *
+ * 失敗時の方針:
+ * - 検出が例外を投げた場合は空配列を返す（URLを取り除かず、元の本文で共有させるため）。
+ *
+ * 例:
+ * - 入力: `"見て https://example.com"`
+ * - 出力: `[{ index: { byteStart: 7, byteEnd: 26 }, features: [{ $type: "app.bsky.richtext.facet#link", uri: "https://example.com" }] }]`
+ */
+const detectLinkFacets = (text: string): PostFacet[] => {
+    try {
+        const rt = new RichText({ text })
+        rt.detectFacetsWithoutResolution()
+        return filterLinkFacets(normalizePostFacets(rt.facets))
+    } catch (err) {
+        console.warn("detectLinkFacets: failed to detect links", err)
+        return []
+    }
+}
+
 export {
+    detectLinkFacets,
     extractLinkUrisFromFacets,
     extractTagsFromFacets,
     countHashtagUsage,

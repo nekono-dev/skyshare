@@ -29,3 +29,12 @@
 - [x] T-4.1: `entryPageCache` を追加し、`middleware.ts` で表示言語の判定の後に登録する。
 - [x] T-4.2: 保存・再利用・言語ごとの分離・保存対象外・失敗時の動作の単体テストを追加する。
 - 検証: `npx vitest run tests/lib/entry/entryPageCache.test.ts`
+
+## Phase 5: 埋め込みの表示
+
+- 対応: D-5
+- [x] T-5.1: `postEmbedView.ts` を実装し、単体テストを受け入れ条件のタグ付きで追加する。
+- [x] T-5.2: `PostLinkCard`・`PostQuote` を作成し、`PostBody` と `[slug].astro` に組み込む。
+- [x] T-5.3: サンプルページにリンクカードと引用の投稿を加え、E2Eテストを追加する。
+- 検証: `npx vitest run tests/lib/entry/postEmbedView.test.ts`
+- E2E: `tests/e2e/entryEmbed.spec.ts` サンプルページを開く → リンクカードと引用の枠が表示され、それぞれ新しいタブでリンク先を開く

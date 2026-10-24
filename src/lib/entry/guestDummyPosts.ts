@@ -18,6 +18,10 @@ import type { EntryDeleteScope } from "@/lib/entry/resolveEntryDeleteScope"
 import type { Locale } from "@/lib/i18n/locale"
 import { entryAtUri } from "@/lib/atproto/nsid"
 import type { Translator } from "@/lib/i18n/translate"
+import type {
+    PostFacet,
+    PostFacetFeature,
+} from "@/lib/atproto/richTextSegments"
 
 /**
  * 単色背景 + イニシャル文字の簡易アバター/サムネイル画像を data URI で生成する。
@@ -38,6 +42,48 @@ const placeholderImage = (bg: string, label: string): string => {
 // sample.astroのOGP画像（og:image/twitter:image）用パス。
 // data URI SVGはOGP取得ツールが画像として解釈できずリンクカードが表示されないため、
 // `placeholderImage`と同内容をPNG化して`public/materials/`に配置したものを使う。
+/**
+ * 翻訳後の本文の中の文字列の位置から、facets（UTF-8 のバイト範囲）を組み立てる。
+ *
+ * 処理の趣旨:
+ * - ゲスト表示の本文は表示言語ごとに異なるため、固定のバイト位置を書かずに、
+ *   リンクにしたい文字列を本文から探して範囲を求める（`specs/post-rich-text`）。
+ *
+ * Input:
+ * - `text`: 翻訳後の本文
+ * - `parts`: リンクにする文字列と、その feature の組
+ *
+ * Output:
+ * - 見つかった文字列の facets（本文に無い文字列は含めない）
+ *
+ * 例:
+ * - 入力: `"見て #a"`, `[{ match: "#a", feature: { $type: "app.bsky.richtext.facet#tag", tag: "a" } }]`
+ * - 出力: `[{ index: { byteStart: 7, byteEnd: 9 }, features: [...] }]`
+ */
+const buildGuestFacets = (
+    text: string,
+    parts: { match: string; feature: PostFacetFeature }[],
+): PostFacet[] => {
+    const encoder = new TextEncoder()
+    return parts.flatMap(({ match, feature }) => {
+        const position = text.indexOf(match)
+        if (position < 0) return []
+        const byteStart = encoder.encode(text.slice(0, position)).length
+        return [
+            {
+                index: {
+                    byteStart,
+                    byteEnd: byteStart + encoder.encode(match).length,
+                },
+                features: [feature],
+            },
+        ]
+    })
+}
+
+/** ゲスト表示の本文のリンクの例に使う外部URL */
+const GUEST_RICH_TEXT_URL = "https://example.com/"
+
 const SAMPLE_OG_IMAGE_PATH = "/materials/sample-og.png"
 const SAMPLE_ORPHANED_OG_IMAGE_PATH = "/materials/sample-orphaned-og.png"
 
@@ -210,6 +256,65 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             })),
         },
         // 以下、Timelineのスレッドグルーピング表示（specs/timeline-api）のゲスト確認用。
+        // 本文にハッシュタグ・メンション・URLを持ち、entry作成済みの投稿
+        // （本文のリンク表示 `specs/post-rich-text` と、共有文のURLの除去 `specs/link-card-priority` の確認用）。
+        {
+            uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-rich-text",
+            cid: "bafyreiguestrichtext",
+            url: "https://bsky.app/profile/guest.demo/post/guest-rich-text",
+            indexedAt: "2026-09-04T18:00:00.000Z",
+            author: {
+                did: "did:plc:guestdemo",
+                handle: "guest.demo",
+                displayName: t("guest.userName"),
+            },
+            text: t("guest.richText.text", { url: GUEST_RICH_TEXT_URL }),
+            facets: buildGuestFacets(
+                t("guest.richText.text", { url: GUEST_RICH_TEXT_URL }),
+                [
+                    {
+                        match: "#skyshare",
+                        feature: {
+                            $type: "app.bsky.richtext.facet#tag",
+                            tag: "skyshare",
+                        },
+                    },
+                    {
+                        match: "@guest.demo",
+                        feature: {
+                            $type: "app.bsky.richtext.facet#mention",
+                            did: "did:plc:guestdemo",
+                        },
+                    },
+                    {
+                        match: GUEST_RICH_TEXT_URL,
+                        feature: {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: GUEST_RICH_TEXT_URL,
+                        },
+                    },
+                ],
+            ),
+            images: [
+                {
+                    url: placeholderImage("#0ea5e9", t("guest.imageLabel")),
+                    alt: t("guest.sampleImageAlt"),
+                    cid: "bafkreiguestrichtextimg",
+                },
+            ],
+            skyshareEntry: {
+                uri: entryAtUri("did:plc:guestdemo", "guestentryrichtext"),
+                cid: "bafyreiguestentryrichtext",
+                createdAt: "2026-09-04T18:00:00.000Z",
+                sourceUri:
+                    "at://did:plc:guestdemo/app.bsky.feed.post/guest-rich-text",
+                sourceCid: "bafyreiguestrichtext",
+                heading: t("guest.richText.entryHeading"),
+                caption: t("guest.richText.entryHeading"),
+                visualUrl: SAMPLE_OG_IMAGE_PATH,
+                webUrl: GUEST_SAMPLE_ENTRY_PATH,
+            },
+        },
         // スレッドA: entry未作成、ルート投稿(guest-thread-a-root)は画像を持たないが
         // 中間segment(guest-thread-a-mid)が画像を持つケース。事後entry作成ボタンは
         // ルート投稿のカードに表示され、Visualはguest-thread-a-midの画像から生成される
@@ -395,6 +500,34 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             images: [],
         },
         // 削除範囲を判定できない場合（Bluesky投稿の状態を確認できない）を再現する単独投稿。
+        // スレッドE: どの投稿も画像・動画・entryを持たないケース
+        // （スレッド全体のグレーアウト、`specs/timeline`）。
+        {
+            uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-e-tail",
+            cid: "bafyreiguestthreadetail",
+            url: "https://bsky.app/profile/guest.demo/post/guest-thread-e-tail",
+            indexedAt: "2026-08-31T12:05:00.000Z",
+            author: {
+                did: "did:plc:guestdemo",
+                handle: "guest.demo",
+                displayName: t("guest.userName"),
+            },
+            text: t("guest.threadE.tailText"),
+            images: [],
+        },
+        {
+            uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-e-root",
+            cid: "bafyreiguestthreaderoot",
+            url: "https://bsky.app/profile/guest.demo/post/guest-thread-e-root",
+            indexedAt: "2026-08-31T12:00:00.000Z",
+            author: {
+                did: "did:plc:guestdemo",
+                handle: "guest.demo",
+                displayName: t("guest.userName"),
+            },
+            text: t("guest.threadE.rootText"),
+            images: [],
+        },
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-unknown",
             cid: "bafyreiguestunknown",
@@ -475,6 +608,12 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
         },
         {
             rootPost: findGuestPost(
+                "at://did:plc:guestdemo/app.bsky.feed.post/guest-rich-text",
+            ),
+            replies: [],
+        },
+        {
+            rootPost: findGuestPost(
                 "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-root",
             ),
             replies: [
@@ -521,6 +660,16 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
         },
         {
             rootPost: findGuestPost(
+                "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-e-root",
+            ),
+            replies: [
+                findGuestPost(
+                    "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-e-tail",
+                ),
+            ],
+        },
+        {
+            rootPost: findGuestPost(
                 "at://did:plc:guestdemo/app.bsky.feed.post/guest-unknown",
             ),
             replies: [],
@@ -546,6 +695,10 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
                 guestPost("guest-thread-b-root"),
                 guestPost("guest-thread-b-tail"),
             ],
+        },
+        "at://did:plc:guestdemo/app.bsky.feed.post/guest-rich-text": {
+            kind: "deletable",
+            posts: [guestPost("guest-rich-text")],
         },
         "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-d-mid": {
             kind: "legacy",

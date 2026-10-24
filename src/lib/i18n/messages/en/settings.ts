@@ -23,6 +23,9 @@ export const settings = {
     "settings.manualImageAttach.label": "Attach images manually",
     "settings.manualImageAttach.description":
         "When on, no Skyshare URL is issued. When using {share}, image data is shared with the target app. When using a post intent (popup {popup}), set the images in the target SNS's post form.",
+    "settings.linkCardPriority.label": "Prefer the Skyshare link card",
+    "settings.linkCardPriority.description":
+        "When on, sharing with a Skyshare URL removes the URLs in the post text from the shared text, so that the Skyshare link card is shown on the destination. The URLs remain in the Bluesky post. Not available while Attach images manually is on.",
     "settings.truncateIntentText.label": "Truncate long text when sharing",
     "settings.truncateIntentText.description":
         'When on, when sharing to X or Taittsuu, the text is shortened with "..." so that it fits within the 140-character limit. Not available while Attach images manually is on.',

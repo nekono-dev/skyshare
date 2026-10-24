@@ -1,11 +1,14 @@
 /**
  * 共有系設定（PopupIntentInsteadOfWebshare / AutoPopupTarget / ManualImageAttach /
- * TruncateIntentText / Mastodonインスタンスドメイン）の state・永続化を管理するフック。
+ * TruncateIntentText / Skyshareのリンクカードを優先表示 / Mastodonインスタンスドメイン）の
+ * state・永続化を管理するフック。
  *
  * 責務と処理概要:
  * - 各設定の初期値を localStorage から読み込み、変更のたびに書き込む。
  * - 設定間の連動は ManualImageAttach → TruncateIntentText のみ。ManualImageAttach が
  *   ONの間は TruncateIntentText を常にOFFとして扱い、UI表示と保存値を一致させる。
+ * - 「Skyshareのリンクカードを優先表示」は ManualImageAttach がONの間は適用しないが、
+ *   保存値は書き換えない（操作不能の表示は呼び出し側が ManualImageAttach を見て行う）。
  * - `PostForm`（投稿フォーム内）と `Settings`（設定ページ）の双方から利用され、
  *   どちらの画面から変更しても同じ永続化が適用される。
  * - 初期値はSSRと同じ固定値とし、マウント後の `reload()` で実値を反映する
@@ -14,13 +17,16 @@
 import { useCallback, useEffect, useState } from "react"
 import {
     DEFAULT_AUTO_POPUP_TARGET,
+    DEFAULT_LINK_CARD_PRIORITY,
     readAutoPopupTargetSetting,
+    readLinkCardPrioritySetting,
     readManualImageAttachSetting,
     readMastodonInstanceDomainSetting,
     readPopupIntentInsteadOfWebshareSetting,
     readTruncateIntentTextSetting,
     removeMastodonInstanceDomainSetting,
     writeAutoPopupTargetSetting,
+    writeLinkCardPrioritySetting,
     writeManualImageAttachSetting,
     writeMastodonInstanceDomainSetting,
     writePopupIntentInsteadOfWebshareSetting,
@@ -35,12 +41,17 @@ export type UseShareTogglesResult = {
     manualImageAttach: boolean
     /** X/タイッツー向け共有文の長文省略。manualImageAttachがtrueの間は常にfalse */
     truncateIntentText: boolean
+    /** 「Skyshareのリンクカードを優先表示」の保存値（ManualImageAttach による補正はしない） */
+    preferSkyshareLinkCard: boolean
+    /** 共有文に適用する実効値。ManualImageAttach がtrueの間は常にfalse */
+    effectivePreferSkyshareLinkCard: boolean
     /** Mastodonインスタンスのドメイン（例: "mastodon.social"）。未設定は空文字 */
     mastodonInstanceDomain: string
     onPopupIntentInsteadOfWebshareChange: (next: boolean) => void
     onAutoPopupTargetChange: (next: AutoPopupTarget) => void
     onManualImageAttachChange: (next: boolean) => void
     onTruncateIntentTextChange: (next: boolean) => void
+    onPreferSkyshareLinkCardChange: (next: boolean) => void
     onMastodonInstanceDomainChange: (next: string) => void
     /** localStorage上の最新値を読み直し、stateへ反映する（書き込みは行わない） */
     reload: () => void
@@ -65,6 +76,9 @@ export const useShareToggles = (): UseShareTogglesResult => {
     )
     const [manualImageAttach, setManualImageAttach] = useState(false)
     const [truncateIntentText, setTruncateIntentText] = useState(false)
+    const [preferSkyshareLinkCard, setPreferSkyshareLinkCard] = useState(
+        DEFAULT_LINK_CARD_PRIORITY,
+    )
     const [mastodonInstanceDomain, setMastodonInstanceDomain] = useState("")
 
     const onPopupIntentInsteadOfWebshareChange = (next: boolean) => {
@@ -115,6 +129,23 @@ export const useShareToggles = (): UseShareTogglesResult => {
     }
 
     /**
+     * 「Skyshareのリンクカードを優先表示」の変更を反映する。
+     *
+     * 処理の趣旨:
+     * - ManualImageAttach がONの間は操作を無視する（切り替えは操作不能の表示になるため）。
+     *
+     * Input:
+     * - `next`: 変更後の値
+     */
+    const onPreferSkyshareLinkCardChange = (next: boolean) => {
+        if (manualImageAttach) {
+            return
+        }
+        setPreferSkyshareLinkCard(next)
+        writeLinkCardPrioritySetting(next)
+    }
+
+    /**
      * Mastodonインスタンスのドメインの変更を反映する。
      *
      * 処理の趣旨:
@@ -161,6 +192,9 @@ export const useShareToggles = (): UseShareTogglesResult => {
             writeTruncateIntentTextSetting(false)
         }
         setTruncateIntentText(nextManualImageAttach ? false : savedTruncate)
+        setPreferSkyshareLinkCard(
+            readLinkCardPrioritySetting(DEFAULT_LINK_CARD_PRIORITY),
+        )
         setMastodonInstanceDomain(readMastodonInstanceDomainSetting(""))
     }, [])
 
@@ -175,11 +209,15 @@ export const useShareToggles = (): UseShareTogglesResult => {
         autoPopupTarget,
         manualImageAttach,
         truncateIntentText,
+        preferSkyshareLinkCard,
+        effectivePreferSkyshareLinkCard:
+            !manualImageAttach && preferSkyshareLinkCard,
         mastodonInstanceDomain,
         onPopupIntentInsteadOfWebshareChange,
         onAutoPopupTargetChange,
         onManualImageAttachChange,
         onTruncateIntentTextChange,
+        onPreferSkyshareLinkCardChange,
         onMastodonInstanceDomainChange,
         reload,
     }
