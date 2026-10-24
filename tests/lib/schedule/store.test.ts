@@ -4,7 +4,7 @@ import { createFakeD1 } from "../../helpers/fakeD1"
 import {
     claimDueSchedules,
     countPending,
-    deletePendingSchedules,
+    deleteSchedulesExceptRunning,
     deleteSchedule,
     completeSchedule,
     failSchedule,
@@ -153,17 +153,19 @@ describe("schedule store", () => {
         expect(db.queryCount - beforeUpdate).toBeLessThanOrEqual(3)
     })
 
-    test("schedule-store/AC-15: 一括削除で自分の待機中の予約だけが消え、他人の予約と自分の失敗は残る", async () => {
+    test("schedule-store/AC-15: 一括削除で自分の待機中と失敗の予約が消え、他人の予約と自分の実行中の予約は残る", async () => {
         const db = createFakeD1()
         await add(db, "done", 1)
+        await add(db, "busy", 2)
         await claimDueSchedules(db, 10, 5)
         await failSchedule(db, "done", "E", 11)
         await add(db, "p1", 100)
         await add(db, "p2", 200)
         await add(db, "other", 100, B)
-        const deleted = await deletePendingSchedules(db, A)
-        expect(deleted.map(r => r.id).sort()).toEqual(["p1", "p2"])
-        expect(await getSchedule(db, A, "done")).not.toBeNull()
+        const deleted = await deleteSchedulesExceptRunning(db, A)
+        expect(deleted.map(r => r.id).sort()).toEqual(["done", "p1", "p2"])
+        expect(await getSchedule(db, A, "done")).toBeNull()
+        expect((await getSchedule(db, A, "busy"))?.status).toBe("running")
         expect(await getSchedule(db, B, "other")).not.toBeNull()
         expect(await countPending(db, A)).toBe(0)
     })

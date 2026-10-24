@@ -1,3 +1,15 @@
+:local(.disabled) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  margin-bottom: var(--space-2, 8px);
+}
+
+:local(.disabled) p {
+  margin: 0;
+}
+
 :local(.section-title) {
   margin: var(--space-2, 8px) 0 var(--space-1, 4px);
   font-size: var(--font-size-sm);

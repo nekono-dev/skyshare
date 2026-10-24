@@ -1107,6 +1107,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               <ScheduleList
                 active={draftModalOpen && draftTab === "schedules"}
                 onSelect={id => void applyScheduleToForm(id)}
+                onOpenSettings={
+                  scheduleRegistered === false
+                    ? () => {
+                        setDraftModalOpen(false)
+                        requestNavigation("/settings/")
+                      }
+                    : undefined
+                }
               />
             </div>
           </div>

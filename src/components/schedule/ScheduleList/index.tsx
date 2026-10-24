@@ -24,6 +24,8 @@ import ui from "@/styles/ui.module.css"
  * - 失敗の予約には分類コードに対応する文言を表示し、「フォームに書き戻す」で `onSelect` を呼ぶ。
  *   失敗の履歴は確認の後に削除できる。
  * - 続きがあるときだけ「さらに表示」を置く。
+ * - 予約投稿が無効のとき（`onOpenSettings` を渡したとき）は、一覧の上に設定で有効にする旨と
+ *   設定を開くボタンを置く。
  */
 
 type Item = ListSchedules200ItemsItem
@@ -33,9 +35,11 @@ type Props = {
   active: boolean
   /** 待機中の予約、または失敗の予約の書き戻しが選ばれたとき */
   onSelect: (id: string) => void
+  /** 予約投稿が無効のときに設定のページへ移る操作。渡すと案内とボタンを表示する */
+  onOpenSettings?: () => void
 }
 
-export const Component = ({ active, onSelect }: Props) => {
+export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
   const { t } = useT()
   const locale = useLocale()
   const [items, setItems] = useState<Item[]>([])
@@ -113,6 +117,19 @@ export const Component = ({ active, onSelect }: Props) => {
 
   return (
     <div data-testid="schedule-list">
+      {onOpenSettings && (
+        <div className={styles.disabled} data-testid="schedule-list-disabled">
+          <p>{t("schedule.unavailableDisabled")}</p>
+          <button
+            type="button"
+            className={btn("blue")}
+            onClick={onOpenSettings}
+          >
+            {t("schedule.setupGuide.open")}
+          </button>
+        </div>
+      )}
+
       <div className={styles.error} role="alert" aria-live="polite">
         {errorKey ? t(errorKey) : ""}
       </div>

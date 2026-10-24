@@ -37,7 +37,7 @@
 - [x] T-4.2: `credential.ts` に GET・DELETE を、`credential/authorization.ts` に認可の開始と戻りを実装する。
 - [x] T-4.3: `src/pages/oauth/` にクライアントのメタデータと公開鍵の一覧を実装する。
 - [x] T-4.4: 受け入れ条件 AC-5 から AC-7、AC-11 のテストをタグ付きで追加する。
-- [x] T-4.5: 認証情報の削除で待機中の予約を取り消す形に改め、AC-11 のテストを更新する。
+- [x] T-4.5: 認証情報の削除で待機中の予約と失敗の履歴を削除する形に改め、AC-11 のテストを更新する。
 - [x] T-4.6: 戻り先を `/oauth/callback/` に移し、完了を `authorization/completion.ts` に分け、AC-22 のテストを追加する。
 - [x] T-4.7: 登録状態に再度の許可の要否と有効期限の目安を加え、開始で戻り先のパスを受けて戻り先から転送し、AC-23 と AC-24 のテストを追加する。
 - 検証: `npx vitest run tests/lib/schedule/oauthFlow.test.ts tests/pages/v2/scheduleCredential.test.ts tests/pages/v2/scheduleAuthorization.test.ts`

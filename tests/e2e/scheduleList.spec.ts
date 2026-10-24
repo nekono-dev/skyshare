@@ -3,6 +3,7 @@
  *
  * 責務と処理概要:
  * - 予約の API を差し替え、予約のタブの並び・失敗の理由・失敗の予約の書き戻し・履歴の削除・
+ *   予約投稿が無効のときの設定への案内・
  *   予約の書き戻し（画像を含む）・置き換え・編集中のキャンセルの3択・日時の解除による取消・
  *   狭い画面の寸法を検証する。
  */
@@ -94,6 +95,8 @@ test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時�
 
     const rows = list.locator("[data-status]")
     await expect(rows).toHaveCount(2)
+    // 予約投稿が有効なときは、設定への案内を出さない
+    await expect(list.getByTestId("schedule-list-disabled")).toHaveCount(0)
     await expect(rows.nth(0)).toHaveAttribute("data-status", "pending")
     await expect(rows.nth(0)).toContainText("待機中")
     await expect(rows.nth(0)).toContainText("本文-a")
@@ -101,7 +104,9 @@ test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時�
     await expect(rows.nth(1)).toHaveAttribute("data-status", "failed")
 
     await expect(
-        rows.nth(1).getByText("Bluesky での予約投稿の許可が無効になっていました"),
+        rows
+            .nth(1)
+            .getByText("Bluesky での予約投稿の許可が無効になっていました"),
     ).toBeVisible()
     // 成功した予約は履歴に残らないため、投稿へのリンクは出ない
     await expect(list.getByRole("link", { name: "投稿を見る" })).toHaveCount(0)
@@ -293,6 +298,43 @@ test("[schedule-form/AC-26] 失敗の予約を書き戻すと日時の無い新�
     await expect(page.getByText("予約しました。")).toBeVisible()
     expect(calls.creates).toHaveLength(1)
     await expect.poll(() => calls.deletes).toEqual(["f1"])
+})
+
+test("[schedule-form/AC-35] 予約投稿が無効のとき、予約のタブに設定を開くボタンが出て、本文があれば確認を挟んで設定へ移る", async ({
+    page,
+}) => {
+    test.setTimeout(120_000)
+    await mockScheduleApi(page, { registered: false, items: [ITEMS[1]] })
+    await page.goto("/post/")
+    let list = await openSchedulesTab(page)
+    const notice = list.getByTestId("schedule-list-disabled")
+    await expect(notice).toContainText(
+        "予約投稿は、設定で有効にすると使えます。",
+    )
+    await expect(list.locator('[data-status="failed"]')).toHaveCount(1)
+    await notice.getByRole("button", { name: "設定を開く" }).click()
+    await expect(page).toHaveURL(/\/settings\/$/)
+
+    // 本文があるときは、移る前に下書きの保存の確認が出て、編集を続けると移らない
+    await page.goto("/post/")
+    await expect(editor(page)).toBeVisible({ timeout: 60_000 })
+    await expect(async () => {
+        await editor(page).click()
+        await page.keyboard.type("作成中の本文")
+        await expect(editor(page)).toContainText("作成中の本文", {
+            timeout: 2_000,
+        })
+    }).toPass({ timeout: 20_000 })
+    list = await openSchedulesTab(page)
+    await list
+        .getByTestId("schedule-list-disabled")
+        .getByRole("button", { name: "設定を開く" })
+        .click()
+    const confirm = page.getByRole("dialog", { name: "下書き保存確認" })
+    await expect(confirm).toBeVisible()
+    await confirm.getByRole("button", { name: "編集を続ける" }).click()
+    expect(new URL(page.url()).pathname).toBe("/post/")
+    await expect(editor(page)).toContainText("作成中の本文")
 })
 
 test.describe("狭い画面", () => {

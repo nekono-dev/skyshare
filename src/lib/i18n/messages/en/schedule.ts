@@ -55,7 +55,11 @@ export const schedule = {
         "Chronosky (a scheduled posting service for Bluesky, opens in a new tab)",
     "schedule.setting.disableTitle": "Turn off scheduled posts",
     "schedule.setting.disableMessage":
+        "{pending} pending scheduled posts and {failed} failed ones in the history will also be deleted. Continue?",
+    "schedule.setting.disableMessagePending":
         "{count} pending scheduled posts will also be cancelled. Continue?",
+    "schedule.setting.disableMessageFailed":
+        "{count} failed scheduled posts in the history will also be deleted. Continue?",
     "schedule.setting.disableMessageNone":
         "This revokes the permission for scheduled posts on Bluesky and deletes the stored authorization. Continue?",
     "schedule.setting.disableConfirm": "Turn off",
@@ -63,8 +67,8 @@ export const schedule = {
     "schedule.setting.reauthRequired":
         "Your permission on Bluesky is no longer valid. Grant it again to schedule posts.",
     "schedule.setting.reauthButton": "Grant again",
-    "schedule.setting.disabledWithCancel":
-        "Scheduled posts were turned off and {count} scheduled posts were cancelled.",
+    "schedule.setting.disabledWithDelete":
+        "Scheduled posts were turned off and {count} scheduled posts were deleted.",
     "schedule.credential.title": "Turn on scheduled posts",
     "schedule.credential.reauthTitle": "Grant permission on Bluesky again",
     "schedule.credential.reauthIntro":

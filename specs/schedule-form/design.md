@@ -157,14 +157,14 @@ export const useScheduleAvailability = (enabled: boolean): {
 
 ### D-3: 設定の予約投稿のスイッチ (FR-1, FR-2)
 
-| 操作             | 処理                                                                                                     |
-| ---------------- | -------------------------------------------------------------------------------------------------------- |
-| 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする      |
-| オンにする       | `CredentialDialog` を開く。閉じたらオフのままにする                                                      |
-| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を `reauth` で開く    |
-| オフにする       | `listSchedules({ status: "pending", limit: 50 })` の件数を `ConfirmDialog` の文言に入れて確認する        |
-| オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` を表示して `notifyScheduleCredentialChange` を呼ぶ |
-| オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                      |
+| 操作             | 処理                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする                                |
+| オンにする       | `CredentialDialog` を開く。閉じたらオフのままにする                                                                                |
+| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を `reauth` で開く                              |
+| オフにする       | `listSchedules({ status: "pending", limit: 50 })` の件数を `ConfirmDialog` の文言に入れて確認する                                  |
+| オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` と `deletedHistory` の合計を表示して `notifyScheduleCredentialChange` を呼ぶ |
+| オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                                                |
 
 ```tsx
 // 設定の投稿フォームのグループの末尾に置く
@@ -288,6 +288,7 @@ export const fetchScheduleForEdit = async (id: string): Promise<
 type ScheduleListProps = {
   active: boolean // タブが選ばれたときに取得する
   onSelect: (id: string) => void // 待機中の行を押したとき、または失敗の行の「フォームに書き戻す」を押したとき
+  onOpenSettings?: () => void // 予約投稿が無効のときだけ渡す。一覧の上に案内と「設定を開く」を置く
 }
 ```
 
@@ -298,6 +299,7 @@ type ScheduleListProps = {
 | 失敗   | 失敗の分類コードに対応する文言 | 「フォームに書き戻す」で `onSelect`、履歴の削除（確認つき） |
 
 - `listSchedules` を `cursor` で続けて取得し、続きがあるときだけ「さらに表示」ボタンを置く。削除は `DELETE /v2/schedules/{id}` を呼び、成功したら行を除く。
+- 「設定を開く」は、投稿フォームが下書き・予約の画面を閉じてから `requestNavigation("/settings/")` で移る。作成中の内容は、再度の許可へ進むときと同じ確認で守る。
 
 ### D-9: エラー文言と言語 (FR-7, NFR-2)
 

@@ -186,21 +186,21 @@ export const updatePendingSchedule = async (
 }
 
 /**
- * 自分の待機中の予約をすべて削除し、削除した行を返す（問い合わせ1回）。
- * 画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
+ * 自分の待機中と失敗の予約をすべて削除し、削除した行を返す（問い合わせ1回）。
+ * 予約投稿を無効にするときに使う。画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
  *
  * Input: `did`: 所有アカウント
- * Output: 削除した行の配列（実行中・投稿済み・失敗の行は残る）
- * Example: `const rows = await deletePendingSchedules(db, did)`
+ * Output: 削除した行の配列（実行中の行は残る）
+ * Example: `const rows = await deleteSchedulesExceptRunning(db, did)`
  */
-export const deletePendingSchedules = async (
+export const deleteSchedulesExceptRunning = async (
     db: D1Database,
     did: string,
 ): Promise<ScheduleRow[]> => {
     const { results } = await db
         .prepare(
             `DELETE FROM scheduled_posts
-             WHERE did = ? AND status = 'pending' RETURNING *`,
+             WHERE did = ? AND status IN ('pending', 'failed') RETURNING *`,
         )
         .bind(did)
         .all<DbRow>()

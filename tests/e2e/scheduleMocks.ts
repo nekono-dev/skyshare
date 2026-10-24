@@ -142,12 +142,15 @@ export const mockScheduleApi = async (
         if (path === "/v2/schedules/credential") {
             if (method === "DELETE") {
                 calls.credentialDeletes += 1
-                const cancelled = state.items.filter(
-                    i => i.status === "pending",
-                ).length
-                state.items = state.items.filter(i => i.status !== "pending")
+                const count = (status: string) =>
+                    state.items.filter(i => i.status === status).length
+                const cancelled = count("pending")
+                const deletedHistory = count("failed")
+                state.items = state.items.filter(i => i.status === "running")
                 state.registered = false
-                return route.fulfill(json({ registered: false, cancelled }))
+                return route.fulfill(
+                    json({ registered: false, cancelled, deletedHistory }),
+                )
             }
             return route.fulfill(
                 json({

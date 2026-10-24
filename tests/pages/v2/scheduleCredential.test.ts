@@ -77,7 +77,7 @@ describe("/v2/schedules/credential", () => {
         expect(reauth.expiresAt).toBeUndefined()
     })
 
-    test("schedule-api/AC-11: 削除で待機中の予約と画像が消え、実行中の予約があると409になる", async () => {
+    test("schedule-api/AC-11: 削除で待機中と失敗の予約と画像が消え、実行中の予約があると409になる", async () => {
         const r2 = holder.env as {
             SCHEDULE_IMAGES: ReturnType<typeof createFakeR2>
         }
@@ -107,16 +107,20 @@ describe("/v2/schedules/credential", () => {
         expect(await countPending(db, DID)).toBe(2)
         expect((await (await call(GET)).json()).registered).toBe(true)
 
-        // 実行が終われば、待機中の予約を取り消して認証情報を削除する
+        // 実行が終われば、待機中の予約と失敗の履歴を削除して認証情報を削除する
         await failSchedule(db, "busy", "InvalidRecord", 11)
         const ok = await call(DELETE)
         expect(ok.status).toBe(200)
-        expect(await ok.json()).toEqual({ registered: false, cancelled: 2 })
+        expect(await ok.json()).toEqual({
+            registered: false,
+            cancelled: 2,
+            deletedHistory: 1,
+        })
         expect(await countPending(db, DID)).toBe(0)
         expect(r2.SCHEDULE_IMAGES.objects.size).toBe(0)
         expect((await (await call(GET)).json()).registered).toBe(false)
-        // 投稿済みの履歴は残る
-        expect(await getSchedule(db, DID, "busy")).not.toBeNull()
+        // 失敗の履歴も残らない
+        expect(await getSchedule(db, DID, "busy")).toBeNull()
     })
 
     test("schedule-api/AC-14: 未認証は401で、キャッシュを禁止する", async () => {

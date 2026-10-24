@@ -46,7 +46,7 @@ sequenceDiagram
   store->>ext_d1: listSchedules
   store->>ext_d1: deleteSchedule
   store->>ext_d1: updatePendingSchedule
-  store->>ext_d1: deletePendingSchedules
+  store->>ext_d1: deleteSchedulesExceptRunning
   store->>imageStaging: getImage
   store->>ext_d1: claimDueSchedules
   alt 到来した予約がない
@@ -139,14 +139,14 @@ export const updatePendingSchedule = (
     next: { runAt: number; payload: string; imageKeys: string[] },
     now: number,
 ): Promise<{ previousImageKeys: string[] } | null>
-export const deletePendingSchedules = (db: D1Database, did: string): Promise<ScheduleRow[]>
+export const deleteSchedulesExceptRunning = (db: D1Database, did: string): Promise<ScheduleRow[]>
 ```
 
 - すべての問い合わせは `WHERE did = ?` を含める。
 - `deleteSchedule` は `running` 以外の行だけを削除してその行を返し、呼び出し側が画像のキーを使って削除する。実行中の行は削除せず `null` を返す。
 - 一覧のカーソルは最後の行の `(run_at, id)` を base64 にした値とする。
 - `updatePendingSchedule` は、`getSchedule` で置き換え前の画像のキーを読み、`UPDATE ... WHERE did = ? AND id = ? AND status = 'pending'` で `run_at`・`payload`・`image_keys`・`updated_at` を置き換え、`progress` と `attempts` を初期値へ戻す。更新が0件なら `null` を返す。
-- `deletePendingSchedules` は `DELETE ... WHERE did = ? AND status = 'pending' RETURNING *` の1文で削除し、削除した行を返す。画像の削除は呼び出し側が行う。
+- `deleteSchedulesExceptRunning` は予約投稿を無効にするときに使い、`DELETE ... WHERE did = ? AND status IN ('pending', 'failed') RETURNING *` の1文で削除し、削除した行を返す。画像の削除は呼び出し側が行う。
 
 ### D-3: 取り出しと進捗 (FR-3, FR-7, FR-10, NFR-1)
 

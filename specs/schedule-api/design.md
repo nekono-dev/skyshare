@@ -127,7 +127,7 @@ sequenceDiagram
     end
   end
   schedules->>ext_store: insertSchedule
-  credential->>ext_store: deletePendingSchedules
+  credential->>ext_store: deleteSchedulesExceptRunning
   authorization->>flow: startAuthorization
   flow->>ext_store: saveOAuthState
   callback->>callback: toAuthorizationFragment
@@ -294,7 +294,7 @@ type CompleteFailure = "Denied" | "StateInvalid" | "IssuerMismatch" | "AccountMi
 
 ```ts
 // GET /v2/schedules/credential -> { registered, reauthRequired, updatedAt?, expiresAt? }
-// DELETE /v2/schedules/credential -> 200 { cancelled: number } | 409
+// DELETE /v2/schedules/credential -> 200 { cancelled: number, deletedHistory: number } | 409
 const CredentialStatusSchema = z.object({
   registered: z.boolean(), // 再度の許可が必要な印だけのときも true
   reauthRequired: z.boolean(),
@@ -302,15 +302,18 @@ const CredentialStatusSchema = z.object({
   expiresAt: z.iso.datetime().optional(), // 再度の許可が必要なときは付けない
 })
 export const estimateCredentialExpiry = (s: { authorizedAt: number; updatedAt: number; latestRunAt: number | null }): number
-const DeleteResponseSchema = z.object({ cancelled: z.number().int() })
+const DeleteResponseSchema = z.object({
+  cancelled: z.number().int(), // 取り消した待機中の件数
+  deletedHistory: z.number().int(), // 削除した失敗の件数
+})
 ```
 
-| 手順 | 処理                                                                                |
-| ---- | ----------------------------------------------------------------------------------- |
-| 1    | `listSchedules` に `status: "running"` を渡し、1件以上なら `ScheduleRunning` の 409 |
-| 2    | `deletePendingSchedules` で待機中の予約を削除し、各行の画像を `removeImages` で削除 |
-| 3    | 保管した更新用トークンを、認可サーバーの取消の端点で取り消す（失敗しても続ける）    |
-| 4    | `deleteCredential` で認証情報を削除し、取り消した件数を `cancelled` で返す          |
+| 手順 | 処理                                                                                            |
+| ---- | ----------------------------------------------------------------------------------------------- |
+| 1    | `listSchedules` に `status: "running"` を渡し、1件以上なら `ScheduleRunning` の 409             |
+| 2    | `deleteSchedulesExceptRunning` で待機中と失敗の予約を削除し、各行の画像を `removeImages` で削除 |
+| 3    | 保管した更新用トークンを、認可サーバーの取消の端点で取り消す（失敗しても続ける）                |
+| 4    | `deleteCredential` で認証情報を削除し、件数を `cancelled` と `deletedHistory` で返す            |
 
 - 有効期限の目安は、本サービスが未使用の許可を印に替える時点（最後の使用か最も遅い待機中の実行時刻から30日）と、Bluesky の認可サーバーが confidential client の許可を失効させる時点（許可から2年）の早い方とする。最後の更新から3か月の失効は30日より後のため考えない。
 - 認可サーバーはトークンの応答で更新用トークンの期限を返さないため、atproto の参照実装の定数から見積もる。Bluesky の設定での取消は含まない。

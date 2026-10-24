@@ -147,13 +147,17 @@ test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の下に、画像�
     await expect(link).toHaveAttribute("rel", /noopener/)
 })
 
-test("[schedule-form/AC-3] 待機中が2件のときオフにすると2件の確認が出て、拒否するとオン、承諾するとオフになる", async ({
+test("[schedule-form/AC-3] 待機中が2件と失敗が1件のときオフにすると両方の件数の確認が出て、拒否するとオン、承諾するとオフになる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
     const { calls } = await mockScheduleApi(page, {
         registered: true,
-        items: [pending("a"), pending("b")],
+        items: [
+            pending("a"),
+            pending("b"),
+            { ...pending("f"), status: "failed", lastError: "InvalidRecord" },
+        ],
     })
     await page.goto("/settings/")
     const toggle = scheduleSwitch(page)
@@ -162,7 +166,9 @@ test("[schedule-form/AC-3] 待機中が2件のときオフにすると2件の確
     await toggle.click({ force: true })
     const confirm = page.getByRole("dialog", { name: "予約投稿を無効にする" })
     await expect(
-        confirm.getByText("待機中の予約2件も取り消されます"),
+        confirm.getByText(
+            "待機中の予約2件と、失敗した予約の履歴1件も削除されます",
+        ),
     ).toBeVisible()
     await confirm.getByRole("button", { name: "キャンセル" }).click()
     await expect(toggle).toBeChecked()
@@ -171,7 +177,7 @@ test("[schedule-form/AC-3] 待機中が2件のときオフにすると2件の確
     await toggle.click({ force: true })
     await confirm.getByRole("button", { name: "無効にする" }).click()
     await expect(toggle).not.toBeChecked()
-    await expect(page.getByText("2件の予約を取り消しました")).toBeVisible()
+    await expect(page.getByText("3件の予約を削除しました")).toBeVisible()
     expect(calls.credentialDeletes).toBe(1)
 })
 

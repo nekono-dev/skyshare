@@ -29,7 +29,7 @@ import {
  *   結果の表示は、全ページ共通の `AuthorizationReturn` が行い、登録状態の変更を知らせる。
  * - 許可が無効になっても（再度の許可が必要な印）スイッチはオンのまま、再度の許可を案内し、
  *   ボタンから同じダイアログを再度の許可として開く。
- * - オフにすると待機中の予約の件数を示して確認し、承諾されたら待機中の予約を取り消して
+ * - オフにすると待機中の予約と失敗の履歴の件数を示して確認し、承諾されたらそれらを削除して
  *   認証情報を削除する。実行中の予約があるときは削除されず、理由を表示する。
  * - 登録・削除の後は、同じページの投稿フォームへ変更を知らせる。
  * - ゲストの表示と、登録状態の取得前・取得の失敗の間は、スイッチを押せない。
@@ -44,7 +44,10 @@ export const Component = () => {
   const { registered, reauthRequired, reload } =
     useScheduleAvailability(!guestMode)
   const [credentialOpen, setCredentialOpen] = useState(false)
-  const [disableCount, setDisableCount] = useState<number | null>(null)
+  const [disableCount, setDisableCount] = useState<{
+    pending: number
+    failed: number
+  } | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<{
     message: DeferredMessage
@@ -58,21 +61,30 @@ export const Component = () => {
   }
 
   /**
-   * オフにする前に、取り消される待機中の予約の件数を数えて確認を開く。
-   * 件数の取得に失敗したら、確認を開かずにエラーを表示する。
+   * オフにする前に、削除される待機中の予約と失敗の履歴の件数を数えて確認を開く。
+   * 一覧を続きまで取得して数える。取得に失敗したら、確認を開かずにエラーを表示する。
    */
   const confirmDisable = async () => {
     setStatus(null)
     try {
-      const res = await listSchedules({ status: "pending", limit: 50 })
-      if (res.status !== 200) {
-        setStatus({
-          message: deferMessage(scheduleErrorKey(res.status)),
-          error: true,
-        })
-        return
-      }
-      setDisableCount(res.data.items.length)
+      const count = { pending: 0, failed: 0 }
+      let cursor: string | undefined
+      do {
+        const res = await listSchedules({ limit: 50, cursor })
+        if (res.status !== 200) {
+          setStatus({
+            message: deferMessage(scheduleErrorKey(res.status)),
+            error: true,
+          })
+          return
+        }
+        for (const item of res.data.items) {
+          if (item.status === "pending") count.pending += 1
+          if (item.status === "failed") count.failed += 1
+        }
+        cursor = res.data.cursor
+      } while (cursor)
+      setDisableCount(count)
     } catch {
       setStatus({ message: deferMessage("error.network"), error: true })
     }
@@ -91,14 +103,14 @@ export const Component = () => {
         })
         return
       }
-      const cancelled = res.data.cancelled
+      const deleted = res.data.cancelled + res.data.deletedHistory
       setStatus({
         message:
-          cancelled > 0
+          deleted > 0
             ? {
                 format: tr =>
-                  tr.t("schedule.setting.disabledWithCancel", {
-                    count: cancelled,
+                  tr.t("schedule.setting.disabledWithDelete", {
+                    count: deleted,
                   }),
               }
             : deferMessage("schedule.setting.disabled"),
@@ -111,6 +123,21 @@ export const Component = () => {
       setBusy(false)
       setDisableCount(null)
     }
+  }
+
+  /** オフの確認の文言。削除される待機中の予約と失敗の履歴の有無で選ぶ */
+  const disableMessage = (
+    count: { pending: number; failed: number } | null,
+  ) => {
+    if (!count) return ""
+    const { pending, failed } = count
+    if (pending > 0 && failed > 0)
+      return t("schedule.setting.disableMessage", { pending, failed })
+    if (pending > 0)
+      return t("schedule.setting.disableMessagePending", { count: pending })
+    if (failed > 0)
+      return t("schedule.setting.disableMessageFailed", { count: failed })
+    return t("schedule.setting.disableMessageNone")
   }
 
   return (
@@ -208,11 +235,7 @@ export const Component = () => {
         onClose={() => setDisableCount(null)}
         ariaLabel={t("schedule.setting.disableTitle")}
         title={t("schedule.setting.disableTitle")}
-        message={
-          disableCount
-            ? t("schedule.setting.disableMessage", { count: disableCount })
-            : t("schedule.setting.disableMessageNone")
-        }
+        message={disableMessage(disableCount)}
         confirmLabel={t("schedule.setting.disableConfirm")}
         confirmVariant="red"
         onConfirm={() => disable()}

@@ -53,7 +53,11 @@ export const schedule = {
         "Chronosky（Bluesky の予約投稿サービス、新しいタブで開く）",
     "schedule.setting.disableTitle": "予約投稿を無効にする",
     "schedule.setting.disableMessage":
+        "待機中の予約{pending}件と、失敗した予約の履歴{failed}件も削除されます。よろしいですか。",
+    "schedule.setting.disableMessagePending":
         "待機中の予約{count}件も取り消されます。よろしいですか。",
+    "schedule.setting.disableMessageFailed":
+        "失敗した予約の履歴{count}件も削除されます。よろしいですか。",
     "schedule.setting.disableMessageNone":
         "Bluesky での予約投稿の許可を取り消し、保管した認可の情報を削除します。よろしいですか。",
     "schedule.setting.disableConfirm": "無効にする",
@@ -61,8 +65,8 @@ export const schedule = {
     "schedule.setting.reauthRequired":
         "Bluesky での許可が無効になっています。予約するには、もう一度許可してください。",
     "schedule.setting.reauthButton": "もう一度許可する",
-    "schedule.setting.disabledWithCancel":
-        "予約投稿を無効にし、{count}件の予約を取り消しました。",
+    "schedule.setting.disabledWithDelete":
+        "予約投稿を無効にし、{count}件の予約を削除しました。",
     "schedule.credential.title": "予約投稿を有効にする",
     "schedule.credential.reauthTitle": "もう一度 Bluesky で許可する",
     "schedule.credential.reauthIntro":
