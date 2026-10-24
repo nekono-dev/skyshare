@@ -61,6 +61,8 @@ eq("branch-guard/AC-4 git -C を判定", d(`git -C ${onMain} commit -m x`, onDev
 eq("branch-guard/AC-4 cd && git を判定", d(`cd ${onMain} && git commit -m x`, onDev), "deny");
 eq("branch-guard/AC-4 連結コマンドの2つ目も判定", d("git status && git push origin main", onDev), "deny");
 eq("branch-guard/AC-4 git 以外は allow", d("echo git commit", onMain), "allow");
+eq("branch-guard/AC-4 リダイレクトは送り先と見なさない", [d("git push origin dev/foo 2>&1", onDev), d("git push 2>/dev/null", onDev), d("git push -u origin dev/foo > log.txt", onDev)], ["allow", "allow", "allow"]);
+eq("branch-guard/AC-4 リダイレクトがあっても保護ブランチへの push は deny", d("git push origin main 2>&1", onDev), "deny");
 
 const created = mkRepo("develop", cfg);
 const bad = run(created, "create", "Bad_Name", "--branch-only");

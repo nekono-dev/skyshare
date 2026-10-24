@@ -29,6 +29,17 @@ function tokenize(seg) {
   return toks;
 }
 
+// リダイレクト（2>&1、> file、2>/dev/null など）を引数から除く。送り先のブランチと取り違えないため
+export function stripRedirects(args) {
+  const out = [];
+  for (let k = 0; k < args.length; k++) {
+    const a = args[k];
+    if (/^\d*(>>?|<|&>)$/.test(a)) k++; // 演算子だけのトークンは、次のトークン（ファイル名）も除く
+    else if (!/^\d*(>>?|<|&>)/.test(a)) out.push(a);
+  }
+  return out;
+}
+
 // コマンド文字列を解析し、{ kind: "commit"|"push", cwd, args }[] を返す
 export function extractGitOps(command, cwd) {
   const ops = [];
@@ -51,7 +62,7 @@ export function extractGitOps(command, cwd) {
       } else if (t[i] === "-c") i += 2;
       else i += 1;
     }
-    if (t[i] === "commit" || t[i] === "push") ops.push({ kind: t[i], cwd: dir, args: t.slice(i + 1) });
+    if (t[i] === "commit" || t[i] === "push") ops.push({ kind: t[i], cwd: dir, args: stripRedirects(t.slice(i + 1)) });
   }
   return ops;
 }
