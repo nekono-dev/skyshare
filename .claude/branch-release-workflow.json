@@ -1,5 +1,5 @@
 {
-  "workBranches": ["dev/*","develop"],
+  "workBranches": ["dev/*", "develop"],
   "protectedBranches": ["main"],
   "baseBranch": "develop",
   "namePattern": "^dev/[a-z0-9]+(-[a-z0-9]+)*$",

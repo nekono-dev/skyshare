@@ -114,7 +114,9 @@ test.describe("intentShare", () => {
         await expect(popup).not.toBeChecked()
         await expect(select).toHaveCount(0)
 
-        await popup.setChecked(true, { force: true })
+        // 本体の input は1pxに隠れており、利用者が押すのは隣の label（ToggleSwitch）。label を押す
+        await popup.locator("xpath=following-sibling::label").click()
+        await expect(popup).toBeChecked()
         await expect(select).toBeVisible()
         await expect(select).toContainText("X")
         // 詳細オプションの先頭に配置される（ラベルが先頭のトグルより前にある）。

@@ -31,10 +31,10 @@ goat version v0.2.2-rev-83684f7
 ## Lintの実行
 
 ```sh
-npm run lint:lexicon
+npm run test:lexicon
 ```
 
-`hack/lint-lexicon.sh`が`entry.json`の位置から独自lexiconを特定して`goat lex lint`を実行する。`npm test`（`tests/lexicons/`）とは別の検証で、CIの`verify`ジョブでは両方を実行する。
+`hack/lint-lexicon.sh`が`entry.json`の位置から独自lexiconを特定して`goat lex lint`を実行する。`npm run test:unit`（`tests/lexicons/`）とは別の検証で、CIの`verify`ジョブでは両方を実行する。
 
 ## LexiconのDNSチェック
 
@@ -101,8 +101,8 @@ goat lex publish ./lexicons/dev/
 1. `lexicons/` 配下のディレクトリを、新ドメインの逆順構造へ移動する（例: `lexicons/dev/nekono/skyshare/` → `lexicons/com/example/myapp/`）。
 2. `entry.json`・`defs.json`の`id`を新NSIDへ書き換える（`entry`は`<prefix>.entry`、`defs`は`<prefix>.defs`の形を守る）。
 3. `entry.json`内の`manifest`の`ref`（`<prefix>.defs#manifest`）を新NSIDへ書き換える。
-4. `npm test`でlexiconを検証する（`tests/lexicons/lexicons.test.ts`が、スキーマ構文・`$ref`の解決・ファイルパスとidの対応・entryレコードのバリデーションを確認する）。
-5. `npm run lint:lexicon`で検証し、DNS TXTレコード（`_lexicon.<authority>`）の設定と`goat lex publish`によるPDSへの公開を行う。
+4. `npm run test:unit`でlexiconを検証する（`tests/lexicons/lexicons.test.ts`が、スキーマ構文・`$ref`の解決・ファイルパスとidの対応・entryレコードのバリデーションを確認する）。
+5. `npm run test:lexicon`で検証し、DNS TXTレコード（`_lexicon.<authority>`）の設定と`goat lex publish`によるPDSへの公開を行う。
 
 注意:
 

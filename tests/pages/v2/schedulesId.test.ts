@@ -100,7 +100,11 @@ const runAtIn = (seconds: number) =>
     new Date(Date.now() + seconds * 1000).toISOString()
 
 /** 画像1枚つきの2件のスレッドの予約の入力（作成と置き換えで共通） */
-const threadForm = (opts: { runAt?: string; text?: string; image?: string }) => {
+const threadForm = (opts: {
+    runAt?: string
+    text?: string
+    image?: string
+}) => {
     const fd = new FormData()
     fd.set("posts[0][text]", opts.text ?? "first")
     fd.append("posts[0][langs]", "ja")
@@ -141,7 +145,9 @@ const getImageOf = (id: string, index: string, did = DID) =>
     (GET_IMAGE as unknown as Handler)({
         params: { id, index },
         locals: { session: { did } },
-        request: new Request(`http://localhost/v2/schedules/${id}/images/${index}/`),
+        request: new Request(
+            `http://localhost/v2/schedules/${id}/images/${index}/`,
+        ),
     } as unknown as APIContext)
 
 const put = (id: string, fd: FormData) =>
@@ -183,7 +189,9 @@ describe("GET /v2/schedules/{id}", () => {
         expect((await getDetail(id, "did:plc:other")).status).toBe(404)
         expect((await getImageOf(id, "0", "did:plc:other")).status).toBe(404)
         await db
-            .prepare("UPDATE scheduled_posts SET status = 'posted' WHERE id = ?")
+            .prepare(
+                "UPDATE scheduled_posts SET status = 'posted' WHERE id = ?",
+            )
             .bind(id)
             .run()
         expect((await getDetail(id)).status).toBe(404)
@@ -193,7 +201,9 @@ describe("GET /v2/schedules/{id}", () => {
     test("失敗した予約は内容と画像を取得でき、状態は failed になる", async () => {
         const id = await create(threadForm({}))
         await db
-            .prepare("UPDATE scheduled_posts SET status = 'failed' WHERE id = ?")
+            .prepare(
+                "UPDATE scheduled_posts SET status = 'failed' WHERE id = ?",
+            )
             .bind(id)
             .run()
         const res = await getDetail(id)
@@ -207,7 +217,9 @@ describe("GET /v2/schedules/{id}", () => {
     test("実行中の予約の内容の取得は409になる", async () => {
         const id = await create(threadForm({}))
         await db
-            .prepare("UPDATE scheduled_posts SET status = 'running' WHERE id = ?")
+            .prepare(
+                "UPDATE scheduled_posts SET status = 'running' WHERE id = ?",
+            )
             .bind(id)
             .run()
         const res = await getDetail(id)
@@ -221,7 +233,10 @@ describe("PUT /v2/schedules/{id}", () => {
         const id = await create(threadForm({}))
         const before = [...r2.objects.keys()]
         const runAt = runAtIn(7200)
-        const res = await put(id, threadForm({ runAt, text: "edited", image: "IMG-B" }))
+        const res = await put(
+            id,
+            threadForm({ runAt, text: "edited", image: "IMG-B" }),
+        )
         expect(res.status).toBe(200)
         const detail = await (await getDetail(id)).json()
         expect(detail.posts[0].text).toBe("edited")
@@ -235,13 +250,18 @@ describe("PUT /v2/schedules/{id}", () => {
 
     test("schedule-api/AC-21: 実行中の予約の置き換えは409、範囲外の実行時刻は400になり、内容が変わらない", async () => {
         const id = await create(threadForm({}))
-        const tooLate = await put(id, threadForm({ runAt: runAtIn(15 * 86400), text: "x" }))
+        const tooLate = await put(
+            id,
+            threadForm({ runAt: runAtIn(15 * 86400), text: "x" }),
+        )
         expect(tooLate.status).toBe(400)
         expect((await (await getDetail(id)).json()).posts[0].text).toBe("first")
         expect(r2.objects.size).toBe(1)
 
         await db
-            .prepare("UPDATE scheduled_posts SET status = 'running' WHERE id = ?")
+            .prepare(
+                "UPDATE scheduled_posts SET status = 'running' WHERE id = ?",
+            )
             .bind(id)
             .run()
         const busy = await put(id, threadForm({ text: "y" }))

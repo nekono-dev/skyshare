@@ -25,7 +25,7 @@ const SAMPLES = ["mp4", "mov", "webm"].map(ext => ({
     file: path.resolve(`tests/fixtures/video-sample.${ext}`),
 }))
 
-test.describe.configure({ timeout: 240_000 })
+test.describe.configure({ timeout: 420_000 })
 
 /** 投稿フォームから動画付きの投稿を行い、投稿成功の表示まで待つ */
 const postVideoViaUi = async (page: Page, text: string, file: string) => {
@@ -43,7 +43,7 @@ const postVideoViaUi = async (page: Page, text: string, file: string) => {
     // Blueskyの動画サービスでの変換完了まで待つ
     await expect(
         page.getByTestId("video-preview").getByText("アップロード完了"),
-    ).toBeVisible({ timeout: 150_000 })
+    ).toBeVisible({ timeout: 300_000 })
 
     await page.getByRole("button", { name: "投稿", exact: true }).click()
     await expect(page.getByText(/Blueskyへの投稿に成功しました/)).toBeVisible({

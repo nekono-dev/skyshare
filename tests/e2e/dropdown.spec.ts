@@ -213,6 +213,8 @@ test.describe("Dropdown: 表示テーマ（絞り込み無し）", () => {
 
 test.describe("Dropdown: 投稿言語（検索付き・トリガーが入力欄・国旗付き）", () => {
     test.beforeEach(async ({ page }) => {
+        // dev サーバーの初回コンパイルが遅いと30秒を超えるため、フックの制限を goto の待ち時間に合わせる
+        test.setTimeout(90_000)
         await page.goto("/post/?guest", { timeout: 60_000 })
         await expect(languageTrigger(page)).toBeVisible({ timeout: 60_000 })
     })

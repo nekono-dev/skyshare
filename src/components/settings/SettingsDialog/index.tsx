@@ -6,6 +6,7 @@
  *   `src/pages/settings.astro` を経由せずどの画面からも設定を開閉できるようにする。
  * - 表示内容・state管理は `Settings` 側にすべて委ね、本体は開閉制御と
  *   ダイアログ用の枠（閉じるボタン・見出し）のみを担う。
+ * - プライバシーポリシーへのリンクは新しいタブで開く。
  */
 import Overlay from "@/components/common/Overlay"
 import Settings from "@/components/settings/Settings"
@@ -56,6 +57,18 @@ export const SettingsDialog = ({ open, onClose }: Props) => {
         </div>
 
         <Settings />
+
+        {/* プライバシーポリシーは単独ページのため、ダイアログを閉じずに新しいタブで開く */}
+        <div style={{ marginTop: "1rem" }}>
+          <a
+            href="/privacy/"
+            className={ui["text"]}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t("privacy.link")}
+          </a>
+        </div>
       </div>
     </Overlay>
   )

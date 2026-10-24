@@ -63,8 +63,9 @@ jobs:
       - run: npm ci
       # src/client 配下の生成コード（atproto / openapi）を作る。型検査とテストの前提
       - run: npm run codegen
-      - run: npx tsc --noEmit
-      - run: npm test
+      - run: npm run test:type
+      - run: npm run test:unit
+      - run: npm run test:astro
       # 仕様書（specs・docs/architecture・poc）の検証。検査コマンド spec-lint は GitHub Packages から取得する
       # （認証には Secret SPEC_LINT_TOKEN = read:packages 権限のトークンが必要。版は 1 系で固定）。
       # 整形は、プロジェクトの prettier プラグイン（.prettierrc）を解決できるよう、リポジトリ側の prettier で検査する
@@ -88,7 +89,7 @@ jobs:
           grep ' goat_Linux_x86_64.tar.gz$' "goat_${GOAT_VERSION}_checksums.txt" | sha256sum -c -
           sudo tar -xf goat_Linux_x86_64.tar.gz -C /usr/local/bin goat
           goat --version
-      - run: npm run lint:lexicon
+      - run: npm run test:lexicon
 
   # E2E（ライブテスト・他ブラウザを含む）。失敗した場合はデプロイしない
   e2e:

@@ -8,8 +8,9 @@ yarn-error.log*
 pnpm-debug.log*
 
 
-# environment variables
+# environment variables（雛形 `*.template` のみ管理対象）
 .env
+.dev.vars
 .env.staging
 .env.production
 # 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
@@ -34,8 +35,6 @@ src/client/**/
 /playwright-report
 /blob-report
 /playwright/.cache
-# E2E（実アカウントのライブテスト）
-/.env.e2e
 /playwright/.auth
 
 _legacy/**/.env.test
@@ -44,3 +43,6 @@ _legacy/**/.env.test.*
 
 # GitHub の Variables 登録用（hack/github-variables.env.example のコピー。運用者の値を含む）
 /github-variables.env
+
+# 環境側に導入するスキル（AGENTS.md「仕様駆動開発」参照）。入れ子の git リポジトリのため追跡しない
+.claude/skills/spec-driven-development/

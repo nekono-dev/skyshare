@@ -1,0 +1,14 @@
+# Worker のランタイム設定の雛形（wrangler が読む）。
+# リポジトリ直下に .dev.vars としてコピーして使う（.dev.vars は .gitignore 対象）。
+#   cp .dev.vars.template .dev.vars
+# .dev.vars がある間、wrangler は .env を読まない。ビルド時に使う PUBLIC_* は .env（.env.template）に置く。
+
+# astro dev 実行時のみ wrangler.jsonc の vars を上書きする（wrangler標準機能）。
+# production 以外にすると Cookie に Secure 属性を付けない（http のローカルで動かすため）
+PUBLIC_NODE_ENV=develop
+
+# --- 予約投稿のシークレット ---
+# 未設定なら npm run dev の準備（hack/prepare-local-env.mjs）が、ランダムに生成してここへ書き込む。
+# 鍵を替えると保管済みの予約の認証情報が復号できなくなるため、設定済みの値は上書きしない。
+#SCHEDULE_ENC_KEY=
+#SCHEDULE_OAUTH_KEY=

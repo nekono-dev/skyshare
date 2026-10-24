@@ -62,19 +62,29 @@ const sampleItem = (page: Page, text: string) =>
  */
 const readPlayButton = async (scope: Locator) => {
     const button = scope.getByTestId("video-play-button")
-    await expect(button).toBeVisible()
-    const box = await button.boundingBox()
-    const style = await button.evaluate(
-        el => getComputedStyle(el).backgroundColor,
-    )
-    const polygon = button.locator("polygon")
-    return {
-        width: box!.width,
-        height: box!.height,
-        background: style,
-        fill: await polygon.getAttribute("fill"),
-        points: await polygon.getAttribute("points"),
-    }
+    // 表示確認と寸法取得の間に再描画で要素が差し替わると null になるため、読み取りごと再試行する
+    let result: {
+        width: number
+        height: number
+        background: string
+        fill: string | null
+        points: string | null
+    } | null = null
+    await expect(async () => {
+        await expect(button).toBeVisible()
+        const box = (await button.boundingBox())!
+        const polygon = button.locator("polygon")
+        result = {
+            width: box.width,
+            height: box.height,
+            background: await button.evaluate(
+                el => getComputedStyle(el).backgroundColor,
+            ),
+            fill: await polygon.getAttribute("fill"),
+            points: await polygon.getAttribute("points"),
+        }
+    }).toPass({ timeout: 15_000 })
+    return result!
 }
 
 test.describe("動画投稿の表示", () => {

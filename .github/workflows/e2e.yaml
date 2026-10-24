@@ -112,11 +112,16 @@ jobs:
 
       # 単体テスト（vitest）。E2E の前に失敗を検出する
       - run: npm run codegen
-      - run: npm test
+      - run: npm run test:unit
+      - run: npm run test:astro
 
       # wrangler.jsonc は .gitignore 対象のため、Variables から生成する（astro dev が参照する）
       - name: Configure build setting
         run: node hack/render-deploy-config.mjs
+
+      # astro dev が読む Worker のランタイム設定（.dev.vars は .gitignore 対象のため雛形から作る）
+      - name: Configure runtime vars
+        run: cp .dev.vars.template .dev.vars
 
       # 認証情報（.env.e2e）を Secret から復元する。値はログに出さず、env 経由で受け渡す。
       # 未登録なら作らず、ライブテストの project ごと無効になる（tests/e2e/live/env.ts）

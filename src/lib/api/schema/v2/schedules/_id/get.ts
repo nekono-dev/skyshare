@@ -43,7 +43,8 @@ export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>
 
 export const operation: ZodOpenApiOperationObject = {
     operationId: "getSchedule",
-    summary: "Get the content of an own pending or failed scheduled post to restore it into the form",
+    summary:
+        "Get the content of an own pending or failed scheduled post to restore it into the form",
     requestParams: { path: PathParamsSchema },
     responses: {
         "200": {

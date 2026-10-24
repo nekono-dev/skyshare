@@ -12,6 +12,7 @@ import LoginIntro from "@/components/account/LoginIntro"
 import LocaleSelect from "@/components/common/LocaleSelect"
 
 import Baselayout from "@/layout/Baselayout.astro"
+import StandaloneFooter from "@/components/layout/StandaloneFooter/index.astro"
 import { serviceName, serviceVersion } from "@/vars"
 const robots = ["index", "follow", "noarchive", "noimageindex"]
 import ui from "@/styles/ui.module.css"
@@ -38,7 +39,7 @@ const { t } = createTranslator(Astro.locals.locale)
             <div style="margin: 1rem;">
                 <a href="/privacy/" data-i18n="privacy.link">{t("privacy.link")}</a>
             </div>
-            <div style="margin: 1rem;">2025-2026 © Skyshare</div>
+            <StandaloneFooter />
         </div>
     </div></Baselayout
 >
