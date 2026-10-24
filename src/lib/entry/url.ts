@@ -161,3 +161,40 @@ export const parseOwnedAtUri = (
     }
     return parsed
 }
+
+/**
+ * blob 参照から CID 文字列を取り出す。取り出せなければ undefined。
+ */
+export const toCidString = (ref: unknown): string | undefined => {
+    if (typeof ref === "string") return ref
+    if (ref && typeof ref === "object") {
+        const maybeLink = (ref as Record<string, unknown>)["$link"]
+        if (typeof maybeLink === "string") return maybeLink
+        if (
+            typeof (ref as { toString?: () => string }).toString === "function"
+        ) {
+            const value = (ref as { toString: () => string }).toString()
+            if (
+                typeof value === "string" &&
+                value.length > 0 &&
+                value !== "[object Object]"
+            ) {
+                return value
+            }
+        }
+    }
+    return
+}
+
+export const blobToCdnUrl = (
+    repoDid: string,
+    blob?: {
+        ref?: unknown
+        mimeType?: string
+    },
+): string | undefined => {
+    if (!blob) return
+    const ref = toCidString(blob.ref)
+    if (!ref) return
+    return bskyCdnUrlgen(repoDid, ref)
+}

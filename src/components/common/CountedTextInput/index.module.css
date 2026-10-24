@@ -42,7 +42,9 @@
   align-items: center;
   border-radius: var(--radius-md);
   padding: var(--space-0) var(--space-2);
-  background: color-mix(in srgb, var(--color-card-bg) 85%, #ffffff 15%);
+  /* 通常時は帯を見せず、省略・超過の状態のときだけ色の帯を出す。カードの色に白を混ぜる方式は、
+     ライトでは見えずダークでだけ明るい帯が出て、明暗で見え方が食い違っていた */
+  background: transparent;
   opacity: 0.92;
   color: var(--color-muted);
   font-size: var(--font-size-sm);

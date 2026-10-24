@@ -7,7 +7,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## 準備
 
-1. wrangler.template.jsonc をコピー。以下の環境変数を設定する
+1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。
 
 ```json
   "vars": {
@@ -23,7 +23,10 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## ビルド方法
 
+ローカル実行の環境変数は、雛形 `.env.template` をコピーして使う（`.env` は Git 管理対象外。未設定でもダミー値で動く）。Worker のシークレット（`SCHEDULE_ENC_KEY` など）は `.dev.vars` に書く。
+
 ```sh
+cp .env.template .env
 ## astroによる簡易サーバ起動
 npm run dev
 ## wranglerを用いた動作確認
@@ -40,41 +43,157 @@ npm run deploy
 
 ## CI/CD（GitHub Actions）
 
-`develop` ブランチへの push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査を通過した場合のみ Cloudflare Workers へデプロイする。`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
+`main` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
 
-| 種別     | 名前                             | 内容                                         |
-| -------- | -------------------------------- | -------------------------------------------- |
-| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン    |
-| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                    |
+| ブランチ   | Worker                                  | ドメイン                   | D1・R2                                                          | 用途                                   |
+| ---------- | --------------------------------------- | -------------------------- | --------------------------------------------------------------- | -------------------------------------- |
+| `main`     | `skyshare`                              | `<SITE_HOST>`              | `skyshare-schedule`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
+| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-schedule-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
+| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                                  | ブランチごとの確認（Cron は動かない）  |
+
+- develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
+- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。
+
+`wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
+
+| 種別     | 名前                             | 内容                                                                                                                      |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン                                                                                 |
+| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                                                                                                 |
 | Secret   | `SPEC_LINT_TOKEN`                | 仕様書の検査コマンド `spec-lint`（GitHub Packages）の取得用。`read:packages` 権限のトークン。Actions の Secret に登録する |
-| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント             |
-| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                             |
-| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
-| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
-| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
+| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント                                                                                          |
+| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                                                                                                          |
+| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける）                                                                              |
+| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                                                                                                        |
+| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                                                                                              |
+
+このほか、下の「運用者ごとの設定」の Variables を登録する。
 
 手動実行（Actions → deploy → Run workflow）では、既定で `dry_run` が有効になり、ビルドと `wrangler deploy --dry-run` のみ行って公開しない。
+
+### 運用者ごとの設定
+
+Skyshare は OSS のため、運用者ごとに変わる値はコードに書かず、GitHub の Variables（手元では環境変数）で渡す。別の運用者は、フォークして次の値を登録すれば同じコードを配備できる。必須の値が欠けると、`npm run build`（運営者情報）と `hack/render-deploy-config.mjs`（配備先）が異常終了する。開発時（`astro dev`・単体テスト）は、運営者情報が未設定でもダミー値で動く。
+
+配備先（`hack/render-deploy-config.mjs` が `wrangler.template.jsonc` の `SITE_HOST` を置き換える）:
+
+| 名前        | 必須 | 内容                                                                                                                               |
+| ----------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `SITE_HOST` | 必須 | 公開するドメイン（例: `skyshare.example.com`）。develop は `develop.<SITE_HOST>`、プレビューは `<名前>.develop.<SITE_HOST>` になる |
+
+Worker・D1・R2 の名前は上の表のとおり固定である。名前は Cloudflare のアカウントごとなので、運用者が違っても衝突しない。D1 は `database_id` を書かず名前で解決する（`wrangler deploy` が同じ名前の D1 を探してつなぐ。CI の API トークンに D1 の権限が要る）。独自ドメインのゾーンは、ドメインから自動で決まる。
+
+運営者情報とアクセス解析（ビルド時に埋め込む。プライバシーポリシーと GA タグに使う。`src/lib/site/siteConfig.ts`）:
+
+| 名前                             | 必須 | 内容                                                                                       |
+| -------------------------------- | ---- | ------------------------------------------------------------------------------------------ |
+| `PUBLIC_OPERATOR_NAME`           | 必須 | 運営者の名称（個人なら活動名でよい。氏名と住所は請求に応じて回答する旨がポリシーに載る）   |
+| `PUBLIC_OPERATOR_EMAIL`          | 必須 | 個人情報の問い合わせ・苦情の窓口のメールアドレス                                           |
+| `PUBLIC_OPERATOR_BLUESKY_HANDLE` | 任意 | 窓口の Bluesky ハンドル（`@` なし）。未登録なら窓口はメールだけ                            |
+| `PUBLIC_PRIVACY_ENACTED_AT`      | 必須 | プライバシーポリシーの制定日（`YYYY-MM-DD`）                                               |
+| `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | プライバシーポリシーの最終改定日（`YYYY-MM-DD`）。本文を改定したら更新する                 |
+| `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さず、ポリシーにも記載しない |
+
+プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は、このリポジトリの実装（Cloudflare での配信と保管、予約投稿の保存期間など）に合わせて書いてある。実装を変えて運用する場合は、本文も見直すこと。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう、変えない。
+
+### フォークして動かす
+
+フォークした自分のリポジトリと Cloudflare のアカウントで動かす手順。GitHub への登録は `gh` コマンドで行う。
+
+1. Cloudflare に、公開するドメインのゾーンを追加しておく。
+2. Cloudflare の API トークンを作る。テンプレート「Edit Cloudflare Workers」を使い、権限にアカウントの「D1 編集」を加える（D1 を名前で探すことと、マイグレーションに使う）。
+3. 下の「予約投稿の初期設定」で、D1・R2・暗号鍵を用意する。
+4. `gh` を入れてログインする。
+
+```sh
+gh auth login  # GitHub.com → HTTPS → ブラウザで認証
+gh auth status # ログインできたか確認する
+```
+
+5. Variables を登録する。雛形をコピーして値を書き換え、まとめて登録する（コピーした `github-variables.env` は `.gitignore` 対象）。
+
+```sh
+cp hack/github-variables.env.example github-variables.env
+$EDITOR github-variables.env
+gh variable set -f github-variables.env -R <owner>/<repo>
+gh variable list -R <owner>/<repo>  # 登録できたか確認する
+```
+
+6. Secrets を登録する。値は対話の入力で渡し、シェルの履歴やファイルに残さない。
+
+```sh
+gh secret set CLOUDFLARE_API_TOKEN -R <owner>/<repo>   # 手順 2 のトークン
+gh secret set CLOUDFLARE_ACCOUNT_ID -R <owner>/<repo>  # Cloudflare のアカウント ID
+gh secret set E2E_ENV -R <owner>/<repo> < .env.e2e     # 任意。実アカウントのライブテストを行う場合
+```
+
+7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
+8. develop 環境を1回配備した後、プレビューの暗号鍵を登録する（下の「予約投稿の初期設定」）。以降、`dev/XXXX` への push でプレビューが作られる。
+
+- `-R <owner>/<repo>` は、remote が SSH の別名（`git@github.com.<別名>:...`）のときに `gh` がリポジトリを判別できないため付ける。
+- 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
+
+### 予約投稿の初期設定（初回のみ）
+
+予約投稿は Cloudflare の D1・R2・Cron Trigger を使う（いずれも無料枠の範囲）。初回のデプロイの前に、次を行う。
+
+本番用と develop 用の D1・R2 を作り、暗号鍵を登録する。dev/\* のプレビューは develop 用の D1・R2 を共用する。
+
+```sh
+npx wrangler d1 create skyshare-schedule # database_id の登録は不要（名前で解決する）
+npx wrangler d1 create skyshare-schedule-develop
+for b in skyshare-schedule-images skyshare-schedule-images-develop; do
+  npx wrangler r2 bucket create "$b"
+  npx wrangler r2 bucket lifecycle add "$b" expire-15d --expire-days 15 -y # 削除漏れの画像を自動で消す（予約は14日後までのため15日）
+done
+# 予約用の認証情報の暗号鍵。本番と develop は別の鍵でよい（D1 が別のため）
+openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare
+# develop とそのプレビューは D1 を共用するため、同じ鍵にする（develop を1回配備した後に実行する）
+openssl rand -base64 32 > enc.key
+npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key
+npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key
+rm enc.key
+# Bluesky の OAuth（confidential client）の署名鍵。develop とプレビューは同じ鍵にする
+node hack/generate-oauth-key.mjs | npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare
+node hack/generate-oauth-key.mjs > oauth.key
+npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare-develop < oauth.key
+npx wrangler preview base-config secret put SCHEDULE_OAUTH_KEY --worker-name skyshare-develop < oauth.key
+rm oauth.key
+```
+
+- 予約の許可は Bluesky の OAuth で得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は設定のページから `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、公開された https の配信元でしか許可を得られない（ローカルでは試せない）。
+- 許可を得た配信元の client_id は認可の情報と一緒に保管し、Cron の実行はそれでトークンを更新する。プレビューで許可した認可の情報は、そのプレビューが消えると更新できなくなる。
+- 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
+
+- プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
+- D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。`migrations/0003_schedule_oauth.sql` は、アプリパスワード方式で登録された認証情報を削除する（利用者は設定で許可し直す）。`0004_schedule_reauth.sql` は、許可の時刻と再度の許可が必要な印の列を加える。
 
 ### E2E（e2e.yaml）
 
 `.github/workflows/e2e.yaml` は deploy.yaml から呼び出され（手動実行も可）、単体テストの後に Playwright の全project（chromium・firefox・webkit・webkit-iphone、およびライブテスト）を実行する。verify と e2e の両方に成功した場合のみデプロイされる。
 
-| 種別     | 名前              | 内容                                                                                                |
-| -------- | ----------------- | --------------------------------------------------------------------------------------------------- |
-| Secret   | `E2E_ENV`         | `.env.e2e` の中身（`KEY=value` 形式・複数行）をそのまま登録する。未登録ならライブテストを除いて実行 |
-| Variable | `PUBLIC_*`（5件） | deploy.yaml と共通                                                                                  |
+OS のパッケージ（フォント・ffmpeg・Playwright のブラウザが使うライブラリ）は、初回だけ Ubuntu のミラーから取得し、deb ファイルを Actions のキャッシュに保存して2回目以降はミラーを使わずに入れる（ミラーが遅い日にダウンロードだけでジョブの上限に達したため）。キャッシュはランナーのイメージ・Playwright の版・`e2e.yaml` が変わると作り直される。ブラウザ本体も Playwright の版ごとにキャッシュする。
+
+| 種別     | 名前               | 内容                                                                                                |
+| -------- | ------------------ | --------------------------------------------------------------------------------------------------- |
+| Secret   | `E2E_ENV`          | `.env.e2e` の中身（`KEY=value` 形式・複数行）をそのまま登録する。未登録ならライブテストを除いて実行 |
+| Variable | deploy.yaml と共通 | 運用者ごとの設定を含む（astro dev の起動前に `wrangler.jsonc` を生成するため）                      |
 
 同じ検証用アカウントを同時に操作しないよう、実行は直列化される。検証専用のアカウントとアプリパスワードを使うこと。
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が `wrangler preview` を実行し、`https://dev-XXXX.skyshare.nekono.dev` で確認できる（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 
 ```sh
 npm run prev
 ```
+
+### develop 環境（Cron を含む確認）
+
+`wrangler preview` では Cron Trigger が動かないため、予約の自動投稿は develop 環境（`https://develop.<SITE_HOST>`）で確認する。`develop` へのマージで deploy.yaml が配備する（`node hack/render-deploy-config.mjs --develop` が、Worker 名・ドメイン・D1・R2 を develop 用に差し替える）。D1・R2 は本番と別なので、本番の予約には触れない。
 
 ## 多言語対応（i18n）
 
@@ -141,7 +260,7 @@ npx playwright test # ゲスト表示（?guest）で完結するE2E
 
 ライブテストが作る投稿は本文が `[e2e <識別子>]` で始まり、テスト終了時に削除される。異常終了で残った分は、次回のライブテスト開始時に回収される。手動で掃除するには `npm run e2e:live:sweep -- --dry-run`（削除予定の確認）、`npm run e2e:live:sweep`（1時間より古いものを削除）を使う。
 
-リポジトリ直下の `.env.e2e`（Git管理対象外）に `KEY=value` 形式で書いてもよい。必ず検証専用のアカウントとアプリパスワードを使うこと。
+リポジトリ直下の `.env.e2e`（Git管理対象外）に `KEY=value` 形式で書いてもよい。雛形 `.env.e2e.template` をコピーして使う（`cp .env.e2e.template .env.e2e`）。本番の解析に使う Cloudflare API トークンも、同じ `.env.e2e` に置く。必ず検証専用のアカウントとアプリパスワードを使うこと。
 
 ヘッドレスブラウザで日本語・国旗絵文字を表示するには、OSのフォントが必要（例: `sudo apt-get install fonts-noto-cjk fonts-noto-color-emoji`）。動画のライブテストの素材作成・確認には `ffmpeg` を使う。
 

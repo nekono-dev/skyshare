@@ -12,6 +12,8 @@ export const video = {
         "A video can't be added while images are attached",
     "video.picker.exclusiveWithOgp":
         "A video can't be added while a link card is attached",
+    "video.picker.exclusiveWithSchedule":
+        "A video can't be added while a schedule time is set",
     "video.picker.exclusiveWithVideo": "A video is already attached",
     "video.status.uploading": "Uploading… {percent}%",
     "video.status.processing": "Processing… {percent}%",

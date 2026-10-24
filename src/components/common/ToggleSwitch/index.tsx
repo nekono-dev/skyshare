@@ -33,6 +33,8 @@ type Props = {
   id?: string
   /** aria-label（labelと共に指定すると aria-label が優先される） */
   "aria-label"?: string
+  /** aria-labelledby（ラベル文言をスイッチの外に置く場合に、その要素の id を指定する） */
+  "aria-labelledby"?: string
   /** 追加の className（コンテナ要素へ適用） */
   className?: string
 }
@@ -84,6 +86,7 @@ const resolveCheckedChange = (
  * - `disabled`: true で操作不能化
  * - `id`: 入力要素の id（省略時は自動生成）
  * - `aria-label`: アクセシビリティ用ラベル
+ * - `aria-labelledby`: スイッチの外に置いたラベル要素の id
  * - `className`: コンテナへの追加クラス
  *
  * Output:
@@ -101,6 +104,7 @@ export const ToggleSwitch = ({
   disabled = false,
   id,
   "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   className,
 }: Props) => {
   const generatedId = useId()
@@ -127,6 +131,7 @@ export const ToggleSwitch = ({
         onChange={handleChange}
         disabled={disabled}
         aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
         aria-checked={checked}
       />
       <label className={styles.label} htmlFor={inputId}>

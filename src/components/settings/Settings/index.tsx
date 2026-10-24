@@ -3,6 +3,7 @@
  *
  * 責務と処理概要:
  * - 投稿フォーム関連のトグル設定を `SettingList` でグループごとに一覧表示する。
+ * - 投稿フォームのグループの末尾に、予約投稿の有効化のスイッチ（`ScheduleSetting`）を置く。
  * - 各設定値の state・永続化・連動ルールは `lib/settings/useShareToggles` および
  *   `lib/settings/shareSettings` に委譲し、本体は表示用データの組み立てに専念する。
  * - Astroページ（`src/pages/settings.astro`）からも `SettingsDialog` からも同じ内容を
@@ -19,10 +20,11 @@ import InlineIcon from "@/components/common/InlineIcon"
 import LocaleSelect from "@/components/common/LocaleSelect"
 import ThemeModeSelect from "@/components/common/ThemeModeSelect"
 import PostGateDialog from "@/components/post/PostGateDialog"
+import ScheduleSetting from "@/components/schedule/ScheduleSetting"
 import SettingList, {
   type SettingListItem,
 } from "@/components/settings/SettingList"
-import type { PostGateValue } from "@/lib/atproto/gate"
+import { DEFAULT_POST_GATE_VALUE, type PostGateValue } from "@/lib/atproto/gate"
 import { useT } from "@/lib/i18n/react"
 import { renderSlots } from "@/lib/i18n/rich"
 import {
@@ -41,6 +43,10 @@ import {
   writeHashtagSuggestEnabledSetting,
   writeMentionSuggestEnabledSetting,
 } from "@/lib/settings/suggestSettings"
+import {
+  readTimelineHiddenSetting,
+  writeTimelineHiddenSetting,
+} from "@/lib/settings/timelineSettings"
 import {
   applyThemeMode,
   readThemeModeSetting,
@@ -66,24 +72,20 @@ import styles from "./index.module.css"
 export const Settings = () => {
   const { t, raw } = useT()
   const shareToggles = useShareToggles()
-  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(() =>
-    readPinnedFormDisabledSetting(false),
+  // 各設定の初期 state はサーバー描画と同じ固定の既定値とし、保存値はマウント後の
+  // reload（下の useEffect）で反映する。初期化関数で localStorage を読むと、クライアントの
+  // 初回描画（ハイドレーション）がサーバー描画と食い違い、React はスイッチの checked 等の
+  // 属性を補正しないため、保存値と異なる見た目のまま残る（`useShareToggles` と同じ方針）。
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+  const [timelineHidden, setTimelineHidden] = useState(false)
+  const [themeMode, setThemeMode] = useState<ThemeMode>("system")
+  const [hashtagSuggestEnabled, setHashtagSuggestEnabled] = useState(true)
+  const [mentionSuggestEnabled, setMentionSuggestEnabled] = useState(true)
+  const [defaultGate, setDefaultGate] = useState<PostGateValue>(
+    DEFAULT_POST_GATE_VALUE,
   )
-  const [themeMode, setThemeMode] = useState(() =>
-    readThemeModeSetting("system"),
-  )
-  const [hashtagSuggestEnabled, setHashtagSuggestEnabled] = useState(() =>
-    readHashtagSuggestEnabledSetting(true),
-  )
-  const [mentionSuggestEnabled, setMentionSuggestEnabled] = useState(() =>
-    readMentionSuggestEnabledSetting(true),
-  )
-  const [defaultGate, setDefaultGate] = useState<PostGateValue>(() =>
-    readPostGateDefaultSetting(),
-  )
-  const [syncGateDefaultAfterPost, setSyncGateDefaultAfterPost] = useState(() =>
-    readSyncGateDefaultAfterPostSetting(false),
-  )
+  const [syncGateDefaultAfterPost, setSyncGateDefaultAfterPost] =
+    useState(false)
   const [gateDialogOpen, setGateDialogOpen] = useState(false)
   // 「返信・引用のデフォルト設定」ダイアログの「リストから選択」がBlueskyリストを
   // 取得する際に必要なdid。Settingsページ自体はアカウント非依存のため保持しておらず、
@@ -100,6 +102,17 @@ export const Settings = () => {
   const onPinnedFormDisabledChange = (next: boolean) => {
     setPinnedFormDisabled(next)
     writePinnedFormDisabledSetting(next)
+  }
+
+  /**
+   * 「タイムラインを表示しない」設定を変更する。
+   *
+   * Input:
+   * - `next`: 変更後の値
+   */
+  const onTimelineHiddenChange = (next: boolean) => {
+    setTimelineHidden(next)
+    writeTimelineHiddenSetting(next)
   }
 
   /**
@@ -154,6 +167,7 @@ export const Settings = () => {
   reloadRef.current = () => {
     shareToggles.reload()
     setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+    setTimelineHidden(readTimelineHiddenSetting(false))
     setThemeMode(readThemeModeSetting("system"))
     setHashtagSuggestEnabled(readHashtagSuggestEnabledSetting(true))
     setMentionSuggestEnabled(readMentionSuggestEnabledSetting(true))
@@ -209,7 +223,10 @@ export const Settings = () => {
       key: "pinnedFormDisabled",
       label: t("settings.pinnedFormDisabled.label"),
       description: t("settings.pinnedFormDisabled.description"),
-      checked: pinnedFormDisabled,
+      // タイムライン非表示中は投稿フォームを常に固定表示するため、OFF表示で操作不能にする
+      // （保存値は保持し、タイムラインを再表示したときに元の設定へ戻す）。
+      checked: pinnedFormDisabled && !timelineHidden,
+      disabled: timelineHidden,
       onCheckedChange: onPinnedFormDisabledChange,
     },
     {
@@ -311,6 +328,13 @@ export const Settings = () => {
         <LocaleSelect id={id} disabled={disabled} ariaLabel={ariaLabel} />
       ),
     },
+    {
+      key: "timelineHidden",
+      label: t("settings.timelineHidden.label"),
+      description: t("settings.timelineHidden.description"),
+      checked: timelineHidden,
+      onCheckedChange: onTimelineHiddenChange,
+    },
   ]
 
   return (
@@ -323,6 +347,8 @@ export const Settings = () => {
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
         <h2 className={ui.subject}>{t("settings.postForm.title")}</h2>
         <SettingList items={postFormItems} />
+        {/* 予約投稿の有効化はサーバーの登録状態に従うため、端末の設定とは別の部品が扱う */}
+        <ScheduleSetting />
       </section>
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
         <h2 className={ui.subject}>{t("settings.gate.title")}</h2>

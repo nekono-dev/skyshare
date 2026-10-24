@@ -10,13 +10,16 @@ export const settings = {
     "settings.theme.dark": "Dark",
     "settings.locale.label": "Language",
     "settings.locale.system": "Follow system settings",
+    "settings.timelineHidden.label": "Hide the timeline",
+    "settings.timelineHidden.description":
+        "When on, only the post form is shown and the timeline is not loaded.",
     "settings.postForm.title": "Post form",
     "settings.pinnedFormDisabled.label": "Don't pin the post form",
     "settings.pinnedFormDisabled.description":
         "When on, the post form is no longer pinned to the top of the screen. Open it with the sidebar or the floating new post button.",
     "settings.popupIntent.label": "Open a popup instead of {share}",
     "settings.popupIntent.description":
-        "When on, sharing after posting opens a post intent popup {popup} instead of the Web Share API (the share menu shown by {share}).",
+        "Opens {popup} (a popup) instead of {share} (the share menu). Turn this on if you use X and other SNS in a browser rather than their apps.",
     "settings.manualImageAttach.label": "Attach images manually",
     "settings.manualImageAttach.description":
         "When on, no Skyshare URL is issued. When using {share}, image data is shared with the target app. When using a post intent (popup {popup}), set the images in the target SNS's post form.",

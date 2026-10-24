@@ -25,6 +25,14 @@ env:
   PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
   PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
   PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
+  # 運用者ごとの設定（DEVELOP.md の「運用者ごとの設定」）
+  SITE_HOST: ${{ vars.SITE_HOST }}
+  PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
+  PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
+  PUBLIC_OPERATOR_BLUESKY_HANDLE: ${{ vars.PUBLIC_OPERATOR_BLUESKY_HANDLE }}
+  PUBLIC_PRIVACY_ENACTED_AT: ${{ vars.PUBLIC_PRIVACY_ENACTED_AT }}
+  PUBLIC_PRIVACY_REVISED_AT: ${{ vars.PUBLIC_PRIVACY_REVISED_AT }}
+  PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
 
 jobs:
   e2e:
@@ -41,11 +49,66 @@ jobs:
           node-version: 22.16.0
           cache: npm
       - run: npm ci
-      # 日本語・国旗絵文字の描画用フォントと、動画のライブテストの素材作成用 ffmpeg
-      - name: Install fonts and ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji ffmpeg
+
+      # OS のパッケージ（日本語・国旗絵文字のフォント、動画のライブテストの素材作成用 ffmpeg、
+      # Playwright のブラウザが使うライブラリ）は、取得した deb ファイルをキャッシュに保存し、
+      # 2回目以降は Ubuntu のミラーを使わずに入れる。ミラーが遅い日にダウンロードだけで
+      # ジョブの上限（60分）に達したため。キーはランナーのイメージと Playwright の版で分ける
+      # （イメージが変わると足りない依存が変わるため）。
+      - name: Resolve cache keys
+        id: keys
+        run: |
+          echo "playwright=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "image=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+      - name: Restore OS packages
+        id: apt-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/apt-debs
+          key: apt-debs-${{ steps.keys.outputs.image }}-pw${{ steps.keys.outputs.playwright }}-${{ hashFiles('.github/workflows/e2e.yaml') }}
+      - name: Install OS packages
+        timeout-minutes: 15
+        env:
+          CACHE_HIT: ${{ steps.apt-cache.outputs.cache-hit }}
+        run: |
+          set -euo pipefail
+          # キャッシュがあれば、ミラーを使わずに deb ファイルから入れる。失敗したら取得し直す
+          if [ "$CACHE_HIT" = "true" ] && ls ~/apt-debs/*.deb > /dev/null 2>&1; then
+            if sudo dpkg -i ~/apt-debs/*.deb > /tmp/dpkg.log 2>&1; then
+              echo "キャッシュした deb ファイルから入れました"
+              exit 0
+            fi
+            echo "::warning::キャッシュからの導入に失敗したため、ミラーから取得し直します"
+            tail -20 /tmp/dpkg.log
+          fi
+          # Playwright が必要とするライブラリのうち、このランナーに無いものの一覧
+          # （--dry-run は不足があると終了コード 1 を返すため、終了コードは見ない）
+          PW_DEPS=$( { npx playwright install-deps --dry-run chromium firefox webkit 2>/dev/null || true; } | sed -n 's/^  \([a-z0-9][^ ]*\)$/\1/p' | tr '\n' ' ')
+          echo "Playwright の不足分: ${PW_DEPS:-なし}"
+          sudo apt-get update
+          sudo apt-get install -y --download-only fonts-noto-cjk fonts-noto-color-emoji ffmpeg $PW_DEPS
+          # 導入の後片付けで deb ファイルが消えることがあるため、導入の前に退避する
+          mkdir -p ~/apt-debs
+          cp /var/cache/apt/archives/*.deb ~/apt-debs/ 2>/dev/null || true
+          sudo apt-get install -y fonts-noto-cjk fonts-noto-color-emoji ffmpeg $PW_DEPS
+      - name: Save OS packages
+        if: steps.apt-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/apt-debs
+          key: apt-debs-${{ steps.keys.outputs.image }}-pw${{ steps.keys.outputs.playwright }}-${{ hashFiles('.github/workflows/e2e.yaml') }}
+
+      # ブラウザ本体は Playwright の版ごとにキャッシュする（依存のライブラリは上の手順で入れる）
+      - name: Restore Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ steps.keys.outputs.playwright }}
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 10
+        run: npx playwright install chromium firefox webkit
 
       # 単体テスト（vitest）。E2E の前に失敗を検出する
       - run: npm run codegen

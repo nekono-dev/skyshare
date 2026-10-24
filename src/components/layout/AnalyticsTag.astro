@@ -1,0 +1,35 @@
+---
+/**
+ * Google アナリティクスのタグを出力する Astro コンポーネント。
+ *
+ * 責務と処理概要:
+ * - 測定 ID があるときだけ、gtag の読み込みと初期化を Partytown（Web Worker）で実行するタグを出す。
+ * - 測定 ID が null なら何も出力しない（アクセス解析を使わない運用）。
+ * - 測定 ID は `lib/site/siteEnv.ts` が形式（G- と英数字のみ）を検査済みのため、スクリプトへそのまま埋め込める。
+ */
+interface Props {
+    measurementId: string | null
+}
+const { measurementId } = Astro.props
+const init = measurementId
+    ? `window.dataLayer = window.dataLayer || []
+function gtag() {
+    dataLayer.push(arguments)
+}
+gtag("js", new Date())
+gtag("config", "${measurementId}")`
+    : ""
+---
+
+{
+    measurementId ? (
+        <>
+            <script
+                is:inline
+                type="text/partytown"
+                src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
+            />
+            <script is:inline type="text/partytown" set:html={init} />
+        </>
+    ) : null
+}

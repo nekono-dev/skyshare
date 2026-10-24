@@ -13,14 +13,20 @@ import ui from "@/styles/ui.module.css"
 type Props = {
   onClick: () => void
   disabled?: boolean
+  /** 置き場所に応じた寸法の調整用（例: `ui["compact-button"]`） */
+  className?: string
 }
 
-export const ThumbnailAdjustButton = ({ onClick, disabled = false }: Props) => {
+export const ThumbnailAdjustButton = ({
+  onClick,
+  disabled = false,
+  className,
+}: Props) => {
   const { t } = useT()
   return (
     <button
       type="button"
-      className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+      className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${className ?? ""}`}
       onClick={onClick}
       disabled={disabled}
     >

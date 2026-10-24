@@ -37,6 +37,8 @@ const ALLOWED_CJK_FILES: Record<string, string> = {
     "components/common/LocaleSelect/index.tsx":
         "表示言語の自称表記（「日本語」「English」は翻訳しない）",
     "lib/atproto/languageFlag.ts": "言語コードと国の対応表（表示文言ではない）",
+    "lib/site/siteEnv.ts":
+        "ビルド時の設定検査のメッセージ（開発者向けで、画面には出ない）",
     "pages/entries/sample.astro":
         "ビルド時に固定される（SSG）サンプルEntryのデモデータ。ゲスト表示のリンク先",
 }
