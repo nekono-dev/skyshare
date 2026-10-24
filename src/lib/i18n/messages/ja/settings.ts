@@ -11,13 +11,16 @@ export const settings = {
     "settings.theme.dark": "ダーク",
     "settings.locale.label": "表示言語",
     "settings.locale.system": "システム設定に従う",
+    "settings.timelineHidden.label": "タイムラインを表示しない",
+    "settings.timelineHidden.description":
+        "オンにすると、投稿フォームのみを表示し、タイムラインの読み込みを省略します。",
     "settings.postForm.title": "投稿フォーム",
     "settings.pinnedFormDisabled.label": "投稿フォームを固定表示しない",
     "settings.pinnedFormDisabled.description":
         "オンにすると、投稿フォームが画面上部に固定表示されなくなります。投稿フォームはサイドバーまたはフローティングの新規投稿ボタンを押して表示してください。",
     "settings.popupIntent.label": "{share}の代わりにポップアップを開く",
     "settings.popupIntent.description":
-        "オンにすると、投稿後の共有をWebshareAPI（{share}で表示できる共有メニュー ）を使わず、投稿インテントをポップアップ{popup}します。",
+        "{share}（共有メニュー）の代わりに{popup}（ポップアップ）を開きます。X等をアプリでなくブラウザで使ってる場合に設定してください。",
     "settings.manualImageAttach.label": "画像を自分で添付する",
     "settings.manualImageAttach.description":
         "オンにすると、SkyshareのURLを発行しません。{share}を使用する場合は、共有先へ画像データを共有します。投稿インテント（ポップアップ{popup}） を使う場合は、対象SNSの投稿フォーム側で画像を設定してください。",

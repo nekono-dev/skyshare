@@ -69,6 +69,7 @@ import {
   resolveMastodonInstanceDomain,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
+import { readTimelineHiddenSetting } from "@/lib/settings/timelineSettings"
 import {
   readHashtagSuggestEnabledSetting,
   readMentionSuggestEnabledSetting,
@@ -256,9 +257,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // SSRは常にfalseでレンダリングするため、初期stateもfalse固定にし、実際の設定値は
     // マウント後のuseEffectで反映する（hydration mismatch対策）。
     const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+    // 「タイムラインを表示しない」がONの間は投稿フォームが常に固定表示されるため、
+    // 「投稿フォームを固定表示しない」はOFF表示かつ操作不能にする（保存値は保持する）。
+    const [timelineHidden, setTimelineHidden] = useState(false)
     useEffect(() => {
       setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+      setTimelineHidden(readTimelineHiddenSetting(false))
     }, [])
+    const effectivePinnedFormDisabled = pinnedFormDisabled && !timelineHidden
     const [hashtagSuggestEnabled] = useState(() =>
       readHashtagSuggestEnabledSetting(true),
     )
@@ -1419,8 +1425,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                     }}
                   />
                   <ToggleSwitch
-                    checked={pinnedFormDisabled}
-                    disabled={isSubmitting}
+                    checked={effectivePinnedFormDisabled}
+                    disabled={isSubmitting || timelineHidden}
                     label={t("settings.pinnedFormDisabled.label")}
                     onCheckedChange={next => {
                       setPinnedFormDisabled(next)

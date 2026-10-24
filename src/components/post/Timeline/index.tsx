@@ -4,6 +4,10 @@
  * 責務と処理概要:
  * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
  * - ThreadComposer の投稿成功時に再取得トリガーを更新する。
+ * - 「タイムラインを表示しない」設定がONの場合は、一覧の取得・表示と投稿ランチャー
+ *   （フローティング/サイドバーの新規投稿ボタン）を省き、投稿フォームを常に固定表示する。
+ *   一覧の取得で行っていた未ログイン判定（ログインページへの移動・ゲスト表示）は、
+ *   セッションの取得結果で代わりに行う。
  * - ページング状態の管理は ComponentList 側へ委譲する。
  */
 
@@ -26,6 +30,7 @@ import ThreadComposer from "@/components/post/ThreadComposer"
 import PostLauncher from "@/components/post/PostLauncher"
 import {
   getActiveAccountInfo,
+  getSessionOnce,
   isSessionKnownUnauthenticated,
 } from "@/lib/account/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
@@ -38,7 +43,10 @@ import {
 } from "@/lib/settings/hashtagHistorySettings"
 import { readPinnedFormDisabledSetting } from "@/lib/settings/shareSettings"
 import type { PaginationMode } from "@/lib/settings/timelineSettings"
-import { readPageSizeSetting } from "@/lib/settings/timelineSettings"
+import {
+  readPageSizeSetting,
+  readTimelineHiddenSetting,
+} from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -81,6 +89,15 @@ const Component = ({ avatarUrl }: Props) => {
   useEffect(() => {
     setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
   }, [])
+  // 「タイムラインを表示しない」設定。pinnedFormDisabled と同じ理由（hydration mismatch
+  // 対策）でマウント後に読み込む。読み込み前（null）の間は一覧の取得を始めないことで、
+  // 非表示設定のときに一覧を1回も取得しないようにする。
+  const [timelineHidden, setTimelineHidden] = useState<boolean | null>(null)
+  useEffect(() => {
+    setTimelineHidden(readTimelineHiddenSetting(false))
+  }, [])
+  // タイムライン非表示中は「投稿フォームを固定表示しない」を無効とし、常に固定表示する。
+  const showPinnedForm = !pinnedFormDisabled || timelineHidden === true
   // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
   // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
   // 到達不能なデッドコードとして残置している。
@@ -123,6 +140,32 @@ const Component = ({ avatarUrl }: Props) => {
       cancelled = true
     }
   }, [])
+
+  // タイムライン非表示中は一覧の取得（getEntries）の401で行っていた未ログイン判定が
+  // 走らないため、セッションの取得結果で同じ扱い（ゲスト表示/ログインページへ移動）をする。
+  useEffect(() => {
+    if (timelineHidden !== true) return
+    let cancelled = false
+
+    const checkSession = async () => {
+      try {
+        const res = await getSessionOnce()
+        if (cancelled || res.status !== 401) return
+        if (isGuestModeRequested()) {
+          setGuestMode(true)
+          return
+        }
+        window.location.href = "/login/"
+      } catch (err) {
+        console.error("Timeline: failed to check session", err)
+      }
+    }
+
+    void checkSession()
+    return () => {
+      cancelled = true
+    }
+  }, [timelineHidden])
 
   /**
    * 指定 cursor のページを取得して ComponentList に返す。
@@ -226,7 +269,7 @@ const Component = ({ avatarUrl }: Props) => {
       pageSize,
       fetchPage,
       reloadKey: guestReloadKey,
-      enabled: paginationMode === "paged",
+      enabled: paginationMode === "paged" && timelineHidden === false,
       loadingText: t("common.loading"),
       emptyText: t("post.timeline.initializing"),
     },
@@ -236,7 +279,7 @@ const Component = ({ avatarUrl }: Props) => {
     infiniteScrollPagination: {
       fetchPage,
       reloadKey: guestReloadKey,
-      enabled: paginationMode === "infinite",
+      enabled: paginationMode === "infinite" && timelineHidden === false,
       loadingText: t("common.loading"),
       emptyText: t("post.timeline.initializing"),
     },
@@ -285,7 +328,7 @@ const Component = ({ avatarUrl }: Props) => {
           {t("post.timeline.guestNotice")}
         </p>
       )}
-      {!pinnedFormDisabled && (
+      {showPinnedForm && (
         <div>
           <ThreadComposer
             variant="page"
@@ -297,15 +340,17 @@ const Component = ({ avatarUrl }: Props) => {
           />
         </div>
       )}
-      <PostLauncher
-        avatarUrl={resolvedAvatarUrl}
-        accountDid={resolvedDid}
-        onPosted={handlePosted}
-        onPinnedFormDisabledChange={setPinnedFormDisabled}
-        guestMode={guestMode}
-      />
+      {timelineHidden !== true && (
+        <PostLauncher
+          avatarUrl={resolvedAvatarUrl}
+          accountDid={resolvedDid}
+          onPosted={handlePosted}
+          onPinnedFormDisabledChange={setPinnedFormDisabled}
+          guestMode={guestMode}
+        />
+      )}
 
-      {loading || error || empty ? (
+      {timelineHidden === true ? null : loading || error || empty ? (
         <p className={error ? styles["error-state"] : styles["empty-state"]}>
           {message}
         </p>
@@ -323,7 +368,7 @@ const Component = ({ avatarUrl }: Props) => {
         />
       )}
 
-      {isPaged ? (
+      {timelineHidden === true ? null : isPaged ? (
         <NavigationBar
           pagination={pagedController.pagination}
           ariaLabel={t("post.timeline.paginationAria")}

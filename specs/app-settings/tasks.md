@@ -14,6 +14,7 @@
 - [x] T-2.2: 描画の単体テストを受け入れ条件のタグ付きで追加する。
 - 検証: `npx vitest run tests/components/settings/SettingList.test.ts`
 - E2E: `tests/e2e/settingsPage.spec.ts` ゲスト表示の設定ページを開く → 表示・投稿フォーム・返信可否の3つの見出しが表示される
+- E2E: `tests/e2e/settingsPage.spec.ts` ゲスト表示の設定ページでラベルと説明文を押し、次にスイッチを押す → ラベルと説明文では状態が変わらず、スイッチで状態が変わる
 
 ## Phase 3: ページとダイアログ
 

@@ -60,14 +60,14 @@
   }
 
   /* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。
-     NavIcon.astro側の既定(active側 opacity:0)をここで反転させる。 */
-  .item:hover [data-nav-icon="active"],
+     NavIcon.astro側の既定(active側 opacity:0)をここで反転させる。
+     :hover の切り替えはホバーできる端末に限る(iPad 等のタッチ端末で、表示が変わる
+     :hover が1回目のタップを遷移させずに消費するのを防ぐ。FooterNav と同じ理由)。 */
   .item:focus [data-nav-icon="active"],
   .item[aria-current="page"] [data-nav-icon="active"] {
     opacity: 1;
   }
 
-  .item:hover [data-nav-icon="muted"],
   .item:focus [data-nav-icon="muted"],
   .item[aria-current="page"] [data-nav-icon="muted"] {
     opacity: 0;
@@ -139,8 +139,24 @@
     display: none;
   }
 
-  .item[data-nav-key="accounts"]:hover .item-label,
   .item[data-nav-key="accounts"]:focus .item-label {
+    display: block;
+  }
+}
+
+/* 表示を切り替える :hover はホバーできる端末に限る(上のクロスフェードの注記を参照)。 */
+@media (min-width: 640px) and (hover: hover) {
+  .item:hover [data-nav-icon="active"] {
+    opacity: 1;
+  }
+
+  .item:hover [data-nav-icon="muted"] {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 848px) and (hover: hover) {
+  .item[data-nav-key="accounts"]:hover .item-label {
     display: block;
   }
 }
