@@ -119,7 +119,8 @@
 
 :local(.base-input-box):has(:disabled),
 :local(.base-input-box):has([aria-disabled="true"]) {
-  background: var(--color-card-muted-bg);
+  background: var(--color-disabled-bg);
+  color: var(--color-text-disabled);
 }
 
 :local(.base-input-field) {

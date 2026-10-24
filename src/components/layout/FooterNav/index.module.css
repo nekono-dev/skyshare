@@ -58,14 +58,25 @@
   height: var(--size-avatar-footer);
 }
 
-/* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。 */
-.item:hover [data-nav-icon="active"],
+/* アイコンのクロスフェード: 既定はmuted(非アクティブ)、hover/aria-current時にbluesky(アクティブ)へ切り替える。
+   :hover の切り替えは、ホバーできる端末(@media (hover: hover))に限る。iOS Safari は
+   タップ時に :hover を適用し、それで要素の表示(opacity 0→1 など)が変わると、
+   1回目のタップをホバー扱いにしてリンク遷移(click)を発生させないため。 */
+@media (hover: hover) {
+  .item:hover [data-nav-icon="active"] {
+    opacity: 1;
+  }
+
+  .item:hover [data-nav-icon="muted"] {
+    opacity: 0;
+  }
+}
+
 .item:focus [data-nav-icon="active"],
 .item[aria-current="page"] [data-nav-icon="active"] {
   opacity: 1;
 }
 
-.item:hover [data-nav-icon="muted"],
 .item:focus [data-nav-icon="muted"],
 .item[aria-current="page"] [data-nav-icon="muted"] {
   opacity: 0;

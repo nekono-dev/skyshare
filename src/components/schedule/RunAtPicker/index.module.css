@@ -1,0 +1,61 @@
+:local(.content) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+:local(.error) {
+  color: var(--color-red-text);
+}
+
+:local(.actions) {
+  display: flex;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+:local(.icon) {
+  width: var(--size-icon-button);
+  height: var(--size-icon-button);
+}
+
+/* 待機中の予約の枠。上限の件数ぶんのマスを横に並べ、使用済み・この予約が使う枠・空きを塗り分ける */
+:local(.slots) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+:local(.slots-label) {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+:local(.slots-bar) {
+  display: flex;
+  gap: var(--space-0);
+}
+
+:local(.slot) {
+  flex: 1 1 0;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-gray);
+}
+
+:local(.slot)[data-state="used"] {
+  background: var(--color-bluesky);
+}
+
+:local(.slot)[data-state="next"] {
+  background: color-mix(in srgb, var(--color-bluesky) 40%, transparent);
+}
+
+/* 許可の有効期限の目安。予約の操作の補足として控えめに示す */
+:local(.expiry) {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

@@ -252,6 +252,8 @@ export const useOgpFetch = ({
 type OgpFetchButtonProps = {
   ogpFetch: UseOgpFetchResult
   disabled?: boolean
+  /** 置き場所に応じた寸法の調整用（例: `ui["compact-button"]`） */
+  className?: string
 }
 
 /**
@@ -259,6 +261,7 @@ type OgpFetchButtonProps = {
  *
  * Input:
  * - `ogpFetch`: `useOgpFetch` の戻り値
+ * - `className`: 追加するクラス名
  *
  * Output:
  * - 取得ボタン。検出 URL が無ければ `null`
@@ -266,6 +269,7 @@ type OgpFetchButtonProps = {
 export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
   ogpFetch,
   disabled,
+  className,
 }) => {
   const { t } = useT()
   const { detectedUrl, isOgpLoading, handleFetchOgp } = ogpFetch
@@ -274,7 +278,7 @@ export const OgpFetchButton: React.FC<OgpFetchButtonProps> = ({
   return (
     <button
       type="button"
-      className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+      className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${className ?? ""}`}
       onClick={handleFetchOgp}
       disabled={isOgpLoading || disabled}
     >

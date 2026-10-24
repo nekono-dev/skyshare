@@ -24,6 +24,7 @@ interface Props {
 import Metadatas from "@/components/layout/Metadatas.astro"
 import { createTranslator, type MessageKey } from "@/lib/i18n/translate"
 import { serviceName } from "@/vars"
+import AuthorizationReturn from "@/components/schedule/AuthorizationReturn"
 const { cardPath, pageTitle, pageTitleKey, robots, avatarUrl, pageHeading, pageCaption } = Astro.props
 const locale = Astro.locals.locale
 // SSR 応答の Content-Type に charset が無いと、X のクローラーが meta charset を使わず
@@ -141,5 +142,7 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
             )
         }
         <slot name="footer" />
+        <!-- 予約投稿の許可の画面から戻ったときの完了と結果の表示 -->
+        <AuthorizationReturn client:load />
     </body>
 </html>

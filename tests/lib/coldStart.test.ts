@@ -56,3 +56,56 @@ describe("cold start: ミドルウェアの静的importにatprotoを含めない
         expect(atproto).toEqual([])
     })
 })
+
+/**
+ * 予約投稿の API は、無料枠の CPU 時間を守るため、ハンドラから静的に辿れる範囲で
+ * atproto のライブラリを読み込まない（予約と認証情報の登録は標準の fetch と Web Crypto で行う）。
+ */
+describe("予約投稿の API の静的importにatprotoを含めない", () => {
+    const entries = [
+        "src/pages/v2/schedules.ts",
+        "src/pages/v2/schedules/[id].ts",
+        "src/pages/v2/schedules/[id]/images/[index].ts",
+        "src/pages/v2/schedules/limits.ts",
+        "src/pages/v2/schedules/credential.ts",
+        "src/lib/schedule/runner.ts",
+    ]
+    it.each(entries)(
+        "schedule-api/AC-16 schedule-runner/AC-16: %s から静的に辿れる範囲に @atproto/* が無い",
+        async entryPath => {
+            const result = await build({
+                entryPoints: [resolve(__dirname, "../../", entryPath)],
+                bundle: true,
+                splitting: true,
+                format: "esm",
+                write: false,
+                outdir: "out",
+                metafile: true,
+                logLevel: "silent",
+                platform: "neutral",
+                alias: { "@": resolve(__dirname, "../../src") },
+                external: ["astro:*", "astro", "cloudflare:*", "@atproto/*"],
+            })
+            const outputs = result.metafile.outputs
+            const entryOutput = Object.keys(outputs).find(
+                key => outputs[key].entryPoint !== undefined,
+            ) as string
+            const staticExternals = new Set<string>()
+            const visited = new Set<string>()
+            const stack = [entryOutput]
+            while (stack.length > 0) {
+                const current = stack.pop() as string
+                if (visited.has(current)) continue
+                visited.add(current)
+                for (const imp of outputs[current].imports) {
+                    if (imp.kind !== "import-statement") continue
+                    if (imp.external) staticExternals.add(imp.path)
+                    else stack.push(imp.path)
+                }
+            }
+            expect(
+                [...staticExternals].filter(p => p.startsWith("@atproto/")),
+            ).toEqual([])
+        },
+    )
+})

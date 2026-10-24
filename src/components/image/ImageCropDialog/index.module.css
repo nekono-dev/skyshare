@@ -3,7 +3,8 @@
   font-family: var(--font-family-sans);
   font-size: var(--font-size-lg);
   line-height: var(--line-height-tight);
-  color: var(--color-black);
+  /* 黒の直書きはダークで読めないため、テーマの文字色にする */
+  color: var(--color-text);
 }
 
 .caption {

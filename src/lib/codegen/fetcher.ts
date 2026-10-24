@@ -67,7 +67,7 @@ const stripPathTrailingSlash = (path: string): string => {
  * - 出力: `extractorApi` を先頭に付与したリクエスト結果
  * - 入力: `url="/v1/page/0/did:plc:abc@3lxyz"`
  * - 出力: `${v1Endpoint}/page/0/did:plc:abc@3lxyz` へのリクエスト結果
- * - 入力: `url="/v2/bsky/images?cid=bafkre..."`
+ * - 入力: `url="/v2/bsky/images?cid=bafkre..."`（応答が `image/*`）
  * - 出力: `data` が画像 `Blob` であるリクエスト結果
  */
 export const customFetcher = async <T>(
@@ -81,9 +81,13 @@ export const customFetcher = async <T>(
     }
     const res = await fetch(url, options)
 
-    if (url.startsWith("/v2/bsky/images")) {
-        // 画像バイナリを Blob のまま返す（base64/JSON化はメモリ・CPUコストが増えるだけで
-        // メリットが無いため行わない）。
+    // 画像の応答は、バイナリを Blob のまま返す（base64/JSON化はメモリ・CPUコストが増えるだけで
+    // メリットが無いため行わない）。PDS の画像は上流の content-type が画像と限らないため URL で、
+    // 予約の画像の取得はエラーの応答が JSON のため content-type で判定する。
+    if (
+        url.startsWith("/v2/bsky/images") ||
+        (res.headers.get("content-type") ?? "").startsWith("image/")
+    ) {
         return {
             data: await res.blob(),
             status: res.status,

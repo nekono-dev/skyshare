@@ -12,6 +12,7 @@
 - 対応: D-2
 - [x] T-2.1: `fetcher.ts` と `openapiFormData.ts` を実装する。
 - [x] T-2.2: 取得処理とフォームデータの単体テストを受け入れ条件のタグ付きで追加する。
+- [x] T-2.3: Blob で返す判定を応答の content-type に改め、予約の画像の取得を AC-6 のテストに加える。
 - 検証: `npx vitest run tests/lib/codegen/fetcher.test.ts tests/lib/codegen/openapiFormData.test.ts`
 
 ## Phase 3: サーバー側の復元と補助

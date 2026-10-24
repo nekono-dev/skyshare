@@ -1,0 +1,76 @@
+:local(.disabled) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  margin-bottom: var(--space-2, 8px);
+}
+
+:local(.disabled) p {
+  margin: 0;
+}
+
+:local(.section-title) {
+  margin: var(--space-2, 8px) 0 var(--space-1, 4px);
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+}
+
+:local(.list) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+
+:local(.item) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  padding: var(--space-3, 12px);
+}
+
+/* 待機中の行は行全体を押して編集を始めるボタンにする */
+:local(.item-button) {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+:local(.item-button):hover {
+  border-color: var(--color-bluesky);
+}
+
+:local(.meta) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+:local(.preview) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+:local(.error) {
+  color: var(--color-red-text);
+}
+
+:local(.actions) {
+  display: flex;
+  gap: var(--space-2, 8px);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 639px) {
+  :local(.item-button) {
+    min-height: 44px;
+  }
+}
