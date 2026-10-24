@@ -8,8 +8,9 @@ yarn-error.log*
 pnpm-debug.log*
 
 
-# environment variables
+# environment variables（雛形 `*.template` のみ管理対象）
 .env
+.dev.vars
 .env.staging
 .env.production
 # 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
@@ -34,8 +35,6 @@ src/client/**/
 /playwright-report
 /blob-report
 /playwright/.cache
-# E2E（実アカウントのライブテスト）
-/.env.e2e
 /playwright/.auth
 
 _legacy/**/.env.test

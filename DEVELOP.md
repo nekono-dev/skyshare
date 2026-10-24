@@ -23,7 +23,10 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## ビルド方法
 
-ローカル実行の環境変数は、雛形 `.env.template` をコピーして使う（`.env` は Git 管理対象外。未設定でもダミー値で動く）。Worker のシークレット（`SCHEDULE_ENC_KEY` など）は `.dev.vars` に書く。
+ローカル実行の設定は、置き場所ごとに雛形を用意している（`.env` と `.dev.vars` は Git 管理対象外）。
+
+- `.env`（`.env.template`）: ビルド時に使う `PUBLIC_*`（接続先・運営者情報など）。未設定でもダミー値で動く。
+- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の鍵（`SCHEDULE_ENC_KEY`・`SCHEDULE_OAUTH_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
 
 ```sh
 cp .env.template .env
@@ -166,7 +169,7 @@ rm oauth.key
 - 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
 
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
-- D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行し、`.dev.vars` に `SCHEDULE_ENC_KEY` を追記する。`migrations/0003_schedule_oauth.sql` は、アプリパスワード方式で登録された認証情報を削除する（利用者は設定で許可し直す）。`0004_schedule_reauth.sql` は、許可の時刻と再度の許可が必要な印の列を加える。
+- D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。`migrations/0003_schedule_oauth.sql` は、アプリパスワード方式で登録された認証情報を削除する（利用者は設定で許可し直す）。`0004_schedule_reauth.sql` は、許可の時刻と再度の許可が必要な印の列を加える。
 
 ### E2E（e2e.yaml）
 

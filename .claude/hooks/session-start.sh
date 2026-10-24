@@ -25,3 +25,4 @@ if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
     --@nekono-dev:registry=https://npm.pkg.github.com \
     --//npm.pkg.github.com/:_authToken="$NODE_AUTH_TOKEN"
 fi
+[ -f .dev.vars ] || cp .dev.vars.template .dev.vars
