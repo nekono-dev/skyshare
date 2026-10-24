@@ -12,9 +12,7 @@ pnpm-debug.log*
 .env
 .env.staging
 .env.production
-# 認証情報を含み得るenvファイル（developの.gitignoreと同じ記述）
-.env.local
-.env.*.local
+# 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
 .env.e2e
 
 # macOS-specific files
@@ -40,9 +38,6 @@ src/client/**/
 /.env.e2e
 /playwright/.auth
 
-# 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
-.env.local
-.env.*.local
 _legacy/**/.env.test
 _legacy/**/.env.test.*
 !_legacy/**/.env.test.template

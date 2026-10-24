@@ -23,7 +23,10 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## ビルド方法
 
+ローカル実行の環境変数は、雛形 `.env.template` をコピーして使う（`.env` は Git 管理対象外。未設定でもダミー値で動く）。Worker のシークレット（`SCHEDULE_ENC_KEY` など）は `.dev.vars` に書く。
+
 ```sh
+cp .env.template .env
 ## astroによる簡易サーバ起動
 npm run dev
 ## wranglerを用いた動作確認
@@ -257,7 +260,7 @@ npx playwright test # ゲスト表示（?guest）で完結するE2E
 
 ライブテストが作る投稿は本文が `[e2e <識別子>]` で始まり、テスト終了時に削除される。異常終了で残った分は、次回のライブテスト開始時に回収される。手動で掃除するには `npm run e2e:live:sweep -- --dry-run`（削除予定の確認）、`npm run e2e:live:sweep`（1時間より古いものを削除）を使う。
 
-リポジトリ直下の `.env.e2e`（Git管理対象外）に `KEY=value` 形式で書いてもよい。必ず検証専用のアカウントとアプリパスワードを使うこと。
+リポジトリ直下の `.env.e2e`（Git管理対象外）に `KEY=value` 形式で書いてもよい。雛形 `.env.e2e.template` をコピーして使う（`cp .env.e2e.template .env.e2e`）。本番の解析に使う Cloudflare API トークンも、同じ `.env.e2e` に置く。必ず検証専用のアカウントとアプリパスワードを使うこと。
 
 ヘッドレスブラウザで日本語・国旗絵文字を表示するには、OSのフォントが必要（例: `sudo apt-get install fonts-noto-cjk fonts-noto-color-emoji`）。動画のライブテストの素材作成・確認には `ffmpeg` を使う。
 
