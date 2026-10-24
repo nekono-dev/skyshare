@@ -119,6 +119,11 @@ export const Component = forwardRef<VideoPickerHandle, Props>(
       abortRef.current = null
     }
 
+    // 親が値を外部から空にした場合（予約の設定に伴う登録解除など）も、アップロードを中断する
+    useEffect(() => {
+      if (value === null) abortCurrent()
+    }, [value])
+
     const startUpload = (
       file: File,
       entryBase: Omit<VideoEntry, "upload" | "alt">,

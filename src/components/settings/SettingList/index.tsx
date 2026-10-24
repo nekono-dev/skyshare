@@ -4,6 +4,9 @@
  * 責務と処理概要:
  * - 設定値ごとの「ラベル・説明文・トグルスイッチ」を1行にまとめ、`ComponentList` を用いて
  *   縦に並べる。
+ * - ラベル・説明文は `<label>` にせず、押してもコントロールの値を変えない
+ *   （値を変えるのはスイッチ・プルダウンなどのコントロールの操作だけにする）。
+ *   アクセシブルネームは `aria-label`、文字列でないラベルでは `aria-labelledby` で与える。
  * - 各設定値の state・永続化・連動ルールは呼び出し元（`Settings` など）に委ね、
  *   このコンポーネントは表示と `onCheckedChange` の橋渡しのみを担う。
  */
@@ -23,7 +26,8 @@ export type SettingListItem = {
   /**
    * 行のメインコントロールを描画する関数。省略時は ON/OFF スイッチ（`checked`/`onCheckedChange`）。
    * プルダウンなど別のコントロールを置く場合に指定し、渡された `id`/`ariaLabel` を
-   * コントロールへ設定すること（ラベルの `htmlFor` と対応させるため）。
+   * コントロールへ設定すること（ラベル文言は `<label>` ではないため、アクセシブルネームは
+   * `ariaLabel` で与える）。
    */
   renderControl?: (props: {
     id: string
@@ -89,6 +93,7 @@ type SettingListRowProps = {
  */
 const SettingListRow = ({ item }: SettingListRowProps) => {
   const inputId = `setting-${item.key}`
+  const labelId = `${inputId}-label`
   const ariaLabel =
     item.ariaLabel ?? (typeof item.label === "string" ? item.label : undefined)
 
@@ -105,12 +110,14 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
       }
     >
       <div className={styles["toggle-row"]}>
-        <label className={styles.text} htmlFor={inputId}>
-          <span className={styles.label}>{item.label}</span>
+        <div className={styles.text}>
+          <span id={labelId} className={styles.label}>
+            {item.label}
+          </span>
           {item.description && (
             <span className={styles.description}>{item.description}</span>
           )}
-        </label>
+        </div>
         {item.renderControl ? (
           item.renderControl({
             id: inputId,
@@ -124,6 +131,7 @@ const SettingListRow = ({ item }: SettingListRowProps) => {
             disabled={item.disabled}
             label=""
             aria-label={ariaLabel}
+            aria-labelledby={ariaLabel ? undefined : labelId}
             onCheckedChange={next => item.onCheckedChange?.(next)}
           />
         )}

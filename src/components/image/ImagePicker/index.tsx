@@ -161,6 +161,35 @@ export const Component = forwardRef<ImagePickerHandle, Props>(
       if (value === null && slotsRef.current.length > 0) {
         revokeSlotUrls(slotsRef.current)
         setSlots([])
+        return
+      }
+      // 外から渡された画像の組（予約の書き戻し）で、内部のスロットを組み立てる。
+      // 渡された thumbnailBlob をそのまま使うため、ここでは onChange を呼ばない。
+      if (value !== null && slotsRef.current.length === 0) {
+        const defs = getSlotDefs(value.originalBlobs.length)
+        const restored: ImageSlot[] = value.originalBlobs.map((blob, index) => {
+          const size = value.meta?.[index]
+          const def = defs[index]
+          const width = size?.width
+          const height = size?.height
+          return {
+            objectUrl: URL.createObjectURL(blob),
+            fileName: value.sourceFileNames[index] ?? `image-${index + 1}`,
+            naturalWidth: width,
+            naturalHeight: height,
+            cropState: {
+              crop: { x: 0, y: 0 },
+              zoom: 1,
+              cropPixels:
+                def && width && height
+                  ? computeInitialCrop(width, height, def.w, def.h)
+                  : null,
+            },
+            alt: size?.alt ?? "",
+          }
+        })
+        slotsRef.current = restored
+        setSlots(restored)
       }
     }, [value])
 

@@ -24,3 +24,11 @@
 - [x] T-3.2: 幅390pxでフォントサイズ・ボタン高さ・下余白・横スクロールを確認するE2Eテストを追加する。
 - 検証: `npm run build`
 - E2E: `tests/e2e/mobileScale.spec.ts` 幅390pxで設定ページを末尾までスクロールする → 末尾要素がフッターナビゲーションと重ならず、横スクロールが発生しない
+
+## Phase 4: 横幅の限られたツールバー
+
+- 対応: D-4
+- [x] T-4.1: `button.ui.module.css` に `.compact-button` を追加し、投稿フォーム上部とセグメントの追加操作のボタンに付ける。
+- [x] T-4.2: 受け入れ条件 AC-7 の E2E をタグ付きで追加する。
+- 検証: `npx tsc --noEmit`
+- E2E: `tests/e2e/draftListLayout.spec.ts` 幅390pxで投稿フォームを開く → 投稿のボタンの文字が16pxで左右余白が14px、キャンセルの左右余白が6pxになる

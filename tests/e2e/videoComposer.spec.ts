@@ -296,7 +296,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         mocks.releaseJob()
     })
 
-    test("[entry-visual/AC-5] 「サムネ調整」ボタンは動画追加ボタンの隣に現れ、アップロード中でも調整できる（サムネ調整）", async ({
+    test("[entry-visual/AC-5] 「サムネ調整」ボタンは動画追加ボタンの下の追加操作の行に現れ、アップロード中でも調整できる（サムネ調整）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page, { holdJob: true })
@@ -309,11 +309,19 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(page.getByRole("progressbar")).toBeVisible()
         await expect(adjust).toBeEnabled()
 
-        // 動画追加ボタンの右隣（同じ行・動画追加ボタンより右）に置かれる
+        // 動画追加ボタンの行の下にある、追加操作の行に置かれる
+        await expect(
+            page
+                .getByTestId("thread-segment-0-media-actions")
+                .getByRole("button", {
+                    name: "サムネ調整",
+                }),
+        ).toBeVisible()
         const videoBox = (await editor.getByLabel("動画追加").boundingBox())!
         const adjustBox = (await adjust.boundingBox())!
-        expect(adjustBox.x).toBeGreaterThan(videoBox.x)
-        expect(Math.abs(adjustBox.y - videoBox.y)).toBeLessThan(40)
+        expect(adjustBox.y).toBeGreaterThanOrEqual(
+            videoBox.y + videoBox.height - 1,
+        )
 
         // プレビューは再生ボタン入りの visual（1200x630）で、中央に再生記号がある
         const thumbImg = page.getByTestId("video-preview").locator("img")

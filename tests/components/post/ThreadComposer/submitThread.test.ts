@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { createEmptySegment } from "@/components/post/ThreadComposer/segments"
-import { submitThread } from "@/components/post/ThreadComposer/submitThread"
+import {
+    createEmptySegment,
+    hasVideoSegment,
+} from "@/components/post/ThreadComposer/segments"
+import {
+    buildThreadRequestBody,
+    submitThread,
+} from "@/components/post/ThreadComposer/submitThread"
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import { createEntry } from "@/client/openapi/client"
 import { warmOgpCache } from "@/lib/entry/warmOgpCache"
@@ -410,5 +416,35 @@ describe("submitThread（動画）", () => {
         })
         const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
         expect(body.posts.every(post => "video" in post)).toBe(true)
+    })
+})
+
+describe("buildThreadRequestBody", () => {
+    it("[thread-composer/AC-14] 動画を含まないスレッドは予約でき、予約の本文は送信の本文と同じ組み立てになる", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }])
+        const segments = [
+            { ...createEmptySegment("ja"), text: "one" },
+            { ...createEmptySegment("ja"), text: "two" },
+        ]
+        expect(hasVideoSegment(segments)).toBe(false)
+
+        const built = await buildThreadRequestBody({
+            segments,
+            manualImageAttach: false,
+        })
+        expect(built.ok).toBe(true)
+        await submitThread({ segments, manualImageAttach: false })
+        const sent = vi.mocked(createEntry).mock.calls[0][0]
+        expect(built.ok && built.body).toEqual(sent)
+    })
+
+    it("[thread-composer/AC-14] 動画を含むスレッドは予約の対象外と判定される", () => {
+        const withVideo = {
+            ...createEmptySegment("ja"),
+            videoEntry: { thumbnailBlob: new Blob(["t"]) } as never,
+        }
+        expect(hasVideoSegment([createEmptySegment("ja"), withVideo])).toBe(
+            true,
+        )
     })
 })

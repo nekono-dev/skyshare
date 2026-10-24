@@ -46,3 +46,6 @@ src/client/**/
 _legacy/**/.env.test
 _legacy/**/.env.test.*
 !_legacy/**/.env.test.template
+
+# GitHub の Variables 登録用（hack/github-variables.env.example のコピー。運用者の値を含む）
+/github-variables.env

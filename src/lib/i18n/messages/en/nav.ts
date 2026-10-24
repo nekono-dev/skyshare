@@ -15,5 +15,6 @@ export const nav = {
     "pageTitle.accounts": "Switch account | {service}",
     "pageTitle.settings": "Settings | {service}",
     "pageTitle.help": "Help | {service}",
+    "pageTitle.privacy": "Privacy Policy | {service}",
     "pageTitle.jump": "Redirecting... - {service}",
 } satisfies MessageEntries

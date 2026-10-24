@@ -5,6 +5,7 @@
  * 責務と処理概要:
  * - OGP / Twitter Card / robots / viewport などの基本メタを一元管理する。
  * - `cardPath` と `Astro.url` から共有カード画像の絶対 URL を組み立てる。
+ * - Google アナリティクスのタグは、運用者ごとの設定の測定 ID を `AnalyticsTag` に渡して出力する。
  */
 
 import type { MessageKey } from "@/lib/i18n/translate"
@@ -21,6 +22,8 @@ interface Props {
 }
 const { cardPath, pageTitle, pageTitleKey, robots, avatarUrl, pageCaption, pageHeading } = Astro.props
 import { serviceName, serviceDescription } from "@/vars"
+import { siteConfig } from "@/lib/site/siteConfig"
+import AnalyticsTag from "./AnalyticsTag.astro"
 
 const url = Astro.url
 const cardUrl = new URL(cardPath, Astro.url)
@@ -45,12 +48,4 @@ const cardUrl = new URL(cardPath, Astro.url)
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="generator" content={Astro.generator} />
 <meta name="robots" content={robots.join(",")} />
-<script is:inline type="text/partytown" src="https://www.googletagmanager.com/gtag/js?id=G-JDS7QWVYQB"></script>
-<script is:inline type="text/partytown">
-    window.dataLayer = window.dataLayer || []
-    function gtag() {
-        dataLayer.push(arguments)
-    }
-    gtag("js", new Date())
-    gtag("config", "G-JDS7QWVYQB")
-</script>
+<AnalyticsTag measurementId={siteConfig.analyticsId} />

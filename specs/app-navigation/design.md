@@ -86,6 +86,8 @@ export const isActiveHref = (href: string, currentPathname: string): boolean
 | ゲスト表示の同期     | 同じ契機で、リンクのクエリを取り除いたうえで `withGuestModeQuery` を適用する                             |
 | アカウントのアイコン | 同じ契機でアクティブなアカウントの画像を取得し、`[data-account-avatar-img]` の `src` に設定して表示する  |
 
+アイコンの色の切り替え（`opacity` のクロスフェード）やラベルの表示のように見た目の要素を出し入れする `:hover` は、`@media (hover: hover)` の中にだけ書く。iOS Safari はタップで `:hover` を適用し、それで要素の表示が変わると1回目のタップをホバーとして扱い、リンクへ遷移しないため。
+
 ## 4. エラー処理
 
 | 事象                   | 処理                                                 |

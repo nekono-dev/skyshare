@@ -45,6 +45,7 @@ node <スキルのパス>/scripts/brw.mjs <サブコマンド>
 | `namePattern` / `maxNameLength` | 作業ブランチ名の正規表現（接頭辞を含むブランチ名全体）と最大文字数 |
 | `preview.provider` | `none` / `url-template` / `cloudflare-previews`。省略時は `urlTemplate` があれば `url-template` |
 | `preview.urlTemplate` | `{alias}`（ブランチ名の `/` を `-` にしたもの）か `{branch}` を含むURL |
+| `preview.aliasStripPrefix` | 省略可。alias を作る前にブランチ名から除く接頭辞（例: `"dev/"` で `dev/foo` の alias が `foo`）。プレビューURL・workflow 雛形・後始末の名前に効く |
 
 `preview` が無い、または `provider: none` ならプレビューURLの案内はしない。provider の詳細は `providers/`、Cloudflare の知見は `references/cloudflare-previews.md`。
 

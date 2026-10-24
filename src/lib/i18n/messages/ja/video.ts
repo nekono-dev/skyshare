@@ -10,6 +10,8 @@ export const video = {
         "画像を添付済みのため動画は追加できません",
     "video.picker.exclusiveWithOgp":
         "リンクカードを取得済みのため動画は追加できません",
+    "video.picker.exclusiveWithSchedule":
+        "予約の日時を設定中のため動画は追加できません",
     "video.picker.exclusiveWithVideo": "動画を添付済みのため追加できません",
     "video.status.uploading": "アップロード中… {percent}%",
     "video.status.processing": "変換中… {percent}%",

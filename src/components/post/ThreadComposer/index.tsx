@@ -13,14 +13,25 @@
  *   対象とする（2件目以降は対象外）。仕様書に明記が無かったため実装時に決定した方針。
  * - API送信は`submitThread`、投稿成功後のポップアップ/WebShareAPI分岐は`shareDispatch`に
  *   それぞれ委譲する。
+ * - 予約投稿: 予約の状態（`scheduleMode`）を保持し、実行日時が設定されていれば送信ボタンを
+ *   「予約」「すべて予約」に変え、予約の作成・置き換えを `submitSchedule` に委ねる。
+ *   状態の遷移・送信先・キャンセルの動作の判定は `lib/schedule/scheduleMode` が決める。
+ * - 下書き・予約: 下書きの一覧と予約の一覧をタブで切り替える画面を開き、選んだ下書きか
+ *   予約の内容をセグメントへ戻す。
+ * - 予約投稿が無効のときにカレンダーのボタンを押すと、設定で有効にする案内を出し、
+ *   「設定を開く」で設定のページへ移る。
+ * - 作成中（未保存の本文がある）にリンクで他のページへ移ろうとしたときは、移動を止めて
+ *   下書き保存の確認（保存して移る・破棄して移る・編集を続ける）を出す。
  */
-import { useT } from "@/lib/i18n/react"
+import { useLocale, useT } from "@/lib/i18n/react"
 import { renderSlots } from "@/lib/i18n/rich"
 import {
   deferMessage,
   type DeferredMessage,
   type PlainMessageKey,
 } from "@/lib/i18n/translate"
+import { navigate } from "astro:transitions/client"
+import { navigatingLinkTarget } from "@/util/links"
 import React, {
   forwardRef,
   useEffect,
@@ -58,6 +69,7 @@ import {
   resolveMastodonInstanceDomain,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
+import { readTimelineHiddenSetting } from "@/lib/settings/timelineSettings"
 import {
   readHashtagSuggestEnabledSetting,
   readMentionSuggestEnabledSetting,
@@ -68,7 +80,31 @@ import IntentShareDialog, {
 import AutoPopupTargetSelect from "@/components/common/AutoPopupTargetSelect"
 import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
 import { runShareDispatch } from "./shareDispatch"
-import { submitThread } from "./submitThread"
+import ChoiceDialog from "@/components/common/ChoiceDialog"
+import TabButtons, { panelId, tabId } from "@/components/common/TabButtons"
+import RunAtPicker from "@/components/schedule/RunAtPicker"
+import CredentialDialog from "@/components/schedule/CredentialDialog"
+import ScheduleList from "@/components/schedule/ScheduleList"
+import type { CreateScheduleBody } from "@/client/openapi/model"
+import { formatRunAtLabel } from "@/lib/schedule/runAtInput"
+import {
+  applyRunAtChange,
+  cancelAction,
+  editScheduleMode,
+  initialScheduleMode,
+  runAtOf,
+  submitLabelKey,
+  submitTarget,
+  type ScheduleMode,
+} from "@/lib/schedule/scheduleMode"
+import {
+  cancelSchedule,
+  fetchPendingCount,
+  fetchScheduleForEdit,
+  submitSchedule,
+} from "@/lib/schedule/submitSchedule"
+import { useScheduleAvailability } from "@/lib/schedule/useScheduleAvailability"
+import { buildThreadRequestBody, submitThread } from "./submitThread"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import { estimateSkyshareEntryUrl } from "@/lib/entry/estimateEntryUrl"
 import { resolveCounterTargets } from "@/lib/share/counterReserve"
@@ -79,9 +115,11 @@ import {
   canRemoveSegment,
   createEmptySegment,
   draftPostsToSegments,
+  hasVideoSegment,
   pendingVideoState,
   removeSegment,
   revokeImageEntry,
+  scheduleDetailToSegments,
   revokeVideoEntry,
   segmentsToDraftPosts,
   type SegmentState,
@@ -166,23 +204,6 @@ const recordUsedHashtagsToHistory = (
 }
 
 /**
- * 共有オプション折りたたみの初期開閉状態を決める。
- *
- * Input:
- * - `optionsList`: 共有系トグルの現在値一覧
- *
- * Output:
- * - 初回表示時に折りたたみを開くべきなら `true`
- */
-const resolveShareOptionsDefaultOpen = ({
-  optionsList,
-}: {
-  optionsList: boolean[]
-}) => {
-  return optionsList.some(Boolean)
-}
-
-/**
  * 投稿フォーム本体（スレッド投稿対応）を描画する。
  *
  * Input:
@@ -233,24 +254,17 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const estimatedEntryUrl = willCreateEntry
       ? estimateSkyshareEntryUrl(accountDid)
       : null
-    // useShareToggles はハイドレーション不一致を避けるため、マウント直後は
-    // 共有系トグルを全てfalse固定で返し、実際の値はマウント後のuseEffectで非同期に
-    // 反映する。Collapsible の defaultOpen は初回マウント時のみ評価される
-    // （内部 state の初期化関数のため）ので、そのままでは常にfalseの仮値を見て
-    // 折りたたんだ状態になってしまう。トグルの読み込み完了を検知して
-    // Collapsible の key を変えることで、正しい値が揃った時点で再マウント
-    // させ、defaultOpen を正しく再評価させる。
-    const [shareTogglesReady, setShareTogglesReady] = useState(false)
-    useEffect(() => {
-      setShareTogglesReady(true)
-    }, [])
     // SSRは常にfalseでレンダリングするため、初期stateもfalse固定にし、実際の設定値は
-    // マウント後のuseEffectで反映する（shareTogglesReadyと同じ理由によるhydration
-    // mismatch対策）。
+    // マウント後のuseEffectで反映する（hydration mismatch対策）。
     const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+    // 「タイムラインを表示しない」がONの間は投稿フォームが常に固定表示されるため、
+    // 「投稿フォームを固定表示しない」はOFF表示かつ操作不能にする（保存値は保持する）。
+    const [timelineHidden, setTimelineHidden] = useState(false)
     useEffect(() => {
       setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+      setTimelineHidden(readTimelineHiddenSetting(false))
     }, [])
+    const effectivePinnedFormDisabled = pinnedFormDisabled && !timelineHidden
     const [hashtagSuggestEnabled] = useState(() =>
       readHashtagSuggestEnabledSetting(true),
     )
@@ -291,6 +305,41 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       undefined,
     )
     const [isSubmitting, setIsSubmitting] = useState(false)
+    // 予約の状態（日時なし・新規の予約・予約の編集中・編集中に取り消した後）
+    const [scheduleMode, setScheduleMode] =
+      useState<ScheduleMode>(initialScheduleMode)
+    const [runAtPickerOpen, setRunAtPickerOpen] = useState(false)
+    // 日時の指定を開くたびに取得する、待機中の予約の件数（取得前・失敗は null）
+    const [pendingCount, setPendingCount] = useState<number | null>(null)
+    useEffect(() => {
+      if (!runAtPickerOpen) return
+      let cancelled = false
+      setPendingCount(null)
+      void fetchPendingCount().then(count => {
+        if (!cancelled) setPendingCount(count)
+      })
+      return () => {
+        cancelled = true
+      }
+    }, [runAtPickerOpen])
+    const [editChoiceOpen, setEditChoiceOpen] = useState(false)
+    const [editChoiceBusy, setEditChoiceBusy] = useState(false)
+    const [scheduleLoading, setScheduleLoading] = useState(false)
+    // 失敗した予約から書き戻した入力のとき、その履歴の識別子。送信に成功したら履歴を削除する
+    const [restoredFailedId, setRestoredFailedId] = useState<string | null>(
+      null,
+    )
+    // 下書き・予約の画面のタブ。開くたびに下書きのタブへ戻す
+    const [draftTab, setDraftTab] = useState<"drafts" | "schedules">("drafts")
+    // 送信中の2回目の確定操作を、state の反映を待たずに無視するための印
+    const submittingRef = useRef(false)
+    const locale = useLocale()
+    const {
+      registered: scheduleRegistered,
+      reauthRequired: scheduleReauthRequired,
+      expiresAt: scheduleExpiresAt,
+      limits: scheduleLimits,
+    } = useScheduleAvailability(!guestMode)
     const [draftModalOpen, setDraftModalOpen] = useState(false)
     const [draftItems, setDraftItems] = useState<
       ReturnType<typeof normalizeDraftList>
@@ -300,6 +349,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       useState<PlainMessageKey | null>(null)
     const [loadedDraft, setLoadedDraft] = useState<LoadedDraft | null>(null)
     const [draftSaveConfirmOpen, setDraftSaveConfirmOpen] = useState(false)
+    // 予約投稿が無効のときにカレンダーのボタンを押した際の、設定への案内
+    const [setupGuideOpen, setSetupGuideOpen] = useState(false)
+    // 許可が無効になったときにカレンダーのボタンを押した際の、再度の許可のダイアログ
+    const [reauthOpen, setReauthOpen] = useState(false)
+    // 下書き保存の確認の後に移るページ。null のときは、確認の後にフォームを閉じるだけ
+    const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+      null,
+    )
     const [isSavingDraft, setIsSavingDraft] = useState(false)
     const formRef = useRef<HTMLDivElement>(null)
     const entryFormRef = useRef<HTMLFormElement>(null)
@@ -307,12 +364,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const rootSegment = segments[0]
     const hasTextInput = segments.some(s => s.text.trim().length > 0)
     const isThread = segments.length > 1
-
-    const defaultOpenShareOptions = resolveShareOptionsDefaultOpen({
-      // 自動ポップアップするSNS（およびそれを表示する条件のPopupIntentInsteadOfWebshare）は、
-      // 折りたたみを初期状態で開く理由にしない。
-      optionsList: [pinnedFormDisabled, shareToggles.truncateIntentText],
-    })
 
     /**
      * 投稿フォームの入力項目（全セグメント・下書き紐付け）のみを初期状態へ戻す。
@@ -340,6 +391,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       ])
       setActiveIndex(0)
       setLoadedDraft(null)
+      setScheduleMode(initialScheduleMode)
+      setRestoredFailedId(null)
     }
 
     /**
@@ -352,6 +405,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
      * - なし（state 更新のみ）
      */
     const openDraftPicker = async () => {
+      setDraftTab("drafts")
       setDraftModalOpen(true)
       setDraftListLoading(true)
       setDraftListError(null)
@@ -399,8 +453,20 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         id: draft.id,
         posts: segmentsToDraftPosts(nextSegments),
       })
+      // 下書きは予約と結び付かないため、予約の状態を通常の入力へ戻す（予約そのものは残る）
+      setScheduleMode(initialScheduleMode)
+      setRestoredFailedId(null)
       setStatus(deferMessage("post.composer.draftApplied"))
       setStatusColor("green")
+    }
+
+    /**
+     * 失敗した予約から書き戻した入力の送信に成功したとき、元の失敗の履歴をバックグラウンドで削除する。
+     * 失敗しても利用者の操作は妨げない（履歴は保持期間の後片付けで消える）。
+     */
+    const deleteRestoredFailedSilently = () => {
+      if (!restoredFailedId) return
+      void cancelSchedule(restoredFailedId)
     }
 
     /**
@@ -455,6 +521,76 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     }
 
     /**
+     * 他のページへ移る。同じオリジンならページ遷移（`navigate`）、別のオリジンなら通常の遷移にする。
+     */
+    const goTo = (to: string) => {
+      const url = new URL(to, window.location.href)
+      if (url.origin === window.location.origin) void navigate(url.href)
+      else window.location.assign(url.href)
+    }
+
+    /**
+     * 下書き保存の確認を済ませた後の動作。フォームを閉じ、移る先が決まっていればそのページへ移る。
+     */
+    const finishAfterDraftConfirm = () => {
+      setDraftSaveConfirmOpen(false)
+      closeForm()
+      goToPendingNavigation()
+    }
+
+    /**
+     * 他のページへ移る。閉じるときと同じ確認（予約の編集中は3択、未保存の本文があれば
+     * 下書き保存の確認）を挟んでから移り、作成中の内容を不意に失わないようにする。
+     *
+     * Input:
+     * - `to`: 移る先の URL またはパス（再度の許可では Bluesky の認可の画面）
+     */
+    const requestNavigation = (to: string) => {
+      const action = cancelAction(
+        scheduleMode,
+        hasUnsavedDraftChanges(),
+        hasTextInput,
+      )
+      if (action === "close") {
+        goTo(to)
+        return
+      }
+      setPendingNavigation(to)
+      if (action === "editChoice") setEditChoiceOpen(true)
+      else setDraftSaveConfirmOpen(true)
+    }
+
+    /** 確認の後に移る先が決まっていれば、そのページへ移る */
+    const goToPendingNavigation = () => {
+      if (!pendingNavigation) return
+      const to = pendingNavigation
+      setPendingNavigation(null)
+      goTo(to)
+    }
+
+    // 作成中にリンクを押して別のページへ移ろうとしたら、移動を止めて下書き保存の確認を出す。
+    // Astro のページ遷移の通知（astro:before-preparation）は、取り消すと全体の再読み込みに
+    // 切り替わり、入力が失われるため使わず、遷移を始める前のクリックを捕まえる。
+    // ブラウザの戻る・進む、再読み込み、タブを閉じる操作は対象にしない。
+    // クリックの購読はマウント中ずっと同じ関数で行うため、最新の状態は ref 経由で参照する。
+    const requestNavigationRef = useRef(requestNavigation)
+    requestNavigationRef.current = requestNavigation
+    const hasUnsavedRef = useRef(hasUnsavedDraftChanges)
+    hasUnsavedRef.current = hasUnsavedDraftChanges
+    useEffect(() => {
+      const onClick = (event: MouseEvent) => {
+        const to = navigatingLinkTarget(event, window.location)
+        if (!to || !hasUnsavedRef.current()) return
+        // Astro のリンクの処理（バブリング段階）へ届く前に止める
+        event.preventDefault()
+        event.stopPropagation()
+        requestNavigationRef.current(to.href)
+      }
+      document.addEventListener("click", onClick, true)
+      return () => document.removeEventListener("click", onClick, true)
+    }, [])
+
+    /**
      * 下書きを保存(新規作成/更新)してからフォームを閉じる。
      *
      * Input:
@@ -477,8 +613,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           return
         }
 
-        setDraftSaveConfirmOpen(false)
-        closeForm()
+        finishAfterDraftConfirm()
       } catch (error) {
         console.error("ThreadComposer: failed to save draft", error)
         setStatus(deferMessage("post.composer.draftSaveFailed"))
@@ -492,19 +627,129 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
      * 下書きを保存せずフォームを閉じる。
      */
     const handleDiscardDraftAndClose = () => {
-      setDraftSaveConfirmOpen(false)
-      closeForm()
+      finishAfterDraftConfirm()
     }
 
     /**
      * フォームを閉じる要求を処理する（キャンセルボタン・Overlay 背景クリック共通）。
+     *
+     * 処理の趣旨:
+     * - 予約の編集中は、予約の取消・予約を残して閉じる・編集を続けるの3択を出す。
+     * - 編集中に日時を解除して予約を取り消した後は、変更がなくても下書きの保存を確認する。
+     * - それ以外（新規の予約を含む）は、下書きの保存の確認に従う。
      */
     const requestClose = () => {
-      if (hasUnsavedDraftChanges()) {
+      const action = cancelAction(
+        scheduleMode,
+        hasUnsavedDraftChanges(),
+        hasTextInput,
+      )
+      if (action === "editChoice") {
+        setEditChoiceOpen(true)
+        return
+      }
+      if (action === "draftConfirm") {
         setDraftSaveConfirmOpen(true)
         return
       }
       closeForm()
+    }
+
+    /**
+     * 予約の編集中のキャンセルで「予約を取り消す」を選んだとき。
+     * 取消に成功したらフォームを閉じ、失敗したら3択を閉じて文言を表示する（入力は残す）。
+     */
+    const handleCancelScheduleAndClose = async () => {
+      if (scheduleMode.kind !== "editing") return
+      setEditChoiceBusy(true)
+      try {
+        const result = await cancelSchedule(scheduleMode.id)
+        setEditChoiceOpen(false)
+        if (!result.ok) {
+          setPendingNavigation(null)
+          setStatus(deferMessage(result.messageKey))
+          setStatusColor("#b00")
+          return
+        }
+        closeForm()
+        setStatus(deferMessage("schedule.cancelled"))
+        setStatusColor("green")
+        goToPendingNavigation()
+      } finally {
+        setEditChoiceBusy(false)
+      }
+    }
+
+    /**
+     * 実行日時の設定・解除を反映する。
+     *
+     * 処理の趣旨:
+     * - 予約の編集中に解除したら、確認なしで予約を取り消す。フォームの内容は残す。
+     * - 取消に失敗したら、編集中の状態と日時に戻して文言を表示する。
+     *
+     * Input:
+     * - `next`: 設定した日時、または解除（null）
+     */
+    const handleRunAtChange = async (next: Date | null) => {
+      const previous = scheduleMode
+      const { mode, cancelScheduleId } = applyRunAtChange(previous, next)
+      setScheduleMode(mode)
+      if (!cancelScheduleId) return
+      const result = await cancelSchedule(cancelScheduleId)
+      if (!result.ok) {
+        setScheduleMode(previous)
+        setStatus(deferMessage(result.messageKey))
+        setStatusColor("#b00")
+        return
+      }
+      setStatus(deferMessage("schedule.cancelled"))
+      setStatusColor("green")
+    }
+
+    /**
+     * 予約のタブで選んだ予約を、内容と画像ごとフォームへ戻す。待機中の予約は編集中にし、
+     * 失敗した予約は日時の無い新規の入力として戻す（送信に成功したら元の履歴を削除する）。
+     * 取得に失敗したら、フォームを変えずに文言を表示する。
+     *
+     * Input:
+     * - `id`: 予約の識別子
+     */
+    const applyScheduleToForm = async (id: string) => {
+      setDraftModalOpen(false)
+      setScheduleLoading(true)
+      try {
+        const loaded = await fetchScheduleForEdit(id)
+        if (!loaded.ok) {
+          setStatus(deferMessage(loaded.messageKey))
+          setStatusColor("#b00")
+          return
+        }
+        segments.forEach(segment => {
+          revokeImageEntry(segment.imageEntry)
+          revokeVideoEntry(segment.videoEntry)
+        })
+        const nextSegments = scheduleDetailToSegments(
+          loaded.detail,
+          loaded.images,
+          languageCode,
+        )
+        setSegments(nextSegments)
+        setActiveIndex(0)
+        setLanguageCode(nextSegments[0]!.languageCode)
+        setLoadedDraft(null)
+        if (loaded.detail.status === "failed") {
+          // 失敗した予約は、日時の無い新規の入力として戻す（送信に成功したら元の履歴を削除する）
+          setScheduleMode(initialScheduleMode)
+          setRestoredFailedId(id)
+        } else {
+          setScheduleMode(editScheduleMode(id, loaded.runAt))
+          setRestoredFailedId(null)
+        }
+        setStatus(deferMessage("schedule.applied"))
+        setStatusColor("green")
+      } finally {
+        setScheduleLoading(false)
+      }
     }
 
     useImperativeHandle(ref, () => ({ requestClose }))
@@ -549,6 +794,102 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 取り外し（キャンセル）した場合のみ、完了を待たずに投稿できる。
     const videoPending = pendingVideoState(segments)
     const canSubmit = areAllSegmentsPostable(segments) && videoPending === null
+    // 動画は予約に含められない（動画を含む間はカレンダーのボタンを無効にし、
+    // 予約の日時の設定中は動画のボタンを無効にする）
+    const hasVideo = hasVideoSegment(segments)
+    const scheduleAvailable =
+      !guestMode &&
+      scheduleRegistered === true &&
+      !scheduleReauthRequired &&
+      scheduleLimits !== null
+    // カレンダーのボタンを押せない理由。押せるときは undefined
+    const scheduleUnavailableReason = guestMode
+      ? t("post.guestUnavailable")
+      : hasVideo
+        ? t("schedule.unavailableVideo")
+        : scheduleRegistered !== true
+          ? t("schedule.unavailableDisabled")
+          : scheduleReauthRequired
+            ? t("schedule.unavailableReauth")
+            : scheduleLimits === null
+              ? t("schedule.unavailableLimits")
+              : undefined
+    const target = submitTarget(scheduleMode)
+    const scheduledRunAt = runAtOf(scheduleMode)
+    // 予約として送信するときは、動画を含む投稿を送れない
+    const canSubmitNow = canSubmit && (target.kind === "post" || !hasVideo)
+
+    /**
+     * 予約の作成・置き換えを送信する（実行日時が設定されているときの送信ボタン）。
+     *
+     * 処理の趣旨:
+     * - 本文は投稿の作成と同じ組み立てを使い、他の SNS への共有は行わない。
+     * - 成功したら完了を表示し、ハッシュタグの履歴を記録して、フォームを初期化する
+     *   （開いていた下書きは予約へ移したものとして削除する）。
+     * - 置き換えの時点で予約が実行中になっていたら、取り消された後と同じ扱い（detached）にする。
+     *
+     * Input:
+     * - `scheduleTarget`: 新規の予約か、編集中の予約と実行日時
+     */
+    const handleScheduleSubmit = async (
+      scheduleTarget: Exclude<typeof target, { kind: "post" }>,
+    ) => {
+      setIsSubmitting(true)
+      setStatus(deferMessage("schedule.sending"))
+      setStatusColor(undefined)
+      try {
+        const built = await buildThreadRequestBody({
+          segments,
+          manualImageAttach: shareToggles.manualImageAttach,
+        })
+        if (!built.ok) {
+          setStatus(deferMessage(built.messageKey))
+          setStatusColor("#b00")
+          return
+        }
+        const result = await submitSchedule(
+          scheduleTarget,
+          built.body as unknown as Omit<CreateScheduleBody, "runAt">,
+        )
+        if (!result.ok) {
+          if (
+            scheduleTarget.kind === "update" &&
+            result.messageKey === "schedule.error.running"
+          ) {
+            setScheduleMode({ kind: "detached" })
+          }
+          setStatus(deferMessage(result.messageKey))
+          setStatusColor("#b00")
+          return
+        }
+        segments.forEach(segment =>
+          recordUsedHashtagsToHistory(segment.text, accountDid),
+        )
+        if (loadedDraft) void deleteDraftSilently(loadedDraft.id)
+        deleteRestoredFailedSilently()
+        let nextRootPostGate = rootSegment.postGate
+        if (syncGateDefaultAfterPost) {
+          writePostGateDefaultSetting(rootSegment.postGate)
+        } else {
+          nextRootPostGate = readPostGateDefaultSetting()
+        }
+        resetInputFields(nextRootPostGate)
+        setStatus(
+          deferMessage(
+            scheduleTarget.kind === "create"
+              ? "schedule.created"
+              : "schedule.updated",
+          ),
+        )
+        setStatusColor("green")
+      } catch (err) {
+        console.error(err)
+        setStatus(deferMessage("error.network"))
+        setStatusColor("#b00")
+      } finally {
+        setIsSubmitting(false)
+      }
+    }
 
     /**
      * 投稿フォームの内容を API 契約に合わせて送信する。
@@ -562,7 +903,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
       e.preventDefault()
       // Enterキー等によるフォーム送信でもボタンと同じ投稿条件でブロックする
-      if (isSubmitting || !canSubmit) return
+      if (isSubmitting || submittingRef.current || !canSubmitNow) return
+
+      // 実行日時が設定されていれば予約として送信する（共有のポップアップは開かない）
+      if (target.kind !== "post") {
+        submittingRef.current = true
+        try {
+          await handleScheduleSubmit(target)
+        } finally {
+          submittingRef.current = false
+        }
+        return
+      }
 
       // 投稿API呼び出し（下のawait）を挟んでからwindow.openすると、iOS Safariでは
       // ユーザーアクティベーションが失効気味になり、実際にはポップアップが開いて
@@ -627,6 +979,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             void deleteDraftSilently(loadedDraft.id)
             setLoadedDraft(null)
           }
+          deleteRestoredFailedSilently()
         }
 
         segments.forEach(segment =>
@@ -685,13 +1038,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
 
     return (
       <>
-        {draftListLoading && (
-          <Loading overlay message={t("post.composer.loadingDrafts")} />
+        {scheduleLoading && (
+          <Loading overlay message={t("schedule.loadingEdit")} />
         )}
 
         <Overlay
           open={draftModalOpen}
           onClose={() => setDraftModalOpen(false)}
+          backdropClassName={styles["draft-list-backdrop"]}
           contentClassName={`${ui["width-lg"]} ${styles["draft-list-overlay"]}`}
         >
           <div
@@ -701,7 +1055,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             style={{ maxHeight: "80vh", overflow: "hidden" }}
           >
             <div
-              className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]}`}
+              className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-center"]} ${styles["draft-list-header"]}`}
             >
               <button
                 type="button"
@@ -713,7 +1067,23 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               <div>{t("post.composer.draftListTitle")}</div>
             </div>
 
-            <div className={styles["draft-list-body"]}>
+            <TabButtons
+              idPrefix={`${entryFormId}-drafts`}
+              ariaLabel={t("post.composer.draftListTitle")}
+              items={[
+                { key: "drafts", label: t("post.composer.draftsTab") },
+                { key: "schedules", label: t("post.composer.schedulesTab") },
+              ]}
+              value={draftTab}
+              onChange={setDraftTab}
+            />
+            <div
+              className={styles["draft-list-body"]}
+              role="tabpanel"
+              id={panelId(`${entryFormId}-drafts`, "drafts")}
+              aria-labelledby={tabId(`${entryFormId}-drafts`, "drafts")}
+              hidden={draftTab !== "drafts"}
+            >
               <DraftListPanel
                 items={draftItems}
                 loading={draftListLoading}
@@ -727,15 +1097,115 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                 }}
               />
             </div>
+            <div
+              className={styles["draft-list-body"]}
+              role="tabpanel"
+              id={panelId(`${entryFormId}-drafts`, "schedules")}
+              aria-labelledby={tabId(`${entryFormId}-drafts`, "schedules")}
+              hidden={draftTab !== "schedules"}
+            >
+              <ScheduleList
+                active={draftModalOpen && draftTab === "schedules"}
+                onSelect={id => void applyScheduleToForm(id)}
+                onOpenSettings={
+                  scheduleRegistered === false
+                    ? () => {
+                        setDraftModalOpen(false)
+                        requestNavigation("/settings/")
+                      }
+                    : undefined
+                }
+              />
+            </div>
           </div>
         </Overlay>
+
+        <ChoiceDialog
+          open={editChoiceOpen}
+          onClose={() => {
+            setEditChoiceOpen(false)
+            setPendingNavigation(null)
+          }}
+          ariaLabel={t("schedule.editCancel.title")}
+          loading={
+            editChoiceBusy ? { message: t("schedule.sending") } : undefined
+          }
+          buttons={[
+            {
+              key: "cancelSchedule",
+              label: t("schedule.editCancel.cancelSchedule"),
+              variant: "red",
+              disabled: editChoiceBusy,
+              onClick: () => handleCancelScheduleAndClose(),
+            },
+            {
+              key: "keep",
+              label: t("schedule.editCancel.keep"),
+              variant: "gray",
+              disabled: editChoiceBusy,
+              onClick: () => {
+                setEditChoiceOpen(false)
+                closeForm()
+                goToPendingNavigation()
+              },
+            },
+            {
+              key: "continue",
+              label: t("schedule.editCancel.continue"),
+              variant: "blue",
+              disabled: editChoiceBusy,
+              onClick: () => {
+                setEditChoiceOpen(false)
+                setPendingNavigation(null)
+              },
+            },
+          ]}
+        />
+
+        <ChoiceDialog
+          open={setupGuideOpen}
+          onClose={() => setSetupGuideOpen(false)}
+          ariaLabel={t("schedule.setupGuide.title")}
+          description={t("schedule.setupGuide.message")}
+          buttons={[
+            {
+              key: "openSettings",
+              label: t("schedule.setupGuide.open"),
+              variant: "blue",
+              onClick: () => {
+                setSetupGuideOpen(false)
+                requestNavigation("/settings/")
+              },
+            },
+            {
+              key: "close",
+              label: t("schedule.setupGuide.close"),
+              variant: "gray",
+              onClick: () => setSetupGuideOpen(false),
+            },
+          ]}
+        />
+
+        <CredentialDialog
+          open={reauthOpen}
+          reauth
+          onClose={() => setReauthOpen(false)}
+          navigate={url => {
+            // 認可の画面へ移る前に、作成中の内容の扱いを確かめる
+            setReauthOpen(false)
+            requestNavigation(url)
+          }}
+        />
 
         <DraftSaveConfirmDialog
           open={draftSaveConfirmOpen}
           isSaving={isSavingDraft}
           onSave={handleSaveDraftAndClose}
           onDiscard={handleDiscardDraftAndClose}
-          onContinueEditing={() => setDraftSaveConfirmOpen(false)}
+          onContinueEditing={() => {
+            setDraftSaveConfirmOpen(false)
+            setPendingNavigation(null)
+          }}
         />
 
         <div
@@ -746,7 +1216,14 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             : {})}
         >
           {isSubmitting && (
-            <Loading overlay message={t("post.composer.posting")} />
+            <Loading
+              overlay
+              message={
+                target.kind === "post"
+                  ? t("post.composer.posting")
+                  : t("schedule.sending")
+              }
+            />
           )}
           <div
             className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
@@ -756,7 +1233,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               {(variant === "dialog" || hasTextInput) && (
                 <button
                   type="button"
-                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["compact-button"]}`}
                   aria-label={t("common.cancel")}
                   disabled={isSubmitting}
                   onClick={requestClose}
@@ -768,7 +1245,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             <div className={`${ui["base-component"]}`}>
               <button
                 type="button"
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]} ${ui["compact-button"]}`}
                 disabled={isSubmitting || guestMode}
                 title={guestMode ? t("post.guestUnavailable") : undefined}
                 onClick={() => {
@@ -779,16 +1256,19 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
               </button>
               <button
                 form={entryFormId}
-                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+                className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${ui["compact-button"]}`}
                 type="submit"
-                disabled={isSubmitting || !canSubmit}
+                disabled={isSubmitting || !canSubmitNow}
+                data-testid="composer-submit"
                 title={
-                  guestMode ? t("post.composer.guestSubmitNotice") : undefined
+                  guestMode
+                    ? t("post.composer.guestSubmitNotice")
+                    : target.kind !== "post" && hasVideo
+                      ? t("schedule.unavailableVideo")
+                      : undefined
                 }
               >
-                {isThread
-                  ? t("post.composer.submitAll")
-                  : t("post.composer.submit")}
+                {t(submitLabelKey(scheduleMode, isThread))}
               </button>
             </div>
           </div>
@@ -832,23 +1312,74 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   if (index === 0) setLanguageCode(next.languageCode)
                 }}
                 onRequestSubmit={() => entryFormRef.current?.requestSubmit()}
+                runAtPicker={
+                  index === activeIndex ? (
+                    <RunAtPicker
+                      value={scheduledRunAt}
+                      limits={scheduleAvailable ? scheduleLimits : null}
+                      disabled={
+                        isSubmitting ||
+                        (guestMode && !scheduleAvailable) ||
+                        (hasVideo && scheduledRunAt === null)
+                      }
+                      disabledReason={scheduleUnavailableReason}
+                      onUnavailable={
+                        // 予約投稿が無効（未登録）のときは設定への案内を、許可が無効になった
+                        // ときはこの画面のまま再度の許可のダイアログを出す
+                        guestMode
+                          ? undefined
+                          : scheduleRegistered === false
+                            ? () => setSetupGuideOpen(true)
+                            : scheduleRegistered === true &&
+                                scheduleReauthRequired
+                              ? () => setReauthOpen(true)
+                              : undefined
+                      }
+                      open={runAtPickerOpen}
+                      onOpenChange={setRunAtPickerOpen}
+                      expiresAt={scheduleAvailable ? scheduleExpiresAt : null}
+                      slots={
+                        pendingCount !== null && scheduleLimits
+                          ? {
+                              used: pendingCount,
+                              max: scheduleLimits.maxPending,
+                              // 編集中の予約は、すでに枠を使っている
+                              consumes: scheduleMode.kind !== "editing",
+                            }
+                          : null
+                      }
+                      onChange={next => void handleRunAtChange(next)}
+                    />
+                  ) : undefined
+                }
+                scheduled={scheduledRunAt !== null}
                 counterTargets={counterTargets}
                 estimatedEntryUrl={estimatedEntryUrl}
               />
             ))}
 
+            {scheduledRunAt && (
+              <div className={`${ui["base-component"]} ${ui["toolbar"]}`}>
+                <button
+                  type="button"
+                  className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
+                  data-testid="schedule-run-at-label"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    // 許可が無効になっているときは、日時の指定の代わりに再度の許可を案内する
+                    scheduleReauthRequired
+                      ? setReauthOpen(true)
+                      : setRunAtPickerOpen(true)
+                  }
+                >
+                  {t("schedule.runAtLabel", {
+                    date: formatRunAtLabel(scheduledRunAt, locale),
+                  })}
+                </button>
+              </div>
+            )}
+
             <div className={`${ui["base-padding"]} ${ui["toggle-box"]}`}>
-              <ToggleSwitch
-                checked={shareToggles.popupIntentInsteadOfWebshare}
-                disabled={isSubmitting}
-                label={renderSlots(raw("post.composer.popupInstead"), {
-                  share: <InlineIcon name="share" />,
-                  popup: <InlineIcon name="popup" />,
-                })}
-                onCheckedChange={
-                  shareToggles.onPopupIntentInsteadOfWebshareChange
-                }
-              />
               <ToggleSwitch
                 checked={shareToggles.manualImageAttach}
                 disabled={isSubmitting}
@@ -858,12 +1389,20 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             </div>
 
             <div className={ui["base-component"]}>
-              <Collapsible
-                key={shareTogglesReady ? "loaded" : "loading"}
-                label={t("post.composer.moreOptions")}
-                defaultOpen={defaultOpenShareOptions}
-              >
+              {/* 情報の密度を下げるため、設定値によらず常に閉じた状態で表示する */}
+              <Collapsible label={t("post.composer.moreOptions")}>
                 <div className={ui["toggle-box"]}>
+                  <ToggleSwitch
+                    checked={shareToggles.popupIntentInsteadOfWebshare}
+                    disabled={isSubmitting}
+                    label={renderSlots(raw("post.composer.popupInstead"), {
+                      share: <InlineIcon name="share" />,
+                      popup: <InlineIcon name="popup" />,
+                    })}
+                    onCheckedChange={
+                      shareToggles.onPopupIntentInsteadOfWebshareChange
+                    }
+                  />
                   {shareToggles.popupIntentInsteadOfWebshare && (
                     <div className={styles["auto-popup-target-row"]}>
                       <label htmlFor={`${entryFormId}-auto-popup-target`}>
@@ -894,8 +1433,8 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                     }}
                   />
                   <ToggleSwitch
-                    checked={pinnedFormDisabled}
-                    disabled={isSubmitting}
+                    checked={effectivePinnedFormDisabled}
+                    disabled={isSubmitting || timelineHidden}
                     label={t("settings.pinnedFormDisabled.label")}
                     onCheckedChange={next => {
                       setPinnedFormDisabled(next)

@@ -5,7 +5,8 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.25);
+  /* 背面の情報を見た目上減らし、前面の内容へ視線を集めるため濃くする */
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   z-index: var(--overlay-z);

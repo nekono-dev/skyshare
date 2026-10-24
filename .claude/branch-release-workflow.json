@@ -1,11 +1,12 @@
 {
-  "workBranches": ["dev/*"],
-  "protectedBranches": ["main", "develop"],
+  "workBranches": ["dev/*","develop"],
+  "protectedBranches": ["main"],
   "baseBranch": "develop",
   "namePattern": "^dev/[a-z0-9]+(-[a-z0-9]+)*$",
-  "maxNameLength": 54,
+  "maxNameLength": 50,
   "preview": {
     "provider": "cloudflare-previews",
-    "urlTemplate": "https://{alias}.skyshare.nekono.dev"
+    "urlTemplate": "https://{alias}.develop.skyshare.nekono.dev",
+    "aliasStripPrefix": "dev/"
   }
 }

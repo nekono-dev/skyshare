@@ -98,6 +98,10 @@
   --color-bg: #ffffff;
   --color-text: #000000;
   --color-text-muted: rgba(0, 0, 0, 0.62);
+  /* 無効・対象外の文字。控えめな文字（muted）よりさらに一段下げ、操作できないことを示す */
+  --color-text-disabled: rgba(0, 0, 0, 0.38);
+  /* 無効のボタン・入力欄の面。カードより一段沈んだ色にする（浮いた面は強調に見えるため） */
+  --color-disabled-bg: rgb(239, 242, 246);
   --color-card-bg: #ffffff;
   --color-muted: #6b7280;
   --color-card-muted-bg: var(--color-gray);
@@ -192,14 +196,44 @@
     --color-bg: #131417;
     --color-text: #e8eaed;
     --color-text-muted: rgba(232, 234, 237, 0.64);
+    --color-text-disabled: rgba(232, 234, 237, 0.36);
+    /* ダークではグレー（#2a2d31）だとカードより明るく浮くため、ほぼ面を持たない色にする */
+    --color-disabled-bg: rgba(255, 255, 255, 0.03);
     --color-card-bg: #1c1e21;
     --color-muted: #9aa4b2;
     --color-card-muted-bg: #2a2d31;
-    --color-border: rgba(255, 255, 255, 0.12);
+    /* ライトの枠線（黒6%）と同じく、面の色の差で区切り、線は控えめにする */
+    --color-border: rgba(255, 255, 255, 0.07);
     --surface-muted: rgb(30, 58, 95);
 
     --color-gray: #2a2d31;
     --color-gray-hover: #35383d;
+
+    /* ライトの「淡い色の面＋濃い文字」を、ダークでは「暗い色の面＋淡い文字」に反転して、
+     役割と強さの関係をライトと揃える（淡い面のままだと周囲から浮いて強調に見える） */
+    --color-white-hover: #182e42; /* ブランドの青を15%重ねたカードの色 */
+    --color-red: #4a1d24;
+    --color-red-hover: #6b2530;
+    --color-red-text: #ffb3c1;
+    --color-taittsuu: #44484e; /* グレーのボタンより一段明るい（ライトの一段濃いに対応） */
+    --color-taittsuu-hover: #55595f;
+    --color-black-hover: #2a2d31;
+    --color-danger-text: #f4a3a3;
+    --color-success-text: #74d99a;
+    --color-warning-text: #f5c26b;
+
+    /* ライトの「淡い色の面＋濃い文字」を、ダークでは「暗い色の面＋淡い文字」に反転して、
+       役割と強さの関係をライトと揃える（淡い面のままだと周囲から浮いて強調に見える） */
+    --color-white-hover: #182e42; /* ブランドの青を15%重ねたカードの色 */
+    --color-red: #4a1d24;
+    --color-red-hover: #6b2530;
+    --color-red-text: #ffb3c1;
+    --color-taittsuu: #44484e; /* グレーのボタンより一段明るい（ライトの一段濃いに対応） */
+    --color-taittsuu-hover: #55595f;
+    --color-black-hover: #2a2d31;
+    --color-danger-text: #f4a3a3;
+    --color-success-text: #74d99a;
+    --color-warning-text: #f5c26b;
 
     --color-danger-bg: rgba(160, 32, 32, 0.24);
     --color-success-bg: rgba(22, 163, 74, 0.24);
@@ -219,14 +253,31 @@
   --color-bg: #131417;
   --color-text: #e8eaed;
   --color-text-muted: rgba(232, 234, 237, 0.64);
+  --color-text-disabled: rgba(232, 234, 237, 0.36);
+  /* ダークではグレー（#2a2d31）だとカードより明るく浮くため、ほぼ面を持たない色にする */
+  --color-disabled-bg: rgba(255, 255, 255, 0.03);
   --color-card-bg: #1c1e21;
   --color-muted: #9aa4b2;
   --color-card-muted-bg: #2a2d31;
-  --color-border: rgba(255, 255, 255, 0.12);
+  /* ライトの枠線（黒6%）と同じく、面の色の差で区切り、線は控えめにする */
+  --color-border: rgba(255, 255, 255, 0.07);
   --surface-muted: rgb(30, 58, 95);
 
   --color-gray: #2a2d31;
   --color-gray-hover: #35383d;
+
+  /* ライトの「淡い色の面＋濃い文字」を、ダークでは「暗い色の面＋淡い文字」に反転して、
+     役割と強さの関係をライトと揃える（淡い面のままだと周囲から浮いて強調に見える） */
+  --color-white-hover: #182e42; /* ブランドの青を15%重ねたカードの色 */
+  --color-red: #4a1d24;
+  --color-red-hover: #6b2530;
+  --color-red-text: #ffb3c1;
+  --color-taittsuu: #44484e; /* グレーのボタンより一段明るい（ライトの一段濃いに対応） */
+  --color-taittsuu-hover: #55595f;
+  --color-black-hover: #2a2d31;
+  --color-danger-text: #f4a3a3;
+  --color-success-text: #74d99a;
+  --color-warning-text: #f5c26b;
 
   --color-danger-bg: rgba(160, 32, 32, 0.24);
   --color-success-bg: rgba(22, 163, 74, 0.24);

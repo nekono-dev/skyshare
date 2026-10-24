@@ -63,7 +63,7 @@ const cropPixels = def
 - `index >= VISUAL_IMAGE_COUNT` のサムネイルに `slot-excluded-badge` を重ねる。取り外しで順序が変わると、位置から判定し直す。
 - 通知は次の追加と取り外しで消す。
 
-### D-2: プレビュー (FR-2, FR-5)
+### D-2: プレビュー (FR-2, FR-5, FR-7)
 
 ```ts
 type MediaThumbProps = {
@@ -84,6 +84,8 @@ type MediaThumbProps = {
 | 取り外し（右上）     | 40pxの円、文字 `--font-size-2xl`                                             |
 | 代替テキスト（右下） | 高さ36px、文字 `--font-size-lg`、左右の余白 `--space-3`                      |
 | 共通                 | `border: 2px solid #fff`、背景 `rgb(0 0 0 / 60%)`、hoverで `--color-bluesky` |
+
+- `value` が null でなく内部のスロットが空のとき（予約の書き戻しのように外から渡されたとき）は、`originalBlobs` から object URL を作り、`meta` の寸法と代替テキストと `computeInitialCrop` の切り抜きでスロットを組み立てる。このときは `onChange` を呼ばず、渡された `thumbnailBlob` をそのまま使う。
 
 ### D-3: 圧縮 (FR-6)
 
