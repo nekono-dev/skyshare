@@ -192,7 +192,8 @@ function finish(args) {
   const unpushed = git(main.path, "rev-list", "--count", `origin/${branch}..refs/heads/${branch}`);
   if (unpushed !== "0") fail(`${branch} に push していない commit があります（${unpushed ?? "不明"} 件）。push してから実行してください。`);
   if (main.branch === branch) fail(`本体の作業ツリーが ${branch} を使っています。分岐元などへ切り替えてから実行してください。`);
-  if (wt) execFileSync("git", ["worktree", "remove", wt.path], { cwd: main.path, stdio: "inherit" });
+  // 変更が無いことは上で確かめた。submodule を含む worktree は --force が無いと消せないため付ける
+  if (wt) execFileSync("git", ["worktree", "remove", "--force", wt.path], { cwd: main.path, stdio: "inherit" });
   execFileSync("git", ["branch", "-D", branch], { cwd: main.path, stdio: "inherit" });
   console.log(`片付けました: ${branch}${wt ? `（worktree: ${wt.path}）` : ""}`);
   console.log(`作業を続けるときは \`brw resume ${branch}\`、新しい作業は \`brw create <名前>\` で、リモートから取得し直して作り直してください。`);

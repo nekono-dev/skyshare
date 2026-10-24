@@ -87,6 +87,16 @@ rmSync(join(finWt, "dirty.txt"));
 eq("branch-guard/AC-8 push 済みなら worktree の中から片付けられる", run(finWt, "finish").status, 0);
 eq("branch-guard/AC-8 worktree とローカルブランチが消える", [existsSync(finWt), hasBranch("dev/fin-work")], [false, false]);
 eq("branch-guard/AC-8 作業ブランチでなければ片付けない", run(fin, "finish", "develop").status, 1);
+// submodule を含む worktree も片付けられる
+const sub = mkRepo("main", null);
+g(fin, "-c", "protocol.file.allow=always", "submodule", "add", "-q", sub, "sub");
+g(fin, "commit", "-q", "-m", "sub");
+g(fin, "push", "-q", "origin", "develop");
+run(fin, "create", "fin-sub");
+const subWt = join(fin, ".claude/worktrees/dev-fin-sub");
+g(subWt, "-c", "protocol.file.allow=always", "submodule", "update", "-q", "--init");
+g(subWt, "push", "-q", "origin", "dev/fin-sub");
+eq("branch-guard/AC-8 submodule を含む worktree も片付けられる", [run(subWt, "finish").status, existsSync(subWt)], [0, false]);
 eq("branch-guard/AC-9 リモートのブランチから worktree を作り直せる", run(fin, "resume", "dev/fin-work").status, 0);
 eq("branch-guard/AC-9 作り直した worktree はリモートの commit を持ち、追跡先がリモートになる", [
   spawnSync("git", ["log", "-1", "--format=%s"], { cwd: finWt, encoding: "utf8" }).stdout.trim(),
