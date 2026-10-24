@@ -14,9 +14,11 @@ import { GET, POST, PUT } from "@/pages/v2/bsky/session"
 import {
     encodeBase64Utf8,
     SESSION_COOKIE_NAME,
-    ACCOUNTS_COOKIE_NAME,
     MAX_POOLED_ACCOUNTS,
 } from "@/lib/session/cookies.js"
+
+/** プールの先頭の枠。空なら失効（`atp_account_0=;`）、1件以上あれば値が入る */
+const ACCOUNTS_COOKIE_NAME = "atp_account_0"
 
 vi.mock("@/lib/atproto/agentFactory", () => ({
     createAtpAgent: vi.fn(),
@@ -38,8 +40,43 @@ const buildSessionCookie = (session: object, service = "https://bsky.social") =>
         JSON.stringify({ session, service }),
     )}`
 
+/**
+ * プールの枠の cookie を作る。以前の形式（`{ did, handle, service, session, addedAt }`）の
+ * テストデータを、アプリパスワードのセッションの形へ直して枠ごとに入れる。
+ */
 const buildAccountsCookie = (accounts: object[]) =>
-    `${ACCOUNTS_COOKIE_NAME}=${encodeBase64Utf8(JSON.stringify(accounts))}`
+    accounts
+        .map((account, index) => {
+            const a = account as {
+                did: string
+                handle: string
+                service: string
+                session: object
+                addedAt: string
+            }
+            const pooled = {
+                kind: "password",
+                session: { ...a.session, did: a.did, handle: a.handle },
+                service: a.service,
+                addedAt: a.addedAt,
+            }
+            return `atp_account_${index}=${encodeBase64Utf8(JSON.stringify(pooled))}`
+        })
+        .join("; ")
+
+/** 応答の枠の cookie から、プールのアカウントの did を枠の順に読む */
+const decodePoolDids = (setCookies: string[]): string[] =>
+    setCookies
+        .filter(c => /^atp_account_\d=[^;]/.test(c))
+        .map(
+            c =>
+                JSON.parse(
+                    Buffer.from(
+                        c.split("=")[1]!.split(";")[0]!,
+                        "base64",
+                    ).toString("utf-8"),
+                ).session.did,
+        )
 
 describe("GET /v2/bsky/session", () => {
     it("[account-session/AC-3] cookieヘッダーが無い場合は401を返す", async () => {
@@ -526,13 +563,7 @@ describe("PUT /v2/bsky/session", () => {
             c.startsWith(`${ACCOUNTS_COOKIE_NAME}=`),
         )
         expect(accountsCookie).not.toMatch(`${ACCOUNTS_COOKIE_NAME}=;`)
-        const decoded = JSON.parse(
-            Buffer.from(
-                accountsCookie!.split("=")[1].split(";")[0],
-                "base64",
-            ).toString("utf-8"),
-        )
-        expect(decoded.map((a: any) => a.did)).toEqual(["did:plc:current"])
+        expect(decodePoolDids(setCookies)).toEqual(["did:plc:current"])
     })
 
     it("現在アクティブなアカウントが無い場合、poolは残りのアカウントのみになる", async () => {

@@ -249,7 +249,7 @@ export type ReturnPurpose = "schedule" | "session"
 const RETURN_COOKIE = "oauth_return"
 const DEFAULT_RETURN_PATHS: Record<ReturnPurpose, string> = { schedule: "/settings/", session: "/login/" }
 const isSafeReturnPath = (path: unknown): path is string
-export const returnCookie = (purpose: ReturnPurpose, path: string): string
+export const returnCookie = (purpose: ReturnPurpose, path: string | undefined): string
 export const clearReturnCookie = (): string
 export const readReturn = (cookieHeader: string | null): { purpose: ReturnPurpose; path: string }
 

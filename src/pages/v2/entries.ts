@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 
-import { AtpAgent, AppBskyFeedDefs } from "@atproto/api"
+import { Agent, AppBskyFeedDefs } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
@@ -54,7 +54,7 @@ const MAX_AUTHOR_FEED_PAGES = 5
  *   辿って追加ページを取得し、limit 件（または取得可能な全件）まで補充する。
  *
  * Input:
- * - `agent`: 認証済み AtpAgent
+ * - `agent`: 認証済み Agent
  * - `did`: session の DID（自分自身）
  * - `limit`: 呼び出し元が要求する件数
  * - `cursor`: ページング開始位置（未指定可）
@@ -64,7 +64,7 @@ const MAX_AUTHOR_FEED_PAGES = 5
  * - `cursor`: 次ページ用 cursor（存在する場合のみ）
  */
 const fetchOwnAuthorFeed = async (
-    agent: AtpAgent,
+    agent: Agent,
     did: string,
     limit: number,
     cursor: string | undefined,

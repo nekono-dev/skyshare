@@ -11,4 +11,4 @@ PUBLIC_NODE_ENV=develop
 # 未設定なら npm run dev の準備（hack/prepare-local-env.mjs）が、ランダムに生成してここへ書き込む。
 # 鍵を替えると保管済みの予約の認証情報が復号できなくなるため、設定済みの値は上書きしない。
 #SCHEDULE_ENC_KEY=
-#SCHEDULE_OAUTH_KEY=
+#OAUTH_CLIENT_KEY=

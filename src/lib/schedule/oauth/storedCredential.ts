@@ -8,7 +8,7 @@
  *   トークンを更新するときに同じものを使う必要があるため、一緒に保管する。
  * - 読み出した文字列が形を満たさない（旧形式のアプリパスワードのトークンを含む）ときは null にする。
  */
-import { type EcPrivateJwk, isEcPrivateJwk } from "./jose"
+import { type EcPrivateJwk, isEcPrivateJwk } from "@/lib/oauth/jose"
 
 export type OAuthCredential = {
     v: 1

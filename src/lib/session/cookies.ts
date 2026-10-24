@@ -1,16 +1,21 @@
 /**
  * セッション管理アーキテクチャ概要:
- * - クライアントは `/api/login` で取得した `atp_session` cookie を保持し、サーバー API との通信時に自動的に送信する。
- * - `atp_session` は `{ session, service }` を含む JSON を base64 エンコードしたもので、サーバー側 API は `parseSessionFromRequest` で復号し
- *   `AtpAgent` を再開することで認証情報を再利用する。
+ * - クライアントはログインで取得した `atp_session` cookie を保持し、サーバー API との通信時に自動的に送信する。
+ * - `atp_session` は `StoredSession`（アプリパスワードのセッション、または OAuth のセッション）の JSON を
+ *   base64 エンコードしたもので、サーバー側 API は `parseSessionFromRequest` で復号してセッションを再開する。
+ *   `kind` の無い値は、以前の形式（`{ session, service }`）のアプリパスワードのセッションとして読む。
  * - セッションの書き込みは `makeSessionSetCookie` を通じて行い、cookie 属性（`HttpOnly`, `SameSite`, `Secure`, `Path`, `Max-Age`）を統一することで
  *   一貫した挙動を保証する。
- * - 複数アカウント切り替え機能のため、非アクティブなアカウントのセッションは `atp_accounts` cookie にプールとして保持する。
- *   `atp_session` と同じ base64 JSON 方式・cookie 属性を用いる（`parseAccountsFromRequest` / `makeAccountsSetCookie`）。
+ * - 複数アカウント切り替え機能のため、非アクティブなアカウントのセッションは `atp_account_0` 〜 `atp_account_3` の
+ *   cookie に1件ずつプールとして保持する（`parseAccountsFromRequest` / `makeAccountsSetCookies`）。
+ *   OAuth のセッションは DPoP の鍵とアクセストークンを持ち1件で約1.6キロバイトになるため、1つの cookie の上限
+ *   （約4キロバイト）に複数件が収まらない。
  *   セッショントークン本体は常に HttpOnly cookie の中にのみ存在し、クライアント JS からは一切参照できない
  *   （localStorage 等クライアント側ストレージにトークンを置かないことが、XSS 時の被害範囲を単一アカウントに限定するための前提）。
  */
 
+import type { AtpSessionData } from "@atproto/api"
+import type { EcPrivateJwk } from "@/lib/oauth/jose"
 import { atpService } from "../../env"
 
 // Cloudflare Workers 環境では Node の `Buffer` が存在しないため
@@ -102,144 +107,224 @@ function decodeBase64Json(raw: string) {
     }
 }
 
-/**
- * API ハンドラ内で Request から atp_session をパースして session と service を取得する。
- *
- * 入力:
- * - `request` - サーバー側の `Request` オブジェクト（`headers` を参照する）。
- * 処理:
- * - `Cookie` ヘッダから `atp_session` を取得。
- * - 取得できなければ `Error('not authenticated')` を投げる。
- * - `atp_session` は base64 エンコードされた JSON としてデコードし、`session` と `service` を取り出す。
- * - `service` がなければ `process.env.DEFAULT_ATP_SERVICE`、さらに無ければ `https://bsky.social` をデフォルトとする。
- * 例外:
- * - cookie が無い場合は `Error('not authenticated')`。
- * - デコード/パースに失敗した場合は `Error('invalid session cookie')`。
- * 戻り値:
- * - `{ session, service }` オブジェクト。
- */
-export function parseSessionFromRequest(request: Request) {
-    const cookieHeader = request.headers.get("cookie") || ""
-    const raw = getCookieFromHeader(cookieHeader, SESSION_COOKIE_NAME)
-    if (!raw) {
-        return { session: undefined, service: undefined }
-    }
-    const parsed = decodeBase64Json(raw)
-    const session = (parsed as any).session ?? parsed
-    const service = parsed.service ?? atpService
-    return { session, service }
-}
-
-/**
- * セッション情報を `Set-Cookie` ヘッダ文字列に変換する。
- *
- * 入力:
- * - `payload` - cookie に格納したい任意のオブジェクト（通常は `{ session, service }`）。
- * - `opts` - cookie 属性の制御オプション（`maxAge`, `path`, `httpOnly`, `sameSite`, `secure`）。
- * 処理:
- * - `payload` を JSON にして base64 エンコードし、`atp_session=<val>` として設定する。
- * - `Path`, `Max-Age`, `HttpOnly`, `SameSite`, `Secure` 等の属性を付与する。
- * 戻り値:
- * - `Set-Cookie` ヘッダにそのまま入れられる単一の文字列。
- */
-export function makeSessionSetCookie(
-    payload: any,
-    opts?: {
-        maxAge?: number
-        path?: string
-    },
-) {
-    const cookieVal = encodeBase64Utf8(JSON.stringify(payload))
-    const parts: string[] = []
-    const secure = process.env.PUBLIC_NODE_ENV === "production"
-
-    parts.push(`${SESSION_COOKIE_NAME}=${cookieVal}`)
-    parts.push(`Path=${opts?.path ?? "/"}`)
-    parts.push(`Max-Age=${opts?.maxAge ?? 60 * 60 * 24 * 7}`)
-    parts.push("HttpOnly")
-    parts.push(`SameSite=Strict`)
-
-    if (secure) parts.push("Secure")
-    return parts.join("; ")
-}
 
 export const SESSION_COOKIE_NAME = "atp_session"
-export const ACCOUNTS_COOKIE_NAME = "atp_accounts"
 
 /**
- * `atp_accounts` プールに保持できる非アクティブアカウント数の上限。
+ * `atp_account_<n>` の枠の数（プールに保持できる非アクティブアカウント数の上限）。
  * アクティブな1件と合わせて、複数アカウント機能全体で扱える最大アカウント数は `MAX_POOLED_ACCOUNTS + 1` になる。
- * Cookie サイズ上限（ブラウザ/Cloudflare Workers のヘッダサイズ制約）を踏まえた保守的な値。
+ * 1リクエストの Cookie ヘッダーの大きさ（ブラウザ/Cloudflare Workers のヘッダサイズ制約）を踏まえた保守的な値。
  */
 export const MAX_POOLED_ACCOUNTS = 4
 
-/**
- * `atp_accounts` プールに保持する非アクティブアカウント1件分の情報。
- */
-export type PooledAccount = {
+/** プールの枠の cookie 名 */
+const accountCookieName = (index: number): string => `atp_account_${index}`
+
+/** アプリパスワードのセッション（`@atproto/api` の `AtpAgent` のセッション） */
+export type PasswordSession = {
+    kind: "password"
+    session: AtpSessionData
+    service: string
+}
+
+/** OAuth のセッションのトークンと、それを使うための認可サーバーの情報 */
+export type OAuthTokens = {
+    accessToken: string
+    /** アクセストークンの期限（UNIX 秒） */
+    expiresAt: number
+    refreshToken: string
+    /** トークンが結び付いた DPoP の秘密鍵 */
+    dpopJwk: EcPrivateJwk
+    issuer: string
+    tokenEndpoint: string
+    revocationEndpoint?: string
+    clientId: string
+}
+
+/** OAuth のセッション */
+export type OAuthSession = {
+    kind: "oauth"
     did: string
     handle: string
-    service: string
-    session: any
-    addedAt: string
+    /** アカウントの PDS の URL */
+    pds: string
+    oauth: OAuthTokens
+}
+
+/** cookie に保持するセッション */
+export type StoredSession = PasswordSession | OAuthSession
+
+/** プールに保持する非アクティブアカウント1件分の情報 */
+export type PooledAccount = StoredSession & { addedAt: string }
+
+/**
+ * セッションのアカウントの識別子とハンドルを返す。
+ *
+ * 例: `sessionIdentity({ kind: "oauth", did: "did:plc:a", handle: "a.test", ... })` → `{ did: "did:plc:a", handle: "a.test" }`
+ */
+export const sessionIdentity = (
+    s: StoredSession,
+): { did: string; handle: string } =>
+    s.kind === "oauth"
+        ? { did: s.did, handle: s.handle }
+        : { did: s.session.did, handle: s.session.handle }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null
+
+/**
+ * 復号した JSON を `StoredSession` として読む（内部ユーティリティ）。
+ *
+ * 想定する入力形状(最小要件):
+ * - OAuth: `{ kind: "oauth", did, handle, pds, oauth: { accessToken, expiresAt, refreshToken, dpopJwk, issuer, tokenEndpoint, clientId } }`
+ * - アプリパスワード: `{ kind?: "password", session: { did, handle, ... }, service? }`（`kind` の無い以前の形式を含む）
+ *
+ * Output: セッション。形が違えば undefined
+ */
+const toStoredSession = (value: unknown): StoredSession | undefined => {
+    if (!isRecord(value)) return undefined
+    if (value.kind === "oauth") {
+        const o = value.oauth
+        if (
+            typeof value.did !== "string" ||
+            typeof value.handle !== "string" ||
+            typeof value.pds !== "string" ||
+            !isRecord(o) ||
+            typeof o.accessToken !== "string" ||
+            typeof o.expiresAt !== "number" ||
+            typeof o.refreshToken !== "string" ||
+            !isRecord(o.dpopJwk) ||
+            typeof o.issuer !== "string" ||
+            typeof o.tokenEndpoint !== "string" ||
+            typeof o.clientId !== "string"
+        ) {
+            return undefined
+        }
+        return value as unknown as OAuthSession
+    }
+    if (value.kind !== undefined && value.kind !== "password") return undefined
+    const session = value.session
+    if (
+        !isRecord(session) ||
+        typeof session.did !== "string" ||
+        typeof session.handle !== "string"
+    ) {
+        return undefined
+    }
+    return {
+        kind: "password",
+        session: session as unknown as AtpSessionData,
+        service: typeof value.service === "string" ? value.service : atpService,
+    }
 }
 
 /**
- * `PooledAccount` として妥当な最小要件を満たしているかを検証する（内部ユーティリティ）。
+ * Request から `atp_session` を復号して、アクティブのセッションを取得する。
  *
  * Input:
- * - `value`: `atp_accounts` cookie を復号した JSON 配列の要素候補
+ * - `request` - サーバー側の `Request` オブジェクト（`headers` を参照する）。
  *
  * Output:
- * - 必須フィールドを満たしていれば `true`
+ * - セッション。cookie が無い・形が違うときは undefined
+ *
+ * 例外:
+ * - base64 か JSON として壊れているときは `Error('invalid session cookie')`（呼び出し側で 500 にする）。
+ *
+ * 例:
+ * - 入力: `atp_session=<{ kind: "oauth", did, ... } の base64>` → 出力: OAuth のセッション
  */
-function isPooledAccount(value: unknown): value is PooledAccount {
-    if (typeof value !== "object" || value === null) return false
-    const record = value as Record<string, unknown>
-    return (
-        typeof record.did === "string" &&
-        typeof record.handle === "string" &&
-        typeof record.service === "string" &&
-        typeof record.addedAt === "string" &&
-        record.session !== undefined
+export function parseSessionFromRequest(
+    request: Request,
+): StoredSession | undefined {
+    const cookieHeader = request.headers.get("cookie") || ""
+    const raw = getCookieFromHeader(cookieHeader, SESSION_COOKIE_NAME)
+    if (!raw) return undefined
+    return toStoredSession(decodeBase64Json(raw))
+}
+
+/**
+ * cookie の共通の属性を付けた `Set-Cookie` の値を作る（内部ユーティリティ）。
+ * 本番のみ `Secure` を付ける（手元の http の確認環境でも cookie を使えるようにするため）。
+ */
+const buildSetCookie = (
+    name: string,
+    value: string,
+    opts?: { maxAge?: number; path?: string },
+): string => {
+    const parts: string[] = []
+    parts.push(`${name}=${value}`)
+    parts.push(`Path=${opts?.path ?? "/"}`)
+    parts.push(`Max-Age=${opts?.maxAge ?? 60 * 60 * 24 * 7}`)
+    parts.push("HttpOnly")
+    parts.push("SameSite=Strict")
+    if (process.env.PUBLIC_NODE_ENV === "production") parts.push("Secure")
+    return parts.join("; ")
+}
+
+/**
+ * アクティブのセッションを `Set-Cookie` ヘッダ文字列に変換する。
+ *
+ * Input:
+ * - `s` - 保持するセッション
+ * - `opts` - cookie 属性の制御オプション（`maxAge`, `path`）。既定は `Path=/`・7日
+ *
+ * Output:
+ * - `Set-Cookie` ヘッダにそのまま入れられる単一の文字列（`HttpOnly`・`SameSite=Strict`、本番のみ `Secure`）
+ */
+export function makeSessionSetCookie(
+    s: StoredSession,
+    opts?: { maxAge?: number; path?: string },
+): string {
+    return buildSetCookie(
+        SESSION_COOKIE_NAME,
+        encodeBase64Utf8(JSON.stringify(s)),
+        opts,
     )
 }
 
 /**
- * API ハンドラ内で Request から `atp_accounts` をパースし、プール中のアカウント一覧を取得する。
+ * Request から `atp_account_<n>` を枠の番号順に読み、プール中のアカウント一覧を取得する。
  *
  * 処理の趣旨:
- * - `atp_session` と異なり、cookie が無い/壊れている場合はエラーにせず空配列にフォールバックする
+ * - `atp_session` と異なり、壊れている枠はエラーにせず飛ばす
  *   （プールが空＝アクティブアカウントのみ、という自然な状態のため）。
  *
  * Input:
  * - `request`: サーバー側の `Request` オブジェクト
  *
  * Output:
- * - `PooledAccount` の配列（cookie が無い/不正な場合は空配列）
+ * - `PooledAccount` の配列（cookie が無い/不正な枠は含めない）
  */
 export function parseAccountsFromRequest(request: Request): PooledAccount[] {
-    const cookieHeader = request.headers.get("cookie") || ""
-    const raw = getCookieFromHeader(cookieHeader, ACCOUNTS_COOKIE_NAME)
-    if (!raw) return []
-
-    try {
-        const parsed = decodeBase64Json(raw)
-        if (!Array.isArray(parsed)) return []
-        return parsed.filter((value): value is PooledAccount =>
-            isPooledAccount(value),
-        )
-    } catch {
-        return []
+    const cookies = parseCookies(request.headers.get("cookie") || "")
+    const pool: PooledAccount[] = []
+    for (let index = 0; index < MAX_POOLED_ACCOUNTS; index++) {
+        const raw = cookies[accountCookieName(index)]
+        if (!raw) continue
+        try {
+            const parsed: unknown = decodeBase64Json(raw)
+            const stored = toStoredSession(parsed)
+            if (!stored || !isRecord(parsed)) continue
+            pool.push({
+                ...stored,
+                addedAt:
+                    typeof parsed.addedAt === "string"
+                        ? parsed.addedAt
+                        : new Date(0).toISOString(),
+            })
+        } catch {
+            // 壊れた枠は飛ばす
+        }
     }
+    return pool
 }
 
 /**
  * 指定した cookie を即時失効させる `Set-Cookie` ヘッダ文字列を生成する。
  *
  * 処理の趣旨:
- * - ログアウトや `atp_accounts` を空にする際、値を空にした上で `Max-Age=0` を指定し、
- *   `makeSessionSetCookie` / `makeAccountsSetCookie` と同じ cookie 属性（`HttpOnly` 等）で失効させる。
+ * - ログアウトやプールの枠を空ける際、値を空にした上で `Max-Age=0` を指定し、
+ *   `makeSessionSetCookie` と同じ cookie 属性（`HttpOnly` 等）で失効させる。
  *
  * Input:
  * - `name`: 失効させる cookie 名
@@ -249,74 +334,53 @@ export function parseAccountsFromRequest(request: Request): PooledAccount[] {
  * - `Set-Cookie` ヘッダにそのまま入れられる単一の文字列
  */
 export function makeClearSetCookie(name: string, path = "/"): string {
-    const parts: string[] = []
-    const secure = process.env.PUBLIC_NODE_ENV === "production"
-
-    parts.push(`${name}=`)
-    parts.push(`Path=${path}`)
-    parts.push("Max-Age=0")
-    parts.push("HttpOnly")
-    parts.push("SameSite=Strict")
-    if (secure) parts.push("Secure")
-    return parts.join("; ")
+    return buildSetCookie(name, "", { maxAge: 0, path })
 }
 
 /**
- * プール中のアカウント一覧を `atp_accounts` の `Set-Cookie` ヘッダ文字列に変換する。
+ * プール中のアカウント一覧を、4つの枠の `Set-Cookie` ヘッダ文字列に変換する。
  *
  * 処理の趣旨:
- * - 空配列を渡した場合はプールが空であることを示すため、`makeClearSetCookie` で cookie 自体を失効させる。
+ * - 先頭から順に枠へ入れ、空いた枠は `makeClearSetCookie` で失効させる（前の状態の枠を残さないため）。
  *
  * Input:
- * - `accounts`: 保存したいプールアカウント一覧
+ * - `accounts`: 保存したいプールアカウント一覧（`MAX_POOLED_ACCOUNTS` 件まで）
  * - `opts`: cookie 属性の制御オプション（`maxAge`, `path`）
  *
  * Output:
- * - `Set-Cookie` ヘッダにそのまま入れられる単一の文字列
+ * - 4件の `Set-Cookie` ヘッダ文字列
+ *
+ * 例:
+ * - 入力: 2件 → 出力: `atp_account_0`・`atp_account_1` の設定と、`atp_account_2`・`atp_account_3` の失効
  */
-export function makeAccountsSetCookie(
+export function makeAccountsSetCookies(
     accounts: PooledAccount[],
-    opts?: {
-        maxAge?: number
-        path?: string
-    },
-): string {
-    if (accounts.length === 0) {
-        return makeClearSetCookie(ACCOUNTS_COOKIE_NAME, opts?.path)
+    opts?: { maxAge?: number; path?: string },
+): string[] {
+    const cookies: string[] = []
+    for (let index = 0; index < MAX_POOLED_ACCOUNTS; index++) {
+        const account = accounts[index]
+        cookies.push(
+            account
+                ? buildSetCookie(
+                      accountCookieName(index),
+                      encodeBase64Utf8(JSON.stringify(account)),
+                      opts,
+                  )
+                : makeClearSetCookie(accountCookieName(index), opts?.path),
+        )
     }
-
-    const cookieVal = encodeBase64Utf8(JSON.stringify(accounts))
-    const parts: string[] = []
-    const secure = process.env.PUBLIC_NODE_ENV === "production"
-
-    parts.push(`${ACCOUNTS_COOKIE_NAME}=${cookieVal}`)
-    parts.push(`Path=${opts?.path ?? "/"}`)
-    parts.push(`Max-Age=${opts?.maxAge ?? 60 * 60 * 24 * 7}`)
-    parts.push("HttpOnly")
-    parts.push(`SameSite=Strict`)
-
-    if (secure) parts.push("Secure")
-    return parts.join("; ")
+    return cookies
 }
 
 /**
- * `atp_session` 相当のセッション情報を `PooledAccount` へ変換する（内部ユーティリティ）。
+ * セッションを `PooledAccount` へ変換する。
  *
- * Input:
- * - `session`: `{ did, handle, ... }` を含むセッションオブジェクト
- * - `service`: 対応する atproto service エンドポイント
- *
- * Output:
- * - プール保存用の `PooledAccount`
+ * Input: `s`: プールへ退避するセッション
+ * Output: プール保存用の `PooledAccount`（退避した時刻を付ける）
  */
-export function toPooledAccount(session: any, service: string): PooledAccount {
-    return {
-        did: session.did,
-        handle: session.handle,
-        service,
-        session,
-        addedAt: new Date().toISOString(),
-    }
+export function toPooledAccount(s: StoredSession): PooledAccount {
+    return { ...s, addedAt: new Date().toISOString() }
 }
 
 /**
@@ -333,5 +397,37 @@ export function upsertPooledAccount(
     pool: PooledAccount[],
     account: PooledAccount,
 ): PooledAccount[] {
-    return [...pool.filter(item => item.did !== account.did), account]
+    const { did } = sessionIdentity(account)
+    return [...pool.filter(item => sessionIdentity(item).did !== did), account]
+}
+
+/**
+ * 新しいセッションをアクティブにしたときの、プールの一覧を決める（追加ログイン・OAuth のログインで共通）。
+ *
+ * 処理の趣旨:
+ * - 新しいアカウントがプールにあれば、アクティブへ昇格させるため除く。
+ * - 別のアカウントがアクティブなら、そのセッションをプールへ退避する。プールが上限なら null。
+ * - 同じアカウントでの再ログインは、トークンの更新とみなして退避しない。
+ *
+ * Input:
+ * - `current`: 現在のアクティブのセッション（無ければ undefined）
+ * - `pool`: 現在のプール
+ * - `incoming`: 新しくアクティブにするセッション
+ *
+ * Output: 新しいプール。上限で退避できなければ null
+ *
+ * 例:
+ * - 入力: `(A, [], B)` → 出力: `[A]`
+ * - 入力: `(A, [C, D, E, F], B)` → 出力: `null`
+ */
+export function admitSession(
+    current: StoredSession | undefined,
+    pool: PooledAccount[],
+    incoming: StoredSession,
+): PooledAccount[] | null {
+    const { did } = sessionIdentity(incoming)
+    const rest = pool.filter(account => sessionIdentity(account).did !== did)
+    if (!current || sessionIdentity(current).did === did) return rest
+    if (rest.length >= MAX_POOLED_ACCOUNTS) return null
+    return upsertPooledAccount(rest, toPooledAccount(current))
 }

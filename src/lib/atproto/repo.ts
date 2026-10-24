@@ -4,16 +4,16 @@
  * 責務と処理概要:
  * - cursor ページングを内部で辿り、指定 repo/collection のレコードを新しい順に、
  *   指定日時より古いページに達するまで収集する（`specs/timeline-api`）。
- * - 実際に呼び出すメソッドは `listRecords` のみのため、`AtpAgent` 全体ではなく
+ * - 実際に呼び出すメソッドは `listRecords` のみのため、`Agent` 全体ではなく
  *   最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
  */
 
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 
 type ListRecordsAgent = {
     com: {
         atproto: {
-            repo: Pick<AtpAgent["com"]["atproto"]["repo"], "listRecords">
+            repo: Pick<Agent["com"]["atproto"]["repo"], "listRecords">
         }
     }
 }
@@ -31,7 +31,7 @@ type ListRecordsAgent = {
  *   （呼び出し元は始点にマージンを持たせ、レコード単位の絞り込みを必要としない）。
  *
  * Input:
- * - `agent`: `com.atproto.repo.listRecords` を持つ認証済み AtpAgent（または同等の最小インターフェース）
+ * - `agent`: `com.atproto.repo.listRecords` を持つ認証済み Agent（または同等の最小インターフェース）
  * - `params.repo`: 取得対象 repo DID
  * - `params.collection`: 取得対象コレクション
  * - `sinceMs`: 取得範囲の始点（エポックミリ秒）

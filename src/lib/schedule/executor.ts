@@ -23,7 +23,7 @@ import { buildSkyshareEntryRecord } from "@/lib/entry/skyshareRecord"
 import type { ScheduleEnv } from "./cfTypes"
 import { removeImages } from "./imageStaging"
 import { parseCredential, serializeCredential } from "./oauth/storedCredential"
-import { type DpopSession } from "./oauth/dpop"
+import { type DpopSession } from "@/lib/oauth/dpop"
 import { refreshTokens } from "./oauth/flow"
 import { nextTid } from "./tid"
 import {

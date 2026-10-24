@@ -7,6 +7,7 @@
  * - ステータスごとの文言の対応（409・500）は`i18n.spec.ts`で確認する。
  */
 import { expect, test } from "@playwright/test"
+import { choosePasswordTab } from "./fixtures"
 
 test("[api-error-message/AC-6] ログイン時に通信が失敗すると、接続できない旨の文言が表示される", async ({
     page,
@@ -20,6 +21,8 @@ test("[api-error-message/AC-6] ログイン時に通信が失敗すると、接�
     await page.goto("/login/", { timeout: 60_000 })
     const form = page.locator("#login-form")
     await expect(form).toBeVisible({ timeout: 60_000 })
+    // 既定は OAuth のタブのため、アプリパスワードのタブへ切り替える
+    await choosePasswordTab(form)
     await form.locator("#username").fill("someone.bsky.social")
     await form.locator("#password").fill("password")
     await expect(async () => {

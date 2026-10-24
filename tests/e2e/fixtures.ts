@@ -65,3 +65,24 @@ export const test = base.extend({
         await use(page)
     },
 })
+
+/**
+ * ログインのフォームで、アプリパスワードのタブを選ぶ（既定は OAuth のタブ）。
+ *
+ * 処理の趣旨:
+ * - ハイドレーションの前に押したクリックは無視されるため、ハンドルの入力欄が出るまで選び直す。
+ *
+ * Input: `scope`（ページ、またはログインのフォームのロケーター）、`name`（タブの名前。表示言語で変わる）
+ * Output: なし（入力欄が表示された状態で戻る）
+ *
+ * 例: `await choosePasswordTab(page.locator("#login-form"))`
+ */
+export const choosePasswordTab = async (
+    scope: Pick<import("@playwright/test").Page, "getByRole" | "locator">,
+    name = "アプリパスワード",
+): Promise<void> => {
+    await expect(async () => {
+        await scope.getByRole("tab", { name }).click()
+        await expect(scope.locator("#username")).toBeVisible({ timeout: 1_000 })
+    }).toPass({ timeout: 30_000 })
+}

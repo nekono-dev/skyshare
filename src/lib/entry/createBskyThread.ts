@@ -19,7 +19,7 @@
  */
 import { TID } from "@atproto/common-web"
 import { cidForLex, type LexValue } from "@atproto/lex-cbor"
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 import type * as Components from "@/lib/api/schema/common"
 import { buildBskyPostRecord, BSKY_POST_COLLECTION } from "@/lib/atproto/post"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
@@ -37,7 +37,7 @@ import {
 type ApplyWritesAgent = {
     com: {
         atproto: {
-            repo: Pick<AtpAgent["com"]["atproto"]["repo"], "applyWrites">
+            repo: Pick<Agent["com"]["atproto"]["repo"], "applyWrites">
         }
     }
 }

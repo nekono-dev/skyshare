@@ -26,7 +26,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 ローカル実行の設定は、置き場所ごとに雛形を用意している（`.env` と `.dev.vars` は Git 管理対象外）。
 
 - `.env`（`.env.template`）: ビルド時に使う `PUBLIC_*`（接続先・運営者情報など）。未設定でもダミー値で動く。
-- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の鍵（`SCHEDULE_ENC_KEY`・`SCHEDULE_OAUTH_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
+- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の鍵（`SCHEDULE_ENC_KEY`・`OAUTH_CLIENT_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
 
 ```sh
 cp .env.template .env
@@ -157,10 +157,10 @@ npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key
 npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key
 rm enc.key
 # Bluesky の OAuth（confidential client）の署名鍵。develop とプレビューは同じ鍵にする
-node hack/generate-oauth-key.mjs | npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare
+node hack/generate-oauth-key.mjs | npx wrangler secret put OAUTH_CLIENT_KEY --name skyshare
 node hack/generate-oauth-key.mjs > oauth.key
-npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare-develop < oauth.key
-npx wrangler preview base-config secret put SCHEDULE_OAUTH_KEY --worker-name skyshare-develop < oauth.key
+npx wrangler secret put OAUTH_CLIENT_KEY --name skyshare-develop < oauth.key
+npx wrangler preview base-config secret put OAUTH_CLIENT_KEY --worker-name skyshare-develop < oauth.key
 rm oauth.key
 ```
 

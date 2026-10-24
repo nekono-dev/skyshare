@@ -6,7 +6,7 @@
  * - 英語環境は `test.use({ locale: "en-US" })`、日本語環境は既定（playwright.config.ts の `ja-JP`）。
  * - ゲスト表示（`?guest`）で実アカウント不要。
  */
-import { expect, test } from "./fixtures"
+import { choosePasswordTab, expect, test } from "./fixtures"
 import { type Locator, type Page } from "@playwright/test"
 
 test.describe("英語ブラウザ", () => {
@@ -336,6 +336,8 @@ test.describe("APIエラーの表示（ログイン）", () => {
                 await page.goto("/login/", { timeout: 60_000 })
                 const form = page.locator("#login-form")
                 await expect(form).toBeVisible({ timeout: 60_000 })
+                // 既定は OAuth のタブのため、アプリパスワードのタブへ切り替える
+                await choosePasswordTab(form)
 
                 await form.locator("#username").fill("someone.bsky.social")
                 await form.locator("#password").fill("password")
@@ -486,6 +488,8 @@ test.describe("表示後のメッセージと言語の自称表記", () => {
         await page.goto("/login/", { timeout: 60_000 })
         const form = page.locator("#login-form")
         await expect(form).toBeVisible({ timeout: 60_000 })
+        // 既定は OAuth のタブのため、アプリパスワードのタブへ切り替える
+        await choosePasswordTab(form)
         await form.locator("#username").fill("someone.bsky.social")
         await form.locator("#password").fill("password")
         await expect(async () => {
@@ -550,9 +554,9 @@ test.describe("複数のタブ・リクエスト", () => {
         const loginTab = await context.newPage()
         await loginTab.goto("/login/", { timeout: 60_000 })
         await expect(loginTab.locator("html")).toHaveAttribute("lang", "ja")
-        await expect(loginTab.locator("#username")).toBeVisible({
-            timeout: 60_000,
-        })
+        await expect(
+            loginTab.getByRole("tab", { name: "アプリパスワード" }),
+        ).toBeVisible({ timeout: 60_000 })
 
         await settingsTab.goto("/settings/?guest", { timeout: 60_000 })
         const localeTrigger = settingsTab.getByRole("combobox", {
@@ -565,7 +569,9 @@ test.describe("複数のタブ・リクエスト", () => {
 
         // 日本語で開いていたもう一方のタブが、再読み込みなしで英語になる
         await expect(loginTab.locator("html")).toHaveAttribute("lang", "en")
-        await expect(loginTab.getByLabel("Handle")).toBeVisible()
+        await expect(
+            loginTab.getByRole("tab", { name: "App password" }),
+        ).toBeVisible()
     })
 
     test("[i18n-locale/AC-13] 受け入れ言語が異なるリクエストを並行して送っても、それぞれの言語の lang で描画される", async ({

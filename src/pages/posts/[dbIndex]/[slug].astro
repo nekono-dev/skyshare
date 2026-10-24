@@ -19,7 +19,7 @@ import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
 import { fetchPageDbEntry, type PageDbImage } from "@/lib/legacy/pagedb"
 import { bskyPostUrlgen } from "@/lib/entry/url"
-import { parseSessionFromRequest } from "@/lib/session/cookies"
+import { parseSessionFromRequest, sessionIdentity } from "@/lib/session/cookies"
 import LegacyPageDeleteButton from "@/components/entry/LegacyPageDeleteButton"
 
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
@@ -46,8 +46,10 @@ let canDeletePost = false
 // legacy dbIndex(数値)の pageId は `${did}@${rkey}` 形式のため did で突合できるが、
 // "legacy" dbIndex の pageId は handle ベース(`${handle}@${rkey}`)のため session.handle で突合する。
 // フロントエンドでの表示制御はあくまで UX 目的であり、実際の本人確認は legacy backend 側で行う。
-const { session } = parseSessionFromRequest(Astro.request)
-const hasSession = Boolean(session?.did && session?.accessJwt)
+// OAuth のセッションでもボタンは表示し、押したときに削除 API が拒否してアプリパスワードでのログインを案内する。
+const stored = parseSessionFromRequest(Astro.request)
+const session = stored ? sessionIdentity(stored) : undefined
+const hasSession = Boolean(session?.did)
 
 // dbIndex/slug の形式検証 → pageDB問い合わせ → 表示用整形、の順で段階的に失敗点を切り分ける。
 if (typeof dbIndex === "undefined" || typeof slug === "undefined") {

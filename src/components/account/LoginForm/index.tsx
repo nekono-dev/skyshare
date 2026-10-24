@@ -1,5 +1,6 @@
 import React, { useState } from "react"
-import { createSession } from "@/client/openapi/client"
+import { createSession, startSessionAuthorization } from "@/client/openapi/client"
+import TabButtons, { panelId, tabId } from "@/components/common/TabButtons"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
 import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
 import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
@@ -13,31 +14,43 @@ import ui from "@/styles/ui.module.css"
  * Bluesky ログインフォームコンポーネント。
  *
  * 責務と処理概要:
- * - ハンドルとアプリパスワードを受け取り、セッション作成 API を呼び出す。
- * - 成功/失敗メッセージを表示し、成功時はトップページへ遷移する。
+ * - OAuth（初期）とアプリパスワードのログインを、タブで切り替える。選んだタブの中身だけを描画する。
+ * - OAuth のタブはユーザー名の入力欄を持たず、ボタンでログインの開始 API を呼び、返った認可の画面
+ *   （Bluesky の画面。ハンドルとパスワードはそこで入力する）へ遷移する。戻りの完了は
+ *   `LoginAuthorizationReturn` が受け持つ。
+ * - アプリパスワードのタブは、ハンドルとアプリパスワードを受け取り、セッション作成 API を呼び出す。
+ *   成功/失敗メッセージを表示し、成功時はトップページへ遷移する。
  *
  * 利用上の制約:
  * - 自身が `base-card` のため、別の `base-card` の中に入れ子にしないこと。
  *   入れ子にすると Proton Pass が入力欄を検出できなくなる（検証で確認済み）。
+ *   タブもこのフォームの中に置き、フォーム自体がカードという構造を保つ。
  * - 入力欄には `autoComplete`（username / current-password）と label の `htmlFor` を設定している。
  */
 
 type Props = {
-  /** ハンドル欄の初期値。再ログイン導線など、対象アカウントが既知の場合に指定する。 */
+  /**
+   * ハンドルの初期値。再ログイン導線など、対象アカウントが既知の場合に指定する。
+   * アプリパスワードのタブのハンドル欄と、OAuth の開始の入力済みの指定（`loginHint`）に使う。
+   */
   initialHandle?: string
 }
+
+type LoginTab = "oauth" | "password"
+
+const TAB_ID_PREFIX = "login-method"
 
 /**
  * ログインフォームを描画する。
  *
  * Input:
- * - `initialHandle`: ハンドル欄の初期値（省略時は空欄）
+ * - `initialHandle`: ハンドルの初期値（省略時は空欄・入力済みの指定なし）
  *
  * Output:
- * - 認証情報入力フォームと状態メッセージ表示を含む JSX
+ * - ログインの方法のタブと、選んだ方法の入力（OAuth はボタンだけ）と状態メッセージ表示を含む JSX
  *
  * 例:
- * - 出力: ハンドル入力・パスワード入力・ログインボタンを持つフォーム
+ * - 出力: 初期は「Bluesky でログイン」のボタン。アプリパスワードのタブでハンドル入力・パスワード入力・ログインボタン
  */
 export const Component = ({ initialHandle }: Props = {}) => {
   const { t, raw } = useT()
@@ -46,6 +59,55 @@ export const Component = ({ initialHandle }: Props = {}) => {
   // 状態メッセージは文言キーで保持し、表示時に翻訳する（言語切り替えに追従させるため）
   const [messageKey, setMessageKey] = useState<PlainMessageKey | "">("")
   const [color, setColor] = useState("")
+  const [tab, setTab] = useState<LoginTab>("oauth")
+  const [oauthStarting, setOauthStarting] = useState(false)
+
+  /**
+   * タブを切り替える。前のタブの状態メッセージは持ち越さない。
+   */
+  const changeTab = (next: LoginTab) => {
+    setTab(next)
+    setMessageKey("")
+    setColor("")
+  }
+
+  /**
+   * OAuth のログインを開始し、認可の画面へ遷移する。
+   *
+   * 処理の趣旨:
+   * - 開始のページ（このページのパス）を戻り先に指定し、再ログインなら対象のハンドルを入力済みにする。
+   * - 遷移までの間はボタンを押せなくし、二重に開始しない。
+   *
+   * Output:
+   * - 返り値なし（成功時は `window.location` の遷移を副作用として実行）
+   *
+   * 失敗時の方針:
+   * - API が 200 以外: ステータスから文言を選んで表示し、ボタンを戻す
+   * - 通信例外: 接続失敗メッセージを表示し、ボタンを戻す
+   */
+  const startOAuth = async () => {
+    if (oauthStarting) return
+    setOauthStarting(true)
+    setColor("")
+    setMessageKey("account.login.oauthRedirecting")
+    try {
+      const res = await startSessionAuthorization({
+        returnTo: window.location.pathname,
+        ...(initialHandle ? { loginHint: initialHandle } : {}),
+      })
+      if (res.status === 200) {
+        window.location.href = res.data.url
+        return
+      }
+      setColor("#b00")
+      setMessageKey(errorMessageKeyFromStatus(res.status, "login"))
+    } catch (err) {
+      console.error(err)
+      setColor("#b00")
+      setMessageKey("error.network")
+    }
+    setOauthStarting(false)
+  }
 
   /**
    * フォーム送信時にセッション作成 API を呼び出す。
@@ -103,54 +165,87 @@ export const Component = ({ initialHandle }: Props = {}) => {
 
   return (
     <form id="login-form" className={ui["base-card"]} onSubmit={onSubmit}>
-      <div className={styles.content}>
-        <div>
-          <label htmlFor="username">{t("account.login.handleLabel")}</label>
-          <div className={ui["base-input-box"]}>
-            <input
-              className={ui["base-input-field"]}
-              id="username"
-              name="username"
-              type="text"
-              autoComplete="username"
-              placeholder="example.bsky.social"
-              required
-              value={handle}
-              onChange={e => setHandle(e.target.value)}
-            />
-          </div>
-        </div>
+      <TabButtons
+        idPrefix={TAB_ID_PREFIX}
+        ariaLabel={t("account.login.tabsAria")}
+        items={[
+          { key: "oauth", label: t("account.login.tabOAuth") },
+          { key: "password", label: t("account.login.tabPassword") },
+        ]}
+        value={tab}
+        onChange={changeTab}
+      />
+      <div
+        className={styles.content}
+        role="tabpanel"
+        id={panelId(TAB_ID_PREFIX, tab)}
+        aria-labelledby={tabId(TAB_ID_PREFIX, tab)}
+      >
+        {tab === "oauth" ? (
+          <>
+            <p className={ui.text}>{t("account.login.oauthHint")}</p>
+            <button
+              type="button"
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+              disabled={oauthStarting}
+              onClick={() => {
+                void startOAuth()
+              }}
+            >
+              {t("account.login.oauthSubmit")}
+            </button>
+          </>
+        ) : (
+          <>
+            <div>
+              <label htmlFor="username">{t("account.login.handleLabel")}</label>
+              <div className={ui["base-input-box"]}>
+                <input
+                  className={ui["base-input-field"]}
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="example.bsky.social"
+                  required
+                  value={handle}
+                  onChange={e => setHandle(e.target.value)}
+                />
+              </div>
+            </div>
 
-        <div>
-          <label htmlFor="password">
-            {renderSlots(raw("account.login.appPasswordLabel"), {
-              link: (
-                <a href="https://bsky.app/settings/app-passwords">
-                  {t("account.login.appPasswordLink")}
-                </a>
-              ),
-            })}
-          </label>
-          <div className={ui["base-input-box"]}>
-            <input
-              className={ui["base-input-field"]}
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-          </div>
-        </div>
+            <div>
+              <label htmlFor="password">
+                {renderSlots(raw("account.login.appPasswordLabel"), {
+                  link: (
+                    <a href="https://bsky.app/settings/app-passwords">
+                      {t("account.login.appPasswordLink")}
+                    </a>
+                  ),
+                })}
+              </label>
+              <div className={ui["base-input-box"]}>
+                <input
+                  className={ui["base-input-field"]}
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
 
-        <button
-          type="submit"
-          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
-        >
-          {t("account.login.submit")}
-        </button>
+            <button
+              type="submit"
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
+            >
+              {t("account.login.submit")}
+            </button>
+          </>
+        )}
 
         <div
           id="message"

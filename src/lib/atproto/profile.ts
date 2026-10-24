@@ -3,13 +3,13 @@
  *
  * 責務と処理概要:
  * - skyshare entry の作成時に投稿者の表示名を取得する。
- * - 実際に呼び出すメソッドは `getProfile` のみのため、`AtpAgent` 全体ではなく
+ * - 実際に呼び出すメソッドは `getProfile` のみのため、`Agent` 全体ではなく
  *   最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
  */
 
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 
-type ProfileAgent = Pick<AtpAgent, "getProfile">
+type ProfileAgent = Pick<Agent, "getProfile">
 
 /**
  * 投稿者の表示名を解決する。
@@ -19,7 +19,7 @@ type ProfileAgent = Pick<AtpAgent, "getProfile">
  *   handle をフォールバックとして採用する。
  *
  * Input:
- * - `agent`: `getProfile` を持つ認証済み AtpAgent（または同等の最小インターフェース）
+ * - `agent`: `getProfile` を持つ認証済み Agent（または同等の最小インターフェース）
  * - `did`: 対象アカウントの DID
  * - `fallbackHandle`: displayName が無い場合に使う handle
  *

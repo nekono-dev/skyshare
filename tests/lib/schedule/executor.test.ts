@@ -30,7 +30,7 @@ let env: {
     DB: typeof db
     SCHEDULE_IMAGES: typeof r2
     SCHEDULE_ENC_KEY: string
-    SCHEDULE_OAUTH_KEY: string
+    OAUTH_CLIENT_KEY: string
 }
 let pds: ReturnType<typeof createFakePds>
 
@@ -74,7 +74,7 @@ beforeEach(async () => {
         DB: db,
         SCHEDULE_IMAGES: r2,
         SCHEDULE_ENC_KEY: KEY,
-        SCHEDULE_OAUTH_KEY: await createTestClientSecret(),
+        OAUTH_CLIENT_KEY: await createTestClientSecret(),
     }
     await saveCredential(
         db,

@@ -6,7 +6,7 @@
  *   `lxm` が `com.atproto.repo.uploadBlob` のトークンのみを受け付ける。
  * - 対応PDSは Bluesky 公式ホスティング（bsky.social 系）のみ。
  */
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 
 import { readPdsServiceFromDidDoc, resolvePdsServiceForDid } from "./did"
 import { VIDEO_UPLOAD_TOKEN_TTL_SEC } from "../video/postVideoLimits"
@@ -30,7 +30,7 @@ export const isSupportedVideoPds = (pdsUrl: string): boolean => {
     return host === "bsky.social" || host.endsWith(".host.bsky.network")
 }
 
-type VideoAuthAgent = Pick<AtpAgent, "com">
+type VideoAuthAgent = Pick<Agent, "com">
 
 export type VideoUploadTokenResult =
     | { ok: true; token: string; did: string; expiresAt: number }

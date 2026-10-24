@@ -8,9 +8,8 @@
  */
 
 import {
-    type AtpAgent,
+    type Agent,
     type AppBskyFeedPost,
-    type ComAtprotoServerRefreshSession,
 } from "@atproto/api"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
@@ -21,11 +20,11 @@ import {
 } from "@/lib/entry/skyshareRecord"
 import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
 
-type FromPostAgent = Pick<AtpAgent, "uploadBlob" | "getProfile"> & {
+type FromPostAgent = Pick<Agent, "uploadBlob" | "getProfile"> & {
     com: {
         atproto: {
             repo: Pick<
-                AtpAgent["com"]["atproto"]["repo"],
+                Agent["com"]["atproto"]["repo"],
                 "getRecord" | "createRecord"
             >
         }
@@ -50,7 +49,7 @@ export type FromPostResult =
  * - bsky 投稿は新規作成せず、既存投稿の URL をそのまま返す。
  *
  * Input:
- * - `agent`: 認証済み AtpAgent（または同等の最小インターフェース）
+ * - `agent`: 認証済み Agent（または同等の最小インターフェース）
  * - `postUri`: 対象となる自分自身の app.bsky.feed.post の AT URI
  * - `session`: セッション情報（DID・handle 取得用）
  * - `visual`: クライアントが合成したサムネイル Blob（必須）
@@ -63,7 +62,7 @@ export type FromPostResult =
 export const createEntryFromExistingPost = async (
     agent: FromPostAgent,
     postUri: string,
-    session: ComAtprotoServerRefreshSession.OutputSchema,
+    session: { did: string; handle: string },
     visual: Blob | undefined,
     heading?: string,
     caption?: string,

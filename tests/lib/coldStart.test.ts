@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest"
  * 動的importすること（`lib/session/bskySessionRefresh.ts` を参照）。
  */
 describe("cold start: ミドルウェアの静的importにatprotoを含めない", () => {
-    it("src/middleware.ts から静的に辿れる範囲に @atproto/* が無い", async () => {
+    it("[oauth-session/AC-16] src/middleware.ts から静的に辿れる範囲に @atproto/* が無い（OAuth のセッションの経路を含む）", async () => {
         const entry = resolve(__dirname, "../../src/middleware.ts")
         const result = await build({
             entryPoints: [entry],
@@ -26,7 +26,7 @@ describe("cold start: ミドルウェアの静的importにatprotoを含めない
             platform: "neutral",
             alias: { "@": resolve(__dirname, "../../src") },
             // ランタイム側で解決されるものはバンドルしない（atproto は import 先として記録される）
-            external: ["astro:*", "astro", "@atproto/*"],
+            external: ["astro:*", "astro", "@atproto/*", "cloudflare:*"],
         })
 
         const outputs = result.metafile.outputs
