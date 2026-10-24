@@ -53,8 +53,7 @@ const tokens = async (
     )
 
 /** トークンの端点の応答だけを差し替えた fetch */
-const tokenResponse =
-    (body: unknown, status = 200): typeof fetch =>
+const tokenResponse = (body: unknown, status = 200): typeof fetch =>
     (async () =>
         new Response(JSON.stringify(body), {
             status,
@@ -107,7 +106,9 @@ describe("トークンの要求", () => {
                 scope: "atproto",
             },
         })
-        const sent = world.requests.filter(r => r.url === AS.tokenEndpoint).at(-1)!
+        const sent = world.requests
+            .filter(r => r.url === AS.tokenEndpoint)
+            .at(-1)!
         expect(sent.form).toMatchObject({
             grant_type: "authorization_code",
             code: "AUTH-CODE-VALUE",
@@ -121,7 +122,10 @@ describe("トークンの要求", () => {
             sub: DID,
         }
         expect(
-            await tokens(CODE_GRANT, tokenResponse({ ...base, token_type: "Bearer" })),
+            await tokens(
+                CODE_GRANT,
+                tokenResponse({ ...base, token_type: "Bearer" }),
+            ),
         ).toEqual({ ok: false, kind: "Invalid" })
         const { refresh_token: _r, ...noRefresh } = base
         expect(await tokens(CODE_GRANT, tokenResponse(noRefresh))).toEqual({

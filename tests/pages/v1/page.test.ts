@@ -121,10 +121,17 @@ describe("DELETE /v1/page", () => {
                     accessToken: "ACCESS",
                     expiresAt: 1_800_000_000,
                     refreshToken: "REFRESH",
-                    dpopJwk: { kty: "EC", crv: "P-256", x: "x", y: "y", d: "d" },
+                    dpopJwk: {
+                        kty: "EC",
+                        crv: "P-256",
+                        x: "x",
+                        y: "y",
+                        d: "d",
+                    },
                     issuer: "https://bsky.social",
                     tokenEndpoint: "https://bsky.social/oauth/token",
-                    clientId: "https://skyshare.test/oauth/client-metadata.json",
+                    clientId:
+                        "https://skyshare.test/oauth/client-metadata.json",
                 },
             }),
         )}`

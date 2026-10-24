@@ -23,8 +23,7 @@ export const account = {
         "The login attempt is no longer valid. Please try again.",
     "account.oauthResult.AccountUnverified":
         "This account can't log in with Bluesky. Please log in with an app password.",
-    "account.oauthResult.failed":
-        "Failed to log in. Please try again later.",
+    "account.oauthResult.failed": "Failed to log in. Please try again later.",
     "account.panel.reauthTitle": "Log in again as @{handle}",
     "account.panel.addTitle": "Add another account",
     "account.panel.reauthHint":

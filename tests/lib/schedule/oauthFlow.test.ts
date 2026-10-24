@@ -273,7 +273,11 @@ describe("予約投稿の OAuth", () => {
         })
         // メタデータはログインと予約の両方の権限を載せ、予約の要求は実行に必要なコレクションと画像に限る
         expect(meta.scope.split(" ")).toEqual(
-            expect.arrayContaining(["atproto", "blob:image/*", "transition:generic"]),
+            expect.arrayContaining([
+                "atproto",
+                "blob:image/*",
+                "transition:generic",
+            ]),
         )
         expect(SCHEDULE_SCOPE).not.toContain("transition:generic")
     })

@@ -7,10 +7,7 @@
  *   skyshare entry 作成という一連の流れを合成する。
  */
 
-import {
-    type Agent,
-    type AppBskyFeedPost,
-} from "@atproto/api"
+import { type Agent, type AppBskyFeedPost } from "@atproto/api"
 import { uploadBlob } from "@/lib/atproto/blob"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {

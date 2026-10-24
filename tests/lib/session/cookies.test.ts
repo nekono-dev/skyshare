@@ -115,7 +115,9 @@ describe("parseSessionFromRequest", () => {
     it("[account-session/AC-1] atp_session cookie を復号してセッションを取得する", () => {
         for (const stored of [password("did:plc:abc"), oauth("did:plc:abc")]) {
             const request = new Request("https://example.com", {
-                headers: { cookie: makeSessionSetCookie(stored).split(";")[0]! },
+                headers: {
+                    cookie: makeSessionSetCookie(stored).split(";")[0]!,
+                },
             })
             expect(parseSessionFromRequest(request)).toEqual(stored)
         }
@@ -215,7 +217,10 @@ describe("toPooledAccount / upsertPooledAccount", () => {
     it("新規didは末尾に追加し、同一didは上書きして末尾に配置する", () => {
         const existing = pooled(password("did:plc:abc"))
         const other = pooled(oauth("did:plc:other"))
-        expect(upsertPooledAccount([existing], other)).toEqual([existing, other])
+        expect(upsertPooledAccount([existing], other)).toEqual([
+            existing,
+            other,
+        ])
         const updated = pooled(password("did:plc:abc", "alice2.test"))
         expect(upsertPooledAccount([existing, other], updated)).toEqual([
             other,

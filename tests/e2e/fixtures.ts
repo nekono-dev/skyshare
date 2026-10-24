@@ -72,14 +72,14 @@ export const test = base.extend({
  * 処理の趣旨:
  * - ハイドレーションの前に押したクリックは無視されるため、ハンドルの入力欄が出るまで選び直す。
  *
- * Input: `scope`（ページ、またはログインのフォームのロケーター）、`name`（タブの名前。表示言語で変わる）
+ * Input: `scope`（ページ、またはログインのフォームのロケーター）、`name`（タブの名前。既定は日本語と英語の両方に一致する）
  * Output: なし（入力欄が表示された状態で戻る）
  *
  * 例: `await choosePasswordTab(page.locator("#login-form"))`
  */
 export const choosePasswordTab = async (
     scope: Pick<import("@playwright/test").Page, "getByRole" | "locator">,
-    name = "アプリパスワード",
+    name: string | RegExp = /^(アプリパスワード|App password)$/,
 ): Promise<void> => {
     await expect(async () => {
         await scope.getByRole("tab", { name }).click()

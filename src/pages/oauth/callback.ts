@@ -23,7 +23,10 @@ import { clearReturnCookie, readReturn } from "@/lib/oauth/returnPath"
 export const GET: APIRoute = ({ request }) => {
     const { purpose, path } = readReturn(request.headers.get("cookie"))
     const to = new URL(path, request.url)
-    to.hash = toAuthorizationFragment(new URL(request.url).searchParams, purpose)
+    to.hash = toAuthorizationFragment(
+        new URL(request.url).searchParams,
+        purpose,
+    )
     return new Response(null, {
         status: 303,
         headers: {

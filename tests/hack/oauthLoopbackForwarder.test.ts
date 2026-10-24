@@ -23,7 +23,11 @@ describe("開発サーバーの戻り先の中継", () => {
         ).toEqual({ status: 404 })
         // 別のホストを含む住所でも、転送先は開発サーバーのオリジンに固定する
         expect(
-            forwardLoopbackRequest("GET", "//evil.example/oauth/callback/", 4321),
+            forwardLoopbackRequest(
+                "GET",
+                "//evil.example/oauth/callback/",
+                4321,
+            ),
         ).toEqual({
             status: 302,
             location: "https://localhost:4321/oauth/callback/",

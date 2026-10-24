@@ -25,7 +25,9 @@ import styles from "./index.module.css"
  *
  * 例: 403 `{ error: "OAuthSessionUnsupported" }` → `"entry.legacy.oauthUnsupported"`
  */
-export const deleteFailureKey = async (res: Response): Promise<PlainMessageKey> => {
+export const deleteFailureKey = async (
+  res: Response,
+): Promise<PlainMessageKey> => {
   if (res.status !== 403) return "entry.legacy.deleteFailed"
   try {
     const body = (await res.json()) as { error?: unknown }

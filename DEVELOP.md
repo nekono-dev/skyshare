@@ -26,7 +26,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 ローカル実行の設定は、置き場所ごとに雛形を用意している（`.env` と `.dev.vars` は Git 管理対象外）。
 
 - `.env`（`.env.template`）: ビルド時に使う `PUBLIC_*`（接続先・運営者情報など）。未設定でもダミー値で動く。
-- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の鍵（`SCHEDULE_ENC_KEY`・`OAUTH_CLIENT_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
+- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の暗号鍵（`SCHEDULE_ENC_KEY`）と OAuth のクライアントの署名鍵（`OAUTH_CLIENT_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
 
 ```sh
 cp .env.template .env
@@ -164,7 +164,10 @@ npx wrangler preview base-config secret put OAUTH_CLIENT_KEY --worker-name skysh
 rm oauth.key
 ```
 
-- 予約の許可は Bluesky の OAuth で得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は設定のページから `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、公開された https の配信元でしか許可を得られない（ローカルでは試せない）。
+- ログイン（`/login/` とアカウントの追加）と予約の許可は、同じ Bluesky の OAuth のクライアントで得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は許可を始めたページから、ログインは `/v2/bsky/session/authorization/completion/`、予約は `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、本番とプレビューでは公開された https の配信元が必要になる。
+- シークレットの名前は `OAUTH_CLIENT_KEY`（以前の `SCHEDULE_OAUTH_KEY` から改名）。以前の名前で登録した配信先は、上の手順で登録し直す。
+- ローカル（`npm run dev`）では、配信元がループバック（`localhost`）のため、開発用の公開クライアント（client_id が `http://localhost?...`）として振る舞い、秘密鍵を使わない。戻り先は `http://127.0.0.1:4322/oauth/callback/` に限られる（認可サーバーがループバックの https を拒否する）ため、開発サーバーが `127.0.0.1:4322` で待ち受けて `https://localhost:4321` へ転送する（`hack/oauthLoopbackForwarder.ts`）。ブラウザでは `https://localhost:4321` を開く（cookie がホストごとのため、`127.0.0.1` や LAN の IP では戻りを受けられない）。開発用の公開クライアントのセッションは、認可サーバーの規定で最長2週間になる。
+- OAuth でログインできるのは、Bluesky がホスティングするアカウント（bsky.social など）だけである。それ以外のアカウントと、旧形式の投稿の削除（アクセストークンが DPoP に結び付くため旧バックエンドで使えない）は、アプリパスワードでログインする。
 - 許可を得た配信元の client_id は認可の情報と一緒に保管し、Cron の実行はそれでトークンを更新する。プレビューで許可した認可の情報は、そのプレビューが消えると更新できなくなる。
 - 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
 

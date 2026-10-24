@@ -1,5 +1,8 @@
 import React, { useState } from "react"
-import { createSession, startSessionAuthorization } from "@/client/openapi/client"
+import {
+  createSession,
+  startSessionAuthorization,
+} from "@/client/openapi/client"
 import TabButtons, { panelId, tabId } from "@/components/common/TabButtons"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
 import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"

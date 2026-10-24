@@ -9,8 +9,7 @@ import {
 const DID = "did:plc:aaaa"
 
 /** 認可サーバーのメタデータの応答だけを差し替えた fetch */
-const withMetadata =
-    (meta: Record<string, unknown>): typeof fetch =>
+const withMetadata = (meta: Record<string, unknown>): typeof fetch =>
     (async () =>
         new Response(JSON.stringify(meta), {
             headers: { "content-type": "application/json" },

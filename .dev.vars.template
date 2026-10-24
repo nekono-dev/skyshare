@@ -7,7 +7,8 @@
 # production 以外にすると Cookie に Secure 属性を付けない（http のローカルで動かすため）
 PUBLIC_NODE_ENV=develop
 
-# --- 予約投稿のシークレット ---
+# --- 予約投稿と OAuth のシークレット ---
+# OAUTH_CLIENT_KEY は本番などの confidential client の署名鍵。ローカル（localhost）では開発用の公開クライアントになり使わない。
 # 未設定なら npm run dev の準備（hack/prepare-local-env.mjs）が、ランダムに生成してここへ書き込む。
 # 鍵を替えると保管済みの予約の認証情報が復号できなくなるため、設定済みの値は上書きしない。
 #SCHEDULE_ENC_KEY=

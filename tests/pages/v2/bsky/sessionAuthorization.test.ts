@@ -86,8 +86,8 @@ const password = (did: string): PasswordSession => ({
 const begin = async () => {
     const res = await callStart(JSON.stringify({ returnTo: "/accounts/" }))
     expect(res.status).toBe(200)
-    const pending = res
-        .headers.getSetCookie()
+    const pending = res.headers
+        .getSetCookie()
         .find(c => c.startsWith("oauth_login_pending="))!
     const state = world.requests
         .filter(r => r.url === `${BSKY}/oauth/par`)

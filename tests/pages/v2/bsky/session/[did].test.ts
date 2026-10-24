@@ -7,10 +7,7 @@ import { describe, expect, it } from "vitest"
 import type { APIContext } from "astro"
 
 import { DELETE } from "@/pages/v2/bsky/session/[did]"
-import {
-    encodeBase64Utf8,
-    SESSION_COOKIE_NAME,
-} from "@/lib/session/cookies.js"
+import { encodeBase64Utf8, SESSION_COOKIE_NAME } from "@/lib/session/cookies.js"
 
 /** プールの先頭の枠 */
 const ACCOUNTS_COOKIE_NAME = "atp_account_0"

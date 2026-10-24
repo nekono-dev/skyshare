@@ -38,7 +38,8 @@ export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>
 
 export const operation: ZodOpenApiOperationObject = {
     operationId: "completeSessionAuthorization",
-    summary: "Complete logging in with Bluesky OAuth with the callback parameters",
+    summary:
+        "Complete logging in with Bluesky OAuth with the callback parameters",
     requestBody: {
         content: { "application/json": { schema: RequestBodySchema } },
     },

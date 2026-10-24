@@ -264,7 +264,10 @@ export const completeOAuthLogin = async (
     if (!result.ok) {
         return {
             ok: false,
-            code: result.kind === "NotConfigured" ? "NotConfigured" : "TokenFailed",
+            code:
+                result.kind === "NotConfigured"
+                    ? "NotConfigured"
+                    : "TokenFailed",
         }
     }
     const { tokens } = result
@@ -274,7 +277,9 @@ export const completeOAuthLogin = async (
     if (!pds) return { ok: false, code: "AccountUnverified" }
     const as = await discoverAuthorizationServer(pds, fetchImpl)
     if (!as || as.issuer !== pending.issuer) {
-        console.warn("oauth login: issuer is not the account's authorization server")
+        console.warn(
+            "oauth login: issuer is not the account's authorization server",
+        )
         return { ok: false, code: "AccountUnverified" }
     }
 
@@ -294,13 +299,15 @@ export const completeOAuthLogin = async (
             return { ok: false, code: "AccountUnverified" }
         }
         const body = (await res.json()) as { did?: unknown; handle?: unknown }
-        if (body.did !== tokens.sub) return { ok: false, code: "AccountUnverified" }
+        if (body.did !== tokens.sub)
+            return { ok: false, code: "AccountUnverified" }
         handle = body.handle
     } catch {
         console.warn("oauth login: getSession unreachable")
         return { ok: false, code: "AccountUnverified" }
     }
-    if (typeof handle !== "string") return { ok: false, code: "AccountUnverified" }
+    if (typeof handle !== "string")
+        return { ok: false, code: "AccountUnverified" }
 
     return {
         ok: true,

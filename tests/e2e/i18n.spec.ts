@@ -454,6 +454,11 @@ test.describe("ログイン画面の言語切り替え", () => {
         await page.getByRole("option", { name: "English" }).click()
 
         await expect(page.locator("html")).toHaveAttribute("lang", "en")
+        // 既定の OAuth のタブの文言が英語になり、アプリパスワードのタブも英語で表示される
+        await expect(
+            page.getByRole("button", { name: "Log in with Bluesky" }),
+        ).toBeVisible()
+        await choosePasswordTab(page)
         await expect(page.getByLabel("Handle (the part after @)")).toBeVisible()
         await expect(
             page.getByRole("button", { name: "Log in", exact: true }),
@@ -463,9 +468,9 @@ test.describe("ログイン画面の言語切り替え", () => {
         ).toHaveText("English")
 
         await page.reload()
-        await expect(page.getByLabel("Handle (the part after @)")).toBeVisible({
-            timeout: 30_000,
-        })
+        await expect(
+            page.getByRole("button", { name: "Log in with Bluesky" }),
+        ).toBeVisible({ timeout: 30_000 })
         await expect(
             page.getByRole("combobox", { name: "Language" }),
         ).toHaveText("English")

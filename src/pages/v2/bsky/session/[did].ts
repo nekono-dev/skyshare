@@ -61,7 +61,9 @@ export const DELETE: APIRoute = async ({ params, request }) => {
             return errorResponseFromStatus(404)
         }
 
-        const target: StoredSession = isActive ? activeSession! : pool[poolIndex]!
+        const target: StoredSession = isActive
+            ? activeSession!
+            : pool[poolIndex]!
         if (target.kind === "oauth") {
             await revokeOAuthSession(target, Math.floor(Date.now() / 1000))
         }

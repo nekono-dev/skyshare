@@ -39,8 +39,7 @@ export type TokenFailure =
     | "NotConfigured"
 
 export type TokenResult =
-    | { ok: true; tokens: TokenSet }
-    | { ok: false; kind: TokenFailure }
+    { ok: true; tokens: TokenSet } | { ok: false; kind: TokenFailure }
 
 /** トークンの要求の種類 */
 export type TokenGrant =
@@ -89,7 +88,8 @@ export const pushAuthorizationRequest = async (
     },
     fetchImpl: typeof fetch = fetch,
 ): Promise<
-    { ok: true; url: string } | { ok: false; kind: "NotConfigured" | "Transient" }
+    | { ok: true; url: string }
+    | { ok: false; kind: "NotConfigured" | "Transient" }
 > => {
     const { as } = input
     const auth = await clientAuthParams(

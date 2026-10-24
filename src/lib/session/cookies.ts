@@ -107,7 +107,6 @@ function decodeBase64Json(raw: string) {
     }
 }
 
-
 export const SESSION_COOKIE_NAME = "atp_session"
 
 /**

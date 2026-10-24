@@ -186,7 +186,8 @@ test("[login-accounts/AC-8] ログインのページに、旧UIとゲスト表�
 
 const AUTHORIZATION_URL = /\/v2\/bsky\/session\/authorization\/?$/
 const COMPLETION_URL = /\/v2\/bsky\/session\/authorization\/completion\/?$/
-const AUTHORIZE_PAGE = "https://bsky.social/oauth/authorize?request_uri=urn%3Atest"
+const AUTHORIZE_PAGE =
+    "https://bsky.social/oauth/authorize?request_uri=urn%3Atest"
 
 /**
  * OAuth のログインの開始と完了のAPIと、認可の画面を差し替える。

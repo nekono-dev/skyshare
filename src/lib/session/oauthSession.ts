@@ -109,7 +109,10 @@ export const ensureFreshOAuthSession = async (
             issuer: s.oauth.issuer,
             client,
             clientId: s.oauth.clientId,
-            grant: { type: "refresh_token", refreshToken: s.oauth.refreshToken },
+            grant: {
+                type: "refresh_token",
+                refreshToken: s.oauth.refreshToken,
+            },
             dpop: await createDpopSession(s.oauth.dpopJwk),
             now,
         },

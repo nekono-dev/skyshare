@@ -134,7 +134,9 @@ describe("OAuth のセッションの再開", () => {
             url: new URL(`${ORIGIN}/v2/entry`),
             request: new Request(`${ORIGIN}/v2/entry`, {
                 headers: {
-                    cookie: cookieOf(makeSessionSetCookie(await oauthSession(0))),
+                    cookie: cookieOf(
+                        makeSessionSetCookie(await oauthSession(0)),
+                    ),
                 },
             }),
             locals: {},
@@ -237,15 +239,15 @@ describe("OAuth のアカウントの切り替えとログアウト", () => {
         const active = cookieOf(makeSessionSetCookie(await oauthSession(600)))
         const res = await callDelete(active)
         expect(res.status).toBe(200)
-        const revoke = world.requests.filter(r => r.url === `${BSKY}/oauth/revoke`)
+        const revoke = world.requests.filter(
+            r => r.url === `${BSKY}/oauth/revoke`,
+        )
         expect(revoke.at(-1)!.form).toMatchObject({
             token: "OLD-REFRESH",
             token_type_hint: "refresh_token",
         })
         expect(
-            res.headers
-                .getSetCookie()
-                .find(c => c.startsWith("atp_session="))!,
+            res.headers.getSetCookie().find(c => c.startsWith("atp_session="))!,
         ).toContain("Max-Age=0")
 
         // 取消の通信が失敗しても、プールから除く

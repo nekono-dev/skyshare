@@ -26,7 +26,8 @@ export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>
 
 export const operation: ZodOpenApiOperationObject = {
     operationId: "startSessionAuthorization",
-    summary: "Start logging in with Bluesky OAuth without asking for the handle",
+    summary:
+        "Start logging in with Bluesky OAuth without asking for the handle",
     requestBody: {
         required: false,
         content: { "application/json": { schema: RequestBodySchema } },

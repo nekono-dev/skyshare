@@ -267,7 +267,10 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
 
         // 現在アクティブなアカウントがあれば、切り替え後はプール側へ戻す。
         const nextPool = currentSession
-            ? upsertPooledAccount(remainingPool, toPooledAccount(currentSession))
+            ? upsertPooledAccount(
+                  remainingPool,
+                  toPooledAccount(currentSession),
+              )
             : remainingPool
 
         const headers = new Headers()

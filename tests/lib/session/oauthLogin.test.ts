@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
-import {
-    HANDLE,
-    PDS,
-    createFakeOAuth,
-} from "../../helpers/fakeOAuth"
+import { HANDLE, PDS, createFakeOAuth } from "../../helpers/fakeOAuth"
 import { createTestClientSecret } from "../../helpers/oauthTestKeys"
 
 const holder = vi.hoisted(() => ({ secret: undefined as string | undefined }))
@@ -36,7 +32,9 @@ const start = async (loginHint?: string) => {
         world.fetch,
     )
     if (!result.ok) throw new Error(`start failed: ${result.status}`)
-    const par = world.requests.filter(r => r.url === `${BSKY}/oauth/par`).at(-1)!
+    const par = world.requests
+        .filter(r => r.url === `${BSKY}/oauth/par`)
+        .at(-1)!
     return { ...result, par }
 }
 
@@ -88,13 +86,17 @@ describe("OAuth のログインの開始と完了", () => {
             ok: false,
             code: "StateInvalid",
         })
-        expect(await complete(null)).toEqual({ ok: false, code: "StateInvalid" })
+        expect(await complete(null)).toEqual({
+            ok: false,
+            code: "StateInvalid",
+        })
         expect(
             await complete(pending, { iss: "https://evil.example" }),
         ).toEqual({ ok: false, code: "IssuerMismatch" })
-        expect(
-            await complete(pending, { error: "access_denied" }),
-        ).toEqual({ ok: false, code: "Denied" })
+        expect(await complete(pending, { error: "access_denied" })).toEqual({
+            ok: false,
+            code: "Denied",
+        })
         expect(tokenRequests()).toBe(0)
     })
 
@@ -103,7 +105,8 @@ describe("OAuth のログインの開始と完了", () => {
         // 持ち主の PDS が別の認可サーバーを指す
         const otherAs = createFakeOAuth(DID)
         const mixed = (async (input: string, init?: RequestInit) =>
-            new URL(input).href === `${PDS}/.well-known/oauth-protected-resource`
+            new URL(input).href ===
+            `${PDS}/.well-known/oauth-protected-resource`
                 ? otherAs.fetch(input, init)
                 : world.fetch(input, init)) as unknown as typeof fetch
         expect(
@@ -163,8 +166,12 @@ describe("OAuth のログインの開始と完了", () => {
             world.fetch,
         )
         expect(dev.ok).toBe(true)
-        const par = world.requests.filter(r => r.url === `${BSKY}/oauth/par`).at(-1)!
+        const par = world.requests
+            .filter(r => r.url === `${BSKY}/oauth/par`)
+            .at(-1)!
         expect(par.form).not.toHaveProperty("client_assertion")
-        expect(par.form.redirect_uri).toBe("http://127.0.0.1:4322/oauth/callback/")
+        expect(par.form.redirect_uri).toBe(
+            "http://127.0.0.1:4322/oauth/callback/",
+        )
     })
 })
