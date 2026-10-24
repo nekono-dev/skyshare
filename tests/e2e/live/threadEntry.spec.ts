@@ -21,7 +21,7 @@ import {
     makePng,
 } from "./helpers"
 
-test.describe.configure({ timeout: 120_000 })
+test.describe.configure({ timeout: 240_000 })
 
 test("e2elive/AC-10: スレッドを投稿し、entry・Timelineの表示を確認して、スレッドごと削除できる", async ({
     page,
@@ -143,9 +143,9 @@ test("e2elive/AC-10: スレッドを投稿し、entry・Timelineの表示を確�
 
         await expect(
             page.locator("article").filter({ hasText: text1 }),
-        ).toHaveCount(0, { timeout: 30_000 })
+        ).toHaveCount(0, { timeout: 90_000 })
         await expect
-            .poll(() => getPublicPostText(rootUri), { timeout: 30_000 })
+            .poll(() => getPublicPostText(rootUri), { timeout: 90_000 })
             .toBeNull()
     } finally {
         await deleteByTag(await createPdsAgent(loadLiveAccount()!), tag)

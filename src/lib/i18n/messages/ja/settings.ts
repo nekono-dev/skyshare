@@ -23,10 +23,10 @@ export const settings = {
         "{share}（共有メニュー）の代わりに{popup}（ポップアップ）を開きます。X等をアプリでなくブラウザで使ってる場合に設定してください。",
     "settings.manualImageAttach.label": "画像を自分で添付する",
     "settings.manualImageAttach.description":
-        "オンにすると、SkyshareのURLを発行しません。{share}を使用する場合は、共有先へ画像データを共有します。投稿インテント（ポップアップ{popup}） を使う場合は、対象SNSの投稿フォーム側で画像を設定してください。",
+        "オンにすると、SkyshareのURLを発行しません。{share}を使用する場合は、共有先へ画像データを共有します。投稿インテント（{popup}ポップアップ） を使う場合は、対象SNSの投稿フォーム側で画像を設定してください。",
     "settings.linkCardPriority.label": "Skyshareのリンクカードを優先表示",
     "settings.linkCardPriority.description":
-        "オンにすると、SkyshareのURLを付けて共有する際に、本文に含まれるURLを共有文から取り除き、共有先でSkyshareのリンクカードが表示されるようにします。本文のURLはBlueskyの投稿で確認できます。「画像を自分で添付する」がオンの間は使えません。",
+        "オンにすると、SkyshareのURLを付けて共有する際に、本文に含まれるURLを共有文から取り除き、共有先でSkyshareのリンクカードが表示されるようにします。",
     "settings.truncateIntentText.label": "長文を省略して共有する",
     "settings.truncateIntentText.description":
         "オンにすると、X・タイッツーへ共有する際に、140字に収まるよう本文を「...」で省略します。「画像を自分で添付する」がオンの間は使えません。",

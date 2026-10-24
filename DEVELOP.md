@@ -233,7 +233,7 @@ APIは利用者向けのエラー文言を返さない。`{ error: "Conflict" }`
 
 ### 検証
 
-- `npm test`: 辞書の整合（キー集合・複数形・プレースホルダ）と、文言の直書き検出（`tests/lib/i18n/noHardcodedText.test.ts`）が走る。例外は同テスト内の許可リストで理由とともに管理する。
+- `npm run test:unit`: 辞書の整合（キー集合・複数形・プレースホルダ）と、文言の直書き検出（`tests/lib/i18n/noHardcodedText.test.ts`）が走る。例外は同テスト内の許可リストで理由とともに管理する。
 - `npm run test:e2e`: `tests/e2e/i18n.spec.ts` が英語環境での表示・切り替え・状態保持・APIエラー表示を確認する。E2E は既定でブラウザのロケールを `ja-JP` に固定している（`playwright.config.ts`）。
 
 ### 言語を追加する手順

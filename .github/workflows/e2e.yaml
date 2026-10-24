@@ -112,7 +112,8 @@ jobs:
 
       # 単体テスト（vitest）。E2E の前に失敗を検出する
       - run: npm run codegen
-      - run: npm test
+      - run: npm run test:unit
+      - run: npm run test:astro
 
       # wrangler.jsonc は .gitignore 対象のため、Variables から生成する（astro dev が参照する）
       - name: Configure build setting

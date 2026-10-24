@@ -54,7 +54,10 @@ export const parseScheduleBody = async (
     const raw = formDataToObject(formData, PostSchema.RequestBodyFieldKinds)
     if (Array.isArray(raw.posts)) {
         for (const item of raw.posts as Record<string, unknown>[]) {
-            if (typeof item.text === "string" && item.text.trim().length === 0) {
+            if (
+                typeof item.text === "string" &&
+                item.text.trim().length === 0
+            ) {
                 delete item.text
             }
         }

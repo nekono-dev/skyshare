@@ -3,7 +3,7 @@
 #
 # 責務: entry.json の位置から独自 lexicon のディレクトリを特定し、`goat lex lint` を実行する。
 #       com/atproto 配下は atproto サブモジュールへの symlink（公式定義）のため対象外とする。
-# 使い方: npm run lint:lexicon
+# 使い方: npm run test:lexicon
 # 失敗時: goat 未導入、または lint で指摘があれば異常終了する。
 set -euo pipefail
 

@@ -43,3 +43,6 @@ _legacy/**/.env.test.*
 
 # GitHub の Variables 登録用（hack/github-variables.env.example のコピー。運用者の値を含む）
 /github-variables.env
+
+# 環境側に導入するスキル（AGENTS.md「仕様駆動開発」参照）。入れ子の git リポジトリのため追跡しない
+.claude/skills/spec-driven-development/

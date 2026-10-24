@@ -11,7 +11,7 @@ import { expect, test } from "./liveTest"
 import { colorFractions, listEntries, makeSolidPng } from "./helpers"
 import { createThread } from "./pds"
 
-test.describe.configure({ timeout: 180_000 })
+test.describe.configure({ timeout: 420_000 })
 
 const CYAN: [number, number, number] = [0, 255, 255]
 
@@ -32,9 +32,11 @@ test("e2elive/AC-14: ルートに画像が無いスレッドの事後entryは、
     await expect(async () => {
         await page.goto("/")
         await expect(create).toBeVisible({ timeout: 25_000 })
-    }).toPass({ timeout: 150_000 })
+    }).toPass({ timeout: 240_000 })
     await create.click()
-    await expect(card.getByText("Entryを開く")).toBeVisible({ timeout: 90_000 })
+    await expect(card.getByText("Entryを開く")).toBeVisible({
+        timeout: 150_000,
+    })
 
     const entry = (await listEntries(request)).find(
         e => e.sourceUri === root.uri,

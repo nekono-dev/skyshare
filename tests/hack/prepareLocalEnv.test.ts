@@ -16,7 +16,6 @@ import {
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-// @ts-expect-error mjs のため型宣言がない
 import { fillMissingSecrets } from "../../hack/prepare-local-env.mjs"
 
 const ROOT = path.resolve(__dirname, "../..")
