@@ -232,14 +232,17 @@
 
   /* baseCard の中身のコントラストを下げ、無効（作成対象外・削除済み）であることを示すバリエーション。
      面の色は変えない（ダークでは明るい面が手前に浮いて強調に見え、ライトと意味が逆転するため）。
-     文字は控えめな色にし、画像・動画は薄く彩度を落とす。操作のボタン内のアイコンは対象外にする。 */
+     文字と本文のリンクは控えめな色にし、画像・動画・操作のボタン内のアイコンは薄く彩度を落とす。 */
   :local(.card-muted) {
     color: var(--color-text-disabled);
     /* 中の控えめな文字（日時・補足）も同じ強さまで下げ、通常のカードとの差を出す */
     --color-text-muted: var(--color-text-disabled);
+    /* 本文のリンク（PostRichText）も文字と同じ色にし、目立たせない */
+    --color-link: var(--color-text-disabled);
   }
 
-  :local(.card-muted) :where(img, video, canvas):not(button *) {
+  /* 操作のボタン内のアイコンも含めて薄くし、通常のカードとの差を揃える */
+  :local(.card-muted) :where(img, video, canvas) {
     opacity: 0.55;
     filter: grayscale(0.6);
   }

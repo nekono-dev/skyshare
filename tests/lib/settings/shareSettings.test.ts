@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
+    DEFAULT_LINK_CARD_PRIORITY,
     isAutoPopupTarget,
     readAutoPopupTargetSetting,
+    readEffectiveLinkCardPriority,
+    readLinkCardPrioritySetting,
+    writeLinkCardPrioritySetting,
+    writeManualImageAttachSetting,
     resolveMastodonInstanceDomain,
     writeAutoPopupTargetSetting,
 } from "@/lib/settings/shareSettings"
@@ -99,5 +104,25 @@ describe("resolveMastodonInstanceDomain", () => {
         ["exa mple.com", null],
     ] as const)("%j → %j", (input, expected) => {
         expect(resolveMastodonInstanceDomain(input)).toBe(expected)
+    })
+})
+
+describe("readLinkCardPrioritySetting / writeLinkCardPrioritySetting", () => {
+    it("[link-card-priority/AC-1] 未保存ならONを返し、OFFを保存した後はOFFを返す", () => {
+        vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
+        expect(readLinkCardPrioritySetting(DEFAULT_LINK_CARD_PRIORITY)).toBe(
+            true,
+        )
+        writeLinkCardPrioritySetting(false)
+        expect(readLinkCardPrioritySetting(DEFAULT_LINK_CARD_PRIORITY)).toBe(
+            false,
+        )
+    })
+
+    it("画像を自分で添付がONの間は、実効値をfalseにする", () => {
+        vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
+        expect(readEffectiveLinkCardPriority()).toBe(true)
+        writeManualImageAttachSetting(true)
+        expect(readEffectiveLinkCardPriority()).toBe(false)
     })
 })

@@ -25,6 +25,7 @@ const TimelinePostSchema = z
         url: z.string(),
         indexedAt: z.string(),
         text: z.string(),
+        facets: Common.CommonFacetsSchema.optional(),
         author: z
             .object({
                 did: z.string(),
