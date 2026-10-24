@@ -234,3 +234,73 @@ test.describe("Timelineの画像表示（specs/image-gallery）", () => {
         await expect(card.locator("img[loading='lazy']")).toHaveCount(0)
     })
 })
+
+test.describe("スレッド単位のコントラスト", () => {
+    test("[timeline/AC-12] 画像もentryも持たないスレッドEを展開すると、起点と返信のすべてのカードがコントラストを下げるクラスを持つ", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const rootArticle = page.locator("article", {
+            hasText: "スレッドE・1件目（ルート、画像なし）です。",
+        })
+        await expect(rootArticle).toBeVisible({ timeout: 30_000 })
+        await rootArticle.locator("xpath=following-sibling::button[1]").click()
+        const tailArticle = page.locator("article", {
+            hasText: "スレッドE・2件目（画像なし）です。",
+        })
+        await expect(tailArticle).toBeVisible()
+        for (const card of [rootArticle, tailArticle]) {
+            await expect(card).toHaveClass(/card-muted/)
+        }
+    })
+
+    test("[timeline/AC-13] 起点に画像が無く返信に画像があるスレッドAを展開すると、どのカードもコントラストを下げるクラスを持たない", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const rootArticle = page.locator("article", {
+            hasText: "スレッドA・1件目（ルート、画像なし）です。",
+        })
+        await expect(rootArticle).toBeVisible({ timeout: 30_000 })
+        await rootArticle.locator("xpath=following-sibling::button[1]").click()
+        const thread = rootArticle.locator("xpath=..")
+        await expect(thread.locator("article")).toHaveCount(3)
+        for (const card of await thread.locator("article").all()) {
+            await expect(card).not.toHaveClass(/card-muted/)
+        }
+    })
+
+    test("[timeline/AC-14] コントラストを下げたカードで、共有のボタンのアイコンの不透明度が通常のカードより低い", async ({
+        page,
+    }) => {
+        // 共有のボタンは Web Share API の対応環境でだけ表示されるため、対応を模擬する
+        await page.addInitScript(() => {
+            Object.defineProperty(navigator, "share", {
+                value: async () => {},
+                configurable: true,
+            })
+            Object.defineProperty(navigator, "canShare", {
+                value: () => true,
+                configurable: true,
+            })
+        })
+        await page.goto("/?guest")
+        const opacityOf = async (text: string) => {
+            const icon = page
+                .locator("article", { hasText: text })
+                .getByRole("button", { name: "Web Share APIで共有" })
+                .locator("img")
+            await expect(icon).toBeVisible({ timeout: 30_000 })
+            return Number(
+                await icon.evaluate(el => getComputedStyle(el).opacity),
+            )
+        }
+        const muted = await opacityOf(
+            "これはゲスト用デモ表示のサンプル投稿です。",
+        )
+        const normal = await opacityOf(
+            "画像投稿で、URL発行を行った際の表示です。",
+        )
+        expect(muted).toBeLessThan(normal)
+    })
+})

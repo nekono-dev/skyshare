@@ -42,6 +42,12 @@ export const guest = {
     "guest.threadD.entryCaption":
         "This is a dummy old-format Entry for guest mode.",
     "guest.threadD.rootText": "Thread D, post 1 (root, no image).",
+    "guest.threadE.rootText":
+        "Thread E, post 1 (root, no image). The whole thread is not eligible for Skyshare.",
+    "guest.threadE.tailText": "Thread E, post 2 (no image).",
+    "guest.richText.text":
+        "A post with a hashtag, a mention, and a URL. #skyshare @guest.demo {url}",
+    "guest.richText.entryHeading": "Sample Entry with links",
     "guest.unknown.text":
         "A post for checking the display when the state of the Bluesky post can't be determined.",
     "guest.unknown.entryHeading": "Undeterminable sample Entry",

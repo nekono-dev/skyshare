@@ -5,7 +5,15 @@ import PostEngagementStats from "@/components/post/PostEngagementStats"
 import VideoPlayer from "@/components/video/VideoPlayer"
 import VideoThumbnail from "@/components/video/VideoThumbnail"
 import VideoUnavailable from "@/components/video/VideoUnavailable"
+import PostRichText from "@/components/post/PostRichText"
+import PostLinkCard from "@/components/post/PostLinkCard"
+import PostQuote from "@/components/post/PostQuote"
 import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
+import type { PostFacet } from "@/lib/atproto/richTextSegments"
+import type {
+  PostLinkCard as PostLinkCardData,
+  PostQuote as PostQuoteData,
+} from "@/lib/entry/postEmbedView"
 import styles from "./index.module.css"
 
 /**
@@ -14,9 +22,11 @@ import styles from "./index.module.css"
  * 責務と処理概要:
  * - Timeline（`PostCard`）と Entry詳細ページの両方で使う、操作ロジックを持たない表示専用部品。
  * - カードの枠・背景は呼び出し側が持つ。
+ * - 本文はメンション・ハッシュタグ・URLをリンクにして表示する（`PostRichText`、specs/post-rich-text）。
  * - 動画（`video`）・利用不可の動画（`unsupportedVideo`）・画像のいずれかを本文の下に表示する。
+ * - `linkCard`・`quote` が渡された場合は、画像・動画の下にリンクカード・引用の枠の順に表示する。
  *   画像は `ImageGallery` で表示し、`engagement` が渡された場合のみ画像の下にリアクション数を表示する。
- * - 設計: specs/entry-detail
+ * - 設計: specs/entry-detail、specs/post-rich-text
  */
 
 type Props = {
@@ -24,6 +34,8 @@ type Props = {
   /** ISO文字列 */
   createdAt: string
   text: string
+  /** 本文の facets。指定時はメンション・ハッシュタグ・URLをリンクにする */
+  facets?: PostFacet[]
   images: SourceImage[]
   /** 動画投稿の動画。指定時は画像の代わりに表示する */
   video?: SourceVideo
@@ -37,6 +49,10 @@ type Props = {
   imagesInteractive?: boolean
   /** 指定時は日時表示を Bluesky ページへのリンク（target=_blank）にする */
   postUrl?: string
+  /** 外部リンクの埋め込み。指定時は画像・動画の下にリンクカードを表示する */
+  linkCard?: PostLinkCardData
+  /** 引用。指定時はリンクカードの下に引用の枠を表示する */
+  quote?: PostQuoteData
   /** 指定時のみ画像の下に PostEngagementStats を表示する */
   engagement?: {
     likeCount: number
@@ -59,6 +75,7 @@ const PostBody = ({
   author,
   createdAt,
   text,
+  facets,
   images,
   video,
   unsupportedVideo,
@@ -66,6 +83,8 @@ const PostBody = ({
   videoInteractive = true,
   imagesInteractive = true,
   postUrl,
+  linkCard,
+  quote,
   engagement,
 }: Props) => {
   const { formatDateTime } = useFormat()
@@ -105,7 +124,11 @@ const PostBody = ({
         </div>
       </div>
 
-      {text ? <p className={styles.text}>{text}</p> : null}
+      {text ? (
+        <p className={styles.text}>
+          <PostRichText text={text} facets={facets} />
+        </p>
+      ) : null}
 
       {video ? (
         videoInteractive ? (
@@ -121,6 +144,10 @@ const PostBody = ({
       ) : images.length > 0 ? (
         <ImageGallery images={images} interactive={imagesInteractive} />
       ) : null}
+
+      {linkCard ? <PostLinkCard card={linkCard} /> : null}
+
+      {quote ? <PostQuote quote={quote} /> : null}
 
       {engagement ? (
         <div className={styles.engagement}>

@@ -9,6 +9,9 @@
 | `src/components/post/PostBody/index.tsx`           | 投稿カードの表示部（タイムラインと共用）           |
 | `src/lib/atproto/threadChain.ts`                   | 自分の投稿の直線的な連鎖の抽出                     |
 | `src/lib/entry/entry.ts`                           | 投稿の画像の抽出                                   |
+| `src/lib/entry/postEmbedView.ts`                   | 投稿の埋め込みのリンクカードと引用の抽出           |
+| `src/components/post/PostLinkCard/index.tsx`       | リンクカードの表示                                 |
+| `src/components/post/PostQuote/index.tsx`          | 引用の枠の表示                                     |
 | `src/lib/entry/entryPageCache.ts`                  | 詳細ページのSSR結果の保存と再利用                  |
 | `src/pages/entries/sample.astro`                   | 表示確認用のサンプルページ                         |
 
@@ -21,8 +24,11 @@ flowchart LR
   slug["[slug]"] --> edv["EntryDetailView/index"]
   slug --> threadChain
   slug --> entry
+  slug -->|extractPostEmbedView| postEmbedView
   slug --> entryPageCache
   edv --> pb["PostBody/index"]
+  pb --> plc["PostLinkCard/index"]
+  pb --> pq["PostQuote/index"]
   sample --> edv
 ```
 
@@ -118,6 +124,32 @@ export type EntryPostView = {
 | 応答ヘッダー | `x-skyshare-cache` に `HIT` か `MISS` を入れる                                               |
 | 対象外       | GET以外、事前描画のページ、Cache API が使えない環境（`workers.dev`）では保存も再利用もしない |
 | 失敗時       | Cache API の失敗は握りつぶし、通常の描画にフォールバックする                                 |
+
+### D-5: 埋め込みの表示 (FR-11, FR-12)
+
+```ts
+export type PostLinkCard = { uri: string; title: string; description: string; domain: string; thumb?: string }
+export type PostQuote =
+  | { kind: "post"; webUrl: string; author: { handle: string; displayName?: string; avatar?: string }
+      createdAt: string; text: string; facets: PostFacet[]; images: SourceImage[] }
+  | { kind: "unavailable" }
+// PostView の embed（hydrate 済みの view）から取り出す。外部入力のため $type で形を確かめる
+export const extractPostEmbedView = (embed: unknown): { linkCard?: PostLinkCard; quote?: PostQuote }
+```
+
+| embed の `$type`                      | 取り出すもの                                       |
+| ------------------------------------- | -------------------------------------------------- |
+| `app.bsky.embed.external#view`        | `external` からリンクカード（http と https だけ）  |
+| `app.bsky.embed.record#view`          | `record` から引用                                  |
+| `app.bsky.embed.recordWithMedia#view` | `record.record` から引用（画像と動画は既存の抽出） |
+
+| 引用の `record` の `$type`                       | 表示                 |
+| ------------------------------------------------ | -------------------- |
+| `app.bsky.embed.record#viewRecord`（投稿）       | 作者・本文・画像の枠 |
+| `#viewNotFound`・`#viewBlocked`・`#viewDetached` | 表示できない旨の枠   |
+| それ以外（フィード・リスト）                     | 表示しない           |
+
+`PostBody` は `linkCard` と `quote` を受け取り、画像・動画の下に `PostLinkCard`・`PostQuote` の順に置く。引用の枠は、全体を覆うリンク（`::after` の重ね）でBlueskyの引用元を開き、本文のリンクはその上に重ねて押せるようにする（リンクの入れ子を作らない）。
 
 ## 4. エラー処理
 

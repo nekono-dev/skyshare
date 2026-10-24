@@ -25,3 +25,12 @@
 - [x] T-3.1: `ThreadCard` から起点のURIで一覧のグループを取り除く。
 - 検証: `npm run build`
 - E2E: `tests/e2e/entryDeleteDialog.spec.ts` ゲスト表示でスレッドBの起点のBluesky投稿を含む削除を確定する → スレッド全体が一覧から消える
+
+## Phase 4: スレッド単位のコントラスト
+
+- 対応: D-4
+- [x] T-4.1: `ThreadCard` でグループ単位の判定を求め、返信の `PostCard` に `muted` を渡す。
+- [x] T-4.2: `card-muted` でボタン内のアイコンと本文のリンクのコントラストを下げる。
+- [x] T-4.3: スレッド単位のコントラストと共有のボタンのアイコンを確認するE2Eテストを追加する。
+- 検証: `npm run build`
+- E2E: `tests/e2e/timelineThread.spec.ts` ゲスト表示で画像の無いスレッドを展開する → 起点と返信のすべてのカードがコントラストを下げるクラスを持つ

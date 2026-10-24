@@ -48,16 +48,21 @@ const cardOf = (page: Page, text: string): Locator =>
     page.locator("article", { hasText: text })
 
 const SAMPLE_VIDEO_TEXT = "スレッド4件目です。動画が付いています。"
-const SAMPLE_UNSUPPORTED_TEXT = "スレッド5件目（末尾投稿）です。"
+const SAMPLE_UNSUPPORTED_TEXT = "スレッド5件目です。"
 const TIMELINE_VIDEO_TEXT = "動画を添付した投稿の表示です。"
 const TIMELINE_UNSUPPORTED_TEXT = "引用投稿に動画が添付された投稿の表示です。"
 
 const sampleItem = (page: Page, text: string) =>
     page.locator("li", { hasText: text })
 
-/** 再生ボタン（円と再生記号）の寸法・色を取得する。 */
+/**
+ * 再生ボタン（円と再生記号）の寸法・色を取得する。
+ * Timeline は一覧を非同期に取得して描画するため、表示されるまで待ってから寸法を読む
+ * （待たずに `boundingBox()` を呼ぶと、描画前で `null` が返る）。
+ */
 const readPlayButton = async (scope: Locator) => {
     const button = scope.getByTestId("video-play-button")
+    await expect(button).toBeVisible()
     const box = await button.boundingBox()
     const style = await button.evaluate(
         el => getComputedStyle(el).backgroundColor,

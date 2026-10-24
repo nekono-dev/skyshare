@@ -1,0 +1,7 @@
+/* 本文中のリンク。中身のコントラストを下げたカード（ui の card-muted）は --color-link を文字の色に差し替える */
+.link {
+  /* 引用の枠（PostQuote）の全体を覆うリンクより手前に出し、本文のリンクを押せるようにする */
+  position: relative;
+  z-index: 1;
+  color: var(--color-link, var(--color-bluesky));
+}

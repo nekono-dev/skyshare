@@ -4,7 +4,8 @@
  * 責務と処理概要:
  * - WebShareAPI の対応可否を、SSR/hydrationの不整合を避けつつクライアント側で判定する。
  * - skyshare entry の有無に応じて共有データを組み立て、WebShareAPI を実行する。
- *   - entry あり: 本文 + entry URL を text として共有（画像は添付しない）。
+ *   - entry あり: 本文 + entry URL を text として共有（画像は添付しない）。「Skyshareのリンクカードを
+ *     優先表示」が有効なら本文のURLを取り除く（`specs/link-card-priority`）。
  *   - entry なし・画像あり: 元投稿の画像を取り込み files として共有（URLは含めない）。
  *   - entry なし・画像なし: Bluesky投稿本文と同じ内容を text として共有する。
  * - entry の作成・削除状態そのものは `useSkyshareEntryStatus` の責務であり、ここでは扱わない。
@@ -22,6 +23,8 @@ import {
     toShareFile,
 } from "@/util/share/webShare"
 import type { TimelinePost } from "@/lib/entry/posts"
+import { resolveShareBody } from "@/lib/share/shareBody"
+import { readEffectiveLinkCardPriority } from "@/lib/settings/shareSettings"
 
 export type UseWebShareCrosspostResult = {
     isSupported: boolean
@@ -84,7 +87,19 @@ export const useWebShareCrosspost = (
         void (async () => {
             try {
                 const shareData: ShareData = entryUrl
-                    ? { text: buildWebShareText(item.text, entryUrl) }
+                    ? {
+                          text: buildWebShareText(
+                              resolveShareBody({
+                                  text: item.text,
+                                  facets: item.facets ?? [],
+                                  entryUrl,
+                                  linkCardUrl: "",
+                                  preferSkyshareLinkCard:
+                                      readEffectiveLinkCardPriority(),
+                              }).text,
+                              entryUrl,
+                          ),
+                      }
                     : item.images.length > 0
                       ? {
                             text: item.text,

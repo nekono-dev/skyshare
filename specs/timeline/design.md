@@ -67,7 +67,7 @@ sequenceDiagram
 | ---------------------- | ------------------------------------------------------------------------------------------------------ |
 | `replies.length === 0` | 起点の `PostCard` だけを描画する                                                                       |
 | 折りたたみボタン       | 「スレッドを展開（N件）」と「折りたたむ」。`Collapsible` と同じCSSの矢印を左に付け、開くと上向きにする |
-| 返信                   | `reply-list` で囲み左マージンで段を作る。`PostCard` に `threadReply` を渡し、`card-muted` にしない     |
+| 返信                   | `reply-list` で囲み左マージンで段を作る。`PostCard` の `muted` にグループ単位の判定を渡す              |
 | entryを開く            | フッターの `entry-link-box` に置き、container query で残り幅が4.5rem未満なら非表示にする               |
 
 ゲスト表示では `GUEST_DUMMY_THREADS` を返す。
@@ -103,6 +103,19 @@ entryの有無は `useSkyshareEntryStatus` の `display` だけで判定する�
 ```
 
 `useSkyshareEntryStatus` は、`deleteBskyPost: true` の削除が成功したときだけ `onPostDeleted` を呼ぶ。entryだけの削除ではカードのentryの表示だけを取り除く。
+
+### D-4: グループ単位のコントラスト (FR-8, FR-11)
+
+```ts
+// ThreadCard: グループのどの投稿も素材とentryを持たないとき、グループ全体をグレーアウトする
+const threadMuted =
+  resolveEntryVisualSourcePost(group) === null &&
+  findEntryCarrier(group) === null
+// 起点の PostCard は自身の display（ineligible）で判定し、返信には muted={threadMuted} を渡す
+// PostCard: muted 未指定なら display.kind === "ineligible" で判定する
+```
+
+`card-muted` は文字を控えめな色にし、ボタン内を含む画像・アイコンの不透明度と彩度を下げ、本文のリンクの色を文字と同じにする。
 
 ## 4. エラー処理
 

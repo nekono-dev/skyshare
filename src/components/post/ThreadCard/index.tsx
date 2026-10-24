@@ -8,6 +8,7 @@
  *   とし、操作により全投稿を時系列順（古い→新しい）に展開表示する。
  * - 事後entry作成ボタン（`resolveEntryVisualSourcePost`）の判定は`entryCandidate.ts`に委譲する。ボタン自体は常に
  *   ルート投稿のカードにのみ表示し、中間投稿のカードに表示することはない。
+ * - どの投稿も画像・動画・entryを持たないスレッドは、返信のカードもグレーアウトする（`specs/timeline`）。
  * - Timelineのページング対象アイテムはバックエンドが権威的に確定した`ThreadGroup`
  *   そのものであるため（`specs/timeline`）、削除成功時の一覧除去は常に
  *   スレッドグループ単位で行う（同§4）。
@@ -16,7 +17,10 @@ import { useT } from "@/lib/i18n/react"
 import { useState } from "react"
 import PostCard from "@/components/post/PostCard"
 import type { ThreadGroup } from "@/lib/entry/posts"
-import { resolveEntryVisualSourcePost } from "./entryCandidate"
+import {
+  findEntryCarrier,
+  resolveEntryVisualSourcePost,
+} from "./entryCandidate"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -42,6 +46,10 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
   const { tn, t } = useT()
   const [expanded, setExpanded] = useState(false)
   const entryVisualSourcePost = resolveEntryVisualSourcePost(group)
+  // どの投稿も画像・動画・entryを持たないスレッドは、起点と返信のすべてのカードを
+  // グレーアウトする（起点はPostCard自身のdisplayでも同じ結論になる）。
+  const threadMuted =
+    entryVisualSourcePost === null && findEntryCarrier(group) === null
 
   const removeThisGroup = () =>
     onPostDeleted(candidate => candidate.rootPost.uri === group.rootPost.uri)
@@ -86,7 +94,7 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
                 onPostDeleted={removeThisGroup}
                 guestMode={guestMode}
                 postCreateEntryButton={false}
-                threadReply
+                muted={threadMuted}
               />
             ))}
           </div>

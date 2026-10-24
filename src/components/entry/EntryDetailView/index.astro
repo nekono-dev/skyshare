@@ -16,6 +16,8 @@
 import EntryPostedAt from "@/components/entry/EntryPostedAt"
 import PostBody from "@/components/post/PostBody"
 import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
+import type { PostFacet } from "@/lib/atproto/richTextSegments"
+import type { PostLinkCard, PostQuote } from "@/lib/entry/postEmbedView"
 import { createTranslator, type PlainMessageKey } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
@@ -26,7 +28,13 @@ export type EntryPostView = {
     /** ISO文字列。表示整形は PostBody が行う */
     createdAt: string
     text: string
+    /** 本文の facets（メンション・ハッシュタグ・URLのリンク表示に使う） */
+    facets?: PostFacet[]
     images: SourceImage[]
+    /** 外部リンクの埋め込み */
+    linkCard?: PostLinkCard
+    /** 引用（画像・動画との併用を含む） */
+    quote?: PostQuote
     /** 動画投稿の動画（再生可能） */
     video?: SourceVideo
     /** 利用不可の動画（再生不可の表示のみ） */
@@ -119,11 +127,14 @@ const bodyKey =
                                     author={post.author}
                                     createdAt={post.createdAt}
                                     text={post.text}
+                                    facets={post.facets}
                                     images={post.images}
                                     video={post.video}
                                     unsupportedVideo={post.unsupportedVideo}
                                     unsupportedVideoLinkUrl={post.webUrl}
                                     postUrl={post.webUrl}
+                                    linkCard={post.linkCard}
+                                    quote={post.quote}
                                     engagement={post.engagement}
                                 />
                             </div>
