@@ -37,15 +37,15 @@ node <スキルのパス>/scripts/brw.mjs <サブコマンド>
 
 `templates/config.example.json` を元に作る。
 
-| キー | 内容 |
-|---|---|
-| `workBranches` | 作業ブランチの glob（`*` は `/` を除く、`**` は `/` を含む）。必須 |
-| `protectedBranches` | 本番向けなど、直接作業を禁止するブランチ。保護の判定が先に効く |
-| `baseBranch` | 作業ブランチの分岐元（既定 `develop`） |
-| `namePattern` / `maxNameLength` | 作業ブランチ名の正規表現（接頭辞を含むブランチ名全体）と最大文字数 |
-| `preview.provider` | `none` / `url-template` / `cloudflare-previews`。省略時は `urlTemplate` があれば `url-template` |
-| `preview.urlTemplate` | `{alias}`（ブランチ名の `/` を `-` にしたもの）か `{branch}` を含むURL |
-| `preview.aliasStripPrefix` | 省略可。alias を作る前にブランチ名から除く接頭辞（例: `"dev/"` で `dev/foo` の alias が `foo`）。プレビューURL・workflow 雛形・後始末の名前に効く |
+| キー                            | 内容                                                                                                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workBranches`                  | 作業ブランチの glob（`*` は `/` を除く、`**` は `/` を含む）。必須                                                                                |
+| `protectedBranches`             | 本番向けなど、直接作業を禁止するブランチ。保護の判定が先に効く                                                                                    |
+| `baseBranch`                    | 作業ブランチの分岐元（既定 `develop`）                                                                                                            |
+| `namePattern` / `maxNameLength` | 作業ブランチ名の正規表現（接頭辞を含むブランチ名全体）と最大文字数                                                                                |
+| `preview.provider`              | `none` / `url-template` / `cloudflare-previews`。省略時は `urlTemplate` があれば `url-template`                                                   |
+| `preview.urlTemplate`           | `{alias}`（ブランチ名の `/` を `-` にしたもの）か `{branch}` を含むURL                                                                            |
+| `preview.aliasStripPrefix`      | 省略可。alias を作る前にブランチ名から除く接頭辞（例: `"dev/"` で `dev/foo` の alias が `foo`）。プレビューURL・workflow 雛形・後始末の名前に効く |
 
 `preview` が無い、または `provider: none` ならプレビューURLの案内はしない。provider の詳細は `providers/`、Cloudflare の知見は `references/cloudflare-previews.md`。
 
@@ -54,7 +54,7 @@ node <スキルのパス>/scripts/brw.mjs <サブコマンド>
 新機能・要望・要件の追加を依頼されたら、作業を始める前に作る。名前はユーザーの依頼から機能を表す短い英語名を自分で決めてよい。
 
 ```sh
-brw create <名前> [--base <分岐元>] [--branch-only]
+brw create [--branch-only] < 名前 > [--base < 分岐元 > ]
 ```
 
 既定で worktree（`.claude/worktrees/<alias>`）も作る。`--branch-only` ならブランチだけ作る。作成後の作業は、そのブランチ（worktree）上で行う。
@@ -74,9 +74,9 @@ brw url [ブランチ]
 ## 3. 整合検査・雛形・後始末
 
 ```sh
-brw check                         # 宣言・workflow・provider 設定の整合検査
-brw gen-workflow [--write]        # provider の preview workflow 雛形（--write で .github/workflows/preview.yaml を作成。既存は上書きしない）
-brw cleanup <ブランチ> [--execute] # provider 固有の後始末（既定は表示のみ）
+brw check                            # 宣言・workflow・provider 設定の整合検査
+brw gen-workflow [--write]           # provider の preview workflow 雛形（--write で .github/workflows/preview.yaml を作成。既存は上書きしない）
+brw cleanup < ブランチ > [--execute]     # provider 固有の後始末（既定は表示のみ）
 brw wrangler-config [ファイル] [--write] # 独自ドメインの有効状況に応じて wrangler 設定の workers_dev / preview_urls を設定
 ```
 

@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - 型付きクライアントの生成（lex gen-api）を廃止したため、lexicon 自体の妥当性は
- *   本テストで担保する（`npm test` = ローカル・CI 共通の検証工程）。
+ *   本テストで担保する（`npm run test:unit` = ローカル・CI 共通の検証工程）。
  * - 公式ライブラリ `@atproto/lexicon` の `Lexicons` で全 lexicon を読み込み、
  *   スキーマ構文・`$ref` の解決・レコードのバリデーションが成立することを確認する。
  * - `lexicons/com/atproto/repo/strongRef.json` は atproto サブモジュールへの symlink のため、

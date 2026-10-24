@@ -110,9 +110,12 @@ test("e2elive/AC-11: 画像5枚を添付して投稿すると、galleryとして
         }))
     expect(strip.scrollable).toBe(true)
     expect(strip.height).toBe(160)
-    await thumbs.first().click()
     const dialog = page.getByRole("dialog", { name: "画像の拡大表示" })
-    await expect(dialog.getByText("1/5")).toBeVisible()
+    // ハイドレーション前のクリックは拡大表示を開かないため、開くまでクリックから繰り返す
+    await expect(async () => {
+        await thumbs.first().click()
+        await expect(dialog.getByText("1/5")).toBeVisible({ timeout: 5_000 })
+    }).toPass({ timeout: 30_000 })
     for (const n of [2, 3, 4, 5]) {
         await dialog.getByRole("button", { name: "次の画像" }).click()
         await expect(dialog.getByText(`${n}/5`)).toBeVisible()

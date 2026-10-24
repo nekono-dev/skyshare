@@ -122,7 +122,7 @@ export const parseEntryAtUri = (uri: string): { actor: string; rkey: string } | 
 | `tests/lib/atproto/nsid.test.ts`        | 導出値とlexicon定義のidの一致、マニフェストの参照の一致、`resolveEntryLexiconId` の異常系、URIの往復と拒否                                                                |
 | `tests/lib/atproto/nsidLiteral.test.ts` | `src/`（`src/client/` を除く）の `.ts` `.tsx` `.astro` からコメントを除いた本文にNSIDの prefix が含まれないこと                                                           |
 
-CIの検証ジョブで vitest と `npm run lint:lexicon`（goat）を両方実行する。
+CIの検証ジョブで vitest と `npm run test:lexicon`（goat）を両方実行する。
 
 ## 4. エラー処理
 

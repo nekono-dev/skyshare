@@ -7,7 +7,7 @@
 ## 導入
 
 ```sh
-git clone git@github.com.nekono:nekono-dev/branch-release-workflow.git <リポジトリ>/.claude/skills/branch-release-workflow
+git clone git@github.com.nekono:nekono-dev/branch-release-workflow.git < リポジトリ > /.claude/skills/branch-release-workflow
 ```
 
 リポジトリへコミットして同梱してもよい（クラウドセッションでも追加の準備なしに動く。更新は手元の clone で行い、更新分をコミットする）。要件: Node.js 22 以上と git。外部パッケージは使わず、PATH やグローバルへも何も導入しない。フックの有効化は [SKILL.md](SKILL.md) の「導入」を参照する。
