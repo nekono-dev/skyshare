@@ -300,6 +300,17 @@ test("[schedule-form/AC-26] 失敗の予約を書き戻すと日時の無い新�
     await expect.poll(() => calls.deletes).toEqual(["f1"])
 })
 
+test("[schedule-form/AC-35] 予約投稿が無効で予約が空のとき、「予約はありません。」を表示しない", async ({
+    page,
+}) => {
+    test.setTimeout(120_000)
+    await mockScheduleApi(page, { registered: false, items: [] })
+    await page.goto("/post/")
+    const list = await openSchedulesTab(page)
+    await expect(list.getByTestId("schedule-list-disabled")).toBeVisible()
+    await expect(list.getByText("予約はありません。")).toHaveCount(0)
+})
+
 test("[schedule-form/AC-35] 予約投稿が無効のとき、予約のタブに設定を開くボタンが出て、本文があれば確認を挟んで設定へ移る", async ({
     page,
 }) => {

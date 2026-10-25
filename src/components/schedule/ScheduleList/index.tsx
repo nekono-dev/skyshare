@@ -24,6 +24,8 @@ import ui from "@/styles/ui.module.css"
  * - 失敗の予約には分類コードに対応する文言を表示し、「フォームに書き戻す」で `onSelect` を呼ぶ。
  *   失敗の履歴は確認の後に削除できる。
  * - 続きがあるときだけ「さらに表示」を置く。
+ * - 一覧が空のときの「予約はありません。」は、予約投稿が有効なときだけ表示する
+ *   （無効なときは設定の案内だけを見せる）。
  * - 予約投稿が無効のとき（`onOpenSettings` を渡したとき）は、一覧の上に設定で有効にする旨と
  *   設定を開くボタンを置く。
  */
@@ -147,7 +149,7 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
         </div>
       )}
 
-      {!loading && !loadFailed && items.length === 0 && (
+      {!onOpenSettings && !loading && !loadFailed && items.length === 0 && (
         <p>{t("schedule.list.empty")}</p>
       )}
 
