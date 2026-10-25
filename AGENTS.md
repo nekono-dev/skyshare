@@ -29,11 +29,12 @@
 # ブランチ・プレビューの規則
 
 - ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、`develop`、保護ブランチ `main`）。
-- 保護ブランチと宣言外のブランチでの commit・push は、PreToolUse フック（`.claude/settings.json`）が拒否する。
+- スキルはリポジトリに同梱せず、プラグイン `branch-release-workflow@nekono-dev`（https://github.com/nekono-dev/branch-release-workflow）として `.claude/settings.json` で有効にしている。
+- 保護ブランチと宣言外のブランチでの commit・push は、プラグインの PreToolUse フックが拒否する。
 - 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作成すること。`git checkout -b` 等で直接作らない。
 - ユーザーが製造したコードの挙動を確認したい旨を示したら、`brw url` が返す `https://XXXX.develop.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
 - push したら `brw finish` で作業ブランチの worktree を片付ける。次の作業は、続きなら `brw resume <ブランチ>`、新しい作業なら `brw create <名前>` で、リモートから取得し直して作り直す。
-- 詳細は `.claude/skills/branch-release-workflow/SKILL.md` を参照（`brw` は同ディレクトリの `scripts/brw.mjs`）。
+- 詳細はプラグインの `SKILL.md` を参照（`brw` はプラグインの `scripts/brw.mjs`）。
 
 # lib / util の使い分け
 
