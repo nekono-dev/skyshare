@@ -732,6 +732,19 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             webUrl: GUEST_SAMPLE_ENTRY_PATH,
             orphaned: true,
         },
+        // スレッドDの旧entry。返信のカードにはツールバーが無いため、一覧から削除を試せるようにする。
+        {
+            uri: entryAtUri("did:plc:guestdemo", "guestentrythreadd"),
+            cid: "bafyreiguestentrythreadd",
+            createdAt: "2026-09-01T12:05:00.000Z",
+            sourceUri:
+                "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-d-mid",
+            sourceCid: "bafyreiguestthreaddmid",
+            heading: t("guest.threadD.entryHeading"),
+            caption: t("guest.threadD.entryCaption"),
+            visualUrl: SAMPLE_OG_IMAGE_PATH,
+            webUrl: GUEST_SAMPLE_ENTRY_PATH,
+        },
     ]
 
     return { posts, threads, entries, deleteScopes }

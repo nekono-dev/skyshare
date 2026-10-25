@@ -1,6 +1,6 @@
 /**
  * 共有系設定（PopupIntentInsteadOfWebshare / AutoPopupTarget / ManualImageAttach /
- * TruncateIntentText / Skyshareのリンクカードを優先表示 / Mastodonインスタンスドメイン）の
+ * TruncateIntentText / Skyshareのリンクカードを優先表示 / Mastodon・Misskeyインスタンスドメイン）の
  * state・永続化を管理するフック。
  *
  * 責務と処理概要:
@@ -22,18 +22,21 @@ import {
     readLinkCardPrioritySetting,
     readManualImageAttachSetting,
     readMastodonInstanceDomainSetting,
+    readMisskeyInstanceDomainSetting,
     readPopupIntentInsteadOfWebshareSetting,
     readTruncateIntentTextSetting,
     removeMastodonInstanceDomainSetting,
+    removeMisskeyInstanceDomainSetting,
     writeAutoPopupTargetSetting,
     writeLinkCardPrioritySetting,
     writeManualImageAttachSetting,
     writeMastodonInstanceDomainSetting,
+    writeMisskeyInstanceDomainSetting,
     writePopupIntentInsteadOfWebshareSetting,
     writeTruncateIntentTextSetting,
     type AutoPopupTarget,
 } from "@/lib/settings/shareSettings"
-import { isValidMastodonInstanceDomain } from "@/util/share/intent"
+import { isValidInstanceDomain } from "@/util/share/intent"
 
 export type UseShareTogglesResult = {
     popupIntentInsteadOfWebshare: boolean
@@ -47,12 +50,15 @@ export type UseShareTogglesResult = {
     effectivePreferSkyshareLinkCard: boolean
     /** Mastodonインスタンスのドメイン（例: "mastodon.social"）。未設定は空文字 */
     mastodonInstanceDomain: string
+    /** Misskeyインスタンスのドメイン（例: "misskey.io"）。未設定は空文字 */
+    misskeyInstanceDomain: string
     onPopupIntentInsteadOfWebshareChange: (next: boolean) => void
     onAutoPopupTargetChange: (next: AutoPopupTarget) => void
     onManualImageAttachChange: (next: boolean) => void
     onTruncateIntentTextChange: (next: boolean) => void
     onPreferSkyshareLinkCardChange: (next: boolean) => void
     onMastodonInstanceDomainChange: (next: string) => void
+    onMisskeyInstanceDomainChange: (next: string) => void
     /** localStorage上の最新値を読み直し、stateへ反映する（書き込みは行わない） */
     reload: () => void
 }
@@ -80,6 +86,7 @@ export const useShareToggles = (): UseShareTogglesResult => {
         DEFAULT_LINK_CARD_PRIORITY,
     )
     const [mastodonInstanceDomain, setMastodonInstanceDomain] = useState("")
+    const [misskeyInstanceDomain, setMisskeyInstanceDomain] = useState("")
 
     const onPopupIntentInsteadOfWebshareChange = (next: boolean) => {
         setPopupIntentInsteadOfWebshare(next)
@@ -159,10 +166,30 @@ export const useShareToggles = (): UseShareTogglesResult => {
     const onMastodonInstanceDomainChange = (next: string) => {
         setMastodonInstanceDomain(next)
 
-        if (isValidMastodonInstanceDomain(next)) {
+        if (isValidInstanceDomain(next)) {
             writeMastodonInstanceDomainSetting(next)
         } else if (next.trim() === "") {
             removeMastodonInstanceDomainSetting()
+        }
+    }
+
+    /**
+     * Misskeyインスタンスのドメインの変更を反映する。
+     *
+     * 処理の趣旨:
+     * - Mastodonと同じく、入力中の表示（state）は常に更新し、localStorageへの保存は
+     *   妥当な形式の場合のみ行う。空文字が指定された場合は保存済みの値を削除する。
+     *
+     * Input:
+     * - `next`: 変更後のドメイン文字列
+     */
+    const onMisskeyInstanceDomainChange = (next: string) => {
+        setMisskeyInstanceDomain(next)
+
+        if (isValidInstanceDomain(next)) {
+            writeMisskeyInstanceDomainSetting(next)
+        } else if (next.trim() === "") {
+            removeMisskeyInstanceDomainSetting()
         }
     }
 
@@ -196,6 +223,7 @@ export const useShareToggles = (): UseShareTogglesResult => {
             readLinkCardPrioritySetting(DEFAULT_LINK_CARD_PRIORITY),
         )
         setMastodonInstanceDomain(readMastodonInstanceDomainSetting(""))
+        setMisskeyInstanceDomain(readMisskeyInstanceDomainSetting(""))
     }, [])
 
     // マウント直後に一度だけ実行し、固定初期値から実際のlocalStorage値へ更新する。
@@ -213,12 +241,14 @@ export const useShareToggles = (): UseShareTogglesResult => {
         effectivePreferSkyshareLinkCard:
             !manualImageAttach && preferSkyshareLinkCard,
         mastodonInstanceDomain,
+        misskeyInstanceDomain,
         onPopupIntentInsteadOfWebshareChange,
         onAutoPopupTargetChange,
         onManualImageAttachChange,
         onTruncateIntentTextChange,
         onPreferSkyshareLinkCardChange,
         onMastodonInstanceDomainChange,
+        onMisskeyInstanceDomainChange,
         reload,
     }
 }

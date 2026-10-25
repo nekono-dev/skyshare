@@ -1,25 +1,27 @@
 /**
- * 投稿先選択ダイアログ（X / タイッツー / Mastodon への intent 共有）。
+ * 投稿先選択ダイアログ（X / タイッツー / Mastodon / Misskey への intent 共有）。
  *
  * 責務と処理概要:
  * - 投稿本文・skyshare entry URL・リンクカードURLから、選択された投稿先ごとに
  *   intent テキストを組み立てる。
  * - X・タイッツー向けは、「長文を省略して共有」設定がONなら本文を省略する
- *   （Mastodon向けは省略しない）。設定はクリック時に localStorage から読む。
+ *   （Mastodon・Misskey向けは省略しない）。設定はクリック時に localStorage から読む。
  * - skyshare entry を持たない投稿（画像を自分で添付・画像以外の投稿）でも開ける。
  *   その場合は URL を付けない。省略は設定に従う（「画像を自分で添付」ON時は設定自体がOFF）。
  * - 投稿先を選択すると intent ポップアップを開く。`keepOpenOnSelect` が偽の場合のみ、
  *   続けてダイアログを閉じる（投稿ボタンから開いた場合は、続けて別の投稿先を選べるよう
  *   閉じない）。「閉じる」・背景クリック・Escキーでは常に閉じる。
- * - Mastodonの投稿先インスタンスドメインは localStorage の保存値（未設定時は既定値）を使う。
- *   保存値が不正な形式の場合は、Mastodon項目を選択できなくする。
+ * - Mastodon・Misskeyの投稿先インスタンスドメインは localStorage の保存値（未設定時は既定値）を使う。
+ *   保存値が不正な形式の場合は、そのSNSの項目を選択できなくする。
  */
 import { useT } from "@/lib/i18n/react"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import {
   readMastodonInstanceDomainSetting,
+  readMisskeyInstanceDomainSetting,
   readTruncateIntentTextSetting,
   resolveMastodonInstanceDomain,
+  resolveMisskeyInstanceDomain,
 } from "@/lib/settings/shareSettings"
 import {
   buildIntentText,
@@ -56,7 +58,7 @@ type Props = {
  *
  * Output:
  * - `request=null` の場合は何も描画しない
- * - それ以外は「X に投稿」「タイッツーに投稿」「Mastodonに投稿」「閉じる」の4択ダイアログ
+ * - それ以外は「X に投稿」「タイッツーに投稿」「Mastodonに投稿」「Misskeyに投稿」「閉じる」の5択ダイアログ
  *
  * 例:
  * - 入力: `{ request: { postText: "hello", entryUrl: "https://...", linkCardUrl: "" } }`
@@ -64,9 +66,12 @@ type Props = {
  */
 const Component = ({ request, keepOpenOnSelect = false, onClose }: Props) => {
   const { t } = useT()
-  // 保存値が不正な形式の場合のみ null になり、Mastodon項目を選択できなくする。
+  // 保存値が不正な形式の場合のみ null になり、そのSNSの項目を選択できなくする。
   const mastodonDomain = resolveMastodonInstanceDomain(
     readMastodonInstanceDomainSetting(""),
+  )
+  const misskeyDomain = resolveMisskeyInstanceDomain(
+    readMisskeyInstanceDomainSetting(""),
   )
 
   /**
@@ -77,7 +82,7 @@ const Component = ({ request, keepOpenOnSelect = false, onClose }: Props) => {
    *
    * Input:
    * - `target`: 共有先SNS
-   * - `instanceDomain`: `target` が "mastodon" の場合の投稿先インスタンスドメイン
+   * - `instanceDomain`: `target` が "mastodon"・"misskey" の場合の投稿先インスタンスドメイン
    */
   const share = (target: IntentTarget, instanceDomain?: string) => {
     if (!request) return
@@ -124,6 +129,17 @@ const Component = ({ request, keepOpenOnSelect = false, onClose }: Props) => {
           onClick: () => {
             if (mastodonDomain !== null) {
               share("mastodon", mastodonDomain)
+            }
+          },
+        },
+        {
+          key: "post-misskey",
+          label: t("post.shareDialog.misskey"),
+          variant: "misskey",
+          disabled: misskeyDomain === null,
+          onClick: () => {
+            if (misskeyDomain !== null) {
+              share("misskey", misskeyDomain)
             }
           },
         },

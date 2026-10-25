@@ -23,9 +23,9 @@
 }
 
 .chronosky-logo {
-  width: 1.5em;
-  height: 1.5em;
+  width: 18px;
+  height: 18px;
   margin-right: var(--space-1);
-  vertical-align: middle;
+  vertical-align: -4px;
   border-radius: var(--radius-sm);
 }

@@ -4,7 +4,7 @@ import type { MessageEntries } from "../../translate"
 export const post = {
     "post.guestUnavailable": "Not available in guest mode",
     "post.guestNotice":
-        "This is guest mode, which doesn't require logging in. Posting to Bluesky is skipped, but you can try the popup, the share sheet, and the post buttons for X, Taittsuu, and Mastodon by pressing the post button.",
+        "This is guest mode, which doesn't require logging in. Posting to Bluesky is skipped, but you can try the popup, the share sheet, and the post buttons for X, Taittsuu, Mastodon, and Misskey by pressing the post button.",
     "post.launcher.new": "New post",
 
     "post.card.openBluesky": "Open in Bluesky",
@@ -27,7 +27,6 @@ export const post = {
     "post.entryActions.deletePost": "Delete post",
     "post.entryActions.creating": "Creating…",
     "post.entryActions.create": "Create Skyshare Entry",
-    "post.entryActions.notEligible": "Not eligible for a Skyshare link",
     "post.stats.aria": "Reactions on Bluesky",
     "post.stats.like": "Likes",
     "post.stats.repost": "Reposts",
@@ -58,10 +57,12 @@ export const post = {
     "post.autoPopupTarget.x": "X",
     "post.autoPopupTarget.taittsuu": "Taittsuu",
     "post.autoPopupTarget.mastodon": "Mastodon",
+    "post.autoPopupTarget.misskey": "Misskey",
     "post.shareDialog.aria": "Choose where to share",
     "post.shareDialog.x": "Post to X",
     "post.shareDialog.taittsuu": "Post to Taittsuu",
     "post.shareDialog.mastodon": "Post to Mastodon",
+    "post.shareDialog.misskey": "Post to Misskey",
 
     "post.gate.title": "Reply and quote settings",
     "post.gate.mentioned": "People you mention",
@@ -120,6 +121,7 @@ export const post = {
         "Skipped posting to Bluesky because this is guest mode",
     "post.share.service.taittsuu": "Taittsuu",
     "post.share.service.mastodon": "Mastodon",
+    "post.share.service.misskey": "Misskey",
     "post.share.service.x": "x.com",
     "post.share.chooseTarget": "{result}. Choose where to share.",
     "post.share.popupOpened": "{result}. Opened the {service} post screen.",

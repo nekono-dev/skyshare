@@ -70,6 +70,10 @@
   --color-mastodon: hsl(286, 58%, 58%);
   --color-mastodon-hover: hsl(288, 55%, 41%);
 
+  /* Misskeyブランドカラー（#86b300）を白文字が読める明度に抑えた黄緑系。 */
+  --color-misskey: hsl(74, 100%, 30%);
+  --color-misskey-hover: hsl(74, 100%, 23%);
+
   --color-gray: rgb(239, 242, 246);
   --color-gray-hover: rgb(220, 226, 234);
 

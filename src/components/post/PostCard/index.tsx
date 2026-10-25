@@ -2,7 +2,8 @@
  * 1件の Bluesky 投稿を表示するカード。
  *
  * 責務と処理概要:
- * - 投稿の表示部（作者・日時・本文・画像）は `PostBody` に委譲し、ツールバーをその下に配置する。
+ * - 投稿の表示部（作者・日時・本文・画像）は `PostBody` に委譲し、ツールバーをその下に配置する
+ *   （`hideToolbar` 指定時はツールバーを出さない）。
  * - `skyshareEntry` が付与されている場合は元画像・動画の代わりにその visual を1枚、拡大なしで表示し、
  *   Entry ページへのリンクを出す。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
@@ -57,10 +58,16 @@ type PostCardProps = {
    * - `undefined`（既定）: 単独投稿と同じ、投稿自身の適格性のみで判定する。
    * - `true`: スレッドのルート投稿として明示的にボタンを表示する
    *   （`entryVisualSourcePost`がある場合はそちらの画像を使う）。
-   * - `false`: スレッドの中間投稿として、投稿自身が画像を持っていてもボタンを
-   *   抑制する（ボタンは常にルート投稿のカードにのみ表示するため）。
+   * - `false`: スレッドのルート投稿のうち、ルート自身にも代わりの画像取得元にも
+   *   画像が無い場合に、ボタンを抑制する。
    */
   postCreateEntryButton?: boolean
+  /**
+   * 下部のツールバー（Blueskyで開く・共有・Entry関連の操作・Entryを開くリンク）を表示しないか
+   * （`specs/timeline`）。操作はスレッドの起点の投稿に対して行うため、`ThreadCard`が
+   * スレッドの返信のカードに指定する。既定は表示する。
+   */
+  hideToolbar?: boolean
   /**
    * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿
    * （`resolveEntryVisualSourcePost`、`specs/timeline`）。
@@ -102,6 +109,7 @@ const Component = ({
   onPostDeleted,
   guestMode = false,
   postCreateEntryButton,
+  hideToolbar = false,
   entryVisualSourcePost,
   entrySourcePost,
   muted,
@@ -184,7 +192,7 @@ const Component = ({
   const isSkyshareIneligible = muted ?? display.kind === "ineligible"
 
   // postCreateEntryButton===false（スレッド内で事後entry作成の対象に選ばれなかった
-  // 画像投稿）の場合のみ、ボタン表示用のdisplayを「作成対象外」に差し替える。
+  // 投稿）の場合のみ、ボタン表示用のdisplayを「作成対象外」に差し替える。
   // display自体（isSkyshareIneligible等）は変更しない。
   const actionsDisplay: SkyshareEntryDisplayState =
     postCreateEntryButton === false && display.kind === "creatable"
@@ -208,71 +216,73 @@ const Component = ({
         imagesInteractive={imagesInteractive}
       />
 
-      <footer
-        className={`${styles.footer} ${ui["toolbar"]} ${ui["toolbar-align"]}`}
-      >
-        <div className={styles["footer-actions"]}>
-          <a
-            className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-            href={guestMode ? undefined : item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={t("post.card.openBluesky")}
-            aria-disabled={guestMode}
-            title={
-              guestMode
-                ? t("post.guestUnavailable")
-                : t("post.card.openBluesky")
-            }
-            onClick={e => {
-              if (guestMode) e.preventDefault()
-            }}
-          >
-            <img src={blueskyIcon.src} width={20} height={20} alt="" />
-          </a>
-
-          {isWebShareSupported ? (
-            <button
-              type="button"
-              className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-              disabled={isWebSharing}
-              onClick={shareViaWebApi}
-              aria-label={t("post.card.webShare")}
-              title={t("post.card.webShare")}
-            >
-              <img src={shareIcon.src} width={20} height={20} alt="" />
-            </button>
-          ) : null}
-
-          <PostCardEntryActions
-            display={actionsDisplay}
-            createError={createError}
-            deleteError={deleteError}
-            onCreate={createEntryFromPost}
-            onRequestDelete={requestDeleteEntry}
-            onCrosspost={() => setShareDialogOpen(true)}
-            disabled={guestMode || isResolvingDeleteScope}
-            deleteDisabled={isResolvingDeleteScope}
-          />
-
-          {shareError ? (
-            <span className={styles["share-error"]}>{t(shareError)}</span>
-          ) : null}
-        </div>
-
-        {entryPath ? (
-          <div className={styles["entry-link-box"]}>
+      {hideToolbar ? null : (
+        <footer
+          className={`${styles.footer} ${ui["toolbar"]} ${ui["toolbar-align"]}`}
+        >
+          <div className={styles["footer-actions"]}>
             <a
-              className={styles["entry-link"]}
-              href={entryPath}
+              className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
+              href={guestMode ? undefined : item.url}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={t("post.card.openBluesky")}
+              aria-disabled={guestMode}
+              title={
+                guestMode
+                  ? t("post.guestUnavailable")
+                  : t("post.card.openBluesky")
+              }
+              onClick={e => {
+                if (guestMode) e.preventDefault()
+              }}
             >
-              {t("post.card.openEntry")}
+              <img src={blueskyIcon.src} width={20} height={20} alt="" />
             </a>
+
+            {isWebShareSupported ? (
+              <button
+                type="button"
+                className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
+                disabled={isWebSharing}
+                onClick={shareViaWebApi}
+                aria-label={t("post.card.webShare")}
+                title={t("post.card.webShare")}
+              >
+                <img src={shareIcon.src} width={20} height={20} alt="" />
+              </button>
+            ) : null}
+
+            <PostCardEntryActions
+              display={actionsDisplay}
+              createError={createError}
+              deleteError={deleteError}
+              onCreate={createEntryFromPost}
+              onRequestDelete={requestDeleteEntry}
+              onCrosspost={() => setShareDialogOpen(true)}
+              disabled={guestMode || isResolvingDeleteScope}
+              deleteDisabled={isResolvingDeleteScope}
+            />
+
+            {shareError ? (
+              <span className={styles["share-error"]}>{t(shareError)}</span>
+            ) : null}
           </div>
-        ) : null}
-      </footer>
+
+          {entryPath ? (
+            <div className={styles["entry-link-box"]}>
+              <a
+                className={styles["entry-link"]}
+                href={entryPath}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t("post.card.openEntry")}
+              </a>
+            </div>
+          ) : null}
+        </footer>
+      )}
 
       {display.kind === "creating" ? (
         <Loading overlay message={t("post.card.creatingEntry")} />

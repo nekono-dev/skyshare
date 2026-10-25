@@ -72,7 +72,7 @@ const seedStorage = async (page: Page, values: Record<string, string>) => {
  */
 const stubExternalSns = (context: BrowserContext) =>
     context.route(
-        /^https:\/\/(x\.com|taittsuu\.com|mastodon\.social)\//,
+        /^https:\/\/(x\.com|taittsuu\.com|mastodon\.social|misskey\.io)\//,
         route => route.fulfill({ status: 200, body: "" }),
     )
 
@@ -154,7 +154,7 @@ test.describe("intentShare", () => {
     test("[thread-composer/AC-12] 詳細オプションの中の設定をONにしても、詳細オプションは初期状態で閉じている", async ({
         page,
     }) => {
-        for (const target of ["ask", "x", "taittsuu", "mastodon"]) {
+        for (const target of ["ask", "x", "taittsuu", "mastodon", "misskey"]) {
             await page.addInitScript((value: string) => {
                 window.localStorage.setItem(
                     "popupIntentInsteadOfWebshare",
@@ -243,7 +243,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("[auto-popup/AC-1 auto-popup/AC-2] プルダウンを開くと4つの選択肢が表示され、「投稿時に選択する」は「X」のときより横幅が広い", async ({
+    test("[auto-popup/AC-1 auto-popup/AC-2] プルダウンを開くと5つの選択肢が表示され、「投稿時に選択する」は「X」のときより横幅が広い", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -263,13 +263,14 @@ test.describe("intentShare", () => {
         const dropdownOption = page.getByRole("option")
         await expect(async () => {
             await select.click()
-            await expect(dropdownOption).toHaveCount(4, { timeout: 2_000 })
+            await expect(dropdownOption).toHaveCount(5, { timeout: 2_000 })
         }).toPass({ timeout: 15_000 })
         await expect(dropdownOption).toHaveText([
             /投稿時に選択する/,
             /X/,
             /タイッツー/,
             /Mastodon/,
+            /Misskey/,
         ])
 
         await page.getByRole("option", { name: "投稿時に選択する" }).click()
@@ -362,7 +363,7 @@ test.describe("intentShare", () => {
         expect(warnings).toEqual([])
     })
 
-    test("[intent-share-dialog/AC-1] skyshare entryのない投稿でダイアログを開くと、X・タイッツー・Mastodon・閉じるの4つが操作可能な状態で表示される", async ({
+    test("[intent-share-dialog/AC-1] skyshare entryのない投稿でダイアログを開くと、X・タイッツー・Mastodon・Misskey・閉じるの5つが操作可能な状態で表示される", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -381,6 +382,7 @@ test.describe("intentShare", () => {
             /X に投稿/,
             /タイッツー/,
             /Mastodon/,
+            /Misskey/,
             /閉じる/,
         ])
         for (const button of await buttons.all()) {
@@ -408,6 +410,71 @@ test.describe("intentShare", () => {
         await expect(
             dialog.getByRole("button", { name: /X に投稿/ }),
         ).toBeEnabled()
+    })
+
+    test("[intent-share-dialog/AC-10] Misskeyのドメインに不正な値が保存されているとき、Misskeyの選択肢だけが操作不能になる", async ({
+        page,
+    }) => {
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "ask",
+            misskeyInstanceDomain: "not a domain!",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+        await submitGuestPost(page, "不正なMisskeyドメインのテスト")
+
+        const dialog = page.getByRole("dialog", { name: DIALOG_NAME })
+        await expect(dialog).toBeVisible({ timeout: 20_000 })
+        await expect(
+            dialog.getByRole("button", { name: /Misskey/ }),
+        ).toBeDisabled()
+        await expect(
+            dialog.getByRole("button", { name: /Mastodon/ }),
+        ).toBeEnabled()
+    })
+
+    test("Misskeyを選ぶと、設定したインスタンスの共有画面がポップアップで開く。未設定なら misskey.io を使う", async ({
+        page,
+        context,
+    }) => {
+        await stubExternalSns(context)
+        await context.route(/^https:\/\/misskey\.example\//, route =>
+            route.fulfill({ status: 200, body: "" }),
+        )
+        await seedStorage(page, {
+            popupIntentInsteadOfWebshare: "true",
+            autoPopupTarget: "ask",
+            misskeyInstanceDomain: "misskey.example",
+        })
+        await page.goto("/post/?guest")
+        await waitHydrated(page)
+        await submitGuestPost(page, "Misskey共有のテスト")
+
+        const dialog = page.getByRole("dialog", { name: DIALOG_NAME })
+        await expect(dialog).toBeVisible({ timeout: 20_000 })
+        const popupPromise = page.waitForEvent("popup")
+        await dialog.getByRole("button", { name: /Misskey/ }).click()
+        const url = new URL((await popupPromise).url())
+        expect(url.origin).toBe("https://misskey.example")
+        expect(url.pathname).toBe("/share")
+        expect(url.searchParams.get("text")).toContain("Misskey共有のテスト")
+    })
+
+    test("[intent-share-dialog/AC-9] skyshare entryを持たない投稿のカードにも、ダイアログを開くボタンが表示される", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        await waitHydrated(page)
+        const card = page.locator("article", {
+            hasText: "これはゲスト用デモ表示のサンプル投稿です。",
+        })
+        const crosspost = card.getByRole("button", { name: "クロスポスト" })
+        await expect(crosspost).toBeVisible({ timeout: 30_000 })
+        await crosspost.click()
+        await expect(
+            page.getByRole("dialog", { name: DIALOG_NAME }),
+        ).toBeVisible()
     })
 
     test("[intent-share-dialog/AC-2 intent-share-dialog/AC-3] 投稿後のダイアログは、投稿先を選んでも閉じず、続けて別の投稿先を選べ、「閉じる」・背景クリック・Escで閉じる", async ({
@@ -490,7 +557,11 @@ test.describe("intentShare", () => {
         await page.goto("/?guest")
         await waitHydrated(page)
 
+        // skyshare URL付きで共有されることを確かめるため、entryを持つ投稿のカードを選ぶ
         const crosspost = page
+            .locator("article", {
+                has: page.getByRole("link", { name: "Entryを開く" }),
+            })
             .getByRole("button", { name: "クロスポスト" })
             .first()
         await expect(crosspost).toBeVisible({ timeout: 30_000 })

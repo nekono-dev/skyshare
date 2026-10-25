@@ -21,6 +21,7 @@
 
 .created-at {
   margin: 0;
+  margin-left: var(--space-2); /* 本文（.caption）の左余白と揃える */
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }

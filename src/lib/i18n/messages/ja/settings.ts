@@ -1,6 +1,6 @@
 /**
  * 設定画面の文言（日本語）。
- * `{share}`/`{popup}`/`{taittsuu}`/`{mastodon}` は `renderSlots` が差し込むアイコン要素のスロット。
+ * `{share}`/`{popup}`/`{taittsuu}`/`{mastodon}`/`{misskey}` は `renderSlots` が差し込むアイコン要素のスロット。
  */
 export const settings = {
     "settings.helpLink": "困った時のヘルプはこちら。",
@@ -51,5 +51,10 @@ export const settings = {
     "settings.mastodon.instance.description":
         "Mastodon への共有で使うインスタンスのドメインです。未設定の場合は mastodon.social を使います。",
     "settings.mastodon.domainError":
+        "ドメインの形式が正しくありません。スキーム（https://等）やパス（/以降）を含めず、ドメイン名のみを入力してください。",
+    "settings.misskey.instance.label": "Misskey{misskey}のインスタンス",
+    "settings.misskey.instance.description":
+        "Misskey への共有で使うインスタンスのドメインです。未設定の場合は misskey.io を使います。",
+    "settings.misskey.domainError":
         "ドメインの形式が正しくありません。スキーム（https://等）やパス（/以降）を含めず、ドメイン名のみを入力してください。",
 } as const

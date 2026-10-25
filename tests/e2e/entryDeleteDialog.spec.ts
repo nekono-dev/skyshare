@@ -118,21 +118,16 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         expect(hits).toEqual([])
     })
 
-    test("[entry-delete-dialog/AC-8] /: スレッドDの旧entryは「リンク・Bluesky投稿を削除」が無効で、リンク削除ではグループが残る", async ({
+    test("[entry-delete-dialog/AC-8] /entries: 旧entry（派生元が返信）は「リンク・Bluesky投稿を削除」が無効で、リンク削除でカードが消える", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
-        await page.goto("/?guest")
+        await page.goto("/entries/?guest")
 
-        const rootArticle = page.locator('article:not([role="dialog"] *)', {
-            hasText: "スレッドD・1件目（ルート、画像なし）です。",
+        const card = page.locator('article:not([role="dialog"] *)', {
+            hasText: "ゲスト表示用の旧仕様ダミーEntryです。",
         })
-        await rootArticle.locator("xpath=following-sibling::button[1]").click()
-
-        const midArticle = page.locator('article:not([role="dialog"] *)', {
-            hasText: "スレッドD・2件目です。",
-        })
-        await midArticle.getByRole("button", { name: "投稿を削除" }).click()
+        await card.getByRole("button", { name: "削除" }).click()
 
         await expect(deletePostButton(page)).toBeDisabled()
         await expect(dialog(page)).toContainText("旧仕様で作成されており")
@@ -140,15 +135,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         await dialog(page)
             .getByRole("button", { name: "Skyshareリンクを削除" })
             .click()
-
-        // スレッドグループは一覧に残り、entryの表示のみ取り除かれる。
-        await expect(
-            page.getByText("スレッドD・1件目（ルート、画像なし）です。"),
-        ).toBeVisible()
-        await expect(midArticle).toBeVisible()
-        await expect(
-            midArticle.getByRole("button", { name: "投稿を削除" }),
-        ).toHaveCount(0)
+        await expect(card).toHaveCount(0)
 
         expect(hits).toEqual([])
     })

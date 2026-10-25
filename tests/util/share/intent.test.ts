@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { buildIntentText, resolveTruncateLimit } from "@/util/share/intent"
+import {
+    buildIntentText,
+    buildIntentUrl,
+    resolveTruncateLimit,
+} from "@/util/share/intent"
 import {
     INTENT_TRAILING_MARGIN,
     INTENT_WEIGHTED_LIMIT,
@@ -15,13 +19,34 @@ describe("resolveTruncateLimit", () => {
         ["x", true, INTENT_WEIGHTED_LIMIT - INTENT_TRAILING_MARGIN],
         ["taittsuu", true, INTENT_WEIGHTED_LIMIT - INTENT_TRAILING_MARGIN],
         ["mastodon", true, undefined],
+        ["misskey", true, undefined],
         ["x", false, undefined],
         ["taittsuu", false, undefined],
         ["mastodon", false, undefined],
+        ["misskey", false, undefined],
     ] as const)(
         "[share-text/AC-4] %s / 設定%s → %s",
         (target, enabled, expected) => {
             expect(resolveTruncateLimit(target, enabled)).toBe(expected)
+        },
+    )
+})
+
+describe("buildIntentUrl", () => {
+    it("Misskeyはインスタンスの /share に text を付けたURLを返す", () => {
+        expect(
+            buildIntentUrl("misskey", "こんにちは\nhttps://example.com", {
+                instanceDomain: "misskey.io",
+            }),
+        ).toBe(
+            "https://misskey.io/share?text=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF%0Ahttps%3A%2F%2Fexample.com",
+        )
+    })
+
+    it.each(["mastodon", "misskey"] as const)(
+        "%s はインスタンスドメイン未指定ならnullを返す",
+        target => {
+            expect(buildIntentUrl(target, "hello")).toBeNull()
         },
     )
 })

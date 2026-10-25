@@ -71,6 +71,7 @@ export const resolveCounterTargets = (
     case "taittsuu":
       return ["taittsuu"]
     case "mastodon":
+    case "misskey":
       return []
     case "ask":
       return ["x", "taittsuu"]

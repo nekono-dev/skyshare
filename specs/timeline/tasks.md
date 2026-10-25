@@ -34,3 +34,11 @@
 - [x] T-4.3: スレッド単位のコントラストと共有のボタンのアイコンを確認するE2Eテストを追加する。
 - 検証: `npm run build`
 - E2E: `tests/e2e/timelineThread.spec.ts` ゲスト表示で画像の無いスレッドを展開する → 起点と返信のすべてのカードがコントラストを下げるクラスを持つ
+
+## Phase 5: 後続の投稿のツールバー
+
+- 対応: D-5
+- [x] T-5.1: `PostCard` に `hideToolbar` を設け、`ThreadCard` が後続の投稿に指定する。
+- [x] T-5.2: 後続のカードにツールバーが無いことを確認するE2Eテストを追加する。
+- 検証: `npm run build`
+- E2E: `tests/e2e/timelineThread.spec.ts` ゲスト表示でスレッドを展開する → 起点のカードにだけツールバーが表示される

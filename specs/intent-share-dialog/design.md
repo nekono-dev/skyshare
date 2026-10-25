@@ -56,9 +56,9 @@ type Props = {
 }
 ```
 
-- `ChoiceDialog` で「X に投稿」「タイッツーに投稿」「Mastodonに投稿」「閉じる」を並べる。背景クリックとEscキーは `ChoiceDialog` の `onClose` が扱う。
+- `ChoiceDialog` で「X に投稿」「タイッツーに投稿」「Mastodonに投稿」「Misskeyに投稿」「閉じる」を並べる。背景クリックとEscキーは `ChoiceDialog` の `onClose` が扱う。
 - クリック時に `readTruncateIntentTextSetting(false)` を読み、`buildIntentText(postText, entryUrl ?? "", linkCardUrl, { truncateLimit: resolveTruncateLimit(target, truncate) })` を `openIntentPopupFor` に渡す。`keepOpenOnSelect` が偽のときだけ続けて `onClose()` を呼ぶ。
-- `resolveMastodonInstanceDomain(readMastodonInstanceDomainSetting(""))` が `null` なら、Mastodonのボタンを `disabled` にする。
+- `resolveMastodonInstanceDomain(readMastodonInstanceDomainSetting(""))` が `null` なら、Mastodonのボタンを `disabled` にする。Misskeyも `resolveMisskeyInstanceDomain(readMisskeyInstanceDomainSetting(""))` で同様に判定する。
 
 ### D-2: 呼び出し側 (FR-2, FR-7, FR-8)
 
@@ -71,6 +71,15 @@ type Props = {
 - `PostLauncher` は投稿成功で `Overlay` を閉じて `ThreadComposer` ごとアンマウントするため、`ThreadComposer` に `onShareRequest` を渡し、ダイアログを自身のstateで描画する。
 - `ThreadComposer` は、共有の分岐結果で `openShareDialog` が true なら、先頭の投稿の本文・skyshare entryのURL・リンクカードのURLから `IntentShareRequest` を作る。`onShareRequest` があればそれを呼び、無ければ自身のstateに入れる。
 - 入力欄のクリア（`resetInputFields`）は、ダイアログの有無によらず投稿成功後に必ず実行する。
+
+### D-3: entryの無い投稿のボタン (FR-9)
+
+```tsx
+// PostCardEntryActions: display.kind によらず先頭に描画する
+<button disabled={display.kind === "creating"} onClick={onCrosspost} />
+```
+
+- `PostCard` のダイアログを開くボタンは `PostCardEntryActions` が `display` の種別によらず常に描画する（entryの作成中だけ操作不能）。ダイアログに渡す共有文は、entryが無ければURLを付けない。
 
 ## 4. エラー処理
 

@@ -61,7 +61,7 @@ type Props = {
 ```
 
 - 共通の `Dropdown` を `autoWidth` 付きで使う。選択肢の `value` は `AUTO_POPUP_TARGETS`、`label` は `t("post.autoPopupTarget.<value>")` とする。
-- X・タイッツー・Mastodonの `content` には `InlineIcon` を前置する。Xのアイコンは塗りを `#444` にする。
+- X・タイッツー・Mastodon・Misskeyの `content` には `InlineIcon` を前置する。Xのアイコンは塗りを `#444` にする。
 - `onChange` に渡す値は `isAutoPopupTarget` で検査してから渡す。ラッパーのCSSは `min-width: 0; max-width: none` とする。
 
 ### D-2: 共有の分岐 (FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11)
@@ -81,10 +81,11 @@ export const runShareDispatch = async (params: ShareDispatchParams): Promise<Sha
 effectiveUri = manualImageAttach ? "" : skyshareUri
 textFor(t)   = buildIntentText(text, effectiveUri, linkCardUrl,
                  { truncateLimit: resolveTruncateLimit(t, truncateIntentText), measure: 宛先別 })
-domain       = resolveMastodonInstanceDomain(mastodonInstanceDomain)
+domain       = resolveInstanceDomainFor(target, { mastodonInstanceDomain, misskeyInstanceDomain })
+             // mastodon/misskey のみ保存値から解決（不正は null）、他は undefined
 
 if popupIntentInsteadOfWebshare:
-  if target == "ask" or (target == "mastodon" and domain == null):
+  if target == "ask" or domain == null:
     popupWindow?.close(); return { openShareDialog: true, status: chooseTarget }
   if openIntentPopupFor(target, textFor(target), { instanceDomain: domain, preOpenedWindow: popupWindow }):
     return { status: popupOpened }
@@ -106,7 +107,7 @@ export const preOpenPopupWindow = (): Window | null // window.open("/jump/", "_b
 export const openIntentPopup = (url: string, preOpenedWindow?: Window | null): boolean
 ```
 
-- ブラウザのポップアップブロックを避けるため、`window.open` は投稿ボタンのクリックと同期した呼び出しの中で行う。`ThreadComposer` は、ポップアップを開く設定がONで、選択値が投稿時に選択するでなく、不正なドメインのMastodonでもない場合だけ事前に開く。
+- ブラウザのポップアップブロックを避けるため、`window.open` は投稿ボタンのクリックと同期した呼び出しの中で行う。`ThreadComposer` は、ポップアップを開く設定がONで、選択値が投稿時に選択するでなく、不正なドメインのMastodon・Misskeyでもない場合だけ事前に開く。
 - 待機画面として `/jump/` を開き、投稿完了後に `location.href` で共有先へ遷移させる。
 - `opener` の切り離しは `setTimeout` で1タスク遅らせる。同期的に切り離すとSafariで遷移が中断されるため。
 - `ThreadComposer` は分岐結果の `forced*` を共有設定へ反映し、`openShareDialog` が true なら投稿先選択ダイアログを開く。

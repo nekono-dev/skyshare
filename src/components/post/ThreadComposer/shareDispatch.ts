@@ -12,7 +12,7 @@
 import type { ImageEntry } from "@/components/image/ImagePicker"
 import type { MessageFormatter } from "@/lib/i18n/translate"
 import {
-    resolveMastodonInstanceDomain,
+    resolveInstanceDomainFor,
     type AutoPopupTarget,
 } from "@/lib/settings/shareSettings"
 import {
@@ -49,6 +49,8 @@ export type ShareDispatchParams = {
     autoPopupTarget: AutoPopupTarget
     /** Mastodonインスタンスドメインの保存値そのまま（未設定は空文字） */
     mastodonInstanceDomain: string
+    /** Misskeyインスタンスドメインの保存値そのまま（未設定は空文字） */
+    misskeyInstanceDomain: string
     /**
      * 呼び出し側が投稿API呼び出し（await）より前に`preOpenPopupWindow`で
      * 事前に開いておいたポップアップウィンドウ。自動ポップアップ対象になった
@@ -137,8 +139,8 @@ const buildWebShareData = ({
  *
  * 処理の趣旨（`specs/auto-popup` 準拠）:
  * - PopupIntentInsteadOfWebshare がONの場合、AutoPopupTarget に従う。
- *   "ask"、または "mastodon" でインスタンスドメインが不正な場合は、ポップアップを開かず
- *   投稿先選択ダイアログを開く。X/タイッツー/Mastodon が選ばれていれば、そのSNSの
+ *   "ask"、または "mastodon"・"misskey" でインスタンスドメインが不正な場合は、ポップアップを開かず
+ *   投稿先選択ダイアログを開く。X/タイッツー/Mastodon/Misskey が選ばれていれば、そのSNSの
  *   ポップアップを自動で開く。開けなかった場合は投稿先選択ダイアログを開き、
  *   AutoPopupTarget を "ask" へ変更させる。
  * - OFFの場合はWebShareAPIを試行する。非対応環境、または対応環境で実際に試行したが
@@ -170,6 +172,7 @@ export const runShareDispatch = async (
         popupIntentInsteadOfWebshare,
         autoPopupTarget,
         mastodonInstanceDomain,
+        misskeyInstanceDomain,
         popupWindow,
         guestMode = false,
     } = params
@@ -195,19 +198,20 @@ export const runShareDispatch = async (
                 intentTarget === "taittsuu" ? "taittsuu" : "x",
             ),
         })
-    const mastodonDomain = resolveMastodonInstanceDomain(mastodonInstanceDomain)
+    // インスタンスを持つ共有先（Mastodon/Misskey）の投稿先ドメイン。それ以外は undefined、不正は null
+    const instanceDomain = resolveInstanceDomainFor(autoPopupTarget, {
+        mastodonInstanceDomain,
+        misskeyInstanceDomain,
+    })
     // 各ステータスの先頭に付ける、投稿結果の文（文末の句点は各文言側で付ける）
     const resultKey = guestMode
         ? "post.share.resultGuest"
         : "post.share.resultSuccess"
 
     if (popupIntentInsteadOfWebshare) {
-        // 自動ポップアップ先を決められない（投稿時に選択する、またはMastodonの
+        // 自動ポップアップ先を決められない（投稿時に選択する、またはMastodon/Misskeyの
         // ドメインが不正）場合は、ポップアップを開かず投稿先選択ダイアログに委ねる。
-        if (
-            autoPopupTarget === "ask" ||
-            (autoPopupTarget === "mastodon" && mastodonDomain === null)
-        ) {
+        if (autoPopupTarget === "ask" || instanceDomain === null) {
             popupWindow?.close()
             return {
                 status: tr =>
@@ -226,12 +230,14 @@ export const runShareDispatch = async (
                 ? "post.share.service.taittsuu"
                 : autoPopupTarget === "mastodon"
                   ? "post.share.service.mastodon"
-                  : "post.share.service.x"
+                  : autoPopupTarget === "misskey"
+                    ? "post.share.service.misskey"
+                    : "post.share.service.x"
         const opened = openIntentPopupFor(
             autoPopupTarget,
             buildTextFor(autoPopupTarget),
             {
-                instanceDomain: mastodonDomain ?? undefined,
+                instanceDomain,
                 preOpenedWindow: popupWindow,
             },
         )
