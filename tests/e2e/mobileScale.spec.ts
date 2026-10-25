@@ -6,7 +6,7 @@
  *   横スクロールの有無を実測する。
  * - 直書きのフォントサイズが無いことの検査は`tests/styles/hardcodedFontSize.test.ts`で行う。
  */
-import { expect, test } from "@playwright/test"
+import { expect, openPasswordLogin, test } from "./fixtures"
 
 test.use({ viewport: { width: 390, height: 844 } })
 
@@ -29,6 +29,8 @@ test("[design-tokens/AC-2] 幅390pxの画面で、トークンを参照するボ
     page,
 }) => {
     await page.goto("/login/", { timeout: 60_000 })
+    // アプリパスワードのログインのボタンは折りたたみの中にあるため、開いてから測る
+    await openPasswordLogin(page)
     const button = page.getByRole("button", { name: "ログイン", exact: true })
     await expect(button).toBeVisible({ timeout: 60_000 })
     await expect(button).toHaveCSS("padding-left", "16px")

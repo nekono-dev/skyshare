@@ -197,7 +197,7 @@ test("[schedule-form/AC-34] 許可を始めた投稿フォームのページに�
 }) => {
     test.setTimeout(90_000)
     const { calls } = await mockScheduleApi(page, { reauthRequired: true })
-    await page.goto("/post/#scheduleAuthorization=1&code=C&state=S")
+    await page.goto("/post/#oauthReturn=schedule&code=C&state=S")
     await expect(page.getByText("予約投稿を有効にしました。")).toBeVisible({
         timeout: 30_000,
     })

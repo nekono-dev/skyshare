@@ -275,6 +275,8 @@ test.describe("英語ブラウザ: 画面ごとの翻訳漏れ（ゲスト表示
         await expect(
             page.getByText("Persistent Skyshare-generated content"),
         ).toBeVisible({ timeout: 60_000 })
+        // アプリパスワードの入力欄は折りたたみの中にあるため、開いてから確認する
+        await openPasswordLogin(page)
         await expect(page.getByLabel("Handle (the part after @)")).toBeVisible()
         expect(await collectJapanese(page)).toEqual([])
 

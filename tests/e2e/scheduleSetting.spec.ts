@@ -111,7 +111,7 @@ test("[schedule-form/AC-28] 別のアカウントで許可して戻ると、そ�
         registered: false,
         completionResult: "AccountMismatch",
     })
-    await page.goto("/settings/#scheduleAuthorization=1&code=C&state=S")
+    await page.goto("/settings/#oauthReturn=schedule&code=C&state=S")
     await expect(
         page.getByText("ログイン中とは別のアカウントで許可されたため"),
     ).toBeVisible({ timeout: 30_000 })
