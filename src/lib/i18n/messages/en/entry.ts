@@ -4,6 +4,7 @@ import type { MessageEntries } from "../../translate"
 export const entry = {
     "entry.noText": "(No text)",
     "entry.card.noCaption": "No caption.",
+    "entry.card.sourceDeleted": "Original post deleted",
     "entry.card.deleteConfirmAria": "Confirm Entry deletion",
     "entry.edit.aria": "Edit Entry",
     "entry.edit.heading": "Heading",

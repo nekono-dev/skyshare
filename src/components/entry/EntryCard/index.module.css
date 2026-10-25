@@ -25,6 +25,17 @@
   color: var(--color-text-muted);
 }
 
+.deleted-badge {
+  flex: 0 0 auto;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: var(--font-size-xs);
+  line-height: 1.6;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
 .entry-link {
   flex: 0 0 auto;
   margin-left: auto;
