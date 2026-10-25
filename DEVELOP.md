@@ -19,6 +19,16 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
   },
 ```
 
+## テスト・型検査と作業ブランチの worktree の準備
+
+`brw create` / `brw resume` が作る worktree と、新しく clone した場所では、Git 管理外のファイルが無い。次を行ってから `npm run test:unit`・`npm run test:type`・`npm run dev`・`npm run test:e2e` を実行する（CI（`.github/workflows/deploy.yaml`）の準備と同じ。Claude Code のクラウドセッションでは `.claude/hooks/session-start.sh` が開始時に自動実行する）。
+
+1. `git submodule update --init --depth 1 atproto`（`lexicons/com/atproto/repo/strongRef.json` が `atproto` サブモジュールへのシンボリックリンクのため）
+2. `npm ci`（CI と同じ。worktree でも自前の `node_modules` を作る。親ディレクトリの `node_modules` を共有しない）
+3. `npm run codegen`（`src/client/` 配下は生成物で Git 管理外）
+4. `wrangler.jsonc` を用意する。Git 管理外で、上の「準備」の手順で作る。作業元の checkout にあるものをそのままコピーしてよい（`cp <作業元>/wrangler.jsonc .`）。無いと `nodejs_compat` が効かず、dev サーバーが `twitter-text` の `punycode` を解決できずにタイムライン等のページが `Failed to load url punycode` で落ちる。
+5. 環境変数 `BRW_PLUGIN_DIR` に branch-release-workflow の clone を指定する（`tests/hack/renderDeployConfig.test.ts` が使う）。
+
 # 実行方法
 
 ## ビルド方法
