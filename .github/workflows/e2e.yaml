@@ -115,6 +115,16 @@ jobs:
       - run: npm run test:unit
       - run: npm run test:astro
 
+      # hack/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する。
+      # 秘密情報を扱うジョブで実行するため、検証済みのコミットに固定する（更新時は BRW_REF を書き換える）
+      - name: Fetch branch-release-workflow
+        env:
+          BRW_REF: 4549dc157056b63d2aff95e64f60a47af1ca55d2
+        run: |
+          git init -q "$RUNNER_TEMP/brw"
+          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 https://github.com/nekono-dev/branch-release-workflow.git "$BRW_REF"
+          git -C "$RUNNER_TEMP/brw" checkout -q FETCH_HEAD
+          echo "BRW_PLUGIN_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
       # wrangler.jsonc は .gitignore 対象のため、Variables から生成する（astro dev が参照する）
       - name: Configure build setting
         run: node hack/render-deploy-config.mjs
