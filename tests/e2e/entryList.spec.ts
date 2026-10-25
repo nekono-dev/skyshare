@@ -34,6 +34,23 @@ test.describe("Entry一覧ページ", () => {
         ).toBeVisible()
     })
 
+    test("[entry-list/AC-11] 参照先の投稿が削除済みのカードにだけ、元投稿削除済みのバッジが表示される", async ({
+        page,
+    }) => {
+        await page.goto("/entries/?guest")
+
+        await expect(
+            page.getByRole("button", { name: "削除" }).first(),
+        ).toBeVisible()
+        const mutedCard = page.locator('article[class*="card-muted"]').first()
+        await expect(mutedCard.getByText("元投稿削除済み")).toBeVisible()
+        const normalCard = page
+            .locator('article:not([class*="card-muted"])')
+            .first()
+        await expect(normalCard).toBeVisible()
+        await expect(normalCard.getByText("元投稿削除済み")).toHaveCount(0)
+    })
+
     test("[entry-list/AC-8] ゲスト表示では、編集ボタンが無効になる", async ({
         page,
     }) => {

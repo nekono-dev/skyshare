@@ -2,6 +2,7 @@
 export const entry = {
     "entry.noText": "（本文なし）",
     "entry.card.noCaption": "キャプションはありません。",
+    "entry.card.sourceDeleted": "元投稿削除済み",
     "entry.card.deleteConfirmAria": "Entry削除確認",
     "entry.edit.aria": "Entry編集",
     "entry.edit.heading": "見出し",

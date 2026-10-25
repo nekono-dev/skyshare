@@ -7,6 +7,7 @@
  *   維持したまま（クロップせず）拡大なしで `ImageGallery` により表示する。
  * - `item.orphaned`（紐づく Bluesky 投稿が削除済み）の場合、`ui["card-muted"]` により
  *   `PostCard` の作成対象外投稿と同じ要領で背景色を変えて識別しやすくする。
+ *   あわせて作成日時の横に「元投稿削除済み」バッジを表示する。
  * - 削除ボタン: `item.orphaned` に応じて確認ダイアログを出し分ける。
  *   - orphaned: `ChoiceDialog` による単純確認のみ（対応する Bluesky 投稿は既に
  *     存在しないため `deleteBskyPost` は付与しない）。
@@ -192,6 +193,11 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
       <div className={styles["main-column"]}>
         <div className={styles["header-row"]}>
           <p className={styles["created-at"]}>{createdAtText}</p>
+          {isOrphaned ? (
+            <span className={styles["deleted-badge"]}>
+              {t("entry.card.sourceDeleted")}
+            </span>
+          ) : null}
         </div>
         {item.caption ? (
           <p className={styles.caption}>{item.caption}</p>
