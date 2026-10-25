@@ -22,23 +22,20 @@
     image: (
       <InlineIcon name="image" alt={t("schedule.setting.mediaImageAlt")} />
     ),
-    video: (
-      <InlineIcon name="video" alt={t("schedule.setting.mediaVideoAlt")} />
-    ),
   })}
 </p>
 ```
 
-- 文言は `schedule.setting.mediaNote`（`{image}の予約投稿のみ対応しており、{video}については対応していません。`）とし、アイコンは単語の代わりのため代替テキスト（画像・動画）を付ける。`InlineIcon` に `image` と `video` を加える。
+- 文言は `schedule.setting.mediaNote`（`{image}の予約投稿のみ対応しています。`）とし、アイコンは単語の代わりのため代替テキスト（画像）を付ける。`InlineIcon` に `image` と `video` を加える。
 - 文字は `--font-size-sm` と `--color-text-muted` にし、左右の余白を設定の行に揃える。
 
 ### D-2: Chronosky への案内 (FR-2, NFR-1)
 
-| 要素   | 内容                                                                                                     |
-| ------ | -------------------------------------------------------------------------------------------------------- |
-| ロゴ   | `chronosky.svg` を 24px で表示し、装飾として `alt=""` にする                                             |
-| 文     | `schedule.setting.chronoskyLead`（`{link}` にリンクを入れる）。Chronosky の機能を断定する表現は使わない  |
-| リンク | `href="https://chronosky.app/"`・`target="_blank"`・`rel="noopener noreferrer"`・説明つきの `aria-label` |
+| 要素   | 内容                                                                                                                                                                                   |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ロゴ   | `chronosky.svg` を 24px で表示し、装飾として `alt=""` にする                                                                                                                           |
+| 文     | `schedule.setting.chronoskyLead`（`{video}の予約投稿や、高度な機能については{link}をご利用ください。`）。`{video}` に動画のアイコン（代替テキスト「動画」）、`{link}` にリンクを入れる |
+| リンク | `href="https://chronosky.app/"`・`target="_blank"`・`rel="noopener noreferrer"`・説明つきの `aria-label`                                                                               |
 
 ## 4. エラー処理
 

@@ -44,12 +44,11 @@ export const schedule = {
     "schedule.setting.label": "Scheduled posts",
     "schedule.setting.description":
         "Post at a time you choose. Turning this on asks you to allow scheduled posting on Bluesky.",
-    "schedule.setting.mediaNote":
-        "Only {image} posts can be scheduled; {video} posts are not supported.",
+    "schedule.setting.mediaNote": "Only {image} posts can be scheduled.",
     "schedule.setting.mediaImageAlt": "Image",
     "schedule.setting.mediaVideoAlt": "Video",
     "schedule.setting.chronoskyLead":
-        "For more full-featured scheduled posting, use {link}, a scheduled posting service for Bluesky.",
+        "For scheduling {video} posts or more advanced features, use {link}.",
     "schedule.setting.chronoskyName": "Chronosky",
     "schedule.setting.chronoskyAria":
         "Chronosky (a scheduled posting service for Bluesky, opens in a new tab)",

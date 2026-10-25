@@ -42,12 +42,11 @@ export const schedule = {
     "schedule.setting.label": "予約投稿",
     "schedule.setting.description":
         "日時を指定して投稿できます。有効にすると、Bluesky で予約投稿の権限を許可します。",
-    "schedule.setting.mediaNote":
-        "{image}の予約投稿のみ対応しており、{video}については対応していません。",
+    "schedule.setting.mediaNote": "{image}の予約投稿のみ対応しています。",
     "schedule.setting.mediaImageAlt": "画像",
     "schedule.setting.mediaVideoAlt": "動画",
     "schedule.setting.chronoskyLead":
-        "より本格的な予約投稿には、Bluesky の予約投稿サービス{link}をご利用ください。",
+        "{video}の予約投稿や、高度な機能については{link}をご利用ください。",
     "schedule.setting.chronoskyName": "Chronosky",
     "schedule.setting.chronoskyAria":
         "Chronosky（Bluesky の予約投稿サービス、新しいタブで開く）",

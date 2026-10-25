@@ -13,3 +13,10 @@
 - [x] T-2.1: `Help/index.tsx`・`HelpItem/index.tsx`・`help.astro` を実装する。
 - 検証: `npx tsc --noEmit`
 - E2E: `tests/e2e/helpPage.spec.ts` ヘルプのページを開く → 記事の見出しがカードごとに表示される
+
+## Phase 3: 単独のページ化
+
+- 対応: D-2
+- [x] T-3.1: `help.astro` からサイドバーとフッターナビを外し、`StandaloneFooter` と設定のページへ戻るリンクを置く。
+- 検証: `npx tsc --noEmit`
+- E2E: `tests/e2e/helpPage.spec.ts` ヘルプのページを開く → サイドバーとフッターナビがなく、設定のページへ戻るリンクがある

@@ -185,12 +185,6 @@ export const Component = () => {
               alt={t("schedule.setting.mediaImageAlt")}
             />
           ),
-          video: (
-            <InlineIcon
-              name="video"
-              alt={t("schedule.setting.mediaVideoAlt")}
-            />
-          ),
         })}
       </p>
       <p className={styles.chronosky} data-testid="schedule-chronosky">
@@ -203,6 +197,12 @@ export const Component = () => {
         />
         <span>
           {renderSlots(raw("schedule.setting.chronoskyLead"), {
+            video: (
+              <InlineIcon
+                name="video"
+                alt={t("schedule.setting.mediaVideoAlt")}
+              />
+            ),
             link: (
               <a
                 href="https://chronosky.app/"

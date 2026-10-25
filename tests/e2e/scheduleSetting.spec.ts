@@ -119,7 +119,7 @@ test("[schedule-form/AC-28] 別のアカウントで許可して戻ると、そ�
     expect(new URL(page.url()).hash).toBe("")
 })
 
-test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の下に、画像と動画のアイコンつきの注と、Chronosky のロゴとリンクがある", async ({
+test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の下に、画像のアイコンつきの注と、動画のアイコンつきの Chronosky のロゴとリンクがある", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -127,19 +127,14 @@ test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の下に、画像�
     await page.goto("/settings/")
     const note = page.getByTestId("schedule-media-note")
     await expect(note).toBeVisible({ timeout: 30_000 })
-    await expect(note).toContainText("の予約投稿のみ対応しており")
-    await expect(note).toContainText("については対応していません")
+    await expect(note).toContainText("の予約投稿のみ対応しています")
     // 単語の代わりのアイコンには、読み上げ用の代替テキストがある
     await expect(note.getByRole("img", { name: "画像" })).toBeVisible()
-    await expect(note.getByRole("img", { name: "動画" })).toBeVisible()
-    const icons = await note
-        .locator("img")
-        .evaluateAll(imgs => imgs.map(img => (img as HTMLImageElement).src))
-    expect(icons).toHaveLength(2)
-    expect(icons[0]).toMatch(/image/)
-    expect(icons[1]).toMatch(/video/)
+    await expect(note.locator("img")).toHaveCount(1)
 
     const guide = page.getByTestId("schedule-chronosky")
+    await expect(guide).toContainText("の予約投稿や、高度な機能については")
+    await expect(guide.getByRole("img", { name: "動画" })).toBeVisible()
     await expect(guide.locator("img")).toHaveAttribute("src", /chronosky/)
     const link = guide.getByRole("link", { name: /Chronosky/ })
     await expect(link).toHaveAttribute("href", "https://chronosky.app/")

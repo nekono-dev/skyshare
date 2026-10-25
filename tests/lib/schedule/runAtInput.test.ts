@@ -118,7 +118,7 @@ describe("エラー文言", () => {
         // 文中のアイコンとリンクの差し込み口がそろっている
         for (const dict of [ja, en] as Record<string, string>[]) {
             expect(dict["schedule.setting.mediaNote"]).toContain("{image}")
-            expect(dict["schedule.setting.mediaNote"]).toContain("{video}")
+            expect(dict["schedule.setting.chronoskyLead"]).toContain("{video}")
             expect(dict["schedule.setting.chronoskyLead"]).toContain("{link}")
         }
     })
