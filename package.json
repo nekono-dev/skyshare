@@ -27,6 +27,7 @@
     "test:spec": "prettier --check specs docs && spec-lint --no-format",
     "test:watch": "vitest",
     "test:e2e": "node hack/run-e2e.mjs",
+    "deploy:env": "node hack/sync-deploy-env.mjs",
     "e2e:live:sweep": "tsx tests/e2e/live/sweep.ts"
   },
   "dependencies": {
