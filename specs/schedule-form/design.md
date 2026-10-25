@@ -173,7 +173,7 @@ export const useScheduleAvailability = (enabled: boolean): {
     {
       key: "scheduledPost",
       label: t("schedule.setting.label"),
-      description: t("schedule.setting.description"),
+      description: renderSlots(raw("schedule.setting.description"), { image }), // 末尾に画像のみ対応の注
       checked: registered === true,
       disabled: registered === null || guestMode,
       onCheckedChange: next =>
@@ -194,12 +194,12 @@ type CredentialDialogProps = {
 }
 ```
 
-| 項目   | 内容                                                                                                                   |
-| ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| 種別   | `Overlay` の中の `role="dialog"`。入力欄は置かない                                                                     |
-| 文言   | 何を許可するか・許可する範囲・`@ハンドル` で許可すること（`getActiveAccountHandle`）・`/privacy/` へのリンク           |
-| 許可   | `startScheduleAuthorization({ returnTo })` に今のページのパスを渡し、返った URL へ移る。失敗は文言を表示して再び押せる |
-| 大きさ | `Overlay` の内容の最大の高さに従い、収まらない分は縦に流す                                                             |
+| 項目   | 内容                                                                                                                                                                          |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 種別   | `Overlay` の中の `role="dialog"`。入力欄は置かない                                                                                                                            |
+| 文言   | 何を許可するか・`@ハンドル` のアカウントで有効にすること（`getActiveAccountHandle`）・認証情報を Skyshare に保存することと `/privacy/` へのリンク。許可のボタンは「認証する」 |
+| 許可   | `startScheduleAuthorization({ returnTo })` に今のページのパスを渡し、返った URL へ移る。失敗は文言を表示して再び押せる                                                        |
+| 大きさ | `Overlay` の内容の最大の高さに従い、収まらない分は縦に流す                                                                                                                    |
 
 - `@media (max-width: 639px)` では `Overlay` の背景に `align-items: flex-start` を指定し、画面の上部に固定する（投稿フォームと同じ）。
 

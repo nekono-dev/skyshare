@@ -14,15 +14,6 @@
   margin: 0;
 }
 
-/* 予約できる投稿の注。画像と動画のアイコンを文中に置き、控えめな文字にする */
-/* 左右の余白は設定の行（SettingList の .row）に揃える */
-.note {
-  margin: 0;
-  padding: 0 var(--space-0);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
 /* 本格的な予約投稿サービスの案内。ロゴと文を横に並べる */
 .chronosky {
   display: flex;

@@ -33,8 +33,9 @@ import {
  *   認証情報を削除する。実行中の予約があるときは削除されず、理由を表示する。
  * - 登録・削除の後は、同じページの投稿フォームへ変更を知らせる。
  * - ゲストの表示と、登録状態の取得前・取得の失敗の間は、スイッチを押せない。
- * - スイッチの下に、予約できる投稿の注（画像は可・動画は不可をアイコンで示す）と、
- *   本格的な予約投稿サービス（Chronosky）への案内をロゴつきで置く。
+ * - スイッチの説明文の末尾に、予約できる投稿の注（画像のみ対応をアイコンで示す）を続ける。
+ * - スイッチの下に、動画の予約投稿や高度な機能の受け皿として、予約投稿サービス（Chronosky）への
+ *   案内をロゴつきで置く。
  */
 
 export const Component = () => {
@@ -147,7 +148,14 @@ export const Component = () => {
           {
             key: "scheduledPost",
             label: t("schedule.setting.label"),
-            description: t("schedule.setting.description"),
+            description: renderSlots(raw("schedule.setting.description"), {
+              image: (
+                <InlineIcon
+                  name="image"
+                  alt={t("schedule.setting.mediaImageAlt")}
+                />
+              ),
+            }),
             checked: registered === true,
             disabled: guestMode || registered === null || busy,
             onCheckedChange: next => {
@@ -177,16 +185,6 @@ export const Component = () => {
           </button>
         </div>
       )}
-      <p className={styles.note} data-testid="schedule-media-note">
-        {renderSlots(raw("schedule.setting.mediaNote"), {
-          image: (
-            <InlineIcon
-              name="image"
-              alt={t("schedule.setting.mediaImageAlt")}
-            />
-          ),
-        })}
-      </p>
       <p className={styles.chronosky} data-testid="schedule-chronosky">
         <img
           src={chronoskyLogo.src}

@@ -2,11 +2,11 @@
 
 ## 1. 構成
 
-| パス                                                | 責務                                                                              |
-| --------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `src/components/schedule/ScheduleSetting/index.tsx` | 予約投稿のスイッチの下に、注と Chronosky の案内を描画する（CSS モジュールを含む） |
-| `src/components/common/InlineIcon/index.tsx`        | 文中に置く画像と動画のアイコン                                                    |
-| `src/images/chronosky.svg`                          | Chronosky のロゴ（公式サイトの favicon を開発者の許可を得て同梱）                 |
+| パス                                                | 責務                                                                                          |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `src/components/schedule/ScheduleSetting/index.tsx` | 予約投稿の説明文に注を続け、スイッチの下に Chronosky の案内を描画する（CSS モジュールを含む） |
+| `src/components/common/InlineIcon/index.tsx`        | 文中に置く画像と動画のアイコン                                                                |
+| `src/images/chronosky.svg`                          | Chronosky のロゴ（公式サイトの favicon を開発者の許可を得て同梱）                             |
 
 ## 2. 関係図・ワークフロー
 
@@ -17,17 +17,14 @@
 ### D-1: 予約できる投稿の注 (FR-1, NFR-1)
 
 ```tsx
-<p data-testid="schedule-media-note">
-  {renderSlots(raw("schedule.setting.mediaNote"), {
-    image: (
-      <InlineIcon name="image" alt={t("schedule.setting.mediaImageAlt")} />
-    ),
-  })}
-</p>
+// SettingList の行の description に渡す
+description: renderSlots(raw("schedule.setting.description"), {
+  image: <InlineIcon name="image" alt={t("schedule.setting.mediaImageAlt")} />,
+})
 ```
 
-- 文言は `schedule.setting.mediaNote`（`{image}の予約投稿のみ対応しています。`）とし、アイコンは単語の代わりのため代替テキスト（画像）を付ける。`InlineIcon` に `image` と `video` を加える。
-- 文字は `--font-size-sm` と `--color-text-muted` にし、左右の余白を設定の行に揃える。
+- 文言は予約投稿の説明文 `schedule.setting.description` の末尾に `{image}の予約投稿のみ対応しています。` を改行せずに続け、アイコンは単語の代わりのため代替テキスト（画像）を付ける。`InlineIcon` に `image` と `video` を加える。
+- 文字の大きさと色は設定の行の説明文に従う。
 
 ### D-2: Chronosky への案内 (FR-2, NFR-1)
 
