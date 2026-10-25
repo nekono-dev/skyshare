@@ -10,6 +10,7 @@
  *   Playwright e2e（`tests/e2e/entryThreadDetail.spec.ts`・`entryPostCards.spec.ts`・`imageGallery.spec.ts`）が使う。
  * - 5件目に動画と引用（recordWithMedia）、6件目にリンクカードと本文のリンク（facets）を持たせ、
  *   `tests/e2e/entryEmbed.spec.ts`・`postRichText.spec.ts` が使う。
+ * - 説明文にスキームを省略した URL を持たせ、`postRichText.spec.ts` が説明文のリンク表示に使う。
  * - サンプルページはこの`entries/sample.astro`1枚に集約している（状態別の追加ページは作らない）。
  */
 export const prerender = true
@@ -26,7 +27,7 @@ import { serviceName } from "@/vars"
 const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
 
 const heading = "サンプルスレッドEntry"
-const caption = "6件の投稿からなるスレッドのサンプル表示です。"
+const caption = "6件の投稿からなるスレッドのサンプル表示です。詳しくはexample.com/sampleを見てください。"
 
 const author = { handle: "guest.demo", displayName: "ゲストユーザー" }
 

@@ -38,10 +38,12 @@ sequenceDiagram
   participant pbi as PostBody/index
   participant prti as PostRichText/index
   participant richTextSegments
+  participant autoLink
   posts->>richTextSegments: normalizePostFacets
   posts-->>pbi: 本文と注釈
   pbi->>prti: 本文と注釈
   prti->>richTextSegments: segmentRichText
+  richTextSegments->>autoLink: findUrlRanges
   alt 注釈が正しい範囲
     richTextSegments-->>prti: リンクの区間
   else 範囲が不正

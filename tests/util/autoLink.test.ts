@@ -27,7 +27,7 @@ describe("findUrlRanges", () => {
         ])
     })
 
-    it("[post-rich-text/AC-8] メールアドレス・メンション・版の表記はURLにしない", () => {
+    it("[post-rich-text/AC-10] メールアドレス・メンション・版の表記はURLにしない", () => {
         expect(linksOf("mail@example.com")).toEqual([])
         expect(linksOf("@alice.bsky.social")).toEqual([])
         expect(linksOf("v1.0.0 と file.txt")).toEqual([])
