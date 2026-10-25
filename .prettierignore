@@ -6,3 +6,4 @@ astro/**
 _legacy/**
 atproto/**
 .claude/worktrees/**
+.claude/skills/branch-release-workflow/**
