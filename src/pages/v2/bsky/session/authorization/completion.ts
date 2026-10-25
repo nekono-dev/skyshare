@@ -1,3 +1,4 @@
+import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus } from "@/lib/api/response.js"
@@ -89,6 +90,8 @@ export const POST: APIRoute = async ({ request }) => {
         for (const cookie of makeAccountsSetCookies(pool)) {
             headers.append("set-cookie", cookie)
         }
+        // アクティブなアカウントが変わるため、予約投稿の登録状態のヒント cookie を失効させる
+        headers.append("set-cookie", makeScheduleHintClearCookie())
         return respond(200, { result: "ok" })
     } catch {
         console.error("session authorization completion POST: unexpected error")

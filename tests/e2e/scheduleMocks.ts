@@ -63,6 +63,8 @@ export type Calls = {
     /** 認可の完了（POST …/authorization/completion/）に送られた本文 */
     authorizationCompletions: unknown[]
     credentialDeletes: number
+    /** 登録状態の取得（GET /v2/schedules/credential/）の回数 */
+    credentialGets: number
 }
 
 const json = (body: unknown, status = 200) => ({
@@ -95,6 +97,7 @@ export const mockScheduleApi = async (
         authorizationStartBodies: [],
         authorizationCompletions: [],
         credentialDeletes: 0,
+        credentialGets: 0,
     }
 
     await page.route(/\/v2\/bsky\/session\/?$/, route =>
@@ -152,6 +155,7 @@ export const mockScheduleApi = async (
                     json({ registered: false, cancelled, deletedHistory }),
                 )
             }
+            calls.credentialGets += 1
             return route.fulfill(
                 json({
                     registered: state.registered,

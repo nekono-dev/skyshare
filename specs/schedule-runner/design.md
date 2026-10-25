@@ -2,13 +2,13 @@
 
 ## 1. 構成
 
-| パス                             | 責務                                                            |
-| -------------------------------- | --------------------------------------------------------------- |
-| `src/worker.ts`                  | Worker のエントリ。画面と API は Astro に任せ、定期実行を受ける |
-| `src/lib/schedule/runner.ts`     | 1回の定期実行の流れ。復帰・取り出し・実行・後片付けを行う       |
-| `src/lib/schedule/executor.ts`   | 1件の予約を進捗に従って段階的に実行する                         |
-| `src/lib/schedule/xrpcClient.ts` | 通信回数の予算つきの XRPC クライアント（DPoP の証明を付ける）   |
-| `src/lib/schedule/tid.ts`        | レコードキーに使う TID の採番                                   |
+| パス                             | 責務                                                             |
+| -------------------------------- | ---------------------------------------------------------------- |
+| `src/worker.ts`                  | Worker のエントリ。画面と API は Astro に任せ、定期実行を受ける  |
+| `src/lib/schedule/runner.ts`     | 毎分の定期実行の流れ（復帰・取り出し・実行）と、1日1回の後片付け |
+| `src/lib/schedule/executor.ts`   | 1件の予約を進捗に従って段階的に実行する                          |
+| `src/lib/schedule/xrpcClient.ts` | 通信回数の予算つきの XRPC クライアント（DPoP の証明を付ける）    |
+| `src/lib/schedule/tid.ts`        | レコードキーに使う TID の採番                                    |
 
 ## 2. 関係図・ワークフロー
 
@@ -34,6 +34,7 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
+  participant worker
   participant runner
   participant executor
   participant xrpcClient
@@ -62,9 +63,15 @@ sequenceDiagram
   else 作成に成功
     executor->>ext_store: saveProgress
   end
-  runner->>ext_store: purgeFinished
-  runner->>ext_store: purgeIdleCredentials
-  runner->>ext_store: purgeReauthMarkers
+  opt 後片付けの時刻
+    worker->>runner: isHousekeepingTime
+    runner->>runner: HOUSEKEEPING_MINUTE_OF_DAY_UTC
+    runner->>runner: runHousekeeping
+    runner->>ext_store: purgeFinished
+    runner->>ext_store: purgeIdleCredentials
+    runner->>ext_store: purgeReauthMarkers
+    runner->>ext_store: purgeOAuthStates
+  end
 ```
 
 予約の状態の遷移を示す。
@@ -92,11 +99,15 @@ import { handle } from "@astrojs/cloudflare/handler"
 export default {
   fetch: handle,
   async scheduled(
-    _event: unknown,
+    event: { scheduledTime: number },
     env: ScheduleEnv,
     ctx: { waitUntil: (promise: Promise<unknown>) => void },
   ) {
-    ctx.waitUntil(runScheduledPosts(env, Math.floor(Date.now() / 1000)))
+    const now = Math.floor(Date.now() / 1000)
+    ctx.waitUntil(runScheduledPosts(env, now))
+    if (isHousekeepingTime(Math.floor(event.scheduledTime / 1000))) {
+      ctx.waitUntil(runHousekeeping(env, now))
+    }
   },
 }
 ```
@@ -109,7 +120,7 @@ export default {
 | `r2_buckets`     | バインディング名 `SCHEDULE_IMAGES`                                    |
 | シークレット     | `SCHEDULE_ENC_KEY`                                                    |
 
-### D-2: 1回の定期実行の流れ (FR-1, FR-10, FR-11, NFR-1)
+### D-2: 1回の定期実行の流れ (FR-1, FR-10, NFR-1)
 
 ```ts
 export const runScheduledPosts = async (
@@ -126,11 +137,10 @@ const MAX_EXTERNAL_CALLS = 40
 | 1    | `requeueStale` で停止した予約を待機中へ戻す                                                                                              |
 | 2    | `claimDueSchedules` で到来した予約を最大5件取り出す                                                                                      |
 | 3    | 取り出した順に `executeSchedule` を呼ぶ。通信の予算が尽きるかレート制限を受けたら、以降の予約は実行せず `releaseSchedule` で待機中へ戻す |
-| 4    | `purgeFinished` で終了から7日を過ぎた予約を削除する                                                                                      |
-| 5    | `purgeIdleCredentials` で予約がなく30日使われない認証情報を印に替え、`purgeReauthMarkers` で180日を過ぎた印を削除する                    |
 
 - 1回の実行で使う予算は、取り出した予約の全体で共有する。
 - 例外が実行全体を中断させないよう、予約ごとに `try` で囲み、分類できない例外は一時的な失敗として扱う。
+- 削除を伴う後片付けは、この流れに含めない（後片付けの項に分ける）。毎分の問い合わせは、停止した予約の回収と到来した予約の取り出しの2つだけで、どちらも `scheduled_posts_due`（`status`・`run_at`）で検索する。
 
 ### D-3: 予算つきの通信クライアント (FR-5, FR-12, NFR-2, NFR-4, NFR-5)
 
@@ -224,6 +234,24 @@ const MAX_ATTEMPTS = 5
 | すべての段階が成功              | 行を削除する（成功した予約は履歴に残さない）                                                       |
 
 - 失敗の記録には分類コードだけを保存し、応答の本文を保存しない。`failSchedule` は画像を削除せず、フォームへの書き戻しに使えるよう残す（履歴の削除で行と画像を消す）。
+
+### D-6: 後片付け (FR-11)
+
+```ts
+export const HOUSEKEEPING_MINUTE_OF_DAY_UTC = 18 * 60 // 日本時間の午前 3 時
+export const isHousekeepingTime = (now: number): boolean // now は UNIX 秒。UTC の 0 時からの分が上の値と等しいとき真
+export const runHousekeeping = async (env: ScheduleEnv, now: number): Promise<void>
+```
+
+| 順序 | 処理                                                                                                                  |
+| ---- | --------------------------------------------------------------------------------------------------------------------- |
+| 1    | `purgeFinished` で終了から7日を過ぎた予約を削除し、返った行の残りの画像を `removeImages` で削除する                   |
+| 2    | `purgeIdleCredentials` で予約がなく30日使われない認証情報を印に替え、`purgeReauthMarkers` で180日を過ぎた印を削除する |
+| 3    | `purgeOAuthStates` で期限を過ぎた認可の途中の状態を削除する                                                           |
+
+- 認証情報と認可の途中の状態の削除は表の全件を走査するため、毎分行うと利用者数に比例して D1 の無料枠の行の読み取りを消費する。保持期間は日単位で、削除が最大1日遅れても結果は変わらないので、1日1回に下げる。
+- 状態を持たず、`worker.ts` が `scheduledTime` の分で判定する。その分の起動が失敗しても、削除はすべて期限での絞り込みなので、翌日の同じ分が回収する。
+- 1つの失敗で残りを止めず、失敗は記録だけして次の日に任せる。
 
 ## 4. エラー処理
 

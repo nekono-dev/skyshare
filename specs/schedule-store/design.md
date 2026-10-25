@@ -113,7 +113,7 @@ CREATE TABLE scheduled_posts (
   last_error TEXT, result_uri TEXT, updated_at INTEGER NOT NULL, finished_at INTEGER
 );
 CREATE INDEX scheduled_posts_due ON scheduled_posts (status, run_at);
-CREATE INDEX scheduled_posts_owner ON scheduled_posts (did, status);
+CREATE INDEX scheduled_posts_owner ON scheduled_posts (did, status, run_at); -- 0005 で run_at を加えた
 CREATE TABLE schedule_credentials (
   did TEXT PRIMARY KEY, service TEXT NOT NULL, token_enc TEXT NOT NULL, updated_at INTEGER NOT NULL,
   authorized_at INTEGER NOT NULL DEFAULT 0, reauth_required INTEGER NOT NULL DEFAULT 0 -- 0004 で追加
@@ -189,7 +189,7 @@ export const FINISHED_RETENTION_SECONDS = 7 * 24 * 60 * 60
 - `requeueStale` は `running` で `updated_at` が `now - staleSeconds` より古い行を `pending` に戻し、`attempts` に1を加える。
 - `purgeFinished` は `failed` で `finished_at` が保持期間より古い行を削除し、削除した行を返す。画像の削除は、返った行の画像のキーを使って呼び出し側が行う。
 
-### D-5: 認証情報の暗号化と保管 (FR-4, FR-5, NFR-2)
+### D-5: 認証情報の暗号化と保管 (FR-4, FR-5, NFR-2, NFR-5)
 
 ```ts
 export const encryptToken = (secret: string, did: string, token: string): Promise<string>
@@ -221,12 +221,13 @@ export const OAUTH_STATE_TTL_SECONDS = 10 * 60
 
 - 認証情報の行の `updated_at` を最後の使用の時刻とする。使用は、登録（`saveCredential`）・予約の作成と置き換え（`touchCredential`）・実行でのトークンの更新（`saveCredential`）の3つとする。
 - `purgeIdleCredentials` は、`updated_at` が `now - idleSeconds` より古く、同じ DID の `pending` と `running` の予約が無い行を1文で印（`token_enc` を空、`reauth_required = 1`）に替え、件数を返す。
+- `getCredentialStatus` の最も遅い実行時刻（`latestRunAt`）は、`scheduled_posts_owner`（`did`・`status`・`run_at`）だけで求める。`run_at` を含むため、予約の表の行を読まずに索引で `MAX(run_at)` が求まり、他のアカウントの予約を走査しない。状態だけの索引 `scheduled_posts_due` を使うと全アカウントの待機中の行を読むため、索引を変えるときは問い合わせの計画を確かめる。
 - `markCredentialReauth` は失効が分かった行を印に替える。印の行は `loadCredential` で返さず、`getCredentialStatus` では登録ありで返す。
 - `purgeReauthMarkers` は、`updated_at` が `now - retentionSeconds`（180日）より古く予約の無い印の行を削除する。
 - `saveCredential` は印を外す。`authorized` が真のときだけ `authorized_at` を `now` にし、トークンの回転では保つ。
 - `deleteCredential` は、予約の有無によらず行を削除する。
 - 認証情報の `token` には、OAuth の更新用トークン・DPoP の鍵・認可サーバーの端点・クライアントの識別子をまとめた JSON の文字列を入れ、`service` には PDS の URL を入れる。
-- 認可の途中の状態は `schedule_oauth_states`（`state`・`did`・`data_enc`・`created_at`）に、認証情報と同じ方式で暗号化して保管する。`takeOAuthState` は `DELETE ... RETURNING` の1文で取り出して消し、別の DID と `OAUTH_STATE_TTL_SECONDS` を過ぎた行は null にする。`purgeOAuthStates` は定期実行の後片付けで期限を過ぎた行を消す。
+- 認可の途中の状態は `schedule_oauth_states`（`state`・`did`・`data_enc`・`created_at`）に、認証情報と同じ方式で暗号化して保管する。`takeOAuthState` は `DELETE ... RETURNING` の1文で取り出して消し、別の DID と `OAUTH_STATE_TTL_SECONDS` を過ぎた行は null にする。`purgeOAuthStates` は定期実行の後片付け（1日1回）で期限を過ぎた行を消す。期限の判定は取り出し時に行うため、消す頻度は結果に影響しない。
 
 ### D-6: 添付画像の一時保管 (FR-6, FR-12, NFR-1, NFR-4)
 

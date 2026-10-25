@@ -1,3 +1,4 @@
+import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import type { APIRoute } from "astro"
 
 import {
@@ -77,6 +78,8 @@ export const DELETE: APIRoute = async ({ params, request }) => {
                 "set-cookie",
                 makeClearSetCookie(SESSION_COOKIE_NAME),
             )
+            // アクティブなアカウントが変わるため、予約投稿の登録状態のヒント cookie を失効させる
+            headers.append("set-cookie", makeScheduleHintClearCookie())
         } else {
             const nextPool = pool.filter((_, index) => index !== poolIndex)
             for (const cookie of makeAccountsSetCookies(nextPool)) {

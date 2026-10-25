@@ -340,8 +340,18 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       reauthRequired: scheduleReauthRequired,
       expiresAt: scheduleExpiresAt,
       limits: scheduleLimits,
+      reload: reloadScheduleAvailability,
     } = useScheduleAvailability(!guestMode)
     const [draftModalOpen, setDraftModalOpen] = useState(false)
+    // 予約の UI（日時の指定・予約のタブ）を開くたびに、cookie のヒントを使わず登録状態を取り直す
+    useEffect(() => {
+      if (runAtPickerOpen) reloadScheduleAvailability()
+    }, [runAtPickerOpen, reloadScheduleAvailability])
+    useEffect(() => {
+      if (draftModalOpen && draftTab === "schedules") {
+        reloadScheduleAvailability()
+      }
+    }, [draftModalOpen, draftTab, reloadScheduleAvailability])
     const [draftItems, setDraftItems] = useState<
       ReturnType<typeof normalizeDraftList>
     >([])

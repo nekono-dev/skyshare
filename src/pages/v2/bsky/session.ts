@@ -1,3 +1,4 @@
+import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import type { APIRoute } from "astro"
 
 import { createAtpAgent } from "@/lib/atproto/agentFactory"
@@ -204,6 +205,8 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         for (const cookie of makeAccountsSetCookies(pool)) {
             headers.append("set-cookie", cookie)
         }
+        // アクティブなアカウントが変わるため、予約投稿の登録状態のヒント cookie を失効させる
+        headers.append("set-cookie", makeScheduleHintClearCookie())
         headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })
@@ -278,6 +281,8 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
         for (const cookie of makeAccountsSetCookies(nextPool)) {
             headers.append("set-cookie", cookie)
         }
+        // アクティブなアカウントが変わるため、予約投稿の登録状態のヒント cookie を失効させる
+        headers.append("set-cookie", makeScheduleHintClearCookie())
         headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })

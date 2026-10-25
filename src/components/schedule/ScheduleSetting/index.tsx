@@ -42,8 +42,10 @@ export const Component = () => {
   const translator = useT()
   const { t, raw } = translator
   const guestMode = isGuestModeRequested()
-  const { registered, reauthRequired, reload } =
-    useScheduleAvailability(!guestMode)
+  const { registered, reauthRequired } = useScheduleAvailability(
+    !guestMode,
+    true,
+  )
   const [credentialOpen, setCredentialOpen] = useState(false)
   const [disableCount, setDisableCount] = useState<{
     pending: number
@@ -55,9 +57,8 @@ export const Component = () => {
     error: boolean
   } | null>(null)
 
-  /** 登録状態の変更を、このスイッチと同じページの投稿フォームへ反映する */
+  /** 登録状態の変更を、このスイッチと同じページの投稿フォームへ反映する（通知で全員が取り直す） */
   const changed = () => {
-    reload()
     notifyScheduleCredentialChange()
   }
 

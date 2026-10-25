@@ -9,14 +9,24 @@
 export type ScheduleErrorCode =
     "ScheduleCredentialRequired" | "ScheduleReauthRequired" | "ScheduleRunning"
 
-export const jsonResponse = (body: unknown, status = 200): Response =>
-    new Response(JSON.stringify(body), {
-        status,
-        headers: {
-            "content-type": "application/json",
-            "cache-control": "no-store",
-        },
+/**
+ * JSON の応答を返す。
+ *
+ * Input:
+ * - `setCookies`: 応答に付ける Set-Cookie の値（登録状態のヒントの保存・失効に使う）
+ */
+export const jsonResponse = (
+    body: unknown,
+    status = 200,
+    setCookies: string[] = [],
+): Response => {
+    const headers = new Headers({
+        "content-type": "application/json",
+        "cache-control": "no-store",
     })
+    for (const cookie of setCookies) headers.append("set-cookie", cookie)
+    return new Response(JSON.stringify(body), { status, headers })
+}
 
 export const codeErrorResponse = (
     status: number,

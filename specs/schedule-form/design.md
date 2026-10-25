@@ -6,6 +6,7 @@
 | ------------------------------------------------------- | ---------------------------------------------------------- |
 | `src/lib/schedule/runAtInput.ts`                        | 日時の既定値・変換・範囲の判定・表示の文字列               |
 | `src/lib/schedule/useScheduleAvailability.ts`           | 認証情報の登録状態と制限値の取得と、変更の通知の購読       |
+| `src/lib/schedule/availabilityHint.ts`                  | 登録状態のヒント cookie の読み取り（schedule-api と共有）  |
 | `src/lib/schedule/scheduleMode.ts`                      | 投稿フォームの予約の状態の遷移と、送信先とキャンセルの判定 |
 | `src/lib/schedule/submitSchedule.ts`                    | 予約の作成と置き換えの呼び出しと、編集用の内容の取得       |
 | `src/lib/schedule/scheduleErrorKey.ts`                  | API のエラーと失敗の分類コードの文言キーの選択             |
@@ -38,6 +39,7 @@ flowchart LR
   submitSchedule --> scheduleErrorKey
   submitSchedule --> runAtInput
   useScheduleAvailability --> ext_client["生成クライアント"]
+  useScheduleAvailability --> availabilityHint
   submitSchedule --> ext_client
   ScheduleList --> ext_client
   CredentialDialog --> ext_client
@@ -142,7 +144,7 @@ export const formatRunAtLabel = (d: Date, locale: string): string // Intl.DateTi
 ```ts
 export const SCHEDULE_CREDENTIAL_EVENT = "skyshare:schedule-credential-change"
 export const notifyScheduleCredentialChange = (): void // window へ CustomEvent を送る
-export const useScheduleAvailability = (enabled: boolean): {
+export const useScheduleAvailability = (enabled: boolean, revalidate?: boolean): {
   registered: boolean | null // 取得前と取得の失敗は null。再度の許可が必要なときも true
   reauthRequired: boolean
   expiresAt: Date | null // 許可の有効期限の目安
@@ -152,7 +154,9 @@ export const useScheduleAvailability = (enabled: boolean): {
 ```
 
 - `enabled` が偽（ゲストの表示）のときは通信せず `registered: null` を返す。
-- マウント時と `astro:page-load` と `SCHEDULE_CREDENTIAL_EVENT` のたびに `getScheduleCredential` を呼ぶ。`getScheduleLimits` は最初に `registered` が真になったときに1回だけ呼ぶ。
+- 登録状態は、`document.cookie` の登録状態のヒント cookie（`readScheduleHint`）があればそれを使い、`getScheduleCredential` を呼ばない。cookie が無いとき（初回・失効後・7日経過後）だけ呼び、その応答でサーバーが cookie を保存する。
+- 次のときは cookie を使わずに必ず `getScheduleCredential` を呼ぶ: `reload` の呼び出し、`SCHEDULE_CREDENTIAL_EVENT`、`revalidate` が真（設定のスイッチ）のマウントと `astro:page-load`。投稿フォームは、日時の指定を開いたときと、下書き・予約の画面の予約のタブを開いたときに `reload` を呼ぶ。登録状態を変える設定の操作は `SCHEDULE_CREDENTIAL_EVENT` だけを送り、取得し直しは購読側に任せる。
+- ページを開くたびに D1 を読むのをやめるための仕組みで、利用者が予約を使わないページ遷移では問い合わせない。ヒントは表示の仮の値であり、予約の作成はサーバーが再検証する。`getScheduleLimits` は最初に `registered` が真になったときに1回だけ呼ぶ。
 - 投稿フォームは `registered === true && !reauthRequired && limits !== null` のときだけ予約投稿を有効とみなす。
 
 ### D-3: 設定の予約投稿のスイッチ (FR-1, FR-2)

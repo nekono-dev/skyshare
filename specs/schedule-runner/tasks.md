@@ -21,10 +21,11 @@
 
 ## Phase 3: 定期実行とエントリ
 
-- 対応: D-1, D-2
+- 対応: D-1, D-2, D-6
 - [x] T-3.1: `src/lib/schedule/runner.ts` に復帰・取り出し・実行・後片付けを実装する。
 - [x] T-3.2: `src/worker.ts` を作成し、`wrangler.template.jsonc` に `main` とトリガーとバインディングを追加する。
 - [x] T-3.3: 受け入れ条件 AC-1、AC-10、AC-11、AC-13、AC-16 のテストをタグ付きで追加する。
 - [x] T-3.4: 後片付けに30日の未使用の認証情報の削除を加え、AC-11 のテストを更新する。
 - [x] T-3.5: 失効と未使用の認証情報を再度の許可が必要な印に替え、印の削除を加え、AC-8 と AC-11 のテストを更新する。
+- [x] T-3.6: 後片付けを `runHousekeeping` に分けて `worker.ts` が1日1回だけ呼ぶ形に改め、AC-11 のテストを後片付けの呼び出しに合わせ、AC-19 のテストをタグ付きで追加する。
 - 検証: `npx vitest run tests/lib/schedule/runner.test.ts && npm run build`

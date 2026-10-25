@@ -109,7 +109,7 @@ describe("OAuth のログインの API", () => {
         expect((await res.json()).url).toMatch(`${BSKY}/oauth/authorize?`)
     })
 
-    test("oauth-session/AC-6: 照合と確認に成功すると OAuth のセッションがアクティブになり、別のアカウントがアクティブだったときはプールへ退避される", async () => {
+    test("oauth-session/AC-6: [schedule-api/AC-25] 照合と確認に成功すると OAuth のセッションがアクティブになり、別のアカウントがアクティブだったときはプールへ退避される", async () => {
         const { pending, state } = await begin()
         const current = makeSessionSetCookie(password("did:plc:current"))
         const res = await callComplete(
@@ -118,6 +118,12 @@ describe("OAuth のログインの API", () => {
         )
         expect(res.status).toBe(200)
         expect(await res.json()).toEqual({ result: "ok" })
+        // アクティブなアカウントが変わるため、予約投稿の登録状態のヒントを失効させる
+        expect(
+            res.headers
+                .getSetCookie()
+                .some(c => c.startsWith("skyshare_schedule=;")),
+        ).toBe(true)
 
         const next = new Request(ORIGIN, {
             headers: { cookie: toCookieHeader(res.headers.getSetCookie()) },

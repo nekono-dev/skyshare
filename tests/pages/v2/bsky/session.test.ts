@@ -265,7 +265,7 @@ describe("POST /v2/bsky/session", () => {
         expect(res.status).toBe(500)
     })
 
-    it("初回ログイン(currentSession無し)は200でpool空のままcookieをセットする", async () => {
+    it("[schedule-api/AC-25] 初回ログイン(currentSession無し)は200でpool空のままcookieをセットし、予約投稿の登録状態のヒントを失効させる", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -291,6 +291,9 @@ describe("POST /v2/bsky/session", () => {
         expect(
             setCookies.some(c => c.startsWith(`${ACCOUNTS_COOKIE_NAME}=;`)),
         ).toBe(true)
+        expect(setCookies.some(c => c.startsWith("skyshare_schedule=;"))).toBe(
+            true,
+        )
     })
 
     it("[account-session/AC-7] 同一did再ログインの場合はpoolへ退避しない", async () => {
@@ -473,7 +476,7 @@ describe("PUT /v2/bsky/session", () => {
         expect(res.status).toBe(500)
     })
 
-    it("成功時はローテーション後のagent.sessionを採用してcookieをセットする", async () => {
+    it("[schedule-api/AC-25] 切り替えの成功時はローテーション後のagent.sessionを採用してcookieをセットし、予約投稿の登録状態のヒントを失効させる", async () => {
         const rotated = {
             ...targetSession,
             accessJwt: "new-access",
@@ -505,6 +508,9 @@ describe("PUT /v2/bsky/session", () => {
             ).toString("utf-8"),
         )
         expect(decoded.session.accessJwt).toBe("new-access")
+        expect(setCookies.some(c => c.startsWith("skyshare_schedule=;"))).toBe(
+            true,
+        )
     })
 
     it("agent.sessionが無い場合はtarget.sessionへフォールバックする", async () => {

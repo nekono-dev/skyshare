@@ -6,7 +6,13 @@ import {
     createTestClientSecret,
     createTestCredentialToken,
 } from "../../helpers/oauthTestKeys"
-import { MAX_EXTERNAL_CALLS, runScheduledPosts } from "@/lib/schedule/runner"
+import {
+    HOUSEKEEPING_MINUTE_OF_DAY_UTC,
+    MAX_EXTERNAL_CALLS,
+    isHousekeepingTime,
+    runHousekeeping,
+    runScheduledPosts,
+} from "@/lib/schedule/runner"
 import { putImages } from "@/lib/schedule/imageStaging"
 import {
     claimDueSchedules,
@@ -62,6 +68,7 @@ const add = async (
     })
 }
 const run = (now = NOW) => runScheduledPosts(env, now, pds.fetch)
+const housekeep = (now = NOW) => runHousekeeping(env, now)
 
 beforeEach(async () => {
     db = createFakeD1()
@@ -151,7 +158,7 @@ describe("runScheduledPosts", () => {
         expect((await getSchedule(db, DID, "fresh"))?.status).toBe("running")
     })
 
-    test("schedule-runner/AC-11: 終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが取り出せなくなる", async () => {
+    test("schedule-runner/AC-11: 後片付けで、終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが取り出せなくなる", async () => {
         const week = 7 * 24 * 60 * 60
         const month = 30 * 24 * 60 * 60
         await add("old", NOW - 10)
@@ -160,12 +167,12 @@ describe("runScheduledPosts", () => {
         await failSchedule(db, "old", "InvalidRecord", NOW - week - 10)
         // 最後の使用から30日以内の認証情報は残る
         await touchCredential(db, DID, NOW - month + 60)
-        await run()
+        await housekeep()
         expect(await getSchedule(db, DID, "old")).toBeNull()
         expect(await loadCredential(db, KEY, DID)).not.toBeNull()
         // 30日を超えると削除される
         await touchCredential(db, DID, NOW - month - 60)
-        await run()
+        await housekeep()
         expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
@@ -173,8 +180,29 @@ describe("runScheduledPosts", () => {
         const month = 30 * 24 * 60 * 60
         await add("future", NOW + 3600)
         await touchCredential(db, DID, NOW - month - 60)
-        await run()
+        await housekeep()
         expect(await loadCredential(db, KEY, DID)).not.toBeNull()
+    })
+
+    test("schedule-runner/AC-19: 毎分の実行は後片付けをせず、1日のうち後片付けの分だけが後片付けの時刻と判定される", async () => {
+        const week = 7 * 24 * 60 * 60
+        await add("old", NOW - 10)
+        await claimDueSchedules(db, NOW, 5)
+        await saveProgress(db, "old", emptyProgress(), NOW)
+        await failSchedule(db, "old", "InvalidRecord", NOW - week - 10)
+        await run()
+        expect(await getSchedule(db, DID, "old")).not.toBeNull()
+
+        const day = 24 * 60 * 60
+        const start = HOUSEKEEPING_MINUTE_OF_DAY_UTC * 60
+        expect(isHousekeepingTime(start + 20)).toBe(true)
+        expect(isHousekeepingTime(start + day * 3 + 59)).toBe(true)
+        expect(isHousekeepingTime(start - 1)).toBe(false)
+        expect(isHousekeepingTime(start + 60)).toBe(false)
+        const hits = Array.from({ length: 24 * 60 }, (_, i) => i * 60).filter(
+            t => isHousekeepingTime(t),
+        )
+        expect(hits).toHaveLength(1)
     })
 
     test("暗号鍵が未設定なら何も実行せず、予約は待機のまま残る", async () => {
