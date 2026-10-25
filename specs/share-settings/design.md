@@ -125,7 +125,7 @@ export type UseShareTogglesResult = {
 | 5   | 長文を省略して共有する（`disabled: manualImageAttach`）                       | 常時                                   |
 | 6   | Mastodonのインスタンス（`textInput`、検証は `isValidMastodonInstanceDomain`） | 常時                                   |
 
-投稿フォームを固定表示しないは表示のグループ（`specs/timeline-hidden` の D-3）、ハッシュタグ候補・メンション候補は投稿のグループに置く。
+投稿フォームを固定表示しないは表示のグループ、ハッシュタグ候補・メンション候補は投稿のグループに置く（これらの行はそれぞれの機能の仕様で定める）。
 
 ## 4. エラー処理
 

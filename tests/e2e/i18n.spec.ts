@@ -379,8 +379,9 @@ test.describe("言語切り替えでの入力保持（FR-7）", () => {
         await clickUntilVisible(trigger, page.getByRole("listbox"))
         await page.getByRole("option", { name: "English" }).click()
 
+        // ドメイン欄があるクロスポストのグループの見出しが英語になる
         await expect(
-            page.getByRole("heading", { name: "Post form", exact: true }),
+            page.getByRole("heading", { name: "Cross-post", exact: true }),
         ).toBeVisible()
         await expect(domain).toHaveValue("mastodon.example")
     })
