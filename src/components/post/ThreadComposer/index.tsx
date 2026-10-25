@@ -1199,7 +1199,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
 
         <CredentialDialog
           open={reauthOpen}
-          reauth
           onClose={() => setReauthOpen(false)}
           navigate={url => {
             // 認可の画面へ移る前に、作成中の内容の扱いを確かめる

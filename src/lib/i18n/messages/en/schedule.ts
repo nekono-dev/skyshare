@@ -68,9 +68,6 @@ export const schedule = {
     "schedule.setting.disabledWithDelete":
         "Scheduled posts were turned off and {count} scheduled posts were deleted.",
     "schedule.credential.title": "Turn on scheduled posts",
-    "schedule.credential.reauthTitle": "Grant permission on Bluesky again",
-    "schedule.credential.reauthIntro":
-        "Your permission for scheduled posts on Bluesky is no longer valid. Grant it again to schedule posts. You will come back to this page afterwards.",
     "schedule.credential.privacy":
         "Your credentials are stored by Skyshare. See the {link} for how the information is handled.",
     "schedule.credential.intro":

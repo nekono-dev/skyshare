@@ -225,7 +225,6 @@ export const Component = () => {
       )}
       <CredentialDialog
         open={credentialOpen}
-        reauth={reauthRequired}
         onClose={() => setCredentialOpen(false)}
       />
       <ConfirmDialog

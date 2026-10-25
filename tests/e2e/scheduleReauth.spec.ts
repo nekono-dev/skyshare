@@ -24,7 +24,7 @@ const typeBody = async (page: Page, text: string) => {
 }
 
 const reauthDialog = (page: Page) =>
-    page.getByRole("dialog", { name: "もう一度 Bluesky で許可する" })
+    page.getByRole("dialog", { name: "予約投稿を有効にする" })
 
 /** 認可の画面への遷移を受け止め、移ったことを記録する */
 const catchAuthorize = async (page: Page) => {

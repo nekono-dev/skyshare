@@ -66,9 +66,6 @@ export const schedule = {
     "schedule.setting.disabledWithDelete":
         "予約投稿を無効にし、{count}件の予約を削除しました。",
     "schedule.credential.title": "予約投稿を有効にする",
-    "schedule.credential.reauthTitle": "もう一度 Bluesky で許可する",
-    "schedule.credential.reauthIntro":
-        "Bluesky での予約投稿の許可が無効になりました。予約するには、もう一度許可してください。許可の画面から戻ると、このページに戻ります。",
     "schedule.credential.privacy":
         "認証情報はSkyshareに保存されます。情報の扱いは{link}をご覧ください。",
     "schedule.credential.intro":
