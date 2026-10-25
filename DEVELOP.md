@@ -171,6 +171,24 @@ rm oauth.key
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
 - D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。`migrations/0003_schedule_oauth.sql` は、アプリパスワード方式で登録された認証情報を削除する（利用者は設定で許可し直す）。`0004_schedule_reauth.sql` は、許可の時刻と再度の許可が必要な印の列を加える。
 
+### 不具合の報告・新機能の提案の初期設定（初回のみ）
+
+設定のページの「不具合の報告・新機能の提案」（`/feedback/`）は、送られた内容をソースコードのリポジトリの公開の Issue として登録する。登録先のリポジトリは、ビルドの時点の `GITHUB_REPOSITORY`（手元では `git remote get-url origin`）で決まるため、設定は要らない。GitHub の認証情報だけを Worker のシークレットに登録する。未登録の間は、送信すると「受け付けを停止しています」と表示される。
+
+1. GitHub の Settings → Developer settings → Fine-grained personal access tokens で、トークンを作る。Repository access は登録先のリポジトリだけ、Permissions は Repository permissions の **Issues: Read and write** だけにする。Issue の作成者はトークンの持ち主になる。
+2. 登録先のリポジトリに、ラベル `bug` と `enhancement` があることを確かめる（GitHub の既定のラベル）。
+3. トークンを本番・develop・プレビューの Worker に登録する。値は対話の入力で渡す。
+
+```sh
+npx wrangler secret put FEEDBACK_GITHUB_TOKEN --name skyshare
+npx wrangler secret put FEEDBACK_GITHUB_TOKEN --name skyshare-develop
+npx wrangler preview base-config secret put FEEDBACK_GITHUB_TOKEN --worker-name skyshare-develop
+```
+
+- 送信の回数は、Cloudflare の Rate Limiting のバインディング（`wrangler.template.jsonc` の `ratelimits`）で、アカウントごとに60秒に1件に制限する。
+- トークンには期限がある。期限が切れると送信が失敗するため、更新したら上の手順で登録し直す。
+- ローカルで試すときは `.dev.vars` に `FEEDBACK_GITHUB_TOKEN` を書く（実際に Issue が作られるため、試験用のリポジトリで試す）。
+
 ### E2E（e2e.yaml）
 
 `.github/workflows/e2e.yaml` は deploy.yaml から呼び出され（手動実行も可）、単体テストの後に Playwright の全project（chromium・firefox・webkit・webkit-iphone、およびライブテスト）を実行する。verify と e2e の両方に成功した場合のみデプロイされる。

@@ -16,5 +16,6 @@ export const nav = {
     "pageTitle.settings": "Settings | {service}",
     "pageTitle.help": "Help | {service}",
     "pageTitle.privacy": "Privacy Policy | {service}",
+    "pageTitle.feedback": "Report a bug / Request a feature | {service}",
     "pageTitle.jump": "Redirecting... - {service}",
 } satisfies MessageEntries

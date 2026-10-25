@@ -12,3 +12,8 @@ PUBLIC_NODE_ENV=develop
 # 鍵を替えると保管済みの予約の認証情報が復号できなくなるため、設定済みの値は上書きしない。
 #SCHEDULE_ENC_KEY=
 #SCHEDULE_OAUTH_KEY=
+
+# --- 不具合の報告・新機能の提案 ---
+# Issues の読み書きだけを許す GitHub の Fine-grained PAT。未設定なら送信は 503（受け付けの停止）になる。
+# 書くと実際に Issue が作られるため、試験用のリポジトリ（git remote の origin）で試す。
+#FEEDBACK_GITHUB_TOKEN=

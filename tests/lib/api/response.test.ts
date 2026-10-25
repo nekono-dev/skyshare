@@ -11,6 +11,7 @@ describe("errorResponseFromStatus", () => {
         [404, "Not Found"],
         [429, "Too Many Requests"],
         [500, "Internal Server Error"],
+        [503, "Service Unavailable"],
         [418, "Internal Server Error"],
     ])("status %i は %s を返す", async (status, message) => {
         const res = errorResponseFromStatus(status)

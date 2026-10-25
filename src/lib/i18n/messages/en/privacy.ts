@@ -24,6 +24,8 @@ export const privacy = {
         "Usage data collected by Google Analytics (pages viewed, device and browser type, approximate region)",
     "privacy.collected.inquiry":
         "Your email address or Bluesky account and the content of your inquiry when you contact us",
+    "privacy.collected.feedback":
+        "When you report a bug or request a feature: what you enter, your Bluesky handle and DID, and your device and Skyshare version",
     "privacy.collected.note":
         "Regular posts and drafts are saved in your own Bluesky account and are not stored by the Service.",
     "privacy.purpose.title": "How we use information",
@@ -44,6 +46,8 @@ export const privacy = {
     "privacy.external.item2":
         "Handling by Cloudflare, which we use to deliver the Service and store its data",
     "privacy.external.item3": "Sending data to Google for analytics",
+    "privacy.external.github":
+        "Publishing bug reports and feature requests as public GitHub issues",
     "privacy.external.item4": "When required by law",
     "privacy.retention.title": "Data retention",
     "privacy.retention.item1":
@@ -56,6 +60,8 @@ export const privacy = {
         "Traffic information is kept only for the period set by Cloudflare.",
     "privacy.retention.item5":
         "Analytics data is kept according to the Google Analytics retention setting.",
+    "privacy.retention.feedback":
+        "Bug reports and feature requests remain as GitHub issues. Contact us if you want one deleted.",
     "privacy.security.title": "Security",
     "privacy.security.intro":
         "We take the following measures to protect your information.",
