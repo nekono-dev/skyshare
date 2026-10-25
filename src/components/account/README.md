@@ -7,7 +7,7 @@ graph TD
   AccountSwitchPanel --> AccountSwitcher
   AccountSwitchPanel --> LoginForm
   LoginForm --> commonExt
-  LoginAuthorizationReturn --> commonExt
+  LoginAuthorizationStatus["LoginAuthorizationReturn/LoginAuthorizationStatus.astro"] --> LoginAuthorizationReturn
   AccountSwitcher --> commonExt
 
   commonExt["common (外部)"]
@@ -16,4 +16,4 @@ graph TD
   class commonExt external;
 ```
 
-外部カテゴリへの依存の内訳: `common`: AccountSwitcher(ComponentList)、LoginForm(Collapsible)、LoginAuthorizationReturn(ChoiceDialog)
+外部カテゴリへの依存の内訳: `common`: AccountSwitcher(ComponentList)、LoginForm(Collapsible)
