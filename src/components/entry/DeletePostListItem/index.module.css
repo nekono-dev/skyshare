@@ -1,0 +1,77 @@
+/* 行同士の間隔は親（ComponentListの各要素）側で確保するため、ここでは枠と内部の並びのみ定義する。 */
+.post-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+  padding: var(--space-1);
+  border: var(--border-card);
+  border-radius: var(--radius-lg);
+}
+
+.post-date {
+  font-size: var(--font-size-sm);
+  opacity: 0.7;
+}
+
+/* 本文は最大3行で省略する。 */
+.post-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-empty-text {
+  margin: 0;
+  opacity: 0.6;
+}
+
+.post-thumbnails {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.post-thumbnail {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+}
+
+.post-thumbnail-more {
+  font-size: var(--font-size-sm);
+  opacity: 0.7;
+}
+
+/* 動画サムネイル。poster の中央に小さな再生マーク（半透明の円＋白い三角）を重ねる。 */
+.post-video-thumbnail {
+  position: relative;
+  display: inline-flex;
+}
+
+.post-video-mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.post-video-mark::after {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 6px;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent #fff;
+}

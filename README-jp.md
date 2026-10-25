@@ -4,8 +4,12 @@
 
 ## 概要
 
-SkyshareはユーザのBluesky投稿を1枚のOGPイメージに集約し、Skyshare EntryとしてユーザのPDSに保存します。
+SkyshareはユーザのBluesky投稿を1枚のリンクカードイメージに集約し、Skyshare EntryとしてユーザのPDSに保存します。
 SkyshareはSkyshare Entryに対応するWebページを生成し、ユーザはWebページのリンクを使用することで他のSNSへBlueskyの投稿を共有します。
+
+## 表示言語
+
+日本語・英語に対応しています。設定画面の「表示言語」から切り替えられます（初期値はブラウザの言語設定に従います）。
 
 ## その他
 

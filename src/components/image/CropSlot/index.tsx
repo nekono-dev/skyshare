@@ -1,0 +1,239 @@
+import React, { useEffect, useRef, useState } from "react"
+import Cropper, { type Area } from "react-easy-crop"
+import styles from "./index.module.css"
+
+/**
+ * 単一画像のクロップ操作を担当するコンポーネント。
+ *
+ * 責務と処理概要:
+ * - `react-easy-crop` を用いて指定アスペクトの切り抜き UI を表示する。
+ * - コンテナサイズ変化に追随して `minZoom` と crop フレームを再計算する。
+ * - 切り抜き結果を `onChange` で親へ通知する。
+ * - ズームスライダーはこのコンポーネントの外（呼び出し元）に配置される想定のため、
+ *   `zoom` は外部から上書き可能にし（`externalZoom`）、`minZoom` は
+ *   `onMinZoomChange` で外部スライダーの `min` 値算出用に報告する。
+ */
+
+export type SlotCropState = {
+  crop: { x: number; y: number }
+  zoom: number
+  cropPixels: Area | null
+}
+
+type Props = {
+  imageUrl: string
+  aspect: number
+  /** 外部（呼び出し元のズームスライダー）から指定されたズーム値。指定時はこの値に同期する。 */
+  externalZoom?: number
+  initialCropPixels?: Area | null // natural image pixels
+  onChange?: (state: SlotCropState) => void
+  /** 画像読み込み完了時に算出した最小ズームを報告する（外部スライダーの min 値に使う）。 */
+  onMinZoomChange?: (minZoom: number) => void
+}
+
+/**
+ * クロップスロットを描画する。
+ *
+ * Input:
+ * - `imageUrl`: 編集対象画像 URL
+ * - `aspect`: 切り抜きアスペクト比
+ * - `externalZoom`: 外部スライダーからの上書きズーム値
+ * - `initialCropPixels`: 初期切り抜き領域（自然画像座標）
+ * - `onChange`: クロップ状態変化通知
+ * - `onMinZoomChange`: 最小ズーム算出通知
+ *
+ * Output:
+ * - 画像クロップ UI（Cropper のみ。ズームスライダーは含まない）
+ *
+ * 例:
+ * - 入力: `{ imageUrl: "blob:...", aspect: 1.9 }`
+ * - 出力: 1.9 比率のクロップビュー
+ */
+const CropSlot: React.FC<Props> = ({
+  imageUrl,
+  aspect,
+  externalZoom,
+  initialCropPixels = null,
+  onChange,
+  onMinZoomChange,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [minZoom, setMinZoom] = useState(1)
+  const [cropFrameSize, setCropFrameSize] = useState<{
+    width: number
+    height: number
+  } | null>(null)
+  // react-easy-crop は画像読み込み完了時、`onMediaLoaded` を呼ぶより前に
+  // まだ補正前の crop/zoom（{0,0}/1）で `onCropComplete` を1回発火させる。
+  // このタイミングで報告される cropPixels は幅・高さが 0 になりうる不正な値であり、
+  // かつ react-easy-crop 側の再計算で確実に上書きされる保証もない。
+  // 補正が完了するまでは onCropComplete を親へ伝播させない。
+  const isInitializedRef = useRef(false)
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    /**
+     * 現在のコンテナ実寸をクロップフレームへ反映する。
+     */
+    const updateCropFrameSize = () => {
+      const width = container.clientWidth
+      const height = container.clientHeight
+
+      if (width <= 0 || height <= 0) {
+        return
+      }
+
+      setCropFrameSize({ width, height })
+    }
+
+    updateCropFrameSize()
+
+    if (typeof ResizeObserver !== "undefined") {
+      const resizeObserver = new ResizeObserver(updateCropFrameSize)
+      resizeObserver.observe(container)
+      return () => resizeObserver.disconnect()
+    }
+
+    window.addEventListener("resize", updateCropFrameSize)
+    return () => window.removeEventListener("resize", updateCropFrameSize)
+  }, [aspect])
+
+  useEffect(() => {
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    setMinZoom(1)
+    isInitializedRef.current = false
+  }, [imageUrl])
+
+  // 外部（呼び出し元のズームスライダー）からズーム値が指定された場合、内部状態へ反映する。
+  useEffect(() => {
+    if (externalZoom !== undefined && externalZoom !== zoom) {
+      setZoom(externalZoom)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalZoom])
+
+  /**
+   * 画像読み込み完了時に最小ズームと初期位置を計算する。
+   *
+   * 処理の趣旨:
+   * - 画像がフレームを必ず覆うよう `requiredMinZoom` を算出する。
+   * - 既存の `initialCropPixels` がある場合は、その中心を維持して復元する。
+   *
+   * Input:
+   * - `mSize`: Cropper から渡される表示/自然サイズ情報
+   *
+   * Output:
+   * - 返り値なし（`zoom`/`crop`/`minZoom` を更新）
+   */
+  const handleMediaLoaded = (mSize: {
+    width: number
+    height: number
+    naturalWidth?: number
+    naturalHeight?: number
+  }) => {
+    const frameWidth =
+      cropFrameSize?.width ?? containerRef.current?.clientWidth ?? mSize.width
+    const frameHeight =
+      cropFrameSize?.height ??
+      containerRef.current?.clientHeight ??
+      frameWidth / aspect
+    const requiredMinZoom = Math.max(
+      frameWidth / mSize.width,
+      frameHeight / mSize.height,
+      1,
+    )
+
+    setMinZoom(requiredMinZoom)
+    onMinZoomChange?.(requiredMinZoom)
+
+    if (initialCropPixels) {
+      const natW = mSize.naturalWidth ?? mSize.width
+      const natH = mSize.naturalHeight ?? mSize.height
+
+      const zoomByWidth =
+        (frameWidth * (natW / (mSize.width || natW))) / initialCropPixels.width
+      const zoomByHeight =
+        (frameHeight * (natH / (mSize.height || natH))) /
+        initialCropPixels.height
+      const calculatedZoom = Math.max(
+        zoomByWidth,
+        zoomByHeight,
+        requiredMinZoom,
+      )
+
+      const centerX = initialCropPixels.x + initialCropPixels.width / 2
+      const centerY = initialCropPixels.y + initialCropPixels.height / 2
+      const xPercent = (centerX / natW - 0.5) * 100
+      const yPercent = (centerY / natH - 0.5) * 100
+
+      const nextCrop = {
+        x: Number(xPercent.toFixed(4)),
+        y: Number(yPercent.toFixed(4)),
+      }
+      setZoom(calculatedZoom)
+      setCrop(nextCrop)
+      isInitializedRef.current = true
+      // 復元対象の cropPixels は算出済みのため、react-easy-crop 側の再計算完了を
+      // 待たずにここで確定値として直接通知する。再計算完了を待つ実装は、
+      // 再計算が完了する前に確定操作が行われた場合に不正な cropPixels
+      // （幅・高さ 0 になることがある）を親へ伝えてしまう不具合があったため。
+      onChange?.({
+        crop: nextCrop,
+        zoom: calculatedZoom,
+        cropPixels: initialCropPixels,
+      })
+      return
+    }
+
+    setZoom(requiredMinZoom)
+    isInitializedRef.current = true
+  }
+
+  /**
+   * クロップ確定ごとに最新状態を親へ通知する。
+   *
+   * Input:
+   * - `_area`: 比率座標（未使用）
+   * - `areaPixels`: 実ピクセル座標のクロップ領域
+   *
+   * Output:
+   * - 返り値なし（`onChange` 呼び出し）
+   */
+  const handleCropComplete = (_area: Area, areaPixels: Area) => {
+    if (!isInitializedRef.current) return
+    if (onChange) {
+      onChange({ crop, zoom, cropPixels: areaPixels })
+    }
+  }
+
+  return (
+    <div
+      className={styles["crop-wrapper"]}
+      data-testid="crop-slot"
+      ref={containerRef}
+      style={{ aspectRatio: String(aspect) }}
+    >
+      <Cropper
+        image={imageUrl}
+        crop={crop}
+        zoom={zoom}
+        minZoom={minZoom}
+        maxZoom={8}
+        aspect={aspect}
+        cropSize={cropFrameSize ?? undefined}
+        restrictPosition
+        onCropChange={setCrop}
+        onZoomChange={setZoom}
+        onCropComplete={handleCropComplete}
+        onMediaLoaded={handleMediaLoaded}
+      />
+    </div>
+  )
+}
+
+export default CropSlot

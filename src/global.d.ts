@@ -8,5 +8,9 @@ declare namespace App {
         agent?: import("@atproto/api").AtpAgent
         session?: import("@atproto/api").AtpSessionData
         service?: string
+        // `lib/i18n/middleware.ts` が全リクエストに供給する表示言語（SSGページは常に既定言語）。
+        locale: import("@/lib/i18n/locale").Locale
+        // @astrojs/cloudflare が供給する Workers の実行コンテキスト（開発サーバーでは未設定）。
+        cfContext?: ExecutionContext
     }
 }

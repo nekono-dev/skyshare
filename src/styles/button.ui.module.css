@@ -20,6 +20,18 @@
   --color-gray-button-border: var(--border-color-muted);
   --color-gray-button-color: var(--color-black);
 
+  /* Taittsuu button（gray-buttonより少し濃いグレー） */
+  --color-taittsuu-button-bg: var(--color-taittsuu);
+  --color-taittsuu-button-hover: var(--color-taittsuu-hover);
+  --color-taittsuu-button-border: var(--border-color-muted);
+  --color-taittsuu-button-color: var(--color-black);
+
+  /* Mastodon button（blue-buttonと同じ彩度・明度の紫系） */
+  --color-mastodon-button-bg: var(--color-mastodon);
+  --color-mastodon-button-hover: var(--color-mastodon-hover);
+  --color-mastodon-button-border: var(--border-color-muted);
+  --color-mastodon-button-color: var(--color-white);
+
   /* Black button */
   --color-black-button-bg: var(--color-black);
   --color-black-button-hover: var(--color-black-hover);
@@ -32,12 +44,43 @@
   --color-red-button-border: var(--border-color-muted);
   --color-red-button-color: var(--color-red-text);
 
+  /* Red-strong button（red-buttonより濃い赤。より強い警告を示す操作向け） */
+  --color-red-strong-button-bg: var(--color-red-strong);
+  --color-red-strong-button-hover: var(--color-red-strong-hover);
+  --color-red-strong-button-border: var(--border-color-muted);
+  --color-red-strong-button-color: var(--color-white);
+
+  /* 無効化ボタン（disabled属性 / aria-disabled="true" の両方に使う共通配色） */
+  --color-disabled-button-bg: var(--color-gray);
+  --color-disabled-button-border: var(--border-color-muted);
+  --color-disabled-button-color: var(--color-text-muted);
+
   /* Size tokens */
   --size-button-md: 40px;
   --size-button-lg: 60px;
 
   --btn-padding-x: calc(var(--space-3));
   --btn-padding-y: calc(var(--space-1));
+}
+
+/* スマホ幅(640px未満)は操作領域を一辺44px以上確保する(specs/design-tokens)。
+   上のブロックより後ろに書くことで上書きを有効にする。 */
+@media (max-width: 639px) {
+  :root {
+    --size-button-md: 44px;
+    --size-button-lg: 64px;
+  }
+}
+
+/* グレーボタンの文字色はダークモードでは --color-black 固定だと背景（--color-gray）に
+   埋もれて読めなくなるため、テーマに追従する --color-text に差し替える */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-gray-button-color: var(--color-text);
+  }
+}
+:root[data-theme="dark"] {
+  --color-gray-button-color: var(--color-text);
 }
 
 /* 
@@ -65,10 +108,16 @@
   border: var(--border-button);
   cursor: pointer;
 }
+:local(.base-button):disabled,
+:local(.base-button)[aria-disabled="true"] {
+  cursor: not-allowed;
+}
 
 /* テキストボタン */
 :local(.text-button) {
   padding: var(--btn-padding-y) var(--btn-padding-x);
+  /* 高さは中サイズのボタン寸法トークンに揃える(幅は内容に応じて可変) */
+  min-height: var(--size-button-md);
   border-radius: var(--radius-button-md);
   font-family: var(--font-family-sans);
   font-size: var(--font-size-md);
@@ -81,7 +130,7 @@
   color: var(--color-white-button-color);
   border-color: var(--color-white-button-border);
 }
-:local(.white-button):hover {
+:local(.white-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-white-button-hover);
 }
 
@@ -91,7 +140,7 @@
   color: var(--color-blue-button-color);
   border-color: var(--color-blue-button-border);
 }
-:local(.blue-button):hover {
+:local(.blue-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-blue-button-hover);
 }
 
@@ -101,8 +150,28 @@
   color: var(--color-gray-button-color);
   border-color: var(--color-gray-button-border);
 }
-:local(.gray-button):hover {
+:local(.gray-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-gray-button-hover);
+}
+
+/* タイッツー系統ボタン（gray-buttonより少し濃いグレー） */
+:local(.taittsuu-button) {
+  background: var(--color-taittsuu-button-bg);
+  color: var(--color-taittsuu-button-color);
+  border-color: var(--color-taittsuu-button-border);
+}
+:local(.taittsuu-button):not(:disabled):not([aria-disabled="true"]):hover {
+  background: var(--color-taittsuu-button-hover);
+}
+
+/* Mastodon系統ボタン（blue-buttonと同じ彩度・明度の紫系） */
+:local(.mastodon-button) {
+  background: var(--color-mastodon-button-bg);
+  color: var(--color-mastodon-button-color);
+  border-color: var(--color-mastodon-button-border);
+}
+:local(.mastodon-button):not(:disabled):not([aria-disabled="true"]):hover {
+  background: var(--color-mastodon-button-hover);
 }
 
 /* 黒系統ボタン */
@@ -111,7 +180,7 @@
   color: var(--color-black-button-color);
   border-color: var(--color-black-button-border);
 }
-:local(.black-button):hover {
+:local(.black-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-black-button-hover);
 }
 
@@ -121,8 +190,41 @@
   color: var(--color-red-button-color);
   border-color: var(--color-red-button-border);
 }
-:local(.red-button):hover {
+:local(.red-button):not(:disabled):not([aria-disabled="true"]):hover {
   background: var(--color-red-button-hover);
+}
+
+/* 濃い赤系統ボタン（red-buttonより強い警告を示す操作向け） */
+:local(.red-strong-button) {
+  background: var(--color-red-strong-button-bg);
+  color: var(--color-red-strong-button-color);
+  border-color: var(--color-red-strong-button-border);
+}
+:local(.red-strong-button):not(:disabled):not([aria-disabled="true"]):hover {
+  background: var(--color-red-strong-button-hover);
+}
+
+/* 無効化ボタン（disabled属性 / リンクなど属性を持てない要素向けの aria-disabled="true"）。
+   色系統に関わらずこの配色に統一し、hoverでも変化させない。 */
+:local(.white-button):disabled,
+:local(.white-button)[aria-disabled="true"],
+:local(.blue-button):disabled,
+:local(.blue-button)[aria-disabled="true"],
+:local(.gray-button):disabled,
+:local(.gray-button)[aria-disabled="true"],
+:local(.taittsuu-button):disabled,
+:local(.taittsuu-button)[aria-disabled="true"],
+:local(.mastodon-button):disabled,
+:local(.mastodon-button)[aria-disabled="true"],
+:local(.black-button):disabled,
+:local(.black-button)[aria-disabled="true"],
+:local(.red-button):disabled,
+:local(.red-button)[aria-disabled="true"],
+:local(.red-strong-button):disabled,
+:local(.red-strong-button)[aria-disabled="true"] {
+  background: var(--color-disabled-button-bg);
+  color: var(--color-disabled-button-color);
+  border-color: var(--color-disabled-button-border);
 }
 
 /* アイコンボタン */
@@ -144,4 +246,51 @@
 :local(.lg-button) {
   width: var(--size-button-lg);
   height: var(--size-button-lg);
+}
+
+/* トグルボタン関連 */
+:local(.toggle-box) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+/*
+  選択可能カード
+  RadioButton・Checkbox(variant="card")など、選択状態を枠色・背景色で示すカード状ボタン。
+  枠線・背景・角丸・paddingは ui.module.css の`.base-card`が基本であり、利用側は
+  `ui["base-card"]`と`.selectable-card`を併用する。ここでは`.base-card`に不足する
+  プロパティ（横並びレイアウト・カーソル・選択時の強調色）のみを追加する。
+
+  基底
+    .selectable-card `.base-card`に不足するプロパティを追加する
+    .selectable-card-checked 選択時のバリエーション（枠線・背景をBlueskyブランドカラーで強調）
+*/
+:local(.selectable-card) {
+  gap: var(--space-2);
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* `.base-card`の`display: block`を上書きして横並びにするため、詳細度を上げて指定する。 */
+:local(.selectable-card.selectable-card) {
+  display: flex;
+  align-items: center;
+}
+
+:local(.selectable-card):has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* `.base-card`の`border`/`background`を上書きするため、詳細度を上げて指定する。 */
+:local(.selectable-card-checked.selectable-card-checked) {
+  border-color: var(--color-bluesky);
+  background: var(--surface-muted);
 }

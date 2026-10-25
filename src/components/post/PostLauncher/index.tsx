@@ -1,0 +1,135 @@
+import { useT } from "@/lib/i18n/react"
+import React, { useEffect, useRef, useState } from "react"
+import { createPortal } from "react-dom"
+import Overlay from "@/components/common/Overlay"
+import IntentShareDialog, {
+  type IntentShareRequest,
+} from "@/components/post/IntentShareDialog"
+import ThreadComposer, {
+  type ThreadComposerHandle,
+} from "@/components/post/ThreadComposer"
+import styles from "./index.module.css"
+import ui from "@/styles/ui.module.css"
+import pic from "@/images/pen.svg"
+
+/**
+ * 投稿フォーム起動ボタンとモーダル表示を管理するコンポーネント。
+ *
+ * 責務と処理概要:
+ * - フローティングボタンで投稿フォームを開く。
+ * - Overlay 内で ThreadComposer を表示し、閉じ操作を集中管理する。
+ * - Overlay 背景クリックでの閉じ操作は ThreadComposer の `requestClose` に委譲し、
+ *   キャンセルボタンと同様に未保存の変更があれば下書き保存確認ダイアログを挟む。
+ * - スマホレイアウトでは ThreadComposer を画面上部に固定配置する（`backdropClassName`）。
+ *   ThreadComposer は画像添付や詳細オプション展開・スレッドセグメント追加で領域が
+ *   拡大しうるため、上端を固定し拡大が下方向にのみ起こるようにしている。
+ */
+
+/**
+ * 投稿ランチャーを描画する。
+ *
+ * Input:
+ * - `avatarUrl`: 投稿フォーム内に表示するアバター URL
+ *
+ * Output:
+ * - ランチャーボタン + 開閉可能な投稿フォームモーダル
+ *
+ * 例:
+ * - 入力: `{ avatarUrl: "https://..." }`
+ * - 出力: クリックで ThreadComposer が開く UI
+ */
+const PostLauncher: React.FC<{
+  avatarUrl?: string | null
+  accountDid?: string | null
+  onPosted?: () => void
+  onPinnedFormDisabledChange?: (next: boolean) => void
+  guestMode?: boolean
+}> = ({
+  avatarUrl,
+  accountDid,
+  onPosted,
+  onPinnedFormDisabledChange,
+  guestMode = false,
+}) => {
+  const { t } = useT()
+  const [open, setOpen] = useState(false)
+  // 投稿成功でOverlay（とThreadComposer）が閉じてアンマウントされても残るよう、
+  // 投稿先選択ダイアログはOverlayの外で描画する。
+  const [shareRequest, setShareRequest] = useState<IntentShareRequest | null>(
+    null,
+  )
+  const postFormRef = useRef<ThreadComposerHandle>(null)
+  // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
+  // Sidebar が用意する #sidebar-action へ Portal で描画することで、フレックス
+  // レイアウト任せでナビ項目の直後に自然に並び、フローティングボタンと同じ open
+  // state を共有する。アイコン/ラベルどちらを見せるかはCSS側の段階別表示で切り替える。
+  const [sidebarActionEl, setSidebarActionEl] = useState<HTMLElement | null>(
+    null,
+  )
+  useEffect(() => {
+    setSidebarActionEl(document.getElementById("sidebar-action"))
+  }, [])
+
+  return (
+    <>
+      <button
+        className={`${ui["base-button"]} ${ui["blue-button"]} ${ui["nontext-button"]} ${ui["lg-button"]} ${styles["launcher-delta"]}`}
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={open}
+      >
+        <img src={pic.src} width={24} height={24} />
+      </button>
+
+      {sidebarActionEl &&
+        createPortal(
+          <button
+            className={`${ui["base-button"]} ${ui["blue-button"]} ${ui["text-button"]} ${styles["sidebar-action"]}`}
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-expanded={open}
+            aria-label={t("post.launcher.new")}
+          >
+            <img
+              src={pic.src}
+              width={20}
+              height={20}
+              className={styles["sidebar-action-icon"]}
+            />
+            <span className={styles["sidebar-action-label"]}>
+              {t("post.launcher.new")}
+            </span>
+          </button>,
+          sidebarActionEl,
+        )}
+
+      <Overlay
+        open={open}
+        onClose={() => postFormRef.current?.requestClose()}
+        backdropClassName={styles["postform-backdrop"]}
+      >
+        <ThreadComposer
+          ref={postFormRef}
+          onClose={() => setOpen(false)}
+          onShareRequest={setShareRequest}
+          onPosted={() => {
+            setOpen(false)
+            onPosted?.()
+          }}
+          avatarUrl={avatarUrl}
+          accountDid={accountDid}
+          onPinnedFormDisabledChange={onPinnedFormDisabledChange}
+          guestMode={guestMode}
+        />
+      </Overlay>
+
+      <IntentShareDialog
+        request={shareRequest}
+        keepOpenOnSelect
+        onClose={() => setShareRequest(null)}
+      />
+    </>
+  )
+}
+
+export default PostLauncher

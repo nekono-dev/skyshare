@@ -1,14 +1,16 @@
 import { defineConfig } from "orval"
 
+import { buildOpenApiDocument } from "./hack/build-openapi-document"
+
 export default defineConfig({
     api: {
         input: {
-            parserOptions: {
-                externalRefs: {
-                    allow: ["*"],
-                },
-            },
-            target: "./openapi/index.yaml",
+            // zod-openapiの戻り値型は`openapi`フィールドが広いstring型のため、
+            // orvalが期待するOpenAPIObject型とは構造的に非互換(値自体は正しい3.1文書)。
+            target: buildOpenApiDocument() as unknown as Record<
+                string,
+                unknown
+            >,
         },
         output: {
             target: "./src/client/openapi/client.ts",

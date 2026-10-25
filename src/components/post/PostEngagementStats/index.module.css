@@ -1,0 +1,41 @@
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+/* 件数が 1 以上のリアクションはアイコン・文字列とも規定の青色にする */
+.active {
+  color: var(--color-bluesky);
+}
+
+/* SVG は mask として描画し、currentColor で着色する（余白付き viewBox のため見切れない） */
+.icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  background-color: currentColor;
+  mask: var(--icon-url) center / contain no-repeat;
+  -webkit-mask: var(--icon-url) center / contain no-repeat;
+}
+
+.count {
+  margin: 0;
+  font-weight: 600;
+}
+
+.label {
+  color: inherit;
+}

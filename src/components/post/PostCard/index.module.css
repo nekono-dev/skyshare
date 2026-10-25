@@ -1,0 +1,66 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+/* フッターのボタン群。幅が足りない場合はこの中で折り返す */
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-0);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* 「Entryを開く」の置き場。ボタン群の残り幅だけを占め、リンクが入り切らない幅
+   （container queryの閾値未満）になった場合は折り返さずリンクを非表示にする。
+   投稿を削除の列の最右端に固定する。 */
+.entry-link-box {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  container-type: inline-size;
+}
+
+@container (max-width: 4.5rem) {
+  .entry-link {
+    display: none;
+  }
+}
+
+.entry-link {
+  flex: 0 0 auto;
+  font-size: var(--font-size-xs);
+  white-space: nowrap;
+  color: var(--color-bluesky);
+  text-decoration: none;
+}
+
+.entry-link:not([aria-disabled="true"]):hover {
+  text-decoration: underline;
+}
+
+.entry-link[aria-disabled="true"],
+.entry-link[aria-disabled="true"]:hover,
+.entry-link[aria-disabled="true"]:focus {
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.footer {
+  flex-wrap: nowrap;
+  gap: var(--space-0);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.share-error {
+  margin: 0;
+  color: var(--color-danger-text);
+  font-size: var(--font-size-sm);
+}

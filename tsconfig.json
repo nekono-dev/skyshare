@@ -1,6 +1,16 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "src/**/*", "./worker-configuration.d.ts"],
+  "include": [
+    ".astro/types.d.ts",
+    "src/**/*",
+    "tests/**/*",
+    "hack/**/*",
+    "./worker-configuration.d.ts",
+    "./orval.config.ts",
+    "./vitest.config.ts",
+    "./vitest.astro.config.ts",
+    "./playwright.config.ts"
+  ],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {
     "verbatimModuleSyntax": false,

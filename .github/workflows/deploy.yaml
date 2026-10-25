@@ -1,0 +1,111 @@
+# develop ブランチへの push をトリガーに、Cloudflare Workers へ自動デプロイする。
+#
+# verify（テスト・型検査）と e2e（Playwright）の両方に成功した場合のみデプロイする。
+# 必要な設定は DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
+# - Secrets:   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
+# - Variables: PUBLIC_LEGACY_BACKEND_ENDPOINT / PUBLIC_DEFAULT_ATP_SERVICE / PUBLIC_NODE_ENV /
+#              PUBLIC_OGP_EXTRACTOR_API / PUBLIC_PLC_DIRECTORY_BASE_URL
+# 手動実行（workflow_dispatch）で dry_run を true にすると、ビルドと wrangler の検証のみ行い、公開はしない。
+name: deploy
+
+on:
+  push:
+    branches: [develop,main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "デプロイせずビルドと検証のみ行う"
+        type: boolean
+        default: true
+
+# 同一ブランチのデプロイが同時に走らないようにする。デプロイ中の処理は中断せず、後続を待たせる
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_LEGACY_BACKEND_ENDPOINT: ${{ vars.PUBLIC_LEGACY_BACKEND_ENDPOINT }}
+  PUBLIC_DEFAULT_ATP_SERVICE: ${{ vars.PUBLIC_DEFAULT_ATP_SERVICE }}
+  PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
+  PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
+  PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
+
+jobs:
+  # テストと型検査。失敗した場合はデプロイしない
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（AGENTS.md 参照）
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      # src/client 配下の生成コード（atproto / openapi）を作る。型検査とテストの前提
+      - run: npm run codegen
+      - run: npx tsc --noEmit
+      - run: npm test
+      # 仕様書（specs・docs/architecture・poc）の検証。検査コマンド spec-lint は GitHub Packages から取得する
+      # （認証には Secret SPEC_LINT_TOKEN = read:packages 権限のトークンが必要。版は 1 系で固定）。
+      # 整形は、プロジェクトの prettier プラグイン（.prettierrc）を解決できるよう、リポジトリ側の prettier で検査する
+      - name: Check spec docs format
+        run: npx prettier --check specs docs
+      - name: Run spec-lint
+        env:
+          SPEC_LINT_TOKEN: ${{ secrets.SPEC_LINT_TOKEN }}
+        run: |
+          npmrc="$RUNNER_TEMP/spec-lint.npmrc"
+          printf '%s\n' '@nekono-dev:registry=https://npm.pkg.github.com' \
+            "//npm.pkg.github.com/:_authToken=${SPEC_LINT_TOKEN}" > "$npmrc"
+          npx --yes --userconfig "$npmrc" @nekono-dev/spec-lint@1 --no-format
+      # lexicon の lint（goat）。リリースのチェックサムを検証してから導入する
+      - name: Run goat lint
+        env:
+          GOAT_VERSION: 0.2.5
+        run: |
+          curl -fsSLO "https://github.com/bluesky-social/goat/releases/download/v${GOAT_VERSION}/goat_Linux_x86_64.tar.gz"
+          curl -fsSLO "https://github.com/bluesky-social/goat/releases/download/v${GOAT_VERSION}/goat_${GOAT_VERSION}_checksums.txt"
+          grep ' goat_Linux_x86_64.tar.gz$' "goat_${GOAT_VERSION}_checksums.txt" | sha256sum -c -
+          sudo tar -xf goat_Linux_x86_64.tar.gz -C /usr/local/bin goat
+          goat --version
+      - run: npm run lint:lexicon
+
+  # E2E（ライブテスト・他ブラウザを含む）。失敗した場合はデプロイしない
+  e2e:
+    uses: ./.github/workflows/e2e.yaml
+    secrets: inherit
+
+  deploy:
+    needs: [verify, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: npm
+      - run: npm ci
+      # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
+      - name: Configure build setting
+        run: node hack/render-deploy-config.mjs
+      - name: Run build
+        run: npm run build
+      - name: Dry run cloudflare deploy
+        run: npx wrangler deploy --dry-run
+      - name: Deploy cloudflare worker
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

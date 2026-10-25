@@ -1,0 +1,1934 @@
+/**
+ * `src/pages/v2/entry.ts`(POST/PUT/DELETE /v2/entry)の分岐網羅レベルの統合テスト。
+ *
+ * 責務と処理概要:
+ * - ルートハンドラを直接呼び出し、`locals.agent` に duck-typed なフェイク AtpAgent
+ *   （`testSupport/fakeAgent.ts`）を注入することで、実ネットワーク・`@atproto/api`の
+ *   モックいずれにも触れずに全分岐（スキーマ検証・atproto呼び出しの成功/失敗）を駆動する。
+ * - ルートが呼び出す `src/lib/entry/*` / `src/lib/atproto/*` はモックせず実コードのまま
+ *   通す。モックの境界は常に agent（atproto通信の実体）に置く方針（`tests/README.md`参照）。
+ */
+import { describe, expect, it, vi } from "vitest"
+import type { APIContext } from "astro"
+
+import { POST, PUT, DELETE } from "@/pages/v2/entry"
+import { createFakeAgent, fakeSession } from "./testSupport/fakeAgent"
+import { ENTRY_COLLECTION, entryAtUri } from "@/lib/atproto/nsid"
+
+const callRoute = (
+    handler: typeof POST,
+    request: Request,
+    locals: Partial<App.Locals> = {},
+) => handler({ request, locals } as unknown as APIContext)
+
+const authHeaders = { cookie: "sid=abc123" }
+
+/** 新規画像投稿(posts[0])としてPOSTするための最小限のFormDataを組み立てる。 */
+const buildNewImagePostFormData = (opts?: {
+    text?: string
+    facets?: object[]
+    imagesCount?: number
+    metaCount?: number
+    gate?: object
+    reply?: object
+    createEntry?: boolean
+}) => {
+    const formData = new FormData()
+    const imagesCount = opts?.imagesCount ?? 1
+    for (let i = 0; i < imagesCount; i++) {
+        formData.append(
+            "posts[0][images]",
+            new Blob([`img${i}`], { type: "image/png" }),
+        )
+    }
+    const metaCount = opts?.metaCount ?? imagesCount
+    formData.set(
+        "posts[0][imagesMeta]",
+        JSON.stringify(
+            Array.from({ length: metaCount }, () => ({
+                width: 100,
+                height: 100,
+            })),
+        ),
+    )
+    if (opts?.text) formData.set("posts[0][text]", opts.text)
+    if (opts?.facets)
+        formData.set("posts[0][facets]", JSON.stringify(opts.facets))
+    if (opts?.gate) formData.set("posts[0][gate]", JSON.stringify(opts.gate))
+    if (opts?.reply) formData.set("reply", JSON.stringify(opts.reply))
+    if (opts?.createEntry) {
+        formData.set("createEntry", "true")
+        formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+    }
+    return formData
+}
+
+/** テキストのみの投稿(posts[0])としてPOSTするための最小限のFormDataを組み立てる。 */
+const buildTextPostFormData = (opts?: { text?: string; reply?: object }) => {
+    const formData = new FormData()
+    formData.set("posts[0][text]", opts?.text ?? "hello")
+    if (opts?.reply) formData.set("reply", JSON.stringify(opts.reply))
+    return formData
+}
+
+/** 既存投稿からの発行(from-post)としてPOSTするための最小限のFormDataを組み立てる。 */
+const buildFromPostFormData = (uri: string) => {
+    const formData = new FormData()
+    formData.set("uri", uri)
+    formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+    return formData
+}
+
+type PostItemOpts = {
+    text?: string
+    imagesCount?: number
+    imagesMeta?: { width: number; height: number; alt?: string }[]
+    ogImage?: boolean
+    ogMeta?: {
+        title: string
+        description: string
+        url: string
+        image?: string
+    }
+    facets?: object[]
+    gate?: object
+}
+
+/**
+ * 複数件(スレッド)のposts[i][...]フォームフィールドを組み立てる。
+ * `createEntry`/`visual`はリクエスト全体で高々1組のトップレベルフィールドのため
+ * `opts`側に置く(`visual: false`で`createEntry:true`のみ・visual欠落の状態を作れる)。
+ */
+const buildThreadFormData = (
+    items: PostItemOpts[],
+    opts?: { reply?: object; createEntry?: boolean; visual?: boolean },
+) => {
+    const formData = new FormData()
+    items.forEach((item, i) => {
+        if (item.text !== undefined)
+            formData.set(`posts[${i}][text]`, item.text)
+        const imagesCount = item.imagesCount ?? 0
+        for (let n = 0; n < imagesCount; n++) {
+            formData.append(
+                `posts[${i}][images]`,
+                new Blob([`img${i}-${n}`], { type: "image/png" }),
+            )
+        }
+        if (item.imagesMeta) {
+            formData.set(
+                `posts[${i}][imagesMeta]`,
+                JSON.stringify(item.imagesMeta),
+            )
+        } else if (imagesCount > 0) {
+            formData.set(
+                `posts[${i}][imagesMeta]`,
+                JSON.stringify(
+                    Array.from({ length: imagesCount }, () => ({
+                        width: 100,
+                        height: 100,
+                    })),
+                ),
+            )
+        }
+        if (item.ogImage) {
+            formData.set(
+                `posts[${i}][ogImage]`,
+                new Blob([`og${i}`], { type: "image/jpeg" }),
+            )
+        }
+        if (item.ogMeta)
+            formData.set(`posts[${i}][ogMeta]`, JSON.stringify(item.ogMeta))
+        if (item.facets)
+            formData.set(`posts[${i}][facets]`, JSON.stringify(item.facets))
+        if (item.gate)
+            formData.set(`posts[${i}][gate]`, JSON.stringify(item.gate))
+    })
+    if (opts?.reply) formData.set("reply", JSON.stringify(opts.reply))
+    if (opts?.createEntry) formData.set("createEntry", "true")
+    if (opts?.createEntry && opts?.visual !== false) {
+        formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+    }
+    return formData
+}
+
+type ThreadWrite = {
+    collection: string
+    rkey: string
+    value: Record<string, any> & { text?: string }
+}
+
+/** `writes`配列から、指定テキストを持つapp.bsky.feed.postのwriteを探す。 */
+const findPostWrite = (writes: ThreadWrite[], text: string): ThreadWrite => {
+    const found = writes.find(
+        w => w.collection === "app.bsky.feed.post" && w.value?.text === text,
+    )
+    if (!found) throw new Error(`post write not found for text: ${text}`)
+    return found
+}
+
+describe("POST /v2/entry", () => {
+    it("[entry-api/AC-16] cookieヘッダーが無い場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            body: new FormData(),
+        })
+        const res = await callRoute(POST, request)
+        expect(res.status).toBe(400)
+    })
+
+    it("[entry-api/AC-16] cookieヘッダーはあるがセッション未確立の場合は401を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            headers: authHeaders,
+            body: buildFromPostFormData(
+                "at://did:plc:abc/app.bsky.feed.post/3lxyz",
+            ),
+        })
+        const res = await callRoute(POST, request, {})
+        expect(res.status).toBe(401)
+    })
+
+    it("Content-Typeがmultipartでない場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            headers: { ...authHeaders, "content-type": "application/json" },
+            body: JSON.stringify({}),
+        })
+        const res = await callRoute(POST, request, {
+            agent: createFakeAgent(),
+            session: fakeSession,
+        })
+        expect(res.status).toBe(400)
+    })
+
+    it("FormDataとして解釈できないbodyの場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            headers: {
+                ...authHeaders,
+                "content-type": "multipart/form-data; boundary=----x",
+            },
+            body: "not-a-valid-multipart-body",
+        })
+        const res = await callRoute(POST, request, {
+            agent: createFakeAgent(),
+            session: fakeSession,
+        })
+        expect(res.status).toBe(400)
+    })
+
+    it("スキーマ不正(uri無し・images無し)の場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            headers: authHeaders,
+            body: new FormData(),
+        })
+        const res = await callRoute(POST, request, {
+            agent: createFakeAgent(),
+            session: fakeSession,
+        })
+        expect(res.status).toBe(400)
+    })
+
+    describe("uri指定時(from-post)", () => {
+        const postUri = "at://did:plc:author/app.bsky.feed.post/3lpost"
+
+        it("[entry-api/AC-7] 所有者不一致のuriなら400を返す", async () => {
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildFromPostFormData(
+                        "at://did:plc:other/app.bsky.feed.post/3lpost",
+                    ),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+        })
+
+        it("対象投稿が見つからない場合は404を返す", async () => {
+            const agent = createFakeAgent({
+                com: {
+                    atproto: {
+                        repo: {
+                            getRecord: vi
+                                .fn()
+                                .mockRejectedValue(new Error("not found")),
+                        },
+                    },
+                },
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildFromPostFormData(postUri),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(404)
+        })
+
+        it("[entry-api/AC-7] 成功時は200でbsky/skyshare情報を返す", async () => {
+            const agent = createFakeAgent()
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildFromPostFormData(postUri),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.posts[0].url).toContain(fakeSession.handle)
+            expect(json.skyshareEntry.sourceUri).toBe(postUri)
+        })
+    })
+
+    describe("新規投稿(posts)", () => {
+        it("[entry-api/AC-5] createEntry:trueで画像投稿を含まなくても、visualがあれば200でskyshareEntryを返す（作成可否の判定はクライアントの責務）", async () => {
+            const formData = buildTextPostFormData()
+            formData.set("createEntry", "true")
+            formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: formData,
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
+        it("画像枚数とメタデータ件数が不一致なら400を返す", async () => {
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({
+                        imagesCount: 2,
+                        metaCount: 1,
+                        createEntry: true,
+                    }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+        })
+
+        it("createEntry:trueで画像投稿はあるがvisualが無い場合は400を返す", async () => {
+            const formData = buildThreadFormData(
+                [{ text: "hello", imagesCount: 2 }],
+                { createEntry: true, visual: false },
+            )
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: formData,
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+        })
+
+        it("OGPリンクカードのみ(画像無し)の投稿は200でexternal embedになる", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            uri: "at://did:plc:author/app.bsky.feed.post/3lpost",
+                            cid: "bafypostcid",
+                        },
+                    ],
+                },
+            })
+            const ogMeta = {
+                title: "Example",
+                description: "example description",
+                url: "https://example.com",
+            }
+            const formData = buildThreadFormData([
+                { text: "見て https://example.com", ogImage: true, ogMeta },
+            ])
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: formData,
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            const postWrite = findPostWrite(
+                writesArg,
+                "見て https://example.com",
+            )
+            expect(postWrite.value.embed).toEqual({
+                $type: "app.bsky.embed.external",
+                external: {
+                    uri: ogMeta.url,
+                    title: ogMeta.title,
+                    description: ogMeta.description,
+                    thumb: expect.anything(),
+                },
+            })
+        })
+
+        it("facets付き投稿はapplyWritesへfacetsをそのまま渡す(サーバは検出しない)", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            uri: "at://did:plc:author/app.bsky.feed.post/3lpost",
+                            cid: "bafypostcid",
+                        },
+                    ],
+                },
+            })
+            const facets = [
+                {
+                    index: { byteStart: 4, byteEnd: 7 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://example.com",
+                        },
+                    ],
+                },
+            ]
+            const formData = buildTextPostFormData({ text: "foo bar" })
+            formData.set("posts[0][facets]", JSON.stringify(facets))
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: formData,
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            expect(applyWrites).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    writes: expect.arrayContaining([
+                        expect.objectContaining({
+                            value: expect.objectContaining({
+                                text: "foo bar",
+                                facets,
+                            }),
+                        }),
+                    ]),
+                }),
+            )
+        })
+
+        it("facetsのbyteEndが本文のバイト長を超える場合は400を返す", async () => {
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({
+                        text: "foo",
+                        facets: [
+                            {
+                                index: { byteStart: 0, byteEnd: 100 },
+                                features: [
+                                    {
+                                        $type: "app.bsky.richtext.facet#link",
+                                        uri: "https://example.com",
+                                    },
+                                ],
+                            },
+                        ],
+                    }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+        })
+
+        it("画像アップロード失敗時は500を返す", async () => {
+            const agent = createFakeAgent({
+                uploadBlob: vi
+                    .fn()
+                    .mockRejectedValue(new Error("upload failed")),
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({ createEntry: true }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(500)
+        })
+
+        it("visualアップロード失敗時は500を返す", async () => {
+            const agent = createFakeAgent({
+                uploadBlob: vi
+                    .fn()
+                    .mockResolvedValueOnce({
+                        data: { blob: { $type: "blob", ref: "x" } },
+                    })
+                    .mockRejectedValueOnce(new Error("og upload failed")),
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({
+                        imagesCount: 1,
+                        createEntry: true,
+                    }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(500)
+        })
+
+        it("applyWrites失敗時は500を返す", async () => {
+            const agent = createFakeAgent({
+                com: {
+                    atproto: {
+                        repo: {
+                            applyWrites: vi
+                                .fn()
+                                .mockRejectedValue(
+                                    new Error("applyWrites failed"),
+                                ),
+                        },
+                    },
+                },
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({ createEntry: true }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(500)
+        })
+
+        it("gate適用が失敗した場合(applyWrites全体が失敗)は500を返す", async () => {
+            const agent = createFakeAgent({
+                com: {
+                    atproto: {
+                        repo: {
+                            applyWrites: vi
+                                .fn()
+                                .mockRejectedValue(
+                                    new Error("gate create failed"),
+                                ),
+                        },
+                    },
+                },
+            })
+            const formData = buildTextPostFormData({ text: "hello" })
+            formData.set(
+                "posts[0][gate]",
+                JSON.stringify({
+                    replyAudience: "nobody",
+                    allowMentioned: false,
+                    allowFollower: false,
+                    allowFollowing: false,
+                    listUris: [],
+                    allowQuote: true,
+                }),
+            )
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: formData,
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(500)
+        })
+
+        it("トップレベルのreply指定時はapplyWritesのpost値へそのまま渡され200を返す", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            uri: "at://did:plc:author/app.bsky.feed.post/3lpost",
+                            cid: "bafypostcid",
+                        },
+                    ],
+                },
+            })
+            const reply = {
+                root: {
+                    uri: "at://did:plc:author/app.bsky.feed.post/3lroot",
+                    cid: "bafyroot",
+                },
+                parent: {
+                    uri: "at://did:plc:author/app.bsky.feed.post/3lparent",
+                    cid: "bafyparent",
+                },
+            }
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildTextPostFormData({ reply }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            expect(applyWrites).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    writes: expect.arrayContaining([
+                        expect.objectContaining({
+                            value: expect.objectContaining({ reply }),
+                        }),
+                    ]),
+                }),
+            )
+        })
+
+        it("[entry-api/AC-4 entry-api/AC-13] replyのroot/parentが他人の投稿を指す場合は400を返す", async () => {
+            const reply = {
+                root: {
+                    uri: "at://did:plc:other/app.bsky.feed.post/3lroot",
+                    cid: "bafyroot",
+                },
+                parent: {
+                    uri: "at://did:plc:author/app.bsky.feed.post/3lparent",
+                    cid: "bafyparent",
+                },
+            }
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildTextPostFormData({ reply }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent(),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+        })
+
+        it("成功時(createEntry:false)は200でskyshareEntryを含まない結果を返す", async () => {
+            const agent = createFakeAgent()
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildTextPostFormData({ text: "hello" }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.posts).toHaveLength(1)
+            expect(json.skyshareEntry).toBeUndefined()
+        })
+
+        it("成功時(createEntry:true)は200でトップレベルskyshareEntryを含む結果を返す", async () => {
+            const agent = createFakeAgent()
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildNewImagePostFormData({
+                        text: "hello",
+                        createEntry: true,
+                    }),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.posts[0]).not.toHaveProperty("skyshareEntry")
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
+        it("複数件のpostsを送るとスレッドとして1回のapplyWritesで作成される", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            uri: "at://did:plc:author/app.bsky.feed.post/3lfirst",
+                            cid: "bafyfirst",
+                        },
+                        {
+                            uri: "at://did:plc:author/app.bsky.feed.post/3lsecond",
+                            cid: "bafysecond",
+                        },
+                    ],
+                },
+            })
+            const formData = new FormData()
+            formData.set("posts[0][text]", "1件目")
+            formData.set("posts[1][text]", "2件目")
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: formData,
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(200)
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            const json = await res.json()
+            expect(json.posts).toHaveLength(2)
+            expect(json.posts[0].uri).toBe(
+                "at://did:plc:author/app.bsky.feed.post/3lfirst",
+            )
+            expect(json.posts[1].uri).toBe(
+                "at://did:plc:author/app.bsky.feed.post/3lsecond",
+            )
+            // 2件目のレコード値には1件目へのreply(root/parent)が組み立てられているはず。
+            // cidは(applyWritesが返す値ではなく)1件目のレコード値から事前計算された値になるため、
+            // ここではuriの一致と、root/parentが同一投稿(1件目)を指すことのみを検証する。
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            const firstPostWrite = writesArg.find(
+                (w: { collection: string; value?: { text?: string } }) =>
+                    w.collection === "app.bsky.feed.post" &&
+                    w.value?.text === "1件目",
+            )
+            const secondPostWrite = writesArg.find(
+                (w: { collection: string; value?: { text?: string } }) =>
+                    w.collection === "app.bsky.feed.post" &&
+                    w.value?.text === "2件目",
+            )
+            const firstPostUri = `at://did:plc:author/app.bsky.feed.post/${firstPostWrite.rkey}`
+            expect(secondPostWrite.value.reply.root.uri).toBe(firstPostUri)
+            expect(secondPostWrite.value.reply.parent.uri).toBe(firstPostUri)
+            expect(secondPostWrite.value.reply.root.cid).toBe(
+                secondPostWrite.value.reply.parent.cid,
+            )
+        })
+    })
+
+    describe("スレッド投稿(複数posts・内容パターン)", () => {
+        /**
+         * gate/entryの有無で実際のwrites件数が変わるため、固定件数ではなく
+         * 送信された`writes`から機械的に(collection/rkeyベースで)結果を組み立てる
+         * (`fakeAgent.ts`の`defaultApplyWrites`と同じ方針)。
+         */
+        const mockApplyWrites = () =>
+            vi
+                .fn()
+                .mockImplementation(
+                    async ({
+                        repo,
+                        writes,
+                    }: {
+                        repo: string
+                        writes: { collection: string; rkey: string }[]
+                    }) => ({
+                        data: {
+                            results: writes.map((write, index) => ({
+                                uri: `at://${repo}/${write.collection}/${write.rkey}`,
+                                cid: `bafyapplywrites${index}`,
+                            })),
+                        },
+                    }),
+                )
+
+        const sendThread = async (
+            items: PostItemOpts[],
+            applyWrites: ReturnType<typeof vi.fn>,
+            opts?: { reply?: object; createEntry?: boolean; visual?: boolean },
+        ) => {
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildThreadFormData(items, opts),
+                },
+            )
+            return callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+        }
+
+        it("[entry-api/AC-1] テキストのみ投稿と画像のみ投稿が混在するスレッドは200で各投稿のembedが独立して反映される", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目" }, { text: "2件目", imagesCount: 1 }],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(
+                findPostWrite(writesArg, "1件目").value.embed,
+            ).toBeUndefined()
+            expect(findPostWrite(writesArg, "2件目").value.embed).toEqual(
+                expect.objectContaining({ $type: "app.bsky.embed.images" }),
+            )
+        })
+
+        it("[entry-api/AC-2] 画像4枚はimages型、5枚はgallery型のembedになる", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [
+                    { text: "4枚", imagesCount: 4 },
+                    { text: "5枚", imagesCount: 5 },
+                ],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(findPostWrite(writesArg, "4枚").value.embed.$type).toBe(
+                "app.bsky.embed.images",
+            )
+            const gallery = findPostWrite(writesArg, "5枚").value.embed
+            expect(gallery.$type).toBe("app.bsky.embed.gallery")
+            expect(gallery.items).toHaveLength(5)
+        })
+
+        it("[entry-api/AC-2] 画像11枚の投稿は400を返す", async () => {
+            const res = await sendThread(
+                [{ text: "11枚", imagesCount: 11 }],
+                mockApplyWrites(),
+            )
+            expect(res.status).toBe(400)
+        })
+
+        it("画像のみ投稿とOGPカードのみ投稿が混在するスレッドは200でそれぞれ異なるembedになる", async () => {
+            const applyWrites = mockApplyWrites()
+            const ogMeta = {
+                title: "Example",
+                description: "example description",
+                url: "https://example.com",
+            }
+            const res = await sendThread(
+                [
+                    { text: "1件目", imagesCount: 1 },
+                    {
+                        text: "2件目 https://example.com",
+                        ogImage: true,
+                        ogMeta,
+                    },
+                ],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(findPostWrite(writesArg, "1件目").value.embed).toEqual(
+                expect.objectContaining({ $type: "app.bsky.embed.images" }),
+            )
+            expect(
+                findPostWrite(writesArg, "2件目 https://example.com").value
+                    .embed,
+            ).toEqual(
+                expect.objectContaining({
+                    $type: "app.bsky.embed.external",
+                    external: expect.objectContaining({ uri: ogMeta.url }),
+                }),
+            )
+        })
+
+        it("URL複数+画像 と URL複数+特定OGPカード が混在するスレッドはembedとfacetsが個別に反映される", async () => {
+            const applyWrites = mockApplyWrites()
+            const facets1 = [
+                {
+                    index: { byteStart: 4, byteEnd: 7 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://a.example.com",
+                        },
+                    ],
+                },
+            ]
+            const facets2 = [
+                {
+                    index: { byteStart: 4, byteEnd: 7 },
+                    features: [
+                        {
+                            $type: "app.bsky.richtext.facet#link",
+                            uri: "https://c.example.com",
+                        },
+                    ],
+                },
+            ]
+            const ogMeta = {
+                title: "Example",
+                description: "example description",
+                url: "https://c.example.com",
+            }
+            const res = await sendThread(
+                [
+                    { text: "見て aaa", facets: facets1, imagesCount: 1 },
+                    {
+                        text: "見て ccc",
+                        facets: facets2,
+                        ogImage: true,
+                        ogMeta,
+                    },
+                ],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            const firstWrite = findPostWrite(writesArg, "見て aaa")
+            const secondWrite = findPostWrite(writesArg, "見て ccc")
+            expect(firstWrite.value.facets).toEqual(facets1)
+            expect(firstWrite.value.embed).toEqual(
+                expect.objectContaining({ $type: "app.bsky.embed.images" }),
+            )
+            expect(secondWrite.value.facets).toEqual(facets2)
+            expect(secondWrite.value.embed).toEqual(
+                expect.objectContaining({ $type: "app.bsky.embed.external" }),
+            )
+        })
+
+        it("[entry-api/AC-3] 画像とOGP情報を両方指定した投稿は画像embedが優先される", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [
+                    {
+                        text: "1件目",
+                        imagesCount: 1,
+                        ogImage: true,
+                        ogMeta: {
+                            title: "Example",
+                            description: "example description",
+                            url: "https://example.com",
+                        },
+                    },
+                ],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(findPostWrite(writesArg, "1件目").value.embed).toEqual(
+                expect.objectContaining({ $type: "app.bsky.embed.images" }),
+            )
+        })
+
+        it("createEntry:trueのスレッドは、画像投稿がposts[0]の場合、sourceがposts[0]を指すskyshareEntryをトップレベルに1件だけ返す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目", imagesCount: 1 }, { text: "2件目" }],
+                applyWrites,
+                { createEntry: true },
+            )
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.posts).toHaveLength(2)
+            expect(json.posts[0]).not.toHaveProperty("skyshareEntry")
+            expect(json.posts[1]).not.toHaveProperty("skyshareEntry")
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
+        it("[entry-api/AC-6] createEntry:trueのスレッドで、画像投稿が中間(posts[1])にあっても、sourceは常にposts[0](スレッド先頭)を指す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目" }, { text: "2件目", imagesCount: 1 }],
+                applyWrites,
+                { createEntry: true },
+            )
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.skyshareEntry).toBeDefined()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+            expect(json.skyshareEntry.sourceUri).not.toBe(json.posts[1].uri)
+        })
+
+        it("[entry-api/AC-5] createEntry:trueのスレッドが画像投稿を1件も含まなくても、visualがあれば200でsourceがposts[0]のskyshareEntryを返す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目" }, { text: "2件目" }],
+                applyWrites,
+                { createEntry: true },
+            )
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
+        it("単発投稿(posts 1件)でcreateEntry:trueの場合、sourceは自身(posts[0])を指す", async () => {
+            const applyWrites = mockApplyWrites()
+            const res = await sendThread(
+                [{ text: "1件目", imagesCount: 1 }],
+                applyWrites,
+                { createEntry: true },
+            )
+            expect(res.status).toBe(200)
+            const json = await res.json()
+            expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        })
+
+        it("トップレベルreplyと複数postsを組み合わせた場合、先頭postは指定replyへ、2件目は先頭post自身へチェーンする", async () => {
+            const applyWrites = mockApplyWrites()
+            const reply = {
+                root: {
+                    uri: "at://did:plc:author/app.bsky.feed.post/3lroot",
+                    cid: "bafyroot",
+                },
+                parent: {
+                    uri: "at://did:plc:author/app.bsky.feed.post/3lparent",
+                    cid: "bafyparent",
+                },
+            }
+            const res = await sendThread(
+                [{ text: "1件目" }, { text: "2件目" }],
+                applyWrites,
+                { reply },
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            const firstWrite = findPostWrite(writesArg, "1件目")
+            const secondWrite = findPostWrite(writesArg, "2件目")
+            expect(firstWrite.value.reply).toEqual(reply)
+            const firstPostUri = `at://did:plc:author/app.bsky.feed.post/${firstWrite.rkey}`
+            expect(secondWrite.value.reply.root.uri).toBe(reply.root.uri)
+            expect(secondWrite.value.reply.parent.uri).toBe(firstPostUri)
+        })
+
+        it("[entry-api/AC-4] スレッド内の特定投稿のみgate指定した場合、該当rkeyにのみgateレコードが作成される", async () => {
+            const applyWrites = mockApplyWrites()
+            const gate = {
+                replyAudience: "nobody",
+                allowMentioned: false,
+                allowFollower: false,
+                allowFollowing: false,
+                listUris: [],
+                allowQuote: true,
+            }
+            const res = await sendThread(
+                [{ text: "1件目", gate }, { text: "2件目" }],
+                applyWrites,
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            const firstWrite = findPostWrite(writesArg, "1件目")
+            const secondWrite = findPostWrite(writesArg, "2件目")
+            const gateWrites = writesArg.filter(
+                (w: { collection: string }) =>
+                    w.collection === "app.bsky.feed.threadgate" ||
+                    w.collection === "app.bsky.feed.postgate",
+            )
+            expect(gateWrites.length).toBeGreaterThan(0)
+            for (const w of gateWrites) {
+                expect(w.rkey).toBe(firstWrite.rkey)
+                expect(w.rkey).not.toBe(secondWrite.rkey)
+            }
+        })
+    })
+
+    describe("スレッド投稿の異常系", () => {
+        it("[entry-api/AC-14] 2件目でfacetsのbyteEndが本文バイト長を超える場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
+            const applyWrites = vi.fn()
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildThreadFormData([
+                        { text: "1件目", imagesCount: 1 },
+                        {
+                            text: "foo",
+                            facets: [
+                                {
+                                    index: { byteStart: 0, byteEnd: 100 },
+                                    features: [
+                                        {
+                                            $type: "app.bsky.richtext.facet#link",
+                                            uri: "https://example.com",
+                                        },
+                                    ],
+                                },
+                            ],
+                        },
+                    ]),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+            expect(applyWrites).not.toHaveBeenCalled()
+        })
+
+        it("[entry-api/AC-14] 2件目で画像枚数とメタデータ件数が不一致の場合、全体を400で拒否しapplyWritesは呼ばれない", async () => {
+            const applyWrites = vi.fn()
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildThreadFormData([
+                        { text: "1件目" },
+                        {
+                            imagesCount: 2,
+                            imagesMeta: [{ width: 100, height: 100 }],
+                        },
+                    ]),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent: createFakeAgent({
+                    com: { atproto: { repo: { applyWrites } } },
+                }),
+                session: fakeSession,
+            })
+            expect(res.status).toBe(400)
+            expect(applyWrites).not.toHaveBeenCalled()
+        })
+
+        it("2件目の画像アップロードが失敗した場合は500を返す", async () => {
+            const agent = createFakeAgent({
+                uploadBlob: vi
+                    .fn()
+                    .mockRejectedValue(new Error("upload failed")),
+            })
+            const request = new Request(
+                "https://skyshare.nekono.dev/v2/entry/",
+                {
+                    method: "POST",
+                    headers: authHeaders,
+                    body: buildThreadFormData([
+                        { text: "1件目" },
+                        { text: "2件目", imagesCount: 1 },
+                    ]),
+                },
+            )
+            const res = await callRoute(POST, request, {
+                agent,
+                session: fakeSession,
+            })
+            expect(res.status).toBe(500)
+        })
+    })
+})
+
+const authenticatedLocals = () => ({
+    agent: createFakeAgent(),
+    session: fakeSession,
+})
+
+describe("PUT /v2/entry", () => {
+    it("cookieヘッダーが無い場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+                uri: entryAtUri("did:plc:author", "3lentry"),
+                heading: "旅行",
+                caption: "京都にて",
+            }),
+        })
+        const res = await callRoute(PUT, request)
+        expect(res.status).toBe(400)
+    })
+
+    it("未認証の場合は401を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                uri: entryAtUri("did:plc:author", "3lentry"),
+                heading: "旅行",
+                caption: "京都にて",
+            }),
+        })
+        const res = await callRoute(PUT, request, {})
+        expect(res.status).toBe(401)
+    })
+
+    it("JSONとして解釈できないbodyの場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: "not-json",
+        })
+        const res = await callRoute(PUT, request, authenticatedLocals())
+        expect(res.status).toBe(400)
+    })
+
+    it("bodyがスキーマ不正(uri欠落)の場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ heading: "旅行", caption: "京都にて" }),
+        })
+        const res = await callRoute(PUT, request, authenticatedLocals())
+        expect(res.status).toBe(400)
+    })
+
+    it("[entry-api/AC-8 entry-api/AC-13] uriが自分自身のentryでない場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                uri: entryAtUri("did:plc:other", "3lentry"),
+                heading: "旅行",
+                caption: "京都にて",
+            }),
+        })
+        const res = await callRoute(PUT, request, authenticatedLocals())
+        expect(res.status).toBe(400)
+    })
+
+    it("[entry-api/AC-16] 対象entryが見つからない場合は404を返す", async () => {
+        const agent = createFakeAgent({
+            com: {
+                atproto: {
+                    repo: {
+                        getRecord: vi.fn().mockRejectedValue(
+                            Object.assign(new Error("RecordNotFound"), {
+                                error: "RecordNotFound",
+                            }),
+                        ),
+                    },
+                },
+            },
+        })
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                uri: entryAtUri("did:plc:author", "3lentry"),
+                heading: "旅行",
+                caption: "京都にて",
+            }),
+        })
+        const res = await callRoute(PUT, request, {
+            agent,
+            session: fakeSession,
+        })
+        expect(res.status).toBe(404)
+    })
+
+    it("[entry-api/AC-8] 成功時は200(本文なし)を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "PUT",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                uri: entryAtUri("did:plc:author", "3lentry"),
+                heading: "旅行",
+                caption: "京都にて",
+            }),
+        })
+        const res = await callRoute(PUT, request, authenticatedLocals())
+        expect(res.status).toBe(200)
+    })
+})
+
+describe("DELETE /v2/entry", () => {
+    const entryUri = entryAtUri("did:plc:author", "3lentry")
+
+    it("cookieヘッダーが無い場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ uri: entryUri }),
+        })
+        const res = await callRoute(DELETE, request)
+        expect(res.status).toBe(400)
+    })
+
+    it("未認証の場合は401を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ uri: entryUri }),
+        })
+        const res = await callRoute(DELETE, request, {})
+        expect(res.status).toBe(401)
+    })
+
+    it("JSONとして解釈できないbodyの場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: "not-json",
+        })
+        const res = await callRoute(DELETE, request, authenticatedLocals())
+        expect(res.status).toBe(400)
+    })
+
+    it("bodyがスキーマ不正(uri欠落)の場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ deleteBskyPost: true }),
+        })
+        const res = await callRoute(DELETE, request, authenticatedLocals())
+        expect(res.status).toBe(400)
+    })
+
+    it("[entry-api/AC-13] uriが自分自身のentryでない場合は400を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                uri: entryAtUri("did:plc:other", "3lentry"),
+            }),
+        })
+        const res = await callRoute(DELETE, request, authenticatedLocals())
+        expect(res.status).toBe(400)
+    })
+
+    it("deleteBskyPost指定時、entryが見つからない場合は404を返す", async () => {
+        const agent = createFakeAgent({
+            com: {
+                atproto: {
+                    repo: {
+                        getRecord: vi
+                            .fn()
+                            .mockRejectedValue(new Error("not found")),
+                    },
+                },
+            },
+        })
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ uri: entryUri, deleteBskyPost: true }),
+        })
+        const res = await callRoute(DELETE, request, {
+            agent,
+            session: fakeSession,
+        })
+        expect(res.status).toBe(404)
+    })
+
+    it("[entry-api/AC-12] deleteBskyPost指定時、元投稿の削除に失敗してもentry削除自体は200を返す", async () => {
+        const deleteRecord = vi
+            .fn()
+            .mockImplementation(
+                async ({ collection }: { collection: string }) => {
+                    if (collection === "app.bsky.feed.post") {
+                        throw new Error("delete failed")
+                    }
+                    return {}
+                },
+            )
+        const agent = createFakeAgent({
+            com: { atproto: { repo: { deleteRecord } } },
+        })
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ uri: entryUri, deleteBskyPost: true }),
+        })
+        const res = await callRoute(DELETE, request, {
+            agent,
+            session: fakeSession,
+        })
+        expect(res.status).toBe(200)
+        // 元投稿の削除を試みて失敗しても、entry自体の削除は行われている
+        const collections = deleteRecord.mock.calls.map(
+            ([input]) => (input as { collection: string }).collection,
+        )
+        expect(collections).toContain("app.bsky.feed.post")
+        expect(collections).toContain(ENTRY_COLLECTION)
+    })
+
+    it("deleteBskyPost=falseの場合は元投稿を削除せず200を返す", async () => {
+        const deleteRecord = vi.fn().mockResolvedValue({})
+        const agent = createFakeAgent({
+            com: { atproto: { repo: { deleteRecord } } },
+        })
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ uri: entryUri, deleteBskyPost: false }),
+        })
+        const res = await callRoute(DELETE, request, {
+            agent,
+            session: fakeSession,
+        })
+        expect(res.status).toBe(200)
+        expect(deleteRecord).toHaveBeenCalledTimes(1)
+    })
+
+    it("成功時(deleteBskyPost:true)は200(本文なし)を返す", async () => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "DELETE",
+            headers: {
+                ...authHeaders,
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({ uri: entryUri, deleteBskyPost: true }),
+        })
+        const res = await callRoute(DELETE, request, authenticatedLocals())
+        expect(res.status).toBe(200)
+    })
+
+    describe("deleteBskyPost:true(sourceを起点とする自己投稿の削除)", () => {
+        const sourceUri = "at://did:plc:author/app.bsky.feed.post/3lpost"
+
+        const makeRequest = (body: Record<string, unknown>) =>
+            new Request("https://skyshare.nekono.dev/v2/entry/", {
+                method: "DELETE",
+                headers: {
+                    ...authHeaders,
+                    "content-type": "application/json",
+                },
+                body: JSON.stringify(body),
+            })
+
+        const node = (
+            uri: string,
+            did: string,
+            replies: unknown[] = [],
+            record?: Record<string, unknown>,
+        ) => ({
+            $type: "app.bsky.feed.defs#threadViewPost",
+            post: { uri, cid: "bafy", author: { did }, record },
+            replies,
+        })
+
+        it("廃止されたdeleteBskyThreadを指定した場合は400を返す", async () => {
+            const res = await callRoute(
+                DELETE,
+                makeRequest({
+                    uri: entryUri,
+                    deleteBskyPost: true,
+                    deleteBskyThread: true,
+                }),
+                authenticatedLocals(),
+            )
+            expect(res.status).toBe(400)
+        })
+
+        it("単発投稿はdeleteRecordで1件削除し、applyWritesは呼ばない", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord, applyWrites } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(deleteRecord).toHaveBeenCalledTimes(2)
+            expect(deleteRecord).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    collection: "app.bsky.feed.post",
+                    rkey: "3lpost",
+                }),
+            )
+            expect(applyWrites).not.toHaveBeenCalled()
+        })
+
+        it("[entry-api/AC-9] 起点の後続自己投稿を辿って1回のapplyWritesで全件削除する", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(sourceUri, "did:plc:author", [
+                        node(
+                            "at://did:plc:author/app.bsky.feed.post/3lsecond",
+                            "did:plc:author",
+                            [
+                                node(
+                                    "at://did:plc:author/app.bsky.feed.post/3lthird",
+                                    "did:plc:author",
+                                ),
+                            ],
+                        ),
+                    ]),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(getPostThread).toHaveBeenCalledWith(
+                expect.objectContaining({ uri: sourceUri, parentHeight: 0 }),
+            )
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(writesArg.map((w: { rkey: string }) => w.rkey)).toEqual([
+                "3lpost",
+                "3lsecond",
+                "3lthird",
+            ])
+            for (const w of writesArg) {
+                expect(w.collection).toBe("app.bsky.feed.post")
+                expect(w.$type).toBe("com.atproto.repo.applyWrites#delete")
+            }
+        })
+
+        it("[entry-api/AC-9] 第三者の返信で分岐した先は削除対象から除外される", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(sourceUri, "did:plc:author", [
+                        node(
+                            "at://did:plc:other/app.bsky.feed.post/3lother",
+                            "did:plc:other",
+                            [
+                                node(
+                                    "at://did:plc:author/app.bsky.feed.post/3lbranched",
+                                    "did:plc:author",
+                                ),
+                            ],
+                        ),
+                    ]),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord, applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(applyWrites).not.toHaveBeenCalled()
+            expect(deleteRecord).toHaveBeenLastCalledWith(
+                expect.objectContaining({ rkey: "3lpost" }),
+            )
+        })
+
+        it("分岐時、投稿日時が近い側のみ削除対象になる", async () => {
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(
+                        sourceUri,
+                        "did:plc:author",
+                        [
+                            node(
+                                "at://did:plc:author/app.bsky.feed.post/3lfar",
+                                "did:plc:author",
+                                [],
+                                { createdAt: "2026-01-05T00:00:00.000Z" },
+                            ),
+                            node(
+                                "at://did:plc:author/app.bsky.feed.post/3lnear",
+                                "did:plc:author",
+                                [],
+                                { createdAt: "2026-01-01T00:00:05.000Z" },
+                            ),
+                        ],
+                        { createdAt: "2026-01-01T00:00:00.000Z" },
+                    ),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            const writesArg = applyWrites.mock.calls[0][0].writes
+            expect(writesArg.map((w: { rkey: string }) => w.rkey)).toEqual([
+                "3lpost",
+                "3lnear",
+            ])
+        })
+
+        it("[entry-api/AC-10] sourceが返信投稿(起点でない)の場合は409を返し、何も削除しない", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const applyWrites = vi.fn().mockResolvedValue({ data: {} })
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(sourceUri, "did:plc:author", [], {
+                        $type: "app.bsky.feed.post",
+                        reply: {
+                            root: {
+                                uri: "at://did:plc:author/app.bsky.feed.post/3lroot",
+                                cid: "bafyroot",
+                            },
+                            parent: {
+                                uri: "at://did:plc:author/app.bsky.feed.post/3lroot",
+                                cid: "bafyroot",
+                            },
+                        },
+                    }),
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord, applyWrites } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(409)
+            expect(deleteRecord).not.toHaveBeenCalled()
+            expect(applyWrites).not.toHaveBeenCalled()
+        })
+
+        it("[entry-api/AC-11] getPostThreadがNotFound以外で失敗した場合は500を返し、何も削除しない", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const getPostThread = vi
+                .fn()
+                .mockRejectedValue(new Error("getPostThread failed"))
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(500)
+            expect(deleteRecord).not.toHaveBeenCalled()
+        })
+
+        it("[entry-api/AC-11] source投稿が既に存在しない場合はentryのみ削除して200を返す", async () => {
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: {
+                        $type: "app.bsky.feed.defs#notFoundPost",
+                        uri: sourceUri,
+                        notFound: true,
+                    },
+                },
+            })
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { deleteRecord } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(deleteRecord).toHaveBeenCalledTimes(1)
+            expect(deleteRecord).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    collection: ENTRY_COLLECTION,
+                }),
+            )
+        })
+
+        it("[entry-api/AC-12] applyWritesが失敗してもentry削除自体は200を返す", async () => {
+            const applyWrites = vi.fn().mockRejectedValue(new Error("fail"))
+            const getPostThread = vi.fn().mockResolvedValue({
+                data: {
+                    thread: node(sourceUri, "did:plc:author", [
+                        node(
+                            "at://did:plc:author/app.bsky.feed.post/3lsecond",
+                            "did:plc:author",
+                        ),
+                    ]),
+                },
+            })
+            const deleteRecord = vi.fn().mockResolvedValue({})
+            const agent = createFakeAgent({
+                com: { atproto: { repo: { applyWrites, deleteRecord } } },
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri, deleteBskyPost: true }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            // 投稿の一括削除が失敗しても、entry自体の削除は行われている
+            expect(applyWrites).toHaveBeenCalledTimes(1)
+            expect(deleteRecord).toHaveBeenCalledWith(
+                expect.objectContaining({ collection: ENTRY_COLLECTION }),
+            )
+        })
+
+        it("deleteBskyPost未指定時はgetPostThreadを呼ばない", async () => {
+            const getPostThread = vi.fn()
+            const agent = createFakeAgent({
+                app: { bsky: { feed: { getPostThread } } },
+            })
+            const res = await callRoute(
+                DELETE,
+                makeRequest({ uri: entryUri }),
+                { agent, session: fakeSession },
+            )
+            expect(res.status).toBe(200)
+            expect(getPostThread).not.toHaveBeenCalled()
+        })
+    })
+})
+
+describe("POST /v2/entry（動画投稿）", () => {
+    const videoBlob = {
+        $type: "blob",
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4",
+        size: 1234,
+    }
+    const videoMeta = { width: 640, height: 360, alt: "海" }
+
+    const mockApplyWrites = () =>
+        vi
+            .fn()
+            .mockImplementation(
+                async ({
+                    repo,
+                    writes,
+                }: {
+                    repo: string
+                    writes: { collection: string; rkey: string }[]
+                }) => ({
+                    data: {
+                        results: writes.map((write, index) => ({
+                            uri: `at://${repo}/${write.collection}/${write.rkey}`,
+                            cid: `bafyapplywrites${index}`,
+                        })),
+                    },
+                }),
+            )
+
+    const send = async (
+        formData: FormData,
+        applyWrites = mockApplyWrites(),
+        uploadBlob = vi.fn().mockResolvedValue({
+            data: {
+                blob: {
+                    $type: "blob",
+                    ref: { $link: "bafkreuploaded" },
+                    mimeType: "image/jpeg",
+                },
+            },
+        }),
+    ) => {
+        const request = new Request("https://skyshare.nekono.dev/v2/entry/", {
+            method: "POST",
+            headers: authHeaders,
+            body: formData,
+        })
+        const res = await callRoute(POST, request, {
+            agent: createFakeAgent({
+                uploadBlob,
+                com: { atproto: { repo: { applyWrites } } },
+            }),
+            session: fakeSession,
+        })
+        return { res, applyWrites, uploadBlob }
+    }
+
+    const setVideo = (formData: FormData, i: number, meta = videoMeta) => {
+        formData.set(`posts[${i}][video]`, JSON.stringify(videoBlob))
+        formData.set(`posts[${i}][videoMeta]`, JSON.stringify(meta))
+    }
+
+    it("[video-upload/AC-9 video-upload/AC-12] 動画投稿は app.bsky.embed.video を作り、動画の uploadBlob は呼ばない", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "動画です")
+        setVideo(formData, 0)
+        const { res, applyWrites, uploadBlob } = await send(formData)
+        expect(res.status).toBe(200)
+        expect(uploadBlob).not.toHaveBeenCalled()
+        const post = applyWrites.mock.calls[0][0].writes.find(
+            (w: any) => w.collection === "app.bsky.feed.post",
+        )
+        expect(post.value.embed).toEqual({
+            $type: "app.bsky.embed.video",
+            video: videoBlob,
+            alt: "海",
+            aspectRatio: { width: 640, height: 360 },
+        })
+    })
+
+    it("[video-upload/AC-11] 2セグメントのスレッドで各投稿に動画 embed が載る", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "一つ目")
+        setVideo(formData, 0)
+        formData.set("posts[1][text]", "二つ目")
+        setVideo(formData, 1, { width: 360, height: 640, alt: "" })
+        const { res, applyWrites } = await send(formData)
+        expect(res.status).toBe(200)
+        const posts = applyWrites.mock.calls[0][0].writes.filter(
+            (w: any) => w.collection === "app.bsky.feed.post",
+        )
+        expect(posts).toHaveLength(2)
+        expect(posts[0].value.embed.$type).toBe("app.bsky.embed.video")
+        expect(posts[1].value.embed.aspectRatio).toEqual({
+            width: 360,
+            height: 640,
+        })
+    })
+
+    it("createEntry+visual で動画投稿から entry が作られる", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "動画です")
+        setVideo(formData, 0)
+        formData.set("createEntry", "true")
+        formData.set("visual", new Blob(["thumb"], { type: "image/jpeg" }))
+        const { res, applyWrites } = await send(formData)
+        expect(res.status).toBe(200)
+        const json = await res.json()
+        expect(json.skyshareEntry.sourceUri).toBe(json.posts[0].uri)
+        expect(
+            applyWrites.mock.calls[0][0].writes.some(
+                (w: any) => w.collection === ENTRY_COLLECTION,
+            ),
+        ).toBe(true)
+    })
+
+    it("[video-upload/AC-10] 動画と画像の併用は 400", async () => {
+        const formData = new FormData()
+        formData.set("posts[0][text]", "x")
+        setVideo(formData, 0)
+        formData.append(
+            "posts[0][images]",
+            new Blob(["a"], { type: "image/png" }),
+        )
+        formData.set(
+            "posts[0][imagesMeta]",
+            JSON.stringify([{ width: 1, height: 1 }]),
+        )
+        const { res } = await send(formData)
+        expect(res.status).toBe(400)
+    })
+})

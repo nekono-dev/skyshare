@@ -1,0 +1,414 @@
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { createEmptySegment } from "@/components/post/ThreadComposer/segments"
+import { submitThread } from "@/components/post/ThreadComposer/submitThread"
+import type { ImageEntry } from "@/components/image/ImagePicker"
+import { createEntry } from "@/client/openapi/client"
+import { warmOgpCache } from "@/lib/entry/warmOgpCache"
+
+vi.mock("@/client/openapi/client", () => ({
+    createEntry: vi.fn(),
+}))
+
+vi.mock("@/lib/account/activeAccountSession", () => ({
+    getActiveAccountDisplayName: vi.fn().mockResolvedValue("Alice"),
+}))
+
+vi.mock("@/lib/entry/warmOgpCache", () => ({
+    warmOgpCache: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock("@/lib/atproto/richtext", () => ({
+    detectFacetsForSubmission: vi.fn().mockResolvedValue(undefined),
+}))
+
+/**
+ * テスト用の画像投稿セグメントを組み立てる。
+ *
+ * Input:
+ * - `overrides`: 上書きしたいImageEntryフィールド
+ *
+ * Output:
+ * - `images`/`imagesMeta`が完全に揃った画像投稿セグメント
+ */
+const buildImageEntry = (overrides: Partial<ImageEntry> = {}): ImageEntry => ({
+    originalBlobs: [new Blob(["a"])],
+    thumbnailBlob: new Blob(["thumb"]),
+    originalPreviews: [],
+    thumbnailPreview: "",
+    sourceFileNames: ["a.png"],
+    meta: [{ width: 100, height: 100, alt: "" }],
+    ...overrides,
+})
+
+const mockCreateEntryOk = (
+    posts: { url: string; uri: string; cid: string }[],
+    skyshareEntry?: { uri: string },
+) => {
+    vi.mocked(createEntry).mockResolvedValue({
+        status: 200,
+        data: { posts, skyshareEntry },
+    } as never)
+}
+
+type SubmitThreadBody = {
+    posts: Record<string, unknown>[]
+    createEntry?: boolean
+    visual?: unknown
+    heading?: string
+    caption?: string
+}
+
+beforeEach(() => {
+    vi.clearAllMocks()
+})
+
+describe("submitThread", () => {
+    it("単一セグメント(テキストのみ)を posts 1件として送信する", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }])
+
+        const segment = { ...createEmptySegment("ja"), text: "hello" }
+        const result = await submitThread({
+            segments: [segment],
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({ ok: true, skyshareUri: "" })
+        expect(createEntry).toHaveBeenCalledTimes(1)
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts).toHaveLength(1)
+        expect(body.posts[0].text).toBe("hello")
+        expect(body.posts[0]).not.toHaveProperty("createEntry")
+        expect(body.createEntry).toBeUndefined()
+    })
+
+    it("単一セグメント(画像)では、トップレベルcreateEntry:true+visualを送る(NFR-1)", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+
+        const segment = {
+            ...createEmptySegment("ja"),
+            text: "画像投稿",
+            imageEntry: buildImageEntry(),
+        }
+        const result = await submitThread({
+            segments: [segment],
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({ ok: true, skyshareUri: "https://skyshare/1" })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBe(true)
+        expect(body.visual).toBeDefined()
+        expect(body.posts[0]).not.toHaveProperty("createEntry")
+        expect(body.posts[0]).not.toHaveProperty("ogImage")
+    })
+
+    it("[thread-composer/AC-8] 画像投稿segmentが0件のスレッドでは、createEntry/visualを送らない", async () => {
+        mockCreateEntryOk([
+            { url: "https://x/1", uri: "at://1", cid: "c1" },
+            { url: "https://x/2", uri: "at://2", cid: "c2" },
+        ])
+
+        const segments = [
+            { ...createEmptySegment("ja"), text: "1件目" },
+            { ...createEmptySegment("ja"), text: "2件目" },
+        ]
+        const result = await submitThread({
+            segments,
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({ ok: true, skyshareUri: "" })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBeUndefined()
+        expect(body.visual).toBeUndefined()
+        expect(body.posts.every(p => !("createEntry" in p))).toBe(true)
+    })
+
+    it("[thread-composer/AC-8] 画像投稿segmentが1件のスレッドでは、そのsegmentのthumbnailBlobがトップレベルvisualになる", async () => {
+        mockCreateEntryOk(
+            [
+                { url: "https://x/1", uri: "at://1", cid: "c1" },
+                { url: "https://x/2", uri: "at://2", cid: "c2" },
+            ],
+            { uri: "https://skyshare/2" },
+        )
+
+        const imageEntry = buildImageEntry()
+        const segments = [
+            { ...createEmptySegment("ja"), text: "1件目(テキストのみ)" },
+            {
+                ...createEmptySegment("ja"),
+                text: "2件目(画像)",
+                imageEntry,
+            },
+        ]
+        const result = await submitThread({
+            segments,
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({ ok: true, skyshareUri: "https://skyshare/2" })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBe(true)
+        expect(body.visual).toBe(imageEntry.thumbnailBlob)
+        expect(body.posts[0]).not.toHaveProperty("createEntry")
+        expect(body.posts[1]).not.toHaveProperty("createEntry")
+        expect(warmOgpCache).toHaveBeenCalledWith("https://skyshare/2")
+    })
+
+    it("[thread-composer/AC-8] 画像投稿segmentが複数あるスレッドでは、先頭のsegmentのthumbnailBlobのみが自動選択される", async () => {
+        mockCreateEntryOk(
+            [
+                { url: "https://x/1", uri: "at://1", cid: "c1" },
+                { url: "https://x/2", uri: "at://2", cid: "c2" },
+            ],
+            { uri: "https://skyshare/1" },
+        )
+
+        const firstImageEntry = buildImageEntry()
+        const secondImageEntry = buildImageEntry()
+        const segments = [
+            {
+                ...createEmptySegment("ja"),
+                text: "1件目(画像)",
+                imageEntry: firstImageEntry,
+            },
+            {
+                ...createEmptySegment("ja"),
+                text: "2件目(画像)",
+                imageEntry: secondImageEntry,
+            },
+        ]
+        const result = await submitThread({
+            segments,
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({ ok: true, skyshareUri: "https://skyshare/1" })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        // 画像投稿segmentが複数あっても、entryはリクエスト全体につき最大1件（先頭を自動選択）。
+        // 2件目自身は独立したentryを作らないが、images自体は通常通り送信される。
+        expect(body.createEntry).toBe(true)
+        expect(body.visual).toBe(firstImageEntry.thumbnailBlob)
+        expect(body.posts[1].images).toBeDefined()
+        expect(warmOgpCache).toHaveBeenCalledWith("https://skyshare/1")
+        expect(warmOgpCache).not.toHaveBeenCalledWith("https://skyshare/2")
+    })
+
+    it("[thread-composer/AC-7] 2件のセグメントを投稿すると、2件の投稿を含む1回のリクエストが送信される", async () => {
+        mockCreateEntryOk([
+            { url: "https://x/1", uri: "at://1", cid: "c1" },
+            { url: "https://x/2", uri: "at://2", cid: "c2" },
+        ])
+        const result = await submitThread({
+            segments: [
+                { ...createEmptySegment("ja"), text: "1件目" },
+                { ...createEmptySegment("ja"), text: "2件目" },
+            ],
+            manualImageAttach: false,
+        })
+
+        expect(result.ok).toBe(true)
+        expect(createEntry).toHaveBeenCalledTimes(1)
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts.map(post => post.text)).toEqual(["1件目", "2件目"])
+    })
+
+    it("[thread-composer/AC-2] 2件目のセグメントに画像を添付して投稿すると、2件目の投稿にだけ画像が含まれる", async () => {
+        mockCreateEntryOk(
+            [
+                { url: "https://x/1", uri: "at://1", cid: "c1" },
+                { url: "https://x/2", uri: "at://2", cid: "c2" },
+            ],
+            { uri: "https://skyshare/2" },
+        )
+        const imageEntry = buildImageEntry()
+        await submitThread({
+            segments: [
+                { ...createEmptySegment("ja"), text: "1件目" },
+                { ...createEmptySegment("ja"), text: "2件目", imageEntry },
+            ],
+            manualImageAttach: false,
+        })
+
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts[0]).not.toHaveProperty("images")
+        expect(body.posts[1].images).toEqual(imageEntry.originalBlobs)
+    })
+
+    it("[thread-composer/AC-8] manualImageAttachが有効な画像投稿ではcreateEntry/visualを送らない", async () => {
+        mockCreateEntryOk([{ url: "https://x/1", uri: "at://1", cid: "c1" }])
+
+        const segments = [
+            {
+                ...createEmptySegment("ja"),
+                text: "画像だけ添付",
+                imageEntry: buildImageEntry(),
+            },
+        ]
+        const result = await submitThread({ segments, manualImageAttach: true })
+
+        expect(result).toEqual({ ok: true, skyshareUri: "" })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBeUndefined()
+        expect(body.visual).toBeUndefined()
+        expect(body.posts[0].images).toBeDefined()
+    })
+
+    it("createEntryを期待したのにトップレベルskyshareEntryが返らない場合は失敗にする", async () => {
+        mockCreateEntryOk([{ url: "https://x/1", uri: "at://1", cid: "c1" }])
+
+        const segments = [
+            {
+                ...createEmptySegment("ja"),
+                text: "画像投稿",
+                imageEntry: buildImageEntry(),
+            },
+        ]
+        const result = await submitThread({
+            segments,
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({
+            ok: false,
+            messageKey: "post.submit.entryCreateFailed",
+        })
+    })
+
+    it("[api-error-message/AC-8] APIが200以外を返した場合、エラーコードを文言キーに変換して失敗にする", async () => {
+        vi.mocked(createEntry).mockResolvedValue({
+            status: 400,
+            data: { error: "APP_BSKY_POST_FAILED" },
+        } as never)
+
+        const result = await submitThread({
+            segments: [{ ...createEmptySegment("ja"), text: "hello" }],
+            manualImageAttach: false,
+        })
+
+        expect(result).toEqual({
+            ok: false,
+            messageKey: "post.submit.postFailed",
+        })
+    })
+})
+
+describe("submitThread（動画）", () => {
+    const videoBlob = {
+        $type: "blob" as const,
+        ref: { $link: "bafkreivideo" },
+        mimeType: "video/mp4" as const,
+        size: 10,
+    }
+    const videoSegment = (overrides = {}) => ({
+        ...createEmptySegment("ja"),
+        text: "動画",
+        videoEntry: {
+            fileName: "a.mp4",
+            width: 640,
+            height: 360,
+            durationSec: 5,
+            alt: "海",
+            posterPreview: "blob:x",
+            thumbnailPreview: "blob:y",
+            posterBlob: new Blob(["p"]),
+            cropState: {
+                crop: { x: 0, y: 0 },
+                zoom: 1,
+                cropPixels: null,
+            },
+            thumbnailBlob: new Blob(["thumb"]),
+            upload: { state: "done" as const, blob: videoBlob },
+        },
+        ...overrides,
+    })
+
+    it("動画 segment の posts[i] に video/videoMeta が載り、images/ogMeta は載らない", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+        await submitThread({
+            segments: [videoSegment()],
+            manualImageAttach: false,
+        })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts[0].video).toEqual(videoBlob)
+        expect(body.posts[0].videoMeta).toEqual({
+            width: 640,
+            height: 360,
+            alt: "海",
+        })
+        expect(body.posts[0]).not.toHaveProperty("images")
+        expect(body.posts[0]).not.toHaveProperty("ogMeta")
+    })
+
+    it("entry 作成候補が動画 segment になり、visual は thumbnailBlob になる", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+        const segment = videoSegment()
+        await submitThread({ segments: [segment], manualImageAttach: false })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBe(true)
+        expect(body.visual).toBe(segment.videoEntry.thumbnailBlob)
+    })
+
+    it("動画 entry は heading に再生時間、画像 entry は heading に投稿者名を送る", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
+            uri: "https://skyshare/1",
+        })
+        await submitThread({
+            segments: [videoSegment({ text: "動画です" })],
+            manualImageAttach: false,
+        })
+        const videoBody = vi.mocked(createEntry).mock
+            .calls[0][0] as SubmitThreadBody
+        expect(videoBody.heading).toBe("0:05")
+        expect(videoBody.caption).toBe("動画です")
+
+        await submitThread({
+            segments: [
+                {
+                    ...createEmptySegment("ja"),
+                    text: "画像です",
+                    imageEntry: buildImageEntry(),
+                },
+            ],
+            manualImageAttach: false,
+        })
+        const imageBody = vi.mocked(createEntry).mock
+            .calls[1][0] as SubmitThreadBody
+        expect(imageBody.heading).toBe("Alice | Skyshare")
+        expect(imageBody.caption).toBe("画像です")
+    })
+
+    it("manualImageAttach が有効なら createEntry を付けない", async () => {
+        mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }])
+        await submitThread({
+            segments: [videoSegment()],
+            manualImageAttach: true,
+        })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.createEntry).toBeUndefined()
+        expect(body.visual).toBeUndefined()
+    })
+
+    it("[thread-composer/AC-7] 2 segment の動画スレッドで両方に video が載る", async () => {
+        mockCreateEntryOk(
+            [
+                { url: "https://x/1", uri: "at://1", cid: "c1" },
+                { url: "https://x/2", uri: "at://2", cid: "c2" },
+            ],
+            { uri: "https://skyshare/1" },
+        )
+        await submitThread({
+            segments: [videoSegment(), videoSegment({ text: "二つ目" })],
+            manualImageAttach: false,
+        })
+        const body = vi.mocked(createEntry).mock.calls[0][0] as SubmitThreadBody
+        expect(body.posts.every(post => "video" in post)).toBe(true)
+    })
+})

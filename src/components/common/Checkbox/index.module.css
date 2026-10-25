@@ -1,0 +1,86 @@
+/**
+ * Checkbox のスタイル定義。
+ *
+ * 設計方針:
+ * - Tailwind に依存しない CSS Modules で実装する。
+ * - 色・サイズ・余白は src/styles/tokens.css のトークンのみを使い、直接値を避ける。
+ * - アクセシビリティ（focus-visible によるフォーカス可視化）を担保する。
+ * - チェック印は`RadioButton`の丸印（`.dot`）と同じ方式（ネイティブ`input`を視覚的に隠し、
+ *   隣接する`.box`を`:checked`で装飾）で描画し、ブラウザ間の見た目差異を無くす。
+ */
+
+/* label: チェックボックスとラベルテキストを横並びにする。クリック領域を広くする。 */
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  user-select: none;
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+/* ネイティブ input を視覚的に隠す。フォーカスリングは.box経由で表示する。 */
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* disabled 時のカーソルと透明度 */
+.input:disabled ~ .box,
+.input:disabled ~ .label-text {
+  cursor: not-allowed;
+}
+.label:has(.input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* フォーカス可視化: キーボード操作時のみ表示する */
+.input:focus-visible ~ .box {
+  outline: 2px solid var(--color-bluesky);
+  outline-offset: 2px;
+}
+
+/* チェックボックスの四角い枠（外枠+チェック時のチェック印） */
+.box {
+  position: relative;
+  display: inline-block;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  border: 2px solid var(--color-muted);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-bg);
+  cursor: pointer;
+}
+
+.input:checked ~ .box {
+  border-color: var(--color-bluesky);
+  background: var(--color-bluesky);
+}
+
+.input:checked ~ .box::after {
+  content: "";
+  position: absolute;
+  left: 0.28rem;
+  top: 0.02rem;
+  width: 0.3rem;
+  height: 0.55rem;
+  border: solid var(--color-white);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ラベルテキスト: 折り返しを許容する（チェックボックスは横並びリストで使うため）。 */
+.label-text {
+  white-space: normal;
+}

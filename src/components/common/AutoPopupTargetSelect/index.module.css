@@ -1,0 +1,12 @@
+/* 可変幅時のトリガー幅は Dropdown の sizer に任せ、文字は他のオプション（トグルのラベル）と同じ大きさにする。 */
+.select {
+  min-width: 0;
+  max-width: none;
+  font-size: var(--font-size-sm);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}

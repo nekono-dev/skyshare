@@ -1,0 +1,22 @@
+.draft-list-overlay {
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.draft-list-body {
+  padding: var(--space-2) var(--space-1);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Use global .base-button / .white-button / .blue-button from src/styles/ui.css */
+
+/* 「自動ポップアップするSNS」の行。ラベルの色・大きさは他のオプション（ToggleSwitchのラベル）に合わせる。 */
+.auto-popup-target-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}

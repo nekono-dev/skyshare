@@ -1,0 +1,22 @@
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.option-active {
+  background: var(--color-gray-hover);
+}
+
+/* 選択中: 太字＋左端の強調線（アクティブのハイライトとは独立して重なる） */
+.option-selected {
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-muted);
+}
+
+.option-disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
