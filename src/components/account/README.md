@@ -7,7 +7,6 @@ graph TD
   AccountSwitchPanel --> AccountSwitcher
   AccountSwitchPanel --> LoginForm
   LoginForm --> commonExt
-  LoginAuthorizationStatus["LoginAuthorizationReturn/LoginAuthorizationStatus.astro"] --> LoginAuthorizationReturn
   AccountSwitcher --> commonExt
 
   commonExt["common (外部)"]

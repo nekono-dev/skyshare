@@ -2,16 +2,15 @@
 
 ## 1. 構成
 
-| パス                                                        | 責務                                   |
-| ----------------------------------------------------------- | -------------------------------------- |
-| `src/components/account/AccountSwitcher/index.tsx`          | アカウントの一覧・切り替え・ログアウト |
-| `src/components/account/AccountSwitchPanel/index.tsx`       | 一覧と再ログインの統括                 |
-| `src/components/account/LoginForm/index.tsx`                | ログインのフォーム                     |
-| `src/components/account/LoginIntro/index.tsx`               | ログインの案内                         |
-| `src/components/account/LoginAuthorizationReturn/index.tsx` | 認可の画面からの戻りの完了と結果の表示 |
-| `src/pages/login.astro`                                     | ログインのページ                       |
-| `src/pages/accounts.astro`                                  | アカウントのページ                     |
-| `src/pages/app.astro`                                       | 旧パスの転送                           |
+| パス                                                  | 責務                                                       |
+| ----------------------------------------------------- | ---------------------------------------------------------- |
+| `src/components/account/AccountSwitcher/index.tsx`    | アカウントの一覧・切り替え・ログアウト                     |
+| `src/components/account/AccountSwitchPanel/index.tsx` | 一覧と再ログインの統括                                     |
+| `src/components/account/LoginForm/index.tsx`          | ログインのフォーム。認可の画面からの戻りの完了と結果の表示 |
+| `src/components/account/LoginIntro/index.tsx`         | ログインの案内                                             |
+| `src/pages/login.astro`                               | ログインのページ                                           |
+| `src/pages/accounts.astro`                            | アカウントのページ                                         |
+| `src/pages/app.astro`                                 | 旧パスの転送                                               |
 
 ## 2. 関係図・ワークフロー
 
@@ -21,11 +20,8 @@
 flowchart LR
   login --> LoginForm["LoginForm/index"]
   login --> LoginIntro["LoginIntro/index"]
-  login --> Return["LoginAuthorizationReturn/index"]
   accounts --> Panel["AccountSwitchPanel/index"]
-  accounts --> Return
   LoginForm --> ext_tabs["タブの部品"]
-  Return --> ext_session
   Panel --> Switcher["AccountSwitcher/index"]
   Panel --> LoginForm
   Switcher --> ext_session["セッションAPI"]
@@ -57,7 +53,6 @@ OAuth のタブでの開始から、戻りでの完了と結果の分岐を示�
 ```mermaid
 sequenceDiagram
   participant LoginForm as LoginForm/index
-  participant Return as LoginAuthorizationReturn/index
   participant ext_session as セッションAPI
   participant ext_as as 認可の画面
   LoginForm->>ext_session: 開始を依頼
@@ -66,13 +61,13 @@ sequenceDiagram
     LoginForm->>LoginForm: 失敗の文言
   else 住所を受け取る
     LoginForm->>ext_as: 遷移
-    ext_as-->>Return: フラグメントつきで戻る
-    Return->>Return: 住所から項目を消す
-    Return->>ext_session: 完了を依頼
+    ext_as-->>LoginForm: フラグメントつきで戻る
+    LoginForm->>LoginForm: 住所から項目を消す
+    LoginForm->>ext_session: 完了を依頼
     alt ok
-      Return->>Return: トップへ遷移
+      LoginForm->>LoginForm: トップへ遷移
     else 失敗の分類か 409
-      Return->>Return: loginResultKey
+      LoginForm->>LoginForm: loginResultKey
     end
   end
 ```
@@ -129,7 +124,7 @@ const startOAuth = async () => {
   if (res.status === 200) window.location.href = res.data.url
   else setMessageKey(errorMessageKeyFromStatus(res.status, "login"))
 }
-// LoginAuthorizationReturn
+// LoginForm（戻りの完了の結果）
 export const loginResultKey = (result: string): PlainMessageKey
 ```
 
@@ -144,17 +139,17 @@ export const loginResultKey = (result: string): PlainMessageKey
 
 - OAuth は説明文を持たず、ボタンだけを置く。ボタンは開始の依頼中は押せなくする。
 - アプリパスワードの入力は、共通の折りたたみ（`Collapsible`。見出しは文言 `account.login.passwordToggle`）の中に置く。閉じている間は入力欄を描画しない。フォーム自体がカードという構造は保つ。
-- 戻りの部品は、用途がログインのフラグメントを読んだら、再読み込みで同じ項目を送らないよう先に `history.replaceState` で住所から消し、完了を依頼する。進行（ログイン中）と結果は、アプリパスワードのログインと同じステータスメッセージで表示する（成功は緑、失敗は赤）。
-- 部品が動き出すまでの待ちを埋めるため、レイアウトの先頭のスクリプトが、戻りの住所なら描画の前に `<html data-oauth-returning="pending">` を付ける。
+- ログインのフォームは、用途がログインのフラグメントを読んだら、再読み込みで同じ項目を送らないよう先に `history.replaceState` で住所から消し、完了を依頼する。進行（ログイン中）と結果は、アプリパスワードのログインと同じフォーム内のステータスメッセージ（`#message`）で表示する（成功は緑、失敗は赤）。
+- フォームが水和するまでの待ちを埋めるため、レイアウトの先頭のスクリプトが、戻りの住所なら描画の前に `<html data-oauth-returning="pending">` を付ける。
 
-| 印の値    | 付ける側                                   | 表示                                                          |
-| --------- | ------------------------------------------ | ------------------------------------------------------------- |
-| `pending` | レイアウトの先頭のスクリプト               | 部品の外のログイン中の文言（`data-i18n`）。フォームは押せない |
-| `active`  | 戻りの部品（動き出した時点）               | 部品のログイン中の文言と結果。フォームは押せない              |
-| なし      | 戻りの部品（失敗したとき、戻りでないとき） | フォームを押せる                                              |
+| 印の値    | 付ける側                                           | 表示                                                                                       |
+| --------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `pending` | レイアウトの先頭のスクリプト                       | ステータスメッセージの位置に、水和の前のログイン中の文言（CSS で表示）。フォームは押せない |
+| `active`  | ログインのフォーム（水和した時点）                 | ステータスメッセージのログイン中の文言と結果。フォームは押せない                           |
+| なし      | ログインのフォーム（失敗したとき、戻りでないとき） | フォームを押せる                                                                           |
 
-- フォームを押せなくするのは CSS（`pointer-events`）と、送信・開始の処理の先頭の確認の両方で行う（キーボードの送信も止めるため）。成功したときは遷移まで印を残す。
-- 戻りの部品は、表示の部品（`LoginAuthorizationStatus.astro`）に包んでログインのページとアカウントのページに置く。開始の `returnTo` は開始したページのパスとする。
+- フォームを押せなくするのは CSS（`pointer-events`。ボタンと折りたたみは薄くし、ステータスメッセージは薄くしない）と、送信・開始の処理の先頭の確認の両方で行う（キーボードの送信も止めるため）。成功したときは遷移まで印を残す。
+- 戻りの完了はログインのフォームが受け持つため、フォームを置くログインのページとアカウントのページで行われる。開始の `returnTo` は開始したページのパスとする。
 
 ## 4. エラー処理
 

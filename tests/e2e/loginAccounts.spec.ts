@@ -287,11 +287,11 @@ test("[login-accounts/AC-12] 完了が失敗の分類を返すと、理由の文
     await mockSessionApi(page)
     await mockOAuthApi(page, { completion: { result: "AccountUnverified" } })
     await page.goto("/login/#oauthReturn=session&code=C1&state=S1")
-    await expect(
-        page.getByText(
-            "このアカウントは Bluesky でのログインに対応していません。アプリパスワードでログインしてください。",
-        ),
-    ).toBeVisible({ timeout: 30_000 })
+    // アプリパスワードのログインと同じ、フォーム内のステータスメッセージに出る
+    await expect(page.locator("#login-form #message")).toHaveText(
+        "このアカウントは Bluesky でのログインに対応していません。アプリパスワードでログインしてください。",
+        { timeout: 30_000 },
+    )
     // 再読み込みで同じ項目を送らないよう、住所から項目が消えている
     expect(new URL(page.url()).hash).toBe("")
     expect(new URL(page.url()).pathname).toBe("/login/")
@@ -356,6 +356,6 @@ test("[login-accounts/AC-14] 戻りの住所で開くと、完了の応答の前
         ),
     ).toBeVisible({ timeout: 30_000 })
     await expect(form).toHaveCSS("pointer-events", "auto")
-    // 部品の外の「ログイン中…」は CSS で隠れ、部品の表示は結果に替わる
+    // 水和の前の「ログイン中…」は CSS で隠れ、ステータスメッセージは結果に替わる
     await expect(page.getByText("ログイン中…")).toBeHidden()
 })
