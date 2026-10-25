@@ -23,10 +23,10 @@
 - 対応: D-5, D-6
 - [x] T-3.1: `src/lib/schedule/credentialCrypto.ts` に暗号化と復号を実装する。
 - [x] T-3.2: `store.ts` に認証情報の保存・読み出し・不要時の削除を実装する。
-- [x] T-3.3: `src/lib/schedule/imageStaging.ts` に画像の保管と削除を実装する。
-- [x] T-3.4: 受け入れ条件 AC-5 から AC-7、AC-12 のテストをタグ付きで追加する。
-- [x] T-3.5: 使用時刻の更新・未使用と失効での再度の許可が必要な印への置き換え・印の削除・指示による削除に改め、AC-6・AC-16・AC-21 のテストを更新・追加する。
-- [x] T-3.6: `imageStaging.ts` に世代つきのキーと画像の読み出しを実装し、AC-18 のテストをタグ付きで追加する。
-- [x] T-3.7: `DEVELOP.md` のライフサイクルを15日に改め、AC-19 のテストをタグ付きで追加する。
-- [x] T-3.8: 認可の途中の状態の保管と取り出しを加え、AC-20 のテストをタグ付きで追加する。
-- 検証: `npx vitest run tests/lib/schedule/credentialCrypto.test.ts tests/lib/schedule/imageStaging.test.ts tests/lib/schedule/store.test.ts`
+- [x] T-3.3: `src/lib/schedule/imageStaging.ts` に画像の保管と削除を実装し、AC-5 から AC-7、AC-12 のテストをタグ付きで追加する。
+- [x] T-3.4: 使用時刻の更新・未使用と失効での再度の許可が必要な印への置き換え・印の削除・指示による削除に改め、AC-6・AC-16・AC-21 のテストを更新・追加する。
+- [x] T-3.5: `imageStaging.ts` に世代つきのキーと画像の読み出しを実装し、AC-18 のテストをタグ付きで追加する。
+- [x] T-3.6: `DEVELOP.md` のライフサイクルを15日に改め、AC-19 のテストをタグ付きで追加する。
+- [x] T-3.7: 認可の途中の状態の保管と取り出しを加え、AC-20 のテストをタグ付きで追加する。
+- [x] T-3.8: `migrations/0005_schedule_owner_index.sql` で予約の所有者の索引に `run_at` を加え、AC-22 のテストをタグ付きで追加する。
+- 検証: `npx vitest run tests/lib/schedule/credentialCrypto.test.ts tests/lib/schedule/imageStaging.test.ts tests/lib/schedule/store.test.ts tests/lib/schedule/ownerIndex.test.ts`

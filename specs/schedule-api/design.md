@@ -30,6 +30,7 @@
 | `src/lib/schedule/oauth/flow.ts`                                              | 認可の開始・完了、トークンの更新・取消           |
 | `src/lib/schedule/oauth/storedCredential.ts`                                  | 保管する認可の情報の形                           |
 | `src/lib/schedule/credentialExpiry.ts`                                        | 許可の有効期限の目安の計算                       |
+| `src/lib/schedule/availabilityHint.ts`                                        | 登録状態のヒント cookie の組み立てと解釈         |
 
 ## 2. 関係図・ワークフロー
 
@@ -67,11 +68,13 @@ flowchart LR
   credential --> credentialGet["credential/get"]
   credential --> credentialDelete["credential/delete"]
   credential --> flow
+  credential --> availabilityHint
   credential --> ext_store["予約ストア"]
   authorization --> authorizationPost["authorization/post"]
   authorization --> flow
   completion --> completionPost["completion/post"]
   completion --> flow
+  completion --> availabilityHint
   authorization --> ext_oauth["OAuth のクライアント"]
   flow --> ext_oauth
   flow --> storedCredential
@@ -296,6 +299,8 @@ const DeleteResponseSchema = z.object({
 | 3    | 保管した更新用トークンを、認可サーバーの取消の端点で取り消す（失敗しても続ける）                |
 | 4    | `deleteCredential` で認証情報を削除し、件数を `cancelled` と `deletedHistory` で返す            |
 
+- 登録状態の取得の応答は、同じ内容（`registered`・`reauthRequired`・`expiresAt`）を登録状態のヒント cookie `skyshare_schedule` に保存する。削除と認可の完了の応答は、このヒント cookie を失効させる。アカウントが変わる操作（追加ログイン・切り替え・アクティブなアカウントのログアウト・OAuth のログインの完了）の応答も、同じ `makeScheduleHintClearCookie` で失効させる。ヒント cookie はアカウントに結び付かないため、別のアカウントの状態を新しいアカウントの表示に使わないようにするためである。プール中のアカウントのログアウトはアクティブなアカウントを変えないので失効させない。
+- ヒント cookie は表示の初期値であり、権限を与えない。クライアントが読むため `HttpOnly` を付けず、署名もしない（改ざんされても、予約の作成と置き換えがサーバーで認証情報を再検証して拒否する）。アカウントには結び付けず、寿命は7日とする。クライアントが予約の UI を開くたびに取り直すため、寿命を長くしても表示が古いままにならない。
 - 有効期限の目安は、本サービスが未使用の許可を印に替える時点（最後の使用か最も遅い待機中の実行時刻から30日）と、Bluesky の認可サーバーが confidential client の許可を失効させる時点（許可から2年）の早い方とする。最後の更新から3か月の失効は30日より後のため考えない。
 - 認可サーバーはトークンの応答で更新用トークンの期限を返さないため、atproto の参照実装の定数から見積もる。Bluesky の設定での取消は含まない。
 

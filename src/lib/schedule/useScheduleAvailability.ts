@@ -2,16 +2,21 @@
  * 予約投稿が使えるか（認証情報の登録の有無と制限値）を取得する React フック。
  *
  * 責務と処理概要:
- * - マウント時・ページ遷移（`astro:page-load`）・登録状態の変更の通知のたびに、登録状態を取得し直す。
+ * - 登録状態は、登録状態のヒント cookie（`availabilityHint.ts`）があればそれを使い、サーバーへ問い合わせない。
+ *   cookie が無いとき（初回・失効後・アカウントの変更後・7日経過後）だけ問い合わせ、その応答でサーバーが
+ *   cookie を保存する。これで、予約を使わない利用者のページ遷移が D1 を読まない。
+ * - 次のときは cookie を使わずに必ず問い合わせる: `reload` の呼び出し（予約の UI を開いたとき）、
+ *   登録状態の変更の通知、`revalidate` が真の画面（設定）のマウントとページ遷移。
  * - 制限値は、最初に登録済みと分かったときに1回だけ取得する（実行環境が変わらない限り変化しない）。
  * - 設定画面で登録・削除したときは `notifyScheduleCredentialChange` で通知し、
  *   同じページの投稿フォームのカレンダーのボタンを即座に有効・無効へ切り替える。
  */
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
     getScheduleCredential,
     getScheduleLimits,
 } from "@/client/openapi/client"
+import { readScheduleHint } from "./availabilityHint"
 import type { ScheduleLimits } from "./scheduleLimits"
 
 export const SCHEDULE_CREDENTIAL_EVENT = "skyshare:schedule-credential-change"
@@ -31,6 +36,7 @@ export const notifyScheduleCredentialChange = (): void => {
  *
  * Input:
  * - `enabled`: 偽（ゲストの表示）のときは通信しない
+ * - `revalidate`: 真なら、マウントとページ遷移のたびに cookie を使わず問い合わせる（設定の画面）
  *
  * Output:
  * - `registered`: 登録済みなら true。取得前・取得の失敗・ゲストは null。
@@ -38,12 +44,13 @@ export const notifyScheduleCredentialChange = (): void => {
  * - `reauthRequired`: 許可が無効になり、再度の許可が必要なら true
  * - `expiresAt`: 許可の有効期限の目安。無い・再度の許可が必要なときは null
  * - `limits`: 制限値。取得前と取得の失敗は null
- * - `reload`: 登録状態を取得し直す
+ * - `reload`: cookie を使わずに登録状態を取得し直す（予約の UI を開くときに呼ぶ）
  *
  * Example: `const { registered, limits } = useScheduleAvailability(!guestMode)`
  */
 export const useScheduleAvailability = (
     enabled: boolean,
+    revalidate = false,
 ): {
     registered: boolean | null
     reauthRequired: boolean
@@ -56,12 +63,30 @@ export const useScheduleAvailability = (
     const [expiresAt, setExpiresAt] = useState<Date | null>(null)
     const [limits, setLimits] = useState<ScheduleLimits | null>(null)
     const [version, setVersion] = useState(0)
-    const reload = useCallback(() => setVersion(v => v + 1), [])
+    // 次の取得で cookie を使わず問い合わせるか。取得の効果が読んで下ろす
+    const forceRef = useRef(revalidate)
+    const reload = useCallback(() => {
+        forceRef.current = true
+        setVersion(v => v + 1)
+    }, [])
+    const refresh = useCallback(() => {
+        if (revalidate) forceRef.current = true
+        setVersion(v => v + 1)
+    }, [revalidate])
 
     // 登録状態の取得。古い応答で新しい結果を上書きしないよう、取り消しの印を持つ
     useEffect(() => {
         if (!enabled) {
             setRegistered(null)
+            return
+        }
+        const force = forceRef.current
+        forceRef.current = false
+        const hint = force ? undefined : readScheduleHint(document.cookie)
+        if (hint) {
+            setRegistered(hint.registered)
+            setReauthRequired(hint.reauthRequired)
+            setExpiresAt(hint.expiresAt ? new Date(hint.expiresAt) : null)
             return
         }
         let cancelled = false
@@ -108,12 +133,12 @@ export const useScheduleAvailability = (
     useEffect(() => {
         if (!enabled) return
         window.addEventListener(SCHEDULE_CREDENTIAL_EVENT, reload)
-        document.addEventListener("astro:page-load", reload)
+        document.addEventListener("astro:page-load", refresh)
         return () => {
             window.removeEventListener(SCHEDULE_CREDENTIAL_EVENT, reload)
-            document.removeEventListener("astro:page-load", reload)
+            document.removeEventListener("astro:page-load", refresh)
         }
-    }, [enabled, reload])
+    }, [enabled, reload, refresh])
 
     return { registered, reauthRequired, expiresAt, limits, reload }
 }

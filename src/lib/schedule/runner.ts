@@ -6,8 +6,12 @@
  * 2. 実行時刻が到来した待機中の予約を、実行時刻の早い順に最大 CLAIM_LIMIT 件取り出す。
  * 3. 取り出した順に実行する。外部への通信の予算は全体で共有し、予算が尽きるか
  *    レート制限を受けたら、残りの予約は実行せず進捗を保ったまま待機中へ戻す。
- * 4. 終了から保持期間を過ぎた予約を削除し、残っている画像を削除する。
- * 5. 予約がなく、最後の使用から30日を過ぎた認証情報を削除する。
+ *
+ * 後片付け（`runHousekeeping`）は毎分の流れから切り離し、1日1回だけ行う。
+ * - 終了から保持期間を過ぎた予約を削除し、残っている画像を削除する。
+ * - 予約がなく、最後の使用から30日を過ぎた認証情報を印に替え、古い印と認可の途中の状態を削除する。
+ * 保持期間は日単位で、後片付けが最大1日遅れても意味が変わらない。毎分行うと、利用者数に比例する
+ * 全件走査が D1 の無料枠の行の読み取りを消費するため、頻度を下げている。
  *
  * 実装上の制約:
  * - atproto のライブラリを読み込まない。1件の失敗で実行全体を止めない。
@@ -70,7 +74,30 @@ export const runScheduledPosts = async (
             await releaseSchedule(env.DB, row.id, true, now).catch(() => {})
         }
     }
+}
 
+/** 後片付けを行う時刻（UTC の 0 時からの分）。日本時間の午前 3 時 */
+export const HOUSEKEEPING_MINUTE_OF_DAY_UTC = 18 * 60
+
+/**
+ * 後片付けを行う定期実行か。1日のうち、この分に起動された1回だけが真になる。
+ * 状態を持たないため、その分の起動が失敗しても翌日の同じ分に回収される（削除はすべて期限での絞り込み）。
+ *
+ * Input: `now`（UNIX 秒。定期実行の予定時刻）
+ * Output: 後片付けの分なら true
+ * Example: 18:00:20 UTC → true、18:01:00 UTC → false
+ */
+export const isHousekeepingTime = (now: number): boolean =>
+    Math.floor(now / 60) % (24 * 60) === HOUSEKEEPING_MINUTE_OF_DAY_UTC
+
+/**
+ * 終了した予約と不要な認証情報・認可の途中の状態を削除する（1日1回）。
+ * 1件の失敗で止めず、失敗は記録だけする。
+ */
+export const runHousekeeping = async (
+    env: ScheduleEnv,
+    now: number,
+): Promise<void> => {
     try {
         const purged = await purgeFinished(
             env.DB,
@@ -87,6 +114,6 @@ export const runScheduledPosts = async (
         await purgeReauthMarkers(env.DB, now, REAUTH_MARKER_KEEP_SECONDS)
         await purgeOAuthStates(env.DB, now)
     } catch {
-        console.error("runScheduledPosts: purge failed")
+        console.error("runHousekeeping: purge failed")
     }
 }

@@ -116,6 +116,16 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
+    test("schedule-api/AC-25: 完了の応答が登録状態のヒント cookie を失効させる", async () => {
+        const res = await callComplete(
+            JSON.stringify({ error: "access_denied", state: "S" }),
+        )
+        const hint = res.headers
+            .getSetCookie()
+            .find(c => c.startsWith("skyshare_schedule="))
+        expect(hint).toContain("Max-Age=0")
+    })
+
     test("schedule-api/AC-24: 開始で渡したページのパスが戻り先だけに送られる cookie に入り、戻るとそのページへ転送されて cookie が消える", async () => {
         const res = await callStart(JSON.stringify({ returnTo: "/post/?a=1" }))
         expect(res.status).toBe(200)

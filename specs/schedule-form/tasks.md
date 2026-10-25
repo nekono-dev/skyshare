@@ -19,6 +19,7 @@
 - [x] T-2.2: `src/components/schedule/CredentialDialog/index.tsx` を、入力欄の無い Bluesky での許可への案内にする。
 - [x] T-2.3: `src/components/schedule/ScheduleSetting/index.tsx` を実装し、設定の投稿フォームのグループに置く。
 - [x] T-2.4: 受け入れ条件 AC-1 から AC-4、AC-21、AC-23、AC-27、AC-28 の E2E をタグ付きで追加する。
+- [x] T-2.5: 登録状態のヒント cookie を使い、日時の指定と予約のタブを開くときだけ取り直す形にし、`tests/e2e/scheduleAvailabilityHint.spec.ts` に AC-36 の E2E を追加する。
 - 検証: `npx tsc --noEmit`
 - E2E: `tests/e2e/scheduleSetting.spec.ts` 設定の予約投稿をオンにして Bluesky で許可し、次にオフにする → 許可して戻るとオンになり、オフの確認を承諾するとオフになる
 

@@ -143,6 +143,7 @@ export const admitSession = (current: StoredSession | undefined, pool: PooledAcc
 | PUT      | `{ did }`                            | プールの対象を再開し、更新後のセッションをアクティブにして現在をプールへ戻す              | 検証 → 400、対象無し → 404、失効 → 401                 |
 | DELETE   | パスの `did`                         | アクティブなら `makeClearSetCookie`、プール中なら `makeAccountsSetCookies` で除去する     | `did` 無し → 400、どちらにも無い → 404                 |
 
+- アクティブなアカウントが変わる応答（POST・PUT・アクティブアカウントの DELETE と、OAuth のログインの完了）は、`makeScheduleHintClearCookie` で予約投稿の登録状態のヒント cookie を失効させる。要件と理由は schedule-api の設計に従う。プール中のアカウントの DELETE は失効させない。
 - プロフィールの取得は認証せず公開の AppView へ行い、失敗は握りつぶして空のメタ情報にする。トークンの更新を起こさないため。
 - 切り替えの再開は、パスワードのセッションなら `resumeSession` で行い、OAuth のセッションなら期限の前の更新を OAuth のセッションの処理に委ねる。ログアウトでは、OAuth のセッションの更新用トークンの取消を同じ処理に委ねる。
 - 例外は `resolveXrpcStatus` で変換し、想定外は 500 とする。

@@ -2,6 +2,10 @@ import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus } from "@/lib/api/response.js"
 import { getScheduleEnv } from "@/lib/schedule/env"
+import {
+    makeScheduleHintClearCookie,
+    makeScheduleHintSetCookie,
+} from "@/lib/schedule/availabilityHint"
 import { estimateCredentialExpiry } from "@/lib/schedule/credentialExpiry"
 import { parseCredential } from "@/lib/schedule/oauth/storedCredential"
 import { revokeCredential } from "@/lib/schedule/oauth/flow"
@@ -25,6 +29,7 @@ import {
  * Skyshare v2 schedules/credential API（予約用の認証情報）。
  *
  * - GET: 登録の有無・再度の許可の要否・更新時刻・許可の有効期限の目安を返す（トークンは返さない）。
+ *   同じ内容を登録状態のヒント cookie に保存し、クライアントが次の表示から D1 へ問い合わせずに済むようにする。
  * - 登録は OAuth の認可（`credential/authorization`）で行う。
  * - DELETE: 待機中の予約と失敗の履歴をすべて削除してから、認可サーバーで更新用トークンを取り消し、
  *   認証情報を削除して予約投稿を無効にする。
@@ -38,16 +43,36 @@ export const GET: APIRoute = async ({ locals }) => {
         const env = await getScheduleEnv()
         const status = await getCredentialStatus(env.DB, session.did)
         if (!status.registered) {
-            return jsonResponse({ registered: false, reauthRequired: false })
+            return jsonResponse(
+                { registered: false, reauthRequired: false },
+                200,
+                [
+                    makeScheduleHintSetCookie({
+                        registered: false,
+                        reauthRequired: false,
+                    }),
+                ],
+            )
         }
-        return jsonResponse({
-            registered: true,
-            reauthRequired: status.reauthRequired,
-            updatedAt: toIso(status.updatedAt),
-            ...(status.reauthRequired
-                ? {}
-                : { expiresAt: toIso(estimateCredentialExpiry(status)) }),
-        })
+        const expiresAt = status.reauthRequired
+            ? undefined
+            : toIso(estimateCredentialExpiry(status))
+        return jsonResponse(
+            {
+                registered: true,
+                reauthRequired: status.reauthRequired,
+                updatedAt: toIso(status.updatedAt),
+                ...(expiresAt === undefined ? {} : { expiresAt }),
+            },
+            200,
+            [
+                makeScheduleHintSetCookie({
+                    registered: true,
+                    reauthRequired: status.reauthRequired,
+                    ...(expiresAt === undefined ? {} : { expiresAt }),
+                }),
+            ],
+        )
     } catch (err) {
         console.error("schedule credential GET: unexpected error", err)
         return errorResponseFromStatus(500)
@@ -62,7 +87,7 @@ export const GET: APIRoute = async ({ locals }) => {
  * 2. 待機中と失敗の予約を一括で削除し、それぞれの画像を削除する（画像の削除の失敗は記録だけする）。
  * 3. 認可サーバーで更新用トークンを取り消す（失敗しても続ける）。
  * 4. 認証情報を削除し、取り消した待機中の件数と削除した失敗の件数を返す。
- *    登録が無くても 200 を返す（冪等）。
+ *    登録が無くても 200 を返す（冪等）。登録状態のヒント cookie は失効させる。
  */
 export const DELETE: APIRoute = async ({ locals }) => {
     try {
@@ -107,7 +132,7 @@ export const DELETE: APIRoute = async ({ locals }) => {
             cancelled: deleted.filter(r => r.status === "pending").length,
             deletedHistory: deleted.filter(r => r.status === "failed").length,
         }
-        return jsonResponse(res)
+        return jsonResponse(res, 200, [makeScheduleHintClearCookie()])
     } catch (err) {
         console.error("schedule credential DELETE: unexpected error", err)
         return errorResponseFromStatus(500)

@@ -123,6 +123,39 @@ describe("/v2/schedules/credential", () => {
         expect(await getSchedule(db, DID, "busy")).toBeNull()
     })
 
+    test("schedule-api/AC-25: 登録状態の取得がヒント cookie を保存し、削除がヒント cookie を失効させる", async () => {
+        const hintOf = (res: Response) =>
+            res.headers
+                .getSetCookie()
+                .find(c => c.startsWith("skyshare_schedule="))!
+        const decode = (cookie: string) =>
+            JSON.parse(decodeURIComponent(cookie.split(";")[0]!.split("=")[1]!))
+
+        expect(decode(hintOf(await call(GET)))).toEqual({
+            registered: false,
+            reauthRequired: false,
+        })
+        await saveCredential(
+            db,
+            KEY,
+            { did: DID, service: "s", token: "t" },
+            100,
+            { authorized: true },
+        )
+        const hint = decode(hintOf(await call(GET)))
+        expect(hint).toMatchObject({ registered: true, reauthRequired: false })
+        expect(hint.expiresAt).toBe(
+            new Date((100 + CREDENTIAL_IDLE_SECONDS) * 1000).toISOString(),
+        )
+        await markCredentialReauth(db, DID)
+        expect(decode(hintOf(await call(GET)))).toEqual({
+            registered: true,
+            reauthRequired: true,
+        })
+
+        expect(hintOf(await call(DELETE))).toContain("Max-Age=0")
+    })
+
     test("schedule-api/AC-14: 未認証は401で、キャッシュを禁止する", async () => {
         for (const handler of [GET, DELETE]) {
             const unauth = await call(handler, { method: "GET" }, {})
