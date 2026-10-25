@@ -22,14 +22,14 @@
 
 # 仕様駆動開発
 
-- 仕様駆動開発は skill `spec-driven-development` に従う。スキルはリポジトリに同梱せず、環境側（`~/.claude/skills/spec-driven-development`）に導入する（導入・更新手順は https://github.com/nekono-dev/spec-driven-development の README）。
+- 仕様駆動開発は skill `spec-driven-development` に従う。スキルはリポジトリに同梱せず、プラグイン `spec-driven-development@nekono-dev`（https://github.com/nekono-dev/spec-driven-development）として `.claude/settings.json` で有効にしている。
 - 仕様書（`specs/`・`docs/architecture*`・`poc/`）の検査は `npm run test:spec`（`spec-lint`）で行う。`spec-lint` はグローバルに導入する（`npm install -g @nekono-dev/spec-lint`。GitHub Packages の認証が必要）。
 - 整形はリポジトリ側の prettier（`.prettierrc` のプラグインを使うため）で検査・修正する（`npx prettier --write specs docs`）。`spec-lint` は `--no-format` で実行する。
 
 # ブランチ・プレビューの規則
 
 - ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、`develop`、保護ブランチ `main`）。
-- スキルはリポジトリに同梱せず、プラグイン `branch-release-workflow@nekono-dev`（https://github.com/nekono-dev/branch-release-workflow）として `.claude/settings.json` で有効にしている。
+- スキルはリポジトリに同梱せず、プラグイン `branch-release-workflow@nekono-dev`（https://github.com/nekono-dev/branch-release-workflow）として `.claude/settings.json` で有効にしている。マーケットプレイス `nekono-dev` は https://github.com/nekono-dev/claude-plugins で、両プラグインを載せている。
 - 保護ブランチと宣言外のブランチでの commit・push は、プラグインの PreToolUse フックが拒否する。
 - 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作成すること。`git checkout -b` 等で直接作らない。
 - ユーザーが製造したコードの挙動を確認したい旨を示したら、`brw url` が返す `https://XXXX.develop.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
