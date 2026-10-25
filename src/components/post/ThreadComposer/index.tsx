@@ -161,6 +161,12 @@ type Props = {
    * 後続処理は通常時と同じフローで実行して見た目を体験してもらう用途。
    */
   guestMode?: boolean
+  /**
+   * 真のとき、マウント直後に先頭セグメントの本文の入力欄へフォーカスする（既定は偽）。
+   * PostLauncher のモーダルのように「開いた直後から入力する」用途で指定する。
+   * 常時表示のフォームでは、表示しただけで画面が動いたりスマホのキーボードが出たりしないよう渡さない。
+   */
+  autoFocus?: boolean
 }
 
 /**
@@ -225,6 +231,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       accountDid,
       onPinnedFormDisabledChange,
       guestMode = false,
+      autoFocus = false,
     },
     ref,
   ) {
@@ -371,6 +378,15 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const [isSavingDraft, setIsSavingDraft] = useState(false)
     const formRef = useRef<HTMLDivElement>(null)
     const entryFormRef = useRef<HTMLFormElement>(null)
+    // マウント時だけ先頭の本文の入力欄へフォーカスする。入力欄が未描画なら何もしない。
+    // スクロール位置を動かさない（preventScroll）のは、モーダルを開いた直後に背面や
+    // フォームが跳ねないようにするため。
+    useEffect(() => {
+      if (!autoFocus) return
+      entryFormRef.current
+        ?.querySelector<HTMLElement>("[data-post-body-editor]")
+        ?.focus({ preventScroll: true })
+    }, [autoFocus])
 
     const rootSegment = segments[0]
     const hasTextInput = segments.some(s => s.text.trim().length > 0)
