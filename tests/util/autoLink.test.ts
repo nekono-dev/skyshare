@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { findUrlRanges } from "@/util/autoLink"
+import { findHashtagRanges, findUrlRanges } from "@/util/autoLink"
 
 /** 検出した範囲の文字列とリンク先の組を返す（テスト用） */
 const linksOf = (text: string) =>
@@ -54,5 +54,32 @@ describe("findUrlRanges", () => {
 
     it("スキームだけの文字列はURLにしない", () => {
         expect(linksOf("https:// のみ")).toEqual([])
+    })
+})
+
+/** 検出したタグの範囲の文字列とタグを返す（テスト用） */
+const tagsOf = (text: string) =>
+    findHashtagRanges(text).map(range => ({
+        text: text.slice(range.start, range.end),
+        tag: range.tag,
+    }))
+
+describe("findHashtagRanges", () => {
+    it("[post-rich-text/AC-12] 日本語の文中の空白の後ろのタグを検出し、末尾の句読点は含めない", () => {
+        expect(tagsOf("今日は #猫。 と (#dog) と（#鳥）")).toEqual([
+            { text: "#猫", tag: "猫" },
+            { text: "#dog", tag: "dog" },
+            { text: "#鳥", tag: "鳥" },
+        ])
+        expect(tagsOf("#start")).toEqual([{ text: "#start", tag: "start" }])
+    })
+
+    it("[post-rich-text/AC-13] 数字だけのタグ・単語の途中の # はタグにしない", () => {
+        expect(tagsOf("#123 a#b #!!")).toEqual([])
+        expect(tagsOf("#1a")).toEqual([{ text: "#1a", tag: "1a" }])
+    })
+
+    it("[post-rich-text/AC-13] 64文字を超えるタグはタグにしない", () => {
+        expect(tagsOf(`#${"a".repeat(65)}`)).toEqual([])
     })
 })

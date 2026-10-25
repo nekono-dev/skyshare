@@ -8,6 +8,8 @@ export const guest = {
     "guest.post1.text": "これはゲスト用デモ表示のサンプル投稿です。",
     "guest.post2.text":
         "画像投稿で、URL発行を行った際の表示です。（共有ボタンやポップアップボタンで再度他SNSへ投稿可能）",
+    "guest.entry1.caption":
+        "画像投稿で、URL発行を行った際の表示です。（共有ボタンやポップアップボタンで再度他SNSへ投稿可能） example.com/entry-list #entrylist",
     "guest.entry1.heading": "サンプルEntry",
     "guest.entry1.postCaption": "ゲスト表示用のダミーEntryです。",
     "guest.post3.text":

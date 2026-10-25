@@ -716,7 +716,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             sourceUri: "at://did:plc:guestdemo/app.bsky.feed.post/guest2",
             sourceCid: "bafyreiguestdemo2",
             heading: t("guest.entry1.heading"),
-            caption: t("guest.post2.text"),
+            caption: t("guest.entry1.caption"),
             visualUrl: SAMPLE_OG_IMAGE_PATH,
             webUrl: GUEST_SAMPLE_ENTRY_PATH,
         },

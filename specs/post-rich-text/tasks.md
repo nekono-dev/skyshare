@@ -29,3 +29,12 @@
 - [x] T-4.3: サンプルのentry詳細ページの説明文にスキームを省略したURLを加え、リンクを確認するE2Eテストを追加する。
 - 検証: `npx vitest run tests/util/autoLink.test.ts tests/lib/atproto/richTextSegments.test.ts`
 - E2E: `tests/e2e/postRichText.spec.ts` サンプルのentry詳細ページを開く → 説明文のスキームを省略したURLが https を補った新しいタブで開くリンクになる
+
+## Phase 5: entry一覧のキャプションとタグのリンク表示
+
+- 対応: D-5, D-6
+- [x] T-5.1: `autoLink.ts` に `findHashtagRanges` を実装し、`segmentRichText` の注釈の範囲外の区間に適用する。単体テストを受け入れ条件のタグ付きで追加する。
+- [x] T-5.2: `EntryCard` のキャプションを `PostRichText` で描画する。
+- [x] T-5.3: ゲスト表示のentryのキャプションにURLとタグを加え、一覧のリンクを確認するE2Eテストを追加する。
+- 検証: `npx vitest run tests/util/autoLink.test.ts`
+- E2E: `tests/e2e/postRichText.spec.ts` ゲスト表示の一覧ページを開く → キャプションのスキームを省略したURLとタグが新しいタブで開くリンクになる

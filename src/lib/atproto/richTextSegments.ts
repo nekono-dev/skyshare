@@ -4,11 +4,11 @@
  * 責務と処理概要:
  * - 外部入力（PDS・AppViewのレコード）の facets を、表示に使う3種（mention/link/tag）だけの形へ正規化する。
  * - facets の UTF-8 バイト範囲で本文を区間に切り出し、リンクの区間にはリンク先を付ける（`specs/post-rich-text`）。
- * - facets の無い部分に書かれた URL（スキーム省略・日本語に続くものを含む）もリンクの区間にする。
+ * - facets の無い部分に書かれた URL（スキーム省略・日本語に続くものを含む）とハッシュタグもリンクの区間にする。
  * - 指定した facets の範囲の文字を本文から取り除く（`specs/link-card-priority`）。
  * - `@atproto/*` を import しない純粋関数のみで構成する（クライアントの bundle と cold start の負担を増やさないため）。
  */
-import { findUrlRanges } from "@/util/autoLink"
+import { findHashtagRanges, findUrlRanges } from "@/util/autoLink"
 
 export type PostFacetFeature =
     | { $type: "app.bsky.richtext.facet#mention"; did: string }
@@ -202,9 +202,24 @@ const validRanges = (bytes: Uint8Array, facets: PostFacet[]): PostFacet[] => {
  * - 出力: `[{ text: "見て" }, { text: "example.com", href: "https://example.com" }, { text: "です" }]`
  */
 const autoLinkSegments = (text: string): RichTextSegment[] => {
+    const urlRanges = findUrlRanges(text)
+    // URL の範囲と重なるタグ（フラグメント等）は除き、URL を優先する
+    const tagRanges = findHashtagRanges(text).filter(
+        tag =>
+            !urlRanges.some(url => tag.start < url.end && url.start < tag.end),
+    )
+    const ranges = [
+        ...urlRanges,
+        ...tagRanges.map(tag => ({
+            start: tag.start,
+            end: tag.end,
+            href: `https://bsky.app/hashtag/${encodeURIComponent(tag.tag)}`,
+        })),
+    ].sort((a, b) => a.start - b.start)
+
     const segments: RichTextSegment[] = []
     let cursor = 0
-    for (const range of findUrlRanges(text)) {
+    for (const range of ranges) {
         if (range.start > cursor) {
             segments.push({ text: text.slice(cursor, range.start) })
         }
