@@ -21,6 +21,8 @@ import { operation as bskySessionGet } from "./v2/bsky/session/get"
 import { operation as bskySessionPost } from "./v2/bsky/session/post"
 import { operation as bskySessionPut } from "./v2/bsky/session/put"
 import { operation as bskySessionDeleteByDid } from "./v2/bsky/session/_did/delete"
+import { operation as bskySessionAuthorizationPost } from "./v2/bsky/session/authorization/post"
+import { operation as bskySessionAuthorizationCompletionPost } from "./v2/bsky/session/authorization/completion/post"
 import { operation as bskyDraftsGet } from "./v2/bsky/drafts/get"
 import { operation as bskyDraftsPost } from "./v2/bsky/drafts/post"
 import { operation as bskyDraftsPut } from "./v2/bsky/drafts/put"
@@ -53,6 +55,10 @@ export const paths: ZodOpenApiPathsObject = {
         put: bskySessionPut,
     },
     "/v2/bsky/session/{did}/": { delete: bskySessionDeleteByDid },
+    "/v2/bsky/session/authorization/": { post: bskySessionAuthorizationPost },
+    "/v2/bsky/session/authorization/completion/": {
+        post: bskySessionAuthorizationCompletionPost,
+    },
     "/v2/bsky/drafts/": {
         get: bskyDraftsGet,
         post: bskyDraftsPost,

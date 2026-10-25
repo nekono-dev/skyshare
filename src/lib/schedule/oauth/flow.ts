@@ -9,6 +9,7 @@
  *   ログイン中のアカウントと同じことを確かめてから、更新用トークンと DPoP の鍵を暗号化して保管する。
  * - 更新: Cron の実行の始めに、更新用トークンで新しいアクセストークンと更新用トークンを得る。
  * - 取消: 予約投稿を無効にしたとき、更新用トークンを認可サーバーで取り消す（失敗しても続ける）。
+ * - PAR・トークンの要求・取消の送り方は、共通の OAuth のクライアント（`@/lib/oauth/token`）に委ねる。
  *
  * 実装上の制約:
  * - Cron の実行からも使うため、atproto のライブラリを読み込まず WebCrypto と fetch だけを使う。
@@ -17,26 +18,32 @@
 import type { ScheduleEnv } from "../cfTypes"
 import { saveCredential, saveOAuthState, takeOAuthState } from "../store"
 import {
-    type ClientKey,
-    OAUTH_SCOPE,
-    clientAssertionParams,
+    SCHEDULE_SCOPE,
     clientIdFor,
     loadClientKey,
     redirectUriFor,
-} from "./client"
+} from "@/lib/oauth/client"
 import { type OAuthCredential, serializeCredential } from "./storedCredential"
-import { discoverAuthorizationServer, resolvePdsUrl } from "./discovery"
-import { type DpopSession, createDpopSession } from "./dpop"
+import {
+    discoverAuthorizationServer,
+    resolvePdsUrl,
+} from "@/lib/oauth/discovery"
+import { type DpopSession, createDpopSession } from "@/lib/oauth/dpop"
 import {
     type EcPrivateJwk,
     generateEcJwk,
     isEcPrivateJwk,
     randomString,
-    sha256Base64url,
-} from "./jose"
-import { postForm } from "./tokenRequest"
+} from "@/lib/oauth/jose"
+import { isLoopbackClientId } from "@/lib/oauth/loopback"
+import {
+    type TokenFailure,
+    pushAuthorizationRequest,
+    requestTokens,
+    revokeToken,
+} from "@/lib/oauth/token"
 
-type Env = Pick<ScheduleEnv, "DB" | "SCHEDULE_ENC_KEY" | "SCHEDULE_OAUTH_KEY">
+type Env = Pick<ScheduleEnv, "DB" | "SCHEDULE_ENC_KEY" | "OAUTH_CLIENT_KEY">
 
 /** 認可の途中で保つ状態 */
 type PendingAuthorization = {
@@ -53,10 +60,6 @@ export type StartResult =
     | { ok: true; url: string }
     | { ok: false; status: 500 | 502; code?: "OAuthNotConfigured" }
 
-/** ログに出す例外の種類（メッセージは URL などを含みうるため出さない） */
-const errorName = (err: unknown): string =>
-    err instanceof Error ? err.name : typeof err
-
 /**
  * 認可を開始する。
  *
@@ -71,58 +74,42 @@ export const startAuthorization = async (
     input: { origin: string; did: string; now: number },
     fetchImpl: typeof fetch = fetch,
 ): Promise<StartResult> => {
-    const client = await loadClientKey(env.SCHEDULE_OAUTH_KEY)
-    if (!client) return { ok: false, status: 500, code: "OAuthNotConfigured" }
+    const clientId = clientIdFor(input.origin)
+    const client = await loadClientKey(env.OAUTH_CLIENT_KEY)
+    // 開発用の公開クライアントは秘密鍵を持たない
+    if (!client && !isLoopbackClientId(clientId)) {
+        return { ok: false, status: 500, code: "OAuthNotConfigured" }
+    }
     const pdsUrl = await resolvePdsUrl(input.did, fetchImpl)
     if (!pdsUrl) return { ok: false, status: 502 }
     const as = await discoverAuthorizationServer(pdsUrl, fetchImpl)
     if (!as) return { ok: false, status: 502 }
 
-    const clientId = clientIdFor(input.origin)
     const dpopJwk = await generateEcJwk()
     const dpop = await createDpopSession(dpopJwk)
     const state = randomString()
     const verifier = randomString(32)
 
-    let res: Response | null
-    try {
-        res = await postForm({
-            url: as.parEndpoint,
+    const par = await pushAuthorizationRequest(
+        {
+            as,
+            client,
+            clientId,
+            redirectUri: redirectUriFor(input.origin),
+            scope: SCHEDULE_SCOPE,
+            state,
+            verifier,
+            loginHint: input.did,
             dpop,
             now: input.now,
-            fetchImpl,
-            params: async () => ({
-                ...(await clientAssertionParams(
-                    client,
-                    clientId,
-                    as.issuer,
-                    input.now,
-                )),
-                response_type: "code",
-                redirect_uri: redirectUriFor(input.origin),
-                scope: OAUTH_SCOPE,
-                state,
-                code_challenge: await sha256Base64url(verifier),
-                code_challenge_method: "S256",
-                login_hint: input.did,
-            }),
-        })
-    } catch (err) {
-        console.error(`oauth start: PAR unreachable (${errorName(err)})`)
-        return { ok: false, status: 502 }
+        },
+        fetchImpl,
+    )
+    if (!par.ok) {
+        return par.kind === "NotConfigured"
+            ? { ok: false, status: 500, code: "OAuthNotConfigured" }
+            : { ok: false, status: 502 }
     }
-    if (!res || !res.ok) {
-        console.error(`oauth start: PAR ${res?.status ?? "none"}`)
-        return { ok: false, status: 502 }
-    }
-    let requestUri: unknown
-    try {
-        requestUri = ((await res.json()) as { request_uri?: unknown })
-            .request_uri
-    } catch {
-        requestUri = undefined
-    }
-    if (typeof requestUri !== "string") return { ok: false, status: 502 }
 
     const pending: PendingAuthorization = {
         verifier,
@@ -141,10 +128,7 @@ export const startAuthorization = async (
         { state, did: input.did, data: JSON.stringify(pending) },
         input.now,
     )
-    const url = new URL(as.authorizationEndpoint)
-    url.searchParams.set("client_id", clientId)
-    url.searchParams.set("request_uri", requestUri)
-    return { ok: true, url: url.toString() }
+    return { ok: true, url: par.url }
 }
 
 /** 認可の完了の失敗の分類。画面へ戻すときの理由に使う */
@@ -210,56 +194,42 @@ export const completeAuthorization = async (
     if (query.iss !== pending.issuer) {
         return { ok: false, code: "IssuerMismatch" }
     }
-    const client = await loadClientKey(env.SCHEDULE_OAUTH_KEY)
-    if (!client) return { ok: false, code: "NotConfigured" }
-
+    const client = await loadClientKey(env.OAUTH_CLIENT_KEY)
     const dpop = await createDpopSession(pending.dpopJwk)
-    let res: Response | null
-    try {
-        res = await postForm({
-            url: pending.tokenEndpoint,
+    const result = await requestTokens(
+        {
+            tokenEndpoint: pending.tokenEndpoint,
+            issuer: pending.issuer,
+            client,
+            clientId: pending.clientId,
+            grant: {
+                type: "authorization_code",
+                code: query.code,
+                redirectUri: redirectUriFor(input.origin),
+                verifier: pending.verifier,
+            },
             dpop,
             now: input.now,
-            fetchImpl,
-            params: async () => ({
-                ...(await clientAssertionParams(
-                    client,
-                    pending.clientId,
-                    pending.issuer,
-                    input.now,
-                )),
-                grant_type: "authorization_code",
-                code: query.code!,
-                redirect_uri: redirectUriFor(input.origin),
-                code_verifier: pending.verifier,
-            }),
-        })
-    } catch (err) {
-        console.error(`oauth complete: token unreachable (${errorName(err)})`)
-        return { ok: false, code: "TokenFailed" }
+        },
+        fetchImpl,
+    )
+    if (!result.ok) {
+        return {
+            ok: false,
+            code:
+                result.kind === "NotConfigured"
+                    ? "NotConfigured"
+                    : "TokenFailed",
+        }
     }
-    if (!res || !res.ok) {
-        console.error(`oauth complete: token ${res?.status ?? "none"}`)
-        return { ok: false, code: "TokenFailed" }
-    }
-    const token = (await res.json().catch(() => ({}))) as {
-        sub?: unknown
-        refresh_token?: unknown
-        token_type?: unknown
-    }
-    if (token.sub !== input.did) return { ok: false, code: "AccountMismatch" }
-    if (
-        typeof token.refresh_token !== "string" ||
-        typeof token.token_type !== "string" ||
-        token.token_type.toLowerCase() !== "dpop"
-    ) {
-        return { ok: false, code: "TokenFailed" }
+    if (result.tokens.sub !== input.did) {
+        return { ok: false, code: "AccountMismatch" }
     }
 
     const credential: OAuthCredential = {
         v: 1,
         clientId: pending.clientId,
-        refreshToken: token.refresh_token,
+        refreshToken: result.tokens.refreshToken,
         dpopJwk: pending.dpopJwk,
         issuer: pending.issuer,
         tokenEndpoint: pending.tokenEndpoint,
@@ -282,13 +252,7 @@ export const completeAuthorization = async (
 }
 
 /** トークンの更新の失敗の分類 */
-export type RefreshFailure =
-    | "Expired"
-    | "RateLimited"
-    | "Transient"
-    | "BudgetExceeded"
-    | "Invalid"
-    | "NotConfigured"
+export type RefreshFailure = TokenFailure
 
 export type RefreshResult =
     | {
@@ -310,7 +274,7 @@ export type RefreshResult =
  * Output: アクセストークンと、DPoP の証明に使う状態と、更新後の認可の情報
  */
 export const refreshTokens = async (
-    env: Pick<ScheduleEnv, "SCHEDULE_OAUTH_KEY">,
+    env: Pick<ScheduleEnv, "OAUTH_CLIENT_KEY">,
     input: {
         did: string
         credential: OAuthCredential
@@ -319,59 +283,31 @@ export const refreshTokens = async (
     },
     fetchImpl: typeof fetch = fetch,
 ): Promise<RefreshResult> => {
-    const client: ClientKey | null = await loadClientKey(env.SCHEDULE_OAUTH_KEY)
-    if (!client) return { ok: false, kind: "NotConfigured" }
+    const client = await loadClientKey(env.OAUTH_CLIENT_KEY)
     const { credential } = input
     const dpop = await createDpopSession(credential.dpopJwk)
-    let res: Response | null
-    try {
-        res = await postForm({
-            url: credential.tokenEndpoint,
+    const result = await requestTokens(
+        {
+            tokenEndpoint: credential.tokenEndpoint,
+            issuer: credential.issuer,
+            client,
+            clientId: credential.clientId,
+            grant: {
+                type: "refresh_token",
+                refreshToken: credential.refreshToken,
+            },
             dpop,
             now: input.now,
-            fetchImpl,
             onRequest: input.onRequest,
-            params: async () => ({
-                ...(await clientAssertionParams(
-                    client,
-                    credential.clientId,
-                    credential.issuer,
-                    input.now,
-                )),
-                grant_type: "refresh_token",
-                refresh_token: credential.refreshToken,
-            }),
-        })
-    } catch {
-        return { ok: false, kind: "Transient" }
-    }
-    if (!res) return { ok: false, kind: "BudgetExceeded" }
-    if (res.status === 429) return { ok: false, kind: "RateLimited" }
-    if (res.status >= 500) return { ok: false, kind: "Transient" }
-    const body = (await res.json().catch(() => ({}))) as {
-        error?: unknown
-        access_token?: unknown
-        refresh_token?: unknown
-        sub?: unknown
-    }
-    if (!res.ok) {
-        // 更新用トークンの失効・取消は、利用者が認可し直すまで回復しない
-        return {
-            ok: false,
-            kind: body.error === "invalid_grant" ? "Expired" : "Invalid",
-        }
-    }
-    if (
-        typeof body.access_token !== "string" ||
-        typeof body.refresh_token !== "string" ||
-        body.sub !== input.did
-    ) {
-        return { ok: false, kind: "Invalid" }
-    }
+        },
+        fetchImpl,
+    )
+    if (!result.ok) return { ok: false, kind: result.kind }
+    if (result.tokens.sub !== input.did) return { ok: false, kind: "Invalid" }
     return {
         ok: true,
-        accessToken: body.access_token,
-        credential: { ...credential, refreshToken: body.refresh_token },
+        accessToken: result.tokens.accessToken,
+        credential: { ...credential, refreshToken: result.tokens.refreshToken },
         dpop,
     }
 }
@@ -380,33 +316,23 @@ export const refreshTokens = async (
  * 更新用トークンを認可サーバーで取り消す。失敗しても例外を投げない（保管の削除は呼び出し側が行う）。
  */
 export const revokeCredential = async (
-    env: Pick<ScheduleEnv, "SCHEDULE_OAUTH_KEY">,
+    env: Pick<ScheduleEnv, "OAUTH_CLIENT_KEY">,
     credential: OAuthCredential,
     now: number,
     fetchImpl: typeof fetch = fetch,
 ): Promise<void> => {
-    if (!credential.revocationEndpoint) return
-    const client = await loadClientKey(env.SCHEDULE_OAUTH_KEY)
-    if (!client) return
-    try {
-        const dpop = await createDpopSession(credential.dpopJwk)
-        await postForm({
-            url: credential.revocationEndpoint,
+    const client = await loadClientKey(env.OAUTH_CLIENT_KEY)
+    const dpop = await createDpopSession(credential.dpopJwk)
+    await revokeToken(
+        {
+            revocationEndpoint: credential.revocationEndpoint,
+            issuer: credential.issuer,
+            client,
+            clientId: credential.clientId,
+            refreshToken: credential.refreshToken,
             dpop,
             now,
-            fetchImpl,
-            params: async () => ({
-                ...(await clientAssertionParams(
-                    client,
-                    credential.clientId,
-                    credential.issuer,
-                    now,
-                )),
-                token: credential.refreshToken,
-                token_type_hint: "refresh_token",
-            }),
-        })
-    } catch (err) {
-        console.warn(`oauth revoke: unreachable (${errorName(err)})`)
-    }
+        },
+        fetchImpl,
+    )
 }

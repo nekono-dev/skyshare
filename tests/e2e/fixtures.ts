@@ -65,3 +65,27 @@ export const test = base.extend({
         await use(page)
     },
 })
+
+/**
+ * ログインのフォームで、従来形式でのログイン（アプリパスワード）の折りたたみを開く（既定は閉じている）。
+ *
+ * 処理の趣旨:
+ * - ハイドレーションの前に押したクリックは無視されるため、ハンドルの入力欄が出るまで押し直す。
+ *   開いた後に押すと閉じるため、入力欄が出ていれば押さない。
+ *
+ * Input: `scope`（ページ、またはログインのフォームのロケーター）、`name`（折りたたみの名前。既定は日本語と英語の両方に一致する）
+ * Output: なし（入力欄が表示された状態で戻る）
+ *
+ * 例: `await openPasswordLogin(page.locator("#login-form"))`
+ */
+export const openPasswordLogin = async (
+    scope: Pick<import("@playwright/test").Page, "getByRole" | "locator">,
+    name: string | RegExp = /^(従来形式でのログイン|Classic login)$/,
+): Promise<void> => {
+    await expect(async () => {
+        if (!(await scope.locator("#username").isVisible())) {
+            await scope.getByRole("button", { name }).click()
+        }
+        await expect(scope.locator("#username")).toBeVisible({ timeout: 1_000 })
+    }).toPass({ timeout: 30_000 })
+}

@@ -7,11 +7,10 @@ import { describe, expect, it } from "vitest"
 import type { APIContext } from "astro"
 
 import { DELETE } from "@/pages/v2/bsky/session/[did]"
-import {
-    encodeBase64Utf8,
-    SESSION_COOKIE_NAME,
-    ACCOUNTS_COOKIE_NAME,
-} from "@/lib/session/cookies.js"
+import { encodeBase64Utf8, SESSION_COOKIE_NAME } from "@/lib/session/cookies.js"
+
+/** プールの先頭の枠 */
+const ACCOUNTS_COOKIE_NAME = "atp_account_0"
 
 const callRoute = (request: Request, did: string | undefined) =>
     DELETE({ request, params: { did } } as unknown as APIContext)
@@ -26,15 +25,12 @@ const sessionCookieValue = encodeBase64Utf8(
     }),
 )
 const accountsCookieValue = encodeBase64Utf8(
-    JSON.stringify([
-        {
-            did: pooledDid,
-            handle: "pooled.bsky.social",
-            service: "https://bsky.social",
-            session: {},
-            addedAt: "2024-01-01T00:00:00.000Z",
-        },
-    ]),
+    JSON.stringify({
+        kind: "password",
+        session: { did: pooledDid, handle: "pooled.bsky.social" },
+        service: "https://bsky.social",
+        addedAt: "2024-01-01T00:00:00.000Z",
+    }),
 )
 
 describe("DELETE /v2/bsky/session/{did}", () => {
@@ -78,7 +74,7 @@ describe("DELETE /v2/bsky/session/{did}", () => {
         ).toBe(true)
     })
 
-    it("[account-session/AC-12] プール中アカウント対象の場合はatp_accountsから除去する", async () => {
+    it("[account-session/AC-12] プール中アカウント対象の場合はプールの枠から除去する", async () => {
         const request = new Request(
             `https://skyshare.nekono.dev/v2/bsky/session/${pooledDid}`,
             {

@@ -11,10 +11,6 @@
 | `src/pages/v2/schedules/credential.ts`                                        | 予約用認証情報の取得・削除のハンドラ             |
 | `src/pages/v2/schedules/credential/authorization.ts`                          | OAuth の認可の開始のハンドラ                     |
 | `src/pages/v2/schedules/credential/authorization/completion.ts`               | OAuth の認可の完了のハンドラ                     |
-| `src/pages/oauth/callback.ts`                                                 | 認可の戻りを設定のページのフラグメントへ転送     |
-| `src/lib/schedule/oauth/callbackFragment.ts`                                  | 戻りの項目とフラグメントの相互変換               |
-| `src/pages/oauth/client-metadata.json.ts`                                     | OAuth のクライアントのメタデータ                 |
-| `src/pages/oauth/jwks.json.ts`                                                | OAuth のクライアントの公開鍵の一覧               |
 | `src/lib/api/schema/v2/schedules/post.ts`                                     | 予約の作成の入力スキーマ                         |
 | `src/lib/api/schema/v2/schedules/get.ts`                                      | 予約の一覧のクエリと応答のスキーマ               |
 | `src/lib/api/schema/v2/schedules/limits/get.ts`                               | 制限値の応答のスキーマ                           |
@@ -32,13 +28,7 @@
 | `src/lib/schedule/scheduleResponse.ts`                                        | 識別子つきのエラー応答と JSON 応答の組み立て     |
 | `src/lib/schedule/env.ts`                                                     | D1・R2・暗号鍵のバインディングの取得             |
 | `src/lib/schedule/oauth/flow.ts`                                              | 認可の開始・完了、トークンの更新・取消           |
-| `src/lib/schedule/oauth/client.ts`                                            | クライアントの識別子・権限・メタデータ・証明     |
-| `src/lib/schedule/oauth/discovery.ts`                                         | DID からの PDS と認可サーバーの探索              |
-| `src/lib/schedule/oauth/dpop.ts`                                              | DPoP の証明と nonce                              |
-| `src/lib/schedule/oauth/jose.ts`                                              | ES256 の JWT の署名と鍵                          |
-| `src/lib/schedule/oauth/tokenRequest.ts`                                      | 認可サーバーへのフォームの要求とやり直し         |
 | `src/lib/schedule/oauth/storedCredential.ts`                                  | 保管する認可の情報の形                           |
-| `src/lib/schedule/oauth/returnPath.ts`                                        | 許可を始めたページのパスの cookie での受け渡し   |
 | `src/lib/schedule/credentialExpiry.ts`                                        | 許可の有効期限の目安の計算                       |
 
 ## 2. 関係図・ワークフロー
@@ -82,18 +72,10 @@ flowchart LR
   authorization --> flow
   completion --> completionPost["completion/post"]
   completion --> flow
-  callback --> callbackFragment
-  callback --> returnPath
-  metadata["client-metadata.json"] --> client
-  jwks["jwks.json"] --> client
-  flow --> client
-  flow --> discovery
-  flow --> dpop
-  flow --> tokenRequest
+  authorization --> ext_oauth["OAuth のクライアント"]
+  flow --> ext_oauth
   flow --> storedCredential
   flow --> ext_store
-  client --> jose
-  dpop --> jose
 ```
 
 作成と置き換えの検証順序と、置き換えの競合と認証情報の削除を示す。
@@ -107,7 +89,7 @@ sequenceDiagram
   participant limits
   participant credential
   participant authorization
-  participant callback
+  participant ext_oauth as OAuth のクライアント
   participant completion
   participant flow
   participant ext_store as 予約ストア
@@ -130,7 +112,7 @@ sequenceDiagram
   credential->>ext_store: deleteSchedulesExceptRunning
   authorization->>flow: startAuthorization
   flow->>ext_store: saveOAuthState
-  callback->>callback: toAuthorizationFragment
+  ext_oauth-->>completion: 戻りを設定のページへ転送
   completion->>flow: completeAuthorization
   alt 戻りまたはトークンの持ち主が違う
     flow-->>completion: 失敗の分類
@@ -258,7 +240,7 @@ type ScheduleListItem = {
 
 ```ts
 // POST /v2/schedules/credential/authorization { returnTo? } -> { url }（認可の画面）。returnTo は cookie に入れる
-// GET  /oauth/callback?code&state&iss -> 303 /settings/#scheduleAuthorization=1&code&state&iss
+// GET  /oauth/callback?code&state&iss -> 303 /settings/#oauthReturn=schedule&code&state&iss（OAuth のクライアントの戻り先）
 // POST /v2/schedules/credential/authorization/completion { code?, state?, iss?, error? } -> { result: "ok" | CompleteFailure }
 export const startAuthorization = (env, input: { origin: string; did: string; now: number }): Promise<{ ok: true; url: string } | { ok: false; status: 500 | 502 }>
 export const completeAuthorization = (env, input: { origin: string; did: string; now: number; query: { code?; state?; iss?; error? } }): Promise<{ ok: true } | { ok: false; code: CompleteFailure }>
@@ -281,13 +263,12 @@ type CompleteFailure = "Denied" | "StateInvalid" | "IssuerMismatch" | "AccountMi
 | 5    | トークンの `sub` がログイン中のアカウントと一致することを確かめる                                              | `AccountMismatch` |
 | 6    | 更新用トークン・DPoP の鍵・端点・クライアントの識別子を1つの JSON にして `saveCredential` で暗号化して保管する | -                 |
 
-- クライアントの識別子は `${origin}/oauth/client-metadata.json`、戻り先は `${origin}/oauth/callback/` とし、プレビューと develop と本番がそれぞれ別のクライアントになる。Cron の更新ではオリジンが無いため、保管した識別子を使う。
+- クライアントの識別子と戻り先は配信元のオリジンから決まり、プレビューと develop と本番がそれぞれ別のクライアントになる。手元の開発環境では開発用の公開クライアントになり、クライアントの証明を付けない。Cron の更新ではオリジンが無いため、保管した識別子を使う。
 - 戻りは別のサイトからの遷移で、`SameSite=Strict` のセッションの cookie が届かない。戻り先はセッションを使わず、既知の項目だけを設定のページのフラグメントへ移して転送する。フラグメントはサーバーにもアクセス解析にも送られない。完了は設定のページが同じサイトから呼ぶ。
-- 開始の `returnTo` は、`/` で始まり `//`・`\\`・`#`・制御文字を含まない512文字以内のパスに限り、`Path=/oauth/callback/`・`SameSite=Lax`・10分の cookie に入れる。戻り先はこの cookie のパス（無い・不正なら `/settings/`）へ転送し、cookie を消す。
+- 開始の `returnTo` は、用途 `schedule` とともに戻り先だけに送る10分の cookie に入れる。戻り先はこの cookie のページ（無い・不正なら `/settings/`）へ転送し、cookie を消す。
 - 作成と置き換えは、未登録なら `ScheduleCredentialRequired`、再度の許可が必要なら `ScheduleReauthRequired` の409にする。
-- 要求する権限は `atproto`・投稿・返信と引用の制限・entry の各コレクションの作成と上書き（`repo:<collection>?action=create&action=update`）・画像（`blob:image/*`）に限る。
-- 認可サーバーと PDS が `use_dpop_nonce` を返したら、受け取った nonce で1回だけやり直す。
-- クライアントの秘密鍵は Worker のシークレット `SCHEDULE_OAUTH_KEY`（`kid` を含む P-256 の JWK）に置き、`/oauth/jwks.json` で公開部分を出す。未設定なら開始は 500 になる。
+- 要求する権限は `SCHEDULE_SCOPE`（`atproto`・投稿・返信と引用の制限・entry の各コレクションの作成と上書き（`repo:<collection>?action=create&action=update`）・画像（`blob:image/*`））に限る。
+- クライアントの秘密鍵は Worker のシークレット `OAUTH_CLIENT_KEY`（`kid` を含む P-256 の JWK）に置く。開発用の公開クライアントでなく未設定なら、開始は 500 になる。
 - WebCrypto と `fetch` だけで実装し、atproto のライブラリを使わない（予約の実行と共有するため）。ログには端点の応答のステータスだけを出す。
 
 ### D-7: 認証情報の状態確認と削除 (FR-9)

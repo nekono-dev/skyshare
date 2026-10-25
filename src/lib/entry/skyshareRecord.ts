@@ -8,7 +8,7 @@
  * - 更新（`updateSkyshareEntry`、PUT /v2/entry用）は単一レコードの読み書きのみのため、
  *   従来通りこのファイルが直接 atproto を呼び出す。
  */
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 import { ENTRY_COLLECTION, MANIFEST_TYPE } from "@/lib/atproto/nsid"
 import { blobToCdnUrl, skyshareEntryUrlgen } from "@/lib/entry/url"
 
@@ -16,7 +16,7 @@ type RepoUpdateAgent = {
     com: {
         atproto: {
             repo: Pick<
-                AtpAgent["com"]["atproto"]["repo"],
+                Agent["com"]["atproto"]["repo"],
                 "getRecord" | "putRecord"
             >
         }
@@ -142,7 +142,7 @@ export type UpdatedSkyshareEntry = {
  * - 副作用: atproto 外部 API を呼び出してレコードを取得・更新。
  *
  * Input:
- * - `agent`: 認証済み AtpAgent
+ * - `agent`: 認証済み Agent
  * - `repo`: 対象レコードの repo（DID）
  * - `rkey`: 対象レコードの rkey
  * - `heading`: 新しい heading

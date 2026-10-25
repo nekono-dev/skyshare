@@ -109,4 +109,35 @@ describe("DELETE /v1/page", () => {
         mockedDelete.mockResolvedValueOnce({ error: "InternalServerError" })
         expect((await call(validBody)).status).toBe(500)
     })
+
+    it("[legacy-page/AC-17] OAuth のセッションでの削除の依頼は、旧バックエンドへ送られず、識別子つきの403が返る", async () => {
+        const oauthCookie = `${SESSION_COOKIE_NAME}=${encodeBase64Utf8(
+            JSON.stringify({
+                kind: "oauth",
+                did: "did:plc:owner",
+                handle: "owner.test",
+                pds: "https://pds.example",
+                oauth: {
+                    accessToken: "ACCESS",
+                    expiresAt: 1_800_000_000,
+                    refreshToken: "REFRESH",
+                    dpopJwk: {
+                        kty: "EC",
+                        crv: "P-256",
+                        x: "x",
+                        y: "y",
+                        d: "d",
+                    },
+                    issuer: "https://bsky.social",
+                    tokenEndpoint: "https://bsky.social/oauth/token",
+                    clientId:
+                        "https://skyshare.test/oauth/client-metadata.json",
+                },
+            }),
+        )}`
+        const res = await call(validBody, oauthCookie)
+        expect(res.status).toBe(403)
+        expect(await res.json()).toEqual({ error: "OAuthSessionUnsupported" })
+        expect(mockedDelete).not.toHaveBeenCalled()
+    })
 })

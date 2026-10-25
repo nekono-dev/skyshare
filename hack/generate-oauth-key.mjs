@@ -2,7 +2,8 @@
  * 予約投稿の OAuth のクライアントの秘密鍵（P-256 の JWK）を生成し、1行の JSON で標準出力へ出す。
  *
  * 使い方（値を画面やファイルに残さず、そのままシークレットへ渡す）:
- *   node hack/generate-oauth-key.mjs | npx wrangler secret put SCHEDULE_OAUTH_KEY --name <Worker 名>
+ *   node hack/generate-oauth-key.mjs | npx wrangler secret put OAUTH_CLIENT_KEY --name <Worker 名>
+ *   （配備先には CI の `hack/ensure-worker-secrets.mjs` が、未登録のときにこの関数で生成して登録する）
  *
  * - `kid` は生成の日時から作る。鍵を入れ替えたときに、認可サーバーが新しい鍵を区別できるようにする。
  * - 出力は秘密鍵そのもの。ログやリポジトリに残さないこと。

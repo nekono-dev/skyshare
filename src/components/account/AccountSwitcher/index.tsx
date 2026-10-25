@@ -66,7 +66,8 @@ const AccountCard = ({
     <div
       role={canSwitch ? "button" : undefined}
       tabIndex={canSwitch ? 0 : undefined}
-      className={`${ui["base-card"]} ${styles.card} ${canSwitch ? ui["card-select"] : ui["card-muted"]}`}
+      // 使用中のカードは無効ではないため card-muted（無効の見た目）にしない。目印は「使用中」のバッジ
+      className={`${ui["base-card"]} ${styles.card}${canSwitch ? ` ${ui["card-select"]}` : ""}`}
       onClick={activate}
       onKeyDown={event => {
         if (!canSwitch) return

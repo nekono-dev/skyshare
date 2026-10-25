@@ -12,11 +12,13 @@
 - 対応: D-2
 - [x] T-2.1: `page.ts` に削除のハンドラを実装する。
 - [x] T-2.2: ハンドラの単体テストを受け入れ条件のタグ付きで追加する。
+- [x] T-2.3: OAuth のセッションを403で拒否し、受け入れ条件 AC-17 のテストをタグ付きで追加する。
 - 検証: `npx vitest run tests/pages/v1/page.test.ts`
 
 ## Phase 3: 投稿ページと削除のボタン
 
 - 対応: D-3
 - [x] T-3.1: 投稿ページと `LegacyPageDeleteButton/index.tsx` を実装する。
-- 検証: `npx tsc --noEmit` と `npm run test:astro`
+- [x] T-3.2: 削除のボタンに OAuth のセッションでの拒否の文言を加え、受け入れ条件 AC-18 の単体テストをタグ付きで追加する。
+- 検証: `npx tsc --noEmit` と `npm run test:astro` と `npx vitest run tests/components/entry/LegacyPageDeleteButton.test.ts`
 - E2E: `tests/e2e/legacyPostPage.spec.ts` 識別子が不正な旧形式のURLを開く → 404が返る

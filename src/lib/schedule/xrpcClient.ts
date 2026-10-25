@@ -16,7 +16,7 @@ import {
     createDpopProof,
     isDpopNonceError,
     rememberDpopNonce,
-} from "./oauth/dpop"
+} from "@/lib/oauth/dpop"
 
 export type Budget = {
     remaining: number

@@ -78,7 +78,7 @@ describe("prepare-local-env.mjs", () => {
         const enc = /^SCHEDULE_ENC_KEY='(.+)'$/m.exec(text)?.[1] ?? ""
         expect(Buffer.from(enc, "base64")).toHaveLength(32)
         const jwk = JSON.parse(
-            /^SCHEDULE_OAUTH_KEY='(.+)'$/m.exec(text)?.[1] ?? "",
+            /^OAUTH_CLIENT_KEY='(.+)'$/m.exec(text)?.[1] ?? "",
         )
         expect(jwk).toMatchObject({ kty: "EC", crv: "P-256" })
         expect(jwk.d).toBeTruthy()
@@ -93,6 +93,6 @@ describe("prepare-local-env.mjs", () => {
         run()
         const text = readFileSync(path.join(dir, ".dev.vars"), "utf8")
         expect(text).toContain("SCHEDULE_ENC_KEY=mine")
-        expect(text).toContain("SCHEDULE_OAUTH_KEY='")
+        expect(text).toContain("OAUTH_CLIENT_KEY='")
     })
 })

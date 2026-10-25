@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import ChoiceDialog from "@/components/common/ChoiceDialog"
 import { useT } from "@/lib/i18n/react"
-import { readAuthorizationFragment } from "@/lib/schedule/oauth/callbackFragment"
+import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
 import { notifyScheduleCredentialChange } from "@/lib/schedule/useScheduleAvailability"
 
 /**
@@ -50,7 +50,7 @@ export const Component = () => {
   const [result, setResult] = useState<string | null>(null)
 
   useEffect(() => {
-    const returned = readAuthorizationFragment(window.location.hash)
+    const returned = readAuthorizationFragment(window.location.hash, "schedule")
     if (!returned) return
     const url = new URL(window.location.href)
     url.hash = ""

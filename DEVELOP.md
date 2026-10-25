@@ -26,7 +26,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 ローカル実行の設定は、置き場所ごとに雛形を用意している（`.env` と `.dev.vars` は Git 管理対象外）。
 
 - `.env`（`.env.template`）: ビルド時に使う `PUBLIC_*`（接続先・運営者情報など）。未設定でもダミー値で動く。
-- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の鍵（`SCHEDULE_ENC_KEY`・`SCHEDULE_OAUTH_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
+- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の暗号鍵（`SCHEDULE_ENC_KEY`）と OAuth のクライアントの署名鍵（`OAUTH_CLIENT_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
 
 ```sh
 cp .env.template .env
@@ -137,7 +137,7 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 - Worker のシークレットの登録は、Worker が一度配備された後に行う（プレビューは develop の Worker の配備の後）。失敗した登録は、配備の後にもう一度実行すればよい。
 
 7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
-8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。
+8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵と OAuth の署名鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
 
 - 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
 
@@ -145,7 +145,7 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 
 予約投稿は Cloudflare の D1・R2・Cron Trigger を使う（いずれも無料枠の範囲）。初回のデプロイの前に、次を行う。
 
-本番用と develop 用の D1・R2 を作り、暗号鍵を登録する。dev/\* のプレビューは develop 用の D1・R2 を共用する。
+本番用と develop 用の D1・R2 を作る。dev/\* のプレビューは develop 用の D1・R2 を共用する。
 
 ```sh
 npx wrangler d1 create skyshare-schedule # database_id の登録は不要（名前で解決する）
@@ -154,22 +154,17 @@ for b in skyshare-schedule-images skyshare-schedule-images-develop; do
   npx wrangler r2 bucket create "$b"
   npx wrangler r2 bucket lifecycle add "$b" expire-15d --expire-days 15 -y # 削除漏れの画像を自動で消す（予約は14日後までのため15日）
 done
-# 予約用の認証情報の暗号鍵。本番と develop は別の鍵でよい（D1 が別のため）
-openssl rand -base64 32 | npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare
-# develop とそのプレビューは D1 を共用するため、同じ鍵にする（develop を1回配備した後に実行する）
-openssl rand -base64 32 > enc.key
-npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key
-npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key
-rm enc.key
-# Bluesky の OAuth（confidential client）の署名鍵。develop とプレビューは同じ鍵にする
-node hack/generate-oauth-key.mjs | npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare
-node hack/generate-oauth-key.mjs > oauth.key
-npx wrangler secret put SCHEDULE_OAUTH_KEY --name skyshare-develop < oauth.key
-npx wrangler preview base-config secret put SCHEDULE_OAUTH_KEY --worker-name skyshare-develop < oauth.key
-rm oauth.key
 ```
 
-- 予約の許可は Bluesky の OAuth で得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は設定のページから `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、公開された https の配信元でしか許可を得られない（ローカルでは試せない）。
+- Worker のシークレット（予約用の認証情報の暗号鍵 `SCHEDULE_ENC_KEY` と、Bluesky の OAuth の署名鍵 `OAUTH_CLIENT_KEY`）は手で登録しない。`hack/ensure-worker-secrets.mjs` が、本番・develop への配備（deploy.yaml）の後と、プレビューの配備（preview.yaml）の前に、未登録のものだけを生成して登録する。登録済みの値は上書きしない。
+  - develop とプレビューの基本設定（`wrangler preview base-config`）は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）。本番は別の値になる。
+  - 既にあるプレビューは、作られた時点の基本設定のシークレットを持ち続ける。必要なシークレットが欠けているプレビューは、preview.yaml が配備の前に削除し、同じ名前（同じ URL）で基本設定から作り直す。
+  - 片方にだけ登録済みのとき、`OAUTH_CLIENT_KEY` は作り直して両方へ登録する（古い鍵の予約の許可は、利用者が許可し直す）。`SCHEDULE_ENC_KEY` は作り直すと保管済みの認証情報を復号できなくなるため、CI を失敗させる。このときは、手で両方を同じ値にそろえる（`openssl rand -base64 32 > enc.key` の後、`npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key` と `npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key` を実行し、`enc.key` を消す）。
+  - 鍵を替えたいときは、配信先からシークレットを削除して配備し直す（`npx wrangler secret delete <名前> --name <Worker 名>`。develop ではプレビューの基本設定からも消す）。
+- ログイン（`/login/` とアカウントの追加）と予約の許可は、同じ Bluesky の OAuth のクライアントで得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は許可を始めたページから、ログインは `/v2/bsky/session/authorization/completion/`、予約は `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、本番とプレビューでは公開された https の配信元が必要になる。
+- シークレットの名前は `OAUTH_CLIENT_KEY`（以前の `SCHEDULE_OAUTH_KEY` から改名）。以前の名前の鍵は CI が引き継がず、新しい鍵を登録する。以前の名前のシークレットは、改名を取り込んだ版を配備した後に削除してよい。
+- ローカル（`npm run dev`）では、配信元がループバック（`localhost`）のため、開発用の公開クライアント（client_id が `http://localhost?...`）として振る舞い、秘密鍵を使わない。戻り先は `http://127.0.0.1:4322/oauth/callback/` に限られる（認可サーバーがループバックの https を拒否する）ため、開発サーバーが `127.0.0.1:4322` で待ち受けて `https://localhost:4321` へ転送する（`hack/oauthLoopbackForwarder.ts`）。ブラウザでは `https://localhost:4321` を開く（cookie がホストごとのため、`127.0.0.1` や LAN の IP では戻りを受けられない）。開発用の公開クライアントのセッションは、認可サーバーの規定で最長2週間になる。
+- OAuth でログインできるのは、Bluesky がホスティングするアカウント（bsky.social など）だけである。それ以外のアカウントと、旧形式の投稿の削除（アクセストークンが DPoP に結び付くため旧バックエンドで使えない）は、アプリパスワードでログインする。
 - 許可を得た配信元の client_id は認可の情報と一緒に保管し、Cron の実行はそれでトークンを更新する。プレビューで許可した認可の情報は、そのプレビューが消えると更新できなくなる。
 - 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
 

@@ -2,14 +2,17 @@ import type { APIRoute } from "astro"
 
 import { createAtpAgent } from "@/lib/atproto/agentFactory"
 import {
+    admitSession,
     makeSessionSetCookie,
-    makeAccountsSetCookie,
+    makeAccountsSetCookies,
     parseSessionFromRequest,
     parseAccountsFromRequest,
+    sessionIdentity,
     toPooledAccount,
     upsertPooledAccount,
-    MAX_POOLED_ACCOUNTS,
+    type StoredSession,
 } from "@/lib/session/cookies.js"
+import { ensureFreshOAuthSession } from "@/lib/session/oauthSession"
 import * as PostSchema from "@/lib/api/schema/v2/bsky/session/post"
 import * as PutSchema from "@/lib/api/schema/v2/bsky/session/put"
 
@@ -25,10 +28,12 @@ import { atpService } from "@/env.js"
  *
  * 概要:
  * - GET: この端末で有効なアクティブアカウント＋プール中の非アクティブアカウントの一覧を返す（トークンは含めない）。
- * - POST: 認証情報を受け取り atproto へ login を実行する。既に別アカウントがアクティブな場合は、
- *   そのセッションをプール(`atp_accounts`)へ退避してから新しいセッションに切り替える（アカウント追加ログイン）。
- * - PUT: `atp_accounts` プール中のアカウントを、現在のアクティブアカウントと入れ替える（アカウント切り替え）。
+ * - POST: アプリパスワードの認証情報を受け取り atproto へ login を実行する。既に別アカウントがアクティブな場合は、
+ *   そのセッションをプール(`atp_account_<n>`)へ退避してから新しいセッションに切り替える（アカウント追加ログイン）。
+ *   OAuth によるログインは `session/authorization` が受け持ち、同じ規則（`admitSession`）でプールを決める。
+ * - PUT: プール中のアカウントを、現在のアクティブアカウントと入れ替える（アカウント切り替え）。
  *   「session を別の session で上書きする」という操作であるため、対象はリソース本体(body の `did`)で指定する。
+ *   切り替え先が OAuth のセッションなら、期限の近いアクセストークンを更新してからアクティブにする。
  *
  * 実装上の制約:
  * - セッショントークン本体は常に HttpOnly cookie 内にのみ存在させ、レスポンス JSON には一切含めない
@@ -92,7 +97,7 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
             return errorResponseFromStatus(401)
         }
 
-        const { session: activeSession } = parseSessionFromRequest(request)
+        const activeSession = parseSessionFromRequest(request)
         const pool = parseAccountsFromRequest(request)
 
         if (!activeSession && pool.length === 0) {
@@ -102,18 +107,10 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
         // アクティブアカウントを先頭に、プール中のアカウントを続けて並べる。
         const entries: { did: string; handle: string; isActive: boolean }[] = []
         if (activeSession) {
-            entries.push({
-                did: activeSession.did,
-                handle: activeSession.handle,
-                isActive: true,
-            })
+            entries.push({ ...sessionIdentity(activeSession), isActive: true })
         }
         for (const account of pool) {
-            entries.push({
-                did: account.did,
-                handle: account.handle,
-                isActive: false,
-            })
+            entries.push({ ...sessionIdentity(account), isActive: false })
         }
 
         const accounts = await Promise.all(
@@ -158,7 +155,7 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
  * - `request`: Astro APIRoute が受け取る HTTP Request
  *
  * Output:
- * - 成功時: 200 + `set-cookie` ヘッダ（`atp_session` / `atp_accounts`）
+ * - 成功時: 200 + `set-cookie` ヘッダ（`atp_session` / `atp_account_<n>`）
  * - 失敗時: ステータスに応じたエラーレスポンス
  *
  * 例:
@@ -184,35 +181,29 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
             identifier,
             password,
         })
-        const session = response.data
+        const incoming: StoredSession = {
+            kind: "password",
+            session: { ...response.data, active: response.data.active ?? true },
+            service,
+        }
 
-        // 新しくログインしたアカウントが既にプールにあれば、アクティブへ昇格させるため一旦除去する。
-        let pool = parseAccountsFromRequest(request).filter(
-            account => account.did !== session.did,
+        // 新しくログインしたアカウントがプールにあれば除き、別アカウントがアクティブならプールへ退避する。
+        const pool = admitSession(
+            parseSessionFromRequest(request),
+            parseAccountsFromRequest(request),
+            incoming,
         )
-
-        const { session: currentSession, service: currentService } =
-            parseSessionFromRequest(request)
-
-        if (
-            currentSession &&
-            currentService &&
-            currentSession.did !== session.did
-        ) {
-            if (pool.length >= MAX_POOLED_ACCOUNTS) {
-                // アカウント数の上限到達。利用者向けの文言はサーバーでは返さず、
-                // 状態の競合を表す 409 をクライアントが表示言語の文言へ対応づける。
-                return errorResponseFromStatus(409)
-            }
-            pool = upsertPooledAccount(
-                pool,
-                toPooledAccount(currentSession, currentService),
-            )
+        if (!pool) {
+            // アカウント数の上限到達。利用者向けの文言はサーバーでは返さず、
+            // 状態の競合を表す 409 をクライアントが表示言語の文言へ対応づける。
+            return errorResponseFromStatus(409)
         }
 
         const headers = new Headers()
-        headers.append("set-cookie", makeSessionSetCookie({ session, service }))
-        headers.append("set-cookie", makeAccountsSetCookie(pool))
+        headers.append("set-cookie", makeSessionSetCookie(incoming))
+        for (const cookie of makeAccountsSetCookies(pool)) {
+            headers.append("set-cookie", cookie)
+        }
         headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })
@@ -242,7 +233,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
  * - `request`: cookie と `{ did }` を含む HTTP リクエスト
  *
  * Output:
- * - 200: `set-cookie` ヘッダ（`atp_session` / `atp_accounts`）のみ、本文なし
+ * - 200: `set-cookie` ヘッダ（`atp_session` / `atp_account_<n>`）のみ、本文なし
  * - 400: 入力不正
  * - 401: 切り替え先アカウントのセッションが atproto 側で失効している
  * - 404: 指定 did がプールに見つからない
@@ -259,62 +250,34 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
             return errorResponseFromStatus(400)
         }
 
-        const { session: currentSession, service: currentService } =
-            parseSessionFromRequest(request)
+        const currentSession = parseSessionFromRequest(request)
         const pool = parseAccountsFromRequest(request)
 
         const targetIndex = pool.findIndex(
-            account => account.did === body.data.did,
+            account => sessionIdentity(account).did === body.data.did,
         )
         if (targetIndex === -1) {
             return errorResponseFromStatus(404)
         }
-        const target = pool[targetIndex]
+        const target = pool[targetIndex]!
         const remainingPool = pool.filter((_, index) => index !== targetIndex)
 
-        // 切り替え先のセッションを atproto 側で検証する。resumeSession は必ず
-        // refreshSession を実行するため、これ自体がトークンの有効性チェックになる。
-        // refreshJwt が失効していれば XRPCError（401相当）が投げられ、成功時は
-        // ローテーション後の新しいトークン対が agent.session に反映される。
-        const agent = createAtpAgent(target.service)
-        try {
-            await agent.resumeSession({
-                refreshJwt: target.session.refreshJwt,
-                accessJwt: target.session.accessJwt,
-                handle: target.session.handle,
-                did: target.session.did,
-                active: true,
-            })
-        } catch (err) {
-            const status = resolveXrpcStatus(err)
-            if (status === 401) {
-                console.warn("session.ts PUT: target session invalid")
-                return errorResponseFromStatus(401)
-            }
-            throw err
-        }
-        // ローテーションされた最新のトークン対を書き戻す（古い refreshJwt を
-        // cookie に残すと、次回の切り替えが再び失効扱いになってしまうため）。
-        const refreshedSession = agent.session ?? target.session
+        const resumed = await resumeTarget(target)
+        if (!resumed.ok) return errorResponseFromStatus(resumed.status)
 
         // 現在アクティブなアカウントがあれば、切り替え後はプール側へ戻す。
-        const nextPool =
-            currentSession && currentService
-                ? upsertPooledAccount(
-                      remainingPool,
-                      toPooledAccount(currentSession, currentService),
-                  )
-                : remainingPool
+        const nextPool = currentSession
+            ? upsertPooledAccount(
+                  remainingPool,
+                  toPooledAccount(currentSession),
+              )
+            : remainingPool
 
         const headers = new Headers()
-        headers.append(
-            "set-cookie",
-            makeSessionSetCookie({
-                session: refreshedSession,
-                service: target.service,
-            }),
-        )
-        headers.append("set-cookie", makeAccountsSetCookie(nextPool))
+        headers.append("set-cookie", makeSessionSetCookie(resumed.session))
+        for (const cookie of makeAccountsSetCookies(nextPool)) {
+            headers.append("set-cookie", cookie)
+        }
         headers.set("Cache-Control", "no-store")
 
         return new Response(undefined, { status: 200, headers })
@@ -322,4 +285,70 @@ export const PUT: APIRoute = async ({ request }: { request: Request }) => {
         console.error("session.ts PUT:", err)
         return errorResponseFromStatus(500)
     }
+}
+
+/**
+ * 切り替え先のセッションを検証し、最新のトークンにする（PUT の内部処理）。
+ *
+ * 処理の趣旨:
+ * - アプリパスワードのセッションは `resumeSession` で再開する。`resumeSession` は必ず refreshSession を
+ *   実行するため、これ自体がトークンの有効性チェックになり、成功時はローテーション後の新しいトークン対が
+ *   `agent.session` に反映される（古い refreshJwt を cookie に残すと、次回の切り替えが失効扱いになるため書き戻す）。
+ * - OAuth のセッションは、期限の近いアクセストークンだけを更新する（毎回更新すると、並行する要求で
+ *   更新用トークンの再利用とみなされ、セッションが失効するため）。
+ *
+ * Input:
+ * - `target`: プールから取り出した切り替え先
+ *
+ * Output:
+ * - 成功: アクティブにするセッション
+ * - 失敗: 失効は 401、OAuth の更新の失敗は `ensureFreshOAuthSession` の状態
+ */
+const resumeTarget = async (
+    target: StoredSession,
+): Promise<
+    { ok: true; session: StoredSession } | { ok: false; status: number }
+> => {
+    if (target.kind === "oauth") {
+        const fresh = await ensureFreshOAuthSession(
+            target,
+            Math.floor(Date.now() / 1000),
+        )
+        if (!fresh.ok) {
+            console.warn("session.ts PUT: target oauth session invalid")
+            return fresh
+        }
+        const { addedAt: _addedAt, ...session } = fresh.session as OAuthPooled
+        return { ok: true, session }
+    }
+    const agent = createAtpAgent(target.service)
+    try {
+        await agent.resumeSession({
+            refreshJwt: target.session.refreshJwt,
+            accessJwt: target.session.accessJwt,
+            handle: target.session.handle,
+            did: target.session.did,
+            active: true,
+        })
+    } catch (err) {
+        const status = resolveXrpcStatus(err)
+        if (status === 401) {
+            console.warn("session.ts PUT: target session invalid")
+            return { ok: false, status: 401 }
+        }
+        throw err
+    }
+    return {
+        ok: true,
+        session: {
+            kind: "password",
+            session: agent.session ?? target.session,
+            service: target.service,
+        },
+    }
+}
+
+/** プールから取り出した OAuth のセッション（退避した時刻を持ちうる） */
+type OAuthPooled = Extract<StoredSession, { kind: "oauth" }> & {
+    addedAt?: string
 }

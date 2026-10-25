@@ -5,3 +5,35 @@
   flex-direction: column;
   gap: calc(var(--space-2, 8px));
 }
+
+/* 折りたたみの中のアプリパスワードのフォーム */
+:local(.password) {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-2, 8px));
+}
+
+/* ボタンと折りたたみ（OAuth の戻りの完了を待つ間に薄くする範囲。ステータスメッセージは含めない） */
+:local(.controls) {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space-2, 8px));
+}
+
+/* 戻りの完了を待つ間は、フォームを押せなくする（もう一度ログインを始めさせない） */
+:global(html[data-oauth-returning]) :local(.form) {
+  pointer-events: none;
+}
+
+:global(html[data-oauth-returning]) :local(.controls) {
+  opacity: 0.6;
+}
+
+/* 水和の前の「ログイン中…」。Baselayout のスクリプトが戻りの住所を見て付けた印の間だけ出す */
+:local(.pending) {
+  display: none;
+}
+
+:global(html[data-oauth-returning="pending"]) :local(.pending) {
+  display: inline;
+}

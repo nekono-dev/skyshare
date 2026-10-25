@@ -3,10 +3,13 @@ import type { APIRoute } from "astro"
 import {
     parseSessionFromRequest,
     parseAccountsFromRequest,
-    makeAccountsSetCookie,
+    makeAccountsSetCookies,
     makeClearSetCookie,
+    sessionIdentity,
     SESSION_COOKIE_NAME,
+    type StoredSession,
 } from "@/lib/session/cookies.js"
+import { revokeOAuthSession } from "@/lib/session/oauthSession"
 import { errorResponseFromStatus } from "@/lib/api/response.js"
 
 /**
@@ -16,7 +19,9 @@ import { errorResponseFromStatus } from "@/lib/api/response.js"
  * - `did` はログアウト対象アカウントの識別子であり、リソースそのものを指すパスパラメータとして扱う
  *   （操作をパスに埋め込まない、というAPI設計原則に沿った形。操作の意味は DELETE メソッドが担う）。
  * - 対象がアクティブアカウントなら `atp_session` を失効させる（プールに残りがあっても自動昇格はしない）。
- * - 対象がプール中のアカウントなら `atp_accounts` から取り除く。
+ * - 対象がプール中のアカウントなら `atp_account_<n>` から取り除く。
+ * - 対象が OAuth のセッションなら、cookie から除く前に更新用トークンを認可サーバーで取り消す
+ *   （取消の失敗では止めない。cookie から除けば、この端末からは使えなくなるため）。
  * - どちらにも該当しなければ 404。
  */
 
@@ -43,14 +48,24 @@ export const DELETE: APIRoute = async ({ params, request }) => {
             return errorResponseFromStatus(400)
         }
 
-        const { session: activeSession } = parseSessionFromRequest(request)
+        const activeSession = parseSessionFromRequest(request)
         const pool = parseAccountsFromRequest(request)
 
-        const isActive = activeSession?.did === did
-        const poolIndex = pool.findIndex(account => account.did === did)
+        const isActive =
+            !!activeSession && sessionIdentity(activeSession).did === did
+        const poolIndex = pool.findIndex(
+            account => sessionIdentity(account).did === did,
+        )
 
         if (!isActive && poolIndex === -1) {
             return errorResponseFromStatus(404)
+        }
+
+        const target: StoredSession = isActive
+            ? activeSession!
+            : pool[poolIndex]!
+        if (target.kind === "oauth") {
+            await revokeOAuthSession(target, Math.floor(Date.now() / 1000))
         }
 
         const headers = new Headers()
@@ -64,7 +79,9 @@ export const DELETE: APIRoute = async ({ params, request }) => {
             )
         } else {
             const nextPool = pool.filter((_, index) => index !== poolIndex)
-            headers.append("set-cookie", makeAccountsSetCookie(nextPool))
+            for (const cookie of makeAccountsSetCookies(nextPool)) {
+                headers.append("set-cookie", cookie)
+            }
         }
         headers.set("Cache-Control", "no-store")
 

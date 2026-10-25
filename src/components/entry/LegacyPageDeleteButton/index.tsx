@@ -15,6 +15,30 @@ import styles from "./index.module.css"
  *   本人以外の投稿を対象にした場合は legacy backend 側の本人確認で拒否される。
  */
 
+/**
+ * 削除の失敗の応答から、表示する文言のキーを決める。
+ *
+ * 想定する入力形状(最小要件):
+ * - 403 の本文 `{ error: "OAuthSessionUnsupported" }`（OAuth のセッションでは旧バックエンドへ送れない）
+ *
+ * Output: OAuth のセッションでの拒否ならアプリパスワードでのログインを求める文言、それ以外は削除失敗の文言
+ *
+ * 例: 403 `{ error: "OAuthSessionUnsupported" }` → `"entry.legacy.oauthUnsupported"`
+ */
+export const deleteFailureKey = async (
+  res: Response,
+): Promise<PlainMessageKey> => {
+  if (res.status !== 403) return "entry.legacy.deleteFailed"
+  try {
+    const body = (await res.json()) as { error?: unknown }
+    return body.error === "OAuthSessionUnsupported"
+      ? "entry.legacy.oauthUnsupported"
+      : "entry.legacy.deleteFailed"
+  } catch {
+    return "entry.legacy.deleteFailed"
+  }
+}
+
 type Props = {
   dbIndex: string
   dbKey: string
@@ -50,7 +74,7 @@ const Component = ({ dbIndex, dbKey }: Props) => {
       })
 
       if (res.status !== 200) {
-        setError("entry.legacy.deleteFailed")
+        setError(await deleteFailureKey(res))
         setIsDeleting(false)
         return
       }

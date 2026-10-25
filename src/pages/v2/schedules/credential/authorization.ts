@@ -4,10 +4,7 @@ import { errorResponseFromStatus } from "@/lib/api/response.js"
 import * as PostSchema from "@/lib/api/schema/v2/schedules/credential/authorization/post"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { startAuthorization } from "@/lib/schedule/oauth/flow"
-import {
-    DEFAULT_RETURN_PATH,
-    returnPathCookie,
-} from "@/lib/schedule/oauth/returnPath"
+import { returnCookie } from "@/lib/oauth/returnPath"
 import { jsonResponse } from "@/lib/schedule/scheduleResponse"
 
 /**
@@ -55,7 +52,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const response = jsonResponse(res)
         response.headers.append(
             "set-cookie",
-            returnPathCookie(body.returnTo ?? DEFAULT_RETURN_PATH),
+            returnCookie("schedule", body.returnTo),
         )
         return response
     } catch {

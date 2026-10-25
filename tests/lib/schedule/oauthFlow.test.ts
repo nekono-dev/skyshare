@@ -10,18 +10,18 @@ import {
 } from "../../helpers/fakeOAuth"
 import { createTestClientSecret } from "../../helpers/oauthTestKeys"
 import {
-    OAUTH_SCOPE,
+    SCHEDULE_SCOPE,
     clientIdFor,
     clientMetadata,
     redirectUriFor,
-} from "@/lib/schedule/oauth/client"
+} from "@/lib/oauth/client"
 import { parseCredential } from "@/lib/schedule/oauth/storedCredential"
 import {
     completeAuthorization,
     refreshTokens,
     startAuthorization,
 } from "@/lib/schedule/oauth/flow"
-import { sha256Base64url } from "@/lib/schedule/oauth/jose"
+import { sha256Base64url } from "@/lib/oauth/jose"
 import { loadCredential } from "@/lib/schedule/store"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(9)))
@@ -31,7 +31,7 @@ const NOW = 1_800_000_000
 
 let db: ReturnType<typeof createFakeD1>
 let world: ReturnType<typeof createFakeOAuth>
-let env: { DB: typeof db; SCHEDULE_ENC_KEY: string; SCHEDULE_OAUTH_KEY: string }
+let env: { DB: typeof db; SCHEDULE_ENC_KEY: string; OAUTH_CLIENT_KEY: string }
 
 beforeEach(async () => {
     db = createFakeD1()
@@ -39,7 +39,7 @@ beforeEach(async () => {
     env = {
         DB: db,
         SCHEDULE_ENC_KEY: KEY,
-        SCHEDULE_OAUTH_KEY: await createTestClientSecret(),
+        OAUTH_CLIENT_KEY: await createTestClientSecret(),
     }
 })
 
@@ -78,7 +78,7 @@ describe("予約投稿の OAuth", () => {
 
         // ユーザー名を受け取らず、ログイン中のアカウントを指定する
         expect(par.form.login_hint).toBe(DID)
-        expect(par.form.scope).toBe(OAUTH_SCOPE)
+        expect(par.form.scope).toBe(SCHEDULE_SCOPE)
         expect(par.form.redirect_uri).toBe(redirectUriFor(ORIGIN))
         expect(par.form.code_challenge_method).toBe("S256")
 
@@ -102,7 +102,7 @@ describe("予約投稿の OAuth", () => {
             sub: clientIdFor(ORIGIN),
             aud: AUTH,
         })
-        const clientJwk = JSON.parse(env.SCHEDULE_OAUTH_KEY)
+        const clientJwk = JSON.parse(env.OAUTH_CLIENT_KEY)
         expect(await verifyJwt(par.form.client_assertion!, clientJwk)).toBe(
             true,
         )
@@ -204,7 +204,7 @@ describe("予約投稿の OAuth", () => {
             "ACCESS-TOKEN-VALUE",
             "REFRESH-TOKEN-VALUE",
             "AUTH-CODE-VALUE",
-            JSON.parse(env.SCHEDULE_OAUTH_KEY).d,
+            JSON.parse(env.OAUTH_CLIENT_KEY).d,
         ]) {
             expect(all).not.toContain(secret)
         }
@@ -271,10 +271,14 @@ describe("予約投稿の OAuth", () => {
             dpop_bound_access_tokens: true,
             grant_types: ["authorization_code", "refresh_token"],
         })
-        // 書き込みは予約の実行に必要なコレクションと画像に限る
+        // メタデータはログインと予約の両方の権限を載せ、予約の要求は実行に必要なコレクションと画像に限る
         expect(meta.scope.split(" ")).toEqual(
-            expect.arrayContaining(["atproto", "blob:image/*"]),
+            expect.arrayContaining([
+                "atproto",
+                "blob:image/*",
+                "transition:generic",
+            ]),
         )
-        expect(meta.scope).not.toContain("transition:generic")
+        expect(SCHEDULE_SCOPE).not.toContain("transition:generic")
     })
 })

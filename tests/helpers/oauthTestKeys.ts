@@ -1,11 +1,11 @@
 /**
  * 予約投稿の OAuth のテスト用の鍵と、保管する認可の情報。
  *
- * - `createTestClientSecret`: Worker のシークレット `SCHEDULE_OAUTH_KEY` に入れる JSON を作る。
+ * - `createTestClientSecret`: Worker のシークレット `OAUTH_CLIENT_KEY` に入れる JSON を作る。
  * - `createTestCredentialToken`: 保管の層の `token` に入れる、OAuth の認可の情報の文字列を作る。
  *   トークンの端点は fakePds が受ける `https://pds/oauth/token` にする。
  */
-import { generateEcJwk } from "@/lib/schedule/oauth/jose"
+import { generateEcJwk } from "@/lib/oauth/jose"
 import { serializeCredential } from "@/lib/schedule/oauth/storedCredential"
 
 export const TEST_TOKEN_ENDPOINT = "https://pds/oauth/token"

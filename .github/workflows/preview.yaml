@@ -90,6 +90,17 @@ jobs:
         run: npm run build
 
 
+      # develop の Worker とプレビューの基本設定に、未登録のシークレット（OAUTH_CLIENT_KEY など）を生成して登録する。
+      # 登録済みの値は上書きしない。Preview は作成時の基本設定のシークレットを使うため、配備の前に行う。
+      # 既にある Preview に必要なシークレットが欠けていれば削除し、次の配備で基本設定から作り直させる（URL は変わらない）
+      - name: Ensure worker secrets
+        if: steps.alias.outputs.valid == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PREVIEW_ALIAS: ${{ steps.alias.outputs.alias }}
+        run: node hack/ensure-worker-secrets.mjs --develop --preview "$PREVIEW_ALIAS"
+
       # wrangler preview はブランチ別の Preview を作成・更新する（本番のデプロイ状態は変えない）。
       # 同じ名前で再実行すると URL は変わらず中身だけ最新になる
       - name: Deploy preview

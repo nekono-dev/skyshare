@@ -44,6 +44,8 @@ export const entry = {
         "This is guest mode, which doesn't require logging in. You can't edit real Entries. Deleting an Entry is only simulated on screen and does not affect any real data.",
     "entry.legacy.confirm": "Delete this post?",
     "entry.legacy.deleteFailed": "Failed to delete the post.",
+    "entry.legacy.oauthUnsupported":
+        "Posts in the old format can't be deleted while logged in with Bluesky. Log in again with an app password to delete them.",
     "entry.detail.viewSource": "View original post on Bluesky",
     "entry.detail.postedAt": "Posted: {date}",
     "entry.detail.noDate": "no data",

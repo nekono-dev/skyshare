@@ -1,17 +1,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import {
+    admitSession,
     decodeBase64Utf8,
     encodeBase64Utf8,
     getCookieFromHeader,
-    makeAccountsSetCookie,
+    makeAccountsSetCookies,
     makeClearSetCookie,
     makeSessionSetCookie,
+    MAX_POOLED_ACCOUNTS,
     parseAccountsFromRequest,
     parseCookies,
     parseSessionFromRequest,
+    sessionIdentity,
     toPooledAccount,
     upsertPooledAccount,
+    type OAuthSession,
+    type PasswordSession,
+    type PooledAccount,
 } from "@/lib/session/cookies"
 
 describe("parseCookies", () => {
@@ -56,34 +62,92 @@ describe("encodeBase64Utf8 / decodeBase64Utf8", () => {
     })
 })
 
+/** テスト用のアプリパスワードのセッション */
+const password = (did: string, handle = `${did}.test`): PasswordSession => ({
+    kind: "password",
+    session: {
+        did,
+        handle,
+        accessJwt: "ACCESS",
+        refreshJwt: "REFRESH",
+        active: true,
+    },
+    service: "https://x",
+})
+
+/** テスト用の OAuth のセッション（実際の大きさに近い値を入れる） */
+const oauth = (did: string): OAuthSession => ({
+    kind: "oauth",
+    did,
+    handle: `${did}.test`,
+    pds: "https://morel.us-east.host.bsky.network",
+    oauth: {
+        accessToken: "a".repeat(700),
+        expiresAt: 1_800_000_000,
+        refreshToken: `ref-${"r".repeat(64)}`,
+        dpopJwk: {
+            kty: "EC",
+            crv: "P-256",
+            x: "x".repeat(43),
+            y: "y".repeat(43),
+            d: "d".repeat(43),
+        },
+        issuer: "https://bsky.social",
+        tokenEndpoint: "https://bsky.social/oauth/token",
+        revocationEndpoint: "https://bsky.social/oauth/revoke",
+        clientId: "https://skyshare.example.com/oauth/client-metadata.json",
+    },
+})
+
+const pooled = (s: PasswordSession | OAuthSession): PooledAccount => ({
+    ...s,
+    addedAt: "2026-01-01T00:00:00.000Z",
+})
+
+/** `Set-Cookie` の一覧を、要求の `Cookie` ヘッダーにまとめる */
+const toCookieHeader = (setCookies: string[]) =>
+    setCookies
+        .filter(c => !c.includes("Max-Age=0"))
+        .map(c => c.split(";")[0])
+        .join("; ")
+
 describe("parseSessionFromRequest", () => {
-    it("[account-session/AC-1] atp_session cookie を復号してsession/serviceを取得する", () => {
+    it("[account-session/AC-1] atp_session cookie を復号してセッションを取得する", () => {
+        for (const stored of [password("did:plc:abc"), oauth("did:plc:abc")]) {
+            const request = new Request("https://example.com", {
+                headers: {
+                    cookie: makeSessionSetCookie(stored).split(";")[0]!,
+                },
+            })
+            expect(parseSessionFromRequest(request)).toEqual(stored)
+        }
+    })
+
+    it("kind の無い以前の形式はアプリパスワードのセッションとして読む", () => {
         const payload = {
-            session: { did: "did:plc:abc" },
+            session: { did: "did:plc:abc", handle: "alice.test" },
             service: "https://x",
         }
-        const cookieVal = encodeBase64Utf8(JSON.stringify(payload))
         const request = new Request("https://example.com", {
-            headers: { cookie: `atp_session=${cookieVal}` },
+            headers: {
+                cookie: `atp_session=${encodeBase64Utf8(JSON.stringify(payload))}`,
+            },
         })
         expect(parseSessionFromRequest(request)).toEqual({
-            session: { did: "did:plc:abc" },
-            service: "https://x",
+            kind: "password",
+            ...payload,
         })
     })
 
-    it("cookieが無ければsession/serviceともundefined", () => {
+    it("cookieが無ければ undefined", () => {
         const request = new Request("https://example.com")
-        expect(parseSessionFromRequest(request)).toEqual({
-            session: undefined,
-            service: undefined,
-        })
+        expect(parseSessionFromRequest(request)).toBeUndefined()
     })
 })
 
 describe("makeSessionSetCookie", () => {
     it("[account-session/AC-1] Set-Cookie文字列に必要な属性を含む", () => {
-        const cookie = makeSessionSetCookie({ did: "did:plc:abc" })
+        const cookie = makeSessionSetCookie(password("did:plc:abc"))
         expect(cookie).toContain("atp_session=")
         expect(cookie).toContain("Path=/")
         expect(cookie).toContain("HttpOnly")
@@ -93,98 +157,101 @@ describe("makeSessionSetCookie", () => {
 
 describe("makeClearSetCookie", () => {
     it("Max-Age=0で即時失効させる", () => {
-        const cookie = makeClearSetCookie("atp_accounts")
-        expect(cookie).toContain("atp_accounts=")
+        const cookie = makeClearSetCookie("atp_account_0")
+        expect(cookie).toContain("atp_account_0=")
         expect(cookie).toContain("Max-Age=0")
     })
 })
 
-describe("parseAccountsFromRequest", () => {
-    it("妥当なPooledAccount配列のみを返す", () => {
-        const accounts = [
-            {
-                did: "did:plc:abc",
-                handle: "alice.bsky.social",
-                service: "https://x",
-                session: {},
-                addedAt: "2026-01-01T00:00:00Z",
-            },
-        ]
-        const cookieVal = encodeBase64Utf8(JSON.stringify(accounts))
+describe("プールの枠の cookie", () => {
+    it("[account-session/AC-18] プールの2件がそれぞれ別の cookie に入り、空いた枠の cookie は失効する", () => {
+        const pool = [pooled(oauth("did:plc:a")), pooled(password("did:plc:b"))]
+        const cookies = makeAccountsSetCookies(pool)
+        expect(cookies).toHaveLength(MAX_POOLED_ACCOUNTS)
+        expect(cookies[0]).toMatch(/^atp_account_0=[^;]+;/)
+        expect(cookies[1]).toMatch(/^atp_account_1=[^;]+;/)
+        expect(cookies[2]).toMatch(/^atp_account_2=;.*Max-Age=0/)
+        expect(cookies[3]).toMatch(/^atp_account_3=;.*Max-Age=0/)
+        for (const cookie of cookies) expect(cookie).toContain("HttpOnly")
+
         const request = new Request("https://example.com", {
-            headers: { cookie: `atp_accounts=${cookieVal}` },
+            headers: { cookie: toCookieHeader(cookies) },
         })
-        expect(parseAccountsFromRequest(request)).toEqual(accounts)
+        expect(parseAccountsFromRequest(request)).toEqual(pool)
     })
 
-    it("cookieが無ければ空配列", () => {
-        const request = new Request("https://example.com")
-        expect(parseAccountsFromRequest(request)).toEqual([])
-    })
-
-    it("壊れたcookieでも空配列にフォールバックする", () => {
-        const request = new Request("https://example.com", {
-            headers: { cookie: "atp_accounts=not-valid-base64-json" },
-        })
-        expect(parseAccountsFromRequest(request)).toEqual([])
-    })
-})
-
-describe("makeAccountsSetCookie", () => {
-    it("空配列の場合はcookieを失効させる", () => {
-        const cookie = makeAccountsSetCookie([])
-        expect(cookie).toContain("Max-Age=0")
-    })
-
-    it("アカウントがあればエンコードした値を設定する", () => {
-        const cookie = makeAccountsSetCookie([
-            {
-                did: "did:plc:abc",
-                handle: "alice.bsky.social",
-                service: "https://x",
-                session: {},
-                addedAt: "2026-01-01T00:00:00Z",
-            },
-        ])
-        expect(cookie).toContain("atp_accounts=")
-        expect(cookie).not.toContain("Max-Age=0")
-    })
-})
-
-describe("toPooledAccount", () => {
-    it("sessionからPooledAccountを組み立てる", () => {
-        const result = toPooledAccount(
-            { did: "did:plc:abc", handle: "alice.bsky.social" },
-            "https://x",
+    it("OAuth のセッションでも、1件の cookie が上限の4キロバイトに収まる", () => {
+        const cookies = makeAccountsSetCookies(
+            Array.from({ length: MAX_POOLED_ACCOUNTS }, (_, i) =>
+                pooled(oauth(`did:plc:${"a".repeat(24)}${i}`)),
+            ),
         )
-        expect(result).toMatchObject({
-            did: "did:plc:abc",
-            handle: "alice.bsky.social",
-            service: "https://x",
+        for (const cookie of cookies) {
+            expect(cookie.split(";")[0]!.length).toBeLessThan(4096)
+        }
+    })
+
+    it("cookieが無ければ空配列、壊れた枠は飛ばす", () => {
+        expect(
+            parseAccountsFromRequest(new Request("https://example.com")),
+        ).toEqual([])
+        const good = makeAccountsSetCookies([pooled(password("did:plc:b"))])
+        const request = new Request("https://example.com", {
+            headers: {
+                cookie: `atp_account_0=not-valid; ${good[0]!.split(";")[0]!.replace("atp_account_0", "atp_account_1")}`,
+            },
         })
+        expect(parseAccountsFromRequest(request)).toEqual([
+            pooled(password("did:plc:b")),
+        ])
+    })
+})
+
+describe("toPooledAccount / upsertPooledAccount", () => {
+    it("セッションに退避した時刻を付ける", () => {
+        const result = toPooledAccount(password("did:plc:abc"))
+        expect(result).toMatchObject(password("did:plc:abc"))
         expect(typeof result.addedAt).toBe("string")
     })
-})
 
-describe("upsertPooledAccount", () => {
-    const existing = {
-        did: "did:plc:abc",
-        handle: "alice.bsky.social",
-        service: "https://x",
-        session: {},
-        addedAt: "2026-01-01T00:00:00Z",
-    }
-
-    it("新規didは末尾に追加する", () => {
-        const other = { ...existing, did: "did:plc:other" }
+    it("新規didは末尾に追加し、同一didは上書きして末尾に配置する", () => {
+        const existing = pooled(password("did:plc:abc"))
+        const other = pooled(oauth("did:plc:other"))
         expect(upsertPooledAccount([existing], other)).toEqual([
             existing,
             other,
         ])
+        const updated = pooled(password("did:plc:abc", "alice2.test"))
+        expect(upsertPooledAccount([existing, other], updated)).toEqual([
+            other,
+            updated,
+        ])
+    })
+})
+
+describe("admitSession", () => {
+    it("別アカウントがアクティブなら退避し、同じアカウントなら退避しない", () => {
+        const a = password("did:plc:a")
+        const b = oauth("did:plc:b")
+        const result = admitSession(a, [], b)!
+        expect(result.map(account => sessionIdentity(account).did)).toEqual([
+            "did:plc:a",
+        ])
+        expect(admitSession(b, [], oauth("did:plc:b"))).toEqual([])
+        // 新しいアカウントがプールにあれば除く
+        expect(admitSession(undefined, [pooled(b)], b)).toEqual([])
     })
 
-    it("同一didは上書きし末尾に配置する", () => {
-        const updated = { ...existing, handle: "alice2.bsky.social" }
-        expect(upsertPooledAccount([existing], updated)).toEqual([updated])
+    it("プールが上限のとき、別アカウントの退避は null になる", () => {
+        const full = Array.from({ length: MAX_POOLED_ACCOUNTS }, (_, i) =>
+            pooled(password(`did:plc:p${i}`)),
+        )
+        expect(
+            admitSession(password("did:plc:a"), full, oauth("did:plc:b")),
+        ).toBeNull()
+        // プールにいるアカウントへのログインは、枠が空くため退避できる
+        expect(
+            admitSession(password("did:plc:a"), full, password("did:plc:p0")),
+        ).toHaveLength(MAX_POOLED_ACCOUNTS)
     })
 })

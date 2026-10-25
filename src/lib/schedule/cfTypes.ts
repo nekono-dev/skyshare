@@ -37,5 +37,5 @@ export type ScheduleEnv = {
     SCHEDULE_IMAGES: R2Bucket
     SCHEDULE_ENC_KEY: string
     /** OAuth のクライアントの秘密鍵（P-256 の JWK の JSON）。未設定なら予約投稿を有効にできない */
-    SCHEDULE_OAUTH_KEY?: string
+    OAUTH_CLIENT_KEY?: string
 }

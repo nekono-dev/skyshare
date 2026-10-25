@@ -5,7 +5,7 @@
  * - ログイン済み状態を使わず（storageStateを空にして）、フォームへ認証情報を入力して
  *   送信し、トップへ遷移してセッションが確立されることを確認する。
  */
-import { expect, test } from "../fixtures"
+import { openPasswordLogin, expect, test } from "../fixtures"
 import { loadLiveAccount } from "./env"
 
 test.use({ storageState: { cookies: [], origins: [] } })
@@ -15,6 +15,8 @@ test("e2elive/AC-4: ログインフォームから検証用アカウントでロ
 }) => {
     const account = loadLiveAccount()!
     await page.goto("/login/")
+    // アプリパスワードのフォームは折りたたまれているため開く
+    await openPasswordLogin(page)
     await page.locator("#username").fill(account.identifier)
     await page.locator("#password").fill(account.password)
     await page.locator("form#login-form button[type=submit]").click()

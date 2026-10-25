@@ -2,6 +2,7 @@
 import { defineConfig, sessionDrivers } from "astro/config"
 import cloudflare from "@astrojs/cloudflare"
 import basicSsl from "@vitejs/plugin-basic-ssl"
+import { oauthLoopbackForwarder } from "./hack/oauthLoopbackForwarder.ts"
 
 import react from "@astrojs/react"
 import partytown from "@astrojs/partytown"
@@ -95,7 +96,9 @@ export default defineConfig({
     // 新しい選択肢である oxc を空のオブジェクトで用意しておく（互換性援助）
     oxc: {},
     // 自己署名証明書で dev サーバーを HTTPS 化する（Web Share API はセキュアコンテキスト必須のため）
-    plugins: [basicSsl()],
+    // basicSsl: 開発サーバーの https 化。oauthLoopbackForwarder: Bluesky の OAuth の開発用の公開クライアントの
+    // 戻り先（http://127.0.0.1:4322/oauth/callback/）を開発サーバーへ中継する（開発サーバーでだけ動く）
+    plugins: [basicSsl(), oauthLoopbackForwarder()],
     server: {
       https: true,
     },

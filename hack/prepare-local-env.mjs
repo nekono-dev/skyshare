@@ -2,7 +2,7 @@
 //
 // 責務:
 // - .dev.vars が無ければ .dev.vars.template から作る
-// - 予約投稿のシークレット（SCHEDULE_ENC_KEY・SCHEDULE_OAUTH_KEY）が未設定なら、ランダムに生成して書き込む
+// - 予約投稿と OAuth のシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY）が未設定なら、ランダムに生成して書き込む
 // - 設定済みの値は決して上書きしない（鍵を替えると、保管済みの予約の認証情報が復号できなくなるため）
 //
 // 使い方: node hack/prepare-local-env.mjs
@@ -14,9 +14,9 @@ import { pathToFileURL } from "node:url"
 import { generateOauthKey } from "./generate-oauth-key.mjs"
 
 /** 自動生成するシークレットと、その生成関数 */
-const GENERATORS = {
+export const GENERATORS = {
   SCHEDULE_ENC_KEY: async () => randomBytes(32).toString("base64"),
-  SCHEDULE_OAUTH_KEY: generateOauthKey,
+  OAUTH_CLIENT_KEY: generateOauthKey,
 }
 
 /**

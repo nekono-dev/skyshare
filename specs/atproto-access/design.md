@@ -22,7 +22,7 @@ flowchart LR
   publicAgent --> ext_env["env"]
   publicAgent --> ext_agent
   did --> ext_env
-  blob --> ext_agent["AtpAgent"]
+  blob --> ext_agent["Agent"]
   repo --> ext_agent
   profile --> ext_agent
   agentFactory --> ext_agent
@@ -73,7 +73,7 @@ export const createAtpAgent = (service: string): AtpAgent =>
 // 認証不要の公開 AppView 用。セッションの cookie は扱わない
 export const publicAtpAgent = new AtpAgent({ service: atpService })
 export const uploadBlob = async (
-  agent: Pick<AtpAgent, "uploadBlob">,
+  agent: Pick<Agent, "uploadBlob">,
   blob: Blob,
 ) => {
   const mime = blob.type || "application/octet-stream"

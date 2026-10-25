@@ -20,7 +20,7 @@
  *   （`resolveEntryRangeStartMs` / `attachSkyshareEntries`）。
  */
 import { AppBskyFeedDefs } from "@atproto/api"
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 import {
     buildThreadViewFromPosts,
     extractOwnedLinearReplyChain,
@@ -74,7 +74,7 @@ export const ENTRY_RANGE_MARGIN_MS = 24 * 60 * 60 * 1000
  * - feed=[B(返信, root=A), A] → `[{ rootPost: A, replies: [B] }]`
  */
 export const buildTimelineThreads = async (
-    agent: AtpAgent,
+    agent: Agent,
     did: string,
     feed: AppBskyFeedDefs.FeedViewPost[],
 ): Promise<ThreadGroup[]> => {

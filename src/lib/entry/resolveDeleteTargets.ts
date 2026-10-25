@@ -9,7 +9,7 @@
  *   各投稿の所有者を検証したrkey一覧を返す。
  */
 import { AppBskyFeedDefs } from "@atproto/api"
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 import {
     extractOwnedLinearReplyChain,
     isThreadRootPost,
@@ -40,7 +40,7 @@ const isNotFoundError = (err: unknown): boolean =>
  * - `DeleteTargetsResult`。`NotFound`以外の取得失敗は例外を送出する。
  */
 export const resolveDeleteTargets = async (
-    agent: AtpAgent,
+    agent: Agent,
     ownerDid: string,
     sourceUri: string,
 ): Promise<DeleteTargetsResult> => {

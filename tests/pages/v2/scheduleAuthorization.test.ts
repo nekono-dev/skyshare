@@ -18,12 +18,9 @@ vi.mock("@/lib/schedule/oauth/flow", async importOriginal => ({
 
 import { GET as callback } from "@/pages/oauth/callback"
 import { POST as start } from "@/pages/v2/schedules/credential/authorization"
-import {
-    isSafeReturnPath,
-    RETURN_PATH_COOKIE,
-} from "@/lib/schedule/oauth/returnPath"
+import { isSafeReturnPath } from "@/lib/oauth/returnPath"
 import { POST as complete } from "@/pages/v2/schedules/credential/authorization/completion"
-import { readAuthorizationFragment } from "@/lib/schedule/oauth/callbackFragment"
+import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
 import { loadCredential } from "@/lib/schedule/store"
 
 const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(4)))
@@ -36,7 +33,7 @@ beforeEach(async () => {
     holder.env = {
         DB: db,
         SCHEDULE_ENC_KEY: KEY,
-        SCHEDULE_OAUTH_KEY: await createTestClientSecret(),
+        OAUTH_CLIENT_KEY: await createTestClientSecret(),
     }
 })
 
@@ -81,7 +78,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(`${to.origin}${to.pathname}`).toBe(`${ORIGIN}/settings/`)
         // 認可コードはクエリに載せない
         expect(to.search).toBe("")
-        expect(readAuthorizationFragment(to.hash)).toEqual({
+        expect(readAuthorizationFragment(to.hash, "schedule")).toEqual({
             code: "C1",
             state: "S1",
             iss: "https://pds",
@@ -92,12 +89,12 @@ describe("予約投稿の OAuth の戻り", () => {
                 "location",
             )!,
         )
-        expect(readAuthorizationFragment(denied.hash)).toEqual({
+        expect(readAuthorizationFragment(denied.hash, "schedule")).toEqual({
             error: "access_denied",
             state: "S2",
         })
         // 目印の無いフラグメントは戻りとみなさない
-        expect(readAuthorizationFragment("#top")).toBeNull()
+        expect(readAuthorizationFragment("#top", "schedule")).toBeNull()
     })
 
     test("schedule-api/AC-22: 完了は未ログインで401、不正な本文で400、拒否と不明な state では保存せずに分類を返す", async () => {
@@ -123,7 +120,7 @@ describe("予約投稿の OAuth の戻り", () => {
         const res = await callStart(JSON.stringify({ returnTo: "/post/?a=1" }))
         expect(res.status).toBe(200)
         const cookie = res.headers.get("set-cookie")!
-        expect(cookie).toContain(`${RETURN_PATH_COOKIE}=%2Fpost%2F%3Fa%3D1`)
+        expect(cookie).toContain("oauth_return=schedule%3A%2Fpost%2F%3Fa%3D1")
         expect(cookie).toContain("Path=/oauth/callback/")
         expect(cookie).toContain("SameSite=Lax")
         expect(cookie).toContain("HttpOnly")
@@ -133,7 +130,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(`${to.origin}${to.pathname}${to.search}`).toBe(
             `${ORIGIN}/post/?a=1`,
         )
-        expect(readAuthorizationFragment(to.hash)).toEqual({
+        expect(readAuthorizationFragment(to.hash, "schedule")).toEqual({
             code: "C",
             state: "S",
         })
@@ -160,7 +157,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect((await callStart("not json")).status).toBe(400)
         const back = callCallback(
             "?code=C",
-            `${RETURN_PATH_COOKIE}=${encodeURIComponent("//evil.example/")}`,
+            `oauth_return=${encodeURIComponent("schedule://evil.example/")}`,
         )
         const to = new URL(back.headers.get("location")!)
         expect(`${to.origin}${to.pathname}`).toBe(`${ORIGIN}/settings/`)

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 
-import { AtpAgent } from "@atproto/api"
+import { Agent } from "@atproto/api"
 import {
     errorResponseFromStatus,
     resolveXrpcStatus,
@@ -38,7 +38,7 @@ const GET_POSTS_BATCH_SIZE = 25
  *   `posts[].uri` の集合に含まれない URI が「孤立（source投稿が削除済み）」と判定できる。
  *
  * Input:
- * - `agent`: 認証済み AtpAgent
+ * - `agent`: 認証済み Agent
  * - `sourceUris`: 生存確認したい Bluesky 投稿の AT URI 配列
  *
  * Output:
@@ -49,7 +49,7 @@ const GET_POSTS_BATCH_SIZE = 25
  * - 出力: `Set(["at://did/app.bsky.feed.post/a"])`
  */
 const fetchAliveSourceUris = async (
-    agent: AtpAgent,
+    agent: Agent,
     sourceUris: string[],
 ): Promise<Set<string>> => {
     const alive = new Set<string>()
@@ -77,7 +77,7 @@ const fetchAliveSourceUris = async (
  *   生存していないものに `orphaned: true` を付与する（絞り込みは行わない）。
  *
  * Input:
- * - `agent`: 認証済み AtpAgent
+ * - `agent`: 認証済み Agent
  * - `did`: 対象 repo DID（自分自身）
  * - `limit`: 呼び出し元が要求する件数
  * - `cursor`: ページング開始位置（未指定可）
@@ -87,7 +87,7 @@ const fetchAliveSourceUris = async (
  * - `cursor`: 次ページ用 cursor（存在する場合のみ）
  */
 const fetchSkyshareEntries = async (
-    agent: AtpAgent,
+    agent: Agent,
     did: string,
     limit: number,
     cursor: string | undefined,

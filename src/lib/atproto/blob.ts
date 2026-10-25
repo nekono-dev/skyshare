@@ -3,13 +3,13 @@
  *
  * 責務と処理概要:
  * - 画像 Blob を atproto の PDS へアップロードし、投稿埋め込み用の blob 参照を返す。
- * - 実際に呼び出すメソッドは `uploadBlob` のみのため、`AtpAgent` 全体ではなく
+ * - 実際に呼び出すメソッドは `uploadBlob` のみのため、`Agent` 全体ではなく
  *   最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
  */
 
-import type { AtpAgent } from "@atproto/api"
+import type { Agent } from "@atproto/api"
 
-type BlobUploadAgent = Pick<AtpAgent, "uploadBlob">
+type BlobUploadAgent = Pick<Agent, "uploadBlob">
 
 /**
  * 画像 Blob を atproto にアップロードし、投稿埋め込み用 blob 参照を返す。
@@ -19,7 +19,7 @@ type BlobUploadAgent = Pick<AtpAgent, "uploadBlob">
  * - 副作用: atproto 外部 API（uploadBlob）を呼び出してアップロードを実行。
  *
  * Input:
- * - `agent`: `uploadBlob` を持つ認証済み AtpAgent（または同等の最小インターフェース）
+ * - `agent`: `uploadBlob` を持つ認証済み Agent（または同等の最小インターフェース）
  * - `blob`: アップロード対象画像データ
  *
  * Output:
