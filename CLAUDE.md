@@ -29,6 +29,7 @@
 - スキルはリポジトリに同梱せず、プラグイン `branch-release-workflow@nekono-dev`（https://github.com/nekono-dev/branch-release-workflow）として `.claude/settings.json` で有効にしている。マーケットプレイス `nekono-dev` は https://github.com/nekono-dev/claude-plugins で、両プラグインを載せている。
 - 保護ブランチと宣言外のブランチでの commit・push は、プラグインの PreToolUse フックが拒否する。
 - `develop` と `main` は、マージコミットだけで構成されるブランチとして保つ。作業ブランチ（`dev/*`）のコミットは、`develop` へ取り込む前に `develop` の先頭へ rebase し、1つのコミットに圧縮してから `--no-ff` でマージする（`develop` や `main` へ通常のコミットを直接積まない）。
+- `develop` へ取り込む圧縮コミットのメッセージは、題のみの1行（可能な限り短く）とし、本文は書かない（Co-Authored-By 等の付記は除く）。
 - 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作成すること。`git checkout -b` 等で直接作らない。
 - ユーザーが製造したコードの挙動を確認したい旨を示したら、`brw url` が返す `https://XXXX.develop.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
 - 作業ブランチへの commit・push は許可を求めずに行う。worktree は push しただけでは片付けず、`develop` へのマージ後（または `main` への PR 作成後）に `brw finish`（取り込み済みをまとめて片付けるなら `brw finish --merged`）で片付ける。続きの作業は `brw resume <ブランチ>`、新しい作業は `brw create <名前>` で始める。
