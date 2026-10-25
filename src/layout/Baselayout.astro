@@ -52,6 +52,11 @@ const bodyClass = hasNav ? `${ui.root} ${ui["with-nav"]}` : ui.root
     <head>
         <meta charset="utf-8" />
         <script is:inline>
+            // OAuth のログインの戻り（#oauthReturn=session...）なら、描画の前に印を付ける。
+            // 印の間はログインのフォームを押せず「ログイン中…」を出す（LoginAuthorizationReturn が引き継ぐ）
+            if (/(^#|&)oauthReturn=session(&|$)/.test(location.hash)) {
+                document.documentElement.dataset.oauthReturning = "pending"
+            }
             try {
                 const themeMode = localStorage.getItem("themeMode")
                 if (themeMode === "light" || themeMode === "dark") {

@@ -32,6 +32,13 @@ import ui from "@/styles/ui.module.css"
  * - 入力欄には `autoComplete`（username / current-password）と label の `htmlFor` を設定している。
  */
 
+/**
+ * OAuth のログインの戻りの完了を待っている間か（`LoginAuthorizationReturn` が `<html>` に付ける印）。
+ * この間はもう一度ログインを始めさせない（CSS でも押せなくしているが、キーボードの送信も止める）。
+ */
+const isCompletingOAuthReturn = () =>
+  document.documentElement.dataset.oauthReturning !== undefined
+
 type Props = {
   /**
    * ハンドルの初期値。再ログイン導線など、対象アカウントが既知の場合に指定する。
@@ -76,7 +83,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
    * - 通信例外: 接続失敗メッセージを表示し、ボタンを戻す
    */
   const startOAuth = async () => {
-    if (oauthStarting) return
+    if (oauthStarting || isCompletingOAuthReturn()) return
     setOauthStarting(true)
     setColor("")
     setMessageKey("account.login.oauthRedirecting")
@@ -122,6 +129,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
    */
   const onSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (isCompletingOAuthReturn()) return
     setMessageKey("account.login.progress")
     setColor("")
 

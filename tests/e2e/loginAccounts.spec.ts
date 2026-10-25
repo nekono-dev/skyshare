@@ -195,7 +195,11 @@ const AUTHORIZE_PAGE =
  */
 const mockOAuthApi = async (
     page: Page,
-    options: { completion?: { status?: number; result?: string } } = {},
+    options: {
+        completion?: { status?: number; result?: string }
+        /** 完了の応答をこの Promise が解決するまで待たせる（完了までの表示を確かめるとき） */
+        holdCompletion?: Promise<void>
+    } = {},
 ) => {
     const calls: { kind: "start" | "complete"; body?: unknown }[] = []
     await page.route("https://bsky.social/**", route =>
@@ -208,8 +212,9 @@ const mockOAuthApi = async (
             body: JSON.stringify({ url: AUTHORIZE_PAGE }),
         })
     })
-    await page.route(COMPLETION_URL, route => {
+    await page.route(COMPLETION_URL, async route => {
         calls.push({ kind: "complete", body: route.request().postDataJSON() })
+        await options.holdCompletion
         const status = options.completion?.status ?? 200
         return route.fulfill({
             status,
@@ -315,4 +320,42 @@ test("[login-accounts/AC-13] 再ログインの案内で OAuth のボタンを�
         returnTo: "/accounts/",
         loginHint: "other.bsky.social",
     })
+})
+
+test("[login-accounts/AC-14] 戻りの住所で開くと、完了の応答の前からログイン中の表示が出てフォームが押せず、失敗の後は押せるようになる", async ({
+    page,
+}) => {
+    test.setTimeout(90_000)
+    await mockSessionApi(page)
+    let release = () => {}
+    const holdCompletion = new Promise<void>(resolve => {
+        release = resolve
+    })
+    const calls = await mockOAuthApi(page, {
+        completion: { result: "AccountUnverified" },
+        holdCompletion,
+    })
+    await page.goto("/login/#oauthReturn=session&code=C1&state=S1")
+    const form = page.locator("#login-form")
+    // 完了の応答を待っている間
+    await expect(page.getByText("ログイン中…").first()).toBeVisible()
+    await expect(form).toHaveCSS("pointer-events", "none")
+    await expect
+        .poll(() => calls.some(c => c.kind === "complete"), { timeout: 30_000 })
+        .toBe(true)
+    // CSS を越えて押しても（キーボードの送信と同じく）、ログインを始めない
+    await page
+        .getByRole("button", { name: "Bluesky でログイン" })
+        .dispatchEvent("click")
+    expect(calls.some(c => c.kind === "start")).toBe(false)
+
+    release()
+    await expect(
+        page.getByText(
+            "このアカウントは Bluesky でのログインに対応していません。アプリパスワードでログインしてください。",
+        ),
+    ).toBeVisible({ timeout: 30_000 })
+    await expect(form).toHaveCSS("pointer-events", "auto")
+    // 部品の外の「ログイン中…」は CSS で隠れ、部品の表示は結果に替わる
+    await expect(page.getByText("ログイン中…")).toBeHidden()
 })

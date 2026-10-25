@@ -11,8 +11,6 @@ export const account = {
     "account.login.passwordToggle": "Classic login",
     "account.login.oauthSubmit": "Log in with Bluesky",
     "account.login.oauthRedirecting": "Taking you to Bluesky…",
-    "account.oauthResult.title": "Log in with Bluesky",
-    "account.oauthResult.close": "Close",
     "account.oauthResult.ok": "Logged in. Redirecting…",
     "account.oauthResult.Denied": "Access was not approved on Bluesky.",
     "account.oauthResult.retry":

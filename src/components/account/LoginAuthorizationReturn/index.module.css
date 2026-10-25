@@ -1,0 +1,19 @@
+/* OAuth の戻りの進行と結果のステータスメッセージ（アプリパスワードのログインの #message と同じ見た目） */
+:local(.status) {
+  margin: 1rem 0;
+}
+
+/* 戻りの部品が動く前の「ログイン中…」。Baselayout のスクリプトが戻りの住所を見て付けた印の間だけ出す */
+:local(.pending) {
+  display: none;
+}
+
+:global(html[data-oauth-returning="pending"]) :local(.pending) {
+  display: block;
+}
+
+/* 戻りの完了を待つ間は、ログインのフォームを押せなくする（もう一度ログインを始めさせない） */
+:global(html[data-oauth-returning]) :global(#login-form) {
+  pointer-events: none;
+  opacity: 0.6;
+}

@@ -9,8 +9,6 @@ export const account = {
     "account.login.passwordToggle": "従来形式でのログイン",
     "account.login.oauthSubmit": "Bluesky でログイン",
     "account.login.oauthRedirecting": "Bluesky の画面へ移動します…",
-    "account.oauthResult.title": "Bluesky でのログイン",
-    "account.oauthResult.close": "閉じる",
     "account.oauthResult.ok": "ログインしました。リダイレクトします…",
     "account.oauthResult.Denied": "Bluesky の画面で許可されませんでした。",
     "account.oauthResult.retry":

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import ChoiceDialog from "@/components/common/ChoiceDialog"
 import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
 import { useT } from "@/lib/i18n/react"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
@@ -11,8 +10,13 @@ import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
  * 責務と処理概要:
  * - 戻り先（`/oauth/callback/`）は、ログインを始めたページの住所のフラグメントに、用途 `session` と
  *   戻りの項目を入れて転送する。このフラグメントを読んだら、再読み込みで同じ項目を送らないよう
- *   先に住所から消し、ログインの完了の API を呼んで、結果をダイアログで表示する。
+ *   先に住所から消し、ログインの完了の API を呼んで、進行と結果をステータスメッセージで表示する
+ *   （アプリパスワードのログインと同じ表示）。
  * - 成功したら、未ログインの記録を消して一定時間の後にトップへ遷移する（パスワードのログインと同じ）。
+ * - `<html data-oauth-returning>` は、Baselayout の先頭のスクリプトが戻りの住所を見て `pending` で付ける。
+ *   付いている間はログインのフォームを押せず、`pending` の間はこの部品が動く前の「ログイン中…」を出す
+ *   （`LoginAuthorizationStatus.astro`）。この部品は動き出したら `active` に変えて表示を引き継ぎ、
+ *   失敗したら外してやり直せるようにする。成功したら遷移まで付けたままにする。
  *
  * 実装上の制約:
  * - 戻りは別のサイトからの遷移で `SameSite=Strict` の cookie が届かないため、完了はこのページから呼ぶ。
@@ -50,13 +54,22 @@ export const loginResultKey = (result: string): PlainMessageKey => {
   }
 }
 
+/** 戻りの完了の状態。`progress` は完了の依頼中、それ以外は完了の結果の分類 */
+type ReturnState = "progress" | string
+
 export const Component = () => {
   const { t } = useT()
-  const [result, setResult] = useState<string | null>(null)
+  const [state, setState] = useState<ReturnState | null>(null)
 
   useEffect(() => {
+    const root = document.documentElement
     const returned = readAuthorizationFragment(window.location.hash, "session")
-    if (!returned) return
+    if (!returned) {
+      delete root.dataset.oauthReturning
+      return
+    }
+    root.dataset.oauthReturning = "active"
+    setState("progress")
     const url = new URL(window.location.href)
     url.hash = ""
     window.history.replaceState(window.history.state, "", url.toString())
@@ -77,7 +90,8 @@ export const Component = () => {
         next = "failed"
       }
       if (cancelled) return
-      setResult(next)
+      setState(next)
+      if (next !== "ok") delete root.dataset.oauthReturning
       if (next === "ok") {
         clearKnownUnauthenticated()
         setTimeout(() => {
@@ -90,21 +104,15 @@ export const Component = () => {
     }
   }, [])
 
+  if (state === null) return null
+  const color =
+    state === "progress" ? undefined : state === "ok" ? "green" : "#b00"
   return (
-    <ChoiceDialog
-      open={result !== null}
-      onClose={() => setResult(null)}
-      ariaLabel={t("account.oauthResult.title")}
-      description={result === null ? undefined : t(loginResultKey(result))}
-      buttons={[
-        {
-          key: "close",
-          label: t("account.oauthResult.close"),
-          variant: "blue",
-          onClick: () => setResult(null),
-        },
-      ]}
-    />
+    <div id="oauth-login-status" aria-live="polite" style={{ color }}>
+      {state === "progress"
+        ? t("account.login.progress")
+        : t(loginResultKey(state))}
+    </div>
   )
 }
 
