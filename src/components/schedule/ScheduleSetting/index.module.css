@@ -14,11 +14,8 @@
   margin: 0;
 }
 
-/* 本格的な予約投稿サービスの案内。ロゴと文を横に並べる */
+/* 本格的な予約投稿サービスの案内。ロゴはリンクの直前に文中へ埋め込む */
 .chronosky {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   margin: var(--space-2) 0 0;
   padding: 0 var(--space-0);
   font-size: var(--font-size-sm);
@@ -26,6 +23,9 @@
 }
 
 .chronosky-logo {
-  flex: 0 0 auto;
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: var(--space-1);
+  vertical-align: middle;
   border-radius: var(--radius-sm);
 }

@@ -199,6 +199,23 @@ describe("segmentRichText", () => {
         ])
     })
 
+    it("[post-rich-text/AC-12] 注釈の無い部分のハッシュタグをリンクにする", () => {
+        expect(segmentRichText("見て #猫 です", [])).toEqual([
+            { text: "見て " },
+            { text: "#猫", href: "https://bsky.app/hashtag/%E7%8C%AB" },
+            { text: " です" },
+        ])
+    })
+
+    it("[post-rich-text/AC-13] URLのフラグメントはハッシュタグのリンクにしない", () => {
+        expect(segmentRichText("https://example.com/a#top", [])).toEqual([
+            {
+                text: "https://example.com/a#top",
+                href: "https://example.com/a#top",
+            },
+        ])
+    })
+
     it("スキームを省略したuriのlinkの注釈は https を補う", () => {
         const text = "見て example.com"
         expect(

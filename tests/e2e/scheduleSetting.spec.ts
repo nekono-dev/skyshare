@@ -145,6 +145,12 @@ test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の説明に画像�
     await expect(link).toHaveAttribute("href", "https://chronosky.app/")
     await expect(link).toHaveAttribute("target", "_blank")
     await expect(link).toHaveAttribute("rel", /noopener/)
+    // ロゴは文の中で、リンクの直前にある
+    await expect(
+        guide.locator(
+            'img[src*="chronosky"] + a[href="https://chronosky.app/"]',
+        ),
+    ).toHaveCount(1)
 })
 
 test("[schedule-form/AC-3] 待機中が2件と失敗が1件のときオフにすると両方の件数の確認が出て、拒否するとオン、承諾するとオフになる", async ({

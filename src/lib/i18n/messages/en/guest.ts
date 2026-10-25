@@ -10,6 +10,8 @@ export const guest = {
     "guest.post1.text": "This is a sample post for the guest demo.",
     "guest.post2.text":
         "How an image post looks when a URL is issued. (You can cross-post again to other SNS with the share or popup button.)",
+    "guest.entry1.caption":
+        "How an image post looks when a URL is issued. (You can cross-post again to other SNS with the share or popup button.) example.com/entry-list #entrylist",
     "guest.entry1.heading": "Sample Entry",
     "guest.entry1.postCaption": "This is a dummy Entry for guest mode.",
     "guest.post3.text":

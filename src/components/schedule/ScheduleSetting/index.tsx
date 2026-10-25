@@ -186,22 +186,23 @@ export const Component = () => {
         </div>
       )}
       <p className={styles.chronosky} data-testid="schedule-chronosky">
-        <img
-          src={chronoskyLogo.src}
-          width={24}
-          height={24}
-          alt=""
-          className={styles["chronosky-logo"]}
-        />
-        <span>
-          {renderSlots(raw("schedule.setting.chronoskyLead"), {
-            video: (
-              <InlineIcon
-                name="video"
-                alt={t("schedule.setting.mediaVideoAlt")}
+        {renderSlots(raw("schedule.setting.chronoskyLead"), {
+          video: (
+            <InlineIcon
+              name="video"
+              alt={t("schedule.setting.mediaVideoAlt")}
+            />
+          ),
+          // ロゴはリンクの直前に文中へ埋め込む（装飾のため alt は空）
+          link: (
+            <>
+              <img
+                src={chronoskyLogo.src}
+                width={24}
+                height={24}
+                alt=""
+                className={styles["chronosky-logo"]}
               />
-            ),
-            link: (
               <a
                 href="https://chronosky.app/"
                 target="_blank"
@@ -210,9 +211,9 @@ export const Component = () => {
               >
                 {t("schedule.setting.chronoskyName")}
               </a>
-            ),
-          })}
-        </span>
+            </>
+          ),
+        })}
       </p>
       {status && (
         <p

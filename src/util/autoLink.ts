@@ -11,6 +11,7 @@ import TLDs from "tlds"
  * - スキーム省略のドメインは、既知の TLD で終わるものだけを URL とみなす
  *   （`1.0.0` のような版の表記や `file.txt` のようなファイル名の誤検出を防ぐ）。
  * - メールアドレスやメンション（`@` の直後）の一部は URL とみなさない。
+ * - 平文のハッシュタグ（`#tag`）の範囲も検出する（`findHashtagRanges`）。リンク先はアプリ側が決める。
  * - アプリのドメイン知識を持たない（入出力は文字列と数値のみ）。
  */
 
@@ -113,6 +114,47 @@ export const findUrlRanges = (text: string): UrlRange[] => {
             start: m.index,
             end: m.index + matched.length,
             href: scheme ? matched : `https://${matched}`,
+        })
+    }
+    return ranges
+}
+
+/** 検出したハッシュタグ1件。`start`/`end` は `#` を含む文字列（UTF-16）の位置、`tag` は `#` を除いた文字列 */
+export type HashtagRange = { start: number; end: number; tag: string }
+
+// 文頭・空白・`(`・`（` の直後の `#` から、空白と `#` までの範囲。
+// 単語の途中（`a#b`）や URL のフラグメント（`/x#y`）を拾わないための条件。
+const HASHTAG_PATTERN = /(?<=^|[\s(（])#([^\s#]+)/gu
+const HASHTAG_MAX_LENGTH = 64
+
+/**
+ * 平文の中のハッシュタグの範囲を、出現順に返す。
+ *
+ * 処理の趣旨:
+ * - 末尾の句読点（`#猫。` の `。`）は範囲に含めない。
+ * - 数字と句読点だけのもの（`#123`）と、64文字を超えるものはタグとみなさない。
+ *
+ * Input:
+ * - `text`: 平文
+ *
+ * Output:
+ * - ハッシュタグの範囲の配列（開始位置の昇順）。見つからなければ空配列
+ *
+ * 例:
+ * - 入力: `"今日は #猫。"` → 出力: `[{ start: 4, end: 6, tag: "猫" }]`
+ * - 入力: `"#123 a#b"` → 出力: `[]`
+ */
+export const findHashtagRanges = (text: string): HashtagRange[] => {
+    const ranges: HashtagRange[] = []
+    for (const m of text.matchAll(HASHTAG_PATTERN)) {
+        const tag = m[1].replace(/\p{P}+$/u, "")
+        if (!/[^\d\p{P}]/u.test(tag) || [...tag].length > HASHTAG_MAX_LENGTH) {
+            continue
+        }
+        ranges.push({
+            start: m.index,
+            end: m.index + 1 + tag.length,
+            tag,
         })
     }
     return ranges

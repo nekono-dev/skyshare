@@ -5,7 +5,8 @@
 | パス                                               | 責務                          |
 | -------------------------------------------------- | ----------------------------- |
 | `src/lib/atproto/richTextSegments.ts`              | 注釈の正規化と区間の切り出し  |
-| `src/util/autoLink.ts`                             | 平文の中のURLの検出           |
+| `src/util/autoLink.ts`                             | 平文の中のURLとタグの検出     |
+| `src/components/entry/EntryCard/index.tsx`         | entry一覧のキャプションの表示 |
 | `src/components/post/PostRichText/index.tsx`       | 区間のリンクの描画            |
 | `src/components/post/PostBody/index.tsx`           | 本文へのリンク表示の組み込み  |
 | `src/lib/entry/posts.ts`                           | 一覧の投稿への注釈の付与      |
@@ -27,6 +28,7 @@ flowchart LR
   prti --> richTextSegments
   richTextSegments --> autoLink
   edvi["EntryDetailView/index"] --> prti
+  ec["EntryCard/index"] --> prti
   get --> posts
 ```
 
@@ -44,6 +46,7 @@ sequenceDiagram
   pbi->>prti: 本文と注釈
   prti->>richTextSegments: segmentRichText
   richTextSegments->>autoLink: findUrlRanges
+  richTextSegments->>autoLink: findHashtagRanges
   alt 注釈が正しい範囲
     richTextSegments-->>prti: リンクの区間
   else 範囲が不正
@@ -119,6 +122,32 @@ export const findUrlRanges = (text: string): UrlRange[]
 | 末尾の記号     | `.,;:!?` と、対応する `(` の無い `)` を範囲から除く                                    |
 
 entry詳細ページの説明文は注釈を持たないため、`PostRichText` に本文だけを渡して描画する。
+
+### D-5: entry一覧のキャプションの表示 (FR-8)
+
+`EntryCard` のキャプションは注釈を持たないため、`<p>` の中身を `PostRichText` に本文だけを渡して描画する。
+
+```tsx
+<p className={styles.caption}>
+  <PostRichText text={item.caption} />
+</p>
+```
+
+### D-6: 注釈の無いタグの検出 (FR-9)
+
+```ts
+export type HashtagRange = { start: number; end: number; tag: string }
+// 平文の中のハッシュタグの範囲（UTF-16の位置）と、`#` を除いたタグを出現順に返す
+export const findHashtagRanges = (text: string): HashtagRange[]
+```
+
+`segmentRichText` は、注釈の範囲外の文字の区間で、`findUrlRanges` の範囲と重ならないタグを `https://bsky.app/hashtag/<encodeURIComponent(tag)>` のリンクの区間にする。
+
+| 対象       | 判定                                                                                |
+| ---------- | ----------------------------------------------------------------------------------- |
+| 始まり     | `#` の直前が文頭・空白・`(`・`（` の位置だけ（単語の途中・URLのフラグメントを除く） |
+| タグの文字 | `#` の後ろの空白と `#` で切れる範囲。末尾の句読点（`\p{P}`）は範囲から除く          |
+| 除外       | 数字と句読点だけのタグ。64文字を超えるタグ                                          |
 
 ## 4. エラー処理
 

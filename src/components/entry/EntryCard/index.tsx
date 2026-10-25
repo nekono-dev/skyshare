@@ -3,6 +3,7 @@
  *
  * 責務と処理概要:
  * - entry の createdAt・manifest.caption・manifest.visual を表示する。
+ *   caption の中の URL・ハッシュタグは Timeline の本文と同じくリンクにする（`PostRichText`）。
  *   visual は Timeline（`PostCard`）と同様に caption の下へ、OGP 比率（1200x630）を
  *   維持したまま（クロップせず）拡大なしで `ImageGallery` により表示する。
  * - `item.orphaned`（紐づく Bluesky 投稿が削除済み）の場合、`ui["card-muted"]` により
@@ -36,6 +37,7 @@ import { resolveGuestDeleteScope } from "@/lib/entry/guestDummyPosts"
 import Loading from "@/components/common/Loading"
 import EntryEditForm from "@/components/entry/EntryEditForm"
 import ImageGallery from "@/components/image/ImageGallery"
+import PostRichText from "@/components/post/PostRichText"
 import type { SourceImage } from "@/lib/entry/entry"
 import { TARGET_WIDTH, TARGET_HEIGHT } from "@/lib/image/postImageProcessing"
 
@@ -200,7 +202,9 @@ const Component = ({ item, onDeleted, onSaved, guestMode = false }: Props) => {
           ) : null}
         </div>
         {item.caption ? (
-          <p className={styles.caption}>{item.caption}</p>
+          <p className={styles.caption}>
+            <PostRichText text={item.caption} />
+          </p>
         ) : (
           <p className={styles["empty-caption"]}>{t("entry.card.noCaption")}</p>
         )}
