@@ -1,6 +1,7 @@
 /** 各ページ固有の文言（ヘルプ・アカウント切り替え・Entry一覧見出し・遷移待機・ログイン案内・legacy投稿ページ）（日本語）。 */
 export const page = {
     "page.help.heading": "過去にあった問い合わせと対処",
+    "page.help.back": "設定に戻る",
     "page.help.androidMedia.title": "画像が選択できない",
     "page.help.androidMedia.description":
         "「アクセス権が拒否されたため、メディアを選択できません」と表示される",

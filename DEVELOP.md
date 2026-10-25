@@ -7,7 +7,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## 準備
 
-1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。
+1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。このスクリプトは [branch-release-workflow](https://github.com/nekono-dev/branch-release-workflow) を使うため、clone した場所を環境変数 `BRW_PLUGIN_DIR` で渡す（例: `git clone --depth 1 https://github.com/nekono-dev/branch-release-workflow.git /tmp/brw` の後に `BRW_PLUGIN_DIR=/tmp/brw node hack/render-deploy-config.mjs`）。CI では各 workflow が固定したコミットを取得して渡す。
 
 ```json
   "vars": {
@@ -198,7 +198,7 @@ OS のパッケージ（フォント・ffmpeg・Playwright のブラウザが使
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node .claude/skills/branch-release-workflow/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にしている）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 

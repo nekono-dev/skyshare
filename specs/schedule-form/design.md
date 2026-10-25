@@ -161,19 +161,19 @@ export const useScheduleAvailability = (enabled: boolean): {
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする                                |
 | オンにする       | `CredentialDialog` を開く。閉じたらオフのままにする                                                                                |
-| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を `reauth` で開く                              |
+| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を開く（初回と同じ見出しと文）                  |
 | オフにする       | `listSchedules({ status: "pending", limit: 50 })` の件数を `ConfirmDialog` の文言に入れて確認する                                  |
 | オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` と `deletedHistory` の合計を表示して `notifyScheduleCredentialChange` を呼ぶ |
 | オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                                                |
 
 ```tsx
-// 設定の投稿フォームのグループの末尾に置く
+// 設定の投稿のグループの末尾に置く
 <SettingList
   items={[
     {
       key: "scheduledPost",
       label: t("schedule.setting.label"),
-      description: t("schedule.setting.description"),
+      description: renderSlots(raw("schedule.setting.description"), { image }), // 末尾に画像のみ対応の注
       checked: registered === true,
       disabled: registered === null || guestMode,
       onCheckedChange: next =>
@@ -189,17 +189,16 @@ export const useScheduleAvailability = (enabled: boolean): {
 type CredentialDialogProps = {
   open: boolean
   onClose: () => void
-  reauth?: boolean // 許可が無効になった後の再度の許可として、見出しと文を替える
   navigate?: (url: string) => void // 認可の画面へ移る。既定は location.assign。投稿フォームは移る前の確認を挟む
 }
 ```
 
-| 項目   | 内容                                                                                                                   |
-| ------ | ---------------------------------------------------------------------------------------------------------------------- |
-| 種別   | `Overlay` の中の `role="dialog"`。入力欄は置かない                                                                     |
-| 文言   | 何を許可するか・許可する範囲・`@ハンドル` で許可すること（`getActiveAccountHandle`）・`/privacy/` へのリンク           |
-| 許可   | `startScheduleAuthorization({ returnTo })` に今のページのパスを渡し、返った URL へ移る。失敗は文言を表示して再び押せる |
-| 大きさ | `Overlay` の内容の最大の高さに従い、収まらない分は縦に流す                                                             |
+| 項目   | 内容                                                                                                                                                                          |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 種別   | `Overlay` の中の `role="dialog"`。入力欄は置かない                                                                                                                            |
+| 文言   | 何を許可するか・`@ハンドル` のアカウントで有効にすること（`getActiveAccountHandle`）・認証情報を Skyshare に保存することと `/privacy/` へのリンク。許可のボタンは「認証する」 |
+| 許可   | `startScheduleAuthorization({ returnTo })` に今のページのパスを渡し、返った URL へ移る。失敗は文言を表示して再び押せる                                                        |
+| 大きさ | `Overlay` の内容の最大の高さに従い、収まらない分は縦に流す                                                                                                                    |
 
 - `@media (max-width: 639px)` では `Overlay` の背景に `align-items: flex-start` を指定し、画面の上部に固定する（投稿フォームと同じ）。
 
@@ -329,7 +328,7 @@ export const formatExpiryDate = (d: Date, locale: string): string // 有効期�
 
 | 場面               | 処理                                                                                                                      |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| 許可が無効         | カレンダーのボタンと実行日時の行は、日時の指定の代わりに `CredentialDialog` を `reauth` で開く                            |
+| 許可が無効         | カレンダーのボタンと実行日時の行は、日時の指定の代わりに `CredentialDialog` を開く                                        |
 | 認可の画面へ移る前 | `navigate` を投稿フォームの `requestNavigation` にし、`cancelAction` に従い3択か下書きの保存の確認を挟んでから移る        |
 | 戻り               | 共通のレイアウトの `AuthorizationReturn` が `#scheduleAuthorization=1&…` を読んで住所から消し、完了を呼んで結果を表示する |
 | 有効期限の目安     | `RunAtPicker` の `expiresAt` に渡し、予約するたびに延びる旨とともに `formatExpiryDate` の日付を示す                       |

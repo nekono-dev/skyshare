@@ -43,7 +43,7 @@ test("[schedule-form/AC-1] 登録済みならオンで表示され、未登録�
     await expect(toggle).not.toBeChecked()
 })
 
-test("[schedule-form/AC-4 schedule-form/AC-21] 許可の案内に範囲とログイン中のアカウントとリンクがあり、ユーザー名とパスワードの欄が無い", async ({
+test("[schedule-form/AC-4 schedule-form/AC-21] 許可の案内に許可の内容とログイン中のアカウントとリンクがあり、ユーザー名とパスワードの欄が無い", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -53,17 +53,19 @@ test("[schedule-form/AC-4 schedule-form/AC-21] 許可の案内に範囲とログ
     await expect(toggle).toBeEnabled({ timeout: 30_000 })
     await toggle.click({ force: true })
     const dialog = page.getByTestId("schedule-credential-dialog")
-    await expect(dialog.getByText("画像のアップロードだけです")).toBeVisible()
+    await expect(
+        dialog.getByText(
+            "Skyshareが予約した日時にBlueskyへ投稿することを許可します。",
+        ),
+    ).toBeVisible()
     await expect(
         dialog.getByTestId("schedule-credential-account"),
-    ).toContainText("@me.bsky.social")
+    ).toContainText("@me.bsky.social アカウントの予約機能を有効化します。")
     await expect(
         dialog.getByRole("link", { name: "プライバシーポリシー" }),
     ).toHaveAttribute("href", "/privacy/#collected")
     await expect(dialog.locator("input")).toHaveCount(0)
-    await expect(
-        dialog.getByRole("button", { name: "Bluesky で許可する" }),
-    ).toBeVisible()
+    await expect(dialog.getByRole("button", { name: "認証する" })).toBeVisible()
 })
 
 test("[schedule-form/AC-2] 許可するで認可の開始が1回呼ばれて認可の画面へ移り、戻り先から設定へ戻ると完了が呼ばれてオンになり文言が出る", async ({
@@ -87,7 +89,7 @@ test("[schedule-form/AC-2] 許可するで認可の開始が1回呼ばれて認�
     await toggle.click({ force: true })
     await page
         .getByTestId("schedule-credential-dialog")
-        .getByRole("button", { name: "Bluesky で許可する" })
+        .getByRole("button", { name: "認証する" })
         .click()
     await expect(page.getByText("予約投稿を有効にしました。")).toBeVisible({
         timeout: 30_000,
@@ -119,28 +121,26 @@ test("[schedule-form/AC-28] 別のアカウントで許可して戻ると、そ�
     expect(new URL(page.url()).hash).toBe("")
 })
 
-test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の下に、画像と動画のアイコンつきの注と、Chronosky のロゴとリンクがある", async ({
+test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の説明に画像のアイコンつきの注が続き、その下に動画のアイコンつきの Chronosky のロゴとリンクがある", async ({
     page,
 }) => {
     test.setTimeout(90_000)
     await mockScheduleApi(page, { registered: false })
     await page.goto("/settings/")
-    const note = page.getByTestId("schedule-media-note")
+    // 説明文は行のラベル（予約投稿）を含む行の中にある
+    const note = page
+        .getByText(/日時を指定して投稿できます。/)
+        .filter({ hasText: "の予約投稿のみ対応しています" })
     await expect(note).toBeVisible({ timeout: 30_000 })
-    await expect(note).toContainText("の予約投稿のみ対応しており")
-    await expect(note).toContainText("については対応していません")
     // 単語の代わりのアイコンには、読み上げ用の代替テキストがある
     await expect(note.getByRole("img", { name: "画像" })).toBeVisible()
-    await expect(note.getByRole("img", { name: "動画" })).toBeVisible()
-    const icons = await note
-        .locator("img")
-        .evaluateAll(imgs => imgs.map(img => (img as HTMLImageElement).src))
-    expect(icons).toHaveLength(2)
-    expect(icons[0]).toMatch(/image/)
-    expect(icons[1]).toMatch(/video/)
+    await expect(note.locator("img")).toHaveCount(1)
 
     const guide = page.getByTestId("schedule-chronosky")
-    await expect(guide.locator("img")).toHaveAttribute("src", /chronosky/)
+    await expect(guide).toContainText("の予約投稿や、高度な機能については")
+    await expect(guide.getByRole("img", { name: "動画" })).toBeVisible()
+    // 動画のアイコンとは別に、Chronosky のロゴがある
+    await expect(guide.locator('img[src*="chronosky"]')).toBeVisible()
     const link = guide.getByRole("link", { name: /Chronosky/ })
     await expect(link).toHaveAttribute("href", "https://chronosky.app/")
     await expect(link).toHaveAttribute("target", "_blank")

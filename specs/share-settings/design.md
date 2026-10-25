@@ -114,16 +114,18 @@ export type UseShareTogglesResult = {
 
 ### D-4: 設定ページの行 (FR-5, FR-8)
 
-| 順  | 行                                                                                  | 表示条件                               |
-| --- | ----------------------------------------------------------------------------------- | -------------------------------------- |
-| 1   | 投稿フォームを固定表示しない（タイムラインを表示しないがONの間は OFF かつ操作不能） | 常時                                   |
-| 2   | WebShareの代わりにポップアップを開く                                                | 常時                                   |
-| 3   | 自動ポップアップするSNS（`AutoPopupTargetSelect`）                                  | `popupIntentInsteadOfWebshare` が true |
-| 4   | 画像を自分で添付する                                                                | 常時                                   |
-| 5   | 長文を省略して共有する（`disabled: manualImageAttach`）                             | 常時                                   |
-| 6   | ハッシュタグ候補を表示                                                              | 常時                                   |
-| 7   | メンション候補を表示                                                                | 常時                                   |
-| 8   | Mastodonのインスタンス（`textInput`、検証は `isValidMastodonInstanceDomain`）       | 常時                                   |
+共有設定の行は、設定ページのクロスポストのグループに次の順で置く。
+
+| 順  | 行                                                                            | 表示条件                               |
+| --- | ----------------------------------------------------------------------------- | -------------------------------------- |
+| 1   | WebShareの代わりにポップアップを開く                                          | 常時                                   |
+| 2   | 自動ポップアップするSNS（`AutoPopupTargetSelect`）                            | `popupIntentInsteadOfWebshare` が true |
+| 3   | 画像を自分で添付する                                                          | 常時                                   |
+| 4   | Skyshareのリンクカードを優先表示（`disabled: manualImageAttach`）             | 常時                                   |
+| 5   | 長文を省略して共有する（`disabled: manualImageAttach`）                       | 常時                                   |
+| 6   | Mastodonのインスタンス（`textInput`、検証は `isValidMastodonInstanceDomain`） | 常時                                   |
+
+投稿フォームを固定表示しないは表示のグループ、ハッシュタグ候補・メンション候補は投稿のグループに置く（これらの行はそれぞれの機能の仕様で定める）。
 
 ## 4. エラー処理
 

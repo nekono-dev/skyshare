@@ -19,7 +19,7 @@ export const schedule = {
     "schedule.runAtLabel": "Scheduled for {date}",
     "schedule.setupGuide.title": "Scheduled posts are not enabled",
     "schedule.setupGuide.message":
-        "To schedule a post, turn on scheduled posts in Settings and allow scheduled posting on Bluesky.",
+        "Turn on the feature in Settings to use scheduled posts.",
     "schedule.setupGuide.open": "Open Settings",
     "schedule.setupGuide.close": "Close",
     "schedule.picker.button": "Set a schedule",
@@ -43,13 +43,11 @@ export const schedule = {
     "schedule.editCancel.continue": "Keep editing",
     "schedule.setting.label": "Scheduled posts",
     "schedule.setting.description":
-        "Post at a time you choose. Turning this on asks you to allow scheduled posting on Bluesky.",
-    "schedule.setting.mediaNote":
-        "Only {image} posts can be scheduled; {video} posts are not supported.",
+        "Post at a time you choose. Turning this on asks you to allow scheduled posting on Bluesky. Only {image} posts can be scheduled.",
     "schedule.setting.mediaImageAlt": "Image",
     "schedule.setting.mediaVideoAlt": "Video",
     "schedule.setting.chronoskyLead":
-        "For more full-featured scheduled posting, use {link}, a scheduled posting service for Bluesky.",
+        "For scheduling {video} posts or more advanced features, use {link}.",
     "schedule.setting.chronoskyName": "Chronosky",
     "schedule.setting.chronoskyAria":
         "Chronosky (a scheduled posting service for Bluesky, opens in a new tab)",
@@ -70,17 +68,12 @@ export const schedule = {
     "schedule.setting.disabledWithDelete":
         "Scheduled posts were turned off and {count} scheduled posts were deleted.",
     "schedule.credential.title": "Turn on scheduled posts",
-    "schedule.credential.reauthTitle": "Grant permission on Bluesky again",
-    "schedule.credential.reauthIntro":
-        "Your permission for scheduled posts on Bluesky is no longer valid. Grant it again to schedule posts. You will come back to this page afterwards.",
     "schedule.credential.privacy":
-        "See the {link} for how the stored information is handled.",
+        "Your credentials are stored by Skyshare. See the {link} for how the information is handled.",
     "schedule.credential.intro":
-        "On Bluesky, you allow Skyshare to post on your behalf at the times you schedule.",
-    "schedule.credential.scope":
-        "The permission covers only posting, reply and quote settings, creating Skyshare links, and uploading images.",
+        "Allow Skyshare to post to Bluesky at the times you schedule.",
     "schedule.credential.account":
-        "You will allow this as {handle}. To use another account, switch to it first.",
+        "Scheduled posts will be turned on for the {handle} account.",
     "schedule.credential.startFailed":
         "Could not open the Bluesky permission page. Please try again later.",
     "schedule.authResult.ok": "Scheduled posts are now on.",
@@ -94,7 +87,7 @@ export const schedule = {
         "Your login had expired, so scheduled posts were not turned on. Log in again and try once more.",
     "schedule.authResult.failed":
         "Could not turn on scheduled posts. Please try again later.",
-    "schedule.credential.submit": "Allow on Bluesky",
+    "schedule.credential.submit": "Authenticate",
     "schedule.credential.cancel": "Cancel",
     "schedule.list.empty": "No scheduled posts.",
     "schedule.list.pendingTitle": "Pending",

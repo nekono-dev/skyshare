@@ -5,15 +5,51 @@
 // - `--develop` では develop 用の別の Worker（Cron が動く確認用の環境。dev/* のプレビューの親）の設定にする
 //   （wrangler.jsonc は本番値を含むため .gitignore 対象。CIでは都度生成する）
 // - 生成した wrangler.jsonc の workers_dev / preview_urls を、独自ドメインの有効状況に合わせて設定する
-//   （branch-release-workflow スキルの wrangler-config。省略しない）
+//   （branch-release-workflow プラグインの wrangler-config。省略しない）
 // - _legacy/frontend/.env.production を生成する（こちらも .gitignore 対象）
 //
-// 使い方: node hack/render-deploy-config.mjs [--develop]
+// 使い方: BRW_PLUGIN_DIR=<branch-release-workflow の clone> node hack/render-deploy-config.mjs [--develop]
 // 必要な環境変数は DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
+// branch-release-workflow はリポジトリに同梱しないプラグインのため、clone した場所を BRW_PLUGIN_DIR で渡す。
 // 必須の環境変数が1つでも未設定/空の場合は、設定漏れによる誤デプロイを防ぐため異常終了する。
 import { execFileSync } from "node:child_process"
-import { readFileSync, writeFileSync } from "node:fs"
-import { parseJsonc } from "../.claude/skills/branch-release-workflow/providers/cloudflare-previews.mjs"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { join, resolve } from "node:path"
+import { pathToFileURL } from "node:url"
+
+/**
+ * branch-release-workflow プラグインの所在（clone したディレクトリ）を環境変数 BRW_PLUGIN_DIR から得る。
+ *
+ * 処理の趣旨:
+ * - プラグインはリポジトリに同梱しないため、CI では clone した場所を渡す（.github/workflows の各 workflow）
+ * - 未設定や brw.mjs が見つからない場合は、wrangler-config を省いた誤った設定で配備しないよう異常終了する
+ *
+ * Input: なし（環境変数 BRW_PLUGIN_DIR）
+ *
+ * Output:
+ * - プラグインのルートの絶対パス
+ *
+ * 例:
+ * - 入力: BRW_PLUGIN_DIR=/tmp/brw
+ * - 出力: "/tmp/brw"
+ */
+const resolveBrwPluginDir = () => {
+  const dir = process.env.BRW_PLUGIN_DIR?.trim()
+  if (!dir || !existsSync(join(dir, "scripts", "brw.mjs"))) {
+    console.error(
+      "環境変数 BRW_PLUGIN_DIR に branch-release-workflow の clone を指定してください" +
+        "（例: git clone --depth 1 https://github.com/nekono-dev/branch-release-workflow.git /tmp/brw）",
+    )
+    process.exit(1)
+  }
+  return resolve(dir)
+}
+const brwPluginDir = resolveBrwPluginDir()
+const { parseJsonc } = await import(
+  pathToFileURL(
+    join(brwPluginDir, "scripts", "providers", "cloudflare-previews.mjs"),
+  ).href
+)
 
 // wrangler.jsonc の vars に反映する環境変数（Cloudflare Worker の実行時変数）
 const WRANGLER_VARS = [
@@ -154,7 +190,7 @@ writeFileSync("wrangler.jsonc", wrangler)
 execFileSync(
   "node",
   [
-    ".claude/skills/branch-release-workflow/scripts/brw.mjs",
+    join(brwPluginDir, "scripts", "brw.mjs"),
     "wrangler-config",
     "wrangler.jsonc",
     "--write",

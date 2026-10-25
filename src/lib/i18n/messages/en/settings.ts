@@ -14,7 +14,8 @@ export const settings = {
     "settings.timelineHidden.label": "Hide the timeline",
     "settings.timelineHidden.description":
         "When on, only the post form is shown and the timeline is not loaded.",
-    "settings.postForm.title": "Post form",
+    "settings.post.title": "Post",
+    "settings.crossPost.title": "Cross-post",
     "settings.pinnedFormDisabled.label": "Don't pin the post form",
     "settings.pinnedFormDisabled.description":
         "When on, the post form is no longer pinned to the top of the screen. Open it with the sidebar or the floating new post button.",
@@ -23,10 +24,10 @@ export const settings = {
         "Opens {popup} (a popup) instead of {share} (the share menu). Turn this on if you use X and other SNS in a browser rather than their apps.",
     "settings.manualImageAttach.label": "Attach images manually",
     "settings.manualImageAttach.description":
-        "When on, no Skyshare URL is issued. When using {share}, image data is shared with the target app. When using a post intent ({popup}popup), set the images in the target SNS's post form.",
+        "When on, no Skyshare URL is issued. When using a post intent ({popup}popup), set the images in the target SNS's post form.",
     "settings.linkCardPriority.label": "Prefer the Skyshare link card",
     "settings.linkCardPriority.description":
-        "When on, sharing with a Skyshare URL removes the URLs in the post text from the shared text, so that the Skyshare link card is shown on the destination.",
+        "When a Skyshare link card is created, link cards for other sites are excluded.",
     "settings.truncateIntentText.label": "Truncate long text when sharing",
     "settings.truncateIntentText.description":
         'When on, when sharing to X or Taittsuu, the text is shortened with "..." so that it fits within the 140-character limit. Not available while Attach images manually is on.',
@@ -36,7 +37,7 @@ export const settings = {
     "settings.mentionSuggest.label": "Show mention suggestions",
     "settings.mentionSuggest.description":
         'When on, a list of mention suggestions appears when you type "@" in the post text.',
-    "settings.gate.title": "Default reply and quote settings",
+    "settings.gate.label": "Default reply and quote settings",
     "settings.gate.description":
         "Default settings for who can reply and whether quoting is allowed, used as the initial values for new posts.",
     "settings.gate.editButton": "Edit default reply and quote settings",

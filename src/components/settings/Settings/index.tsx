@@ -2,8 +2,9 @@
  * 設定ページ本体コンポーネント。
  *
  * 責務と処理概要:
- * - 投稿フォーム関連のトグル設定を `SettingList` でグループごとに一覧表示する。
- * - 投稿フォームのグループの末尾に、予約投稿の有効化のスイッチ（`ScheduleSetting`）を置く。
+ * - 設定を「表示」「投稿」「クロスポスト」の3グループに分け、`SettingList` で一覧表示する。
+ * - 投稿のグループに返信・引用のデフォルト設定の編集ボタンの行を含め、末尾に
+ *   予約投稿の有効化のスイッチ（`ScheduleSetting`）を置く。
  * - 各設定値の state・永続化・連動ルールは `lib/settings/useShareToggles` および
  *   `lib/settings/shareSettings` に委譲し、本体は表示用データの組み立てに専念する。
  * - Astroページ（`src/pages/settings.astro`）からも `SettingsDialog` からも同じ内容を
@@ -64,10 +65,10 @@ import styles from "./index.module.css"
  * 設定ページを描画する。
  *
  * Output:
- * - 「投稿フォーム」「クロスポスト」の2グループに分けた設定一覧
+ * - 「表示」「投稿」「クロスポスト」の3グループに分けた設定一覧
  *
  * 例:
- * - 出力: 投稿フォーム設定3件・クロスポスト設定4件、計7件のトグル付き設定一覧
+ * - 出力: 表示4件・投稿4件（+予約投稿）・クロスポスト5〜6件の設定一覧
  */
 export const Settings = () => {
   const { t, raw } = useT()
@@ -218,7 +219,36 @@ export const Settings = () => {
   }
   const rich = (key: MessageKey) => renderSlots(raw(key), slots)
 
-  const postFormItems: SettingListItem[] = [
+  // 表示: 画面全体の見た目 → 画面構成の順。固定表示しないはタイムライン非表示中に
+  // 操作不能になるため、原因となるタイムラインの行の直後に置く。
+  const displayItems: SettingListItem[] = [
+    {
+      key: "themeMode",
+      label: t("settings.theme.label"),
+      renderControl: ({ id, ariaLabel, disabled }) => (
+        <ThemeModeSelect
+          id={id}
+          value={themeMode}
+          disabled={disabled}
+          ariaLabel={ariaLabel}
+          onChange={onThemeModeChange}
+        />
+      ),
+    },
+    {
+      key: "uiLocale",
+      label: t("settings.locale.label"),
+      renderControl: ({ id, ariaLabel, disabled }) => (
+        <LocaleSelect id={id} disabled={disabled} ariaLabel={ariaLabel} />
+      ),
+    },
+    {
+      key: "timelineHidden",
+      label: t("settings.timelineHidden.label"),
+      description: t("settings.timelineHidden.description"),
+      checked: timelineHidden,
+      onCheckedChange: onTimelineHiddenChange,
+    },
     {
       key: "pinnedFormDisabled",
       label: t("settings.pinnedFormDisabled.label"),
@@ -229,6 +259,55 @@ export const Settings = () => {
       disabled: timelineHidden,
       onCheckedChange: onPinnedFormDisabledChange,
     },
+  ]
+
+  // 投稿: 本文の入力補助 → 返信・引用の既定値の順（予約投稿はこの後ろに別部品で置く）。
+  const postItems: SettingListItem[] = [
+    {
+      key: "hashtagSuggestEnabled",
+      label: t("settings.hashtagSuggest.label"),
+      description: t("settings.hashtagSuggest.description"),
+      checked: hashtagSuggestEnabled,
+      onCheckedChange: onHashtagSuggestEnabledChange,
+    },
+    {
+      key: "mentionSuggestEnabled",
+      label: t("settings.mentionSuggest.label"),
+      description: t("settings.mentionSuggest.description"),
+      checked: mentionSuggestEnabled,
+      onCheckedChange: onMentionSuggestEnabledChange,
+    },
+    {
+      key: "postGateDefault",
+      label: t("settings.gate.label"),
+      description: t("settings.gate.description"),
+      // 値はダイアログで編集するため、行のコントロールはダイアログを開くボタンにする。
+      // 表示文言は短くし、アクセシブルネームで編集対象を示す。
+      renderControl: ({ id, disabled }) => (
+        <button
+          id={id}
+          type="button"
+          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
+          disabled={disabled}
+          aria-label={t("settings.gate.editButton")}
+          onClick={() => setGateDialogOpen(true)}
+        >
+          {t("common.edit")}
+        </button>
+      ),
+    },
+    {
+      key: "syncGateDefaultAfterPost",
+      label: t("settings.syncGate.label"),
+      description: t("settings.syncGate.description"),
+      checked: syncGateDefaultAfterPost,
+      onCheckedChange: onSyncGateDefaultAfterPostChange,
+    },
+  ]
+
+  // クロスポスト: 共有の方法 → 共有する内容 → 共有先ごとの設定の順。
+  // リンクカード優先・長文省略は「画像を自分で添付する」がONの間は操作不能になるため、その後ろに置く。
+  const crossPostItems: SettingListItem[] = [
     {
       key: "popupIntentInsteadOfWebshare",
       label: rich("settings.popupIntent.label"),
@@ -288,20 +367,6 @@ export const Settings = () => {
       onCheckedChange: shareToggles.onTruncateIntentTextChange,
     },
     {
-      key: "hashtagSuggestEnabled",
-      label: t("settings.hashtagSuggest.label"),
-      description: t("settings.hashtagSuggest.description"),
-      checked: hashtagSuggestEnabled,
-      onCheckedChange: onHashtagSuggestEnabledChange,
-    },
-    {
-      key: "mentionSuggestEnabled",
-      label: t("settings.mentionSuggest.label"),
-      description: t("settings.mentionSuggest.description"),
-      checked: mentionSuggestEnabled,
-      onCheckedChange: onMentionSuggestEnabledChange,
-    },
-    {
       key: "mastodonInstanceDomain",
       label: rich("settings.mastodon.instance.label"),
       description: t("settings.mastodon.instance.description"),
@@ -316,36 +381,6 @@ export const Settings = () => {
     },
   ]
 
-  const displayItems: SettingListItem[] = [
-    {
-      key: "themeMode",
-      label: t("settings.theme.label"),
-      renderControl: ({ id, ariaLabel, disabled }) => (
-        <ThemeModeSelect
-          id={id}
-          value={themeMode}
-          disabled={disabled}
-          ariaLabel={ariaLabel}
-          onChange={onThemeModeChange}
-        />
-      ),
-    },
-    {
-      key: "uiLocale",
-      label: t("settings.locale.label"),
-      renderControl: ({ id, ariaLabel, disabled }) => (
-        <LocaleSelect id={id} disabled={disabled} ariaLabel={ariaLabel} />
-      ),
-    },
-    {
-      key: "timelineHidden",
-      label: t("settings.timelineHidden.label"),
-      description: t("settings.timelineHidden.description"),
-      checked: timelineHidden,
-      onCheckedChange: onTimelineHiddenChange,
-    },
-  ]
-
   return (
     <div className={`${styles.groups}`}>
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
@@ -354,37 +389,15 @@ export const Settings = () => {
       </section>
 
       <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>{t("settings.postForm.title")}</h2>
-        <SettingList items={postFormItems} />
+        <h2 className={ui.subject}>{t("settings.post.title")}</h2>
+        <SettingList items={postItems} />
         {/* 予約投稿の有効化はサーバーの登録状態に従うため、端末の設定とは別の部品が扱う */}
         <ScheduleSetting />
       </section>
-      <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
-        <h2 className={ui.subject}>{t("settings.gate.title")}</h2>
-        <p className={styles["gate-description"]}>
-          {t("settings.gate.description")}
-        </p>
-        <div className={`${ui["right"]}`}>
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["gray-button"]}`}
-            onClick={() => setGateDialogOpen(true)}
-          >
-            {t("settings.gate.editButton")}
-          </button>
-        </div>
 
-        <SettingList
-          items={[
-            {
-              key: "syncGateDefaultAfterPost",
-              label: t("settings.syncGate.label"),
-              description: t("settings.syncGate.description"),
-              checked: syncGateDefaultAfterPost,
-              onCheckedChange: onSyncGateDefaultAfterPostChange,
-            },
-          ]}
-        />
+      <section className={`${ui["base-card"]} ${ui["base-padding"]}`}>
+        <h2 className={ui.subject}>{t("settings.crossPost.title")}</h2>
+        <SettingList items={crossPostItems} />
       </section>
 
       <PostGateDialog

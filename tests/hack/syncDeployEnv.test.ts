@@ -59,7 +59,9 @@ describe("parseDeployEnv", () => {
 describe("repositoryFromRemote", () => {
     it("HTTPS と SSH の別名の remote から owner/repo を取り出す", () => {
         expect(
-            repositoryFromRemote("git@github.com.nekono:nekono-dev/skyshare.git"),
+            repositoryFromRemote(
+                "git@github.com.nekono:nekono-dev/skyshare.git",
+            ),
         ).toBe("nekono-dev/skyshare")
         expect(repositoryFromRemote("https://github.com/o/r\n")).toBe("o/r")
         expect(repositoryFromRemote("https://gitlab.com/o/r")).toBeNull()
@@ -78,9 +80,7 @@ describe("planRegistrations", () => {
             },
             opts,
         )
-        expect(
-            plans.map(p => [p.command, ...p.args].join(" ")),
-        ).toEqual([
+        expect(plans.map(p => [p.command, ...p.args].join(" "))).toEqual([
             "gh variable set SITE_HOST -R owner/repo",
             "gh secret set E2E_ENV -R owner/repo",
             "npx wrangler secret put FEEDBACK_GITHUB_TOKEN --name skyshare",
