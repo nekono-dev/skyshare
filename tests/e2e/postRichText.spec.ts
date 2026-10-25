@@ -4,6 +4,7 @@
  * 責務と処理概要:
  * - `/?guest` のタイムラインの `guest-rich-text` 投稿と、`/entries/sample/` の6件目の投稿で、
  *   メンション・ハッシュタグ・URLがそれぞれの遷移先を新しいタブで開くリンクになることを検証する。
+ * - `/entries/sample/` の説明文のスキームを省略した URL が、https を補ったリンクになることを検証する。
  * - JavaScript を無効にした entry 詳細ページでもリンクが表示されることを検証する。
  */
 import { expect, test } from "./fixtures"
@@ -52,6 +53,16 @@ test.describe("投稿本文のリンク表示", () => {
     }) => {
         await page.goto("/entries/sample/")
         await expectBodyLinks(page.locator("li", { hasText: SAMPLE_LINK_POST }))
+    })
+
+    test("[post-rich-text/AC-9] entry詳細ページの説明文のスキームを省略したURLが、httpsを補ったリンクになる", async ({
+        page,
+    }) => {
+        await page.goto("/entries/sample/")
+        const link = page.getByRole("link", { name: "example.com/sample" })
+        await expect(link).toHaveAttribute("href", "https://example.com/sample")
+        await expect(link).toHaveAttribute("target", "_blank")
+        await expect(link).toHaveAttribute("rel", "noopener noreferrer")
     })
 })
 

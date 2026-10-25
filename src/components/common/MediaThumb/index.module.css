@@ -54,7 +54,8 @@
   right: var(--space-2);
   height: var(--size-button-md);
   padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
+  /* 他のボタンと揃えて左右を完全な半円にする */
+  border-radius: var(--radius-pill);
   font-size: var(--font-size-lg);
   text-transform: uppercase;
 }

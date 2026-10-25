@@ -39,7 +39,9 @@
   --radius-pill: 9999px;
 
   /* Button-specific */
-  --radius-button-md: 20px;
+  /* テキストボタンは高さ（スマホ幅で 44px 等）に関わらず左右を完全な半円にするため、
+     固定の 20px ではなくピル形の値を使う */
+  --radius-button-md: var(--radius-pill);
   --radius-button-max: 100%;
 
   --nav-bar-height: 84px;

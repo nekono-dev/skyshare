@@ -10,11 +10,13 @@
  * - 最下部に内容を持たない余白（`.page-footer`）を常に置き、Xアプリ内ブラウザ等で
  *   下部が見切れないようにする（エラーペイン時も含む）。
  * - heading は本文に表示しない（`<title>`・OGP用の値）。
+ * - caption の中の URL（スキーム省略を含む）は、投稿本文と同じくリンクにする（`PostRichText`）。
  * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
  * - 設計: specs/entry-detail
  */
 import EntryPostedAt from "@/components/entry/EntryPostedAt"
 import PostBody from "@/components/post/PostBody"
+import PostRichText from "@/components/post/PostRichText"
 import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
 import type { PostFacet } from "@/lib/atproto/richTextSegments"
 import type { PostLinkCard, PostQuote } from "@/lib/entry/postEmbedView"
@@ -89,7 +91,11 @@ const bodyKey =
     statusCode === 200 ? (
         <article class={styles.container}>
             <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
-                {caption ? <p class={styles["body-text"]}>{caption}</p> : null}
+                {caption ? (
+                    <p class={styles["body-text"]}>
+                        <PostRichText text={caption} />
+                    </p>
+                ) : null}
                 {visualUrl ? (
                     <img class={styles.visual} src={visualUrl} alt={heading || caption} data-testid="entry-visual" />
                 ) : null}

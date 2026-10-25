@@ -4,9 +4,11 @@
  * 責務と処理概要:
  * - 外部入力（PDS・AppViewのレコード）の facets を、表示に使う3種（mention/link/tag）だけの形へ正規化する。
  * - facets の UTF-8 バイト範囲で本文を区間に切り出し、リンクの区間にはリンク先を付ける（`specs/post-rich-text`）。
+ * - facets の無い部分に書かれた URL（スキーム省略・日本語に続くものを含む）もリンクの区間にする。
  * - 指定した facets の範囲の文字を本文から取り除く（`specs/link-card-priority`）。
  * - `@atproto/*` を import しない純粋関数のみで構成する（クライアントの bundle と cold start の負担を増やさないため）。
  */
+import { findUrlRanges } from "@/util/autoLink"
 
 export type PostFacetFeature =
     | { $type: "app.bsky.richtext.facet#mention"; did: string }
@@ -126,9 +128,14 @@ const featureHref = (feature: PostFacetFeature): string | undefined => {
             return `https://bsky.app/profile/${feature.did}`
         case "app.bsky.richtext.facet#tag":
             return `https://bsky.app/hashtag/${encodeURIComponent(feature.tag)}`
-        case "app.bsky.richtext.facet#link":
-            // javascript: などの危険なスキームをリンクにしない
-            return /^https?:\/\//i.test(feature.uri) ? feature.uri : undefined
+        case "app.bsky.richtext.facet#link": {
+            if (/^https?:\/\//i.test(feature.uri)) return feature.uri
+            // スキームを省略した uri を書く投稿クライアントもあるため、ドメインで始まる
+            // ものは https を補う。javascript: などの危険なスキームはリンクにしない
+            return /^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#]|$)/i.test(feature.uri)
+                ? `https://${feature.uri}`
+                : undefined
+        }
     }
 }
 
@@ -178,12 +185,47 @@ const validRanges = (bytes: Uint8Array, facets: PostFacet[]): PostFacet[] => {
 }
 
 /**
+ * リンクでない文字の区間を、その中に書かれた URL の位置で更に区間に分ける。
+ *
+ * 処理の趣旨:
+ * - facets を持たない投稿（他のクライアントの投稿や、日本語に続けて書いた URL など、
+ *   投稿時に facets として検出されなかったもの）でも、URL をリンクにする。
+ *
+ * Input:
+ * - `text`: リンクでない文字の区間の文字列
+ *
+ * Output:
+ * - 区間の配列。連結すると `text` と一致する
+ *
+ * 例:
+ * - 入力: `"見てexample.comです"`
+ * - 出力: `[{ text: "見て" }, { text: "example.com", href: "https://example.com" }, { text: "です" }]`
+ */
+const autoLinkSegments = (text: string): RichTextSegment[] => {
+    const segments: RichTextSegment[] = []
+    let cursor = 0
+    for (const range of findUrlRanges(text)) {
+        if (range.start > cursor) {
+            segments.push({ text: text.slice(cursor, range.start) })
+        }
+        segments.push({
+            text: text.slice(range.start, range.end),
+            href: range.href,
+        })
+        cursor = range.end
+    }
+    if (cursor < text.length) segments.push({ text: text.slice(cursor) })
+    return segments
+}
+
+/**
  * 本文を facets の範囲で区間に切り出し、リンクの区間にリンク先を付ける。
  *
  * 処理の趣旨:
  * - facets の index は UTF-8 のバイト位置のため、文字列（UTF-16）ではなくバイト列で切り出す。
  * - 不正な範囲の facet は無視し、その範囲は文字のまま残す（失敗時も本文は欠けない）。
  * - 1つの facet が複数の feature を持つ場合は、最初にリンク先を作れた feature を使う。
+ * - facets の範囲外の文字の区間は、その中の URL を更にリンクの区間にする（`autoLinkSegments`）。
  *
  * Input:
  * - `text`: 投稿本文
@@ -212,9 +254,11 @@ export const segmentRichText = (
             .find(value => value !== undefined)
         if (href === undefined) continue
         if (byteStart > cursor) {
-            segments.push({
-                text: decoder.decode(bytes.subarray(cursor, byteStart)),
-            })
+            segments.push(
+                ...autoLinkSegments(
+                    decoder.decode(bytes.subarray(cursor, byteStart)),
+                ),
+            )
         }
         segments.push({
             text: decoder.decode(bytes.subarray(byteStart, byteEnd)),
@@ -224,7 +268,9 @@ export const segmentRichText = (
     }
 
     if (cursor < bytes.length) {
-        segments.push({ text: decoder.decode(bytes.subarray(cursor)) })
+        segments.push(
+            ...autoLinkSegments(decoder.decode(bytes.subarray(cursor))),
+        )
     }
     return segments
 }
