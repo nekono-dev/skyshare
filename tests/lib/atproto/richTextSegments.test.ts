@@ -182,6 +182,38 @@ describe("segmentRichText", () => {
         ])
     })
 
+    it("[post-rich-text/AC-8] 注釈の無い部分のスキームを省略したURLをリンクにする", () => {
+        const text = "#a 見てexample.comです"
+        expect(
+            segmentRichText(text, [
+                facetOf(text, "#a", {
+                    $type: "app.bsky.richtext.facet#tag",
+                    tag: "a",
+                }),
+            ]),
+        ).toEqual([
+            { text: "#a", href: "https://bsky.app/hashtag/a" },
+            { text: " 見て" },
+            { text: "example.com", href: "https://example.com" },
+            { text: "です" },
+        ])
+    })
+
+    it("スキームを省略したuriのlinkの注釈は https を補う", () => {
+        const text = "見て example.com"
+        expect(
+            segmentRichText(text, [
+                facetOf(text, "example.com", {
+                    $type: "app.bsky.richtext.facet#link",
+                    uri: "example.com",
+                }),
+            ]),
+        ).toEqual([
+            { text: "見て " },
+            { text: "example.com", href: "https://example.com" },
+        ])
+    })
+
     it("空の本文は空配列を返す", () => {
         expect(segmentRichText("", [])).toEqual([])
     })

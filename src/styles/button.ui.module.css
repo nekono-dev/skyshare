@@ -234,10 +234,10 @@
   border-color: var(--color-disabled-button-border);
 }
 
-/* アイコンボタン */
+/* アイコンボタン（正方形なら円、幅≠高さでも楕円にせず左右を半円にするためピル形の値を使う） */
 :local(.nontext-button) {
   padding: 0;
-  border-radius: var(--radius-button-max);
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   justify-content: center;

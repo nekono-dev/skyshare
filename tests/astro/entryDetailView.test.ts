@@ -30,6 +30,16 @@ describe("EntryDetailView", () => {
         expect(text).not.toContain("見出しの文言")
     })
 
+    it("[post-rich-text/AC-9] 説明文の中のスキームを省略したURLがリンクになる", async () => {
+        const html = await renderAstro(EntryDetailView, {
+            ...baseProps,
+            caption: "詳しくは example.com を見て",
+        })
+        expect(html).toMatch(
+            /<a[^>]*href="https:\/\/example\.com"[^>]*>example\.com<\/a>/,
+        )
+    })
+
     it("[entry-detail/AC-8] 派生元が削除済みの場合は案内文が表示され、リアクション数は表示されない", async () => {
         const html = await renderAstro(EntryDetailView, {
             ...baseProps,
