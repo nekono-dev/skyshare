@@ -10,12 +10,12 @@ import {
 import styles from "./index.module.css"
 
 /**
- * 投稿後に自動でポップアップするSNS（投稿時に選択する/X/タイッツー/Mastodon）を選択するプルダウン。
+ * 投稿後に自動でポップアップするSNS（投稿時に選択する/X/タイッツー/Mastodon/Misskey）を選択するプルダウン。
  *
  * 責務と処理概要:
  * - 選択肢一覧から自動ポップアップ先を選ばせるだけの純粋UIコンポーネントで、
  *   永続化や表示条件（PopupIntentInsteadOfWebshare がONのときのみ表示）は呼び出し側が決める。
- * - X・タイッツー・Mastodon は対応する `InlineIcon` を名称の前に併記する。
+ * - X・タイッツー・Mastodon・Misskey は対応する `InlineIcon` を名称の前に併記する。
  * - 横幅は選択中の内容に合わせて可変にする（`Dropdown` の `autoWidth`）。
  */
 
@@ -24,6 +24,7 @@ const OPTION_LABEL_KEYS: Record<AutoPopupTarget, PlainMessageKey> = {
   x: "post.autoPopupTarget.x",
   taittsuu: "post.autoPopupTarget.taittsuu",
   mastodon: "post.autoPopupTarget.mastodon",
+  misskey: "post.autoPopupTarget.misskey",
 }
 
 export type AutoPopupTargetSelectProps = {

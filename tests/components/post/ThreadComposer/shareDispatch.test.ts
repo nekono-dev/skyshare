@@ -45,6 +45,7 @@ const buildParams = (
     popupIntentInsteadOfWebshare: false,
     autoPopupTarget: "x" as const,
     mastodonInstanceDomain: "",
+    misskeyInstanceDomain: "",
     popupWindow: null,
     ...overrides,
 })
@@ -82,7 +83,7 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
         expect(result.forcedPopupIntentInsteadOfWebshareOn).toBe(false)
     })
 
-    it.each(["x", "taittsuu", "mastodon"] as const)(
+    it.each(["x", "taittsuu", "mastodon", "misskey"] as const)(
         "[auto-popup/AC-3] %sが選ばれている場合、そのSNSへ自動ポップアップする",
         async target => {
             vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
@@ -91,6 +92,7 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
                     popupIntentInsteadOfWebshare: true,
                     autoPopupTarget: target,
                     mastodonInstanceDomain: "example.com",
+                    misskeyInstanceDomain: "example.com",
                 }),
             )
 
@@ -111,6 +113,32 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
             }),
         )
         expect(popupOptions()?.instanceDomain).toBe("mastodon.social")
+    })
+
+    it("Misskeyのドメインが未設定なら既定ドメインで自動ポップアップする", async () => {
+        vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
+        await runShareDispatch(
+            buildParams({
+                popupIntentInsteadOfWebshare: true,
+                autoPopupTarget: "misskey",
+                misskeyInstanceDomain: "",
+            }),
+        )
+        expect(popupOptions()?.instanceDomain).toBe("misskey.io")
+    })
+
+    it("Misskeyのドメインが不正な場合、ポップアップを開かず投稿先選択ダイアログを開く", async () => {
+        const result = await runShareDispatch(
+            buildParams({
+                popupIntentInsteadOfWebshare: true,
+                autoPopupTarget: "misskey",
+                misskeyInstanceDomain: "https://example.com/",
+            }),
+        )
+
+        expect(intent.openIntentPopupFor).not.toHaveBeenCalled()
+        expect(result.openShareDialog).toBe(true)
+        expect(result.forcedAutoPopupTarget).toBeNull()
     })
 
     it("[auto-popup/AC-5] Mastodonのドメインが不正な場合、ポップアップを開かず投稿先選択ダイアログを開く（選択値は変更しない）", async () => {

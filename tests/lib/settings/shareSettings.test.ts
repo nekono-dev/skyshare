@@ -8,7 +8,9 @@ import {
     readLinkCardPrioritySetting,
     writeLinkCardPrioritySetting,
     writeManualImageAttachSetting,
+    resolveInstanceDomainFor,
     resolveMastodonInstanceDomain,
+    resolveMisskeyInstanceDomain,
     writeAutoPopupTargetSetting,
 } from "@/lib/settings/shareSettings"
 
@@ -31,9 +33,12 @@ afterEach(() => {
 })
 
 describe("isAutoPopupTarget", () => {
-    it.each(["ask", "x", "taittsuu", "mastodon"])("%s は妥当", value => {
-        expect(isAutoPopupTarget(value)).toBe(true)
-    })
+    it.each(["ask", "x", "taittsuu", "mastodon", "misskey"])(
+        "%s は妥当",
+        value => {
+            expect(isAutoPopupTarget(value)).toBe(true)
+        },
+    )
 
     it.each(["", "X", "bluesky", null, undefined, 1])("%s は不正", value => {
         expect(isAutoPopupTarget(value)).toBe(false)
@@ -104,6 +109,44 @@ describe("resolveMastodonInstanceDomain", () => {
         ["exa mple.com", null],
     ] as const)("%j → %j", (input, expected) => {
         expect(resolveMastodonInstanceDomain(input)).toBe(expected)
+    })
+})
+
+describe("resolveMisskeyInstanceDomain", () => {
+    it.each([
+        ["", "misskey.io"],
+        ["   ", "misskey.io"],
+        ["example.com", "example.com"],
+        ["https://example.com/", null],
+        ["example", null],
+    ] as const)("%j → %j", (input, expected) => {
+        expect(resolveMisskeyInstanceDomain(input)).toBe(expected)
+    })
+})
+
+describe("resolveInstanceDomainFor", () => {
+    const saved = {
+        mastodonInstanceDomain: "",
+        misskeyInstanceDomain: "a.example",
+    }
+
+    it.each([
+        ["mastodon", "mastodon.social"],
+        ["misskey", "a.example"],
+        ["x", undefined],
+        ["taittsuu", undefined],
+        ["ask", undefined],
+    ] as const)("%s → %j", (target, expected) => {
+        expect(resolveInstanceDomainFor(target, saved)).toBe(expected)
+    })
+
+    it("保存値が不正ならnullを返す", () => {
+        expect(
+            resolveInstanceDomainFor("misskey", {
+                ...saved,
+                misskeyInstanceDomain: "https://a.example/",
+            }),
+        ).toBeNull()
     })
 })
 

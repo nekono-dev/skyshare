@@ -308,8 +308,8 @@ test.describe("動画投稿の表示", () => {
         await expect(frame.getByRole("button")).toHaveCount(0)
         await expect(card.locator("video")).toHaveCount(0)
         expect(await card.getAttribute("class")).toContain("card-muted")
-        // entry 作成の対象外（作成ボタンは無く、対象外の表示になる）
-        await expect(card.getByText("Skyshareリンク作成対象外")).toBeVisible()
+        // entry 作成の対象外（作成ボタンは無く、案内の文言も出さない）
+        await expect(card.getByText("Skyshareリンク作成対象外")).toHaveCount(0)
         await expect(
             card.getByRole("button", { name: "Skyshare Entryを作成" }),
         ).toHaveCount(0)

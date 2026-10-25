@@ -84,7 +84,7 @@ export const resolveEntryVisualSourcePost = (
 }
 // ThreadCard → 起点の PostCard
 //   postCreateEntryButton={!!visual} entryVisualSourcePost={visual} entrySourcePost={group.rootPost}
-// 返信の PostCard は postCreateEntryButton={false}
+// 返信の PostCard は hideToolbar（下部のツールバーごと表示しない。操作は起点に対して行うため）
 // useSkyshareEntryStatus: visualSource = visualSourcePost ?? item（画像取得と createDefaultThumbnail）
 //                         source = sourcePost ?? item（API に送る uri）
 ```
@@ -116,6 +116,15 @@ const threadMuted =
 ```
 
 `card-muted` は文字を控えめな色にし、ボタン内を含む画像・アイコンの不透明度と彩度を下げ、本文のリンクの色を文字と同じにする。
+
+### D-5: 後続の投稿のツールバー (FR-12)
+
+```tsx
+// ThreadCard: 後続の PostCard にはツールバーを出さない
+<PostCard item={reply} hideToolbar muted={threadMuted} />
+```
+
+`PostCard` は `hideToolbar` が真のとき、下部のツールバー全体（Blueskyで開く・共有・Entry関連の操作・entryを開くリンク）を描画しない。操作は起点の投稿に対して行う。
 
 ## 4. エラー処理
 

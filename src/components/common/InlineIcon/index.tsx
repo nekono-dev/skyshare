@@ -11,6 +11,7 @@ import crosspostIcon from "@/images/crosspost.svg"
 import hashtagIcon from "@/images/hashtag.svg"
 import imageIcon from "@/images/image.svg"
 import mastodonIcon from "@/images/mastodon.svg"
+import misskeyIcon from "@/images/misskey.svg"
 import shareIcon from "@/images/share.svg"
 import taittsuuIcon from "@/images/taittsuu.png"
 import xIcon from "@/images/twitter.svg"
@@ -24,6 +25,7 @@ export type InlineIconName =
   | "x"
   | "taittsuu"
   | "mastodon"
+  | "misskey"
   | "hashtag"
   | "image"
   | "video"
@@ -34,6 +36,7 @@ const icons: Record<InlineIconName, ImageMetadata> = {
   x: xIcon,
   taittsuu: taittsuuIcon,
   mastodon: mastodonIcon,
+  misskey: misskeyIcon,
   hashtag: hashtagIcon,
   image: imageIcon,
   video: videoIcon,

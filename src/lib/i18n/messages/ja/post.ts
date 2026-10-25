@@ -6,7 +6,7 @@
 export const post = {
     "post.guestUnavailable": "ゲスト表示のため利用できません",
     "post.guestNotice":
-        "これはログイン不要のゲスト表示です。Blueskyへの投稿はスキップされますが、投稿ボタンを押すとポップアップ・共有シートやX・タイッツー・Mastodonへの投稿ボタンはお試しいただけます。",
+        "これはログイン不要のゲスト表示です。Blueskyへの投稿はスキップされますが、投稿ボタンを押すとポップアップ・共有シートやX・タイッツー・Mastodon・Misskeyへの投稿ボタンはお試しいただけます。",
     "post.launcher.new": "新規投稿",
 
     "post.card.openBluesky": "Bluesky で開く",
@@ -29,7 +29,6 @@ export const post = {
     "post.entryActions.deletePost": "投稿を削除",
     "post.entryActions.creating": "作成中…",
     "post.entryActions.create": "Skyshare Entryを作成",
-    "post.entryActions.notEligible": "Skyshareリンク作成対象外",
     "post.stats.aria": "Blueskyでのリアクション数",
     "post.stats.like": "いいね",
     "post.stats.repost": "リポスト",
@@ -59,10 +58,12 @@ export const post = {
     "post.autoPopupTarget.x": "X",
     "post.autoPopupTarget.taittsuu": "タイッツー",
     "post.autoPopupTarget.mastodon": "Mastodon",
+    "post.autoPopupTarget.misskey": "Misskey",
     "post.shareDialog.aria": "共有先を選択",
     "post.shareDialog.x": "X に投稿",
     "post.shareDialog.taittsuu": "タイッツーに投稿",
     "post.shareDialog.mastodon": "Mastodonに投稿",
+    "post.shareDialog.misskey": "Misskeyに投稿",
 
     "post.gate.title": "返信・引用の設定",
     "post.gate.mentioned": "メンションされた人",
@@ -122,6 +123,7 @@ export const post = {
         "ゲスト表示のためBlueskyへの投稿はスキップしました",
     "post.share.service.taittsuu": "タイッツー",
     "post.share.service.mastodon": "Mastodon",
+    "post.share.service.misskey": "Misskey",
     "post.share.service.x": "x.com",
     "post.share.chooseTarget": "{result}。共有先を選択してください。",
     "post.share.popupOpened": "{result}。{service} 投稿画面を開きました。",

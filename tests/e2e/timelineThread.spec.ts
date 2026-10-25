@@ -270,6 +270,26 @@ test.describe("スレッド単位のコントラスト", () => {
         }
     })
 
+    test("[timeline/AC-15] スレッドを展開すると、起点のカードにだけ下部のツールバーが表示され、後続のカードには表示されない", async ({
+        page,
+    }) => {
+        await page.goto("/?guest")
+        const rootArticle = page.locator("article", {
+            hasText: "スレッドA・1件目（ルート、画像なし）です。",
+        })
+        await expect(rootArticle).toBeVisible({ timeout: 30_000 })
+        await rootArticle.locator("xpath=following-sibling::button[1]").click()
+        const thread = rootArticle.locator("xpath=..")
+        await expect(thread.locator("article")).toHaveCount(3)
+        await expect(rootArticle.locator("footer")).toHaveCount(1)
+        await expect(
+            thread.locator("article").nth(1).locator("footer"),
+        ).toHaveCount(0)
+        await expect(
+            thread.locator("article").nth(2).locator("footer"),
+        ).toHaveCount(0)
+    })
+
     test("[timeline/AC-14] コントラストを下げたカードで、共有のボタンのアイコンの不透明度が通常のカードより低い", async ({
         page,
     }) => {

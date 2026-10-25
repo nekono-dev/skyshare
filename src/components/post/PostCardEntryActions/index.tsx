@@ -4,6 +4,7 @@
  *
  * 責務と処理概要:
  * - `useSkyshareEntryStatus` が返す `display` の種別だけを見てボタン種を切り替える。
+ * - クロスポストのボタンは、entry の有無によらず常に表示する（entry が無ければ URL を付けずに共有する）。
  * - ボタン種の切り替え条件（entry の有無・進行中操作・作成対象外判定）は
  *   呼び出し元のフック側に一元化し、ここでは分岐しない。
  */
@@ -39,11 +40,11 @@ type Props = {
  * - `onCreate`/`onRequestDelete`/`onCrosspost`: 各ボタンの押下ハンドラ
  *
  * Output:
- * - `display.kind` に応じたボタン（作成・クロスポスト+削除・作成対象外）
+ * - クロスポストのボタンと、`display.kind` に応じたボタン（作成・削除。作成対象外は表示なし）
  *
  * 例:
  * - 入力: `display={{ kind: "creatable" }}`
- * - 出力: 「Skyshare Entryを作成」ボタン
+ * - 出力: クロスポストのボタンと「Skyshare Entryを作成」ボタン
  */
 const Component = ({
   display,
@@ -58,26 +59,26 @@ const Component = ({
   const { t } = useT()
   return (
     <>
+      <button
+        type="button"
+        className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
+        disabled={display.kind === "creating"}
+        onClick={onCrosspost}
+        aria-label={t("post.entryActions.crosspost")}
+        title={t("post.entryActions.crosspost")}
+      >
+        <img src={crosspostIcon.src} width={20} height={20} alt="" />
+      </button>
+
       {display.kind === "entry" || display.kind === "deleting" ? (
-        <>
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["nontext-button"]} ${ui["md-button"]} ${ui["white-button"]}`}
-            onClick={onCrosspost}
-            aria-label={t("post.entryActions.crosspost")}
-            title={t("post.entryActions.crosspost")}
-          >
-            <img src={crosspostIcon.src} width={20} height={20} alt="" />
-          </button>
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
-            disabled={deleteDisabled || display.kind === "deleting"}
-            onClick={onRequestDelete}
-          >
-            {t("post.entryActions.deletePost")}
-          </button>
-        </>
+        <button
+          type="button"
+          className={`${ui["base-button"]} ${ui["text-button"]} ${ui["red-button"]}`}
+          disabled={deleteDisabled || display.kind === "deleting"}
+          onClick={onRequestDelete}
+        >
+          {t("post.entryActions.deletePost")}
+        </button>
       ) : display.kind === "creatable" || display.kind === "creating" ? (
         <button
           type="button"
@@ -89,11 +90,7 @@ const Component = ({
             ? t("post.entryActions.creating")
             : t("post.entryActions.create")}
         </button>
-      ) : (
-        <span className={styles["no-skyshare"]}>
-          {t("post.entryActions.notEligible")}
-        </span>
-      )}
+      ) : null}
 
       {createError ? (
         <span className={styles["create-entry-error"]}>{t(createError)}</span>

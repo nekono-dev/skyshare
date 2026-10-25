@@ -1,5 +1,5 @@
 /**
- * 外部SNS（x.com / タイッツー / Mastodon）向け intent 共通処理。
+ * 外部SNS（x.com / タイッツー / Mastodon / Misskey）向け intent 共通処理。
  *
  * 責務と処理概要:
  * - intent 本文の組み立て、intent URL の組み立て、ポップアップの起動
@@ -13,7 +13,7 @@ import {
     truncateBodyWithSuffix,
 } from "@/util/share/truncateText"
 
-export type IntentTarget = "x" | "taittsuu" | "mastodon"
+export type IntentTarget = "x" | "taittsuu" | "mastodon" | "misskey"
 
 // ドメイン名（ホスト名）のみを許可する。ラベルは英数字とハイフンのみ・先頭/末尾ハイフン不可・
 // 1〜63文字、ラベルを`.`で1つ以上連結する（最低2ラベル＝ドット必須）。
@@ -23,7 +23,7 @@ const MASTODON_DOMAIN_PATTERN =
     /^(?!-)[a-zA-Z0-9-]{1,63}(?<!-)(\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))+$/
 
 /**
- * Mastodonインスタンスのドメインとして妥当な形式かを判定する。
+ * Mastodon・Misskeyなどのインスタンスのドメインとして妥当な形式かを判定する。
  *
  * Input:
  * - `value`: 検証対象の文字列
@@ -37,7 +37,7 @@ const MASTODON_DOMAIN_PATTERN =
  * - 入力: "https://mastodon.social/"
  * - 出力: `false`（スキーム・サブパスを含むため）
  */
-export const isValidMastodonInstanceDomain = (value: string): boolean => {
+export const isValidInstanceDomain = (value: string): boolean => {
     return MASTODON_DOMAIN_PATTERN.test(value.trim())
 }
 
@@ -53,7 +53,7 @@ export type BuildIntentTextOptions = {
  *
  * 処理の趣旨:
  * - 文字数制限が厳しいX・タイッツーに限り、設定ONの場合のみ上限を返す。
- *   Mastodonは制限が緩いため対象外とする。
+ *   Mastodon・Misskeyは制限が緩いため対象外とする。
  *
  * Input:
  * - `target`: 共有先SNS
@@ -163,7 +163,7 @@ export const buildIntentText = (
 }
 
 export type IntentUrlOptions = {
-    /** `target` が "mastodon" の場合のみ必須。ユーザが設定したインスタンスドメイン。 */
+    /** `target` が "mastodon"・"misskey" の場合のみ必須。ユーザが設定したインスタンスドメイン。 */
     instanceDomain?: string
 }
 
@@ -173,10 +173,10 @@ export type IntentUrlOptions = {
  * Input:
  * - `target`: 対象SNS
  * - `intentText`: intent に渡す投稿文（`buildIntentText` の戻り値を想定）
- * - `options.instanceDomain`: `target` が "mastodon" の場合の投稿先インスタンスドメイン
+ * - `options.instanceDomain`: `target` が "mastodon"・"misskey" の場合の投稿先インスタンスドメイン
  *
  * Output:
- * - intent URL文字列。Mastodonでドメイン未指定/不正な場合は `null`
+ * - intent URL文字列。Mastodon・Misskeyでドメイン未指定/不正な場合は `null`
  *
  * 例:
  * - 入力: `"x"`, `"hello"`
@@ -198,11 +198,13 @@ export const buildIntentUrl = (
             url.searchParams.set("text", intentText)
             return url.toString()
         }
-        case "mastodon": {
+        case "mastodon":
+        case "misskey": {
             if (!options.instanceDomain) {
                 return null
             }
             try {
+                // どちらも `https://<インスタンス>/share?text=` で投稿画面を開く
                 const url = new URL(`https://${options.instanceDomain}/share`)
                 url.searchParams.set("text", intentText)
                 return url.toString()
@@ -227,7 +229,7 @@ export type OpenIntentPopupOptions = IntentUrlOptions & {
  * Input:
  * - `target`: 対象SNS
  * - `intentText`: intent に渡す投稿文
- * - `options.instanceDomain`: `target` が "mastodon" の場合の投稿先インスタンスドメイン
+ * - `options.instanceDomain`: `target` が "mastodon"・"misskey" の場合の投稿先インスタンスドメイン
  * - `options.preOpenedWindow`: 事前に開いておいたポップアップウィンドウ
  *
  * Output:

@@ -33,9 +33,11 @@ describe("resolveCounterTargets", () => {
         ["x", true, ["x"]],
         ["taittsuu", true, ["taittsuu"]],
         ["mastodon", true, []],
+        ["misskey", true, []],
         ["ask", true, ["x", "taittsuu"]],
         ["taittsuu", false, ["x"]],
         ["mastodon", false, ["x"]],
+        ["misskey", false, ["x"]],
     ] as const)("%s / popup=%s", (target, popup, expected) => {
         expect(resolveCounterTargets(target, popup)).toEqual(expected)
     })

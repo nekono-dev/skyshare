@@ -6,7 +6,7 @@
 - [x] T-1.1: `IntentShareDialog` を実装する。
 - [x] T-1.2: entryのない投稿での選択肢の表示と、不正なMastodonドメインでの操作不能を確認するE2Eテストを追加する。
 - 検証: `npm run build`
-- E2E: `tests/e2e/intentShare.spec.ts` 不正なMastodonドメインを保存してタイムラインの投稿の共有ダイアログを開く → Mastodonの選択肢が操作不能で、他の3つは操作できる
+- E2E: `tests/e2e/intentShare.spec.ts` 不正なMastodonドメインを保存してタイムラインの投稿の共有ダイアログを開く → Mastodonの選択肢が操作不能で、他の4つは操作できる
 
 ## Phase 2: 呼び出し側
 
@@ -15,3 +15,10 @@
 - [x] T-2.2: `PostCard` からダイアログを表示する。
 - 検証: `npx playwright test tests/e2e/intentShare.spec.ts`
 - E2E: `tests/e2e/intentShare.spec.ts` 投稿直後のダイアログでXとタイッツーを続けて選ぶ → ダイアログが閉じず、閉じる・背景クリック・Escキーで閉じる
+
+## Phase 3: entryの無い投稿のボタン
+
+- 対応: D-3
+- [x] T-3.1: `PostCardEntryActions` でダイアログを開くボタンを常に表示する。
+- 検証: `npm run build`
+- E2E: `tests/e2e/intentShare.spec.ts` ゲスト表示でentryの無い投稿のカードを表示する → ダイアログを開くボタンが表示される

@@ -18,7 +18,7 @@ export type CounterTarget = "x" | "taittsuu"
  *
  * 処理の趣旨:
  * - WebShareAPI利用時は共有先を特定できないため、従来どおりXのみとする。
- * - ポップアップ利用時は自動ポップアップ先に従う。Mastodonは字数制限が緩いため無し、
+ * - ポップアップ利用時は自動ポップアップ先に従う。Mastodon・Misskeyは字数制限が緩いため無し、
  *   「投稿時に選択する」はXとタイッツーの両方を出す。
  *
  * Input:
@@ -43,6 +43,7 @@ export const resolveCounterTargets = (
         case "taittsuu":
             return ["taittsuu"]
         case "mastodon":
+        case "misskey":
             return []
         case "ask":
             return ["x", "taittsuu"]

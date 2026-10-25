@@ -67,7 +67,7 @@ import {
 } from "@/lib/settings/postGateSettings"
 import {
   readPinnedFormDisabledSetting,
-  resolveMastodonInstanceDomain,
+  resolveInstanceDomainFor,
   writePinnedFormDisabledSetting,
 } from "@/lib/settings/shareSettings"
 import { readTimelineHiddenSetting } from "@/lib/settings/timelineSettings"
@@ -933,16 +933,13 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       // 走ることがある。そのため自動ポップアップが行われる設定の場合は、ここ
       // （ユーザー操作と同期的なコールスタック内）で先に空のポップアップを開いて
       // おき、URL確定後にrunShareDispatch内でそこへ遷移させる。
-      // 自動ポップアップ先を決められない場合（投稿時に選択する、またはMastodonの
+      // 自動ポップアップ先を決められない場合（投稿時に選択する、またはMastodon/Misskeyの
       // ドメインが不正）は、ポップアップを開かず投稿先選択ダイアログに委ねるため開かない。
       const willAutoPopup =
         shareToggles.popupIntentInsteadOfWebshare &&
         shareToggles.autoPopupTarget !== "ask" &&
-        !(
-          shareToggles.autoPopupTarget === "mastodon" &&
-          resolveMastodonInstanceDomain(shareToggles.mastodonInstanceDomain) ===
-            null
-        )
+        resolveInstanceDomainFor(shareToggles.autoPopupTarget, shareToggles) !==
+          null
       const popupWindow = willAutoPopup ? preOpenPopupWindow() : null
 
       setIsSubmitting(true)
@@ -1018,6 +1015,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
             shareToggles.popupIntentInsteadOfWebshare,
           autoPopupTarget: shareToggles.autoPopupTarget,
           mastodonInstanceDomain: shareToggles.mastodonInstanceDomain,
+          misskeyInstanceDomain: shareToggles.misskeyInstanceDomain,
           popupWindow,
           guestMode,
         })

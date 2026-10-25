@@ -12,7 +12,14 @@ import Overlay from "@/components/common/Overlay"
 import ui from "@/styles/ui.module.css"
 
 export type DialogButtonVariant =
-  "blue" | "gray" | "red" | "red-strong" | "black" | "taittsuu" | "mastodon"
+  | "blue"
+  | "gray"
+  | "red"
+  | "red-strong"
+  | "black"
+  | "taittsuu"
+  | "mastodon"
+  | "misskey"
 
 export type DialogButton = {
   key: string
@@ -41,6 +48,7 @@ export const variantClassName: Record<DialogButtonVariant, string> = {
   black: ui["black-button"],
   taittsuu: ui["taittsuu-button"],
   mastodon: ui["mastodon-button"],
+  misskey: ui["misskey-button"],
 }
 
 /**

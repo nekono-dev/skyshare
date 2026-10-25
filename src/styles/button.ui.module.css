@@ -32,6 +32,12 @@
   --color-mastodon-button-border: var(--border-color-muted);
   --color-mastodon-button-color: var(--color-white);
 
+  /* Misskey button（黄緑系） */
+  --color-misskey-button-bg: var(--color-misskey);
+  --color-misskey-button-hover: var(--color-misskey-hover);
+  --color-misskey-button-border: var(--border-color-muted);
+  --color-misskey-button-color: var(--color-white);
+
   /* Black button */
   --color-black-button-bg: var(--color-black);
   --color-black-button-hover: var(--color-black-hover);
@@ -181,6 +187,16 @@
   background: var(--color-mastodon-button-hover);
 }
 
+/* Misskey系統ボタン（黄緑系） */
+:local(.misskey-button) {
+  background: var(--color-misskey-button-bg);
+  color: var(--color-misskey-button-color);
+  border-color: var(--color-misskey-button-border);
+}
+:local(.misskey-button):not(:disabled):not([aria-disabled="true"]):hover {
+  background: var(--color-misskey-button-hover);
+}
+
 /* 黒系統ボタン */
 :local(.black-button) {
   background: var(--color-black-button-bg);
@@ -223,6 +239,8 @@
 :local(.taittsuu-button)[aria-disabled="true"],
 :local(.mastodon-button):disabled,
 :local(.mastodon-button)[aria-disabled="true"],
+:local(.misskey-button):disabled,
+:local(.misskey-button)[aria-disabled="true"],
 :local(.black-button):disabled,
 :local(.black-button)[aria-disabled="true"],
 :local(.red-button):disabled,

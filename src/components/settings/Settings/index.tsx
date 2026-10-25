@@ -57,7 +57,7 @@ import {
 import type { MessageKey } from "@/lib/i18n/translate"
 import { useShareToggles } from "@/lib/settings/useShareToggles"
 import AutoPopupTargetSelect from "@/components/common/AutoPopupTargetSelect"
-import { isValidMastodonInstanceDomain } from "@/util/share/intent"
+import { isValidInstanceDomain } from "@/util/share/intent"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -216,6 +216,7 @@ export const Settings = () => {
     share: <InlineIcon name="share" />,
     popup: <InlineIcon name="popup" />,
     mastodon: <InlineIcon name="mastodon" />,
+    misskey: <InlineIcon name="misskey" />,
   }
   const rich = (key: MessageKey) => renderSlots(raw(key), slots)
 
@@ -376,8 +377,20 @@ export const Settings = () => {
       textInputValue: shareToggles.mastodonInstanceDomain,
       onTextInputChange: shareToggles.onMastodonInstanceDomainChange,
       textInputPlaceholder: "mastodon.social",
-      textInputValidate: isValidMastodonInstanceDomain,
+      textInputValidate: isValidInstanceDomain,
       textInputErrorMessage: t("settings.mastodon.domainError"),
+    },
+    {
+      key: "misskeyInstanceDomain",
+      label: rich("settings.misskey.instance.label"),
+      description: t("settings.misskey.instance.description"),
+      renderControl: () => null,
+      textInput: true,
+      textInputValue: shareToggles.misskeyInstanceDomain,
+      onTextInputChange: shareToggles.onMisskeyInstanceDomainChange,
+      textInputPlaceholder: "misskey.io",
+      textInputValidate: isValidInstanceDomain,
+      textInputErrorMessage: t("settings.misskey.domainError"),
     },
   ]
 

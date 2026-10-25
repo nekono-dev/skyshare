@@ -17,7 +17,7 @@
  *   （`specs/entry-api`）。
  * - バックエンドはfacetsの自動検出を行わない設計になったため、送信直前に
  *   `detectFacetsForSubmission`でfacetsを組み立てて併せて送信する。
- * - クロスポスト（X/タイッツー/Mastodon自動ポップアップ・WebShareAPI）は先頭（1件目）
+ * - クロスポスト（X/タイッツー/Mastodon/Misskey自動ポップアップ・WebShareAPI）は先頭（1件目）
  *   segmentのみを対象とするため（本モジュールの利用側で合意済みの方針）、戻り値は
  *   トップレベルskyshareEntryのuriのみを返す。
  */

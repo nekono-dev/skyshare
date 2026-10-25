@@ -51,4 +51,9 @@ export const settings = {
         "The instance domain used when sharing to Mastodon. If not set, mastodon.social is used.",
     "settings.mastodon.domainError":
         "The domain format is invalid. Enter only the domain name, without a scheme (such as https://) or a path (anything after /).",
+    "settings.misskey.instance.label": "Misskey{misskey} instance",
+    "settings.misskey.instance.description":
+        "The instance domain used when sharing to Misskey. If not set, misskey.io is used.",
+    "settings.misskey.domainError":
+        "The domain format is invalid. Enter only the domain name, without a scheme (such as https://) or a path (anything after /).",
 } satisfies MessageEntries
