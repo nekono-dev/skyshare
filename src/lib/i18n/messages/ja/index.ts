@@ -6,6 +6,7 @@ import { account } from "./account"
 import { common } from "./common"
 import { entry } from "./entry"
 import { error } from "./error"
+import { feedback } from "./feedback"
 import { guest } from "./guest"
 import { image } from "./image"
 import { nav } from "./nav"
@@ -21,6 +22,7 @@ export const ja = {
     ...common,
     ...entry,
     ...error,
+    ...feedback,
     ...guest,
     ...image,
     ...nav,

@@ -52,6 +52,9 @@ export const errorResponseFromStatus = (status: number): Response => {
         case 429:
             message.error = "Too Many Requests"
             break
+        case 503:
+            message.error = "Service Unavailable"
+            break
         default:
             message.error = "Internal Server Error"
             break

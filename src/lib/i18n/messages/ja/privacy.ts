@@ -24,6 +24,8 @@ export const privacy = {
         "Google アナリティクスによる利用状況（閲覧したページ・端末やブラウザの種類・おおよその地域）",
     "privacy.collected.inquiry":
         "お問い合わせの際のメールアドレスまたは Bluesky のアカウントと、お問い合わせの内容",
+    "privacy.collected.feedback":
+        "不具合の報告・機能の提案の際の、入力した内容と Bluesky のハンドルと DID、端末と Skyshare の版の情報",
     "privacy.collected.note":
         "通常の投稿や下書きは利用者の Bluesky に保存され、本サービスでは保管しません。",
     "privacy.purpose.title": "利用目的",
@@ -41,6 +43,8 @@ export const privacy = {
     "privacy.external.item2":
         "本サービスの配信とデータの保管を委託する Cloudflare での取り扱い",
     "privacy.external.item3": "アクセス解析のための Google への送信",
+    "privacy.external.github":
+        "不具合の報告・機能の提案の内容を、GitHub の公開の Issue として掲載すること",
     "privacy.external.item4": "法令に基づく要請がある場合",
     "privacy.retention.title": "保持期間",
     "privacy.retention.item1":
@@ -53,6 +57,8 @@ export const privacy = {
         "通信の情報は、Cloudflare が定める期間に限り保持されます。",
     "privacy.retention.item5":
         "アクセス解析の情報は、Google アナリティクスの保持期間の設定に従います。",
+    "privacy.retention.feedback":
+        "不具合の報告・機能の提案は、GitHub の Issue として残ります。削除をご希望の場合は連絡先までご連絡ください。",
     "privacy.security.title": "セキュリティ",
     "privacy.security.intro":
         "利用者の情報を守るため、次の対策をとっています。",

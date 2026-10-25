@@ -14,5 +14,6 @@ export const nav = {
     "pageTitle.settings": "設定 | {service}",
     "pageTitle.help": "ヘルプ | {service}",
     "pageTitle.privacy": "プライバシーポリシー | {service}",
+    "pageTitle.feedback": "不具合の報告・機能の提案 | {service}",
     "pageTitle.jump": "移動しています... - {service}",
 } as const

@@ -1,0 +1,37 @@
+---
+/**
+ * 不具合の報告・新機能の提案のページ。
+ *
+ * 責務と処理概要:
+ * - `FeedbackForm` を表示し、ログイン中の利用者の報告と提案を GitHub の Issue として送らせる。
+ * - ログインの確認と送信は画面の側で行い、ページ自体は辞書のみに依存するため、静的配信可能。
+ *   prerender を有効化する。
+ * - ログイン・プライバシーポリシーと同様に、サイドバー・フッターナビを表示しない単独ページとする。
+ *   ナビ項目一覧にもこのページを追加しない（リンクは設定ページのヘルプへのリンクの下に置く）。
+ *   ナビがないため、設定ページへ戻るリンクを置く。
+ */
+export const prerender = true
+import FeedbackForm from "@/components/feedback/FeedbackForm"
+import Baselayout from "@/layout/Baselayout.astro"
+import StandaloneFooter from "@/components/layout/StandaloneFooter/index.astro"
+import { createTranslator } from "@/lib/i18n/translate"
+import ui from "@/styles/ui.module.css"
+
+const { t } = createTranslator(Astro.locals.locale)
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitleKey="pageTitle.feedback" robots={robots}>
+    <div class={ui.center}>
+        <div class=`${ui.page} ${ui["width-lg"]} ${ui.center} `>
+            <div class={ui["width-lg"]}>
+                <h1 class={ui.subject} data-i18n="feedback.heading">{t("feedback.heading")}</h1>
+                <FeedbackForm client:load />
+                <div style="margin-bottom: 1rem;">
+                    <a href="/settings/" class={ui.text} data-i18n="feedback.back">{t("feedback.back")}</a>
+                </div>
+            </div>
+            <StandaloneFooter />
+        </div>
+    </div>
+</Baselayout>

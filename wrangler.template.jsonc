@@ -30,6 +30,15 @@
       "bucket_name": "skyshare-schedule-images",
     },
   ],
+  // 不具合の報告と機能の提案の送信の回数の制限（アカウントごとに60秒に1件。期間は10秒か60秒しか選べない）。
+  // namespace_id はアカウントの中で制限を区別する任意の数字で、運用者ごとに変えなくてよい
+  "ratelimits": [
+    {
+      "name": "FEEDBACK_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 1, "period": 60 },
+    },
+  ],
   "observability": {
     "enabled": true,
   },
@@ -52,6 +61,14 @@
   "preview_urls": false,
   // プレビューは develop の Worker（--develop）だけで作る。D1・R2 は hack/render-deploy-config.mjs が加える
   "previews": {
+    // ratelimits は previews に継承されないため、本番と同じ制限を宣言する
+    "ratelimits": [
+      {
+        "name": "FEEDBACK_RATE_LIMITER",
+        "namespace_id": "1001",
+        "simple": { "limit": 1, "period": 60 },
+      },
+    ],
     "vars": {
       "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
       "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",

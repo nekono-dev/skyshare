@@ -61,22 +61,29 @@ describe("buildPrivacyPolicy", () => {
         for (const s of ja()) expect(s.title).not.toBe("")
     })
 
-    it("[privacy-policy/AC-2] 収集する情報の節が、5つの区分をすべて持つ", () => {
+    it("[privacy-policy/AC-2] 収集する情報の節が、6つの区分をすべて持つ", () => {
         const keywords = [
             "ログイン",
             "予約投稿",
             "Cloudflare",
             "Google アナリティクス",
             "お問い合わせ",
+            "不具合の報告",
         ]
         const list = items("collected").map(itemText)
         expect(list).toHaveLength(keywords.length)
         keywords.forEach((k, i) => expect(list[i]).toContain(k))
     })
 
-    it("[privacy-policy/AC-3] 情報の共有の節が、4つの例外を1項目ずつ持つ", () => {
+    it("[privacy-policy/AC-3] 情報の共有の節が、5つの例外を1項目ずつ持つ", () => {
         const list = items("external").map(itemText)
-        const keywords = ["利用者の操作", "Cloudflare", "Google", "法令"]
+        const keywords = [
+            "利用者の操作",
+            "Cloudflare",
+            "Google",
+            "GitHub",
+            "法令",
+        ]
         expect(list).toHaveLength(keywords.length)
         keywords.forEach((k, i) => expect(list[i]).toContain(k))
     })

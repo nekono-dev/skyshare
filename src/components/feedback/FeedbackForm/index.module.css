@@ -1,0 +1,104 @@
+/**
+ * FeedbackForm のスタイル定義。
+ *
+ * 設計方針:
+ * - カード・入力欄・ボタンの見た目は共通UI（`ui.module.css`）に委ね、ここでは並びと余白、
+ *   注記と送る値の一覧、結果の表示だけを定義する。
+ * - 色・余白は src/styles/tokens.css のトークンのみを使う。
+ */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-2) 0 var(--space-6);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+}
+
+.fieldset {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-size: var(--font-size-sm);
+  font-weight: bold;
+}
+
+/* 種別のラジオカードは横に2つ並べる */
+.radio-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* 再現の頻度は4つのため、狭い画面では2列に折り返す */
+.radio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: var(--space-2);
+}
+
+.notice {
+  background: var(--color-card-muted-bg);
+}
+
+/* 項目名の列の幅をそろえるため、一覧全体を2列のグリッドにし、行の要素はグリッドに直接並べる */
+.collected {
+  display: grid;
+  grid-template-columns: fit-content(45%) 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+}
+
+.collected-row {
+  display: contents;
+}
+
+.collected-row dt {
+  font-weight: bold;
+}
+
+/* 識別文字列は長く区切りがないため、どこでも折り返す */
+.collected-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.error {
+  color: var(--color-danger-text);
+}
+
+.error:empty {
+  display: none;
+}
+
+.success {
+  align-self: stretch;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.success p {
+  margin: 0 0 var(--space-1);
+}

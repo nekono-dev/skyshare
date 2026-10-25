@@ -7,6 +7,8 @@ import react from "@astrojs/react"
 import partytown from "@astrojs/partytown"
 import { loadEnv } from "vite"
 import { checkSiteEnv, siteUrl } from "./src/lib/site/siteEnv.ts"
+import { resolveBuildInfo } from "./src/lib/site/buildEnv.ts"
+import { execFileSync } from "node:child_process"
 
 // astro dev サーバーは HTTPS 化のため vite-plugin-basic-ssl 経由で
 // Node の http2 secure server を使う（Vite が https 設定時に自動選択するため）。
@@ -31,6 +33,23 @@ if (process.argv.includes("build")) {
   }
 }
 
+// 不具合の報告に載せる、ビルドしたコミットとソースコードのリポジトリ。
+// CI では GITHUB_SHA・GITHUB_REPOSITORY を使い、手元では Git の値を読む（Git がなければ不明として続ける）
+const readGit = (...args) => {
+  try {
+    return execFileSync("git", args, {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim()
+  } catch {
+    return ""
+  }
+}
+const build = resolveBuildInfo(env, {
+  sha: readGit("rev-parse", "HEAD"),
+  remoteUrl: readGit("remote", "get-url", "origin"),
+})
+
 export default defineConfig({
   output: "server",
   adapter: cloudflare({ imageService: "compile" }),
@@ -51,6 +70,13 @@ export default defineConfig({
   },
   // Vite 固有の設定を乗せて、いくつかのビルド時警告を抑制する
   vite: {
+    // ビルドの情報を画面とサーバーの両方に埋め込む（`src/lib/site/buildInfo.ts` が参照する）
+    define: {
+      "import.meta.env.PUBLIC_COMMIT_SHA": JSON.stringify(build.commit ?? ""),
+      "import.meta.env.PUBLIC_SOURCE_REPOSITORY": JSON.stringify(
+        build.repository ?? "",
+      ),
+    },
     // バンドルが大きくなる旨の警告上限を引き上げる
     build: {
       chunkSizeWarningLimit: 1000,

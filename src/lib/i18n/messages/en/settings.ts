@@ -3,6 +3,7 @@ import type { MessageEntries } from "../../translate"
 
 export const settings = {
     "settings.helpLink": "Need help? Click here.",
+    "settings.feedbackLink": "Report a bug or request a feature.",
     "settings.display.title": "Display",
     "settings.theme.label": "Theme",
     "settings.theme.system": "Follow system settings",

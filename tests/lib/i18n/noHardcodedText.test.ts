@@ -37,6 +37,8 @@ const ALLOWED_CJK_FILES: Record<string, string> = {
     "components/common/LocaleSelect/index.tsx":
         "表示言語の自称表記（「日本語」「English」は翻訳しない）",
     "lib/atproto/languageFlag.ts": "言語コードと国の対応表（表示文言ではない）",
+    "lib/feedback/issueContent.ts":
+        "GitHub の Issue の本文の見出しと項目名（開発者向けで、表示言語によらず日本語に固定する）",
     "lib/site/siteEnv.ts":
         "ビルド時の設定検査のメッセージ（開発者向けで、画面には出ない）",
     "pages/entries/sample.astro":

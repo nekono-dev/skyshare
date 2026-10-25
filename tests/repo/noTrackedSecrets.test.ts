@@ -2,7 +2,7 @@
  * Git管理下のenvファイルに認証情報が混入していないことの検査。
  *
  * 責務と処理概要:
- * - `git ls-files`で管理対象の`.env*`を列挙し、`PASSWORD`・`SECRET`・`TOKEN`・`KEY`を名前に含む
+ * - `git ls-files`で管理対象の`.env*`と`deploy.env*`を列挙し、`PASSWORD`・`SECRET`・`TOKEN`・`KEY`を名前に含む
  *   変数の値が空・プレースホルダ以外であれば失敗させる（過去に検証用アカウントの
  *   アプリパスワードがコミットされた事故の再発防止）。
  * - 認証情報を置くファイルは`.gitignore`で管理対象外にし、雛形（`*.template`）だけを管理する。
@@ -19,7 +19,7 @@ const PLACEHOLDER =
 const trackedEnvFiles = (): string[] =>
     execFileSync("git", ["ls-files"], { encoding: "utf8" })
         .split("\n")
-        .filter(f => /(^|\/)\.env(\.|$)/.test(f))
+        .filter(f => /(^|\/)(\.env|deploy\.env)(\.|$)/.test(f))
 
 describe("Git管理下のenvファイル", () => {
     it("認証情報らしい変数に実値が入っていない", () => {

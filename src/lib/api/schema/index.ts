@@ -38,6 +38,7 @@ import { operation as scheduleAuthorizationCompletionPost } from "./v2/schedules
 import { operation as scheduleCredentialDelete } from "./v2/schedules/credential/delete"
 import { operation as bskyImagesGet } from "./v2/bsky/images/get"
 import { operation as bskyVideoUploadTokenPost } from "./v2/bsky/video/upload-token/post"
+import { operation as feedbackPost } from "./v2/feedback/post"
 
 export const paths: ZodOpenApiPathsObject = {
     "/v1/extract/": { get: extractUrlGet },
@@ -78,4 +79,5 @@ export const paths: ZodOpenApiPathsObject = {
     },
     "/v2/bsky/images/": { get: bskyImagesGet },
     "/v2/bsky/video/upload-token/": { post: bskyVideoUploadTokenPost },
+    "/v2/feedback/": { post: feedbackPost },
 }

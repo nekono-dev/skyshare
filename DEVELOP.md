@@ -113,27 +113,32 @@ gh auth login  # GitHub.com → HTTPS → ブラウザで認証
 gh auth status # ログインできたか確認する
 ```
 
-5. Variables を登録する。雛形をコピーして値を書き換え、まとめて登録する（コピーした `github-variables.env` は `.gitignore` 対象）。
+5. 配備に使う設定値を `deploy.env` に書き、GitHub の Variables・Secrets と Worker のシークレットへまとめて登録する（`deploy.env` は `.gitignore` 対象。認証情報もここに置いて管理する）。
 
 ```sh
-cp hack/github-variables.env.example github-variables.env
-$EDITOR github-variables.env
-gh variable set -f github-variables.env -R <owner>/<repo>
+cp deploy.env.template deploy.env
+$EDITOR deploy.env
+npm run deploy:env -- --dry-run  # 登録先と変数名だけを表示する（値は表示しない）
+npm run deploy:env               # gh と wrangler で登録する
 gh variable list -R <owner>/<repo>  # 登録できたか確認する
 ```
 
-6. Secrets を登録する。値は対話の入力で渡し、シェルの履歴やファイルに残さない。
+| 区分                          | 登録先                                                                                                   |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `[github.variables]`          | Actions の Variables（`gh variable set`）                                                                |
+| `[github.secrets]`            | Actions の Secrets（`gh secret set`）。Cloudflare の認証は wrangler にも使う                             |
+| `[worker.secrets]`            | 本番・develop・プレビューの Worker（`wrangler secret put` と `wrangler preview base-config secret put`） |
+| `[worker.secrets.production]` | 本番の Worker                                                                                            |
+| `[worker.secrets.develop]`    | develop の Worker とプレビュー                                                                           |
 
-```sh
-gh secret set CLOUDFLARE_API_TOKEN -R <owner>/<repo>   # 手順 2 のトークン
-gh secret set CLOUDFLARE_ACCOUNT_ID -R <owner>/<repo>  # Cloudflare のアカウント ID
-gh secret set E2E_ENV -R <owner>/<repo> < .env.e2e     # 任意。実アカウントのライブテストを行う場合
-```
+- 値が空の行は登録しない。登録済みの値をそのままにしたいもの（予約投稿の鍵など）は空にしておく。
+- 値は標準入力で渡し、コマンドの引数や画面に出さない。値を `@<パス>` にするとファイルの中身を登録する（例: `E2E_ENV=@.env.e2e`）。
+- GitHub のリポジトリは git の remote の origin から判定する（SSH の別名でもよい）。判定できないときは `-- --repo <owner>/<repo>` を付ける。
+- Worker のシークレットの登録は、Worker が一度配備された後に行う（プレビューは develop の Worker の配備の後）。失敗した登録は、配備の後にもう一度実行すればよい。
 
 7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
-8. develop 環境を1回配備した後、プレビューの暗号鍵を登録する（下の「予約投稿の初期設定」）。以降、`dev/XXXX` への push でプレビューが作られる。
+8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。
 
-- `-R <owner>/<repo>` は、remote が SSH の別名（`git@github.com.<別名>:...`）のときに `gh` がリポジトリを判別できないため付ける。
 - 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
 
 ### 予約投稿の初期設定（初回のみ）
@@ -170,6 +175,18 @@ rm oauth.key
 
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
 - D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。`migrations/0003_schedule_oauth.sql` は、アプリパスワード方式で登録された認証情報を削除する（利用者は設定で許可し直す）。`0004_schedule_reauth.sql` は、許可の時刻と再度の許可が必要な印の列を加える。
+
+### 不具合の報告・新機能の提案の初期設定（初回のみ）
+
+設定のページの「不具合の報告・新機能の提案」（`/feedback/`）は、送られた内容をソースコードのリポジトリの公開の Issue として登録する。登録先のリポジトリは、ビルドの時点の `GITHUB_REPOSITORY`（手元では `git remote get-url origin`）で決まるため、設定は要らない。GitHub の認証情報だけを Worker のシークレットに登録する。未登録の間は、送信すると「受け付けを停止しています」と表示される。
+
+1. GitHub の Settings → Developer settings → Fine-grained personal access tokens で、トークンを作る。Repository access は登録先のリポジトリだけ、Permissions は Repository permissions の **Issues: Read and write** だけにする。Issue の作成者はトークンの持ち主になる。
+2. 登録先のリポジトリに、ラベル `bug` と `enhancement` があることを確かめる（GitHub の既定のラベル）。
+3. トークンを `deploy.env` の `[worker.secrets]` の `FEEDBACK_GITHUB_TOKEN` に書き、`npm run deploy:env` で本番・develop・プレビューの Worker に登録する。
+
+- 送信の回数は、Cloudflare の Rate Limiting のバインディング（`wrangler.template.jsonc` の `ratelimits`）で、アカウントごとに60秒に1件に制限する。
+- トークンには期限がある。期限が切れると送信が失敗するため、更新したら `deploy.env` を書き換えて `npm run deploy:env` を実行し直す。
+- ローカルで試すときは `.dev.vars` に `FEEDBACK_GITHUB_TOKEN` を書く（実際に Issue が作られるため、試験用のリポジトリで試す）。
 
 ### E2E（e2e.yaml）
 

@@ -4,6 +4,7 @@
  */
 export const settings = {
     "settings.helpLink": "困った時のヘルプはこちら。",
+    "settings.feedbackLink": "不具合の報告・新機能の提案はこちら。",
     "settings.display.title": "表示",
     "settings.theme.label": "表示テーマ",
     "settings.theme.system": "システム設定に従う",
