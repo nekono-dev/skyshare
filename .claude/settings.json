@@ -3,12 +3,13 @@
     "nekono-dev": {
       "source": {
         "source": "github",
-        "repo": "nekono-dev/branch-release-workflow"
+        "repo": "nekono-dev/claude-plugins"
       }
     }
   },
   "enabledPlugins": {
-    "branch-release-workflow@nekono-dev": true
+    "branch-release-workflow@nekono-dev": true,
+    "spec-driven-development@nekono-dev": true
   },
   "hooks": {
     "SessionStart": [

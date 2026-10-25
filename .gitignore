@@ -44,8 +44,5 @@ _legacy/**/.env.test.*
 # 配備に使う設定値（deploy.env.template のコピー。運用者の値と認証情報を含む。npm run deploy:env で登録する）
 /deploy.env
 
-# 環境側に導入するスキル（AGENTS.md「仕様駆動開発」参照）。入れ子の git リポジトリのため追跡しない
-.claude/skills/spec-driven-development/
-
 # brw create が作る作業ブランチの worktree
 .claude/worktrees/
