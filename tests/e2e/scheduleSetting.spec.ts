@@ -139,7 +139,8 @@ test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の説明に画像�
     const guide = page.getByTestId("schedule-chronosky")
     await expect(guide).toContainText("の予約投稿や、高度な機能については")
     await expect(guide.getByRole("img", { name: "動画" })).toBeVisible()
-    await expect(guide.locator("img")).toHaveAttribute("src", /chronosky/)
+    // 動画のアイコンとは別に、Chronosky のロゴがある
+    await expect(guide.locator('img[src*="chronosky"]')).toBeVisible()
     const link = guide.getByRole("link", { name: /Chronosky/ })
     await expect(link).toHaveAttribute("href", "https://chronosky.app/")
     await expect(link).toHaveAttribute("target", "_blank")

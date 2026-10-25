@@ -19,6 +19,7 @@
   - `git submodule update --init --depth 1 atproto`
   - `npm install`（CI では `npm ci`）
   - `npm run codegen`
+  - 環境変数 `BRW_PLUGIN_DIR` に branch-release-workflow の clone を指定する（`tests/hack/renderDeployConfig.test.ts` が `hack/render-deploy-config.mjs` を通して使う。手順は DEVELOP.md。CI は固定したコミットを取得して渡す）
 
 # 仕様駆動開発
 
