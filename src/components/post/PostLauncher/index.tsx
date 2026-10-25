@@ -18,6 +18,8 @@ import pic from "@/images/pen.svg"
  * 責務と処理概要:
  * - フローティングボタンで投稿フォームを開く。
  * - Overlay 内で ThreadComposer を表示し、閉じ操作を集中管理する。
+ * - 開くたびに ThreadComposer が新しくマウントされるため、`autoFocus` で本文の入力欄へ
+ *   自動フォーカスし、ボタンを押してすぐ入力できるようにする。
  * - Overlay 背景クリックでの閉じ操作は ThreadComposer の `requestClose` に委譲し、
  *   キャンセルボタンと同様に未保存の変更があれば下書き保存確認ダイアログを挟む。
  * - スマホレイアウトでは ThreadComposer を画面上部に固定配置する（`backdropClassName`）。
@@ -120,6 +122,7 @@ const PostLauncher: React.FC<{
           accountDid={accountDid}
           onPinnedFormDisabledChange={onPinnedFormDisabledChange}
           guestMode={guestMode}
+          autoFocus
         />
       </Overlay>
 
