@@ -24,7 +24,7 @@ const typeBody = async (page: Page, text: string) => {
 }
 
 const reauthDialog = (page: Page) =>
-    page.getByRole("dialog", { name: "もう一度 Bluesky で許可する" })
+    page.getByRole("dialog", { name: "予約投稿を有効にする" })
 
 /** 認可の画面への遷移を受け止め、移ったことを記録する */
 const catchAuthorize = async (page: Page) => {
@@ -70,7 +70,7 @@ test("[schedule-form/AC-30] 許可が無効になってもスイッチはオン�
     const dialog = reauthDialog(page)
     await expect(dialog).toBeVisible()
     await catchAuthorize(page)
-    await dialog.getByRole("button", { name: "Bluesky で許可する" }).click()
+    await dialog.getByRole("button", { name: "認証する" }).click()
     await expect.poll(() => calls.authorizationStarts).toBe(1)
     expect(calls.authorizationStartBodies[0]).toEqual({
         returnTo: "/settings/",
@@ -86,7 +86,7 @@ test("[schedule-form/AC-31] 投稿フォームで許可が無効なら、カレ�
     await page.goto("/post/")
     await typeBody(page, "作成中の本文")
     const dialog = await openReauthFromCalendar(page)
-    await dialog.getByRole("button", { name: "Bluesky で許可する" }).click()
+    await dialog.getByRole("button", { name: "認証する" }).click()
 
     // 移る前に下書きの確認が出て、編集を続けると移らず本文が残る
     const confirm = page.getByRole("dialog", { name: "下書き保存確認" })
@@ -99,7 +99,7 @@ test("[schedule-form/AC-31] 投稿フォームで許可が無効なら、カレ�
 
     // もう一度許可を選び、破棄を選ぶと認可の画面へ移る
     const again = await openReauthFromCalendar(page)
-    await again.getByRole("button", { name: "Bluesky で許可する" }).click()
+    await again.getByRole("button", { name: "認証する" }).click()
     await confirm.getByRole("button", { name: "破棄" }).click()
     await expect.poll(() => visits.length).toBe(1)
 })
@@ -152,7 +152,7 @@ test("[schedule-form/AC-32] 予約の編集中に再度の許可へ進むと、�
     await page.getByTestId("schedule-run-at-label").click()
     const dialog = reauthDialog(page)
     await expect(dialog).toBeVisible()
-    await dialog.getByRole("button", { name: "Bluesky で許可する" }).click()
+    await dialog.getByRole("button", { name: "認証する" }).click()
     const choice = page.getByRole("dialog", { name: "予約の編集をやめます" })
     await expect(
         choice.getByRole("button", { name: "予約を取り消す" }),
@@ -162,9 +162,7 @@ test("[schedule-form/AC-32] 予約の編集中に再度の許可へ進むと、�
     await expect(editor(page)).toContainText("編集中の予約")
 
     await page.getByTestId("schedule-run-at-label").click()
-    await reauthDialog(page)
-        .getByRole("button", { name: "Bluesky で許可する" })
-        .click()
+    await reauthDialog(page).getByRole("button", { name: "認証する" }).click()
     await choice.getByRole("button", { name: "予約を残して閉じる" }).click()
     await expect.poll(() => visits.length).toBe(1)
 })

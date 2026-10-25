@@ -105,7 +105,7 @@ describe("エラー文言", () => {
 
     test("schedule-guide/AC-3: 予約投稿の案内の文言が日本語と英語の両方にある", () => {
         for (const key of [
-            "schedule.setting.mediaNote",
+            "schedule.setting.description",
             "schedule.setting.chronoskyLead",
             "schedule.setting.chronoskyName",
             "schedule.setting.chronoskyAria",
@@ -117,8 +117,8 @@ describe("エラー文言", () => {
         }
         // 文中のアイコンとリンクの差し込み口がそろっている
         for (const dict of [ja, en] as Record<string, string>[]) {
-            expect(dict["schedule.setting.mediaNote"]).toContain("{image}")
-            expect(dict["schedule.setting.mediaNote"]).toContain("{video}")
+            expect(dict["schedule.setting.description"]).toContain("{image}")
+            expect(dict["schedule.setting.chronoskyLead"]).toContain("{video}")
             expect(dict["schedule.setting.chronoskyLead"]).toContain("{link}")
         }
     })

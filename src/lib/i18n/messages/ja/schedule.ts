@@ -16,7 +16,7 @@ export const schedule = {
     "schedule.runAtLabel": "{date}に予約",
     "schedule.setupGuide.title": "予約投稿を有効にしていません",
     "schedule.setupGuide.message":
-        "予約投稿を使うには、設定で予約投稿を有効にして、Bluesky で予約投稿を許可してください。",
+        "設定画面で機能を有効にすると、予約投稿を使うことができます。",
     "schedule.setupGuide.open": "設定を開く",
     "schedule.setupGuide.close": "閉じる",
     "schedule.picker.button": "予約日時を指定",
@@ -41,13 +41,11 @@ export const schedule = {
     "schedule.editCancel.continue": "編集を続ける",
     "schedule.setting.label": "予約投稿",
     "schedule.setting.description":
-        "日時を指定して投稿できます。有効にすると、Bluesky で予約投稿の権限を許可します。",
-    "schedule.setting.mediaNote":
-        "{image}の予約投稿のみ対応しており、{video}については対応していません。",
+        "日時を指定して投稿できます。有効にすると、Bluesky で予約投稿の権限を許可します。{image}の予約投稿のみ対応しています。",
     "schedule.setting.mediaImageAlt": "画像",
     "schedule.setting.mediaVideoAlt": "動画",
     "schedule.setting.chronoskyLead":
-        "より本格的な予約投稿には、Bluesky の予約投稿サービス{link}をご利用ください。",
+        "{video}の予約投稿や、高度な機能については{link}をご利用ください。",
     "schedule.setting.chronoskyName": "Chronosky",
     "schedule.setting.chronoskyAria":
         "Chronosky（Bluesky の予約投稿サービス、新しいタブで開く）",
@@ -68,16 +66,12 @@ export const schedule = {
     "schedule.setting.disabledWithDelete":
         "予約投稿を無効にし、{count}件の予約を削除しました。",
     "schedule.credential.title": "予約投稿を有効にする",
-    "schedule.credential.reauthTitle": "もう一度 Bluesky で許可する",
-    "schedule.credential.reauthIntro":
-        "Bluesky での予約投稿の許可が無効になりました。予約するには、もう一度許可してください。許可の画面から戻ると、このページに戻ります。",
-    "schedule.credential.privacy": "保管する情報の扱いは{link}をご覧ください。",
+    "schedule.credential.privacy":
+        "認証情報はSkyshareに保存されます。情報の扱いは{link}をご覧ください。",
     "schedule.credential.intro":
-        "Bluesky の画面で、予約した日時に Skyshare があなたの代わりに投稿することを許可します。",
-    "schedule.credential.scope":
-        "許可するのは、投稿・返信と引用の設定・Skyshare のリンクの作成と、画像のアップロードだけです。",
+        "Skyshareが予約した日時にBlueskyへ投稿することを許可します。",
     "schedule.credential.account":
-        "{handle} で許可します。別のアカウントで使うときは、先にそのアカウントへ切り替えてください。",
+        "{handle} アカウントの予約機能を有効化します。",
     "schedule.credential.startFailed":
         "Bluesky の許可の画面を開けませんでした。時間をおいて、もう一度お試しください。",
     "schedule.authResult.ok": "予約投稿を有効にしました。",
@@ -91,7 +85,7 @@ export const schedule = {
         "ログインの期限が切れていたため、有効にできませんでした。ログインし直してから、もう一度お試しください。",
     "schedule.authResult.failed":
         "予約投稿を有効にできませんでした。時間をおいて、もう一度お試しください。",
-    "schedule.credential.submit": "Bluesky で許可する",
+    "schedule.credential.submit": "認証する",
     "schedule.credential.cancel": "キャンセル",
     "schedule.list.empty": "予約はありません。",
     "schedule.list.pendingTitle": "待機中",

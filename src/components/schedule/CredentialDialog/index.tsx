@@ -12,10 +12,11 @@ import ui from "@/styles/ui.module.css"
  * 予約投稿を有効にするダイアログ（Bluesky の OAuth の認可へ送る）。
  *
  * 責務と処理概要:
- * - 設定で予約投稿をオンにしたときに開き、何をどのアカウントで許可するかを示す。
+ * - 設定で予約投稿をオンにしたときに開き、何を許可するか・どのアカウントで有効にするか・
+ *   認証情報の保存先を示す。
  * - ユーザー名・パスワードの入力欄は置かない。認可するアカウントは、ログイン中のアカウントに決まる。
- * - 許可が無効になったとき（`reauth`）は、再度の許可が必要である旨の見出しと文にする。
- * - 「Bluesky で許可する」で `POST /v2/schedules/credential/authorization` に今のページのパスを
+ * - 許可が無効になった後の再度の許可でも、初回と同じ見出しと文で案内する。
+ * - 「認証する」で `POST /v2/schedules/credential/authorization` に今のページのパスを
  *   渡して呼び、返った認可の画面の URL へ移る。認可の画面から戻ると今のページが開き、
  *   全ページ共通の `AuthorizationReturn` が完了と結果の表示を行う。
  * - 投稿フォームから開いたときは、移る前に作成中の内容の扱いを確かめられるよう、
@@ -26,8 +27,6 @@ import ui from "@/styles/ui.module.css"
 type Props = {
   open: boolean
   onClose: () => void
-  /** 許可が無効になった後の再度の許可として開く */
-  reauth?: boolean
   /** 認可の画面へ移る。テストで差し替えられるよう、既定は `location.assign` */
   navigate?: (url: string) => void
 }
@@ -35,7 +34,6 @@ type Props = {
 export const Component = ({
   open,
   onClose,
-  reauth = false,
   navigate = url => window.location.assign(url),
 }: Props) => {
   const { t, raw } = useT()
@@ -110,28 +108,11 @@ export const Component = ({
       <div
         className={`${ui["base-card"]} ${styles.content}`}
         role="dialog"
-        aria-label={t(
-          reauth
-            ? "schedule.credential.reauthTitle"
-            : "schedule.credential.title",
-        )}
+        aria-label={t("schedule.credential.title")}
         data-testid="schedule-credential-dialog"
       >
-        <h2 className={ui.subject}>
-          {t(
-            reauth
-              ? "schedule.credential.reauthTitle"
-              : "schedule.credential.title",
-          )}
-        </h2>
-        <p className={styles.note}>
-          {t(
-            reauth
-              ? "schedule.credential.reauthIntro"
-              : "schedule.credential.intro",
-          )}
-        </p>
-        <p className={styles.note}>{t("schedule.credential.scope")}</p>
+        <h2 className={ui.subject}>{t("schedule.credential.title")}</h2>
+        <p className={styles.note}>{t("schedule.credential.intro")}</p>
         {handle && (
           <p className={styles.note} data-testid="schedule-credential-account">
             {t("schedule.credential.account", { handle: `@${handle}` })}

@@ -3,6 +3,7 @@ import type { MessageEntries } from "../../translate"
 
 export const page = {
     "page.help.heading": "Past questions and fixes",
+    "page.help.back": "Back to settings",
     "page.help.androidMedia.title": "Can't select images",
     "page.help.androidMedia.description":
         '"Permission was denied, so media can\'t be selected" is shown',
