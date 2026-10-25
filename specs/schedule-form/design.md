@@ -167,7 +167,7 @@ export const useScheduleAvailability = (enabled: boolean): {
 | オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                                                |
 
 ```tsx
-// 設定の投稿フォームのグループの末尾に置く
+// 設定の投稿のグループの末尾に置く
 <SettingList
   items={[
     {

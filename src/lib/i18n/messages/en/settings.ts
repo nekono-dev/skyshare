@@ -14,7 +14,8 @@ export const settings = {
     "settings.timelineHidden.label": "Hide the timeline",
     "settings.timelineHidden.description":
         "When on, only the post form is shown and the timeline is not loaded.",
-    "settings.postForm.title": "Post form",
+    "settings.post.title": "Post",
+    "settings.crossPost.title": "Cross-post",
     "settings.pinnedFormDisabled.label": "Don't pin the post form",
     "settings.pinnedFormDisabled.description":
         "When on, the post form is no longer pinned to the top of the screen. Open it with the sidebar or the floating new post button.",
@@ -36,7 +37,7 @@ export const settings = {
     "settings.mentionSuggest.label": "Show mention suggestions",
     "settings.mentionSuggest.description":
         'When on, a list of mention suggestions appears when you type "@" in the post text.',
-    "settings.gate.title": "Default reply and quote settings",
+    "settings.gate.label": "Default reply and quote settings",
     "settings.gate.description":
         "Default settings for who can reply and whether quoting is allowed, used as the initial values for new posts.",
     "settings.gate.editButton": "Edit default reply and quote settings",

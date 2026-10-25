@@ -15,7 +15,8 @@ export const settings = {
     "settings.timelineHidden.label": "タイムラインを表示しない",
     "settings.timelineHidden.description":
         "オンにすると、投稿フォームのみを表示し、タイムラインの読み込みを省略します。",
-    "settings.postForm.title": "投稿フォーム",
+    "settings.post.title": "投稿",
+    "settings.crossPost.title": "クロスポスト",
     "settings.pinnedFormDisabled.label": "投稿フォームを固定表示しない",
     "settings.pinnedFormDisabled.description":
         "オンにすると、投稿フォームが画面上部に固定表示されなくなります。投稿フォームはサイドバーまたはフローティングの新規投稿ボタンを押して表示してください。",
@@ -37,7 +38,7 @@ export const settings = {
     "settings.mentionSuggest.label": "メンション候補を表示",
     "settings.mentionSuggest.description":
         "オンにすると、投稿本文で「@」を入力した際にメンション候補一覧を表示します。",
-    "settings.gate.title": "返信・引用のデフォルト設定",
+    "settings.gate.label": "返信・引用のデフォルト設定",
     "settings.gate.description":
         "新規投稿時の初期値として使われる、返信可能ユーザー・引用許可のデフォルト設定です。",
     "settings.gate.editButton": "返信・引用のデフォルト設定を編集",
