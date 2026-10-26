@@ -17,7 +17,7 @@ const callRoute = (
 const authenticatedLocals = () => ({ agent: createFakeAgent() })
 
 describe("GET /v2/bsky/drafts", () => {
-    it("[draft-api/AC-9] 未認証の場合は401を返す", async () => {
+    it("[draft-api/3.1,3.2] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
         )
@@ -25,7 +25,7 @@ describe("GET /v2/bsky/drafts", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[draft-api/AC-3] limitが範囲外の場合は400を返す", async () => {
+    it("[draft-api/2.2] limitが範囲外の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/?limit=0",
         )
@@ -33,7 +33,7 @@ describe("GET /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[draft-api/AC-3] cursorが空文字の場合は400を返す", async () => {
+    it("[draft-api/2.2] cursorが空文字の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/?cursor=",
         )
@@ -41,7 +41,7 @@ describe("GET /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[draft-api/AC-7] getDraftsのレスポンスが不正な形の場合は500を返す", async () => {
+    it("[draft-api/2.7] getDraftsのレスポンスが不正な形の場合は500を返す", async () => {
         const getDrafts = vi
             .fn()
             .mockResolvedValue({ data: { drafts: [{ id: "missing-fields" }] } })
@@ -114,7 +114,7 @@ describe("GET /v2/bsky/drafts", () => {
         ])
     })
 
-    it("[draft-api/AC-9] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
+    it("[draft-api/3.1,3.2] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
         const getDrafts = vi.fn().mockRejectedValue(
             Object.assign(new Error("RateLimitExceeded"), {
                 error: "RateLimitExceeded",
@@ -132,7 +132,7 @@ describe("GET /v2/bsky/drafts", () => {
 })
 
 describe("POST /v2/bsky/drafts", () => {
-    it("[draft-api/AC-9] 未認証の場合は401を返す", async () => {
+    it("[draft-api/3.1,3.2] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             {
@@ -153,7 +153,7 @@ describe("POST /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[draft-api/AC-1] postsが空配列の場合は400を返す", async () => {
+    it("[draft-api/1.1,1.2] postsが空配列の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             { method: "POST", body: JSON.stringify({ posts: [] }) },
@@ -162,7 +162,7 @@ describe("POST /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[draft-api/AC-1] postsが101件の場合は400を返し、下書きを作成しない", async () => {
+    it("[draft-api/1.1,1.2] postsが101件の場合は400を返し、下書きを作成しない", async () => {
         const createDraft = vi.fn()
         const agent = createFakeAgent({
             app: { bsky: { draft: { createDraft } } },
@@ -181,7 +181,7 @@ describe("POST /v2/bsky/drafts", () => {
         expect(createDraft).not.toHaveBeenCalled()
     })
 
-    it("[draft-api/AC-2] labelsが文字列の配列でない投稿を含む場合は400を返し、下書きを作成しない", async () => {
+    it("[draft-api/1.4] labelsが文字列の配列でない投稿を含む場合は400を返し、下書きを作成しない", async () => {
         const createDraft = vi.fn()
         const agent = createFakeAgent({
             app: { bsky: { draft: { createDraft } } },
@@ -200,7 +200,7 @@ describe("POST /v2/bsky/drafts", () => {
         expect(createDraft).not.toHaveBeenCalled()
     })
 
-    it("[draft-api/AC-4] 成功時は200で{id}を返す", async () => {
+    it("[draft-api/2.3] 成功時は200で{id}を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             {
@@ -214,7 +214,7 @@ describe("POST /v2/bsky/drafts", () => {
         expect(json.id).toBe("3ldrafttid")
     })
 
-    it("[draft-api/AC-1] posts複数件(スレッド下書き)を新規作成できる", async () => {
+    it("[draft-api/1.1,1.2] posts複数件(スレッド下書き)を新規作成できる", async () => {
         const createDraft = vi.fn().mockResolvedValue({
             data: { id: "3lthreaddraft" },
         })
@@ -244,7 +244,7 @@ describe("POST /v2/bsky/drafts", () => {
         )
     })
 
-    it("[draft-api/AC-9] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
+    it("[draft-api/3.1,3.2] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
         const createDraft = vi.fn().mockRejectedValue(
             Object.assign(new Error("DraftLimitReached"), {
                 error: "DraftLimitReached",
@@ -266,7 +266,7 @@ describe("POST /v2/bsky/drafts", () => {
 })
 
 describe("PUT /v2/bsky/drafts", () => {
-    it("[draft-api/AC-9] 未認証の場合は401を返す", async () => {
+    it("[draft-api/3.1,3.2] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             {
@@ -308,7 +308,7 @@ describe("PUT /v2/bsky/drafts", () => {
         expect(res.status).toBe(200)
     })
 
-    it("[draft-api/AC-5] posts複数件(スレッド下書き)へ更新できる", async () => {
+    it("[draft-api/2.4] posts複数件(スレッド下書き)へ更新できる", async () => {
         const updateDraft = vi.fn().mockResolvedValue({ data: {} })
         const agent = createFakeAgent({
             app: { bsky: { draft: { updateDraft } } },
@@ -342,7 +342,7 @@ describe("PUT /v2/bsky/drafts", () => {
 })
 
 describe("DELETE /v2/bsky/drafts", () => {
-    it("[draft-api/AC-9] 未認証の場合は401を返す", async () => {
+    it("[draft-api/3.1,3.2] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             { method: "DELETE", body: JSON.stringify({ id: "3ldrafttid" }) },
@@ -351,7 +351,7 @@ describe("DELETE /v2/bsky/drafts", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[draft-api/AC-6] bodyがスキーマ不正(id欠落)の場合は400を返す", async () => {
+    it("[draft-api/2.6] bodyがスキーマ不正(id欠落)の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             { method: "DELETE", body: JSON.stringify({}) },
@@ -360,7 +360,7 @@ describe("DELETE /v2/bsky/drafts", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[draft-api/AC-6] 成功時は200(本文なし)を返す", async () => {
+    it("[draft-api/2.6] 成功時は200(本文なし)を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/drafts/",
             { method: "DELETE", body: JSON.stringify({ id: "3ldrafttid" }) },

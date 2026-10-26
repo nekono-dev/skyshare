@@ -20,7 +20,7 @@ const outerProps = (props: Parameters<typeof ListboxOption>[0]) =>
     (ListboxOption(props) as ReactElement<Record<string, any>>).props
 
 describe("ListboxOption", () => {
-    it("[listbox-option/AC-3] 無効な選択肢を押しても確定せず、有効な選択肢は確定する", () => {
+    it("[listbox-option/1.3] 無効な選択肢を押しても確定せず、有効な選択肢は確定する", () => {
         const preventDefault = vi.fn()
 
         const onSelectDisabled = vi.fn()
@@ -43,7 +43,7 @@ describe("ListboxOption", () => {
         expect(onSelect).toHaveBeenCalledTimes(1)
     })
 
-    it("[listbox-option/AC-4] アクティブ項目と選択中の項目に、選択状態の属性が付く", () => {
+    it("[listbox-option/2.1] アクティブ項目と選択中の項目に、選択状態の属性が付く", () => {
         const html = (props: { isActive?: boolean; isSelected?: boolean }) =>
             renderToStaticMarkup(
                 createElement(ListboxOption, { ...baseProps, ...props }),
@@ -60,7 +60,7 @@ describe("ListboxOption", () => {
         )
     })
 
-    it("[listbox-option/AC-5] 選択中の項目にだけ、太字にするクラスが付く", () => {
+    it("[listbox-option/2.2] 選択中の項目にだけ、太字にするクラスが付く", () => {
         const classOf = (isSelected: boolean) =>
             renderToStaticMarkup(
                 createElement(ListboxOption, { ...baseProps, isSelected }),

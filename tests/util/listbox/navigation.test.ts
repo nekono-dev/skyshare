@@ -29,12 +29,12 @@ describe("firstEnabledIndex / lastEnabledIndex", () => {
 })
 
 describe("nextEnabledIndex", () => {
-    it("[dropdown/AC-8] 無効項目を飛ばして移動する", () => {
+    it("[dropdown/3.1,3.2,3.3] 無効項目を飛ばして移動する", () => {
         expect(nextEnabledIndex(items, 1, 1)).toBe(3)
         expect(nextEnabledIndex(items, 3, -1)).toBe(1)
     })
 
-    it("[dropdown/AC-8] 端では移動せず現在位置のまま（循環しない）", () => {
+    it("[dropdown/3.1,3.2,3.3] 端では移動せず現在位置のまま（循環しない）", () => {
         expect(nextEnabledIndex(items, 3, 1)).toBe(3)
         expect(nextEnabledIndex(items, 1, -1)).toBe(1)
     })
@@ -61,7 +61,7 @@ describe("indexOfEnabled", () => {
 })
 
 describe("findPrefixIndex", () => {
-    it("[dropdown/AC-9] 大文字小文字を無視して先頭一致する有効項目を探す", () => {
+    it("[dropdown/3.4] 大文字小文字を無視して先頭一致する有効項目を探す", () => {
         expect(findPrefixIndex(items, "av", 1)).toBe(1)
         expect(findPrefixIndex(items, "AP", 1)).toBe(3)
     })
@@ -70,7 +70,7 @@ describe("findPrefixIndex", () => {
         expect(findPrefixIndex(items, "ban", 1)).toBe(-1)
     })
 
-    it("[dropdown/AC-9] 同一文字の連打は現在位置の次から巡回する", () => {
+    it("[dropdown/3.4] 同一文字の連打は現在位置の次から巡回する", () => {
         expect(findPrefixIndex(items, "aa", 1)).toBe(3)
         expect(findPrefixIndex(items, "aaa", 3)).toBe(1)
     })

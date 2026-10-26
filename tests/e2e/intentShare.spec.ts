@@ -3,7 +3,7 @@
  * ヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
- * - `specs/share-settings`・`specs/auto-popup`・`specs/intent-share-dialog`・`specs/share-counter` の受け入れ条件の恒久テスト。
+ * - `.kiro/specs/share-settings`・`.kiro/specs/auto-popup`・`.kiro/specs/intent-share-dialog`・`.kiro/specs/share-counter` の受け入れ条件の恒久テスト。
  * - `/post/?guest`（ログイン不要のゲスト表示）で、設定の表示条件・永続化・投稿後の
  *   自動ポップアップ／投稿先選択ダイアログを検証する。
  * - `/?guest` のタイムライン上のPostCardから、skyshare entry URL付きの共有ダイアログを検証する。
@@ -151,7 +151,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("[thread-composer/AC-12] 詳細オプションの中の設定をONにしても、詳細オプションは初期状態で閉じている", async ({
+    test("[thread-composer/5.2] 詳細オプションの中の設定をONにしても、詳細オプションは初期状態で閉じている", async ({
         page,
     }) => {
         for (const target of ["ask", "x", "taittsuu", "mastodon", "misskey"]) {
@@ -182,7 +182,7 @@ test.describe("intentShare", () => {
         }
     })
 
-    test("[share-settings/AC-5 share-settings/AC-8] 設定ページにも自動ポップアップ先のプルダウンがあり、Mastodonのインスタンス入力欄は常時表示される。旧項目は存在しない", async ({
+    test("[share-settings/3.1 share-settings/3.2] 設定ページにも自動ポップアップ先のプルダウンがあり、Mastodonのインスタンス入力欄は常時表示される。旧項目は存在しない", async ({
         page,
     }) => {
         await page.goto("/settings/")
@@ -217,7 +217,7 @@ test.describe("intentShare", () => {
         }
     })
 
-    test("[auto-popup/AC-4 intent-share-dialog/AC-8] 「投稿時に選択する」で投稿すると、ポップアップは開かず投稿先選択ダイアログが開き、入力欄が空になる", async ({
+    test("[auto-popup/2.2 intent-share-dialog/2.3] 「投稿時に選択する」で投稿すると、ポップアップは開かず投稿先選択ダイアログが開き、入力欄が空になる", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -243,7 +243,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("[auto-popup/AC-1 auto-popup/AC-2] プルダウンを開くと5つの選択肢が表示され、「投稿時に選択する」は「X」のときより横幅が広い", async ({
+    test("[auto-popup/1.1 auto-popup/1.2] プルダウンを開くと5つの選択肢が表示され、「投稿時に選択する」は「X」のときより横幅が広い", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -279,7 +279,7 @@ test.describe("intentShare", () => {
         expect(widthOfAsk).toBeGreaterThan(widthOfX)
     })
 
-    test("[auto-popup/AC-12] 投稿ボタンのクリックで待機画面のウィンドウが開き、投稿完了後に共有先の投稿画面へ遷移する", async ({
+    test("[auto-popup/2.5] 投稿ボタンのクリックで待機画面のウィンドウが開き、投稿完了後に共有先の投稿画面へ遷移する", async ({
         page,
         context,
     }) => {
@@ -306,7 +306,7 @@ test.describe("intentShare", () => {
         expect(new URL(popup.url()).hostname).toBe("taittsuu.com")
     })
 
-    test("[auto-popup/AC-3] 「タイッツー」で投稿すると、タイッツーのintentポップアップが開き、ダイアログは開かない", async ({
+    test("[auto-popup/2.1] 「タイッツー」で投稿すると、タイッツーのintentポップアップが開き、ダイアログは開かない", async ({
         page,
         context,
     }) => {
@@ -331,7 +331,7 @@ test.describe("intentShare", () => {
         ).toHaveCount(0)
     })
 
-    test("[share-settings/AC-10] 共有設定を保存した状態で投稿フォームを開いても、ハイドレーションの警告が出力されない", async ({
+    test("[share-settings/1.4] 共有設定を保存した状態で投稿フォームを開いても、ハイドレーションの警告が出力されない", async ({
         page,
     }) => {
         const warnings: string[] = []
@@ -363,7 +363,7 @@ test.describe("intentShare", () => {
         expect(warnings).toEqual([])
     })
 
-    test("[intent-share-dialog/AC-1] skyshare entryのない投稿でダイアログを開くと、X・タイッツー・Mastodon・Misskey・閉じるの5つが操作可能な状態で表示される", async ({
+    test("[intent-share-dialog/1.1] skyshare entryのない投稿でダイアログを開くと、X・タイッツー・Mastodon・Misskey・閉じるの5つが操作可能な状態で表示される", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -390,7 +390,7 @@ test.describe("intentShare", () => {
         }
     })
 
-    test("[intent-share-dialog/AC-6] Mastodonのドメインに不正な値が保存されているとき、Mastodonの選択肢が操作不能になる", async ({
+    test("[intent-share-dialog/1.3] Mastodonのドメインに不正な値が保存されているとき、Mastodonの選択肢が操作不能になる", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -412,7 +412,7 @@ test.describe("intentShare", () => {
         ).toBeEnabled()
     })
 
-    test("[intent-share-dialog/AC-10] Misskeyのドメインに不正な値が保存されているとき、Misskeyの選択肢だけが操作不能になる", async ({
+    test("[intent-share-dialog/1.3] Misskeyのドメインに不正な値が保存されているとき、Misskeyの選択肢だけが操作不能になる", async ({
         page,
     }) => {
         await seedStorage(page, {
@@ -461,7 +461,7 @@ test.describe("intentShare", () => {
         expect(url.searchParams.get("text")).toContain("Misskey共有のテスト")
     })
 
-    test("[intent-share-dialog/AC-9] skyshare entryを持たない投稿のカードにも、ダイアログを開くボタンが表示される", async ({
+    test("[intent-share-dialog/3.3] skyshare entryを持たない投稿のカードにも、ダイアログを開くボタンが表示される", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -477,7 +477,7 @@ test.describe("intentShare", () => {
         ).toBeVisible()
     })
 
-    test("[intent-share-dialog/AC-2 intent-share-dialog/AC-3] 投稿後のダイアログは、投稿先を選んでも閉じず、続けて別の投稿先を選べ、「閉じる」・背景クリック・Escで閉じる", async ({
+    test("[intent-share-dialog/2.1 intent-share-dialog/1.2] 投稿後のダイアログは、投稿先を選んでも閉じず、続けて別の投稿先を選べ、「閉じる」・背景クリック・Escで閉じる", async ({
         page,
         context,
     }) => {
@@ -521,7 +521,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeHidden()
     })
 
-    test("[intent-share-dialog/AC-7] 投稿フォームを固定表示しない場合（Overlay）でも、投稿成功でOverlayが閉じた後にダイアログが残り、続けて選べる", async ({
+    test("[intent-share-dialog/2.2] 投稿フォームを固定表示しない場合（Overlay）でも、投稿成功でOverlayが閉じた後にダイアログが残り、続けて選べる", async ({
         page,
         context,
     }) => {
@@ -548,7 +548,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeVisible()
     })
 
-    test("[intent-share-dialog/AC-4] タイムラインのPostCardの共有ダイアログは、投稿先を選ぶとポップアップを開いて閉じ、skyshare URL付きで上限を超えない", async ({
+    test("[intent-share-dialog/3.1] タイムラインのPostCardの共有ダイアログは、投稿先を選ぶとポップアップを開いて閉じ、skyshare URL付きで上限を超えない", async ({
         page,
         context,
     }) => {
@@ -579,7 +579,7 @@ test.describe("intentShare", () => {
         await expect(dialog).toBeHidden()
     })
 
-    test("[intent-share-dialog/AC-5] 省略がONのとき、タイムラインの長文の投稿をXへ共有すると、本文が省略されて共有文がX向けの上限280以内になる", async ({
+    test("[intent-share-dialog/3.2] 省略がONのとき、タイムラインの長文の投稿をXへ共有すると、本文が省略されて共有文がX向けの上限280以内になる", async ({
         page,
         context,
     }) => {
@@ -646,7 +646,7 @@ test.describe("intentShare", () => {
         expect(weightedLength(text)).toBeLessThanOrEqual(280)
     })
 
-    test("[thread-composer/AC-11] 長文省略トグルと「返信・引用オプションを保存する」は詳細オプション内に表示され、設定がリロード後も保持される", async ({
+    test("[thread-composer/5.1] 長文省略トグルと「返信・引用オプションを保存する」は詳細オプション内に表示され、設定がリロード後も保持される", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -703,7 +703,7 @@ test.describe("intentShare", () => {
         ).toBeChecked()
     })
 
-    test("[share-settings/AC-3 share-settings/AC-4] 「画像を自分で添付」をONにすると省略がOFFかつ操作不能になり、OFFに戻しても復帰しない。競合する保存値は読み込み時に補正される", async ({
+    test("[share-settings/2.1 share-settings/2.2,2.3] 「画像を自分で添付」をONにすると省略がOFFかつ操作不能になり、OFFに戻しても復帰しない。競合する保存値は読み込み時に補正される", async ({
         page,
     }) => {
         await seedStorage(page, { truncateIntentText: "true" })
@@ -818,7 +818,7 @@ test.describe("intentShare", () => {
         ["mastodon", ["/300:Bluesky"], [":X", "ﾀｲｯﾂｰ"]],
         ["ask", ["/140:X", "/140:ﾀｲｯﾂｰ", "/300:Bluesky"], []],
     ] as const) {
-        test(`[share-counter/AC-7 share-counter/AC-8 share-counter/AC-9] 文字数カウンタは自動ポップアップ先「${target}」に応じて表示が切り替わる`, async ({
+        test(`[share-counter/2.1 share-counter/2.2 share-counter/2.4] 文字数カウンタは自動ポップアップ先「${target}」に応じて表示が切り替わる`, async ({
             page,
         }) => {
             await seedStorage(page, {
@@ -843,7 +843,7 @@ test.describe("intentShare", () => {
         "base64",
     )
 
-    test("[share-counter/AC-2 share-counter/AC-6] 画像付きの先頭の投稿は、skyshare URL分だけXの上限が減り、「画像を自分で添付」をONにすると140に戻る。2件目以降は140のまま", async ({
+    test("[share-counter/1.3 share-counter/1.7] 画像付きの先頭の投稿は、skyshare URL分だけXの上限が減り、「画像を自分で添付」をONにすると140に戻る。2件目以降は140のまま", async ({
         page,
     }) => {
         await seedStorage(page, {

@@ -58,7 +58,7 @@ describe("予約の状態の遷移", () => {
         expect(runAtOf({ kind: "detached" })).toBeNull()
     })
 
-    test("schedule-form/AC-8: 日時を設定すると、投稿は予約に、すべて投稿はすべて予約になる", () => {
+    test("schedule-form/4.1: 日時を設定すると、投稿は予約に、すべて投稿はすべて予約になる", () => {
         expect(submitLabelKey(initialScheduleMode, false)).toBe(
             "post.composer.submit",
         )

@@ -24,7 +24,7 @@ import { listRecordsSince } from "@/lib/atproto/repo"
  *   新しい順に取得する）と embed し、
  *   バックエンド側で権威的にスレッド構造化（`buildTimelineThreads`）した
  *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する
- *   （`specs/timeline-api`）。
+ *   （`.kiro/specs/timeline-api`）。
  * - skyshare entry 自体の一覧・作成・削除は `/v2/entry`・`/v2/entries/skyshare` を参照。
  *
  * 実装上の制約:

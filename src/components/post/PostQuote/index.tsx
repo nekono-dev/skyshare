@@ -1,5 +1,5 @@
 /**
- * 投稿の引用（`app.bsky.embed.record`・`recordWithMedia` の引用部分）を表示する枠（`specs/entry-detail`）。
+ * 投稿の引用（`app.bsky.embed.record`・`recordWithMedia` の引用部分）を表示する枠（`.kiro/specs/entry-detail`）。
  *
  * 責務と処理概要:
  * - 引用元の作者・投稿日時・本文（リンク付き）・画像を枠に並べる。

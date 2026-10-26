@@ -8,7 +8,7 @@ import {
 } from "@/components/common/CountedTextInput/autoGrowHeight"
 
 describe("resolveLineHeightPx", () => {
-    it("[counted-text-input/AC-4] px単位の値はそのまま数値化する", () => {
+    it("[counted-text-input/2.1] px単位の値はそのまま数値化する", () => {
         expect(resolveLineHeightPx("22.4px", 16)).toBe(22.4)
     })
 
@@ -22,7 +22,7 @@ describe("resolveLineHeightPx", () => {
 })
 
 describe("computeAutoGrowBounds", () => {
-    it("[counted-text-input/AC-5] rows/maxRowsからmin/maxの高さ(px)を算出する", () => {
+    it("[counted-text-input/2.2] rows/maxRowsからmin/maxの高さ(px)を算出する", () => {
         expect(computeAutoGrowBounds(2, 7, 20, 8)).toEqual({
             minHeightPx: 48,
             maxHeightPx: 148,
@@ -46,7 +46,7 @@ describe("computeRowsFromAvailableHeight", () => {
         expect(computeRowsFromAvailableHeight(30, 20, 8, 2, 6)).toBe(2)
     })
 
-    it("[counted-text-input/AC-7] 算出結果がmaxRowsを超える場合、maxRowsにクランプする", () => {
+    it("[counted-text-input/2.5] 算出結果がmaxRowsを超える場合、maxRowsにクランプする", () => {
         expect(computeRowsFromAvailableHeight(1000, 20, 8, 2, 6)).toBe(6)
     })
 })
@@ -66,7 +66,7 @@ describe("clampAutoGrowHeightPx", () => {
         })
     })
 
-    it("[counted-text-input/AC-6] scrollHeightがmaxHeightを超える場合、maxHeightに切り詰めてoverflow-yはauto", () => {
+    it("[counted-text-input/2.4] scrollHeightがmaxHeightを超える場合、maxHeightに切り詰めてoverflow-yはauto", () => {
         expect(clampAutoGrowHeightPx(200, 48, 148)).toEqual({
             heightPx: 148,
             overflowY: "auto",

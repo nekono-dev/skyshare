@@ -34,7 +34,7 @@ describe("resolveXrpcStatus", () => {
         ["RecordNotFound", 404],
         ["SomethingElse", 500],
     ])(
-        "[entry-api/AC-19] XRPCError(%s) は %i を返す",
+        "[entry-api/5.5] XRPCError(%s) は %i を返す",
         (errorCode, expected) => {
             const error = new XRPCError(500, errorCode, "message")
             expect(resolveXrpcStatus(error)).toBe(expected)

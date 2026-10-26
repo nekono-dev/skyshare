@@ -6,7 +6,7 @@
  *   セッションCookieを含むブラウザ状態を`LIVE_STORAGE_STATE`へ保存する。
  *   以降のライブテストはこの状態から始まるため、テストごとにログインしない。
  * - 失敗時のエラーにはHTTPステータスのみを含め、認証情報は出力しない。
- * - 続けてPDSエージェントで前回の取りこぼしを掃除する（`specs/e2elive/design.md §7`）。
+ * - 続けてPDSエージェントで前回の取りこぼしを掃除する（`.kiro/specs/e2elive/design.md §7`）。
  */
 import { expect, test as setup } from "../fixtures"
 import { LIVE_STORAGE_STATE, loadLiveAccount, loadPeerAccount } from "./env"

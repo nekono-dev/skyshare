@@ -39,7 +39,7 @@ const enhancement: RequestBodyType = {
 }
 
 describe("buildIssue", () => {
-    it("[feedback-api/AC-7] 不具合に bug、提案に enhancement のラベルが付き、件名の改行が空白になる", () => {
+    it("[feedback-api/3.1,3.2] 不具合に bug、提案に enhancement のラベルが付き、件名の改行が空白になる", () => {
         const bugIssue = buildIssue(bug, reporter, build)
         expect(bugIssue.labels).toEqual(["bug"])
         expect(bugIssue.title).toBe("画像が 送れない")
@@ -48,7 +48,7 @@ describe("buildIssue", () => {
         ])
     })
 
-    it("[feedback-api/AC-8] 本文に入力・ハンドル・DID・版・コミット・OS・ブラウザ・起動の形態・識別文字列が含まれる", () => {
+    it("[feedback-api/3.3] 本文に入力・ハンドル・DID・版・コミット・OS・ブラウザ・起動の形態・識別文字列が含まれる", () => {
         const { body } = buildIssue(bug, reporter, build)
         for (const text of [
             "画像を選んで送信した",
@@ -66,7 +66,7 @@ describe("buildIssue", () => {
         }
     })
 
-    it("[feedback-api/AC-4] 技術的な補足を省いた提案は、補足の見出しを載せない", () => {
+    it("[feedback-api/2.3,2.4] 技術的な補足を省いた提案は、補足の見出しを載せない", () => {
         expect(buildIssue(enhancement, reporter, build).body).not.toContain(
             "技術的な補足",
         )
@@ -79,7 +79,7 @@ describe("buildIssue", () => {
         expect(withNotes.body).toContain("IndexedDB で保持する")
     })
 
-    it("[feedback-api/AC-10] 画面のコミットがサーバーと異なるときだけ、画面のコミットを並べる", () => {
+    it("[feedback-api/3.5] 画面のコミットがサーバーと異なるときだけ、画面のコミットを並べる", () => {
         expect(buildIssue(bug, reporter, build).body).not.toContain(
             "画面のコミット",
         )
@@ -106,7 +106,7 @@ describe("buildIssue", () => {
 })
 
 describe("fencedBlock / inlineValue", () => {
-    it("[feedback-api/AC-9] バッククォートとメンションと HTML を含む入力が、閉じられないコードブロックの中に載る", () => {
+    it("[feedback-api/3.4] バッククォートとメンションと HTML を含む入力が、閉じられないコードブロックの中に載る", () => {
         const input = "@octocat ```\n<img src=x onerror=alert(1)>\n````"
         const block = fencedBlock(input)
         const lines = block.split("\n")

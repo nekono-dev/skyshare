@@ -57,7 +57,7 @@ const complete = (
     )
 
 describe("OAuth のログインの開始と完了", () => {
-    test("oauth-session/AC-1: 開始で、ユーザー名を含まずログインの権限を指定した事前の要求が送られ、認可の画面の住所が返る", async () => {
+    test("oauth-session/1.1: 開始で、ユーザー名を含まずログインの権限を指定した事前の要求が送られ、認可の画面の住所が返る", async () => {
         const { url, par, pending } = await start()
         const to = new URL(url)
         expect(`${to.origin}${to.pathname}`).toBe(`${BSKY}/oauth/authorize`)
@@ -73,12 +73,12 @@ describe("OAuth のログインの開始と完了", () => {
         })
     })
 
-    test("oauth-session/AC-2: ハンドルを指定した開始では、そのハンドルが入力済みの指定として送られる", async () => {
+    test("oauth-session/1.2: ハンドルを指定した開始では、そのハンドルが入力済みの指定として送られる", async () => {
         const { par } = await start("alice.bsky.social")
         expect(par.form.login_hint).toBe("alice.bsky.social")
     })
 
-    test("oauth-session/AC-4: 途中の状態と違う state・途中の状態が無い戻り・発行元の違う戻りでは、トークンを要求しない", async () => {
+    test("oauth-session/2.1,2.2: 途中の状態と違う state・途中の状態が無い戻り・発行元の違う戻りでは、トークンを要求しない", async () => {
         const { pending } = await start()
         const tokenRequests = () =>
             world.requests.filter(r => r.url === `${BSKY}/oauth/token`).length
@@ -100,7 +100,7 @@ describe("OAuth のログインの開始と完了", () => {
         expect(tokenRequests()).toBe(0)
     })
 
-    test("oauth-session/AC-5: 持ち主の PDS の認可サーバーが発行元と違うトークンと、PDS がセッションを返さないトークンでは、セッションが作られない", async () => {
+    test("oauth-session/2.3,2.4: 持ち主の PDS の認可サーバーが発行元と違うトークンと、PDS がセッションを返さないトークンでは、セッションが作られない", async () => {
         const { pending } = await start()
         // 持ち主の PDS が別の認可サーバーを指す
         const otherAs = createFakeOAuth(DID)

@@ -76,19 +76,9 @@ jobs:
           echo "BRW_PLUGIN_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
       - run: npm run test:unit
       - run: npm run test:astro
-      # 仕様書（specs・docs/architecture・poc）の検証。検査コマンド spec-lint は GitHub Packages から取得する
-      # （認証には Secret SPEC_LINT_TOKEN = read:packages 権限のトークンが必要。版は 1 系で固定）。
-      # 整形は、プロジェクトの prettier プラグイン（.prettierrc）を解決できるよう、リポジトリ側の prettier で検査する
+      # 仕様書（.kiro/specs・.kiro/steering）と設計資料（docs）の整形を、プロジェクトの prettier プラグイン（.prettierrc）で検査する
       - name: Check spec docs format
-        run: npx prettier --check specs docs
-      - name: Run spec-lint
-        env:
-          SPEC_LINT_TOKEN: ${{ secrets.SPEC_LINT_TOKEN }}
-        run: |
-          npmrc="$RUNNER_TEMP/spec-lint.npmrc"
-          printf '%s\n' '@nekono-dev:registry=https://npm.pkg.github.com' \
-            "//npm.pkg.github.com/:_authToken=${SPEC_LINT_TOKEN}" > "$npmrc"
-          npx --yes --userconfig "$npmrc" @nekono-dev/spec-lint@1 --no-format
+        run: npm run test:docs
       # lexicon の lint（goat）。リリースのチェックサムを検証してから導入する
       - name: Run goat lint
         env:

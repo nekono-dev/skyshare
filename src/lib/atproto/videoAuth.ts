@@ -48,7 +48,7 @@ export type VideoUploadTokenResult =
  * - 成功: トークン・DID・有効期限
  * - 失敗: 対応PDS以外は 400、PDS 解決失敗・トークン発行失敗は 500
  *
- * トークンはログに出力しない（NFR-2）。
+ * トークンはログに出力しない（video-upload 要件1.3）。
  */
 export const createVideoUploadToken = async (
     agent: VideoAuthAgent,

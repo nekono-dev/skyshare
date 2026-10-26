@@ -24,7 +24,7 @@ const contextOf = (acceptLanguage: string, isPrerendered = false) =>
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 describe("localeMiddleware", () => {
-    it("[i18n-locale/AC-13] 受け入れ言語が異なる2件のリクエストを並行して処理しても、それぞれの言語で描画される", async () => {
+    it("[i18n-locale/4.2] 受け入れ言語が異なる2件のリクエストを並行して処理しても、それぞれの言語で描画される", async () => {
         const seen: Record<string, string | undefined> = {}
         const handle = async (
             name: string,
@@ -50,7 +50,7 @@ describe("localeMiddleware", () => {
         expect(seen).toEqual({ first: "en", second: "ja", third: "en" })
     })
 
-    it("[i18n-locale/AC-14] 静的生成するページは、受け入れ言語が英語でも日本語を設定する", async () => {
+    it("[i18n-locale/4.3] 静的生成するページは、受け入れ言語が英語でも日本語を設定する", async () => {
         const context = contextOf("en", true)
         await localeMiddleware(
             context as unknown as APIContext,

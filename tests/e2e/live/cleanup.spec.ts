@@ -48,7 +48,7 @@ const listOriginalUris = async (agent: AtpAgent) => {
         .map(r => r.uri)
 }
 
-test("e2elive/AC-8 e2elive/AC-21: entryを持たない投稿を終了時の削除で取り除け、同じ識別子の投稿が残らない", async ({
+test("e2elive/4.1 e2elive/4.4: entryを持たない投稿を終了時の削除で取り除け、同じ識別子の投稿が残らない", async ({
     agent,
     tag,
 }) => {
@@ -61,7 +61,7 @@ test("e2elive/AC-8 e2elive/AC-21: entryを持たない投稿を終了時の削�
     expect(await countContaining(agent, tag)).toBe(0)
 })
 
-test("e2elive/AC-9 e2elive/AC-22: 掃除は2時間前の投稿だけを削除し、作成直後の投稿と元からある投稿は残す", async ({
+test("e2elive/4.2 e2elive/3.6: 掃除は2時間前の投稿だけを削除し、作成直後の投稿と元からある投稿は残す", async ({
     agent,
     tag,
 }) => {

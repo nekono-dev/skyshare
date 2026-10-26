@@ -55,7 +55,7 @@ const openReauthFromCalendar = async (page: Page) => {
     return reauthDialog(page)
 }
 
-test("[schedule-form/AC-30] 許可が無効になってもスイッチはオンのまま再度の許可が案内され、ボタンで再度の許可のダイアログが開く", async ({
+test("[schedule-form/1.3] 許可が無効になってもスイッチはオンのまま再度の許可が案内され、ボタンで再度の許可のダイアログが開く", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -77,7 +77,7 @@ test("[schedule-form/AC-30] 許可が無効になってもスイッチはオン�
     })
 })
 
-test("[schedule-form/AC-31] 投稿フォームで許可が無効なら、カレンダーから再度の許可を開け、作成中の内容があれば移る前に下書きの確認が出る", async ({
+test("[schedule-form/3.3] 投稿フォームで許可が無効なら、カレンダーから再度の許可を開け、作成中の内容があれば移る前に下書きの確認が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -115,7 +115,7 @@ const pendingItem: ScheduleItem = {
     lastError: null,
 }
 
-test("[schedule-form/AC-32] 予約の編集中に再度の許可へ進むと、移る前に予約の編集をやめる3択が出る", async ({
+test("[schedule-form/4.10] 予約の編集中に再度の許可へ進むと、移る前に予約の編集をやめる3択が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -170,7 +170,7 @@ test("[schedule-form/AC-32] 予約の編集中に再度の許可へ進むと、�
 test.describe("東京の端末", () => {
     test.use({ timezoneId: "Asia/Tokyo" })
 
-    test("[schedule-form/AC-33] 日時の指定に、許可の有効期限の目安が予約するたびに延びる旨とともに示される", async ({
+    test("[schedule-form/3.9] 日時の指定に、許可の有効期限の目安が予約するたびに延びる旨とともに示される", async ({
         page,
     }) => {
         test.setTimeout(90_000)
@@ -190,7 +190,7 @@ test.describe("東京の端末", () => {
     })
 })
 
-test("[schedule-form/AC-34] 許可を始めた投稿フォームのページに戻ると、完了が呼ばれて結果が表示され、戻りの項目が住所から消える", async ({
+test("[schedule-form/2.2,2.5] 許可を始めた投稿フォームのページに戻ると、完了が呼ばれて結果が表示され、戻りの項目が住所から消える", async ({
     page,
 }) => {
     test.setTimeout(90_000)

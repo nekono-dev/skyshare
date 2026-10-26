@@ -109,7 +109,7 @@ beforeEach(() => {
 })
 
 describe("POST /v2/feedback", () => {
-    test("feedback-api/AC-1: セッションのない送信は401になり、報告者はセッションのアカウントになる", async () => {
+    test("feedback-api/1.1,1.2: セッションのない送信は401になり、報告者はセッションのアカウントになる", async () => {
         expect((await call(bugBody, {})).status).toBe(401)
         // 入力に報告者を混ぜる送信は、未知の項目として拒否される
         expect((await call({ ...bugBody, did: "did:plc:other" })).status).toBe(
@@ -126,7 +126,7 @@ describe("POST /v2/feedback", () => {
         expect(sent[0].body).toContain(`[${DID}]`)
     })
 
-    test("feedback-api/AC-2: 不具合の種別に新機能の提案の本文を付けた送信は400になる", async () => {
+    test("feedback-api/2.1: 不具合の種別に新機能の提案の本文を付けた送信は400になる", async () => {
         expect(
             (await call({ ...bugBody, description: "提案の本文" })).status,
         ).toBe(400)
@@ -137,7 +137,7 @@ describe("POST /v2/feedback", () => {
         expect(sent).toHaveLength(0)
     })
 
-    test("feedback-api/AC-3: 再現の頻度が4つの値以外の不具合の送信は400になる", async () => {
+    test("feedback-api/2.2: 再現の頻度が4つの値以外の不具合の送信は400になる", async () => {
         expect(
             (await call({ ...bugBody, reproducibility: "often" })).status,
         ).toBe(400)
@@ -153,14 +153,14 @@ describe("POST /v2/feedback", () => {
         }
     })
 
-    test("feedback-api/AC-4: 技術的な補足を省いた新機能の提案が登録される", async () => {
+    test("feedback-api/2.3,2.4: 技術的な補足を省いた新機能の提案が登録される", async () => {
         const res = await call(enhancementBody)
         expect(res.status).toBe(200)
         expect(sent[0].labels).toEqual(["enhancement"])
         expect(sent[0].body).not.toContain("技術的な補足")
     })
 
-    test("feedback-api/AC-5: 101文字の件名と空白だけの本文は400、絵文字100個の件名は登録される", async () => {
+    test("feedback-api/2.5,2.6: 101文字の件名と空白だけの本文は400、絵文字100個の件名は登録される", async () => {
         expect(
             (await call({ ...bugBody, title: "あ".repeat(101) })).status,
         ).toBe(400)
@@ -173,20 +173,20 @@ describe("POST /v2/feedback", () => {
         expect(sent[0].title).toBe(family)
     })
 
-    test("feedback-api/AC-6: 同じアカウントの2件目の送信は429になり、GitHub への登録が行われない", async () => {
+    test("feedback-api/1.3: 同じアカウントの2件目の送信は429になり、GitHub への登録が行われない", async () => {
         expect((await call(bugBody)).status).toBe(200)
         expect((await call(bugBody)).status).toBe(429)
         expect(sent).toHaveLength(1)
         expect(limiter.limit).toHaveBeenCalledWith({ key: DID })
     })
 
-    test("feedback-api/AC-6: 入力が不正な送信は回数を消費しない", async () => {
+    test("feedback-api/1.3: 入力が不正な送信は回数を消費しない", async () => {
         expect((await call({ ...bugBody, title: "" })).status).toBe(400)
         expect(limiter.limit).not.toHaveBeenCalled()
         expect((await call(bugBody)).status).toBe(200)
     })
 
-    test("feedback-api/AC-12: 認証情報がないときは503、GitHub が失敗を返したときは500になる", async () => {
+    test("feedback-api/1.4,1.5: 認証情報がないときは503、GitHub が失敗を返したときは500になる", async () => {
         holder.env = { FEEDBACK_RATE_LIMITER: limiter }
         expect((await call(bugBody)).status).toBe(503)
 

@@ -4,7 +4,7 @@
  * 責務と処理概要:
  * - 環境変数（またはリポジトリ直下の`.env.e2e`）から検証用アカウントの認証情報を読む。
  * - 必須の2値が揃わない場合は`null`を返し、呼び出し側（`playwright.config.ts`）が
- *   ライブテストのprojectごと無効化する（`specs/e2elive/design.md §2・§3`）。
+ *   ライブテストのprojectごと無効化する（`.kiro/specs/e2elive/design.md §2・§3`）。
  * - 認証情報の値は、ログ・エラーメッセージのいずれにも出力しない。
  */
 import { existsSync } from "node:fs"

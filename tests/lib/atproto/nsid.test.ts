@@ -19,7 +19,7 @@ const readLexicon = (name: string) => {
 }
 
 describe("lexicon JSONとの整合", () => {
-    it("[lexicon/AC-5] ENTRY_COLLECTIONがentry.jsonのidと一致する", () => {
+    it("[lexicon/2.1] ENTRY_COLLECTIONがentry.jsonのidと一致する", () => {
         expect(ENTRY_COLLECTION).toBe(readLexicon("entry.json").id)
     })
 
@@ -27,7 +27,7 @@ describe("lexicon JSONとの整合", () => {
         expect(DEFS_NSID).toBe(readLexicon("defs.json").id)
     })
 
-    it("[lexicon/AC-8] entry.jsonのmanifest参照がMANIFEST_TYPEと一致する", () => {
+    it("[lexicon/4.1] entry.jsonのmanifest参照がMANIFEST_TYPEと一致する", () => {
         const entry = readLexicon("entry.json")
         expect(entry.defs.main.record.properties.manifest.ref).toBe(
             MANIFEST_TYPE,
@@ -42,13 +42,13 @@ describe("resolveEntryLexiconId", () => {
         ).toBe("x.y.entry")
     })
 
-    it("[lexicon/AC-7] 0件なら例外", () => {
+    it("[lexicon/2.3] 0件なら例外", () => {
         expect(() => resolveEntryLexiconId({})).toThrow(
             "Exactly one entry.json",
         )
     })
 
-    it("[lexicon/AC-7] 複数件なら例外", () => {
+    it("[lexicon/2.3] 複数件なら例外", () => {
         expect(() =>
             resolveEntryLexiconId({
                 "/a/entry.json": { id: "a.entry" },
@@ -57,7 +57,7 @@ describe("resolveEntryLexiconId", () => {
         ).toThrow("found 2")
     })
 
-    it("[lexicon/AC-7] idが.entryで終わらなければ例外", () => {
+    it("[lexicon/2.3] idが.entryで終わらなければ例外", () => {
         expect(() =>
             resolveEntryLexiconId({ "/a/entry.json": { id: "a.record" } }),
         ).toThrow(".entry")
@@ -74,13 +74,13 @@ describe("entryAtUri / parseEntryAtUri", () => {
         })
     })
 
-    it("[lexicon/AC-9] 別コレクションは受理しない", () => {
+    it("[lexicon/3.1] 別コレクションは受理しない", () => {
         expect(
             parseEntryAtUri("at://did:plc:abc/app.bsky.feed.post/3lxyz"),
         ).toBeUndefined()
     })
 
-    it("[lexicon/AC-9] 末尾に余分なパス・クエリ・フラグメントが付くものは受理しない", () => {
+    it("[lexicon/3.1] 末尾に余分なパス・クエリ・フラグメントが付くものは受理しない", () => {
         const base = entryAtUri("did:plc:abc", "3lxyz")
         expect(parseEntryAtUri(`${base}/`)).toBeUndefined()
         expect(parseEntryAtUri(`${base}?a=1`)).toBeUndefined()
@@ -96,7 +96,7 @@ describe("entryAtUri / parseEntryAtUri", () => {
 })
 
 describe("NSIDの導出の取り込み", () => {
-    it("[lexicon/AC-12] NSIDの導出はビルド時の取り込みで行い、実行時にファイルを読まない", () => {
+    it("[lexicon/2.4] NSIDの導出はビルド時の取り込みで行い、実行時にファイルを読まない", () => {
         const source = readFileSync("src/lib/atproto/nsid.ts", "utf-8")
         // コメントを除いた本文だけを対象にする
         const code = source

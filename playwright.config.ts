@@ -2,7 +2,7 @@
  * Playwright（ヘッドレスブラウザでのe2eテスト）設定。
  *
  * 責務と処理概要:
- * - spec-driven-development スキル（`references/ui-verification.md`）が定める「UI実装の検証には
+ * - steering の `workflow.md`（UI 実装の検証）が定める「UI実装の検証には
  *   Playwrightによるヘッドレスブラウザでの実動作確認を必須とする」方針を実行するための
  *   最小構成。
  * - `https://localhost:4321`（`astro dev`、`astro.config.mjs`参照。dev サーバーは
@@ -22,7 +22,7 @@ import { defineConfig, devices } from "@playwright/test"
 import { LIVE_STORAGE_STATE, loadLiveAccount } from "./tests/e2e/live/env"
 
 // 検証用アカウントの認証情報があるときだけ、実アカウントE2E（ライブテスト）を有効にする
-// （`specs/e2elive/design.md §3`）。無ければprojectごと存在しない。
+// （`.kiro/specs/e2elive/design.md §3`）。無ければprojectごと存在しない。
 const liveEnabled = loadLiveAccount() !== null
 
 export default defineConfig({
@@ -54,7 +54,7 @@ export default defineConfig({
         },
         // 他ブラウザ・iPhoneエミュレーション（WebKit）での確認。Chromiumで検証済みの全specを
         // 流すのではなく、ブラウザ差が出る機能（Dropdown・動画再生）のspecに限定する
-        // （`specs/e2elive`ではなく各機能のspecの手動確認項目に対応する）。
+        // （`.kiro/specs/e2elive`ではなく各機能のspecの手動確認項目に対応する）。
         {
             name: "firefox",
             testMatch: /(dropdown|videoDisplay|videoLimits)\.spec\.ts$/,

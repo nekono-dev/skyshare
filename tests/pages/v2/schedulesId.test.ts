@@ -59,7 +59,7 @@ beforeEach(async () => {
 })
 
 describe("DELETE /v2/schedules/{id}", () => {
-    test("schedule-api/AC-9: 待機中の予約の取消で画像も削除され、認証情報は残る", async () => {
+    test("schedule-api/3.1,3.2,3.3: 待機中の予約の取消で画像も削除され、認証情報は残る", async () => {
         await add("s1", DID, true)
         expect(r2.objects.size).toBe(1)
         const res = await del("s1")
@@ -69,7 +69,7 @@ describe("DELETE /v2/schedules/{id}", () => {
         expect(await loadCredential(db, KEY, DID)).not.toBeNull()
     })
 
-    test("schedule-api/AC-9: 投稿済みの予約の削除は成功し、実行中の予約の削除は409になる", async () => {
+    test("schedule-api/3.1,3.2,3.3: 投稿済みの予約の削除は成功し、実行中の予約の削除は409になる", async () => {
         await add("done")
         await add("busy")
         await claimDueSchedules(db, 10, 5)
@@ -81,7 +81,7 @@ describe("DELETE /v2/schedules/{id}", () => {
         expect(await getSchedule(db, DID, "busy")).not.toBeNull()
     })
 
-    test("schedule-api/AC-14: 他人の予約は404、未認証は401で、キャッシュを禁止する", async () => {
+    test("schedule-api/6.2: 他人の予約は404、未認証は401で、キャッシュを禁止する", async () => {
         await add("other", "did:plc:other")
         const res = await del("other")
         expect(res.status).toBe(404)
@@ -162,7 +162,7 @@ const put = (id: string, fd: FormData) =>
     } as unknown as APIContext)
 
 describe("GET /v2/schedules/{id}", () => {
-    test("schedule-api/AC-18: 画像つきの待機中の予約の内容と画像の番号が返り、番号で取得した画像が作成時と一致する", async () => {
+    test("schedule-api/2.2: 画像つきの待機中の予約の内容と画像の番号が返り、番号で取得した画像が作成時と一致する", async () => {
         const id = await create(threadForm({}))
         const res = await getDetail(id)
         expect(res.status).toBe(200)
@@ -184,7 +184,7 @@ describe("GET /v2/schedules/{id}", () => {
         expect((await getImageOf(id, "1")).status).toBe(404)
     })
 
-    test("schedule-api/AC-19: 他人の予約と、待機中でも失敗でもない予約の内容の取得は404になる", async () => {
+    test("schedule-api/2.3,2.4: 他人の予約と、待機中でも失敗でもない予約の内容の取得は404になる", async () => {
         const id = await create(threadForm({}))
         expect((await getDetail(id, "did:plc:other")).status).toBe(404)
         expect((await getImageOf(id, "0", "did:plc:other")).status).toBe(404)
@@ -229,7 +229,7 @@ describe("GET /v2/schedules/{id}", () => {
 })
 
 describe("PUT /v2/schedules/{id}", () => {
-    test("schedule-api/AC-20: 置き換えると新しい内容と実行時刻で取得でき、置き換え前の画像が削除される", async () => {
+    test("schedule-api/2.5: 置き換えると新しい内容と実行時刻で取得でき、置き換え前の画像が削除される", async () => {
         const id = await create(threadForm({}))
         const before = [...r2.objects.keys()]
         const runAt = runAtIn(7200)
@@ -248,7 +248,7 @@ describe("PUT /v2/schedules/{id}", () => {
         expect(r2.objects.size).toBe(1)
     })
 
-    test("schedule-api/AC-21: 実行中の予約の置き換えは409、範囲外の実行時刻は400になり、内容が変わらない", async () => {
+    test("schedule-api/2.6,2.7: 実行中の予約の置き換えは409、範囲外の実行時刻は400になり、内容が変わらない", async () => {
         const id = await create(threadForm({}))
         const tooLate = await put(
             id,

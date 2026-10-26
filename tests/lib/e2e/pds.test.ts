@@ -33,7 +33,7 @@ describe("識別子", () => {
         ["[e2e abc]x"],
         [""],
         [undefined],
-    ])("e2elive/AC-5: 形式に合わない本文は対象外（%s）", text => {
+    ])("e2elive/3.2: 形式に合わない本文は対象外（%s）", text => {
         expect(isE2eText(text)).toBe(false)
         expect(e2eTagTimeMs(text)).toBeNull()
     })
@@ -48,7 +48,7 @@ describe("planDeletion", () => {
     ]
     const entries = [entry("e1", "1"), entry("e3", "3"), entry("e4", "4")]
 
-    it("e2elive/AC-6: matchに一致する識別子付き投稿と、そのentryだけを選ぶ", () => {
+    it("e2elive/3.3: matchに一致する識別子付き投稿と、そのentryだけを選ぶ", () => {
         const plan = planDeletion({
             posts,
             entries,
@@ -58,7 +58,7 @@ describe("planDeletion", () => {
         expect(plan.entryUris.map(u => u.split("/").pop())).toEqual(["e1"])
     })
 
-    it("e2elive/AC-6: matchが常にtrueでも、形式に合わない投稿・そのentryは選ばない", () => {
+    it("e2elive/3.3: matchが常にtrueでも、形式に合わない投稿・そのentryは選ばない", () => {
         const plan = planDeletion({ posts, entries, match: () => true })
         expect(plan.postUris).toHaveLength(3)
         expect(plan.entryUris.map(u => u.split("/").pop())).toEqual([
@@ -78,7 +78,7 @@ describe("planDeletion", () => {
         expect(plan.entryUris).toHaveLength(1)
     })
 
-    it("e2elive/AC-7: 上限を超える場合は何も返さず例外にする", () => {
+    it("e2elive/3.4: 上限を超える場合は何も返さず例外にする", () => {
         expect(() =>
             planDeletion({ posts, entries, match: () => true, limit: 4 }),
         ).toThrow(/上限/)

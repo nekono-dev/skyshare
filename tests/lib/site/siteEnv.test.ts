@@ -18,7 +18,7 @@ const valid = {
 }
 
 describe("checkSiteEnv", () => {
-    it("[site-config/AC-1] 必須の値が欠けると欠けた変数名を挙げ、そろえば問題がない", () => {
+    it("[site-config/1.1,1.2,1.3] 必須の値が欠けると欠けた変数名を挙げ、そろえば問題がない", () => {
         const problems = checkSiteEnv({})
         expect(problems).toHaveLength(5)
         for (const name of [
@@ -32,7 +32,7 @@ describe("checkSiteEnv", () => {
         expect(checkSiteEnv(valid)).toEqual([])
     })
 
-    it("[site-config/AC-2] 形式の違う値を問題として挙げる", () => {
+    it("[site-config/1.2] 形式の違う値を問題として挙げる", () => {
         const problems = checkSiteEnv({
             ...valid,
             SITE_HOST: "https://s.example.org/",
@@ -45,7 +45,7 @@ describe("checkSiteEnv", () => {
 })
 
 describe("resolveSiteConfig", () => {
-    it("[site-config/AC-3] 任意の値は省いても問題がなく、設定すればそのまま使い、形式が違えば使わない", () => {
+    it("[site-config/1.4] 任意の値は省いても問題がなく、設定すればそのまま使い、形式が違えば使わない", () => {
         const {
             PUBLIC_OPERATOR_BLUESKY_HANDLE: _h,
             PUBLIC_GA_MEASUREMENT_ID: _g,
@@ -68,7 +68,7 @@ describe("resolveSiteConfig", () => {
         expect(broken.analyticsId).toBeNull()
     })
 
-    it("[site-config/AC-4] 開発時は未設定の必須値をダミー値で補い、任意の値は使わない", () => {
+    it("[site-config/1.5] 開発時は未設定の必須値をダミー値で補い、任意の値は使わない", () => {
         const config = resolveSiteConfig({}, true)
         expect(config.operator.email).toBe("operator@example.com")
         expect(config.privacy.enactedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
@@ -78,7 +78,7 @@ describe("resolveSiteConfig", () => {
 })
 
 describe("siteUrl", () => {
-    it("[site-config/AC-6] 公開するドメインからサイトの URL を作り、未設定なら開発サーバーのアドレスにする", () => {
+    it("[site-config/2.1,2.2] 公開するドメインからサイトの URL を作り、未設定なら開発サーバーのアドレスにする", () => {
         expect(siteUrl({ SITE_HOST: "s.example.org" })).toBe(
             "https://s.example.org",
         )

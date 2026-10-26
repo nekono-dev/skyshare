@@ -4,7 +4,7 @@
  * 責務と処理概要:
  * - `agent`: 検証用アカウントのPDSエージェント（`pds.ts`）。
  * - `tag`: そのテスト専用の識別子（`makeRunTag`）。テストの成否にかかわらず、終了時に
- *   この識別子の投稿とentryを`deleteByTag`で削除する（`specs/e2elive/design.md §7`）。
+ *   この識別子の投稿とentryを`deleteByTag`で削除する（`.kiro/specs/e2elive/design.md §7`）。
  *   テストが作る投稿の本文は、必ずこの`tag`で始めること。
  */
 import type { AtpAgent } from "@atproto/api"

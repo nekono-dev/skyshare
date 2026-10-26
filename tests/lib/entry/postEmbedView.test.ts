@@ -41,7 +41,7 @@ const viewRecord = {
 }
 
 describe("extractPostEmbedView", () => {
-    it("[entry-detail/AC-14] 外部リンクの埋め込みから、題名・説明・ドメイン・サムネイルを取り出す", () => {
+    it("[entry-detail/3.1] 外部リンクの埋め込みから、題名・説明・ドメイン・サムネイルを取り出す", () => {
         expect(
             extractPostEmbedView({
                 $type: "app.bsky.embed.external#view",
@@ -112,7 +112,7 @@ describe("extractPostEmbedView", () => {
         })
     })
 
-    it("[entry-detail/AC-15] 画像や動画と併用した引用（recordWithMedia）から引用を取り出す", () => {
+    it("[entry-detail/3.2] 画像や動画と併用した引用（recordWithMedia）から引用を取り出す", () => {
         const result = extractPostEmbedView({
             $type: "app.bsky.embed.recordWithMedia#view",
             record: { $type: "app.bsky.embed.record#view", record: viewRecord },

@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - `SKYSHARE_E2E_PEER_IDENTIFIER`・`SKYSHARE_E2E_PEER_APP_PASSWORD`が無ければスキップする
- *   （`specs/e2elive/design.md §9`）。
+ *   （`.kiro/specs/e2elive/design.md §9`）。
  * - 検証用アカウントのスレッド（A→B）のルートAに、第三者アカウントが返信する。
  *   Aの「リンク・Bluesky投稿を削除」（A・Bが削除される）の後も、第三者の返信は残る。
  * - 第三者アカウント側の作成物も、終了時に本文の識別子で削除する。
@@ -21,7 +21,7 @@ import {
 
 test.describe.configure({ timeout: 180_000 })
 
-test("e2elive/AC-17: ルートの削除後も、第三者の返信は残る", async ({
+test("e2elive/6.5: ルートの削除後も、第三者の返信は残る", async ({
     page,
     agent,
     tag,

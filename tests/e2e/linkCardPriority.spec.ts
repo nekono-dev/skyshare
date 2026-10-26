@@ -1,5 +1,5 @@
 /**
- * 「Skyshareのリンクカードを優先表示」（`specs/link-card-priority`）のヘッドレスブラウザによる動作確認。
+ * 「Skyshareのリンクカードを優先表示」（`.kiro/specs/link-card-priority`）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
  * - `/post/?guest` と `/settings/` で、切り替えの位置・既定値・画像を自分で添付との連動を検証する。
@@ -80,7 +80,7 @@ test.describe("Skyshareのリンクカードを優先表示", () => {
         await page.close()
     })
 
-    test("[link-card-priority/AC-2 link-card-priority/AC-3] 投稿フォームで画像を自分で添付の直後に表示され、既定はONで、手動添付をONにすると操作不能になる", async ({
+    test("[link-card-priority/1.2 link-card-priority/1.3] 投稿フォームで画像を自分で添付の直後に表示され、既定はONで、手動添付をONにすると操作不能になる", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -97,7 +97,7 @@ test.describe("Skyshareのリンクカードを優先表示", () => {
         await expect(priority).toBeDisabled()
     })
 
-    test("[link-card-priority/AC-2] 設定ページで画像を自分で添付の直後に表示される", async ({
+    test("[link-card-priority/1.2] 設定ページで画像を自分で添付の直後に表示される", async ({
         page,
     }) => {
         await page.goto("/settings/?guest")
@@ -113,7 +113,7 @@ test.describe("Skyshareのリンクカードを優先表示", () => {
         await expect(priority).toBeDisabled()
     })
 
-    test("[link-card-priority/AC-8] タイムラインのentryを持つカードの共有ダイアログでXを選ぶと、共有文に本文のURLが含まれない", async ({
+    test("[link-card-priority/3.1] タイムラインのentryを持つカードの共有ダイアログでXを選ぶと、共有文に本文のURLが含まれない", async ({
         page,
         context,
     }) => {
@@ -126,7 +126,7 @@ test.describe("Skyshareのリンクカードを優先表示", () => {
         expect(text).toMatch(/\/entries\/sample\/$/)
     })
 
-    test("[link-card-priority/AC-6] 設定がOFFのとき、タイムラインの共有文に本文のURLが残る", async ({
+    test("[link-card-priority/2.3] 設定がOFFのとき、タイムラインの共有文に本文のURLが残る", async ({
         page,
         context,
     }) => {
@@ -138,7 +138,7 @@ test.describe("Skyshareのリンクカードを優先表示", () => {
         expect(text).toContain("https://example.com/")
     })
 
-    test("[link-card-priority/AC-9] 設定を保存した状態で投稿フォームを開いても、ハイドレーションの警告が出力されない", async ({
+    test("[link-card-priority/1.4] 設定を保存した状態で投稿フォームを開いても、ハイドレーションの警告が出力されない", async ({
         page,
     }) => {
         const warnings: string[] = []

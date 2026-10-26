@@ -7,13 +7,13 @@
  *   （中間・後続を問わず任意件数）を一覧レスポンスから欠落させる場合がある
  *   （既知のAppView側の挙動）。この欠落に依存せず正しいスレッド構造を返すため、
  *   `replyCount`や投稿レコード自体の`record.reply`をシグナルに、該当スレッドを
- *   `app.bsky.feed.getPostThread`で直接・権威的に取得し直す（`specs/timeline-api`）。
+ *   `app.bsky.feed.getPostThread`で直接・権威的に取得し直す（`.kiro/specs/timeline-api`）。
  * - 表示対象は「自分起点スレッド」（プロトコルルートが自分の投稿）のメインスレッド
  *   （`extractOwnedLinearReplyChain`が選ぶ唯一の直線的投稿列）のみ。他者起点スレッド
  *   （他人の投稿への返信から始まるもの）と、分岐で採用されなかったサブスレッドは
- *   Timelineに一切含めない（FR-1）。状態は保持せず、呼び出しのたびに再評価する。
+ *   Timelineに一切含めない（timeline-api 要件1.1）。状態は保持せず（要件2.4）、呼び出しのたびに再評価する。
  * - フロントエンドはこの結果（`ThreadGroup[]`）をそのまま描画するだけでよく、
- *   reply chainの再構築を行わない（NFR-4）。
+ *   reply chainの再構築を行わない（timeline-api 要件2.5）。
  * - Workers無料枠のCPU時間を抑えるため、`getAuthorFeed`の結果だけでスレッドの構成を確定
  *   できる場合は`getPostThread`を呼ばない（`buildThreadViewFromPosts`）。skyshare entryの
  *   付与はスレッドの確定後に、表示する投稿の日時の範囲だけを取得して行う
@@ -52,11 +52,11 @@ export const ENTRY_RANGE_MARGIN_MS = 24 * 60 * 60 * 1000
  * 1. 各投稿を正規化し、プロトコルルートuri（`record.reply.root`、無ければ自分自身）を
  *    併記する。ルートが他人のrepoの投稿（他者起点スレッド）は解決対象にしない。
  * 2. 自分起点のルートごとにメインスレッドを解決する。ルートが`feed`にあり、各投稿の
- *    `replyCount`が`feed`内の子の件数と一致するなら、`feed`だけで木を組む（NFR-4）。
+ *    `replyCount`が`feed`内の子の件数と一致するなら、`feed`だけで木を組む（timeline-api 要件3.4）。
  *    確定できないルートは`getPostThread`で取得する（`Promise.all`で並行、1 rootの失敗は
  *    他に影響させない）。どちらも`extractOwnedLinearReplyChain`で系統を選ぶ。
  * 3. 解決済みメインスレッドのルートが`feed`に現れない場合（ルートのみ一覧から欠落）、
- *    ルートのindexedAtに基づいて新しい順を保ったまま挿入する（NFR-3）。
+ *    ルートのindexedAtに基づいて新しい順を保ったまま挿入する（timeline-api 要件3.2）。
  * 4. `feed`の出現順で`ThreadGroup[]`を組み立てる。他者起点スレッド・サブスレッドは
  *    出力しない。getPostThread失敗時、自分がルートの投稿は単独投稿として表示する
  *    （欠落より過表示の方が実害が小さいため）。
@@ -127,7 +127,7 @@ export const buildTimelineThreads = async (
         return true
     }
 
-    // feedだけで構成を確定できるルートはgetPostThreadを省く（NFR-4）。
+    // feedだけで構成を確定できるルートはgetPostThreadを省く（timeline-api 要件3.4）。
     const rootsNeedingFetch: string[] = []
     for (const rootUri of rootsNeedingResolution) {
         const view = buildThreadViewFromPosts(rootUri, feedPostViews)

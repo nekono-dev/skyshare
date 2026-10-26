@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { forwardLoopbackRequest } from "../../hack/oauthLoopbackForwarder"
 
 describe("開発サーバーの戻り先の中継", () => {
-    test("oauth-client/AC-14: ループバックの戻り先への遷移が、同じパスとクエリのまま開発サーバーのオリジンへ転送される", () => {
+    test("oauth-client/6.1: ループバックの戻り先への遷移が、同じパスとクエリのまま開発サーバーのオリジンへ転送される", () => {
         expect(
             forwardLoopbackRequest(
                 "GET",

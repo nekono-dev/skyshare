@@ -2,7 +2,7 @@
  * ライブテスト: 動画投稿（実アカウント）。
  *
  * 責務と処理概要:
- * - `specs/video/tasks.md`の手動確認項目のうち、動画の投稿・表示・事後entry作成を自動化する。
+ * - `.kiro/specs/video/tasks.md`の手動確認項目のうち、動画の投稿・表示・事後entry作成を自動化する。
  *   - mp4・mov・webmを投稿すると、Bluesky上で`app.bsky.embed.video`の投稿になり、縦横比が保持され、
  *     entryが作られ、entry詳細ページに動画プレイヤーが表示される。
  *   - 既存の動画投稿（entryなし）からTimelineの「Skyshare Entryを作成」で作ったentryの詳細ページで、
@@ -19,7 +19,7 @@ import { expect, test } from "./liveTest"
 import { deleteEntriesOnly } from "./pds"
 import { getPublicPostRecord, gotoAndFindCard, listEntries } from "./helpers"
 
-/** 投稿する動画の形式（mov・webmもBlueskyの動画サービスがmp4へ変換する。AC-2） */
+/** 投稿する動画の形式（mov・webmもBlueskyの動画サービスがmp4へ変換する。e2elive 要件5.3） */
 const SAMPLES = ["mp4", "mov", "webm"].map(ext => ({
     ext,
     file: path.resolve(`tests/fixtures/video-sample.${ext}`),
@@ -73,7 +73,7 @@ const waitForEntry = async (
 }
 
 for (const { ext, file } of SAMPLES) {
-    test(`e2elive/AC-12: ${ext}を投稿すると動画投稿になりentryが作られ、詳細ページで再生用プレイヤーが表示される`, async ({
+    test(`e2elive/5.3: ${ext}を投稿すると動画投稿になりentryが作られ、詳細ページで再生用プレイヤーが表示される`, async ({
         page,
         request,
         tag,
@@ -93,7 +93,7 @@ for (const { ext, file } of SAMPLES) {
     })
 }
 
-test("e2elive/AC-13: 既存の動画投稿からTimelineで事後にentryを作成すると、詳細ページでvisualと動画プレイヤーが表示される", async ({
+test("e2elive/6.1: 既存の動画投稿からTimelineで事後にentryを作成すると、詳細ページでvisualと動画プレイヤーが表示される", async ({
     page,
     request,
     agent,

@@ -27,7 +27,7 @@ const makeEntry = (rkey: string, sourceUri: string) => ({
 })
 
 describe("GET /v2/entries/skyshare", () => {
-    it("[entry-list/AC-1] limitが範囲外の場合は400を返す", async () => {
+    it("[entry-list/1.1] limitが範囲外の場合は400を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/entries/skyshare/?limit=101",
         )
@@ -35,7 +35,7 @@ describe("GET /v2/entries/skyshare", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[entry-list/AC-2] 未認証の場合は401を返す", async () => {
+    it("[entry-list/1.2] 未認証の場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/entries/skyshare/",
         )
@@ -43,7 +43,7 @@ describe("GET /v2/entries/skyshare", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[entry-list/AC-3] source投稿が現存する場合はorphaned:falseを付与する", async () => {
+    it("[entry-list/1.3] source投稿が現存する場合はorphaned:falseを付与する", async () => {
         const sourceUri = "at://did:plc:author/app.bsky.feed.post/3lalive"
         const listRecords = vi.fn().mockResolvedValue({
             data: {
@@ -68,7 +68,7 @@ describe("GET /v2/entries/skyshare", () => {
         expect(json.entries[0].orphaned).toBe(false)
     })
 
-    it("[entry-list/AC-4] source投稿が削除済みの場合はorphaned:trueを付与する", async () => {
+    it("[entry-list/1.3] source投稿が削除済みの場合はorphaned:trueを付与する", async () => {
         const sourceUri = "at://did:plc:author/app.bsky.feed.post/3ldeleted"
         const listRecords = vi.fn().mockResolvedValue({
             data: {
@@ -91,7 +91,7 @@ describe("GET /v2/entries/skyshare", () => {
         expect(json.entries[0].orphaned).toBe(true)
     })
 
-    it("[entry-list/AC-5] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
+    it("[entry-list/1.4] atproto呼び出しが失敗した場合はresolveXrpcStatusで正規化したステータスを返す", async () => {
         const listRecords = vi.fn().mockRejectedValue(
             Object.assign(new Error("RepoNotFound"), {
                 error: "RepoNotFound",

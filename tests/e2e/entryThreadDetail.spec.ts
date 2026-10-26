@@ -8,14 +8,14 @@
  *   このテスト環境では直接検証できない（実アカウントでの確認は手動確認タスクとして
  *   別途残す）。ここでは`entries/sample.astro`（スレッド表示、`[slug].astro`と同じ`EntryDetailView`を
  *   描画するサンプルページ）を用いて、コンポーネント自体の描画を検証する。
- * - `specs/entry-detail`の受け入れ条件のうち、「先頭から後続投稿まで
+ * - `.kiro/specs/entry-detail`の受け入れ条件のうち、「先頭から後続投稿まで
  *   時系列順にすべて表示される」
  *   実ブラウザでのレンダリング結果として確認する。
  */
 import { expect, test } from "./fixtures"
 
 test.describe("entry詳細ページのスレッド表示", () => {
-    test("[entry-detail/AC-4] スレッド由来entryのサンプルページで、先頭から末尾まで時系列順にすべて表示される", async ({
+    test("[entry-detail/2.1] スレッド由来entryのサンプルページで、先頭から末尾まで時系列順にすべて表示される", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
@@ -50,7 +50,7 @@ test.describe("entry詳細ページのスレッド表示", () => {
         await expect(page.getByTestId("entry-visual")).toBeVisible()
     })
 
-    test("[entry-detail/AC-9] 形式が正しくないentryの詳細ページを開くと、404のエラー表示になる", async ({
+    test("[entry-detail/4.1] 形式が正しくないentryの詳細ページを開くと、404のエラー表示になる", async ({
         page,
     }) => {
         const response = await page.goto("/entries/invalid-slug/")

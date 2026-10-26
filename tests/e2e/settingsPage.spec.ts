@@ -9,7 +9,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[app-settings/AC-12] ゲスト表示の設定ページに、3つのグループの見出しが表示される", async ({
+test("[app-settings/3.1] ゲスト表示の設定ページに、3つのグループの見出しが表示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -21,7 +21,7 @@ test("[app-settings/AC-12] ゲスト表示の設定ページに、3つのグル�
     }
 })
 
-test("[app-settings/AC-13] ラベルと説明文を押してもスイッチの状態が変わらず、スイッチを押すと変わる", async ({
+test("[app-settings/2.7] ラベルと説明文を押してもスイッチの状態が変わらず、スイッチを押すと変わる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

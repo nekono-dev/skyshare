@@ -69,7 +69,7 @@ const bodyWith = (count: number, extra: Record<string, unknown>) => ({
 })
 
 describe.each(TARGETS)("$name のスレッドの上限", target => {
-    it("[entry-api/AC-17 draft-api/AC-8] スキーマが共有の定数を参照し、ドキュメントの上限もその値になる", () => {
+    it("[entry-api/2.6 draft-api/1.5] スキーマが共有の定数を参照し、ドキュメントの上限もその値になる", () => {
         const source = readFileSync(join(SCHEMA_ROOT, target.file), "utf8")
         expect(source).toMatch(
             /import \{ MAX_THREAD_POST_COUNT \} from "[^"]*atproto\/threadLimit"/,
@@ -80,7 +80,7 @@ describe.each(TARGETS)("$name のスレッドの上限", target => {
         )
     })
 
-    it("[entry-api/AC-18] ドキュメントの件数の範囲が、検証に使うスキーマの受理と拒否の境界と一致する", () => {
+    it("[entry-api/5.4] ドキュメントの件数の範囲が、検証に使うスキーマの受理と拒否の境界と一致する", () => {
         const { minItems, maxItems } = postsSchemaOf(target.path, target.method)
         for (const count of [
             0,

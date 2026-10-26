@@ -20,7 +20,7 @@ const DEV = "https://localhost:4321"
 const NOW = 1_800_000_000
 
 describe("OAuth のクライアントの識別", () => {
-    test("oauth-client/AC-1: 本番のメタデータが、識別子・戻り先・公開鍵の一覧の住所と、ログインと予約の両方の権限を含む", () => {
+    test("oauth-client/1.1: 本番のメタデータが、識別子・戻り先・公開鍵の一覧の住所と、ログインと予約の両方の権限を含む", () => {
         const meta = clientMetadata(ORIGIN, "Skyshare")
         expect(meta).toMatchObject({
             client_id: `${ORIGIN}/oauth/client-metadata.json`,
@@ -40,7 +40,7 @@ describe("OAuth のクライアントの識別", () => {
         expect(new Set(scopes).size).toBe(scopes.length)
     })
 
-    test("oauth-client/AC-2: 公開鍵の一覧に秘密鍵の成分が含まれない", async () => {
+    test("oauth-client/1.2: 公開鍵の一覧に秘密鍵の成分が含まれない", async () => {
         const client = (await loadClientKey(await createTestClientSecret()))!
         const jwks = clientJwks(client)
         expect(jwks.keys).toHaveLength(1)
@@ -48,7 +48,7 @@ describe("OAuth のクライアントの識別", () => {
         expect(jwks.keys[0]).not.toHaveProperty("d")
     })
 
-    test("oauth-client/AC-3: ループバックのオリジンでは、識別子が権限と戻り先を含む開発用の形になり、戻り先がループバックの IP の http になる", () => {
+    test("oauth-client/1.3: ループバックのオリジンでは、識別子が権限と戻り先を含む開発用の形になり、戻り先がループバックの IP の http になる", () => {
         expect(isLoopbackOrigin(DEV)).toBe(true)
         expect(isLoopbackOrigin("http://127.0.0.1:8787")).toBe(true)
         expect(isLoopbackOrigin(ORIGIN)).toBe(false)
@@ -63,7 +63,7 @@ describe("OAuth のクライアントの識別", () => {
         )
     })
 
-    test("oauth-client/AC-4: 開発用の証明は識別子だけ、それ以外は署名した証明になり、秘密鍵が無ければ作れない", async () => {
+    test("oauth-client/1.4,1.5: 開発用の証明は識別子だけ、それ以外は署名した証明になり、秘密鍵が無ければ作れない", async () => {
         const devId = clientIdFor(DEV)
         expect(
             await clientAuthParams(null, devId, "https://bsky.social", NOW),
@@ -97,7 +97,7 @@ describe("OAuth のクライアントの識別", () => {
         ).toBeNull()
     })
 
-    test("oauth-client/AC-15: OAuth のクライアントの処理が、atproto のライブラリを読み込まない", () => {
+    test("oauth-client/4.3: OAuth のクライアントの処理が、atproto のライブラリを読み込まない", () => {
         const dir = join(process.cwd(), "src/lib/oauth")
         for (const file of readdirSync(dir)) {
             const text = readFileSync(join(dir, file), "utf8")

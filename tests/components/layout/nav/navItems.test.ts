@@ -8,7 +8,7 @@ import {
 } from "@/components/layout/nav/navItems"
 
 describe("navItems", () => {
-    it("[app-navigation/AC-5] サイドバーとフッターで、項目の並びが異なる", () => {
+    it("[app-navigation/2.1] サイドバーとフッターで、項目の並びが異なる", () => {
         expect(sidebarNavItems.map(item => item.key)).toEqual([
             "accounts",
             "post",
@@ -25,13 +25,13 @@ describe("navItems", () => {
 })
 
 describe("normalizePathname / isActiveHref", () => {
-    it("[app-navigation/AC-6] ルート以外の末尾のスラッシュを取り除いて比べる", () => {
+    it("[app-navigation/2.2] ルート以外の末尾のスラッシュを取り除いて比べる", () => {
         expect(normalizePathname("/entries/")).toBe("/entries")
         expect(normalizePathname("/")).toBe("/")
         expect(isActiveHref("/entries/", "/entries")).toBe(true)
     })
 
-    it("[app-navigation/AC-7] 配下のパスでも現在地として判定し、ルートは完全一致だけを現在地とする", () => {
+    it("[app-navigation/2.3] 配下のパスでも現在地として判定し、ルートは完全一致だけを現在地とする", () => {
         expect(isActiveHref("/entries/", "/entries/abc")).toBe(true)
         expect(isActiveHref("/", "/")).toBe(true)
         expect(isActiveHref("/", "/entries")).toBe(false)

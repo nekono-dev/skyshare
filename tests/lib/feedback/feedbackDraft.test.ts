@@ -20,7 +20,7 @@ const env = {
 const build = { version: "2.0.0", commit: null }
 
 describe("isDraftSubmittable", () => {
-    it("[feedback-form/AC-7] 必須の項目が空なら送れず、埋めると送れ、上限を超えると送れない", () => {
+    it("[feedback-form/2.6] 必須の項目が空なら送れず、埋めると送れ、上限を超えると送れない", () => {
         const bug = emptyDraft("bug")
         expect(isDraftSubmittable(bug)).toBe(false)
         const filled = {
@@ -57,7 +57,7 @@ describe("isDraftSubmittable", () => {
 })
 
 describe("toFeedbackRequest", () => {
-    it("[feedback-form/AC-3] 種別に合う項目だけを載せ、他の種別の入力は送らない", () => {
+    it("[feedback-form/2.1,2.4] 種別に合う項目だけを載せ、他の種別の入力は送らない", () => {
         const draft = {
             ...emptyDraft("enhancement"),
             title: "並べ替え",

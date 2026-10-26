@@ -1,11 +1,11 @@
 /**
- * entry詳細ページの埋め込みの表示（`specs/entry-detail`）のヘッドレスブラウザによる動作確認。
+ * entry詳細ページの埋め込みの表示（`.kiro/specs/entry-detail`）のヘッドレスブラウザによる動作確認。
  * `entries/sample` の5件目（動画と引用）・6件目（リンクカード）を使う。
  */
 import { expect, test } from "./fixtures"
 
 test.describe("entry詳細ページの埋め込み", () => {
-    test("[entry-detail/AC-14] リンクカードを持つ投稿に、題名とドメインを持ちリンク先を新しいタブで開くカードが表示される", async ({
+    test("[entry-detail/3.1] リンクカードを持つ投稿に、題名とドメインを持ちリンク先を新しいタブで開くカードが表示される", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
@@ -18,7 +18,7 @@ test.describe("entry詳細ページの埋め込み", () => {
         await expect(card).toHaveAttribute("target", "_blank")
     })
 
-    test("[entry-detail/AC-15] 動画と引用を持つ投稿に、動画の表示と、引用元の作者と本文を持ちBlueskyの引用元を開く枠が表示される", async ({
+    test("[entry-detail/3.2] 動画と引用を持つ投稿に、動画の表示と、引用元の作者と本文を持ちBlueskyの引用元を開く枠が表示される", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")

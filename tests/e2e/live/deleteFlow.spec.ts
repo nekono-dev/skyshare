@@ -2,8 +2,8 @@
  * ライブテスト: entry削除フロー（最終確認・旧実装のentry・削除後の再表示）。
  *
  * 責務と処理概要:
- * - `specs/entry/frontend/tasks.md`・`specs/timeline/tasks.md`の削除に関する手動確認項目を
- *   自動化する（`specs/e2elive/design.md §8`）。前提のentry・投稿はPDSへ直接作成する。
+ * - `.kiro/specs/entry/frontend/tasks.md`・`.kiro/specs/timeline/tasks.md`の削除に関する手動確認項目を
+ *   自動化する（`.kiro/specs/e2elive/design.md §8`）。前提のentry・投稿はPDSへ直接作成する。
  *   - 単発投稿: 「リンク・Bluesky投稿を削除」→ 最終確認 → キャンセルで選択肢に戻り、
  *     再度開くと一覧が再表示 → 確定で投稿が消える（`/entries`の導線）。
  *   - 単発投稿・スレッド: Timelineの導線で確定すると、グループ全体が消え、再読み込みしても
@@ -28,7 +28,7 @@ const expectPostGone = (uri: string) =>
 /** 最終確認ダイアログの削除予定一覧の行を取得する */
 const confirmRows = (page: Page) => page.getByRole("dialog").locator("article")
 
-test("e2elive/AC-15: 単発投稿: 最終確認でキャンセルすると削除されず、再度開くと一覧が再表示され、確定で削除される（/entries）", async ({
+test("e2elive/6.3: 単発投稿: 最終確認でキャンセルすると削除されず、再度開くと一覧が再表示され、確定で削除される（/entries）", async ({
     page,
     agent,
     tag,
@@ -69,7 +69,7 @@ test("e2elive/AC-15: 単発投稿: 最終確認でキャンセルすると削除
     await expectPostGone(post.uri)
 })
 
-test("e2elive/AC-15: 単発投稿: Timelineの導線で確定すると、カードが消え、再読み込みしても再表示されない", async ({
+test("e2elive/6.3: 単発投稿: Timelineの導線で確定すると、カードが消え、再読み込みしても再表示されない", async ({
     page,
     agent,
     tag,
@@ -101,7 +101,7 @@ test("e2elive/AC-15: 単発投稿: Timelineの導線で確定すると、カー�
     )
 })
 
-test("e2elive/AC-15: スレッド: Timelineの導線で確定すると、グループ全体が消え、再読み込みしても再表示されず、全投稿が削除される", async ({
+test("e2elive/6.3: スレッド: Timelineの導線で確定すると、グループ全体が消え、再読み込みしても再表示されず、全投稿が削除される", async ({
     page,
     agent,
     tag,
@@ -147,7 +147,7 @@ test("e2elive/AC-15: スレッド: Timelineの導線で確定すると、グル�
     )
 })
 
-test("e2elive/AC-16: 旧実装のentry（sourceが返信投稿）: 投稿ごとの削除は選べず理由が表示され、リンクのみ削除しても投稿は残る", async ({
+test("e2elive/6.4: 旧実装のentry（sourceが返信投稿）: 投稿ごとの削除は選べず理由が表示され、リンクのみ削除しても投稿は残る", async ({
     page,
     agent,
     tag,

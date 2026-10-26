@@ -13,7 +13,7 @@ import {
 } from "@/lib/image/postImageProcessing"
 
 describe("getSlotDefs", () => {
-    it("[entry-visual/AC-2] 1枚は全面スロット", () => {
+    it("[entry-visual/1.2] 1枚は全面スロット", () => {
         const slots = getSlotDefs(1)
         expect(slots).toHaveLength(1)
         expect(slots[0]).toMatchObject({
@@ -24,14 +24,14 @@ describe("getSlotDefs", () => {
         })
     })
 
-    it("[entry-visual/AC-2] 2枚は左右2分割", () => {
+    it("[entry-visual/1.2] 2枚は左右2分割", () => {
         const slots = getSlotDefs(2)
         expect(slots).toHaveLength(2)
         expect(slots[0].w).toBe(TARGET_WIDTH / 2)
         expect(slots[1].x).toBe(TARGET_WIDTH / 2)
     })
 
-    it("[entry-visual/AC-2] 3枚は左1列+右上下2段", () => {
+    it("[entry-visual/1.2] 3枚は左1列+右上下2段", () => {
         const half = { w: TARGET_WIDTH / 2, h: TARGET_HEIGHT / 2 }
         expect(getSlotDefs(3)).toMatchObject([
             { x: 0, y: 0, w: TARGET_WIDTH / 2, h: TARGET_HEIGHT },
@@ -40,7 +40,7 @@ describe("getSlotDefs", () => {
         ])
     })
 
-    it("[entry-visual/AC-2 image-picker/AC-7] 4枚は2x2グリッドで、5枚以上でも区画は先頭4枚分だけ", () => {
+    it("[entry-visual/1.2 image-picker/1.3] 4枚は2x2グリッドで、5枚以上でも区画は先頭4枚分だけ", () => {
         const half = { w: TARGET_WIDTH / 2, h: TARGET_HEIGHT / 2 }
         const grid = [
             { x: 0, y: 0, ...half },
@@ -84,22 +84,22 @@ describe("computeInitialCrop", () => {
 })
 
 describe("canUsePostImageAsIs", () => {
-    it("[image-picker/AC-6] jpeg かつ 予算内なら true", () => {
+    it("[image-picker/4.1,4.2] jpeg かつ 予算内なら true", () => {
         const blob = new Blob([new Uint8Array(1000)], { type: "image/jpeg" })
         expect(canUsePostImageAsIs(blob)).toBe(true)
     })
 
-    it("[image-picker/AC-6] png かつ 予算内なら true", () => {
+    it("[image-picker/4.1,4.2] png かつ 予算内なら true", () => {
         const blob = new Blob([new Uint8Array(1000)], { type: "image/png" })
         expect(canUsePostImageAsIs(blob)).toBe(true)
     })
 
-    it("[image-picker/AC-6] webp は false(形式が対象外)", () => {
+    it("[image-picker/4.1,4.2] webp は false(形式が対象外)", () => {
         const blob = new Blob([new Uint8Array(1000)], { type: "image/webp" })
         expect(canUsePostImageAsIs(blob)).toBe(false)
     })
 
-    it("[image-picker/AC-6] 予算超過のjpegは false", () => {
+    it("[image-picker/4.1,4.2] 予算超過のjpegは false", () => {
         const blob = new Blob([new Uint8Array(2_000_000)], {
             type: "image/jpeg",
         })
@@ -160,7 +160,7 @@ describe("createProcessedImages", () => {
             cropPixels: { x: 0, y: 0, width: 100, height: 50 },
         }))
 
-    it("[entry-visual/AC-1] 5枚入力でoriginalBlobsは5件、visualの素材は先頭4枚のみ", async () => {
+    it("[entry-visual/1.1] 5枚入力でoriginalBlobsは5件、visualの素材は先頭4枚のみ", async () => {
         const drawnSrcs = stubBrowserApis()
         const urls = ["u0", "u1", "u2", "u3", "u4"]
         const result = await createProcessedImages(urls, buildCropStates(5))
@@ -169,7 +169,7 @@ describe("createProcessedImages", () => {
         expect(drawnSrcs).toEqual(["u0", "u1", "u2", "u3"])
     })
 
-    it("[image-picker/AC-7] 4枚の画像からは、4枚すべてを合成した代表画像が作られる", async () => {
+    it("[image-picker/1.3] 4枚の画像からは、4枚すべてを合成した代表画像が作られる", async () => {
         const drawnSrcs = stubBrowserApis()
         const urls = ["u0", "u1", "u2", "u3"]
         const result = await createProcessedImages(urls, buildCropStates(4))

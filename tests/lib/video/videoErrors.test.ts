@@ -27,7 +27,7 @@ const ALL_CODES: VideoErrorCode[] = [
 
 describe("mapVideoError", () => {
     it.each(ALL_CODES)(
-        "[video-upload/AC-7] %s は ja・en の両方に定義されたキーへ対応する",
+        "[video-upload/3.1] %s は ja・en の両方に定義されたキーへ対応する",
         code => {
             const key = mapVideoError(code)
             expect(key).toBe(`video.error.${code}`)
@@ -47,7 +47,7 @@ describe("mapServiceErrorName", () => {
         ["ServiceOverloaded", "overloaded"],
         ["Something", "unknown"],
         [undefined, "unknown"],
-    ])("[video-upload/AC-7] %s → %s", (name, code) => {
+    ])("[video-upload/3.1] %s → %s", (name, code) => {
         expect(mapServiceErrorName(name)).toBe(code)
     })
 })

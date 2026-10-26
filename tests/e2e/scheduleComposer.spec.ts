@@ -107,7 +107,7 @@ const setDefaultRunAt = async (page: Page) => {
     await expect(dialog).toBeHidden()
 }
 
-test("[schedule-form/AC-5] 予約投稿が無効のときは、カレンダーのボタンが押せない", async ({
+test("[schedule-form/3.1,3.2] 予約投稿が無効のときは、カレンダーのボタンが押せない", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -128,7 +128,7 @@ const videoInput = (page: Page) =>
         .locator('input[type="file"][accept*="video/quicktime"]')
         .first()
 
-test("[schedule-form/AC-24] 動画を添付すると、カレンダーのボタンが押せず、理由が示される", async ({
+test("[schedule-form/3.4] 動画を添付すると、カレンダーのボタンが押せず、理由が示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -148,7 +148,7 @@ test("[schedule-form/AC-24] 動画を添付すると、カレンダーのボタ�
     await expect(page.getByRole("dialog")).toHaveCount(0)
 })
 
-test("[schedule-form/AC-25] 実行日時を設定すると、動画のボタンが押せない", async ({
+test("[schedule-form/3.5] 実行日時を設定すると、動画のボタンが押せない", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -168,7 +168,7 @@ const pendingItem = (id: string) => ({
     lastError: null,
 })
 
-test("[schedule-form/AC-29] 日時の指定に待機中の予約の枠が棒で示され、空きが無いと設定できない", async ({
+test("[schedule-form/3.8,3.9] 日時の指定に待機中の予約の枠が棒で示され、空きが無いと設定できない", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -197,7 +197,7 @@ test("[schedule-form/AC-29] 日時の指定に待機中の予約の枠が棒で�
     await expect(dialog.getByRole("button", { name: "設定" })).toBeDisabled()
 })
 
-test("[schedule-form/AC-2 schedule-form/AC-6 schedule-form/AC-7] 予約投稿が有効なら押せ、既定値は翌日の同時刻で、範囲外では設定できない", async ({
+test("[schedule-form/1.2,2.2 schedule-form/3.6 schedule-form/3.7] 予約投稿が有効なら押せ、既定値は翌日の同時刻で、範囲外では設定できない", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -222,7 +222,7 @@ test("[schedule-form/AC-2 schedule-form/AC-6 schedule-form/AC-7] 予約投稿が
     await expect(set).toBeEnabled()
 })
 
-test("[schedule-form/AC-8 schedule-form/AC-9] 日時を設定するとボタンが強調され、実行日時の行が出て、予約のボタンで作成が1回呼ばれ本文が空になる", async ({
+test("[schedule-form/4.1 schedule-form/4.2] 日時を設定するとボタンが強調され、実行日時の行が出て、予約のボタンで作成が1回呼ばれ本文が空になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -250,7 +250,7 @@ test("[schedule-form/AC-8 schedule-form/AC-9] 日時を設定するとボタン�
     await expect(page.getByTestId("schedule-run-at-label")).toHaveCount(0)
 })
 
-test("[schedule-form/AC-8] スレッドでは、すべて投稿がすべて予約になる", async ({
+test("[schedule-form/4.1] スレッドでは、すべて投稿がすべて予約になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -263,7 +263,7 @@ test("[schedule-form/AC-8] スレッドでは、すべて投稿がすべて予�
     await expect(submitButton(page)).toHaveText("すべて予約")
 })
 
-test("[schedule-form/AC-11] 予約の作成が409を返すと日本語の文言が表示され、入力が残る", async ({
+test("[schedule-form/4.4] 予約の作成が409を返すと日本語の文言が表示され、入力が残る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -288,7 +288,7 @@ test("[schedule-form/AC-11] 予約の作成が409を返すと日本語の文言�
 test.describe("英語の表示", () => {
     test.use({ locale: "en-US" })
 
-    test("[schedule-form/AC-11] 予約の作成が409を返すと英語の文言が表示される", async ({
+    test("[schedule-form/4.4] 予約の作成が409を返すと英語の文言が表示される", async ({
         page,
     }) => {
         test.setTimeout(90_000)
@@ -312,7 +312,7 @@ test.describe("英語の表示", () => {
     })
 })
 
-test("[schedule-form/AC-22] 送信中に予約のボタンを2回押しても、作成の呼び出しは1回だけ", async ({
+test("[schedule-form/4.5] 送信中に予約のボタンを2回押しても、作成の呼び出しは1回だけ", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -325,7 +325,7 @@ test("[schedule-form/AC-22] 送信中に予約のボタンを2回押しても、
     expect(calls.creates).toHaveLength(1)
 })
 
-test("[schedule-form/AC-17] 新規の予約の日時を設定した入力でキャンセルすると、下書きの保存の確認が出る", async ({
+test("[schedule-form/4.9] 新規の予約の日時を設定した入力でキャンセルすると、下書きの保存の確認が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -351,7 +351,7 @@ test("[schedule-form/AC-17] 新規の予約の日時を設定した入力でキ�
 test.describe("狭い画面", () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
-    test("[schedule-form/AC-19] 画面幅390のとき、カレンダーのボタンの縦横が44ピクセル以上", async ({
+    test("[schedule-form/3.10] 画面幅390のとき、カレンダーのボタンの縦横が44ピクセル以上", async ({
         page,
     }) => {
         test.setTimeout(90_000)

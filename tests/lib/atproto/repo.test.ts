@@ -20,7 +20,7 @@ describe("listRecordsSince", () => {
         }
     }
 
-    it("[timeline-api/AC-12] 新しい順（reverse）で100件ずつ取得する", async () => {
+    it("[timeline-api/4.2] 新しい順（reverse）で100件ずつ取得する", async () => {
         const { agent, listRecords } = makeAgent({
             records: [record("a", "2026-01-12T00:00:00Z")],
         })
@@ -40,7 +40,7 @@ describe("listRecordsSince", () => {
         })
     })
 
-    it("[atproto-access/AC-3] 複数ページのcursorを辿って全件結合する", async () => {
+    it("[atproto-access/2.1] 複数ページのcursorを辿って全件結合する", async () => {
         const { agent, listRecords } = makeAgent(
             {
                 records: [record("a", "2026-01-15T00:00:00Z")],
@@ -63,7 +63,7 @@ describe("listRecordsSince", () => {
         expect(listRecords).toHaveBeenCalledTimes(3)
     })
 
-    it("[timeline-api/AC-12] ページ内がすべて始点より古ければ、cursorがあっても次のページを取得しない", async () => {
+    it("[timeline-api/4.2] ページ内がすべて始点より古ければ、cursorがあっても次のページを取得しない", async () => {
         const { agent, listRecords } = makeAgent(
             {
                 records: [

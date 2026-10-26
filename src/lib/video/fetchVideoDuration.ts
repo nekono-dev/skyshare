@@ -14,7 +14,7 @@ const fetchOk = async (url: string): Promise<Response> => {
  *
  * 失敗時の方針:
  * - いずれかの取得失敗・EXTINF が1件も無い・合計が 0 以下の場合は Error を throw する
- *   （呼び出し側が entry 作成を失敗させる。要件 FR-5）。
+ *   （呼び出し側が entry 作成を失敗させる。entry-visual 要件5.3）。
  *
  * 例:
  * - 入力: 4.0 + 4.0 + 2.5 秒のセグメントを持つプレイリストの URL

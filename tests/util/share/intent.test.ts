@@ -25,7 +25,7 @@ describe("resolveTruncateLimit", () => {
         ["mastodon", false, undefined],
         ["misskey", false, undefined],
     ] as const)(
-        "[share-text/AC-4] %s / 設定%s → %s",
+        "[share-text/3.2] %s / 設定%s → %s",
         (target, enabled, expected) => {
             expect(resolveTruncateLimit(target, enabled)).toBe(expected)
         },
@@ -52,12 +52,12 @@ describe("buildIntentUrl", () => {
 })
 
 describe("buildIntentText の省略", () => {
-    it("[share-text/AC-1] truncateLimit未指定なら省略しない", () => {
+    it("[share-text/1.1] truncateLimit未指定なら省略しない", () => {
         const text = buildIntentText(LONG_BODY, ENTRY_URL)
         expect(text).toBe(`${LONG_BODY}\n${ENTRY_URL}`)
     })
 
-    it("[share-text/AC-1] 本文・skyshare entryのURL・リンクカードのURLを、この順に改行区切りで連結する", () => {
+    it("[share-text/1.1] 本文・skyshare entryのURL・リンクカードのURLを、この順に改行区切りで連結する", () => {
         const text = buildIntentText(
             "見て",
             ENTRY_URL,
@@ -66,7 +66,7 @@ describe("buildIntentText の省略", () => {
         expect(text).toBe(`見て\n${ENTRY_URL}\nhttps://example.com/page`)
     })
 
-    it("[share-text/AC-3] truncateLimit指定ならskyshareUriありで省略する", () => {
+    it("[share-text/3.1] truncateLimit指定ならskyshareUriありで省略する", () => {
         const text = buildIntentText(LONG_BODY, ENTRY_URL, undefined, {
             truncateLimit: INTENT_WEIGHTED_LIMIT,
         })
@@ -93,7 +93,7 @@ describe("buildIntentText の省略", () => {
         expect(weightedLength(text)).toBeLessThanOrEqual(INTENT_WEIGHTED_LIMIT)
     })
 
-    it("[share-text/AC-7] リンクカードURLも末尾要素として削らずに残す", () => {
+    it("[share-text/3.3] リンクカードURLも末尾要素として削らずに残す", () => {
         const text = buildIntentText(
             LONG_BODY,
             ENTRY_URL,
@@ -106,7 +106,7 @@ describe("buildIntentText の省略", () => {
         expect(weightedLength(text)).toBeLessThanOrEqual(INTENT_WEIGHTED_LIMIT)
     })
 
-    it("[share-text/AC-2] 本文に含まれるリンクカードURLは重複して付けない", () => {
+    it("[share-text/1.2] 本文に含まれるリンクカードURLは重複して付けない", () => {
         const text = buildIntentText(
             "見て example.com/page",
             ENTRY_URL,

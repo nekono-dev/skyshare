@@ -6,7 +6,7 @@
  *   スロット配列で動くごく小さな実装に差し替え、フック関数を直接呼び出して検証する。
  *   state更新後は`render()`で再度フックを呼び、最新の戻り値を得る。
  * - 通信（`createEntry`/`deleteEntry`）・画像合成・削除範囲判定は`vi.mock`で差し替える。
- * - 対象は `specs/timeline/tasks.md` のテストタスク
+ * - 対象は `.kiro/specs/timeline/tasks.md` のテストタスク
  *   （reply由来Visualでもsourceはrootのuriを送る／削除スコープの確定・
  *   `deleteBskyThread`を送らない／`onPostDeleted`の呼び出し条件／legacyでもダイアログが開く）。
  */

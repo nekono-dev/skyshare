@@ -20,7 +20,7 @@ describe("getHashtagCandidates", () => {
         trending.mockReset()
     })
 
-    it("[post-suggest/AC-9] 履歴を先に並べ、履歴と重なるトレンドを除く", async () => {
+    it("[post-suggest/2.4] 履歴を先に並べ、履歴と重なるトレンドを除く", async () => {
         history.mockReturnValue([
             { tag: "Alpha", lastUsedAt: 2 },
             { tag: "beta", lastUsedAt: 1 },
@@ -36,7 +36,7 @@ describe("getHashtagCandidates", () => {
         ])
     })
 
-    it("[post-suggest/AC-10] 候補は5件までに切り詰められる", async () => {
+    it("[post-suggest/2.4] 候補は5件までに切り詰められる", async () => {
         history.mockReturnValue([])
         trending.mockResolvedValue(
             Array.from({ length: 8 }, (_, i) => ({ tag: `tag${i}` })),

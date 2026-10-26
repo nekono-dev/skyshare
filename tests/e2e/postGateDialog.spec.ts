@@ -26,7 +26,7 @@ const openGateDialog = async (page: Page) => {
 const readSavedGate = (page: Page) =>
     page.evaluate(() => window.localStorage.getItem("postGateDefault"))
 
-test("[post-gate/AC-12] 返信不可を選んで適用すると、既定値として保存される", async ({
+test("[post-gate/4.1] 返信不可を選んで適用すると、既定値として保存される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -38,7 +38,7 @@ test("[post-gate/AC-12] 返信不可を選んで適用すると、既定値と�
     expect(JSON.parse(saved ?? "{}")).toMatchObject({ replyAudience: "nobody" })
 })
 
-test("[post-gate/AC-13] キャンセルすると、変更は保存されない", async ({
+test("[post-gate/4.2] キャンセルすると、変更は保存されない", async ({
     page,
 }) => {
     test.setTimeout(90_000)

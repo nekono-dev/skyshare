@@ -10,7 +10,7 @@ const render = (items: SettingListItem[]) =>
     renderToStaticMarkup(createElement(SettingList, { items }))
 
 describe("SettingList", () => {
-    it("[app-settings/AC-5] ラベルとスイッチを描画し、スイッチの状態が反映される", () => {
+    it("[app-settings/2.1] ラベルとスイッチを描画し、スイッチの状態が反映される", () => {
         const html = render([
             { key: "a", label: "設定A", checked: true },
             { key: "b", label: "設定B", checked: false, disabled: true },
@@ -26,7 +26,7 @@ describe("SettingList", () => {
         expect(html).toMatch(/id="setting-b"[^>]*disabled=""/)
     })
 
-    it("[app-settings/AC-6] 説明が指定された行にだけ、説明文が描画される", () => {
+    it("[app-settings/2.2] 説明が指定された行にだけ、説明文が描画される", () => {
         const html = render([
             { key: "a", label: "設定A", description: "Aの説明" },
             { key: "b", label: "設定B" },
@@ -35,7 +35,7 @@ describe("SettingList", () => {
         expect(html.match(/<span class="[^"]*description/g)).toHaveLength(1)
     })
 
-    it("[app-settings/AC-7] 独自のコントロールが指定された行は、スイッチの代わりに独自のコントロールを描画する", () => {
+    it("[app-settings/2.3] 独自のコントロールが指定された行は、スイッチの代わりに独自のコントロールを描画する", () => {
         const html = render([
             {
                 key: "c",
@@ -49,7 +49,7 @@ describe("SettingList", () => {
         expect(html).not.toContain('role="switch"')
     })
 
-    it("[app-settings/AC-8] 文字入力の値が検証を通ると、確認の印が描画される", () => {
+    it("[app-settings/2.4] 文字入力の値が検証を通ると、確認の印が描画される", () => {
         const html = render([
             {
                 key: "d",
@@ -62,7 +62,7 @@ describe("SettingList", () => {
         expect(html).toContain("✓")
     })
 
-    it("[app-settings/AC-9] 文字入力の値が検証を通らないと、エラー文が描画される", () => {
+    it("[app-settings/2.5] 文字入力の値が検証を通らないと、エラー文が描画される", () => {
         const html = render([
             {
                 key: "e",
@@ -77,7 +77,7 @@ describe("SettingList", () => {
         expect(html).not.toContain("✓")
     })
 
-    it("[app-settings/AC-10] 文字入力の値が空のとき、確認の印もエラー文も描画されない", () => {
+    it("[app-settings/2.6] 文字入力の値が空のとき、確認の印もエラー文も描画されない", () => {
         const html = render([
             {
                 key: "f",

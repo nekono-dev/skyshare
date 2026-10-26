@@ -29,6 +29,16 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 4. `wrangler.jsonc` を用意する。Git 管理外で、上の「準備」の手順で作る。作業元の checkout にあるものをそのままコピーしてよい（`cp <作業元>/wrangler.jsonc .`）。無いと `nodejs_compat` が効かず、dev サーバーが `twitter-text` の `punycode` を解決できずにタイムライン等のページが `Failed to load url punycode` で落ちる。
 5. 環境変数 `BRW_PLUGIN_DIR` に branch-release-workflow の clone を指定する（`tests/hack/renderDeployConfig.test.ts` が使う）。
 
+## 仕様駆動開発（cc-sdd）の準備
+
+仕様駆動開発には [cc-sdd](https://github.com/gotalab/cc-sdd) を使う。`/kiro-*` の skill と、仕様のテンプレート（`.kiro/settings/`）はリポジトリに含めず、セッション開始時のフック `.claude/hooks/install-cc-sdd.sh` が固定バージョンで導入する（`.claude/settings.json` の `SessionStart`）。
+
+- 導入済みで版が一致していれば何もしない。導入物は `.gitignore` 対象（`.claude/skills/kiro-*`・`.kiro/settings/`）で、仕様（`.kiro/specs/`）と規約（`.kiro/steering/`）は追跡する
+- 版を上げるときは、`install-cc-sdd.sh` の `CC_SDD_VERSION` だけを変える。次のセッションで入れ直す
+- cc-sdd のインストーラーは、プロジェクトの `CLAUDE.md` を雛形で上書きする。フックは導入の前後で `CLAUDE.md` を退避・復元する（`--overwrite skip` は新規ファイルまで飛ばすため使えない）
+- `.kiro/settings/templates/` は導入のたびに作り直される。テンプレートの調整は、フックのあとに適用する仕組みを足すか、cc-sdd 側へ反映する
+- 仕様・規約・設計資料の整形は `npm run test:docs` で検査する（修正は `npx prettier --write .kiro/specs .kiro/steering docs`）
+
 # 実行方法
 
 ## ビルド方法
@@ -69,16 +79,15 @@ npm run deploy
 
 `wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
-| 種別     | 名前                             | 内容                                                                                                                      |
-| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン                                                                                 |
-| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                                                                                                 |
-| Secret   | `SPEC_LINT_TOKEN`                | 仕様書の検査コマンド `spec-lint`（GitHub Packages）の取得用。`read:packages` 権限のトークン。Actions の Secret に登録する |
-| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント                                                                                          |
-| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                                                                                                          |
-| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける）                                                                              |
-| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                                                                                                        |
-| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                                                                                              |
+| 種別     | 名前                             | 内容                                         |
+| -------- | -------------------------------- | -------------------------------------------- |
+| Secret   | `CLOUDFLARE_API_TOKEN`           | Workers のデプロイ権限を持つ API トークン    |
+| Secret   | `CLOUDFLARE_ACCOUNT_ID`          | Cloudflare のアカウントID                    |
+| Variable | `PUBLIC_LEGACY_BACKEND_ENDPOINT` | _legacy版backendのエンドポイント             |
+| Variable | `PUBLIC_DEFAULT_ATP_SERVICE`     | ATPサービスのURL                             |
+| Variable | `PUBLIC_NODE_ENV`                | `production`（Cookieに Secure 属性を付ける） |
+| Variable | `PUBLIC_OGP_EXTRACTOR_API`       | OGP ExtractorのURL                           |
+| Variable | `PUBLIC_PLC_DIRECTORY_BASE_URL`  | PLCディレクトリサービスのURL                 |
 
 このほか、下の「運用者ごとの設定」の Variables を登録する。
 
@@ -148,8 +157,6 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 
 7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
 8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵と OAuth の署名鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
-
-- 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
 
 ### 予約投稿の初期設定（初回のみ）
 
@@ -224,7 +231,7 @@ npm run prev
 
 表示言語は日本語（`ja`）と英語（`en`）に対応している。設定画面の「表示言語」で「システム設定に従う / 日本語 / English」を選べる。選択は localStorage の `uiLocale` に保存され、未選択時はブラウザの言語（`navigator.languages`）、一致しなければ日本語になる。サーバー描画（SSR）ページの初回HTMLは `Accept-Language` で決まり、保存済みの設定との差は初期描画後に切り替わる。SSG（`prerender = true`）のページはビルド時に日本語で出力し、クライアントで言語を確定して書き換える。
 
-実装は外部ライブラリを使わない型付き辞書（`src/lib/i18n/`）で、設計は `specs/i18n-locale/` と `specs/i18n-messages/` にある。
+実装は外部ライブラリを使わない型付き辞書（`src/lib/i18n/`）で、設計は `.kiro/specs/i18n-locale/` と `.kiro/specs/i18n-messages/` にある。
 
 ### 文言の追加手順
 
@@ -273,7 +280,7 @@ npx playwright test # ゲスト表示（?guest）で完結するE2E
 
 ### 実アカウントのE2E（ライブテスト）
 
-検証用アカウントの認証情報を環境変数で与えると、`tests/e2e/live/` のテストが有効になる。未設定のときは実行対象にならない。設計は `specs/e2elive/` にある。
+検証用アカウントの認証情報を環境変数で与えると、`tests/e2e/live/` のテストが有効になる。未設定のときは実行対象にならない。設計は `.kiro/specs/e2elive/` にある。
 
 | 環境変数                    | 必須 | 内容                                   |
 | --------------------------- | ---- | -------------------------------------- |

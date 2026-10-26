@@ -25,7 +25,7 @@ describe("deletePageDbEntry", () => {
         accessJwt: "jwt",
     }
 
-    it("[legacy-page/AC-9] 識別子を「dbIndex/dbKey」にして依頼し、成功なら ok を返す", async () => {
+    it("[legacy-page/3.1] 識別子を「dbIndex/dbKey」にして依頼し、成功なら ok を返す", async () => {
         mockedDelete.mockResolvedValue({ status: 200, data: {} } as any)
         expect(await deletePageDbEntry(params)).toEqual({ ok: true })
         expect(mockedDelete).toHaveBeenCalledWith({
@@ -35,7 +35,7 @@ describe("deletePageDbEntry", () => {
         })
     })
 
-    it("[legacy-page/AC-10] 旧バックエンドがエラーを返したとき、その理由を返す", async () => {
+    it("[legacy-page/3.2] 旧バックエンドがエラーを返したとき、その理由を返す", async () => {
         mockedDelete.mockResolvedValue({
             status: 400,
             data: { error: "BadRequest" },
@@ -45,7 +45,7 @@ describe("deletePageDbEntry", () => {
         })
     })
 
-    it("[legacy-page/AC-11] 通信が失敗したとき、不明なエラーとして返す", async () => {
+    it("[legacy-page/3.3] 通信が失敗したとき、不明なエラーとして返す", async () => {
         vi.spyOn(console, "warn").mockImplementation(() => {})
         mockedDelete.mockRejectedValue(new Error("network"))
         expect(await deletePageDbEntry(params)).toEqual({
@@ -55,7 +55,7 @@ describe("deletePageDbEntry", () => {
 })
 
 describe("fetchPageDbEntry", () => {
-    it("[legacy-page/AC-12] 取得に成功したとき、OGP画像・投稿者・添付画像を返す", async () => {
+    it("[legacy-page/1.1] 取得に成功したとき、OGP画像・投稿者・添付画像を返す", async () => {
         const entry = {
             ogp: "https://example.com/ogp.png",
             handle: "a.test",
@@ -68,7 +68,7 @@ describe("fetchPageDbEntry", () => {
         expect(mockedGet).toHaveBeenCalledWith("legacy", "a.test%403abc")
     })
 
-    it("[legacy-page/AC-13] 取得に失敗したとき、その理由を返す", async () => {
+    it("[legacy-page/1.2] 取得に失敗したとき、その理由を返す", async () => {
         mockedGet.mockResolvedValue({
             status: 404,
             data: { error: "BadRequest" },

@@ -171,7 +171,7 @@ describe("createEntryFromExistingPost", () => {
     })
 })
 
-describe("createEntryFromExistingPost: sourceの決定(specs/entry-api)", () => {
+describe("createEntryFromExistingPost: sourceの決定(.kiro/specs/entry-api)", () => {
     const rootUri = "at://did:plc:abc/app.bsky.feed.post/3lroot"
     const otherRootUri = "at://did:plc:other/app.bsky.feed.post/3lroot"
 

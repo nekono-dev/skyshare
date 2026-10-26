@@ -16,7 +16,7 @@ const hintCookie = (baseURL: string) => ({
     url: baseURL,
 })
 
-test("[schedule-form/AC-36] ヒント cookie があるページの表示では登録状態を問い合わせず、日時の指定を開くと1回問い合わせる", async ({
+test("[schedule-form/1.4] ヒント cookie があるページの表示では登録状態を問い合わせず、日時の指定を開くと1回問い合わせる", async ({
     page,
     context,
     baseURL,
@@ -39,7 +39,7 @@ test("[schedule-form/AC-36] ヒント cookie があるページの表示では�
     await expect.poll(() => calls.credentialGets).toBe(1)
 })
 
-test("[schedule-form/AC-36] ヒント cookie が無いときは、登録状態を1回問い合わせる", async ({
+test("[schedule-form/1.4] ヒント cookie が無いときは、登録状態を1回問い合わせる", async ({
     page,
 }) => {
     test.setTimeout(120_000)

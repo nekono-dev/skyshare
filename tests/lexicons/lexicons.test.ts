@@ -32,7 +32,7 @@ describe("lexicon JSONの検証", () => {
         expect(docs.length).toBeGreaterThan(0)
     })
 
-    it("[lexicon/AC-10] 全lexiconがスキーマとして妥当で、$refがすべて解決できる", () => {
+    it("[lexicon/4.2] 全lexiconがスキーマとして妥当で、$refがすべて解決できる", () => {
         // コンストラクタが各docを検証して登録する。不正なdocは例外になる。
         const lexicons = new Lexicons(docs)
         for (const doc of docs) {
@@ -51,7 +51,7 @@ describe("lexicon JSONの検証", () => {
         ).not.toThrow()
     })
 
-    it("[lexicon/AC-10] ファイルパスとlexiconのidが対応している（NSID → パス）", () => {
+    it("[lexicon/4.2] ファイルパスとlexiconのidが対応している（NSID → パス）", () => {
         for (const [path, doc] of Object.entries(lexiconFiles)) {
             const expected = `/lexicons/${doc.id.split(".").join("/")}.json`
             // `<prefix>.defs` のような末尾セグメントがファイル名になる
@@ -59,7 +59,7 @@ describe("lexicon JSONの検証", () => {
         }
     })
 
-    it("[lexicon/AC-10] lexiconのidが重複していない", () => {
+    it("[lexicon/4.2] lexiconのidが重複していない", () => {
         const ids = docs.map(doc => doc.id)
         expect(new Set(ids).size).toBe(ids.length)
     })
@@ -95,7 +95,7 @@ describe("entryレコードのバリデーション", () => {
         createdAt: "2026-01-01T00:00:00.000Z",
     }) as Record<string, any>
 
-    it("[lexicon/AC-1] 正しいレコードを受理する", () => {
+    it("[lexicon/1.1] 正しいレコードを受理する", () => {
         expect(() =>
             lexicons.assertValidRecord(ENTRY_COLLECTION, validRecord),
         ).not.toThrow()
@@ -108,7 +108,7 @@ describe("entryレコードのバリデーション", () => {
         ).toThrow()
     })
 
-    it("[lexicon/AC-4] headingの上限（100バイト）超過を拒否し、ちょうどは受理する", () => {
+    it("[lexicon/1.4] headingの上限（100バイト）超過を拒否し、ちょうどは受理する", () => {
         const record = {
             ...validRecord,
             manifest: { ...validRecord.manifest, heading: "a".repeat(101) },
@@ -127,7 +127,7 @@ describe("entryレコードのバリデーション", () => {
         ).not.toThrow()
     })
 
-    it("[lexicon/AC-4] captionの上限（300バイト）超過を拒否し、代表画像はPNG・JPEG・WebPだけを許可する定義になっている", () => {
+    it("[lexicon/1.4] captionの上限（300バイト）超過を拒否し、代表画像はPNG・JPEG・WebPだけを許可する定義になっている", () => {
         const withManifest = (manifest: Record<string, unknown>) => ({
             ...validRecord,
             manifest: { ...validRecord.manifest, ...manifest },
@@ -151,7 +151,7 @@ describe("entryレコードのバリデーション", () => {
         expect(visual.accept).toEqual(["image/png", "image/jpeg", "image/webp"])
     })
 
-    it("[lexicon/AC-2] 投稿以外のレコード種別を指す派生元への参照を受理する", () => {
+    it("[lexicon/1.2] 投稿以外のレコード種別を指す派生元への参照を受理する", () => {
         for (const uri of [
             "at://did:plc:abc/app.bsky.actor.profile/self",
             "at://did:plc:abc/app.bsky.graph.list/3lxyz",
@@ -165,7 +165,7 @@ describe("entryレコードのバリデーション", () => {
         }
     })
 
-    it("[lexicon/AC-3] 代表画像の無いマニフェストを拒否し、見出しと説明文の無いマニフェストを受理する", () => {
+    it("[lexicon/1.3] 代表画像の無いマニフェストを拒否し、見出しと説明文の無いマニフェストを受理する", () => {
         const { visual: _visual, ...withoutVisual } = validRecord.manifest
         expect(() =>
             lexicons.assertValidRecord(ENTRY_COLLECTION, {
@@ -186,7 +186,7 @@ describe("別ドメインへの書き換え", () => {
     const FROM = "dev.nekono.skyshare"
     const TO = "example.org.app"
 
-    it("[lexicon/AC-6] idと参照を別ドメインのNSIDに書き換えると、導出される値とURIの扱いが書き換え後の値に従い、定義が妥当になる", () => {
+    it("[lexicon/2.2] idと参照を別ドメインのNSIDに書き換えると、導出される値とURIの扱いが書き換え後の値に従い、定義が妥当になる", () => {
         // 運用者が行う手順と同じく、entry.json・defs.json の id と ref の文字列だけを書き換える
         const rewritten = docs
             .filter(doc => doc.id.startsWith(`${FROM}.`))
@@ -265,7 +265,7 @@ describe("公開済みのlexiconとの互換", () => {
         readFileSync("tests/lexicons/publishedFields.json", "utf-8"),
     ) as Record<string, PublishedField>
 
-    it("[lexicon/AC-11] 公開済みの項目の型・必須指定が変わっておらず、追加された項目はすべて任意である", () => {
+    it("[lexicon/1.5] 公開済みの項目の型・必須指定が変わっておらず、追加された項目はすべて任意である", () => {
         const current = currentFields()
         for (const [key, field] of Object.entries(published)) {
             // 削除・型の変更・必須化のいずれも互換性を壊す

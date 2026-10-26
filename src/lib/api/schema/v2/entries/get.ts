@@ -1,6 +1,6 @@
 /**
  * GET /v2/entries/ — 自分のBluesky投稿一覧を、紐づくskyshare entryとembedし、
- * バックエンド側で権威的にスレッド構造化して返す（`specs/timeline-api`）。
+ * バックエンド側で権威的にスレッド構造化して返す（`.kiro/specs/timeline-api`）。
  *
  * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */

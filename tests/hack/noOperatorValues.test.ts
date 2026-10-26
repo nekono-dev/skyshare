@@ -34,11 +34,11 @@ const findValues = (paths: string[]) =>
     })
 
 describe("運用者固有の値の直書き", () => {
-    it("[site-config/AC-9] ワークフローに運用者固有の値がない", () => {
+    it("[site-config/3.4] ワークフローに運用者固有の値がない", () => {
         expect(findValues(files(".github/workflows"))).toEqual([])
     })
 
-    it("[site-config/AC-10] アプリのコードと配備のテンプレート・設定に運用者固有の値がない", () => {
+    it("[site-config/4.1] アプリのコードと配備のテンプレート・設定に運用者固有の値がない", () => {
         expect(
             findValues([
                 ...files("src").filter(f => !f.startsWith("src/client/")),

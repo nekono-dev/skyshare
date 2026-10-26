@@ -95,7 +95,7 @@ test.describe("動画投稿の表示", () => {
         await page.close()
     })
 
-    test("[video-player/AC-1 video-player/AC-10] Timeline: 動画投稿は poster と再生マークで表示され、再生されず、グレーアウトされない（シナリオ1）", async ({
+    test("[video-player/1.1 video-player/1.7] Timeline: 動画投稿は poster と再生マークで表示され、再生されず、グレーアウトされない（シナリオ1）", async ({
         page,
     }) => {
         const requests = await mockHls(page)
@@ -118,7 +118,7 @@ test.describe("動画投稿の表示", () => {
         expect(requests).toEqual([])
     })
 
-    test("[video-player/AC-3] Entry 詳細: 初期は poster と再生ボタンのみで、動画データも hls.js も取得しない（シナリオ2）", async ({
+    test("[video-player/2.2] Entry 詳細: 初期は poster と再生ボタンのみで、動画データも hls.js も取得しない（シナリオ2）", async ({
         page,
     }) => {
         const requests = await mockHls(page)
@@ -141,7 +141,7 @@ test.describe("動画投稿の表示", () => {
         expect(scripts).toEqual([])
     })
 
-    test("[video-player/AC-2 video-player/AC-4] 再生ボタンで動画が再生され、hls.js と playlist が取得される。再生の前後でコンテナの高さが変わらない（シナリオ3・6）", async ({
+    test("[video-player/2.1 video-player/1.3] 再生ボタンで動画が再生され、hls.js と playlist が取得される。再生の前後でコンテナの高さが変わらない（シナリオ3・6）", async ({
         page,
     }) => {
         const requests = await mockHls(page)
@@ -176,7 +176,7 @@ test.describe("動画投稿の表示", () => {
         expect(Math.abs(after.width - before.width)).toBeLessThanOrEqual(1)
     })
 
-    test("[video-player/AC-12] 再生ボタンを押すと、Chromium系・Firefox・Safariのそれぞれで動画が再生される", async ({
+    test("[video-player/2.5] 再生ボタンを押すと、Chromium系・Firefox・Safariのそれぞれで動画が再生される", async ({
         page,
     }) => {
         await mockHls(page)
@@ -197,7 +197,7 @@ test.describe("動画投稿の表示", () => {
             .toBeGreaterThanOrEqual(2)
     })
 
-    test("[video-player/AC-5] playlist が 404 なら再生失敗の文言と Bluesky へのリンクが表示される（シナリオ4）", async ({
+    test("[video-player/2.3] playlist が 404 なら再生失敗の文言と Bluesky へのリンクが表示される（シナリオ4）", async ({
         page,
     }) => {
         await mockHls(page, { playlist404: true })
@@ -215,7 +215,7 @@ test.describe("動画投稿の表示", () => {
         await expect(link).toHaveAttribute("target", "_blank")
     })
 
-    test("[video-player/AC-11] 再生ボタンはキーボード（Tab → Enter）で到達・操作できる（シナリオ5）", async ({
+    test("[video-player/2.4] 再生ボタンはキーボード（Tab → Enter）で到達・操作できる（シナリオ5）", async ({
         page,
     }) => {
         await mockHls(page)
@@ -234,7 +234,7 @@ test.describe("動画投稿の表示", () => {
         await expect(item.locator("video")).toBeVisible()
     })
 
-    test("[video-player/AC-6] 再生ボタンは直径 59px・半透明の暗い円・白い再生記号で、Timeline と Entry 詳細で同一（シナリオ8）", async ({
+    test("[video-player/1.4] 再生ボタンは直径 59px・半透明の暗い円・白い再生記号で、Timeline と Entry 詳細で同一（シナリオ8）", async ({
         page,
     }) => {
         await mockHls(page)
@@ -264,7 +264,7 @@ test.describe("動画投稿の表示", () => {
         })
     })
 
-    test("[video-player/AC-6] 再生ボタンは動画の表示領域の中央に置かれる（シナリオ8補足）", async ({
+    test("[video-player/1.4] 再生ボタンは動画の表示領域の中央に置かれる（シナリオ8補足）", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
@@ -285,7 +285,7 @@ test.describe("動画投稿の表示", () => {
         )
     })
 
-    test("[video-player/AC-8] Timeline: 利用不可の動画は poster が暗く表示され、文言とリンクがあり、再生ボタン・button が無く、グレーアウトされる（シナリオ9）", async ({
+    test("[video-player/3.1] Timeline: 利用不可の動画は poster が暗く表示され、文言とリンクがあり、再生ボタン・button が無く、グレーアウトされる（シナリオ9）", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -315,7 +315,7 @@ test.describe("動画投稿の表示", () => {
         ).toHaveCount(0)
     })
 
-    test("[video-player/AC-8] Entry 詳細: 利用不可の動画も暗い poster・文言・リンクで表示され、再生ボタンが無い（シナリオ10）", async ({
+    test("[video-player/3.1] Entry 詳細: 利用不可の動画も暗い poster・文言・リンクで表示され、再生ボタンが無い（シナリオ10）", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")

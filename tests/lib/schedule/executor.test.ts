@@ -109,7 +109,7 @@ const full: StoredPayload = {
 }
 
 describe("executeSchedule", () => {
-    test("schedule-runner/AC-3: 画像・投稿・制限・entry の順に作成する", async () => {
+    test("schedule-runner/2.3: 画像・投稿・制限・entry の順に作成する", async () => {
         await schedule("s1", full, 2)
         const { outcome } = await exec("s1")
         expect(outcome).toBe("posted")
@@ -145,7 +145,7 @@ describe("executeSchedule", () => {
         )
     })
 
-    test("schedule-runner/AC-4: 投稿の日時は実行時の時刻で、返信先の指定があれば先頭がその返信になる", async () => {
+    test("schedule-runner/2.4: 投稿の日時は実行時の時刻で、返信先の指定があれば先頭がその返信になる", async () => {
         const reply = {
             root: { uri: `at://${DID}/app.bsky.feed.post/r`, cid: "cr" },
             parent: { uri: `at://${DID}/app.bsky.feed.post/p`, cid: "cp" },
@@ -162,7 +162,7 @@ describe("executeSchedule", () => {
         expect(b!.body.record.reply.root).toEqual(reply.root)
     })
 
-    test("schedule-runner/AC-2: 更新後のトークンを投稿より先に保管し、投稿に失敗しても残る", async () => {
+    test("schedule-runner/2.1: 更新後のトークンを投稿より先に保管し、投稿に失敗しても残る", async () => {
         await schedule("s1", { posts: [{ text: "a" }] })
         pds.override = c =>
             c.nsid === "com.atproto.repo.putRecord"
@@ -186,7 +186,7 @@ describe("executeSchedule", () => {
         expect(post?.dpop).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/)
     })
 
-    test("schedule-runner/AC-5: 通信の上限に達した予約は進捗を保って戻り、次の実行で続きから完了する", async () => {
+    test("schedule-runner/3.1: 通信の上限に達した予約は進捗を保って戻り、次の実行で続きから完了する", async () => {
         await schedule("s1", {
             posts: [{ text: "a" }, { text: "b" }, { text: "c" }],
         })
@@ -201,7 +201,7 @@ describe("executeSchedule", () => {
         expect(pds.records.size).toBe(3)
     })
 
-    test("schedule-runner/AC-6: 作成の直後に進捗の保存に失敗しても、再実行で同じ位置の投稿が重複しない", async () => {
+    test("schedule-runner/3.3: 作成の直後に進捗の保存に失敗しても、再実行で同じ位置の投稿が重複しない", async () => {
         await schedule("s1", { posts: [{ text: "a" }, { text: "b" }] })
         const row = (await claim())[0]!
         // 2回目の進捗の保存（1件目の作成の記録）で失敗させる
@@ -229,7 +229,7 @@ describe("executeSchedule", () => {
         expect(new Set(keys).size).toBe(2)
     })
 
-    test("schedule-runner/AC-15: 書き込みの直後に中断して再実行しても、同じキーへの書き込みになり投稿は1件のまま", async () => {
+    test("schedule-runner/3.4: 書き込みの直後に中断して再実行しても、同じキーへの書き込みになり投稿は1件のまま", async () => {
         await schedule("s1", { posts: [{ text: "a" }] })
         const row = (await claim())[0]!
         let saves = 0
@@ -256,7 +256,7 @@ describe("executeSchedule", () => {
         expect(pds.records.size).toBe(1)
     })
 
-    test("schedule-runner/AC-7: 一時的な失敗は4回目まで待機に戻り、5回続くと失敗になる", async () => {
+    test("schedule-runner/4.1: 一時的な失敗は4回目まで待機に戻り、5回続くと失敗になる", async () => {
         await schedule("s1", { posts: [{ text: "a" }] })
         pds.override = c =>
             c.nsid === "oauth.token"
@@ -276,7 +276,7 @@ describe("executeSchedule", () => {
         expect(row.lastError).toBe("RetryExceeded")
     })
 
-    test("schedule-runner/AC-8: 認証が失効した予約は再試行されず、失敗と分類コードが記録され、認証情報が消えて再度の許可が必要な印が残る", async () => {
+    test("schedule-runner/4.2,4.3: 認証が失効した予約は再試行されず、失敗と分類コードが記録され、認証情報が消えて再度の許可が必要な印が残る", async () => {
         await schedule("s1", { posts: [{ text: "a" }] }, 1)
         pds.override = c =>
             c.nsid === "oauth.token"
@@ -352,7 +352,7 @@ describe("executeSchedule", () => {
         )
     })
 
-    test("schedule-runner/AC-9: 成功した予約は履歴に残らず行ごと削除され、画像が削除される", async () => {
+    test("schedule-runner/4.4,4.5: 成功した予約は履歴に残らず行ごと削除され、画像が削除される", async () => {
         await schedule(
             "s1",
             {
@@ -374,7 +374,7 @@ describe("executeSchedule", () => {
         expect(await loadCredential(db, KEY, DID)).not.toBeNull()
     })
 
-    test("schedule-runner/AC-12: レート制限を受けたら以降の通信を止め、予約は回数を数えずに待機に戻る", async () => {
+    test("schedule-runner/3.2: レート制限を受けたら以降の通信を止め、予約は回数を数えずに待機に戻る", async () => {
         await schedule("s1", { posts: [{ text: "a" }, { text: "b" }] })
         pds.override = c =>
             c.nsid === "com.atproto.repo.putRecord"
@@ -389,7 +389,7 @@ describe("executeSchedule", () => {
         expect((await getSchedule(db, DID, "s1"))?.attempts).toBe(0)
     })
 
-    test("schedule-runner/AC-17: 失敗した実行のログと記録にトークンが現れない", async () => {
+    test("schedule-runner/6.2: 失敗した実行のログと記録にトークンが現れない", async () => {
         await schedule("s1", { posts: [{ text: "a" }] })
         const logs: string[] = []
         const spies = (["log", "warn", "error"] as const).map(m =>
@@ -416,7 +416,7 @@ describe("executeSchedule", () => {
 })
 
 describe("PDS への DPoP の要求", () => {
-    test("schedule-runner/AC-18: PDS が nonce を求めたら、受け取った nonce を証明に入れて1回だけやり直す", async () => {
+    test("schedule-runner/2.2: PDS が nonce を求めたら、受け取った nonce を証明に入れて1回だけやり直す", async () => {
         await schedule("s1", { posts: [{ text: "a" }] })
         let asked = false
         pds.override = c => {

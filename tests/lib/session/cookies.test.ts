@@ -112,7 +112,7 @@ const toCookieHeader = (setCookies: string[]) =>
         .join("; ")
 
 describe("parseSessionFromRequest", () => {
-    it("[account-session/AC-1] atp_session cookie を復号してセッションを取得する", () => {
+    it("[account-session/1.1] atp_session cookie を復号してセッションを取得する", () => {
         for (const stored of [password("did:plc:abc"), oauth("did:plc:abc")]) {
             const request = new Request("https://example.com", {
                 headers: {
@@ -146,7 +146,7 @@ describe("parseSessionFromRequest", () => {
 })
 
 describe("makeSessionSetCookie", () => {
-    it("[account-session/AC-1] Set-Cookie文字列に必要な属性を含む", () => {
+    it("[account-session/1.1] Set-Cookie文字列に必要な属性を含む", () => {
         const cookie = makeSessionSetCookie(password("did:plc:abc"))
         expect(cookie).toContain("atp_session=")
         expect(cookie).toContain("Path=/")
@@ -164,7 +164,7 @@ describe("makeClearSetCookie", () => {
 })
 
 describe("プールの枠の cookie", () => {
-    it("[account-session/AC-18] プールの2件がそれぞれ別の cookie に入り、空いた枠の cookie は失効する", () => {
+    it("[account-session/1.2] プールの2件がそれぞれ別の cookie に入り、空いた枠の cookie は失効する", () => {
         const pool = [pooled(oauth("did:plc:a")), pooled(password("did:plc:b"))]
         const cookies = makeAccountsSetCookies(pool)
         expect(cookies).toHaveLength(MAX_POOLED_ACCOUNTS)

@@ -59,7 +59,7 @@ describe("normalizePostFacets", () => {
 })
 
 describe("segmentRichText", () => {
-    it("[post-rich-text/AC-1] メンション・ハッシュタグ・URLがそれぞれの遷移先を指す", () => {
+    it("[post-rich-text/1.1] メンション・ハッシュタグ・URLがそれぞれの遷移先を指す", () => {
         const text = "見て @alice.test #猫 https://example.com/a"
         const segments = segmentRichText(text, [
             facetOf(text, "@alice.test", {
@@ -88,7 +88,7 @@ describe("segmentRichText", () => {
         ])
     })
 
-    it("[post-rich-text/AC-2] 区間を連結すると元の本文に一致する", () => {
+    it("[post-rich-text/1.2] 区間を連結すると元の本文に一致する", () => {
         const text = "前 #a 中 #b 後"
         const segments = segmentRichText(text, [
             facetOf(text, "#a", {
@@ -104,7 +104,7 @@ describe("segmentRichText", () => {
         expect(segments[0]).toEqual({ text: "前 " })
     })
 
-    it("[post-rich-text/AC-3] 範囲が本文の長さを超える注釈は無視して全文を文字のまま返す", () => {
+    it("[post-rich-text/1.3] 範囲が本文の長さを超える注釈は無視して全文を文字のまま返す", () => {
         expect(
             segmentRichText("abc", [
                 {
@@ -150,7 +150,7 @@ describe("segmentRichText", () => {
         ).toEqual([{ text: "猫" }])
     })
 
-    it("[post-rich-text/AC-4] リンク先がjavascriptの形式の注釈はリンクにならない", () => {
+    it("[post-rich-text/1.4] リンク先がjavascriptの形式の注釈はリンクにならない", () => {
         const text = "click me"
         expect(
             segmentRichText(text, [
@@ -167,7 +167,7 @@ describe("segmentRichText", () => {
         ).toEqual([{ text: "click me" }])
     })
 
-    it("[post-rich-text/AC-7] 絵文字の後ろのハッシュタグは、ハッシュタグの文字だけをリンクにする", () => {
+    it("[post-rich-text/1.5] 絵文字の後ろのハッシュタグは、ハッシュタグの文字だけをリンクにする", () => {
         const text = "😀👍 #tag です"
         const segments = segmentRichText(text, [
             facetOf(text, "#tag", {
@@ -182,7 +182,7 @@ describe("segmentRichText", () => {
         ])
     })
 
-    it("[post-rich-text/AC-8] 注釈の無い部分のスキームを省略したURLをリンクにする", () => {
+    it("[post-rich-text/3.1] 注釈の無い部分のスキームを省略したURLをリンクにする", () => {
         const text = "#a 見てexample.comです"
         expect(
             segmentRichText(text, [
@@ -199,7 +199,7 @@ describe("segmentRichText", () => {
         ])
     })
 
-    it("[post-rich-text/AC-12] 注釈の無い部分のハッシュタグをリンクにする", () => {
+    it("[post-rich-text/3.5] 注釈の無い部分のハッシュタグをリンクにする", () => {
         expect(segmentRichText("見て #猫 です", [])).toEqual([
             { text: "見て " },
             { text: "#猫", href: "https://bsky.app/hashtag/%E7%8C%AB" },
@@ -207,7 +207,7 @@ describe("segmentRichText", () => {
         ])
     })
 
-    it("[post-rich-text/AC-13] URLのフラグメントはハッシュタグのリンクにしない", () => {
+    it("[post-rich-text/3.6] URLのフラグメントはハッシュタグのリンクにしない", () => {
         expect(segmentRichText("https://example.com/a#top", [])).toEqual([
             {
                 text: "https://example.com/a#top",

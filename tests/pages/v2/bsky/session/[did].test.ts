@@ -55,7 +55,7 @@ describe("DELETE /v2/bsky/session/{did}", () => {
         expect(res.status).toBe(404)
     })
 
-    it("[account-session/AC-11] [schedule-api/AC-25] アクティブアカウント対象の場合はatp_sessionと予約投稿の登録状態のヒントを失効させる", async () => {
+    it("[account-session/5.1] [schedule-api/4.6,4.8,4.10] アクティブアカウント対象の場合はatp_sessionと予約投稿の登録状態のヒントを失効させる", async () => {
         const request = new Request(
             `https://skyshare.nekono.dev/v2/bsky/session/${activeDid}`,
             {
@@ -77,7 +77,7 @@ describe("DELETE /v2/bsky/session/{did}", () => {
         )
     })
 
-    it("[account-session/AC-12] [schedule-api/AC-25] プール中アカウント対象の場合はプールの枠から除去し、予約投稿の登録状態のヒントは失効させない", async () => {
+    it("[account-session/5.2] [schedule-api/4.6,4.8,4.10] プール中アカウント対象の場合はプールの枠から除去し、予約投稿の登録状態のヒントは失効させない", async () => {
         const request = new Request(
             `https://skyshare.nekono.dev/v2/bsky/session/${pooledDid}`,
             {

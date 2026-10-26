@@ -22,7 +22,7 @@ const baseProps = {
 }
 
 describe("EntryDetailView", () => {
-    it("[entry-detail/AC-2] ヘッダーカードに説明文と作成日時が表示され、見出しの本文は表示されない", async () => {
+    it("[entry-detail/1.2] ヘッダーカードに説明文と作成日時が表示され、見出しの本文は表示されない", async () => {
         const text = textOf(await renderAstro(EntryDetailView, baseProps))
         expect(text).toContain("説明文の文言")
         expect(text).toContain("投稿日時")
@@ -30,7 +30,7 @@ describe("EntryDetailView", () => {
         expect(text).not.toContain("見出しの文言")
     })
 
-    it("[post-rich-text/AC-9] 説明文の中のスキームを省略したURLがリンクになる", async () => {
+    it("[post-rich-text/3.3] 説明文の中のスキームを省略したURLがリンクになる", async () => {
         const html = await renderAstro(EntryDetailView, {
             ...baseProps,
             caption: "詳しくは example.com を見て",
@@ -40,7 +40,7 @@ describe("EntryDetailView", () => {
         )
     })
 
-    it("[entry-detail/AC-8] 派生元が削除済みの場合は案内文が表示され、リアクション数は表示されない", async () => {
+    it("[entry-detail/2.4] 派生元が削除済みの場合は案内文が表示され、リアクション数は表示されない", async () => {
         const html = await renderAstro(EntryDetailView, {
             ...baseProps,
             sourcePostAvailable: false,
@@ -51,7 +51,7 @@ describe("EntryDetailView", () => {
         expect(html).not.toContain("Blueskyでのリアクション数")
     })
 
-    it("[entry-detail/AC-9] 存在しないentryの場合は、404のエラー表示になる", async () => {
+    it("[entry-detail/4.1] 存在しないentryの場合は、404のエラー表示になる", async () => {
         const html = await renderAstro(EntryDetailView, {
             ...baseProps,
             statusCode: 404,

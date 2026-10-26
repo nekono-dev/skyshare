@@ -1,5 +1,5 @@
 /**
- * 複数画像（5枚以上）添付のヘッドレスブラウザによる動作確認（specs/image-picker）。
+ * 複数画像（5枚以上）添付のヘッドレスブラウザによる動作確認（.kiro/specs/image-picker）。
  *
  * 責務と処理概要:
  * - `/post/?guest`の投稿フォームで、11枚選択時に10枚で止まり通知が出ること、
@@ -47,7 +47,7 @@ const openComposer = async (page: Page) => {
 }
 
 test.describe("複数画像の投稿フォーム", () => {
-    test("[image-picker/AC-5] 画像サムネイルの「×」「alt」ボタンは大きく縁取りされ、マウスオーバーで色が変わる", async ({
+    test("[image-picker/2.2] 画像サムネイルの「×」「alt」ボタンは大きく縁取りされ、マウスオーバーで色が変わる", async ({
         page,
     }) => {
         const editor = await openComposer(page)
@@ -76,7 +76,7 @@ test.describe("複数画像の投稿フォーム", () => {
         }
     })
 
-    test("[image-picker/AC-1 image-picker/AC-2 image-picker/AC-3] 11枚選択すると10枚で止まり通知が出る。5枚目以降にVisual対象外ラベルが付く", async ({
+    test("[image-picker/1.1,1.2 image-picker/2.1 image-picker/3.1] 11枚選択すると10枚で止まり通知が出る。5枚目以降にVisual対象外ラベルが付く", async ({
         page,
     }) => {
         const editor = await openComposer(page)
@@ -98,7 +98,7 @@ test.describe("複数画像の投稿フォーム", () => {
         }
     })
 
-    test("[entry-visual/AC-6 image-crop/AC-3] クロップダイアログには先頭4枚のスロットだけが表示される", async ({
+    test("[entry-visual/3.3 image-crop/2.1] クロップダイアログには先頭4枚のスロットだけが表示される", async ({
         page,
     }) => {
         const editor = await openComposer(page)
@@ -111,7 +111,7 @@ test.describe("複数画像の投稿フォーム", () => {
         await expect(page.getByTestId("crop-slot")).toHaveCount(4)
     })
 
-    test("[image-picker/AC-4] 先頭画像を削除すると、繰り上がった5枚目のラベルが消える", async ({
+    test("[image-picker/3.2] 先頭画像を削除すると、繰り上がった5枚目のラベルが消える", async ({
         page,
     }) => {
         const editor = await openComposer(page)

@@ -11,7 +11,7 @@ const CI_SHA = "a".repeat(40)
 const GIT_SHA = "b".repeat(40)
 
 describe("resolveBuildInfo", () => {
-    it("[feedback-api/AC-11] CI の値があればその値を、なければ Git の値を、どちらもなければ不明とする", () => {
+    it("[feedback-api/4.2] CI の値があればその値を、なければ Git の値を、どちらもなければ不明とする", () => {
         expect(
             resolveBuildInfo(
                 {

@@ -46,3 +46,7 @@ _legacy/**/.env.test.*
 
 # brw create が作る作業ブランチの worktree
 .claude/worktrees/
+
+# cc-sdd の生成物（セッション開始時に .claude/hooks/install-cc-sdd.sh が導入する。.kiro/specs と .kiro/steering は追跡する）
+/.claude/skills/kiro-*/
+/.kiro/settings/

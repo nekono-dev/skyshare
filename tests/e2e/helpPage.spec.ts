@@ -7,7 +7,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[help-page/AC-3] ヘルプページに、記事の見出しがカードごとに表示される", async ({
+test("[help-page/2.1] ヘルプページに、記事の見出しがカードごとに表示される", async ({
     page,
 }) => {
     await page.goto("/help/")
@@ -18,7 +18,7 @@ test("[help-page/AC-3] ヘルプページに、記事の見出しがカードご
     ).toBeVisible()
 })
 
-test("[help-page/AC-4] ヘルプページにサイドバーとフッターナビがなく、設定ページへ戻るリンクがある", async ({
+test("[help-page/2.2] ヘルプページにサイドバーとフッターナビがなく、設定ページへ戻るリンクがある", async ({
     page,
 }) => {
     await page.goto("/help/")
