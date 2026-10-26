@@ -46,6 +46,7 @@ flowchart LR
   composer --> contract["API契約と生成"]
   composer --> schedule["予約フォーム"]
   composer --> navigation["投稿フォームの遷移"]
+  composer --> autofocus["投稿フォームの初期フォーカス"]
   media --> video["動画アップロード"]
   video --> session["セッション管理"]
   video --> atproto["Bluesky連携層"]
