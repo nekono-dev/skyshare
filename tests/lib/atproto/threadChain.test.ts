@@ -52,7 +52,7 @@ describe("extractOwnedLinearReplyChain", () => {
         ])
     })
 
-    it("[entry-detail/AC-5] 第三者の返信は除外する", () => {
+    it("[entry-detail/2.2] 第三者の返信は除外する", () => {
         const otherReply = makeNode("at://other-reply", otherDid)
         const root = makeNode("at://root", ownerDid, [otherReply])
 
@@ -60,7 +60,7 @@ describe("extractOwnedLinearReplyChain", () => {
         expect(result.map(p => p.uri)).toEqual(["at://root"])
     })
 
-    it("[entry-detail/AC-5] 第三者の返信で分岐した先(仮に所有者自身の投稿でも)は除外する", () => {
+    it("[entry-detail/2.2] 第三者の返信で分岐した先(仮に所有者自身の投稿でも)は除外する", () => {
         const ownedButBranched = makeNode("at://branched", ownerDid)
         const otherReply = makeNode("at://other-reply", otherDid, [
             ownedButBranched,
@@ -288,7 +288,7 @@ describe("buildThreadViewFromPosts", () => {
     const toMap = (...posts: any[]) =>
         new Map(posts.map(post => [post.uri as string, post]))
 
-    it("[timeline-api/AC-14] 返信数がすべて一覧の子の件数と一致すれば、個別取得した場合と同じ系統を返す", () => {
+    it("[timeline-api/3.4] 返信数がすべて一覧の子の件数と一致すれば、個別取得した場合と同じ系統を返す", () => {
         const posts = toMap(
             makeFeedPost("root", undefined, 1),
             makeFeedPost("mid", "root", 1),
@@ -306,7 +306,7 @@ describe("buildThreadViewFromPosts", () => {
         ])
     })
 
-    it("[timeline-api/AC-14] 分岐でも全候補が一覧にあれば、親に最も近い日時の系統を選ぶ", () => {
+    it("[timeline-api/3.4] 分岐でも全候補が一覧にあれば、親に最も近い日時の系統を選ぶ", () => {
         const posts = toMap(
             makeFeedPost("root", undefined, 2, "2026-01-01T00:00:00Z"),
             makeFeedPost("far", "root", 0, "2026-01-05T00:00:00Z"),
@@ -319,7 +319,7 @@ describe("buildThreadViewFromPosts", () => {
         expect(chain.map(p => p.uri)).toEqual(["at://root", "at://near"])
     })
 
-    it("[timeline-api/AC-15] 返信数が一覧の子の件数より多ければ（他人の返信や欠落）確定できない", () => {
+    it("[timeline-api/3.5] 返信数が一覧の子の件数より多ければ（他人の返信や欠落）確定できない", () => {
         const posts = toMap(
             makeFeedPost("root", undefined, 2),
             makeFeedPost("mid", "root", 0),
@@ -330,7 +330,7 @@ describe("buildThreadViewFromPosts", () => {
         )
     })
 
-    it("[timeline-api/AC-15] 中間の投稿が一覧から欠けていれば確定できない", () => {
+    it("[timeline-api/3.5] 中間の投稿が一覧から欠けていれば確定できない", () => {
         const posts = toMap(
             makeFeedPost("root", undefined, 1),
             makeFeedPost("tail", "mid", 0),
@@ -341,7 +341,7 @@ describe("buildThreadViewFromPosts", () => {
         )
     })
 
-    it("[timeline-api/AC-15] 返信数が一覧の子の件数より少なければ確定できない", () => {
+    it("[timeline-api/3.5] 返信数が一覧の子の件数より少なければ確定できない", () => {
         const posts = toMap(
             makeFeedPost("root", undefined, 0),
             makeFeedPost("mid", "root", 0),
@@ -352,7 +352,7 @@ describe("buildThreadViewFromPosts", () => {
         )
     })
 
-    it("[timeline-api/AC-15] 返信数が数値でない投稿があれば確定できない", () => {
+    it("[timeline-api/3.5] 返信数が数値でない投稿があれば確定できない", () => {
         const posts = toMap(
             makeFeedPost("root", undefined, undefined),
             makeFeedPost("mid", "root", 0),
@@ -363,7 +363,7 @@ describe("buildThreadViewFromPosts", () => {
         )
     })
 
-    it("[timeline-api/AC-15] 起点が一覧に無ければ確定できない", () => {
+    it("[timeline-api/3.5] 起点が一覧に無ければ確定できない", () => {
         const posts = toMap(makeFeedPost("mid", "root", 0))
 
         expect(buildThreadViewFromPosts("at://root", posts as any)).toBe(

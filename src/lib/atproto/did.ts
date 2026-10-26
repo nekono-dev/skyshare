@@ -96,11 +96,16 @@ export const resolvePdsServiceForDid = async (
 ): Promise<string | undefined> => {
     if (!did.startsWith("did:plc:")) return
 
-    const url = new URL(`/${encodeURIComponent(did)}`, plcDirectoryBaseUrl)
-    const response = await fetch(url)
+    try {
+        const url = new URL(`/${encodeURIComponent(did)}`, plcDirectoryBaseUrl)
+        const response = await fetch(url)
 
-    if (!response.ok) return
+        if (!response.ok) return
 
-    const didDoc = (await response.json()) as unknown
-    return readPdsServiceFromDidDoc(didDoc)
+        const didDoc = (await response.json()) as unknown
+        return readPdsServiceFromDidDoc(didDoc)
+    } catch {
+        // 通信の失敗や応答本文の不正は未解決として扱う。
+        return
+    }
 }

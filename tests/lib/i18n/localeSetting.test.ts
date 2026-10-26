@@ -34,7 +34,7 @@ describe("localeSetting", () => {
         })
         expect(readLocaleSetting()).toBe("system")
     })
-    it("[i18n-locale/AC-4] system はキー削除、それ以外は保存", () => {
+    it("[i18n-locale/2.1,2.2,2.3] system はキー削除、それ以外は保存", () => {
         const setItem = vi.fn()
         const removeItem = vi.fn()
         stubWindow({ setItem, removeItem })

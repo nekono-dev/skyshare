@@ -67,7 +67,7 @@ const callComplete = (
     } as unknown as APIContext)
 
 describe("予約投稿の OAuth の戻り", () => {
-    test("schedule-api/AC-22: 戻り先はセッションなしで、既知の項目だけを設定のページのフラグメントへ移して303で転送する", () => {
+    test("schedule-api/4.2,4.4,4.5: 戻り先はセッションなしで、既知の項目だけを設定のページのフラグメントへ移して303で転送する", () => {
         const res = callCallback(
             "?code=C1&state=S1&iss=https%3A%2F%2Fpds&extra=x",
         )
@@ -97,7 +97,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(readAuthorizationFragment("#top", "schedule")).toBeNull()
     })
 
-    test("schedule-api/AC-22: 完了は未ログインで401、不正な本文で400、拒否と不明な state では保存せずに分類を返す", async () => {
+    test("schedule-api/4.2,4.4,4.5: 完了は未ログインで401、不正な本文で400、拒否と不明な state では保存せずに分類を返す", async () => {
         expect((await callComplete("{}", {})).status).toBe(401)
         expect((await callComplete("not json")).status).toBe(400)
         expect((await callComplete('{"code":1}')).status).toBe(400)
@@ -116,7 +116,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
-    test("schedule-api/AC-25: 完了の応答が登録状態のヒント cookie を失効させる", async () => {
+    test("schedule-api/4.6,4.8,4.10: 完了の応答が登録状態のヒント cookie を失効させる", async () => {
         const res = await callComplete(
             JSON.stringify({ error: "access_denied", state: "S" }),
         )
@@ -126,7 +126,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(hint).toContain("Max-Age=0")
     })
 
-    test("schedule-api/AC-24: 開始で渡したページのパスが戻り先だけに送られる cookie に入り、戻るとそのページへ転送されて cookie が消える", async () => {
+    test("schedule-api/4.2,4.4: 開始で渡したページのパスが戻り先だけに送られる cookie に入り、戻るとそのページへ転送されて cookie が消える", async () => {
         const res = await callStart(JSON.stringify({ returnTo: "/post/?a=1" }))
         expect(res.status).toBe(200)
         const cookie = res.headers.get("set-cookie")!
@@ -151,7 +151,7 @@ describe("予約投稿の OAuth の戻り", () => {
         expect(plain.headers.get("set-cookie")).toContain("%2Fsettings%2F")
     })
 
-    test("schedule-api/AC-24: 別のオリジンへ向かうパスは開始で400になり、cookie にあっても設定のページへ転送する", async () => {
+    test("schedule-api/4.2,4.4: 別のオリジンへ向かうパスは開始で400になり、cookie にあっても設定のページへ転送する", async () => {
         for (const bad of [
             "https://evil.example/",
             "//evil.example/",

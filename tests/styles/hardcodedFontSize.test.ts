@@ -1,5 +1,5 @@
 /**
- * コンポーネントのスタイル定義に、フォントサイズの直書きが無いことの検査（specs/design-tokens）。
+ * コンポーネントのスタイル定義に、フォントサイズの直書きが無いことの検査（.kiro/specs/design-tokens）。
  *
  * 責務と処理概要:
  * - `src` 配下のCSS・Astro・TSXから `font-size:` / `fontSize:` の指定を拾い、
@@ -22,7 +22,7 @@ const collectFiles = (dir: string): string[] =>
     })
 
 describe("フォントサイズの直書き", () => {
-    it("[design-tokens/AC-3] コンポーネントのスタイル定義に、トークン参照以外のフォントサイズ指定が存在しない", () => {
+    it("[design-tokens/1.3] コンポーネントのスタイル定義に、トークン参照以外のフォントサイズ指定が存在しない", () => {
         const violations: string[] = []
         for (const file of collectFiles(SRC_ROOT)) {
             if (file.endsWith(TOKEN_DEFINITION_FILE)) continue

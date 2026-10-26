@@ -7,21 +7,21 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[legacy-page/AC-14] dbIndex が数字でも legacy でもないURLは、404を返す", async ({
+test("[legacy-page/1.3] dbIndex が数字でも legacy でもないURLは、404を返す", async ({
     page,
 }) => {
     const res = await page.goto("/posts/abc/someone@3abc")
     expect(res?.status()).toBe(404)
 })
 
-test("[legacy-page/AC-15] 識別子に区切りが無いURLは、404を返す", async ({
+test("[legacy-page/1.3] 識別子に区切りが無いURLは、404を返す", async ({
     page,
 }) => {
     const res = await page.goto("/posts/legacy/no-separator")
     expect(res?.status()).toBe(404)
 })
 
-test("[legacy-page/AC-16] dbIndex を省略した識別子が不正なURLも、404を返す", async ({
+test("[legacy-page/1.3] dbIndex を省略した識別子が不正なURLも、404を返す", async ({
     page,
 }) => {
     const res = await page.goto("/posts/no-separator")

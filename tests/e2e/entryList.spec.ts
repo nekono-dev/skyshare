@@ -11,7 +11,7 @@
 import { expect, test } from "./fixtures"
 
 test.describe("Entry一覧ページ", () => {
-    test("[entry-list/AC-6] ゲスト表示でカードが表示され、削除ボタンが有効な状態でレンダリングされる", async ({
+    test("[entry-list/2.1] ゲスト表示でカードが表示され、削除ボタンが有効な状態でレンダリングされる", async ({
         page,
     }) => {
         await page.goto("/entries/?guest")
@@ -21,7 +21,7 @@ test.describe("Entry一覧ページ", () => {
         await expect(deleteButton).toBeEnabled()
     })
 
-    test("[entry-list/AC-7] 参照先の投稿が削除済みのカードは、中身のコントラストを下げるクラスを持つ", async ({
+    test("[entry-list/2.2] 参照先の投稿が削除済みのカードは、中身のコントラストを下げるクラスを持つ", async ({
         page,
     }) => {
         await page.goto("/entries/?guest")
@@ -34,7 +34,7 @@ test.describe("Entry一覧ページ", () => {
         ).toBeVisible()
     })
 
-    test("[entry-list/AC-11] 参照先の投稿が削除済みのカードにだけ、元投稿削除済みのバッジが表示される", async ({
+    test("[entry-list/2.3] 参照先の投稿が削除済みのカードにだけ、元投稿削除済みのバッジが表示される", async ({
         page,
     }) => {
         await page.goto("/entries/?guest")
@@ -51,7 +51,7 @@ test.describe("Entry一覧ページ", () => {
         await expect(normalCard.getByText("元投稿削除済み")).toHaveCount(0)
     })
 
-    test("[entry-list/AC-8] ゲスト表示では、編集ボタンが無効になる", async ({
+    test("[entry-list/3.2] ゲスト表示では、編集ボタンが無効になる", async ({
         page,
     }) => {
         await page.goto("/entries/?guest")
@@ -61,7 +61,7 @@ test.describe("Entry一覧ページ", () => {
         await expect(editButton).toBeDisabled()
     })
 
-    test("[entry-list/AC-9] 見出しを編集して保存すると、更新APIへ新しい見出しが送られる", async ({
+    test("[entry-list/3.1] 見出しを編集して保存すると、更新APIへ新しい見出しが送られる", async ({
         page,
     }) => {
         test.setTimeout(90_000)
@@ -125,7 +125,7 @@ test.describe("Entry一覧ページ", () => {
         })
     })
 
-    test("[entry-list/AC-10] 日本語34文字の見出しを入力すると、見出しの表示が102/100のバイト数になり誤りの状態になる", async ({
+    test("[entry-list/3.3] 日本語34文字の見出しを入力すると、見出しの表示が102/100のバイト数になり誤りの状態になる", async ({
         page,
     }) => {
         test.setTimeout(90_000)

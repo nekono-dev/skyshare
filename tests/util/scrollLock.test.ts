@@ -23,7 +23,7 @@ describe("scrollLock", () => {
         vi.unstubAllGlobals()
     })
 
-    it("[browser-utils/AC-4] 最初の要求で body を現在位置に固定し、最後の解除で元の位置へ戻す", async () => {
+    it("[browser-utils/2.1,2.2] 最初の要求で body を現在位置に固定し、最後の解除で元の位置へ戻す", async () => {
         const { acquireScrollLock, releaseScrollLock } =
             await import("@/util/scrollLock")
         const { style, scrollTo } = stubDom(120)
@@ -35,7 +35,7 @@ describe("scrollLock", () => {
         expect(scrollTo).toHaveBeenCalledWith(0, 120)
     })
 
-    it("[browser-utils/AC-5] 入れ子の要求では、最初に保存した位置が保たれ、外側の解除まで固定が続く", async () => {
+    it("[browser-utils/2.3] 入れ子の要求では、最初に保存した位置が保たれ、外側の解除まで固定が続く", async () => {
         const { acquireScrollLock, releaseScrollLock } =
             await import("@/util/scrollLock")
         const { style, scrollTo } = stubDom(300)

@@ -258,7 +258,7 @@ const detectFacetsForSubmission = async (
  * 投稿本文からURL（link）のfacetsだけを、通信せずに検出する。
  *
  * 処理の趣旨:
- * - 共有文から本文のURLを取り除く範囲を求めるために使う（`specs/link-card-priority`）。
+ * - 共有文から本文のURLを取り除く範囲を求めるために使う（`.kiro/specs/link-card-priority`）。
  *   URLの検出にはメンションの did 解決が不要なため、`detectFacetsWithoutResolution` を使う。
  *
  * Input:

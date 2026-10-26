@@ -51,7 +51,7 @@ const clickSettingsLink = (page: Page) =>
 
 test.use({ viewport: { width: 390, height: 844 } })
 
-test("[composer-navigation/AC-1 composer-navigation/AC-6] 本文を入力して設定を押すと3択の確認が出て、住所は変わらず、保存を選ぶと保存が1回呼ばれて設定へ移る", async ({
+test("[composer-navigation/1.1 composer-navigation/1.5] 本文を入力して設定を押すと3択の確認が出て、住所は変わらず、保存を選ぶと保存が1回呼ばれて設定へ移る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -73,7 +73,7 @@ test("[composer-navigation/AC-1 composer-navigation/AC-6] 本文を入力して�
     expect(saves).toHaveLength(1)
 })
 
-test("[composer-navigation/AC-2] 破棄は保存を呼ばずに設定へ移り、編集を続けるは移らず本文が残る", async ({
+test("[composer-navigation/1.2,1.3] 破棄は保存を呼ばずに設定へ移り、編集を続けるは移らず本文が残る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -97,7 +97,7 @@ test("[composer-navigation/AC-2] 破棄は保存を呼ばずに設定へ移り�
     expect(saves).toHaveLength(0)
 })
 
-test("[composer-navigation/AC-3] 本文が空のときは、確認が出ずに設定へ移る", async ({
+test("[composer-navigation/1.4] 本文が空のときは、確認が出ずに設定へ移る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -111,7 +111,7 @@ test("[composer-navigation/AC-3] 本文が空のときは、確認が出ずに�
     await expect(confirmDialog(page)).toHaveCount(0)
 })
 
-test("[composer-navigation/AC-4 composer-navigation/AC-5] 予約投稿が無効のときカレンダーを押すと案内が出て、設定を開くと、本文があれば確認を挟んで設定へ移る", async ({
+test("[composer-navigation/2.1 composer-navigation/2.2] 予約投稿が無効のときカレンダーを押すと案内が出て、設定を開くと、本文があれば確認を挟んで設定へ移る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -146,7 +146,7 @@ test("[composer-navigation/AC-4 composer-navigation/AC-5] 予約投稿が無効�
     expect(new URL(page.url()).pathname).toBe("/post/")
 })
 
-test("[schedule-form/AC-27] 画面幅390で認証情報の入力を開くと、ダイアログの上端が画面の上部にあり、全体が画面に収まる", async ({
+test("[schedule-form/2.4] 画面幅390で認証情報の入力を開くと、ダイアログの上端が画面の上部にあり、全体が画面に収まる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

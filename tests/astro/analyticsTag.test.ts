@@ -10,7 +10,7 @@ import AnalyticsTag from "@/components/layout/AnalyticsTag.astro"
 import { renderAstro } from "./support/renderAstro"
 
 describe("AnalyticsTag", () => {
-    it("[site-config/AC-5] 測定 ID があるときだけ GA のタグを出力する", async () => {
+    it("[site-config/1.6,1.7] 測定 ID があるときだけ GA のタグを出力する", async () => {
         const html = await renderAstro(AnalyticsTag, {
             measurementId: "G-TEST123",
         })

@@ -57,7 +57,7 @@ describe("parseUserAgent", () => {
         [UA.ipadDesktop, 5, "iPadOS", "Safari 18.0"],
         ["curl/8.0", 0, "Unknown", "Unknown"],
     ])(
-        "[feedback-form/AC-9] 識別文字列から OS とブラウザを求める (%#)",
+        "[feedback-form/3.2] 識別文字列から OS とブラウザを求める (%#)",
         (ua, touch, os, browser) => {
             expect(parseUserAgent(ua, touch)).toEqual({ os, browser })
         },
@@ -65,7 +65,7 @@ describe("parseUserAgent", () => {
 })
 
 describe("detectStandalone", () => {
-    it("[feedback-form/AC-9] display-mode と iOS の standalone から起動の形態を求める", () => {
+    it("[feedback-form/3.2] display-mode と iOS の standalone から起動の形態を求める", () => {
         expect(
             detectStandalone(fakeWindow({ displayMode: "standalone" })),
         ).toBe(true)

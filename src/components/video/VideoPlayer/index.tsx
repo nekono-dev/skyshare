@@ -18,7 +18,7 @@ type Phase = "idle" | "playing" | "error"
  *
  * 責務と処理概要:
  * - 初期表示は poster と再生ボタンのみ。ページを開いただけでは動画データも `hls.js` も
- *   取得しない（NFR-3）。再生ボタンの操作で初めて `<video>` を作り、HLS を読み込む。
+ *   取得しない（video-player 要件2.2）。再生ボタンの操作で初めて `<video>` を作り、HLS を読み込む。
  * - Safari はネイティブ HLS、それ以外は `hls.js`（動的 import）で再生する。
  * - 再生に失敗したら、元の Bluesky 投稿へ誘導する表示にする。
  */

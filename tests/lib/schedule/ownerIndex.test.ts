@@ -17,7 +17,7 @@ const planOf = (sql: string): string[] => {
 }
 
 describe("予約の所有者の索引", () => {
-    test("schedule-store/AC-22: 登録状態の取得の問い合わせが、アカウントと状態で絞る索引だけで予約の表を検索する", () => {
+    test("schedule-store/3.8: 登録状態の取得の問い合わせが、アカウントと状態で絞る索引だけで予約の表を検索する", () => {
         const plan = planOf(`
             SELECT updated_at,
               (SELECT MAX(run_at) FROM scheduled_posts

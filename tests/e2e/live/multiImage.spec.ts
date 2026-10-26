@@ -2,7 +2,7 @@
  * ライブテスト: 5枚以上の画像投稿（実アカウント）。
  *
  * 責務と処理概要:
- * - `specs/multiimage/tasks.md`の手動確認項目を自動化する。色の違う5枚の画像を添付して投稿し、
+ * - `.kiro/specs/multiimage/tasks.md`の手動確認項目を自動化する。色の違う5枚の画像を添付して投稿し、
  *   - 投稿レコードが`app.bsky.embed.gallery`で、画像5枚が保存されること、
  *   - 公開AppViewのビュー（公式アプリが描画に使う形）でも画像5枚を持つこと、
  *   - entryが作成され、visualは先頭4枚だけから合成される（5枚目の色が含まれない）こと
@@ -31,7 +31,7 @@ const COLORS: [number, number, number][] = [
     [255, 0, 255],
 ]
 
-test("e2elive/AC-11: 画像5枚を添付して投稿すると、galleryとして保存されentryが作られ、visualは先頭4枚から作られる", async ({
+test("e2elive/5.2: 画像5枚を添付して投稿すると、galleryとして保存されentryが作られ、visualは先頭4枚から作られる", async ({
     page,
     request,
     tag,

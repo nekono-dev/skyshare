@@ -25,7 +25,7 @@ describe("callXrpc", () => {
         expect(budget.remaining).toBe(0)
     })
 
-    test("schedule-runner/AC-12: 429 は RateLimited になり、予算に rateLimited が立つ", async () => {
+    test("schedule-runner/3.2: 429 は RateLimited になり、予算に rateLimited が立つ", async () => {
         const budget = createBudget(10)
         const r = await callXrpc(budget, req, (async () => res(429)) as never)
         expect(r).toEqual({ ok: false, kind: "RateLimited" })
@@ -73,7 +73,7 @@ describe("callXrpc", () => {
         )
     })
 
-    test("schedule-runner/AC-17: 失敗のログにトークンが現れない", async () => {
+    test("schedule-runner/6.2: 失敗のログにトークンが現れない", async () => {
         const logs: string[] = []
         const spies = (["log", "warn", "error"] as const).map(m =>
             vi.spyOn(console, m).mockImplementation((...a) => {

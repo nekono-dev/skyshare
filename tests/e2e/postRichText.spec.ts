@@ -1,5 +1,5 @@
 /**
- * 投稿本文のリンク表示（`specs/post-rich-text`）のヘッドレスブラウザによる動作確認。
+ * 投稿本文のリンク表示（`.kiro/specs/post-rich-text`）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
  * - `/?guest` のタイムラインの `guest-rich-text` 投稿と、`/entries/sample/` の6件目の投稿で、
@@ -35,7 +35,7 @@ const expectBodyLinks = async (scope: Locator) => {
 }
 
 test.describe("投稿本文のリンク表示", () => {
-    test("[post-rich-text/AC-1 post-rich-text/AC-2] タイムラインの本文のメンション・ハッシュタグ・URLが新しいタブで開くリンクになり、前後の文字は元のまま", async ({
+    test("[post-rich-text/1.1 post-rich-text/1.2] タイムラインの本文のメンション・ハッシュタグ・URLが新しいタブで開くリンクになり、前後の文字は元のまま", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -49,14 +49,14 @@ test.describe("投稿本文のリンク表示", () => {
         )
     })
 
-    test("[post-rich-text/AC-1] entry詳細ページの本文のメンション・ハッシュタグ・URLがリンクになる", async ({
+    test("[post-rich-text/1.1] entry詳細ページの本文のメンション・ハッシュタグ・URLがリンクになる", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
         await expectBodyLinks(page.locator("li", { hasText: SAMPLE_LINK_POST }))
     })
 
-    test("[post-rich-text/AC-9] entry詳細ページの説明文のスキームを省略したURLが、httpsを補ったリンクになる", async ({
+    test("[post-rich-text/3.3] entry詳細ページの説明文のスキームを省略したURLが、httpsを補ったリンクになる", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")
@@ -68,7 +68,7 @@ test.describe("投稿本文のリンク表示", () => {
 })
 
 test.describe("entry一覧のキャプションのリンク表示", () => {
-    test("[post-rich-text/AC-11 post-rich-text/AC-12] ゲスト表示の一覧のキャプションのURLとタグが新しいタブで開くリンクになる", async ({
+    test("[post-rich-text/3.4 post-rich-text/3.5] ゲスト表示の一覧のキャプションのURLとタグが新しいタブで開くリンクになる", async ({
         page,
     }) => {
         await page.goto("/entries/?guest")
@@ -92,7 +92,7 @@ test.describe("entry一覧のキャプションのリンク表示", () => {
 test.describe("JavaScript無効", () => {
     test.use({ javaScriptEnabled: false })
 
-    test("[post-rich-text/AC-6] JavaScriptを無効にしたentry詳細ページで、本文のリンクが表示される", async ({
+    test("[post-rich-text/2.2] JavaScriptを無効にしたentry詳細ページで、本文のリンクが表示される", async ({
         page,
     }) => {
         await page.goto("/entries/sample/")

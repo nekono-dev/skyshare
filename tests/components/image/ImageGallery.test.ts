@@ -13,7 +13,7 @@ const images = [
 ]
 
 describe("ImageGallery", () => {
-    it("[image-gallery/AC-10] 拡大表示を持たない静的な表示の指定があり、指定するとサムネイルがボタンにならない", () => {
+    it("[image-gallery/4.3] 拡大表示を持たない静的な表示の指定があり、指定するとサムネイルがボタンにならない", () => {
         const interactive = renderToStaticMarkup(
             createElement(ImageGallery, { images }),
         )
@@ -26,7 +26,7 @@ describe("ImageGallery", () => {
         expect(staticView.match(/<img/g)).toHaveLength(2)
     })
 
-    it("[image-gallery/AC-4] 各サムネイルに、画像の代替テキストが設定される", () => {
+    it("[image-gallery/1.4] 各サムネイルに、画像の代替テキストが設定される", () => {
         for (const interactive of [true, false]) {
             const html = renderToStaticMarkup(
                 createElement(ImageGallery, { images, interactive }),

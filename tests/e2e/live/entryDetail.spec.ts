@@ -2,13 +2,13 @@
  * ライブテスト: 実PDS上のEntryの詳細ページ（`entries/[slug].astro`）の表示。
  *
  * 責務と処理概要:
- * - `specs/postcardlayout/tasks.md`の「実PDS上のEntryでの`[slug].astro`の表示確認」を自動化する
- *   （受け入れ条件は`specs/postcardlayout/requirements.md`）。前提の投稿・entryはPDSへ直接作る。
+ * - `.kiro/specs/postcardlayout/tasks.md`の「実PDS上のEntryでの`[slug].astro`の表示確認」を自動化する
+ *   （受け入れ条件は`.kiro/specs/postcardlayout/requirements.md`）。前提の投稿・entryはPDSへ直接作る。
  *   - 単発投稿（画像1枚）: 投稿カード1件、画像はサムネイル、タップで拡大表示が開き、
  *     Escで閉じてフォーカスがサムネイルへ戻る。
  *   - スレッド（画像1・3・4枚）: 投稿ごとの独立したカードが古い順にすべて展開された状態で並び、
  *     枚数ごとのサムネイルが表示される。360px幅でページ全体に横スクロールが出ない。
- *   - JavaScriptを無効にしても、投稿カードとサムネイルが表示される（NFR-1）。
+ *   - JavaScriptを無効にしても、投稿カードとサムネイルが表示される（entry-detail 要件5.1）。
  * - 画像5枚以上のEntry（gallery）は`multiImage.spec.ts`で確認する。
  */
 import { expect, test } from "./liveTest"

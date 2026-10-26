@@ -21,14 +21,14 @@ const KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)))
 const DID = "did:plc:aaaa"
 
 describe("credentialCrypto", () => {
-    test("schedule-store/AC-5: 暗号文に平文が含まれず、復号すると元に戻る", async () => {
+    test("schedule-store/3.1: 暗号文に平文が含まれず、復号すると元に戻る", async () => {
         const enc = await encryptToken(KEY, DID, "refresh-token-plain")
         expect(enc).not.toContain("refresh-token-plain")
         expect(atob(enc)).not.toContain("refresh-token-plain")
         expect(await decryptToken(KEY, DID, enc)).toBe("refresh-token-plain")
     })
 
-    test("schedule-store/AC-5: 保管した行にも平文が含まれない", async () => {
+    test("schedule-store/3.1: 保管した行にも平文が含まれない", async () => {
         const db = createFakeD1()
         await saveCredential(
             db,
@@ -47,7 +47,7 @@ describe("credentialCrypto", () => {
         })
     })
 
-    test("schedule-store/AC-12: 同じトークンの暗号文は毎回異なる", async () => {
+    test("schedule-store/3.2: 同じトークンの暗号文は毎回異なる", async () => {
         const a = await encryptToken(KEY, DID, "same")
         const b = await encryptToken(KEY, DID, "same")
         expect(a).not.toBe(b)
@@ -60,7 +60,7 @@ describe("credentialCrypto", () => {
         await expect(encryptToken("***", DID, "t")).rejects.toThrow()
     })
 
-    test("schedule-store/AC-6: 待機中の予約が残るか最後の使用から30日以内なら残り、どちらにも当たらないと再度の許可が必要な印になり、印は180日を超えると削除される", async () => {
+    test("schedule-store/3.4,3.5: 待機中の予約が残るか最後の使用から30日以内なら残り、どちらにも当たらないと再度の許可が必要な印になり、印は180日を超えると削除される", async () => {
         const db = createFakeD1()
         const now = 100 * 24 * 60 * 60
         const idle = CREDENTIAL_IDLE_SECONDS
@@ -110,7 +110,7 @@ describe("credentialCrypto", () => {
         })
     })
 
-    test("schedule-store/AC-21: 失効を記録すると取り出せず再度の許可が必要と返り、許可を得て保管し直すと印が外れて許可の時刻が更新される", async () => {
+    test("schedule-store/3.4,3.7: 失効を記録すると取り出せず再度の許可が必要と返り、許可を得て保管し直すと印が外れて許可の時刻が更新される", async () => {
         const db = createFakeD1()
         await saveCredential(
             db,
@@ -157,7 +157,7 @@ describe("credentialCrypto", () => {
         })
     })
 
-    test("schedule-store/AC-16: 所有アカウントの指示で、待機中の予約が残っていても認証情報が削除される", async () => {
+    test("schedule-store/3.6: 所有アカウントの指示で、待機中の予約が残っていても認証情報が削除される", async () => {
         const db = createFakeD1()
         await saveCredential(db, KEY, { did: DID, service: "s", token: "t" }, 1)
         await saveCredential(

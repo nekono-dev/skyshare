@@ -1,5 +1,5 @@
 /**
- * 他SNSへの共有文に使う本文とリンクカードのURLを決めるモジュール（`specs/link-card-priority`）。
+ * 他SNSへの共有文に使う本文とリンクカードのURLを決めるモジュール（`.kiro/specs/link-card-priority`）。
  *
  * 責務と処理概要:
  * - 「Skyshareのリンクカードを優先表示」がONで、共有文に skyshare entry のURLを含めるときだけ、

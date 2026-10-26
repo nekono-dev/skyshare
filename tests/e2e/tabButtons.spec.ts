@@ -22,7 +22,7 @@ const openDraftsDialog = async (page: Page) => {
     }
 }
 
-test("[thread-composer/AC-15 tab-buttons/AC-1] 下書き・予約の画面に2つのタブがあり、初めは下書きが選ばれ、選択中だけが太字と下線になる", async ({
+test("[thread-composer/4.2 tab-buttons/1.1] 下書き・予約の画面に2つのタブがあり、初めは下書きが選ばれ、選択中だけが太字と下線になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -47,7 +47,7 @@ test("[thread-composer/AC-15 tab-buttons/AC-1] 下書き・予約の画面に2�
     expect(other.underline).toBe(false)
 })
 
-test("[tab-buttons/AC-2 tab-buttons/AC-3] タブを押すと選択と中身が移り、矢印キーで隣のタブへ移る", async ({
+test("[tab-buttons/1.2 tab-buttons/2.1] タブを押すと選択と中身が移り、矢印キーで隣のタブへ移る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -71,7 +71,7 @@ test("[tab-buttons/AC-2 tab-buttons/AC-3] タブを押すと選択と中身が�
 test.describe("狭い画面", () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
-    test("[tab-buttons/AC-7] 画面幅390のとき、各タブの高さが44ピクセル以上", async ({
+    test("[tab-buttons/1.3] 画面幅390のとき、各タブの高さが44ピクセル以上", async ({
         page,
     }) => {
         test.setTimeout(90_000)

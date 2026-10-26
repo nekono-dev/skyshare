@@ -12,7 +12,7 @@ const json = (status: number, body: unknown) =>
     })
 
 describe("LegacyPageDeleteButton の失敗の文言", () => {
-    it("[legacy-page/AC-18] 削除が識別子つきの403で拒否されると、アプリパスワードでのログインを求める文言になる", async () => {
+    it("[legacy-page/4.2] 削除が識別子つきの403で拒否されると、アプリパスワードでのログインを求める文言になる", async () => {
         const key = await deleteFailureKey(
             json(403, { error: "OAuthSessionUnsupported" }),
         )

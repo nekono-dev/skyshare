@@ -1,5 +1,5 @@
 /**
- * APIエラーの表示文言（specs/api-error-message）のヘッドレスブラウザによる動作確認。
+ * APIエラーの表示文言（.kiro/specs/api-error-message）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
  * - ログイン時の通信失敗で、接続できない旨の文言が表示されることを確認する。
@@ -9,7 +9,7 @@
 import { expect, test } from "@playwright/test"
 import { openPasswordLogin } from "./fixtures"
 
-test("[api-error-message/AC-6] ログイン時に通信が失敗すると、接続できない旨の文言が表示される", async ({
+test("[api-error-message/2.4] ログイン時に通信が失敗すると、接続できない旨の文言が表示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -34,7 +34,7 @@ test("[api-error-message/AC-6] ログイン時に通信が失敗すると、接�
     }).toPass({ timeout: 20_000 })
 })
 
-test("[api-error-message/AC-7] タイムラインの取得に失敗すると、サーバーのエラー文字列ではなく読み込み失敗の文言が表示される", async ({
+test("[api-error-message/4.1] タイムラインの取得に失敗すると、サーバーのエラー文字列ではなく読み込み失敗の文言が表示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)

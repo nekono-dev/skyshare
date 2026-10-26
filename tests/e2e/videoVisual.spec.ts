@@ -5,7 +5,7 @@
  * 責務と処理概要:
  * - 無地の動画（`rgb(97,95,168)`）の poster から、実ブラウザ上で本実装の
  *   `probeVideo`・`createDefaultThumbnail`・`drawVideoOverlay` を実行して visual を生成し、
- *   画素をサンプリングして `specs/entry-visual` の寸法・色と照合する。
+ *   画素をサンプリングして `.kiro/specs/entry-visual` の寸法・色と照合する。
  * - 動画の縦横比（横長・正方形・縦長）によらず、円の中心の位置が同じであることを確認する。
  * - 許容誤差は色が各チャンネル ±6（JPEG 圧縮と補間のため）。
  */
@@ -112,7 +112,7 @@ test.describe("動画投稿の visual", () => {
         ["正方形 480x480", "video-solid-square.mp4"],
         ["縦長 360x640", "video-solid-portrait.mp4"],
     ] as const) {
-        test(`[entry-visual/AC-3 entry-visual/AC-11] ${label} の visual は、円・再生記号が同じ位置と色で描かれる（シナリオ1〜6・8）`, async ({
+        test(`[entry-visual/2.1 entry-visual/2.3] ${label} の visual は、円・再生記号が同じ位置と色で描かれる（シナリオ1〜6・8）`, async ({
             page,
         }) => {
             await page.goto("/post/?guest")
@@ -137,7 +137,7 @@ test.describe("動画投稿の visual", () => {
         })
     }
 
-    test("[entry-visual/AC-7] サムネ調整で切り抜きを変えても、円・再生記号の位置と色は変わらない（サムネ調整）", async ({
+    test("[entry-visual/3.4] サムネ調整で切り抜きを変えても、円・再生記号の位置と色は変わらない（サムネ調整）", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -255,7 +255,7 @@ test.describe("動画投稿の visual", () => {
             )
         }
 
-        test("[entry-visual/AC-9] poster と再生時間（EXTINF 合計）から、再生ボタン入りの visual が作られる", async ({
+        test("[entry-visual/5.1,5.2] poster と再生時間（EXTINF 合計）から、再生ボタン入りの visual が作られる", async ({
             page,
         }) => {
             const result = await buildFromPost(page)
@@ -274,7 +274,7 @@ test.describe("動画投稿の visual", () => {
             near(oldBadge, BACKGROUND)
         })
 
-        test("[entry-visual/AC-10] playlist を取得できなければ visual は作られず失敗になる", async ({
+        test("[entry-visual/5.3] playlist を取得できなければ visual は作られず失敗になる", async ({
             page,
         }) => {
             const result = await buildFromPost(page, { playlist404: true })

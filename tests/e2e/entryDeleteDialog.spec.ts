@@ -4,7 +4,7 @@
  *
  * 責務と処理概要:
  * - ログイン不要のゲスト表示（`/entries/?guest`・`/?guest`）の模擬動作
- *   （`specs/entry-delete-dialog`）で、削除フローの状態遷移と表示内容を検証する。
+ *   （`.kiro/specs/entry-delete-dialog`）で、削除フローの状態遷移と表示内容を検証する。
  * - ゲスト表示は削除範囲の判定・削除の実行をアプリ内で模擬するため、全シナリオで
  *   `DELETE /v2/entry`と公開APIの`getPostThread`への通信が発生しないことも検証する。
  */
@@ -35,7 +35,7 @@ const deletePostButton = (page: Page) =>
     dialog(page).getByRole("button", { name: "リンク・Bluesky投稿を削除" })
 
 test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
-    test("[entry-delete-dialog/AC-1 entry-delete-dialog/AC-3] /entries: 単発entryは最終確認を経て削除され、キャンセルでは削除されない", async ({
+    test("[entry-delete-dialog/1.1 entry-delete-dialog/1.3,1.4] /entries: 単発entryは最終確認を経て削除され、キャンセルでは削除されない", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -68,7 +68,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         expect(hits).toEqual([])
     })
 
-    test("[entry-delete-dialog/AC-2 entry-delete-dialog/AC-12] /entries: 「Skyshareリンクを削除」は最終確認なしでカードが消える", async ({
+    test("[entry-delete-dialog/1.2 entry-delete-dialog/4.1] /entries: 「Skyshareリンクを削除」は最終確認なしでカードが消える", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -93,7 +93,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         ).toBeDisabled()
     })
 
-    test("[entry-delete-dialog/AC-4 timeline/AC-10] /: スレッドBは2件の投稿・第三者返信の注意が表示され、確定でスレッド全体が消える", async ({
+    test("[entry-delete-dialog/2.1 timeline/3.1] /: スレッドBは2件の投稿・第三者返信の注意が表示され、確定でスレッド全体が消える", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -118,7 +118,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         expect(hits).toEqual([])
     })
 
-    test("[entry-delete-dialog/AC-8] /entries: 旧entry（派生元が返信）は「リンク・Bluesky投稿を削除」が無効で、リンク削除でカードが消える", async ({
+    test("[entry-delete-dialog/3.1] /entries: 旧entry（派生元が返信）は「リンク・Bluesky投稿を削除」が無効で、リンク削除でカードが消える", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -140,7 +140,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         expect(hits).toEqual([])
     })
 
-    test("[entry-delete-dialog/AC-9] /: 判定不能のentryは「リンク・Bluesky投稿を削除」が無効で、理由が表示される", async ({
+    test("[entry-delete-dialog/3.2] /: 判定不能のentryは「リンク・Bluesky投稿を削除」が無効で、理由が表示される", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -158,7 +158,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         expect(hits).toEqual([])
     })
 
-    test("[entry-delete-dialog/AC-5 entry-delete-dialog/AC-7] /entries: 最終確認にのみ削除予定投稿の一覧（本文・日時・サムネイル）が表示され、キャンセル後も再表示される", async ({
+    test("[entry-delete-dialog/2.2 entry-delete-dialog/2.4] /entries: 最終確認にのみ削除予定投稿の一覧（本文・日時・サムネイル）が表示され、キャンセル後も再表示される", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -190,7 +190,7 @@ test.describe("Entry削除確認ダイアログ（ゲスト模擬）", () => {
         expect(hits).toEqual([])
     })
 
-    test("[entry-delete-dialog/AC-6] /: スレッドBの一覧は古い順の2件で、画像の無い投稿にサムネイルが無く、低い画面でもボタンを押せる", async ({
+    test("[entry-delete-dialog/2.3] /: スレッドBの一覧は古い順の2件で、画像の無い投稿にサムネイルが無く、低い画面でもボタンを押せる", async ({
         page,
     }) => {
         const hits = await watchForbiddenRequests(page)
@@ -303,7 +303,7 @@ const openDeleteDialog = async (page: Page) => {
 }
 
 test.describe("Entry削除確認ダイアログ（APIの応答を差し替え）", () => {
-    test("[entry-delete-dialog/AC-10] 派生元が削除済みのentryの削除の確認には、Bluesky投稿の削除の選択肢が無い", async ({
+    test("[entry-delete-dialog/3.3] 派生元が削除済みのentryの削除の確認には、Bluesky投稿の削除の選択肢が無い", async ({
         page,
     }) => {
         test.setTimeout(90_000)
@@ -324,7 +324,7 @@ test.describe("Entry削除確認ダイアログ（APIの応答を差し替え）
         ).toHaveCount(0)
     })
 
-    test("[entry-delete-dialog/AC-11] 削除の応答が409のとき、entryが残り、削除できない旨のエラーが表示される", async ({
+    test("[entry-delete-dialog/1.5] 削除の応答が409のとき、entryが残り、削除できない旨のエラーが表示される", async ({
         page,
     }) => {
         test.setTimeout(90_000)

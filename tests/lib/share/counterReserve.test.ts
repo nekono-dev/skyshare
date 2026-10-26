@@ -11,7 +11,7 @@ import { TID } from "@atproto/common-web"
 const DID = "did:plc:abcdefghijklmnopqrstuvwx"
 
 describe("estimateSkyshareEntryUrl", () => {
-    it("[share-counter/AC-3] 実際のURLと同じ長さ・構造になる", () => {
+    it("[share-counter/1.4] 実際のURLと同じ長さ・構造になる", () => {
         const actual = skyshareEntryUrlgen(DID, TID.nextStr())
         expect(estimateSkyshareEntryUrl(DID).length).toBe(actual.length)
         expect(
@@ -57,7 +57,7 @@ describe("resolveCounterReserve", () => {
         ).toBe(0)
     })
 
-    it("[share-counter/AC-1] Xは改行1 + URL23 = 24 → 12", () => {
+    it("[share-counter/1.1,1.2,1.6] Xは改行1 + URL23 = 24 → 12", () => {
         expect(
             resolveCounterReserve({
                 target: "x",
@@ -68,7 +68,7 @@ describe("resolveCounterReserve", () => {
         ).toBe(12)
     })
 
-    it("[share-counter/AC-5] タイッツーはURLの全文字を半角0.5で数える", () => {
+    it("[share-counter/1.6] タイッツーはURLの全文字を半角0.5で数える", () => {
         expect(
             resolveCounterReserve({
                 target: "taittsuu",
@@ -79,7 +79,7 @@ describe("resolveCounterReserve", () => {
         ).toBe(Math.ceil((entryUrl.length + 1) / 2))
     })
 
-    it("[share-counter/AC-4] 本文に無いリンクカードURLも差し引く", () => {
+    it("[share-counter/1.5] 本文に無いリンクカードURLも差し引く", () => {
         const link = "https://example.com/a"
         const withLink = resolveCounterReserve({
             target: "taittsuu",
@@ -90,7 +90,7 @@ describe("resolveCounterReserve", () => {
         expect(withLink).toBe(Math.ceil((link.length + 1) / 2))
     })
 
-    it("[share-counter/AC-4] 本文に含まれるリンクカードURLは差し引かない", () => {
+    it("[share-counter/1.5] 本文に含まれるリンクカードURLは差し引かない", () => {
         expect(
             resolveCounterReserve({
                 target: "x",

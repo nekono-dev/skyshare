@@ -3,16 +3,16 @@ import { describe, expect, it } from "vitest"
 import { isObjectRecord } from "@/util/object"
 
 describe("isObjectRecord", () => {
-    it("[browser-utils/AC-1] プレーンオブジェクトは true", () => {
+    it("[browser-utils/1.1] プレーンオブジェクトは true", () => {
         expect(isObjectRecord({ a: 1 })).toBe(true)
         expect(isObjectRecord({})).toBe(true)
     })
 
-    it("[browser-utils/AC-2] null は false", () => {
+    it("[browser-utils/1.2] null は false", () => {
         expect(isObjectRecord(null)).toBe(false)
     })
 
-    it("[browser-utils/AC-3] 配列は false", () => {
+    it("[browser-utils/1.2] 配列は false", () => {
         expect(isObjectRecord([1, 2, 3])).toBe(false)
     })
 

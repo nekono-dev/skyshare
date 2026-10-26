@@ -17,6 +17,6 @@ export const operation: ZodOpenApiOperationObject = {
     requestParams: { path: PathParamsSchema },
     responses: {
         "200": { description: "Success" },
-        ...Common.errorResponses(["401", "404", "500"]),
+        ...Common.errorResponses(["400", "401", "404", "500"]),
     },
 }

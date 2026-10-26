@@ -2,7 +2,7 @@
  * ライブテスト: 既存投稿からの事後entry作成（Timelineの「Skyshare Entryを作成」ボタン）。
  *
  * 責務と処理概要:
- * - `specs/timeline/tasks.md`の手動確認項目を自動化する（`specs/e2elive/design.md §8`）。
+ * - `.kiro/specs/timeline/tasks.md`の手動確認項目を自動化する（`.kiro/specs/e2elive/design.md §8`）。
  * - 前提となる「entryを持たない既存投稿」は、PDSへ直接作成する（アプリのUIからは作れない）。
  *   - 画像付き単発投稿に対して、ボタンが出て、押下するとentryが作られボタンが消える。
  *   - ルートが画像を持たず後続投稿が画像を持つスレッドで、ルートのカードにボタンが出て、
@@ -16,7 +16,7 @@ const CREATE = "Skyshare Entryを作成"
 
 test.describe.configure({ timeout: 180_000 })
 
-test("e2elive/AC-13: 画像付き単発投稿に事後でentryを作成できる", async ({
+test("e2elive/6.1: 画像付き単発投稿に事後でentryを作成できる", async ({
     page,
     request,
     agent,
@@ -34,7 +34,7 @@ test("e2elive/AC-13: 画像付き単発投稿に事後でentryを作成できる
     expect(entries.filter(e => e.sourceUri === post.uri)).toHaveLength(1)
 })
 
-test("e2elive/AC-13: ルートに画像が無く後続投稿に画像があるスレッドで、ルートに作成したentryのsourceはルートを指す", async ({
+test("e2elive/6.1: ルートに画像が無く後続投稿に画像があるスレッドで、ルートに作成したentryのsourceはルートを指す", async ({
     page,
     request,
     agent,

@@ -93,7 +93,7 @@ beforeEach(async () => {
 })
 
 describe("runScheduledPosts", () => {
-    test("schedule-runner/AC-1: 到来した7件のうち早い5件が実行され、未到来の予約は実行されない", async () => {
+    test("schedule-runner/1.1: 到来した7件のうち早い5件が実行され、未到来の予約は実行されない", async () => {
         for (let i = 1; i <= 7; i++) await add(`due${i}`, NOW - 100 + i)
         await add("future", NOW + 3600)
         await run()
@@ -104,7 +104,7 @@ describe("runScheduledPosts", () => {
         expect((await getSchedule(db, DID, "future"))?.status).toBe("pending")
     })
 
-    test("schedule-runner/AC-13: 実行時刻の直後の実行で、5件以内の予約が投稿の作成を開始する", async () => {
+    test("schedule-runner/1.2: 実行時刻の直後の実行で、5件以内の予約が投稿の作成を開始する", async () => {
         await add("a", NOW)
         await add("b", NOW)
         await run(NOW + 60)
@@ -114,7 +114,7 @@ describe("runScheduledPosts", () => {
         expect(posts).toHaveLength(2)
     })
 
-    test("schedule-runner/AC-14: 10枚の画像を持つ予約を5件実行しても、外部への通信が40回を超えない", async () => {
+    test("schedule-runner/1.3: 10枚の画像を持つ予約を5件実行しても、外部への通信が40回を超えない", async () => {
         const payload = {
             posts: [
                 {
@@ -139,7 +139,7 @@ describe("runScheduledPosts", () => {
         expect(pds.records.size).toBe(5)
     })
 
-    test("schedule-runner/AC-10: 10分以上更新のない実行中の予約が待機に戻り、直近に更新された予約は戻らない", async () => {
+    test("schedule-runner/3.5: 10分以上更新のない実行中の予約が待機に戻り、直近に更新された予約は戻らない", async () => {
         await add("stuck", NOW - 5000)
         await add("fresh", NOW - 5000)
         await claimDueSchedules(db, NOW - 700, 1) // stuck を 700 秒前に実行中にする
@@ -158,7 +158,7 @@ describe("runScheduledPosts", () => {
         expect((await getSchedule(db, DID, "fresh"))?.status).toBe("running")
     })
 
-    test("schedule-runner/AC-11: 後片付けで、終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが取り出せなくなる", async () => {
+    test("schedule-runner/5.1,5.2: 後片付けで、終了から7日を超えた予約が削除され、予約がなく最後の使用から30日を超えた認証情報だけが取り出せなくなる", async () => {
         const week = 7 * 24 * 60 * 60
         const month = 30 * 24 * 60 * 60
         await add("old", NOW - 10)
@@ -184,7 +184,7 @@ describe("runScheduledPosts", () => {
         expect(await loadCredential(db, KEY, DID)).not.toBeNull()
     })
 
-    test("schedule-runner/AC-19: 毎分の実行は後片付けをせず、1日のうち後片付けの分だけが後片付けの時刻と判定される", async () => {
+    test("schedule-runner/5.3: 毎分の実行は後片付けをせず、1日のうち後片付けの分だけが後片付けの時刻と判定される", async () => {
         const week = 7 * 24 * 60 * 60
         await add("old", NOW - 10)
         await claimDueSchedules(db, NOW, 5)

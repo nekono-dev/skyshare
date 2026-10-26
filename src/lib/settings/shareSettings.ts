@@ -20,7 +20,7 @@ const TEXTAREA_ROWS_KEY = "textareaRows"
 const MASTODON_INSTANCE_DOMAIN_KEY = "mastodonInstanceDomain"
 const MISSKEY_INSTANCE_DOMAIN_KEY = "misskeyInstanceDomain"
 
-/** 「Skyshareのリンクカードを優先表示」が未設定の場合に使う既定値（`specs/link-card-priority`）。 */
+/** 「Skyshareのリンクカードを優先表示」が未設定の場合に使う既定値（`.kiro/specs/link-card-priority`）。 */
 export const DEFAULT_LINK_CARD_PRIORITY = true
 
 /** Mastodonインスタンスドメインが未設定の場合に使う既定値。 */

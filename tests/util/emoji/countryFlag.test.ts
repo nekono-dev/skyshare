@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { countryCodeToFlagEmoji } from "@/util/emoji/countryFlag"
 
 describe("countryCodeToFlagEmoji", () => {
-    it("[language-select/AC-2] JP は日本の国旗絵文字になる", () => {
+    it("[language-select/2.1] JP は日本の国旗絵文字になる", () => {
         expect(countryCodeToFlagEmoji("JP")).toBe("🇯🇵")
     })
 

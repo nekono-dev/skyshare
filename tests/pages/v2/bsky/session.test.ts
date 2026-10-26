@@ -79,7 +79,7 @@ const decodePoolDids = (setCookies: string[]): string[] =>
         )
 
 describe("GET /v2/bsky/session", () => {
-    it("[account-session/AC-3] cookieヘッダーが無い場合は401を返す", async () => {
+    it("[account-session/2.2] cookieヘッダーが無い場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/session/",
         )
@@ -87,7 +87,7 @@ describe("GET /v2/bsky/session", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[account-session/AC-4] cookieはあるがアクティブ・プール共に無い場合は401を返す", async () => {
+    it("[account-session/2.2] cookieはあるがアクティブ・プール共に無い場合は401を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/session/",
             { headers: { cookie: "unrelated=1" } },
@@ -96,7 +96,7 @@ describe("GET /v2/bsky/session", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[account-session/AC-17] アクティブアカウントのみの場合、そのプロフィールを付与して200を返す", async () => {
+    it("[account-session/8.1] アクティブアカウントのみの場合、そのプロフィールを付与して200を返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             getProfile: vi.fn().mockResolvedValue({
                 data: { displayName: "Alice", avatar: "https://a" },
@@ -125,7 +125,7 @@ describe("GET /v2/bsky/session", () => {
         expect(res.headers.get("cache-control")).toBe("no-store")
     })
 
-    it("[account-session/AC-2] アクティブ+プールがある場合、アクティブを先頭に並べる", async () => {
+    it("[account-session/2.1] アクティブ+プールがある場合、アクティブを先頭に並べる", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             getProfile: vi.fn().mockResolvedValue({ data: {} }),
         } as any)
@@ -162,7 +162,7 @@ describe("GET /v2/bsky/session", () => {
         expect(json.accounts[1].isActive).toBe(false)
     })
 
-    it("[account-session/AC-5] プロフィール取得が失敗しても致命的にならず空メタで返す", async () => {
+    it("[account-session/2.3] プロフィール取得が失敗しても致命的にならず空メタで返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             getProfile: vi.fn().mockRejectedValue(new Error("network error")),
         } as any)
@@ -265,7 +265,7 @@ describe("POST /v2/bsky/session", () => {
         expect(res.status).toBe(500)
     })
 
-    it("[schedule-api/AC-25] 初回ログイン(currentSession無し)は200でpool空のままcookieをセットし、予約投稿の登録状態のヒントを失効させる", async () => {
+    it("[schedule-api/4.6,4.8,4.10] 初回ログイン(currentSession無し)は200でpool空のままcookieをセットし、予約投稿の登録状態のヒントを失効させる", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -296,7 +296,7 @@ describe("POST /v2/bsky/session", () => {
         )
     })
 
-    it("[account-session/AC-7] 同一did再ログインの場合はpoolへ退避しない", async () => {
+    it("[account-session/3.2] 同一did再ログインの場合はpoolへ退避しない", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:same", handle: "same.bsky.social" },
@@ -327,7 +327,7 @@ describe("POST /v2/bsky/session", () => {
         ).toBe(true)
     })
 
-    it("[account-session/AC-6] 別アカウントが既にアクティブな状態からの追加ログインで現在のアカウントがpoolへ退避される", async () => {
+    it("[account-session/3.1] 別アカウントが既にアクティブな状態からの追加ログインで現在のアカウントがpoolへ退避される", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -360,7 +360,7 @@ describe("POST /v2/bsky/session", () => {
         expect(accountsCookie).not.toMatch(`${ACCOUNTS_COOKIE_NAME}=;`)
     })
 
-    it("[account-session/AC-8] pool上限に達している場合は409を返す", async () => {
+    it("[account-session/3.3] pool上限に達している場合は409を返す", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             login: vi.fn().mockResolvedValue({
                 data: { did: "did:plc:new", handle: "new.bsky.social" },
@@ -426,7 +426,7 @@ describe("PUT /v2/bsky/session", () => {
         expect(res.status).toBe(400)
     })
 
-    it("[account-session/AC-10] 対象didがpoolに見つからない場合は404を返す", async () => {
+    it("[account-session/4.2] 対象didがpoolに見つからない場合は404を返す", async () => {
         const request = new Request(
             "https://skyshare.nekono.dev/v2/bsky/session/",
             {
@@ -476,7 +476,7 @@ describe("PUT /v2/bsky/session", () => {
         expect(res.status).toBe(500)
     })
 
-    it("[schedule-api/AC-25] 切り替えの成功時はローテーション後のagent.sessionを採用してcookieをセットし、予約投稿の登録状態のヒントを失効させる", async () => {
+    it("[schedule-api/4.6,4.8,4.10] 切り替えの成功時はローテーション後のagent.sessionを採用してcookieをセットし、予約投稿の登録状態のヒントを失効させる", async () => {
         const rotated = {
             ...targetSession,
             accessJwt: "new-access",
@@ -541,7 +541,7 @@ describe("PUT /v2/bsky/session", () => {
         expect(decoded.session.accessJwt).toBe(targetSession.accessJwt)
     })
 
-    it("[account-session/AC-9] 現在アクティブなアカウントがある場合、切り替え後はpoolへ戻される", async () => {
+    it("[account-session/4.1] 現在アクティブなアカウントがある場合、切り替え後はpoolへ戻される", async () => {
         mockedCreateAtpAgent.mockReturnValue({
             resumeSession: vi.fn().mockResolvedValue(undefined),
             session: targetSession,

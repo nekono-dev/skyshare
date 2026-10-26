@@ -38,13 +38,13 @@ beforeEach(() => {
 })
 
 describe("旧形式の投稿の表示ページ", () => {
-    it("[legacy-page/AC-14] 種別が数字でも旧形式でもないURLは、旧バックエンドへ問い合わせず404を返す", async () => {
+    it("[legacy-page/1.3] 種別が数字でも旧形式でもないURLは、旧バックエンドへ問い合わせず404を返す", async () => {
         const res = await request({ dbIndex: "abc", slug: "someone@3abc" })
         expect(res.status).toBe(404)
         expect(mockedFetch).not.toHaveBeenCalled()
     })
 
-    it("[legacy-page/AC-15] キーに区切りが無いURLは、旧バックエンドへ問い合わせず404を返し、不正な識別子の旨を表示する", async () => {
+    it("[legacy-page/1.3] キーに区切りが無いURLは、旧バックエンドへ問い合わせず404を返し、不正な識別子の旨を表示する", async () => {
         const res = await request({ dbIndex: "legacy", slug: "no-separator" })
         expect(res.status).toBe(404)
         expect(mockedFetch).not.toHaveBeenCalled()

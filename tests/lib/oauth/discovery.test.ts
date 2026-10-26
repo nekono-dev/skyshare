@@ -25,7 +25,7 @@ const goodMeta = {
 }
 
 describe("認可サーバーの探索と PDS の解決", () => {
-    test("oauth-client/AC-5: メタデータの識別子が違う認可サーバーと、必要な端点が欠けた認可サーバーは使われない", async () => {
+    test("[oauth-client/2.1,2.2] メタデータの識別子が違う認可サーバーと、必要な端点が欠けた認可サーバーは使われない", async () => {
         expect(
             await readAuthorizationServer(
                 AUTH,
@@ -47,7 +47,7 @@ describe("認可サーバーの探索と PDS の解決", () => {
         ).toBeNull()
     })
 
-    test("oauth-client/AC-6: 認可サーバーの識別子から、その端点が得られ、PDS からも同じ認可サーバーに辿れる", async () => {
+    test("[oauth-client/2.1] 認可サーバーの識別子から、その端点が得られ、PDS からも同じ認可サーバーに辿れる", async () => {
         expect(
             await readAuthorizationServer(AUTH, withMetadata(goodMeta)),
         ).toEqual({
@@ -62,7 +62,7 @@ describe("認可サーバーの探索と PDS の解決", () => {
         ).toBe(AUTH)
     })
 
-    test("oauth-client/AC-7: DID ドキュメントの PDS が解決され、解決できない DID では何も返らない", async () => {
+    test("[oauth-client/2.3] DID ドキュメントの PDS が解決され、解決できない DID では何も返らない", async () => {
         const world = createFakeOAuth(DID)
         expect(await resolvePdsUrl(DID, world.fetch)).toBe(PDS)
         expect(await resolvePdsUrl("did:example:x", world.fetch)).toBeNull()

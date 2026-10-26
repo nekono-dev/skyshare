@@ -36,7 +36,7 @@ const add = (db: D1Database, id: string, runAt: number, did = A, now = 0) =>
     })
 
 describe("schedule store", () => {
-    test("schedule-store/AC-1: 新規の予約は待機として保存される", async () => {
+    test("schedule-store/1.1: 新規の予約は待機として保存される", async () => {
         const db = createFakeD1()
         await add(db, "s1", 100)
         const row = await getSchedule(db, A, "s1")
@@ -44,7 +44,7 @@ describe("schedule store", () => {
         expect(row?.attempts).toBe(0)
     })
 
-    test("schedule-store/AC-2: 別のアカウントの予約は取得・一覧・削除できない", async () => {
+    test("schedule-store/1.2: 別のアカウントの予約は取得・一覧・削除できない", async () => {
         const db = createFakeD1()
         await add(db, "s1", 100, A)
         expect(await getSchedule(db, B, "s1")).toBeNull()
@@ -55,7 +55,7 @@ describe("schedule store", () => {
         expect(await getSchedule(db, A, "s1")).not.toBeNull()
     })
 
-    test("schedule-store/AC-3: 到来した予約を早い順に指定件数だけ実行中にする", async () => {
+    test("schedule-store/2.1: 到来した予約を早い順に指定件数だけ実行中にする", async () => {
         const db = createFakeD1()
         await add(db, "s3", 30)
         await add(db, "s1", 10)
@@ -68,14 +68,14 @@ describe("schedule store", () => {
         expect((await getSchedule(db, A, "later"))?.status).toBe("pending")
     })
 
-    test("schedule-store/AC-4: 同じ予約を2回続けて取り出さない", async () => {
+    test("schedule-store/2.2: 同じ予約を2回続けて取り出さない", async () => {
         const db = createFakeD1()
         await add(db, "s1", 10)
         expect(await claimDueSchedules(db, 100, 5)).toHaveLength(1)
         expect(await claimDueSchedules(db, 100, 5)).toHaveLength(0)
     })
 
-    test("schedule-store/AC-8: 保存した進捗が取り出し直しても返る", async () => {
+    test("schedule-store/2.4: 保存した進捗が取り出し直しても返る", async () => {
         const db = createFakeD1()
         await add(db, "s1", 10)
         await claimDueSchedules(db, 100, 5)
@@ -86,13 +86,13 @@ describe("schedule store", () => {
         expect(JSON.parse(again[0]!.progress)).toEqual(progress)
     })
 
-    test("schedule-store/AC-8: 実行中でない予約への進捗の保存は false を返す", async () => {
+    test("schedule-store/2.4: 実行中でない予約への進捗の保存は false を返す", async () => {
         const db = createFakeD1()
         await add(db, "s1", 10)
         expect(await saveProgress(db, "s1", emptyProgress(), 5)).toBe(false)
     })
 
-    test("schedule-store/AC-9: 指定の時間を超えた実行中の予約だけ待機に戻る", async () => {
+    test("schedule-store/2.6: 指定の時間を超えた実行中の予約だけ待機に戻る", async () => {
         const db = createFakeD1()
         await add(db, "old", 1)
         await add(db, "fresh", 2)
@@ -104,7 +104,7 @@ describe("schedule store", () => {
         expect((await getSchedule(db, A, "fresh"))?.status).toBe("running")
     })
 
-    test("schedule-store/AC-10: 失敗から7日を超えた予約だけが削除される", async () => {
+    test("schedule-store/2.7: 失敗から7日を超えた予約だけが削除される", async () => {
         const db = createFakeD1()
         const week = 7 * 24 * 60 * 60
         await add(db, "failed-old", 1)
@@ -130,13 +130,13 @@ describe("schedule store", () => {
         expect(await getSchedule(db, A, "run")).toBeNull()
     })
 
-    test("schedule-store/AC-11: 1回の取り出しは5件まで", async () => {
+    test("schedule-store/2.3,4.1: 1回の取り出しは5件まで", async () => {
         const db = createFakeD1()
         for (let i = 0; i < 6; i++) await add(db, `s${i}`, i)
         expect(await claimDueSchedules(db, 100, 99)).toHaveLength(5)
     })
 
-    test("schedule-store/AC-13: 予約1件の保存と取得の問い合わせは3回以内", async () => {
+    test("schedule-store/1.5: 予約1件の保存と取得の問い合わせは3回以内", async () => {
         const db = createFakeD1()
         const before = db.queryCount
         await add(db, "s1", 10)
@@ -153,7 +153,7 @@ describe("schedule store", () => {
         expect(db.queryCount - beforeUpdate).toBeLessThanOrEqual(3)
     })
 
-    test("schedule-store/AC-15: 一括削除で自分の待機中と失敗の予約が消え、他人の予約と自分の実行中の予約は残る", async () => {
+    test("schedule-store/1.2,1.3: 一括削除で自分の待機中と失敗の予約が消え、他人の予約と自分の実行中の予約は残る", async () => {
         const db = createFakeD1()
         await add(db, "done", 1)
         await add(db, "busy", 2)
@@ -170,7 +170,7 @@ describe("schedule store", () => {
         expect(await countPending(db, A)).toBe(0)
     })
 
-    test("schedule-store/AC-17: 待機中の予約は置き換えられ、実行中の予約は置き換わらない", async () => {
+    test("schedule-store/1.4: 待機中の予約は置き換えられ、実行中の予約は置き換わらない", async () => {
         const db = createFakeD1()
         await insertSchedule(db, {
             id: "s1",
@@ -216,7 +216,7 @@ describe("schedule store", () => {
         expect((await getSchedule(db, A, "s1"))?.payload).toBe('{"v":2}')
     })
 
-    test("schedule-store/AC-14: 戻すと進捗が保たれ、回数は指定のときだけ増える", async () => {
+    test("schedule-store/2.5: 戻すと進捗が保たれ、回数は指定のときだけ増える", async () => {
         const db = createFakeD1()
         await add(db, "s1", 1)
         await claimDueSchedules(db, 10, 5)
@@ -254,7 +254,7 @@ describe("schedule store", () => {
 
 describe("認可の途中の状態", () => {
     const SECRET = btoa(String.fromCharCode(...new Uint8Array(32).fill(4)))
-    test("schedule-store/AC-20: 所有アカウントで10分以内に1回だけ取り出せ、別のアカウント・2回目・期限後には取り出せない", async () => {
+    test("schedule-store/3.3: 所有アカウントで10分以内に1回だけ取り出せ、別のアカウント・2回目・期限後には取り出せない", async () => {
         const db = createFakeD1()
         const save = (state: string, now: number) =>
             saveOAuthState(

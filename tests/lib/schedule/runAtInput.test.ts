@@ -22,12 +22,12 @@ afterAll(() => {
 })
 
 describe("日時の入力と変換", () => {
-    test("schedule-form/AC-6: 既定値は翌日の同時刻で、秒以下は切り捨てる", () => {
+    test("schedule-form/3.6: 既定値は翌日の同時刻で、秒以下は切り捨てる", () => {
         const now = new Date("2027-03-01T10:15:42.123Z")
         expect(defaultRunAt(now).toISOString()).toBe("2027-03-02T10:15:00.000Z")
     })
 
-    test("schedule-form/AC-6: 東京の端末では、入力した時刻がタイムゾーンつきの形式になる", () => {
+    test("schedule-form/3.6: 東京の端末では、入力した時刻がタイムゾーンつきの形式になる", () => {
         process.env.TZ = "Asia/Tokyo"
         const d = new Date("2027-03-01T10:30:00Z")
         const local = toLocalInputValue(d)
@@ -48,7 +48,7 @@ describe("日時の入力と変換", () => {
         expect(fromLocalInputValue("2027-13-45T99:99")).toBeNull()
     })
 
-    test("schedule-form/AC-7: 範囲が5分後から14日後のとき、4分後と15日後は範囲外、14日後は範囲内", () => {
+    test("schedule-form/3.7: 範囲が5分後から14日後のとき、4分後と15日後は範囲外、14日後は範囲内", () => {
         const now = new Date("2027-03-01T00:00:00Z")
         const at = (sec: number) => new Date(now.getTime() + sec * 1000)
         expect(checkRunAt(at(4 * 60), now, limits)).toBe("tooSoon")
@@ -67,7 +67,7 @@ describe("日時の入力と変換", () => {
 })
 
 describe("エラー文言", () => {
-    test("schedule-form/AC-11: 409 は識別子ごとに日本語と英語の文言になる", () => {
+    test("schedule-form/4.4: 409 は識別子ごとに日本語と英語の文言になる", () => {
         for (const code of ["ScheduleCredentialRequired", "ScheduleRunning"]) {
             const key = scheduleErrorKey(409, code)
             expect(createTranslator("ja").t(key)).toBe(
@@ -94,7 +94,7 @@ describe("エラー文言", () => {
         expect(failureMessageKey(null)).toBe("schedule.failure.unknown")
     })
 
-    test("schedule-form/AC-20: 日本語と英語の予約の文言のキー集合が一致する", () => {
+    test("schedule-form/6.1: 日本語と英語の予約の文言のキー集合が一致する", () => {
         const keys = (d: object) =>
             Object.keys(d)
                 .filter(k => k.startsWith("schedule."))
@@ -103,7 +103,7 @@ describe("エラー文言", () => {
         expect(keys(ja).length).toBeGreaterThan(40)
     })
 
-    test("schedule-guide/AC-3: 予約投稿の案内の文言が日本語と英語の両方にある", () => {
+    test("schedule-guide/3.1: 予約投稿の案内の文言が日本語と英語の両方にある", () => {
         for (const key of [
             "schedule.setting.description",
             "schedule.setting.chronoskyLead",

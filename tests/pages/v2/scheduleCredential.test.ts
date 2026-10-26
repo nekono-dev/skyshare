@@ -41,7 +41,7 @@ beforeEach(() => {
 })
 
 describe("/v2/schedules/credential", () => {
-    test("schedule-api/AC-11: 登録状態の取得が登録の有無を返す", async () => {
+    test("schedule-api/4.6,4.8,4.9: 登録状態の取得が登録の有無を返す", async () => {
         expect(await (await call(GET)).json()).toEqual({
             registered: false,
             reauthRequired: false,
@@ -58,7 +58,7 @@ describe("/v2/schedules/credential", () => {
         expect(JSON.stringify(body)).not.toContain("TOKEN-VALUE-XYZ")
     })
 
-    test("schedule-api/AC-23: 登録状態に許可の有効期限の目安が付き、再度の許可が必要なときは登録ありのまま目安を返さない", async () => {
+    test("schedule-api/4.7: 登録状態に許可の有効期限の目安が付き、再度の許可が必要なときは登録ありのまま目安を返さない", async () => {
         await saveCredential(
             db,
             KEY,
@@ -77,7 +77,7 @@ describe("/v2/schedules/credential", () => {
         expect(reauth.expiresAt).toBeUndefined()
     })
 
-    test("schedule-api/AC-11: 削除で待機中と失敗の予約と画像が消え、実行中の予約があると409になる", async () => {
+    test("schedule-api/4.6,4.8,4.9: 削除で待機中と失敗の予約と画像が消え、実行中の予約があると409になる", async () => {
         const r2 = holder.env as {
             SCHEDULE_IMAGES: ReturnType<typeof createFakeR2>
         }
@@ -123,7 +123,7 @@ describe("/v2/schedules/credential", () => {
         expect(await getSchedule(db, DID, "busy")).toBeNull()
     })
 
-    test("schedule-api/AC-25: 登録状態の取得がヒント cookie を保存し、削除がヒント cookie を失効させる", async () => {
+    test("schedule-api/4.6,4.8,4.10: 登録状態の取得がヒント cookie を保存し、削除がヒント cookie を失効させる", async () => {
         const hintOf = (res: Response) =>
             res.headers
                 .getSetCookie()
@@ -156,7 +156,7 @@ describe("/v2/schedules/credential", () => {
         expect(hintOf(await call(DELETE))).toContain("Max-Age=0")
     })
 
-    test("schedule-api/AC-14: 未認証は401で、キャッシュを禁止する", async () => {
+    test("schedule-api/6.2: 未認証は401で、キャッシュを禁止する", async () => {
         for (const handler of [GET, DELETE]) {
             const unauth = await call(handler, { method: "GET" }, {})
             expect(unauth.status).toBe(401)

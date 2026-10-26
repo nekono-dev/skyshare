@@ -2,7 +2,7 @@
  * ライブテスト: 分岐したスレッド。
  *
  * 責務と処理概要:
- * - `specs/timeline/tasks.md`の分岐に関する手動確認項目を自動化する（`specs/e2elive/design.md §8`）。
+ * - `.kiro/specs/timeline/tasks.md`の分岐に関する手動確認項目を自動化する（`.kiro/specs/e2elive/design.md §8`）。
  * - 同一投稿Aに自己返信が2系統ある状態（A→B→C と A→D→E）を、`createdAt`を指定して
  *   PDSへ直接作る。Bの投稿日時はAの1秒後、Dは1時間後のため、投稿日時が直前の投稿に
  *   最も近い側（A→B→C）がメインスレッドとして採用される。
@@ -15,7 +15,7 @@ import { createEntryRecord, createPost } from "./pds"
 
 test.describe.configure({ timeout: 180_000 })
 
-test("e2elive/AC-16: 分岐したスレッドは採用された系統だけが表示され、ルートの削除で採用されなかった側は残る", async ({
+test("e2elive/6.4: 分岐したスレッドは採用された系統だけが表示され、ルートの削除で採用されなかった側は残る", async ({
     page,
     agent,
     tag,

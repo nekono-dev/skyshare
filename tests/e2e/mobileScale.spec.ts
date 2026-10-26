@@ -1,5 +1,5 @@
 /**
- * スマホ幅（390px）でのデザイントークンの上書き（specs/design-tokens）のヘッドレスブラウザによる動作確認。
+ * スマホ幅（390px）でのデザイントークンの上書き（.kiro/specs/design-tokens）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
  * - 幅390pxのビューポートで、フォントサイズ・ボタンの余白と高さ・フッターナビゲーション分の下余白・
@@ -10,7 +10,7 @@ import { expect, openPasswordLogin, test } from "./fixtures"
 
 test.use({ viewport: { width: 390, height: 844 } })
 
-test("[design-tokens/AC-1] 幅390pxの画面で、中サイズの本文のフォントサイズが18pxになる", async ({
+test("[design-tokens/1.1] 幅390pxの画面で、中サイズの本文のフォントサイズが18pxになる", async ({
     page,
 }) => {
     await page.goto("/login/", { timeout: 60_000 })
@@ -25,7 +25,7 @@ test("[design-tokens/AC-1] 幅390pxの画面で、中サイズの本文のフォ
     expect(fontSize).toBe("18px")
 })
 
-test("[design-tokens/AC-2] 幅390pxの画面で、トークンを参照するボタンの左右余白が16pxになる", async ({
+test("[design-tokens/1.2] 幅390pxの画面で、トークンを参照するボタンの左右余白が16pxになる", async ({
     page,
 }) => {
     await page.goto("/login/", { timeout: 60_000 })
@@ -37,7 +37,7 @@ test("[design-tokens/AC-2] 幅390pxの画面で、トークンを参照するボ
     await expect(button).toHaveCSS("padding-right", "16px")
 })
 
-test("[design-tokens/AC-4] 幅390pxの画面で、表示されるすべてのボタンの高さが44px以上になる", async ({
+test("[design-tokens/2.2] 幅390pxの画面で、表示されるすべてのボタンの高さが44px以上になる", async ({
     page,
 }) => {
     for (const path of ["/post/?guest", "/?guest", "/login/"]) {
@@ -64,7 +64,7 @@ test("[design-tokens/AC-4] 幅390pxの画面で、表示されるすべてのボ
     }
 })
 
-test("[design-tokens/AC-5] 幅390pxの画面でページ末尾までスクロールしたとき、最後の要素がフッターナビゲーションと重ならない", async ({
+test("[design-tokens/3.1] 幅390pxの画面でページ末尾までスクロールしたとき、最後の要素がフッターナビゲーションと重ならない", async ({
     page,
 }) => {
     await page.goto("/settings/?guest", { timeout: 60_000 })
@@ -93,7 +93,7 @@ test("[design-tokens/AC-5] 幅390pxの画面でページ末尾までスクロー
     expect(contentBottom).toBeLessThanOrEqual(footerTop)
 })
 
-test("[design-tokens/AC-6] 幅390pxの画面で、文書の横幅が表示領域の横幅を超えない", async ({
+test("[design-tokens/3.2] 幅390pxの画面で、文書の横幅が表示領域の横幅を超えない", async ({
     page,
 }) => {
     for (const path of ["/login/", "/settings/?guest", "/entries/?guest"]) {

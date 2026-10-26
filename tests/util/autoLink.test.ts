@@ -9,7 +9,7 @@ const linksOf = (text: string) =>
     }))
 
 describe("findUrlRanges", () => {
-    it("[post-rich-text/AC-8] スキームを省略したURLに https を補う", () => {
+    it("[post-rich-text/3.1] スキームを省略したURLに https を補う", () => {
         expect(linksOf("見て example.com/a?b=1#c です")).toEqual([
             {
                 text: "example.com/a?b=1#c",
@@ -18,7 +18,7 @@ describe("findUrlRanges", () => {
         ])
     })
 
-    it("[post-rich-text/AC-8] 日本語に空白なしで続くURLを検出する", () => {
+    it("[post-rich-text/3.1] 日本語に空白なしで続くURLを検出する", () => {
         expect(linksOf("見てexample.comです")).toEqual([
             { text: "example.com", href: "https://example.com" },
         ])
@@ -27,7 +27,7 @@ describe("findUrlRanges", () => {
         ])
     })
 
-    it("[post-rich-text/AC-10] メールアドレス・メンション・版の表記はURLにしない", () => {
+    it("[post-rich-text/3.2] メールアドレス・メンション・版の表記はURLにしない", () => {
         expect(linksOf("mail@example.com")).toEqual([])
         expect(linksOf("@alice.bsky.social")).toEqual([])
         expect(linksOf("v1.0.0 と file.txt")).toEqual([])
@@ -65,7 +65,7 @@ const tagsOf = (text: string) =>
     }))
 
 describe("findHashtagRanges", () => {
-    it("[post-rich-text/AC-12] 日本語の文中の空白の後ろのタグを検出し、末尾の句読点は含めない", () => {
+    it("[post-rich-text/3.5] 日本語の文中の空白の後ろのタグを検出し、末尾の句読点は含めない", () => {
         expect(tagsOf("今日は #猫。 と (#dog) と（#鳥）")).toEqual([
             { text: "#猫", tag: "猫" },
             { text: "#dog", tag: "dog" },
@@ -74,12 +74,12 @@ describe("findHashtagRanges", () => {
         expect(tagsOf("#start")).toEqual([{ text: "#start", tag: "start" }])
     })
 
-    it("[post-rich-text/AC-13] 数字だけのタグ・単語の途中の # はタグにしない", () => {
+    it("[post-rich-text/3.6] 数字だけのタグ・単語の途中の # はタグにしない", () => {
         expect(tagsOf("#123 a#b #!!")).toEqual([])
         expect(tagsOf("#1a")).toEqual([{ text: "#1a", tag: "1a" }])
     })
 
-    it("[post-rich-text/AC-13] 64文字を超えるタグはタグにしない", () => {
+    it("[post-rich-text/3.6] 64文字を超えるタグはタグにしない", () => {
         expect(tagsOf(`#${"a".repeat(65)}`)).toEqual([])
     })
 })

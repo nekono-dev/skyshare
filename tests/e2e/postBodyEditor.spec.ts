@@ -15,7 +15,7 @@ const openEditor = async (page: import("@playwright/test").Page) => {
     return editor
 }
 
-test("[post-body-editor/AC-15] 編集欄へ #tag と入力すると、その範囲が色付けされた要素になる", async ({
+test("[post-body-editor/1.5] 編集欄へ #tag と入力すると、その範囲が色付けされた要素になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -30,7 +30,7 @@ test("[post-body-editor/AC-15] 編集欄へ #tag と入力すると、その範�
     await expect(editor.locator("span").first()).toHaveText("#tag")
 })
 
-test("[post-body-editor/AC-16] 本文を入力した後に Enter を押すと、改行が入り入力済みの本文が残る", async ({
+test("[post-body-editor/4.1] 本文を入力した後に Enter を押すと、改行が入り入力済みの本文が残る", async ({
     page,
 }) => {
     test.setTimeout(90_000)

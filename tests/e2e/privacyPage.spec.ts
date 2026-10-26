@@ -6,7 +6,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[privacy-policy/AC-7] ログインなしでページを開くと、節の見出しがカードごとに表示され、連絡先がリンクになる", async ({
+test("[privacy-policy/4.2,4.3] ログインなしでページを開くと、節の見出しがカードごとに表示され、連絡先がリンクになる", async ({
     page,
 }) => {
     await page.goto("/privacy/")

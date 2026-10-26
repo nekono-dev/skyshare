@@ -6,13 +6,13 @@
  *   スレッドA（entry未作成、ルートは画像なし・中間segmentのみ画像あり）・
  *   スレッドB（ルートにentry済み）・スレッドC（entry未作成、ルート自身が画像あり）
  *   の3つの固定フィクスチャを用いて、実Blueskyアカウント無しでスレッドグルーピング・
- *   展開/折りたたみ・事後entry作成ボタン（常にルートのカードに表示、FR-3）・
+ *   展開/折りたたみ・事後entry作成ボタン（常にルートのカードに表示、timeline 要件2.1）・
  *   スレッドタグが表示されないことを検証する。
  */
 import { expect, test } from "./fixtures"
 
 test.describe("Timeline一覧のスレッド表示", () => {
-    test("[timeline/AC-1 timeline/AC-2] スレッドAが折りたたみ表示され、展開すると3件が時系列順に表示される。ルート自身は画像を持たないが、中間投稿の画像を元に事後entry作成ボタンがルート投稿のカードに表示される", async ({
+    test("[timeline/1.1 timeline/1.2] スレッドAが折りたたみ表示され、展開すると3件が時系列順に表示される。ルート自身は画像を持たないが、中間投稿の画像を元に事後entry作成ボタンがルート投稿のカードに表示される", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -36,7 +36,7 @@ test.describe("Timeline一覧のスレッド表示", () => {
 
         // ルート投稿自身は画像を持たないが、中間投稿(guest-thread-a-mid)の画像を
         // Visual取得元として事後entry作成ボタンがルート投稿のカードに表示される
-        // （FR-3、ボタンは常にルートのカードにのみ表示する）。
+        // （timeline 要件2.1、ボタンは常にルートのカードにのみ表示する）。
         await expect(
             rootArticle.getByRole("button", { name: "Skyshare Entryを作成" }),
         ).toBeVisible()
@@ -80,7 +80,7 @@ test.describe("Timeline一覧のスレッド表示", () => {
         await expect(midText).not.toBeVisible()
     })
 
-    test("[timeline/AC-4] スレッドCはルートが画像を持ち、entry未作成のため、ルート投稿にのみ事後entry作成ボタンが表示される", async ({
+    test("[timeline/2.1] スレッドCはルートが画像を持ち、entry未作成のため、ルート投稿にのみ事後entry作成ボタンが表示される", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -117,7 +117,7 @@ test.describe("Timeline一覧のスレッド表示", () => {
         ).toHaveCount(0)
     })
 
-    test("[timeline/AC-8] スレッドBのルート投稿にスレッドタグは表示されない", async ({
+    test("[timeline/1.4] スレッドBのルート投稿にスレッドタグは表示されない", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -134,7 +134,7 @@ test.describe("Timeline一覧のスレッド表示", () => {
         ).toHaveCount(0)
     })
 
-    test("[timeline/AC-3 timeline/AC-11] スレッドに関係しない単独投稿は、従来通り個別カードとして表示される", async ({
+    test("[timeline/1.3 timeline/1.6] スレッドに関係しない単独投稿は、従来通り個別カードとして表示される", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -153,7 +153,7 @@ test.describe("Timeline一覧のスレッド表示", () => {
     })
 })
 
-test.describe("Timelineの画像表示（specs/image-gallery）", () => {
+test.describe("Timelineの画像表示（.kiro/specs/image-gallery）", () => {
     test("Entryを持つ投稿は visual を1枚だけ表示し、クリックしても拡大表示が開かない", async ({
         page,
     }) => {
@@ -236,7 +236,7 @@ test.describe("Timelineの画像表示（specs/image-gallery）", () => {
 })
 
 test.describe("スレッド単位のコントラスト", () => {
-    test("[timeline/AC-12] 画像もentryも持たないスレッドEを展開すると、起点と返信のすべてのカードがコントラストを下げるクラスを持つ", async ({
+    test("[timeline/4.1] 画像もentryも持たないスレッドEを展開すると、起点と返信のすべてのカードがコントラストを下げるクラスを持つ", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -254,7 +254,7 @@ test.describe("スレッド単位のコントラスト", () => {
         }
     })
 
-    test("[timeline/AC-13] 起点に画像が無く返信に画像があるスレッドAを展開すると、どのカードもコントラストを下げるクラスを持たない", async ({
+    test("[timeline/4.1] 起点に画像が無く返信に画像があるスレッドAを展開すると、どのカードもコントラストを下げるクラスを持たない", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -270,7 +270,7 @@ test.describe("スレッド単位のコントラスト", () => {
         }
     })
 
-    test("[timeline/AC-15] スレッドを展開すると、起点のカードにだけ下部のツールバーが表示され、後続のカードには表示されない", async ({
+    test("[timeline/1.5] スレッドを展開すると、起点のカードにだけ下部のツールバーが表示され、後続のカードには表示されない", async ({
         page,
     }) => {
         await page.goto("/?guest")
@@ -290,7 +290,7 @@ test.describe("スレッド単位のコントラスト", () => {
         ).toHaveCount(0)
     })
 
-    test("[timeline/AC-14] コントラストを下げたカードで、共有のボタンのアイコンの不透明度が通常のカードより低い", async ({
+    test("[timeline/4.2] コントラストを下げたカードで、共有のボタンのアイコンの不透明度が通常のカードより低い", async ({
         page,
     }) => {
         // 共有のボタンは Web Share API の対応環境でだけ表示されるため、対応を模擬する

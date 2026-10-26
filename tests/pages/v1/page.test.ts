@@ -44,7 +44,7 @@ const call = (body: unknown, cookie: string | null = sessionCookie) =>
 const validBody = { dbIndex: "3", dbKey: "did:plc:owner@3abc" }
 
 describe("DELETE /v1/page", () => {
-    it("[legacy-page/AC-1] 本人の資格情報とともに旧バックエンドへ削除を依頼し、200を返す", async () => {
+    it("[legacy-page/2.1] 本人の資格情報とともに旧バックエンドへ削除を依頼し、200を返す", async () => {
         mockedDelete.mockResolvedValue({ ok: true })
         const res = await call(validBody)
         expect(res.status).toBe(200)
@@ -56,7 +56,7 @@ describe("DELETE /v1/page", () => {
         })
     })
 
-    it("[legacy-page/AC-2] legacy の識別子でも依頼される", async () => {
+    it("[legacy-page/2.3] legacy の識別子でも依頼される", async () => {
         mockedDelete.mockResolvedValue({ ok: true })
         const res = await call({
             dbIndex: "legacy",
@@ -71,37 +71,37 @@ describe("DELETE /v1/page", () => {
         )
     })
 
-    it("[legacy-page/AC-3] 識別子の種類が不正のとき、400を返し依頼しない", async () => {
+    it("[legacy-page/2.2] 識別子の種類が不正のとき、400を返し依頼しない", async () => {
         const res = await call({ dbIndex: "abc", dbKey: "x@y" })
         expect(res.status).toBe(400)
         expect(mockedDelete).not.toHaveBeenCalled()
     })
 
-    it("[legacy-page/AC-4] 対象のキーの形式が不正のとき、400を返し依頼しない", async () => {
+    it("[legacy-page/2.2] 対象のキーの形式が不正のとき、400を返し依頼しない", async () => {
         const res = await call({ dbIndex: "3", dbKey: "no-at-sign" })
         expect(res.status).toBe(400)
         expect(mockedDelete).not.toHaveBeenCalled()
     })
 
-    it("[legacy-page/AC-5] 本文がJSONでないとき、400を返す", async () => {
+    it("[legacy-page/2.4] 本文がJSONでないとき、400を返す", async () => {
         const res = await call("not json")
         expect(res.status).toBe(400)
         expect(mockedDelete).not.toHaveBeenCalled()
     })
 
-    it("[legacy-page/AC-6] cookieが無いとき、401を返す", async () => {
+    it("[legacy-page/2.5] cookieが無いとき、401を返す", async () => {
         const res = await call(validBody, null)
         expect(res.status).toBe(401)
         expect(mockedDelete).not.toHaveBeenCalled()
     })
 
-    it("[legacy-page/AC-7] cookieはあるがセッションが無いとき、401を返す", async () => {
+    it("[legacy-page/2.5] cookieはあるがセッションが無いとき、401を返す", async () => {
         const res = await call(validBody, "other=1")
         expect(res.status).toBe(401)
         expect(mockedDelete).not.toHaveBeenCalled()
     })
 
-    it("[legacy-page/AC-8] 旧バックエンドの失敗を、不正な依頼は400、頻度制限は429、それ以外は500に変換する", async () => {
+    it("[legacy-page/3.4] 旧バックエンドの失敗を、不正な依頼は400、頻度制限は429、それ以外は500に変換する", async () => {
         mockedDelete.mockResolvedValueOnce({ error: "BadRequest" })
         expect((await call(validBody)).status).toBe(400)
         mockedDelete.mockResolvedValueOnce({ error: "RateLimitExceeded" })
@@ -110,7 +110,7 @@ describe("DELETE /v1/page", () => {
         expect((await call(validBody)).status).toBe(500)
     })
 
-    it("[legacy-page/AC-17] OAuth のセッションでの削除の依頼は、旧バックエンドへ送られず、識別子つきの403が返る", async () => {
+    it("[legacy-page/4.1] OAuth のセッションでの削除の依頼は、旧バックエンドへ送られず、識別子つきの403が返る", async () => {
         const oauthCookie = `${SESSION_COOKIE_NAME}=${encodeBase64Utf8(
             JSON.stringify({
                 kind: "oauth",

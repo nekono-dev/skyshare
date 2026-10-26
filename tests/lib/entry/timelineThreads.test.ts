@@ -97,7 +97,7 @@ describe("buildTimelineThreads", () => {
         })
     })
 
-    it("[timeline-api/AC-2 timeline-api/AC-11] 通常のスレッド(root+mid+tailがすべてfeedに存在)を1つのThreadGroupにまとめる", async () => {
+    it("[timeline-api/2.1 timeline-api/1.3,2.5] 通常のスレッド(root+mid+tailがすべてfeedに存在)を1つのThreadGroupにまとめる", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -131,7 +131,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("[timeline-api/AC-5] rootは残るが後続投稿がすべて欠落している場合でも、replyCountを手がかりに補完する", async () => {
+    it("[timeline-api/3.1] rootは残るが後続投稿がすべて欠落している場合でも、replyCountを手がかりに補完する", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -161,7 +161,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("[timeline-api/AC-5] 中間投稿が欠落している場合でも、末尾投稿のrecord.replyから補完する", async () => {
+    it("[timeline-api/3.1] 中間投稿が欠落している場合でも、末尾投稿のrecord.replyから補完する", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -281,7 +281,7 @@ describe("buildTimelineThreads", () => {
         )
     })
 
-    it("[timeline-api/AC-3 timeline-api/AC-4] 分岐時、採用された系統のみが1つのThreadGroupになり、採用されなかった側はTimelineに一切含まれない", async () => {
+    it("[timeline-api/2.2 timeline-api/2.3] 分岐時、採用された系統のみが1つのThreadGroupになり、採用されなかった側はTimelineに一切含まれない", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode(
@@ -338,7 +338,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("[timeline-api/AC-8] 採用側が削除された場合、次回評価で不採用だった系統が新たにメインスレッドとして表示される", async () => {
+    it("[timeline-api/2.4] 採用側が削除された場合、次回評価で不採用だった系統が新たにメインスレッドとして表示される", async () => {
         const feed = [
             makeFeedItem("branchD", "2026-01-05T00:00:00Z", {
                 replyToRkey: "root",
@@ -369,7 +369,7 @@ describe("buildTimelineThreads", () => {
         expect(threads[0].replies.map(p => p.uri)).toEqual([feed[0].post.uri])
     })
 
-    it("[timeline-api/AC-1] 他人の投稿への返信から始まるスレッドは、後続が自分の投稿のみでもTimelineに一切含まれず、getPostThreadも呼ばれない", async () => {
+    it("[timeline-api/1.1] 他人の投稿への返信から始まるスレッドは、後続が自分の投稿のみでもTimelineに一切含まれず、getPostThreadも呼ばれない", async () => {
         const otherDid = "did:plc:other"
         const getPostThread = vi.fn()
         const agent = { app: { bsky: { feed: { getPostThread } } } } as any
@@ -394,7 +394,7 @@ describe("buildTimelineThreads", () => {
         expect(getPostThread).not.toHaveBeenCalled()
     })
 
-    it("[timeline-api/AC-6] メインスレッドのrootがfeedに現れない場合、rootのindexedAtに基づく位置へ新しい順を保って挿入される", async () => {
+    it("[timeline-api/3.2] メインスレッドのrootがfeedに現れない場合、rootのindexedAtに基づく位置へ新しい順を保って挿入される", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode(
@@ -429,7 +429,7 @@ describe("buildTimelineThreads", () => {
         ])
     })
 
-    it("[timeline-api/AC-7] getPostThreadが失敗した場合、自分がルートの投稿は単独投稿として表示され、返信側は表示されない", async () => {
+    it("[timeline-api/3.3] getPostThreadが失敗した場合、自分がルートの投稿は単独投稿として表示され、返信側は表示されない", async () => {
         const getPostThread = vi.fn().mockRejectedValue(new Error("boom"))
         const agent = { app: { bsky: { feed: { getPostThread } } } } as any
         const errSpy = vi.spyOn(console, "error").mockImplementation(() => {})
@@ -452,7 +452,7 @@ describe("buildTimelineThreads（一覧だけでの確定）", () => {
     const makeAgent = (getPostThread = vi.fn()) =>
         ({ app: { bsky: { feed: { getPostThread } } } }) as any
 
-    it("[timeline-api/AC-14] 返信数が一覧の子の件数と一致するスレッドは、getPostThreadを呼ばずに1つのグループにまとめる", async () => {
+    it("[timeline-api/3.4] 返信数が一覧の子の件数と一致するスレッドは、getPostThreadを呼ばずに1つのグループにまとめる", async () => {
         const getPostThread = vi.fn()
         const feed = [
             makeFeedItem("tail", "2026-01-01T00:02:00Z", {
@@ -482,7 +482,7 @@ describe("buildTimelineThreads（一覧だけでの確定）", () => {
         ])
     })
 
-    it("[timeline-api/AC-14] 一覧だけで確定した分岐でも、親に最も近い日時の系統だけを返す", async () => {
+    it("[timeline-api/3.4] 一覧だけで確定した分岐でも、親に最も近い日時の系統だけを返す", async () => {
         const getPostThread = vi.fn()
         const withCreatedAt = (item: any, createdAt: string) => {
             item.post.record.createdAt = createdAt
@@ -524,7 +524,7 @@ describe("buildTimelineThreads（一覧だけでの確定）", () => {
         ])
     })
 
-    it("[timeline-api/AC-15] 他人の返信などで返信数が一覧と一致しないスレッドは、getPostThreadで取得する", async () => {
+    it("[timeline-api/3.5] 他人の返信などで返信数が一覧と一致しないスレッドは、getPostThreadで取得する", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -553,7 +553,7 @@ describe("buildTimelineThreads（一覧だけでの確定）", () => {
         ])
     })
 
-    it("[timeline-api/AC-14] 一覧に起点が無いスレッドはgetPostThreadで取得する", async () => {
+    it("[timeline-api/3.4] 一覧に起点が無いスレッドはgetPostThreadで取得する", async () => {
         const getPostThread = vi.fn().mockResolvedValue({
             data: {
                 thread: makeThreadNode("root", "2026-01-01T00:00:00Z", [
@@ -578,7 +578,7 @@ describe("resolveEntryRangeStartMs", () => {
     const post = (rkey: string, indexedAt: string) =>
         ({ uri: `at://${did}/app.bsky.feed.post/${rkey}`, indexedAt }) as any
 
-    it("[timeline-api/AC-12] 起点と後続を含む最も古いindexedAtからマージンを引いた日時を返す", () => {
+    it("[timeline-api/4.2] 起点と後続を含む最も古いindexedAtからマージンを引いた日時を返す", () => {
         const start = resolveEntryRangeStartMs([
             {
                 rootPost: post("a", "2026-01-05T00:00:00Z"),
@@ -595,7 +595,7 @@ describe("resolveEntryRangeStartMs", () => {
         )
     })
 
-    it("[timeline-api/AC-13] 補完した起点が一覧より古ければ、その起点を始点の基準にする", () => {
+    it("[timeline-api/4.3] 補完した起点が一覧より古ければ、その起点を始点の基準にする", () => {
         const start = resolveEntryRangeStartMs([
             {
                 rootPost: post("old-root", "2025-12-01T00:00:00Z"),
@@ -608,7 +608,7 @@ describe("resolveEntryRangeStartMs", () => {
         )
     })
 
-    it("[timeline-api/AC-12] 投稿が無い、または日時が読めなければundefinedを返す", () => {
+    it("[timeline-api/4.2] 投稿が無い、または日時が読めなければundefinedを返す", () => {
         expect(resolveEntryRangeStartMs([])).toBeUndefined()
         expect(
             resolveEntryRangeStartMs([
@@ -624,7 +624,7 @@ describe("attachSkyshareEntries", () => {
     const post = (rkey: string) =>
         ({ uri: `at://${did}/app.bsky.feed.post/${rkey}` }) as any
 
-    it("[timeline-api/AC-9] 起点と後続の両方へsource.uriが一致するentryを付与し、入力は変更しない", () => {
+    it("[timeline-api/4.1] 起点と後続の両方へsource.uriが一致するentryを付与し、入力は変更しない", () => {
         const root = post("root")
         const reply = post("reply")
         const threads = [{ rootPost: root, replies: [reply] }]
@@ -642,7 +642,7 @@ describe("attachSkyshareEntries", () => {
         expect(root.skyshareEntry).toBeUndefined()
     })
 
-    it("[timeline-api/AC-9] 一致するentryが無い投稿にはskyshareEntryを付けない", () => {
+    it("[timeline-api/4.1] 一致するentryが無い投稿にはskyshareEntryを付けない", () => {
         const result = attachSkyshareEntries(
             [{ rootPost: post("a"), replies: [] }],
             new Map(),

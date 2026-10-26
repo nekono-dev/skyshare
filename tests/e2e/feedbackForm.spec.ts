@@ -57,7 +57,7 @@ const mockFeedback = async (page: Page, statuses: number[] = [200]) => {
     return bodies
 }
 
-test("[feedback-form/AC-1] 設定のページのリンクから報告のページが開き、サイドバーとフッターナビが表示されない", async ({
+test("[feedback-form/1.1] 設定のページのリンクから報告のページが開き、サイドバーとフッターナビが表示されない", async ({
     page,
 }) => {
     await mockLoggedIn(page)
@@ -76,7 +76,7 @@ test("[feedback-form/AC-1] 設定のページのリンクから報告のペー�
     await expect(page.locator('nav[data-nav="footer"]')).toHaveCount(0)
 })
 
-test("[feedback-form/AC-2] 未ログインで開くと、フォームがなくログインのページへのリンクが表示される", async ({
+test("[feedback-form/1.3] 未ログインで開くと、フォームがなくログインのページへのリンクが表示される", async ({
     page,
 }) => {
     await page.route(/\/v2\/bsky\/session\/?$/, route =>
@@ -95,7 +95,7 @@ test("[feedback-form/AC-2] 未ログインで開くと、フォームがなく�
     await expect(page.getByTestId("feedback-form")).toHaveCount(0)
 })
 
-test("[feedback-form/AC-3][feedback-form/AC-4][feedback-form/AC-5][feedback-form/AC-6] 種別で入力欄と件名の見出しが切り替わり、各欄にカウンタが付く", async ({
+test("[feedback-form/2.1,2.4][feedback-form/2.2][feedback-form/2.3][feedback-form/2.5] 種別で入力欄と件名の見出しが切り替わり、各欄にカウンタが付く", async ({
     page,
 }) => {
     await mockLoggedIn(page)
@@ -133,7 +133,7 @@ test("[feedback-form/AC-3][feedback-form/AC-4][feedback-form/AC-5][feedback-form
     await expect(form.getByText("0/2000:文字")).toHaveCount(2)
 })
 
-test("[feedback-form/AC-7] 件名が空なら送信できず、必須の項目を埋めると送れ、上限を超えると送れない", async ({
+test("[feedback-form/2.6] 件名が空なら送信できず、必須の項目を埋めると送れ、上限を超えると送れない", async ({
     page,
 }) => {
     await mockLoggedIn(page)
@@ -152,7 +152,7 @@ test("[feedback-form/AC-7] 件名が空なら送信できず、必須の項目�
     await expect(submit).toBeDisabled()
 })
 
-test("[feedback-form/AC-8] 注記にハンドルの共有と GitHub での公開が載り、送る値の一覧にハンドルが載る", async ({
+test("[feedback-form/3.1] 注記にハンドルの共有と GitHub での公開が載り、送る値の一覧にハンドルが載る", async ({
     page,
 }) => {
     await mockLoggedIn(page)
@@ -167,7 +167,7 @@ test("[feedback-form/AC-8] 注記にハンドルの共有と GitHub での公開
     await expect(collected).toContainText("いいえ")
 })
 
-test("[feedback-form/AC-10] 送信が成功すると Issue へのリンクが出て入力が空になり、429 では時間を置く旨が出て入力が残る", async ({
+test("[feedback-form/4.1,4.2] 送信が成功すると Issue へのリンクが出て入力が空になり、429 では時間を置く旨が出て入力が残る", async ({
     page,
 }) => {
     await mockLoggedIn(page)
@@ -207,7 +207,7 @@ test("[feedback-form/AC-10] 送信が成功すると Issue へのリンクが出
 test.describe("英語ブラウザ", () => {
     test.use({ locale: "en-US" })
 
-    test("[feedback-form/AC-11] 英語の表示では、ページの見出しと送信のボタンが英語になる", async ({
+    test("[feedback-form/1.2] 英語の表示では、ページの見出しと送信のボタンが英語になる", async ({
         page,
     }) => {
         await mockLoggedIn(page)

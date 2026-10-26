@@ -31,7 +31,7 @@ const typeBody = async (page: Page, text: string, reload = true) => {
     return button
 }
 
-test("[ogp-link-card/AC-6] 本文にURLがあるときだけ、取得ボタンが表示される", async ({
+test("[ogp-link-card/1.1] 本文にURLがあるときだけ、取得ボタンが表示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -45,7 +45,7 @@ test("[ogp-link-card/AC-6] 本文にURLがあるときだけ、取得ボタン�
     ).toBeVisible()
 })
 
-test("[ogp-link-card/AC-7] 取得に成功すると、取得済みの表示と画像のプレビューが現れる", async ({
+test("[ogp-link-card/1.2] 取得に成功すると、取得済みの表示と画像のプレビューが現れる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -75,7 +75,7 @@ test("[ogp-link-card/AC-7] 取得に成功すると、取得済みの表示と�
     await expect(page.getByTestId("ogp-preview")).toBeVisible()
 })
 
-test("[ogp-link-card/AC-8] 取得に失敗すると、失敗の表示が現れ、プレビューは現れない", async ({
+test("[ogp-link-card/1.3] 取得に失敗すると、失敗の表示が現れ、プレビューは現れない", async ({
     page,
 }) => {
     test.setTimeout(90_000)

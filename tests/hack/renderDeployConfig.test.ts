@@ -80,7 +80,7 @@ const run = (env: Record<string, string>, args: string[] = []) => {
 }
 
 describe("render-deploy-config", () => {
-    it("[site-config/AC-7] 本番は与えたドメインと固定の D1・R2 の名前でプレビューを無効にし、ドメインが欠けると異常終了する", () => {
+    it("[site-config/3.1,3.2] 本番は与えたドメインと固定の D1・R2 の名前でプレビューを無効にし、ドメインが欠けると異常終了する", () => {
         const { status, config } = run(ENV)
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare"')
@@ -96,7 +96,7 @@ describe("render-deploy-config", () => {
         expect(failed.stderr).toContain("SITE_HOST")
     })
 
-    it("[site-config/AC-8] develop は別の Worker 名と develop サブドメインに develop 専用の D1・R2 を使い、プレビューの D1 に名前から引いた ID を入れる", () => {
+    it("[site-config/3.3] develop は別の Worker 名と develop サブドメインに develop 専用の D1・R2 を使い、プレビューの D1 に名前から引いた ID を入れる", () => {
         const { status, config } = run(ENV, ["--develop"])
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare-develop"')

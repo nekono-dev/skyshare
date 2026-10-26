@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import { resolveDisplayName } from "@/lib/atproto/profile"
 
 describe("resolveDisplayName", () => {
-    it("[atproto-access/AC-5] displayNameがあればそれを採用する", async () => {
+    it("[atproto-access/3.1] displayNameがあればそれを採用する", async () => {
         const agent = {
             getProfile: vi
                 .fn()
@@ -14,7 +14,7 @@ describe("resolveDisplayName", () => {
         ).toBe("Alice")
     })
 
-    it("[atproto-access/AC-4] displayNameが空文字ならfallbackHandleを採用する", async () => {
+    it("[atproto-access/3.1] displayNameが空文字ならfallbackHandleを採用する", async () => {
         const agent = {
             getProfile: vi
                 .fn()

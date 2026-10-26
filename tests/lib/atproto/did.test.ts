@@ -6,7 +6,7 @@ import {
 } from "@/lib/atproto/did"
 
 describe("readPdsServiceFromDidDoc", () => {
-    it("[atproto-access/AC-8] atproto PDS のserviceEndpointを抽出する", () => {
+    it("[atproto-access/4.1] atproto PDS のserviceEndpointを抽出する", () => {
         expect(
             readPdsServiceFromDidDoc({
                 service: [
@@ -20,7 +20,7 @@ describe("readPdsServiceFromDidDoc", () => {
         ).toBe("https://example.social")
     })
 
-    it("[atproto-access/AC-9] 該当するserviceが無ければ undefined", () => {
+    it("[atproto-access/4.2] 該当するserviceが無ければ undefined", () => {
         expect(
             readPdsServiceFromDidDoc({
                 service: [
@@ -56,7 +56,7 @@ describe("resolvePdsServiceForDid", () => {
         vi.unstubAllGlobals()
     })
 
-    it("[atproto-access/AC-10] did:plc: 以外は fetch を呼ばず undefined", async () => {
+    it("[atproto-access/4.4] did:plc: 以外は fetch を呼ばず undefined", async () => {
         const fetchMock = vi.fn()
         vi.stubGlobal("fetch", fetchMock)
 
@@ -66,8 +66,28 @@ describe("resolvePdsServiceForDid", () => {
         expect(fetchMock).not.toHaveBeenCalled()
     })
 
-    it("[atproto-access/AC-11] レスポンスが失敗(ok=false)なら undefined", async () => {
+    it("[atproto-access/4.4] レスポンスが失敗(ok=false)なら undefined", async () => {
         vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }))
+
+        expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
+    })
+
+    it("[atproto-access/4.4] fetch が例外を投げたら undefined", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")))
+
+        expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
+    })
+
+    it("[atproto-access/4.4] 応答本文の json() が失敗したら undefined", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => {
+                    throw new SyntaxError("bad json")
+                },
+            }),
+        )
 
         expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
     })

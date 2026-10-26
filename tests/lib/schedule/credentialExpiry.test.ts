@@ -8,7 +8,7 @@ import { CREDENTIAL_IDLE_SECONDS } from "@/lib/schedule/store"
 const DAY = 86400
 
 describe("許可の有効期限の目安", () => {
-    test("schedule-api/AC-23: 最後の使用か最も遅い待機中の実行時刻から30日と、許可から2年の早い方になる", () => {
+    test("schedule-api/4.7: 最後の使用か最も遅い待機中の実行時刻から30日と、許可から2年の早い方になる", () => {
         // 予約がなければ、最後の使用から30日
         expect(
             estimateCredentialExpiry({

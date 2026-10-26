@@ -6,7 +6,7 @@ import {
 } from "@/util/formData"
 
 describe("formDataIndexedArrayToObjects", () => {
-    it("[api-codegen/AC-10] インデックス付きフィールドから複数件のオブジェクト配列を復元する", () => {
+    it("[api-codegen/3.4] インデックス付きフィールドから複数件のオブジェクト配列を復元する", () => {
         const formData = new FormData()
         formData.set("posts[0][text]", JSON.stringify("hello"))
         formData.set("posts[1][text]", JSON.stringify("world"))
@@ -106,7 +106,7 @@ describe("formDataToObject", () => {
         })
     })
 
-    it("[api-codegen/AC-11] jsonのパースに失敗した場合は生の値を残す", () => {
+    it("[api-codegen/3.5] jsonのパースに失敗した場合は生の値を残す", () => {
         const formData = new FormData()
         formData.set("imagesMeta", "not-json")
         expect(formDataToObject(formData, { imagesMeta: "json" })).toEqual({

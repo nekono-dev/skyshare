@@ -27,6 +27,12 @@ export type MentionSuggestion = {
 const MENTION_SUGGEST_LIMIT = 5
 const SUGGEST_TIMEOUT_MS = 5000
 
+/** 呼び出し元の signal（あれば）と5秒のタイムアウトを合成する。 */
+const withTimeout = (signal?: AbortSignal): AbortSignal => {
+    const timeout = AbortSignal.timeout(SUGGEST_TIMEOUT_MS)
+    return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 /**
  * `app.bsky.actor.searchActorsTypeahead` を叩き、メンション候補に必要な形へ整形する。
  *
@@ -50,7 +56,7 @@ export const searchMentionSuggestions = async (
     try {
         const res = await publicAtpAgent.app.bsky.actor.searchActorsTypeahead(
             { q: query, limit: MENTION_SUGGEST_LIMIT },
-            { signal: opts?.signal ?? AbortSignal.timeout(SUGGEST_TIMEOUT_MS) },
+            { signal: withTimeout(opts?.signal) },
         )
         return res.data.actors.map(actor => ({
             did: actor.did,
@@ -117,7 +123,7 @@ export const getTrendingTagSuggestions = async (opts?: {
     try {
         const res = await publicAtpAgent.app.bsky.unspecced.getTrendingTopics(
             { limit: 25 },
-            { signal: opts?.signal ?? AbortSignal.timeout(SUGGEST_TIMEOUT_MS) },
+            { signal: withTimeout(opts?.signal) },
         )
         const tags = [...res.data.topics, ...res.data.suggested]
             .map(t => t.topic.replace(/^[#＃]/, "").trim())

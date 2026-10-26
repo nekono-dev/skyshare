@@ -24,12 +24,12 @@ afterEach(() => {
 })
 
 describe("waitForImageLoad", () => {
-    it("[browser-utils/AC-6] 読み込めたとき、true を返す", async () => {
+    it("[browser-utils/3.1] 読み込めたとき、true を返す", async () => {
         stubImage([true])
         expect(await waitForImageLoad("https://example.com/a.png")).toBe(true)
     })
 
-    it("[browser-utils/AC-7] 読み込みに失敗したあと、間隔を空けて再試行し、読み込めたら true を返す", async () => {
+    it("[browser-utils/3.2] 読み込みに失敗したあと、間隔を空けて再試行し、読み込めたら true を返す", async () => {
         vi.useFakeTimers()
         const calls = stubImage([false, false, true])
         const promise = waitForImageLoad("https://example.com/a.png", {
@@ -41,7 +41,7 @@ describe("waitForImageLoad", () => {
         expect(calls()).toBe(3)
     })
 
-    it("[browser-utils/AC-8] 全体の上限を超えたとき、例外を投げずに false を返す", async () => {
+    it("[browser-utils/3.3] 全体の上限を超えたとき、例外を投げずに false を返す", async () => {
         vi.useFakeTimers()
         stubImage([false])
         const promise = waitForImageLoad("https://example.com/a.png", {
@@ -52,7 +52,7 @@ describe("waitForImageLoad", () => {
         expect(await promise).toBe(false)
     })
 
-    it("[browser-utils/AC-9] URLが空のとき、false を返す", async () => {
+    it("[browser-utils/3.4] URLが空のとき、false を返す", async () => {
         stubImage([true])
         expect(await waitForImageLoad("")).toBe(false)
     })

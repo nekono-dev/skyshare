@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { loadLiveAccount, loadPeerAccount } from "../../e2e/live/env"
 
 describe("loadLiveAccount", () => {
-    it("e2elive/AC-2: 必須の2値が揃えば認証情報を返し、サービスの既定値はbsky.social", () => {
+    it("e2elive/1.1: 必須の2値が揃えば認証情報を返し、サービスの既定値はbsky.social", () => {
         expect(
             loadLiveAccount({
                 SKYSHARE_E2E_IDENTIFIER: " a.bsky.social ",
@@ -33,7 +33,7 @@ describe("loadLiveAccount", () => {
         [{ SKYSHARE_E2E_IDENTIFIER: "a" }],
         [{ SKYSHARE_E2E_APP_PASSWORD: "p" }],
         [{ SKYSHARE_E2E_IDENTIFIER: " ", SKYSHARE_E2E_APP_PASSWORD: "p" }],
-    ])("e2elive/AC-1: 必須値が欠けていればnull（%j）", env => {
+    ])("e2elive/1.2: 必須値が欠けていればnull（%j）", env => {
         expect(loadLiveAccount(env)).toBeNull()
     })
 })

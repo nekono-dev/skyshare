@@ -7,7 +7,7 @@ import {
 import * as EntryPostSchema from "@/lib/api/schema/v2/entry/post"
 
 describe("customFormData", () => {
-    it("[api-codegen/AC-7] textフィールドは常にJSON.stringifyしてから積む", () => {
+    it("[api-codegen/3.1] textフィールドは常にJSON.stringifyしてから積む", () => {
         const formData = customFormData({ text: "hello\nworld" })
         expect(formData.get("text")).toBe(JSON.stringify("hello\nworld"))
     })
@@ -21,7 +21,7 @@ describe("customFormData", () => {
         expect((appended as Blob).size).toBe(blob.size)
     })
 
-    it("[api-codegen/AC-8] Blob配列は複数フィールドへ展開する", () => {
+    it("[api-codegen/3.2] Blob配列は複数フィールドへ展開する", () => {
         const blobs = [new Blob(["a"]), new Blob(["b"])]
         const formData = customFormData({ images: blobs })
         const appended = formData.getAll("images")
@@ -51,7 +51,7 @@ describe("customFormData", () => {
         )
     })
 
-    it("[api-codegen/AC-9] プレーンオブジェクトの配列(posts)はインデックス付きフィールド名へ展開する", () => {
+    it("[api-codegen/3.3] プレーンオブジェクトの配列(posts)はインデックス付きフィールド名へ展開する", () => {
         const blob = new Blob(["img"], { type: "image/png" })
         const formData = customFormData({
             posts: [

@@ -2,7 +2,7 @@
  * 「タイムラインを表示しない」設定のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
- * - `specs/timeline-hidden` の受け入れ条件の恒久テスト。
+ * - `.kiro/specs/timeline-hidden` の受け入れ条件の恒久テスト。
  * - ログイン不要のゲスト表示（`?guest`）で、設定ページでの切り替え・トップページの
  *   一覧の取得の有無・新規投稿ボタンの有無・「投稿フォームを固定表示しない」の無効化を検証する。
  */
@@ -38,7 +38,7 @@ const openMoreOptions = async (page: Page) => {
 }
 
 test.describe("タイムラインを表示しない設定", () => {
-    test("[timeline-hidden/AC-2 timeline-hidden/AC-3 timeline-hidden/AC-4 timeline-hidden/AC-7 timeline-hidden/AC-8] 設定ページでONにすると、トップページは一覧を取得せず投稿フォームとゲスト表示の案内だけを表示し、新規投稿ボタンとハイドレーション警告が出ない", async ({
+    test("[timeline-hidden/1.2 timeline-hidden/2.1 timeline-hidden/2.2 timeline-hidden/2.3 timeline-hidden/1.3] 設定ページでONにすると、トップページは一覧を取得せず投稿フォームとゲスト表示の案内だけを表示し、新規投稿ボタンとハイドレーション警告が出ない", async ({
         page,
     }) => {
         await page.goto("/settings/?guest")
@@ -91,7 +91,7 @@ test.describe("タイムラインを表示しない設定", () => {
         expect(warnings).toEqual([])
     })
 
-    test("[timeline-hidden/AC-5 timeline-hidden/AC-6] 固定表示しないをONにした後でタイムラインを表示しないをONにすると、固定表示しないのスイッチがOFFかつ操作不能になり、OFFに戻すとONの表示に戻る", async ({
+    test("[timeline-hidden/3.1 timeline-hidden/3.2] 固定表示しないをONにした後でタイムラインを表示しないをONにすると、固定表示しないのスイッチがOFFかつ操作不能になり、OFFに戻すとONの表示に戻る", async ({
         page,
     }) => {
         await page.goto("/settings/?guest")

@@ -13,7 +13,7 @@ const DID = "did:plc:aaaa"
 const NOW = 1_800_000_000
 
 describe("PDS への DPoP つきの要求", () => {
-    test("oauth-client/AC-11: アクセストークンとそのハッシュを入れた証明が付き、nonce を求められると1回だけやり直す", async () => {
+    test("[oauth-client/4.1,4.2] アクセストークンとそのハッシュを入れた証明が付き、nonce を求められると1回だけやり直す", async () => {
         const world = createFakeOAuth(DID)
         const dpop = await createDpopSession(await generateEcJwk())
         const fetchPds = createDpopFetch({

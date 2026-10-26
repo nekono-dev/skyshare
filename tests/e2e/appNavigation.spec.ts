@@ -8,7 +8,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[app-navigation/AC-8] デスクトップ幅ではサイドバーが、決まった順に表示される", async ({
+test("[app-navigation/3.1] デスクトップ幅ではサイドバーが、決まった順に表示される", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 1200, height: 800 })
@@ -25,7 +25,7 @@ test("[app-navigation/AC-8] デスクトップ幅ではサイドバーが、決�
     ).toEqual(["accounts", "post", "entries", "settings"])
 })
 
-test("[app-navigation/AC-9] モバイル幅ではフッターのナビが表示され、サイドバーは隠れる", async ({
+test("[app-navigation/3.2] モバイル幅ではフッターのナビが表示され、サイドバーは隠れる", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 375, height: 700 })
@@ -42,7 +42,7 @@ test("[app-navigation/AC-9] モバイル幅ではフッターのナビが表示�
     ).toEqual(["entries", "post", "settings", "accounts"])
 })
 
-test("[app-navigation/AC-10] 現在のページのリンクにだけ aria-current が付く", async ({
+test("[app-navigation/2.4] 現在のページのリンクにだけ aria-current が付く", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 1200, height: 800 })
@@ -55,7 +55,7 @@ test("[app-navigation/AC-10] 現在のページのリンクにだけ aria-curren
     await expect(nav.locator("a[aria-current]")).toHaveCount(1)
 })
 
-test("[app-navigation/AC-11] ゲスト表示のとき、ナビのリンクに guest のクエリが引き継がれる", async ({
+test("[app-navigation/1.5] ゲスト表示のとき、ナビのリンクに guest のクエリが引き継がれる", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 1200, height: 800 })
@@ -64,7 +64,7 @@ test("[app-navigation/AC-11] ゲスト表示のとき、ナビのリンクに gu
     await expect(link).toHaveAttribute("href", "/settings/?guest=1")
 })
 
-test("[app-navigation/AC-12] ログイン中のアカウントのアイコンが、アカウントのリンクに補われる", async ({
+test("[app-navigation/4.1] ログイン中のアカウントのアイコンが、アカウントのリンクに補われる", async ({
     page,
 }) => {
     await page.setViewportSize({ width: 1200, height: 800 })

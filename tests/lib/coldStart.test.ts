@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest"
  * 動的importすること（`lib/session/bskySessionRefresh.ts` を参照）。
  */
 describe("cold start: ミドルウェアの静的importにatprotoを含めない", () => {
-    it("[oauth-session/AC-16] src/middleware.ts から静的に辿れる範囲に @atproto/* が無い（OAuth のセッションの経路を含む）", async () => {
+    it("[oauth-session/3.4] src/middleware.ts から静的に辿れる範囲に @atproto/* が無い（OAuth のセッションの経路を含む）", async () => {
         const entry = resolve(__dirname, "../../src/middleware.ts")
         const result = await build({
             entryPoints: [entry],
@@ -71,7 +71,7 @@ describe("予約投稿の API の静的importにatprotoを含めない", () => {
         "src/lib/schedule/runner.ts",
     ]
     it.each(entries)(
-        "schedule-api/AC-16 schedule-runner/AC-16: %s から静的に辿れる範囲に @atproto/* が無い",
+        "schedule-api/6.4 schedule-runner/6.1: %s から静的に辿れる範囲に @atproto/* が無い",
         async entryPath => {
             const result = await build({
                 entryPoints: [resolve(__dirname, "../../", entryPath)],

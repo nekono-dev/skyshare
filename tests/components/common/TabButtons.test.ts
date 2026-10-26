@@ -15,14 +15,14 @@ const items: TabItem<"a" | "b" | "c">[] = [
 ]
 
 describe("nextTabKey", () => {
-    test("tab-buttons/AC-3: 2つ目が無効のとき、1つ目で右を押すと3つ目、3つ目で右を押すと1つ目に戻る", () => {
+    test("tab-buttons/2.1: 2つ目が無効のとき、1つ目で右を押すと3つ目、3つ目で右を押すと1つ目に戻る", () => {
         expect(nextTabKey(items, "a", "ArrowRight")).toBe("c")
         expect(nextTabKey(items, "c", "ArrowRight")).toBe("a")
         expect(nextTabKey(items, "a", "ArrowLeft")).toBe("c")
         expect(nextTabKey(items, "c", "ArrowLeft")).toBe("a")
     })
 
-    test("tab-buttons/AC-4: Home で先頭の、End で末尾の無効でないタブが選ばれる", () => {
+    test("tab-buttons/2.2: Home で先頭の、End で末尾の無効でないタブが選ばれる", () => {
         expect(nextTabKey(items, "c", "Home")).toBe("a")
         expect(nextTabKey(items, "a", "End")).toBe("c")
         const tailDisabled: TabItem<"x" | "y">[] = [
@@ -54,13 +54,13 @@ describe("TabButtons の描画", () => {
             }),
         )
 
-    test("tab-buttons/AC-2: 無効なタブは押せない状態で描画される", () => {
+    test("tab-buttons/1.2: 無効なタブは押せない状態で描画される", () => {
         const html = render("a")
         expect(html).toMatch(/id="t-tab-b"[^>]*disabled=""/)
         expect(html).not.toMatch(/id="t-tab-a"[^>]*disabled=""/)
     })
 
-    test("tab-buttons/AC-5: タブリストの役割を持ち、各タブが対応するタブパネルを参照し、選択中だけが選択状態になる", () => {
+    test("tab-buttons/3.1: タブリストの役割を持ち、各タブが対応するタブパネルを参照し、選択中だけが選択状態になる", () => {
         const html = render("c")
         expect(html).toContain('role="tablist"')
         expect(html).toContain('aria-label="切り替え"')
@@ -71,7 +71,7 @@ describe("TabButtons の描画", () => {
         expect(html.match(/aria-selected="true"/g)).toHaveLength(1)
     })
 
-    test("tab-buttons/AC-6: 選択中のタブだけがフォーカスの順序に含まれる", () => {
+    test("tab-buttons/2.3: 選択中のタブだけがフォーカスの順序に含まれる", () => {
         const html = render("a")
         expect(html.match(/tabindex="0"/gi)).toHaveLength(1)
         expect(html.match(/tabindex="-1"/gi)).toHaveLength(2)

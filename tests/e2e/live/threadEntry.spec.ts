@@ -3,9 +3,9 @@
  *
  * 責務と処理概要:
  * - 手動確認としていた次の項目を自動化する。
- *   - `specs/threadpost/tasks.md`: 複数segmentの順次投稿がBluesky上でスレッドになる／
+ *   - `.kiro/specs/threadpost/tasks.md`: 複数segmentの順次投稿がBluesky上でスレッドになる／
  *     画像を含むスレッドでentryが1件だけ作られ、そのsourceがスレッド先頭を指す。
- *   - `specs/timeline/tasks.md`・`specs/entry/frontend/tasks.md`: Timelineでのスレッド折りたたみ表示、
+ *   - `.kiro/specs/timeline/tasks.md`・`.kiro/specs/entry/frontend/tasks.md`: Timelineでのスレッド折りたたみ表示、
  *     entry一覧・詳細ページの表示、「リンク・Bluesky投稿を削除」の最終確認（削除予定一覧）と
  *     確定後のスレッド全体の削除。
  * - 作成した投稿は本文の識別子（`makeRunTag`）で特定し、成否に関わらず終了時に削除する。
@@ -23,7 +23,7 @@ import {
 
 test.describe.configure({ timeout: 240_000 })
 
-test("e2elive/AC-10: スレッドを投稿し、entry・Timelineの表示を確認して、スレッドごと削除できる", async ({
+test("e2elive/5.1: スレッドを投稿し、entry・Timelineの表示を確認して、スレッドごと削除できる", async ({
     page,
     request,
 }) => {

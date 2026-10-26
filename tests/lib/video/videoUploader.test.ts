@@ -76,7 +76,7 @@ afterEach(() => {
 })
 
 describe("uploadVideo", () => {
-    it("[video-upload/AC-3] 正常系: 3 パートを順番に送り、blob 参照を返し、進捗を通知する", async () => {
+    it("[video-upload/2.1] 正常系: 3 パートを順番に送り、blob 参照を返し、進捗を通知する", async () => {
         const calls = setupFetch({
             ...happy(3),
             getJobStatus: (() => {
@@ -160,7 +160,7 @@ describe("uploadVideo", () => {
         ["a.webm", "video/webm", "video/webm"],
         ["a.MOV", "", "video/quicktime"],
     ])(
-        "[video-upload/AC-7] %s（type=%j）の startUpload の mimeType は実形式 %s になる",
+        "[video-upload/3.1] %s（type=%j）の startUpload の mimeType は実形式 %s になる",
         async (name, type, expected) => {
             const calls = setupFetch(happy(1))
             const file = new File([new Uint8Array(100)], name, { type })
@@ -173,7 +173,7 @@ describe("uploadVideo", () => {
         },
     )
 
-    it("[video-upload/AC-4] パートが 503 なら再試行して成功する", async () => {
+    it("[video-upload/2.3] パートが 503 なら再試行して成功する", async () => {
         let n = 0
         const calls = setupFetch({
             ...happy(1),
@@ -185,7 +185,7 @@ describe("uploadVideo", () => {
         expect(calls.filter(c => c.name === "uploadPart")).toHaveLength(2)
     })
 
-    it("[video-upload/AC-4] 4 回連続失敗で network エラー", async () => {
+    it("[video-upload/2.3] 4 回連続失敗で network エラー", async () => {
         const calls = setupFetch({
             ...happy(1),
             uploadPart: () => json({}, 503),
@@ -199,7 +199,7 @@ describe("uploadVideo", () => {
         expect(calls.filter(c => c.name === "uploadPart")).toHaveLength(4)
     })
 
-    it("[video-upload/AC-4] 400 は再試行しない", async () => {
+    it("[video-upload/2.3] 400 は再試行しない", async () => {
         const calls = setupFetch({
             ...happy(1),
             uploadPart: () => json({ error: "Bad" }, 400),
@@ -220,7 +220,7 @@ describe("uploadVideo", () => {
         ["TooManyOpenUploads", "tooManyUploads"],
         ["ServiceOverloaded", "overloaded"],
     ])(
-        "[video-upload/AC-7] startUpload の %s は %s になる",
+        "[video-upload/3.1] startUpload の %s は %s になる",
         async (name, code) => {
             setupFetch({
                 ...happy(1),
@@ -246,7 +246,7 @@ describe("uploadVideo", () => {
         await assertion
     })
 
-    it("[video-upload/AC-8] ポーリングが上限を超えると timeout", async () => {
+    it("[video-upload/2.7] ポーリングが上限を超えると timeout", async () => {
         setupFetch({
             ...happy(1),
             getJobStatus: () =>
@@ -276,7 +276,7 @@ describe("uploadVideo", () => {
         await assertion
     })
 
-    it("[video-upload/AC-5] トークンの残りが 5 分未満なら次のリクエスト前に再取得する", async () => {
+    it("[video-upload/2.4] トークンの残りが 5 分未満なら次のリクエスト前に再取得する", async () => {
         setupFetch(happy(2))
         const nowSec = Math.floor(Date.now() / 1000)
         const fetchToken = vi
@@ -300,7 +300,7 @@ describe("uploadVideo", () => {
         expect(fetchToken.mock.calls.length).toBeGreaterThanOrEqual(2)
     })
 
-    it("[video-upload/AC-6] uploadPart 中に中断すると abortUpload が 1 回呼ばれ AbortError", async () => {
+    it("[video-upload/2.5,2.6] uploadPart 中に中断すると abortUpload が 1 回呼ばれ AbortError", async () => {
         const controller = new AbortController()
         const calls = setupFetch({
             ...happy(2),
@@ -318,7 +318,7 @@ describe("uploadVideo", () => {
         expect(calls.filter(c => c.name === "abortUpload")).toHaveLength(1)
     })
 
-    it("[video-upload/AC-6] finishUpload 後の中断では abortUpload は呼ばれない", async () => {
+    it("[video-upload/2.5,2.6] finishUpload 後の中断では abortUpload は呼ばれない", async () => {
         const controller = new AbortController()
         const calls = setupFetch({
             ...happy(1),
@@ -340,7 +340,7 @@ describe("uploadVideo", () => {
         expect(calls.filter(c => c.name === "abortUpload")).toHaveLength(0)
     })
 
-    it("[video-upload/AC-13] トークン文字列を console に出力しない", async () => {
+    it("[video-upload/1.3] トークン文字列を console に出力しない", async () => {
         const spies = (["log", "info", "warn", "error", "debug"] as const).map(
             m => vi.spyOn(console, m).mockImplementation(() => undefined),
         )

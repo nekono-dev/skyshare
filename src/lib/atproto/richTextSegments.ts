@@ -3,9 +3,9 @@
  *
  * 責務と処理概要:
  * - 外部入力（PDS・AppViewのレコード）の facets を、表示に使う3種（mention/link/tag）だけの形へ正規化する。
- * - facets の UTF-8 バイト範囲で本文を区間に切り出し、リンクの区間にはリンク先を付ける（`specs/post-rich-text`）。
+ * - facets の UTF-8 バイト範囲で本文を区間に切り出し、リンクの区間にはリンク先を付ける（`.kiro/specs/post-rich-text`）。
  * - facets の無い部分に書かれた URL（スキーム省略・日本語に続くものを含む）とハッシュタグもリンクの区間にする。
- * - 指定した facets の範囲の文字を本文から取り除く（`specs/link-card-priority`）。
+ * - 指定した facets の範囲の文字を本文から取り除く（`.kiro/specs/link-card-priority`）。
  * - `@atproto/*` を import しない純粋関数のみで構成する（クライアントの bundle と cold start の負担を増やさないため）。
  */
 import { findHashtagRanges, findUrlRanges } from "@/util/autoLink"

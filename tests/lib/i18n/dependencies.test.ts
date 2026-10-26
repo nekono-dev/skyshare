@@ -20,7 +20,7 @@ const collectFiles = (dir: string): string[] =>
     })
 
 describe("表示言語の処理の依存", () => {
-    it("[i18n-locale/AC-12] 表示言語の処理が、実行時に外部の翻訳用パッケージを読み込まない", () => {
+    it("[i18n-locale/4.4] 表示言語の処理が、実行時に外部の翻訳用パッケージを読み込まない", () => {
         const violations: string[] = []
         for (const file of collectFiles(I18N_ROOT)) {
             const source = readFileSync(file, "utf8")

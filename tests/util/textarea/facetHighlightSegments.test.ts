@@ -13,7 +13,7 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
-    it("[post-body-editor/AC-1] #の直後に1文字入力しただけで即座にハイライトされる", () => {
+    it("[post-body-editor/1.1] #の直後に1文字入力しただけで即座にハイライトされる", () => {
         expect(computeHighlightSegments("#n")).toEqual([
             { text: "#n", highlighted: true },
         ])
@@ -31,7 +31,7 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
-    it("[post-body-editor/AC-2] httpsのURLはプロトコル直後に1文字続いた時点で即座にハイライトされる", () => {
+    it("[post-body-editor/1.1] httpsのURLはプロトコル直後に1文字続いた時点で即座にハイライトされる", () => {
         expect(computeHighlightSegments("https://a")).toEqual([
             { text: "https://a", highlighted: true },
         ])
@@ -43,13 +43,13 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
-    it("[post-body-editor/AC-4] メールアドレスの@は誤ってハイライトしない（空白/行頭直後のみが対象）", () => {
+    it("[post-body-editor/1.2] メールアドレスの@は誤ってハイライトしない（空白/行頭直後のみが対象）", () => {
         expect(computeHighlightSegments("mail@example.com 宛に")).toEqual([
             { text: "mail@example.com 宛に", highlighted: false },
         ])
     })
 
-    it("[post-body-editor/AC-5] C#のような単語中の#は誤ってハイライトしない", () => {
+    it("[post-body-editor/1.2] C#のような単語中の#は誤ってハイライトしない", () => {
         expect(computeHighlightSegments("C#言語の話")).toEqual([
             { text: "C#言語の話", highlighted: false },
         ])
@@ -97,7 +97,7 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
-    it("[post-body-editor/AC-3] スキーム(https://)が無いドメインのみのURLもハイライトされる", () => {
+    it("[post-body-editor/1.3] スキーム(https://)が無いドメインのみのURLもハイライトされる", () => {
         expect(computeHighlightSegments("example.com を見て")).toEqual([
             { text: "example.com", highlighted: true },
             { text: " を見て", highlighted: false },
@@ -111,13 +111,13 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
-    it("[post-body-editor/AC-6] 既知TLDでない文字列はドメインとしてハイライトしない", () => {
+    it("[post-body-editor/1.3] 既知TLDでない文字列はドメインとしてハイライトしない", () => {
         expect(computeHighlightSegments("index.html を編集")).toEqual([
             { text: "index.html を編集", highlighted: false },
         ])
     })
 
-    it("[post-body-editor/AC-7] バージョン表記のような数字の並びは誤ってハイライトしない", () => {
+    it("[post-body-editor/1.3] バージョン表記のような数字の並びは誤ってハイライトしない", () => {
         expect(computeHighlightSegments("v1.0.0 をリリース")).toEqual([
             { text: "v1.0.0 をリリース", highlighted: false },
         ])
@@ -129,7 +129,7 @@ describe("computeHighlightSegments", () => {
         ])
     })
 
-    it("[post-body-editor/AC-8] セグメントを連結すると元のテキストに一致する", () => {
+    it("[post-body-editor/1.4] セグメントを連結すると元のテキストに一致する", () => {
         const text =
             "今日も #猫 と @alice がかわいい、本当に https://example.com へ"
         const segments = computeHighlightSegments(text)
