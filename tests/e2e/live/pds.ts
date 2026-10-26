@@ -3,10 +3,10 @@
  *
  * 責務と処理概要:
  * - `@atproto/api`の`AtpAgent`で、検証用アカウントの投稿（`app.bsky.feed.post`）と
- *   entry（`dev.nekono.skyshare.entry`）レコードを直接作成・削除する（`specs/e2elive/design.md §6`）。
+ *   entry（`dev.nekono.skyshare.entry`）レコードを直接作成・削除する（`.kiro/specs/e2elive/design.md §6`）。
  *   アプリのAPIはentry経由でしか投稿を削除できないため、entryを持たない投稿の後始末にもこちらを使う。
  * - 作成する投稿の本文は必ず`[e2e <識別子>]`で始め（`createPost`が強制する）、削除は
- *   この形式の投稿と、それを`source`とするentryだけに限定する（`specs/e2elive/requirements.md NFR-4`）。
+ *   この形式の投稿と、それを`source`とするentryだけに限定する（`.kiro/specs/e2elive/requirements.md 要件3.4`）。
  * - 削除対象の選別（`planDeletion`）は純粋関数として切り出し、PDSなしで単体テストする。
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
@@ -17,7 +17,7 @@ import type { LiveAccount } from "./env"
 export const POST_COLLECTION = "app.bsky.feed.post"
 export const ENTRY_COLLECTION = "dev.nekono.skyshare.entry"
 
-/** 1回の削除で許容する件数の上限（識別子の誤りによる大量削除を防ぐ。NFR-4） */
+/** 1回の削除で許容する件数の上限（識別子の誤りによる大量削除を防ぐ。e2elive 要件3.4） */
 export const DELETE_LIMIT = 50
 
 /** `sweepStale`の既定の猶予（これより新しい投稿は、実行中の別プロセスのものとして残す） */

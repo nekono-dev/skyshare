@@ -8,7 +8,7 @@
  *   Entry ページへのリンクを出す。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
  * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
  * - 投稿先選択ダイアログ・WebShareの共有文は、「Skyshareのリンクカードを優先表示」に従って
- *   本文のURLを取り除く（`resolveShareBody`、`specs/link-card-priority`）。
+ *   本文のURLを取り除く（`resolveShareBody`、`.kiro/specs/link-card-priority`）。
  * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
  *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
  */
@@ -41,20 +41,20 @@ type PostCardProps = {
   /**
    * Bluesky投稿ごと削除された直後に呼び出されるコールバック。呼び出し元
    * （`ThreadCard`）は、Timelineのページング対象アイテムがスレッドグループ単位
-   * であるため（`specs/timeline`）、常にそのスレッドグループ全体を
+   * であるため（`.kiro/specs/timeline`）、常にそのスレッドグループ全体を
    * 一覧から除去する。
    */
   onPostDeleted?: () => void
   /**
    * ログイン不要のゲスト用デモ表示。Bluesky投稿への実際の書き込みを伴う操作
    * （Entry作成・元投稿へのリンク）のみ無効化する。Entry削除は有効で、削除範囲の判定・
-   * 削除の実行はアプリ内で模擬する（`specs/entry-delete-dialog`）。クロスポスト（Xへの
+   * 削除の実行はアプリ内で模擬する（`.kiro/specs/entry-delete-dialog`）。クロスポスト（Xへの
    * 共有intentポップアップ）とWebShare共有はatproto認証を必要としないため
    * 通常通り操作でき、「Entryを開く」もサンプルEntryページへ遷移できる。
    */
   guestMode?: boolean
   /**
-   * 事後entry作成ボタンの表示制御（`specs/timeline`）。
+   * 事後entry作成ボタンの表示制御（`.kiro/specs/timeline`）。
    * - `undefined`（既定）: 単独投稿と同じ、投稿自身の適格性のみで判定する。
    * - `true`: スレッドのルート投稿として明示的にボタンを表示する
    *   （`entryVisualSourcePost`がある場合はそちらの画像を使う）。
@@ -64,26 +64,26 @@ type PostCardProps = {
   postCreateEntryButton?: boolean
   /**
    * 下部のツールバー（Blueskyで開く・共有・Entry関連の操作・Entryを開くリンク）を表示しないか
-   * （`specs/timeline`）。操作はスレッドの起点の投稿に対して行うため、`ThreadCard`が
+   * （`.kiro/specs/timeline`）。操作はスレッドの起点の投稿に対して行うため、`ThreadCard`が
    * スレッドの返信のカードに指定する。既定は表示する。
    */
   hideToolbar?: boolean
   /**
    * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿
-   * （`resolveEntryVisualSourcePost`、`specs/timeline`）。
+   * （`resolveEntryVisualSourcePost`、`.kiro/specs/timeline`）。
    * `ThreadCard`がスレッドのルート投稿向けに、ルート自身が画像を持たない場合の
    * 代わりの画像取得元（ルートに最も近い画像付き投稿）を渡す。未指定時は`item`
    * 自身が対象になる。
    */
   entryVisualSourcePost?: TimelinePost
   /**
-   * 作成するentryの`source`にする投稿（`specs/timeline`）。
+   * 作成するentryの`source`にする投稿（`.kiro/specs/timeline`）。
    * `ThreadCard`がルート投稿のカードに、スレッドのルート投稿を渡す。
    * 未指定時は`item`自身が`source`になる。
    */
   entrySourcePost?: TimelinePost
   /**
-   * カードの中身のコントラストを下げるか（`specs/timeline`）。
+   * カードの中身のコントラストを下げるか（`.kiro/specs/timeline`）。
    * - `undefined`（既定）: 投稿自身がEntryを持たず作成対象にも該当しない（`display.kind === "ineligible"`）ときに下げる。
    * - `true`/`false`: 呼び出し側の判定に従う。`ThreadCard`がスレッドの返信のカードに、
    *   グループ全体が作成対象外か（どの投稿も画像・動画・entryを持たないか）を渡す。

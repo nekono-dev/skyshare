@@ -1,0 +1,68 @@
+# Implementation Plan
+
+- [x] 1. 検証処理とスキーマ
+- [x] 1.1 `src/lib/schedule/validateSchedule.ts` に実行時刻の範囲検証を実装する。
+  - _Requirements: 1.4, 1.5, 1.6_
+- [x] 1.2 作成・一覧・取消のスキーマを `src/lib/api/schema/v2/schedules/` に定義し、OpenAPI の生成に登録する。
+  - _Requirements: 1.4, 1.5, 1.6_
+- [x] 1.3 `npm run codegen` を実行し、クライアントの生成を確認する。
+  - _Requirements: 1.4, 1.5, 1.6_
+- [x] 1.4 上限を14日後と待機中5件に改め、`src/lib/schedule/stageSchedule.ts` に共通の検証と画像の保管を切り出す。
+  - _Requirements: 1.4, 1.5, 1.6_
+- [x] 1.5 受け入れ条件 1.4 と 1.6 のテストを新しい上限に合わせて更新する。
+  - 検証: `npx vitest run tests/lib/schedule/validateSchedule.test.ts`
+  - _Requirements: 1.4, 1.5, 1.6_
+
+- [x] 2. 予約の作成
+- [x] 2.1 `src/pages/v2/schedules.ts` に POST を実装し、画像の保管と予約の保存を行う。
+  - _Requirements: 1.1, 1.2, 1.3_
+- [x] 2.2 動画・件数・実行時刻・認証情報の未登録・件数の上限を拒否する分岐を実装する。
+  - _Requirements: 1.1, 1.2, 1.3_
+- [x] 2.3 受け入れ条件 1.1, 1.2 から 1.5、1.6、1.1 のテストをタグ付きで追加する。
+  - 検証: `npx vitest run tests/pages/v2/schedules.test.ts`
+  - _Requirements: 1.1, 1.2, 1.3_
+
+- [x] 3. 一覧と取消
+- [x] 3.1 `src/pages/v2/schedules.ts` に GET を実装する。
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+- [x] 3.2 `src/pages/v2/schedules/[id].ts` に DELETE を実装する。
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+- [x] 3.3 `src/pages/v2/schedules/limits.ts` に制限値の取得を実装する。
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+- [x] 3.4 受け入れ条件 2.1、3.1, 3.2, 3.3、5.1, 5.2 のテストをタグ付きで追加する。
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+- [x] 3.5 内容の取得と置き換えのスキーマを `_id/get.ts` と `_id/put.ts` に定義し、`[id].ts` に GET と PUT を実装する。
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+- [x] 3.6 画像の取得のスキーマと `src/pages/v2/schedules/[id]/images/[index].ts` を実装する。
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+- [x] 3.7 取消で認証情報を削除しない形に改め、受け入れ条件 2.2 から 2.6, 2.7 のテストをタグ付きで追加する。
+  - 検証: `npx vitest run tests/pages/v2/schedules.test.ts tests/pages/v2/schedulesId.test.ts`
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 3.1, 3.2, 3.3, 5.1, 5.2_
+
+- [x] 4. 認証情報
+- [x] 4.1 `src/lib/schedule/oauth/` に OAuth の認可の開始・完了とトークンの更新・取消を実装する。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.2 `credential.ts` に GET・DELETE を、`credential/authorization.ts` に認可の開始と戻りを実装する。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.3 `src/pages/oauth/` にクライアントのメタデータと公開鍵の一覧を実装する。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.4 受け入れ条件 4.1, 4.2 から 4.3、4.6, 4.8, 4.9 のテストをタグ付きで追加し、削除で待機中の予約と失敗の履歴も削除する形に改める。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.5 戻り先を `/oauth/callback/` に移し、完了を `authorization/completion.ts` に分け、4.2, 4.4, 4.5 のテストを追加する。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.6 登録状態に再度の許可の要否と有効期限の目安を加え、開始で戻り先のパスを受けて戻り先から転送し、4.7 と 4.2, 4.4 のテストを追加する。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.7 認可の処理を共通の OAuth のクライアントの上に移し、戻り先の cookie を用途つきにして、4.2, 4.4, 4.5 と 4.2, 4.4 のテストを合わせる。
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+- [x] 4.8 `src/lib/schedule/availabilityHint.ts` を実装し、登録状態の取得でヒント cookie を保存して、削除・認可の完了・アカウントが変わる操作で失効させ、4.6, 4.8, 4.10 のテストをタグ付きで追加する。
+  - 検証: `npx vitest run tests/lib/schedule/oauthFlow.test.ts tests/lib/schedule/availabilityHint.test.ts tests/pages/v2/scheduleCredential.test.ts tests/pages/v2/scheduleAuthorization.test.ts tests/pages/v2/bsky/session.test.ts`
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10_
+
+- [x] 5. 横断の確認
+- [x] 5.1 受け入れ条件 6.1 から 6.4 のテストをタグ付きで追加する。
+  - _Requirements: 6.1, 6.2, 6.3, 6.4_
+- [x] 5.2 起動時の読み込みを検査する既存のテストに、予約の API の経路を追加する。
+  - _Requirements: 6.1, 6.2, 6.3, 6.4_
+- [x] 5.3 取得・置き換え・画像の経路を 6.1 と 6.4 のテストに加え、`npm run codegen` で生成し直す。
+  - 検証: `npm run test:unit`
+  - _Requirements: 6.1, 6.2, 6.3, 6.4_

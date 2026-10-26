@@ -28,7 +28,7 @@ test.beforeEach(async ({ page }) => {
     await waitHydrated(page)
 })
 
-test("[composer-autofocus/AC-1] 投稿ボタンで開くと入力欄にフォーカスがあり、クリックせずに入力できる", async ({
+test("[composer-autofocus/1.1] 投稿ボタンで開くと入力欄にフォーカスがあり、クリックせずに入力できる", async ({
     page,
 }) => {
     await page.getByRole("button", { name: "新規投稿" }).first().click()
@@ -40,7 +40,7 @@ test("[composer-autofocus/AC-1] 投稿ボタンで開くと入力欄にフォー
     await expect(editor).toContainText("自動フォーカスの確認")
 })
 
-test("[composer-autofocus/AC-2] 閉じて開き直しても入力欄にフォーカスがある", async ({
+test("[composer-autofocus/1.2] 閉じて開き直しても入力欄にフォーカスがある", async ({
     page,
 }) => {
     const launcher = page.getByRole("button", { name: "新規投稿" }).first()
@@ -54,7 +54,7 @@ test("[composer-autofocus/AC-2] 閉じて開き直しても入力欄にフォー
     await expect(editorLocator(page)).toBeFocused()
 })
 
-test("[composer-autofocus/AC-3] スクロールした状態で開いても、背面の固定位置と閉じた後のスクロール位置が変わらない", async ({
+test("[composer-autofocus/2.1] スクロールした状態で開いても、背面の固定位置と閉じた後のスクロール位置が変わらない", async ({
     page,
 }) => {
     // スクロールできる高さを確保してから、下へスクロールする

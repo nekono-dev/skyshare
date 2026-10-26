@@ -11,7 +11,7 @@ const createdAt = "2026-01-01T00:00:00.000Z"
 const postUri = "at://did:plc:abc/app.bsky.feed.post/3lxyz"
 
 describe("buildThreadgateRecord", () => {
-    it("[post-gate/AC-1] everyoneの場合はnullを返す(レコードを作らない)", () => {
+    it("[post-gate/1.1] everyoneの場合はnullを返す(レコードを作らない)", () => {
         const result = buildThreadgateRecord(
             postUri,
             DEFAULT_POST_GATE_VALUE,
@@ -20,7 +20,7 @@ describe("buildThreadgateRecord", () => {
         expect(result).toBeNull()
     })
 
-    it("[post-gate/AC-2] nobodyの場合はallow:[]を返す", () => {
+    it("[post-gate/1.2] nobodyの場合はallow:[]を返す", () => {
         const gate: PostGateValue = {
             ...DEFAULT_POST_GATE_VALUE,
             replyAudience: "nobody",
@@ -34,7 +34,7 @@ describe("buildThreadgateRecord", () => {
         })
     })
 
-    it("[post-gate/AC-3] customの場合、選択したフラグに応じたunion要素を積む", () => {
+    it("[post-gate/1.3] customの場合、選択したフラグに応じたunion要素を積む", () => {
         const gate: PostGateValue = {
             ...DEFAULT_POST_GATE_VALUE,
             replyAudience: "custom",
@@ -59,7 +59,7 @@ describe("buildThreadgateRecord", () => {
         })
     })
 
-    it("[post-gate/AC-4] customで5件を超えるリストを指定した場合、5件へclampされる", () => {
+    it("[post-gate/1.4] customで5件を超えるリストを指定した場合、5件へclampされる", () => {
         const gate: PostGateValue = {
             ...DEFAULT_POST_GATE_VALUE,
             replyAudience: "custom",
@@ -74,7 +74,7 @@ describe("buildThreadgateRecord", () => {
 })
 
 describe("buildPostgateRecord", () => {
-    it("[post-gate/AC-5] allowQuote:trueの場合はnullを返す(レコードを作らない)", () => {
+    it("[post-gate/2.1] allowQuote:trueの場合はnullを返す(レコードを作らない)", () => {
         const result = buildPostgateRecord(
             postUri,
             DEFAULT_POST_GATE_VALUE,
@@ -83,7 +83,7 @@ describe("buildPostgateRecord", () => {
         expect(result).toBeNull()
     })
 
-    it("[post-gate/AC-6] allowQuote:falseの場合はdisableRuleを含むレコードを返す", () => {
+    it("[post-gate/2.2] allowQuote:falseの場合はdisableRuleを含むレコードを返す", () => {
         const gate: PostGateValue = {
             ...DEFAULT_POST_GATE_VALUE,
             allowQuote: false,

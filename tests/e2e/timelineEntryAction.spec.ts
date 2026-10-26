@@ -1,5 +1,5 @@
 /**
- * タイムラインの投稿カードのentry操作（specs/timeline）のヘッドレスブラウザによる動作確認。
+ * タイムラインの投稿カードのentry操作（.kiro/specs/timeline）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
  * - entryを開くリンクが操作の列の右端に置かれることを、ゲスト表示のカードで確認する。
@@ -14,7 +14,7 @@ const PNG_1X1 = Buffer.from(
     "base64",
 )
 
-test("[timeline/AC-9] entryを開くリンクが、操作の列の右端に表示される", async ({
+test("[timeline/1.4] entryを開くリンクが、操作の列の右端に表示される", async ({
     page,
 }) => {
     await page.goto("/?guest")
@@ -38,7 +38,7 @@ test("[timeline/AC-9] entryを開くリンクが、操作の列の右端に表�
     ).toBeLessThan(40)
 })
 
-test("[timeline/AC-6] 代表画像の素材が返信でも、entryの作成で起点の投稿のURIが送られる", async ({
+test("[timeline/2.4] 代表画像の素材が返信でも、entryの作成で起点の投稿のURIが送られる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

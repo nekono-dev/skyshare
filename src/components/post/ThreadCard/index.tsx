@@ -3,15 +3,15 @@
  *
  * 責務と処理概要:
  * - `group.replies.length === 0`（単独投稿）の場合は、既存`PostCard`をそのまま描画する
- *   フォールバック（`specs/timeline`）。
+ *   フォールバック（`.kiro/specs/timeline`）。
  * - 2件以上のスレッドグループは、既定で折りたたみ表示（ルート投稿＋「スレッドを展開」ボタン）
  *   とし、操作により全投稿を時系列順（古い→新しい）に展開表示する。
  * - 事後entry作成ボタン（`resolveEntryVisualSourcePost`）の判定は`entryCandidate.ts`に委譲する。
  *   操作はスレッドの起点の投稿に対して行うため、ツールバーごとルート投稿のカードにのみ表示し、
  *   返信のカードには表示しない。
- * - どの投稿も画像・動画・entryを持たないスレッドは、返信のカードもグレーアウトする（`specs/timeline`）。
+ * - どの投稿も画像・動画・entryを持たないスレッドは、返信のカードもグレーアウトする（`.kiro/specs/timeline`）。
  * - Timelineのページング対象アイテムはバックエンドが権威的に確定した`ThreadGroup`
- *   そのものであるため（`specs/timeline`）、削除成功時の一覧除去は常に
+ *   そのものであるため（`.kiro/specs/timeline`）、削除成功時の一覧除去は常に
  *   スレッドグループ単位で行う（同§4）。
  */
 import { useT } from "@/lib/i18n/react"

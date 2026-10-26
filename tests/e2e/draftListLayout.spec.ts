@@ -28,7 +28,7 @@ const centerY = async (locator: Locator) => {
 
 test.use({ viewport: { width: 390, height: 844 } })
 
-test("[thread-composer/AC-17] 画面幅390のとき、キャンセル・下書き・予約・投稿のボタンの文言がそれぞれ1行に収まる", async ({
+test("[thread-composer/5.3] 画面幅390のとき、キャンセル・下書き・予約・投稿のボタンの文言がそれぞれ1行に収まる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -71,7 +71,7 @@ test("[thread-composer/AC-17] 画面幅390のとき、キャンセル・下書�
     expect(submit.x + submit.width).toBeLessThanOrEqual(390)
 })
 
-test("[thread-composer/AC-18] 画面幅390で下書き・予約を開くと、取得が終わるまでスピナーが出て、画面の上部に一覧が出る", async ({
+test("[thread-composer/4.3] 画面幅390で下書き・予約を開くと、取得が終わるまでスピナーが出て、画面の上部に一覧が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -112,7 +112,7 @@ test("[thread-composer/AC-18] 画面幅390で下書き・予約を開くと、�
     await expect(dialog.getByText("下書きがありません。")).toBeVisible()
 })
 
-test("[thread-composer/AC-19] 画面幅390で画像を添付しURLを入力しても、添付の行が1行に並び、サムネ調整とリンクカードを取得は別の行に出る", async ({
+test("[thread-composer/5.3] 画面幅390で画像を添付しURLを入力しても、添付の行が1行に並び、サムネ調整とリンクカードを取得は別の行に出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -150,7 +150,7 @@ test("[thread-composer/AC-19] 画面幅390で画像を添付しURLを入力し�
     expect(await centerY(actions)).toBeGreaterThan(base + 20)
 })
 
-test("[thread-composer/AC-20] 画面幅390で下書き・予約を開くと、閉じるのボタンの全体がダイアログの内側に見える", async ({
+test("[thread-composer/4.3] 画面幅390で下書き・予約を開くと、閉じるのボタンの全体がダイアログの内側に見える", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -172,7 +172,7 @@ test("[thread-composer/AC-20] 画面幅390で下書き・予約を開くと、�
     )
 })
 
-test("[design-tokens/AC-7] 画面幅390で、横幅の限られたツールバーのボタンは文字が16px、青系統の左右余白が14px、白系統の左右余白が6pxになる", async ({
+test("[design-tokens/4.1] 画面幅390で、横幅の限られたツールバーのボタンは文字が16px、青系統の左右余白が14px、白系統の左右余白が6pxになる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

@@ -17,7 +17,7 @@ const ENTRY_URL = "https://skyshare.nekono.dev/entries/abc"
 const LINK = "https://example.com/article"
 
 describe("resolveShareBody", () => {
-    it("[link-card-priority/AC-4] 設定がONでentryのURLがあるとき、本文のURLを取り除く", () => {
+    it("[link-card-priority/2.1] 設定がONでentryのURLがあるとき、本文のURLを取り除く", () => {
         const text = `記事を読んだ ${LINK}`
         expect(
             resolveShareBody({
@@ -30,7 +30,7 @@ describe("resolveShareBody", () => {
         ).toBe("記事を読んだ")
     })
 
-    it("[link-card-priority/AC-5] 本文のURLを取り除いたとき、リンクカードのURLを補わない", () => {
+    it("[link-card-priority/2.2] 本文のURLを取り除いたとき、リンクカードのURLを補わない", () => {
         const text = `記事 ${LINK}`
         expect(
             resolveShareBody({
@@ -43,7 +43,7 @@ describe("resolveShareBody", () => {
         ).toBe("")
     })
 
-    it("[link-card-priority/AC-6] 設定がOFFのとき、本文のURLとリンクカードのURLを残す", () => {
+    it("[link-card-priority/2.3] 設定がOFFのとき、本文のURLとリンクカードのURLを残す", () => {
         const text = `記事 ${LINK}`
         expect(
             resolveShareBody({
@@ -56,7 +56,7 @@ describe("resolveShareBody", () => {
         ).toEqual({ text, linkCardUrl: LINK })
     })
 
-    it("[link-card-priority/AC-6] entryのURLが無いとき、本文のURLを残す", () => {
+    it("[link-card-priority/2.3] entryのURLが無いとき、本文のURLを残す", () => {
         const text = `記事 ${LINK}`
         for (const entryUrl of [null, ""]) {
             expect(
@@ -71,7 +71,7 @@ describe("resolveShareBody", () => {
         }
     })
 
-    it("[link-card-priority/AC-7] 本文の途中のURLを取り除くと、行末の空白が残らず連続する改行が2行に詰まる", () => {
+    it("[link-card-priority/2.4] 本文の途中のURLを取り除くと、行末の空白が残らず連続する改行が2行に詰まる", () => {
         const text = `はじめ ${LINK}\n\n\n\nおわり　`
         expect(
             resolveShareBody({

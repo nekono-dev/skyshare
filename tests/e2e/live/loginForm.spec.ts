@@ -10,7 +10,7 @@ import { loadLiveAccount } from "./env"
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
-test("e2elive/AC-4: ログインフォームから検証用アカウントでログインできる", async ({
+test("e2elive/2.2: ログインフォームから検証用アカウントでログインできる", async ({
     page,
 }) => {
     const account = loadLiveAccount()!

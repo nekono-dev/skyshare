@@ -26,7 +26,7 @@ describe("computeHighlightNodeParts", () => {
         ])
     })
 
-    it("[post-body-editor/AC-9] 末尾が改行の場合、末尾にanchor partが付加される", () => {
+    it("[post-body-editor/2.2] 末尾が改行の場合、末尾にanchor partが付加される", () => {
         expect(computeHighlightNodeParts("abc\n")).toEqual([
             { type: "text", value: "abc", highlighted: false },
             { type: "br" },
@@ -34,7 +34,7 @@ describe("computeHighlightNodeParts", () => {
         ])
     })
 
-    it("[post-body-editor/AC-10] 末尾が改行以外の場合、anchor partは付加されない", () => {
+    it("[post-body-editor/2.2] 末尾が改行以外の場合、anchor partは付加されない", () => {
         expect(computeHighlightNodeParts("abc\ndef")).toEqual([
             { type: "text", value: "abc", highlighted: false },
             { type: "br" },
@@ -162,7 +162,7 @@ describe("diffNodeParts", () => {
         })
     })
 
-    it("[post-body-editor/AC-11] 共通要素が1つしかない場合、接頭辞と接尾辞で二重カウントしない", () => {
+    it("[post-body-editor/2.3] 共通要素が1つしかない場合、接頭辞と接尾辞で二重カウントしない", () => {
         const oldParts: NodePart[] = [
             { type: "text", value: "same", highlighted: false },
         ]

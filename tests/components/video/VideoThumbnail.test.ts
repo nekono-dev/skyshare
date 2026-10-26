@@ -27,13 +27,13 @@ const render = (embed: never) => {
 }
 
 describe("VideoThumbnail", () => {
-    it("[video-player/AC-7] 代替テキストのある動画のposterに、その代替テキストが設定される", () => {
+    it("[video-player/1.5] 代替テキストのある動画のposterに、その代替テキストが設定される", () => {
         const html = render(embedOf({ alt: "海を泳ぐ魚" }))
         expect(html).toMatch(/<img[^>]*alt="海を泳ぐ魚"/)
         expect(html).toContain("thumbnail.jpg")
     })
 
-    it("[video-player/AC-9] 他のクライアントで作成した動画の投稿（代替テキストと縦横比が無い）も、posterと再生ボタンで表示される", () => {
+    it("[video-player/1.6] 他のクライアントで作成した動画の投稿（代替テキストと縦横比が無い）も、posterと再生ボタンで表示される", () => {
         const html = render(embedOf())
         // posterは投稿の埋め込みから組み立てたURLで、再生ボタンを重ねる
         expect(html).toContain(

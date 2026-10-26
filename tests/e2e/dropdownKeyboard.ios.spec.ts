@@ -2,7 +2,7 @@
  * iOS Safari（WebKit + iPhone エミュレーション）でのDropdownの、ソフトウェアキーボード表示中の挙動。
  *
  * 責務と処理概要:
- * - `specs/dropdown/tasks.md`の「iOS Safari 実機での、キーボード表示中のスクロール」の手動確認項目の
+ * - `.kiro/specs/dropdown/tasks.md`の「iOS Safari 実機での、キーボード表示中のスクロール」の手動確認項目の
  *   うち、エミュレーションで検証できる部分を自動化する。
  * - Playwrightは仮想キーボードを再現できないため、キーボードの表示はビューポート高さの縮小で
  *   代用する（キーボードが画面下部を覆い、見える領域が縮む状況に相当する）。
@@ -25,7 +25,7 @@ const clickUntilOpen = async (trigger: Locator, target: Locator) => {
 /**
  * パネルが親のoverflowで切れていないか（四隅・中央の最前面要素がパネル自身か）。
  * 画面に固定されたナビ等（`position: fixed`の要素）が上に重なる点は、親のクリップではなく
- * ページのスクロールで見えるようになるため、判定から除く（`specs/dropdown/requirements.md FR-2`）。
+ * ページのスクロールで見えるようになるため、判定から除く（`.kiro/specs/dropdown/requirements.md 要件1.4`）。
  */
 const panelNotClipped = (list: Locator) =>
     list.evaluate(el => {

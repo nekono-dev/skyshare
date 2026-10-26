@@ -2,7 +2,7 @@
  * ライブテスト: 事後entry作成のvisualの生成元（画素確認）。
  *
  * 責務と処理概要:
- * - `specs/timeline/tasks.md`の手動確認項目「ルートが画像を持たないスレッドに画像付きreplyを
+ * - `.kiro/specs/timeline/tasks.md`の手動確認項目「ルートが画像を持たないスレッドに画像付きreplyを
  *   追加した場合、事後作成したentryのvisualがそのreplyの画像から生成される」を自動化する。
  * - ルートはテキストのみ、後続のreplyが単色（シアン）の画像を持つスレッドをPDSへ直接作り、
  *   Timelineの「Skyshare Entryを作成」で作ったentryのvisualが、その色を主に含むことを確認する。
@@ -15,7 +15,7 @@ test.describe.configure({ timeout: 420_000 })
 
 const CYAN: [number, number, number] = [0, 255, 255]
 
-test("e2elive/AC-14: ルートに画像が無いスレッドの事後entryは、後続replyの画像からvisualが作られる", async ({
+test("e2elive/6.2: ルートに画像が無いスレッドの事後entryは、後続replyの画像からvisualが作られる", async ({
     page,
     request,
     agent,

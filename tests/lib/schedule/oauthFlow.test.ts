@@ -70,7 +70,7 @@ const complete = (state: string, did = DID, extra: object = {}) =>
     )
 
 describe("予約投稿の OAuth", () => {
-    test("schedule-api/AC-5: 認可の開始は、ログイン中のアカウントを指定した PAR を、署名つきの証明とともに送り、認可の画面の URL を返す", async () => {
+    test("schedule-api/4.1,4.2: 認可の開始は、ログイン中のアカウントを指定した PAR を、署名つきの証明とともに送り、認可の画面の URL を返す", async () => {
         const { url, par } = await start()
         expect(`${url.origin}${url.pathname}`).toBe(`${AUTH}/oauth/authorize`)
         expect(url.searchParams.get("client_id")).toBe(clientIdFor(ORIGIN))
@@ -108,7 +108,7 @@ describe("予約投稿の OAuth", () => {
         )
     })
 
-    test("schedule-api/AC-5: 認可の完了で、PKCE の verifier と DPoP つきでトークンを得て、更新用トークンを暗号化して保管する", async () => {
+    test("schedule-api/4.1,4.2: 認可の完了で、PKCE の verifier と DPoP つきでトークンを得て、更新用トークンを暗号化して保管する", async () => {
         const { state, par } = await start()
         expect(await complete(state)).toEqual({ ok: true })
 
@@ -141,7 +141,7 @@ describe("予約投稿の OAuth", () => {
         expect(row!.token_enc).not.toContain("REFRESH-TOKEN-VALUE")
     })
 
-    test("schedule-api/AC-6: トークンの持ち主がログイン中のアカウントと違うときは、保管しない", async () => {
+    test("schedule-api/4.3: トークンの持ち主がログイン中のアカウントと違うときは、保管しない", async () => {
         const { state } = await start()
         world.tokenSub = "did:plc:other"
         expect(await complete(state)).toEqual({
@@ -151,7 +151,7 @@ describe("予約投稿の OAuth", () => {
         expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
-    test("schedule-api/AC-7: 別のアカウントの state・使用済みの state・発行元の違う戻りは受け付けない", async () => {
+    test("schedule-api/4.3: 別のアカウントの state・使用済みの state・発行元の違う戻りは受け付けない", async () => {
         const first = await start()
         // 別のアカウントのセッションでは、state を照合できない
         expect(await complete(first.state, "did:plc:other")).toEqual({
@@ -181,7 +181,7 @@ describe("予約投稿の OAuth", () => {
         expect(await loadCredential(db, KEY, DID)).toBeNull()
     })
 
-    test("schedule-api/AC-15: 認可の失敗でも、トークン・認可コード・鍵がログに現れない", async () => {
+    test("schedule-api/6.3: 認可の失敗でも、トークン・認可コード・鍵がログに現れない", async () => {
         const logs: string[] = []
         const spies = (["log", "warn", "error"] as const).map(m =>
             vi.spyOn(console, m).mockImplementation((...a) => {

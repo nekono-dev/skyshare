@@ -87,7 +87,7 @@ describe("submitThread", () => {
         expect(body.createEntry).toBeUndefined()
     })
 
-    it("単一セグメント(画像)では、トップレベルcreateEntry:true+visualを送る(NFR-1)", async () => {
+    it("単一セグメント(画像)では、トップレベルcreateEntry:true+visualを送る", async () => {
         mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }], {
             uri: "https://skyshare/1",
         })
@@ -110,7 +110,7 @@ describe("submitThread", () => {
         expect(body.posts[0]).not.toHaveProperty("ogImage")
     })
 
-    it("[thread-composer/AC-8] 画像投稿segmentが0件のスレッドでは、createEntry/visualを送らない", async () => {
+    it("[thread-composer/3.3,3.4] 画像投稿segmentが0件のスレッドでは、createEntry/visualを送らない", async () => {
         mockCreateEntryOk([
             { url: "https://x/1", uri: "at://1", cid: "c1" },
             { url: "https://x/2", uri: "at://2", cid: "c2" },
@@ -132,7 +132,7 @@ describe("submitThread", () => {
         expect(body.posts.every(p => !("createEntry" in p))).toBe(true)
     })
 
-    it("[thread-composer/AC-8] 画像投稿segmentが1件のスレッドでは、そのsegmentのthumbnailBlobがトップレベルvisualになる", async () => {
+    it("[thread-composer/3.3,3.4] 画像投稿segmentが1件のスレッドでは、そのsegmentのthumbnailBlobがトップレベルvisualになる", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },
@@ -164,7 +164,7 @@ describe("submitThread", () => {
         expect(warmOgpCache).toHaveBeenCalledWith("https://skyshare/2")
     })
 
-    it("[thread-composer/AC-8] 画像投稿segmentが複数あるスレッドでは、先頭のsegmentのthumbnailBlobのみが自動選択される", async () => {
+    it("[thread-composer/3.3,3.4] 画像投稿segmentが複数あるスレッドでは、先頭のsegmentのthumbnailBlobのみが自動選択される", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },
@@ -203,7 +203,7 @@ describe("submitThread", () => {
         expect(warmOgpCache).not.toHaveBeenCalledWith("https://skyshare/2")
     })
 
-    it("[thread-composer/AC-7] 2件のセグメントを投稿すると、2件の投稿を含む1回のリクエストが送信される", async () => {
+    it("[thread-composer/3.1] 2件のセグメントを投稿すると、2件の投稿を含む1回のリクエストが送信される", async () => {
         mockCreateEntryOk([
             { url: "https://x/1", uri: "at://1", cid: "c1" },
             { url: "https://x/2", uri: "at://2", cid: "c2" },
@@ -222,7 +222,7 @@ describe("submitThread", () => {
         expect(body.posts.map(post => post.text)).toEqual(["1件目", "2件目"])
     })
 
-    it("[thread-composer/AC-2] 2件目のセグメントに画像を添付して投稿すると、2件目の投稿にだけ画像が含まれる", async () => {
+    it("[thread-composer/1.2] 2件目のセグメントに画像を添付して投稿すると、2件目の投稿にだけ画像が含まれる", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },
@@ -244,7 +244,7 @@ describe("submitThread", () => {
         expect(body.posts[1].images).toEqual(imageEntry.originalBlobs)
     })
 
-    it("[thread-composer/AC-8] manualImageAttachが有効な画像投稿ではcreateEntry/visualを送らない", async () => {
+    it("[thread-composer/3.3,3.4] manualImageAttachが有効な画像投稿ではcreateEntry/visualを送らない", async () => {
         mockCreateEntryOk([{ url: "https://x/1", uri: "at://1", cid: "c1" }])
 
         const segments = [
@@ -284,7 +284,7 @@ describe("submitThread", () => {
         })
     })
 
-    it("[api-error-message/AC-8] APIが200以外を返した場合、エラーコードを文言キーに変換して失敗にする", async () => {
+    it("[api-error-message/4.2] APIが200以外を返した場合、エラーコードを文言キーに変換して失敗にする", async () => {
         vi.mocked(createEntry).mockResolvedValue({
             status: 400,
             data: { error: "APP_BSKY_POST_FAILED" },
@@ -402,7 +402,7 @@ describe("submitThread（動画）", () => {
         expect(body.visual).toBeUndefined()
     })
 
-    it("[thread-composer/AC-7] 2 segment の動画スレッドで両方に video が載る", async () => {
+    it("[thread-composer/3.1] 2 segment の動画スレッドで両方に video が載る", async () => {
         mockCreateEntryOk(
             [
                 { url: "https://x/1", uri: "at://1", cid: "c1" },
@@ -420,7 +420,7 @@ describe("submitThread（動画）", () => {
 })
 
 describe("buildThreadRequestBody", () => {
-    it("[thread-composer/AC-14] 動画を含まないスレッドは予約でき、予約の本文は送信の本文と同じ組み立てになる", async () => {
+    it("[thread-composer/3.2] 動画を含まないスレッドは予約でき、予約の本文は送信の本文と同じ組み立てになる", async () => {
         mockCreateEntryOk([{ url: "https://x", uri: "at://1", cid: "c1" }])
         const segments = [
             { ...createEmptySegment("ja"), text: "one" },
@@ -438,7 +438,7 @@ describe("buildThreadRequestBody", () => {
         expect(built.ok && built.body).toEqual(sent)
     })
 
-    it("[thread-composer/AC-14] 動画を含むスレッドは予約の対象外と判定される", () => {
+    it("[thread-composer/3.2] 動画を含むスレッドは予約の対象外と判定される", () => {
         const withVideo = {
             ...createEmptySegment("ja"),
             videoEntry: { thumbnailBlob: new Blob(["t"]) } as never,

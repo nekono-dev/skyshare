@@ -8,7 +8,7 @@
 import { expect, test } from "../fixtures"
 import { loadLiveAccount } from "./env"
 
-test("e2elive/AC-3: ログイン済み状態で検証用アカウントがアクティブになっている", async ({
+test("e2elive/2.1: ログイン済み状態で検証用アカウントがアクティブになっている", async ({
     request,
 }) => {
     const account = loadLiveAccount()!

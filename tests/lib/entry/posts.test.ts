@@ -253,7 +253,7 @@ describe("動画投稿の TimelinePost", () => {
 })
 
 describe("normalizeTimelinePost の注釈", () => {
-    it("[post-rich-text/AC-5] 注釈を持つ投稿を一覧用に変換すると、投稿に注釈が含まれる", () => {
+    it("[post-rich-text/2.1] 注釈を持つ投稿を一覧用に変換すると、投稿に注釈が含まれる", () => {
         const facets = [
             {
                 $type: "app.bsky.richtext.facet",

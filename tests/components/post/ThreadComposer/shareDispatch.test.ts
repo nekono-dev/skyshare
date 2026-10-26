@@ -65,7 +65,7 @@ beforeEach(() => {
 })
 
 describe("runShareDispatch - 自動ポップアップするSNS", () => {
-    it("[auto-popup/AC-4] 「投稿時に選択する」の場合、ポップアップ/WebShareAPIを実行せず投稿先選択ダイアログを開く", async () => {
+    it("[auto-popup/2.2] 「投稿時に選択する」の場合、ポップアップ/WebShareAPIを実行せず投稿先選択ダイアログを開く", async () => {
         const close = vi.fn()
         const result = await runShareDispatch(
             buildParams({
@@ -84,7 +84,7 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
     })
 
     it.each(["x", "taittsuu", "mastodon", "misskey"] as const)(
-        "[auto-popup/AC-3] %sが選ばれている場合、そのSNSへ自動ポップアップする",
+        "[auto-popup/2.1] %sが選ばれている場合、そのSNSへ自動ポップアップする",
         async target => {
             vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
             const result = await runShareDispatch(
@@ -141,7 +141,7 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
         expect(result.forcedAutoPopupTarget).toBeNull()
     })
 
-    it("[auto-popup/AC-5] Mastodonのドメインが不正な場合、ポップアップを開かず投稿先選択ダイアログを開く（選択値は変更しない）", async () => {
+    it("[auto-popup/2.3] Mastodonのドメインが不正な場合、ポップアップを開かず投稿先選択ダイアログを開く（選択値は変更しない）", async () => {
         const result = await runShareDispatch(
             buildParams({
                 popupIntentInsteadOfWebshare: true,
@@ -155,7 +155,7 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
         expect(result.forcedAutoPopupTarget).toBeNull()
     })
 
-    it("[auto-popup/AC-6] ブロックされた場合、投稿先選択ダイアログを開き、選択値を「投稿時に選択する」へ変更させる", async () => {
+    it("[auto-popup/2.4] ブロックされた場合、投稿先選択ダイアログを開き、選択値を「投稿時に選択する」へ変更させる", async () => {
         vi.mocked(intent.openIntentPopupFor).mockReturnValue(false)
         const result = await runShareDispatch(
             buildParams({ popupIntentInsteadOfWebshare: true }),
@@ -178,7 +178,7 @@ describe("runShareDispatch - 自動ポップアップするSNS", () => {
 
 describe("runShareDispatch - 長文省略", () => {
     it.each(["x", "taittsuu"] as const)(
-        "[auto-popup/AC-10] %s宛でONなら本文を省略する",
+        "[auto-popup/4.1] %s宛でONなら本文を省略する",
         async target => {
             vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
             await runShareDispatch(
@@ -221,7 +221,7 @@ describe("runShareDispatch - 長文省略", () => {
         expect(popupText()).toBe(`${LONG_TEXT}\n${ENTRY_URL}`)
     })
 
-    it("[auto-popup/AC-11] skyshare URLが無くても、ONなら本文のみを省略する", async () => {
+    it("[auto-popup/4.2] skyshare URLが無くても、ONなら本文のみを省略する", async () => {
         vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
         await runShareDispatch(
             buildParams({
@@ -235,7 +235,7 @@ describe("runShareDispatch - 長文省略", () => {
         expect(popupText().length).toBeLessThan(LONG_TEXT.length)
     })
 
-    it("[auto-popup/AC-10] WebShareAPIに渡す共有文は省略しない", async () => {
+    it("[auto-popup/4.1] WebShareAPIに渡す共有文は省略しない", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(true)
         vi.mocked(webShare.shareWithWebApi).mockResolvedValue({ ok: true })
         await runShareDispatch(
@@ -259,7 +259,7 @@ describe("runShareDispatch - 長文省略", () => {
 })
 
 describe("runShareDispatch - WebShareAPIフォールバック", () => {
-    it("[auto-popup/AC-8] WebShareAPI非対応の場合、即時にXポップアップを試行し、ポップアップONとX選択へ変更させる", async () => {
+    it("[auto-popup/3.3] WebShareAPI非対応の場合、即時にXポップアップを試行し、ポップアップONとX選択へ変更させる", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(false)
         vi.mocked(intent.openIntentPopupFor).mockReturnValue(true)
 
@@ -272,7 +272,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
         expect(result.openShareDialog).toBe(false)
     })
 
-    it("[auto-popup/AC-9] WebShareAPI非対応かつXポップアップも開けない場合、投稿先選択ダイアログを開き、「投稿時に選択する」へ変更させる", async () => {
+    it("[auto-popup/3.4] WebShareAPI非対応かつXポップアップも開けない場合、投稿先選択ダイアログを開き、「投稿時に選択する」へ変更させる", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(false)
         vi.mocked(intent.openIntentPopupFor).mockReturnValue(false)
 
@@ -283,7 +283,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
         expect(result.openShareDialog).toBe(true)
     })
 
-    it("[auto-popup/AC-8] WebShareAPI対応環境で実際の共有に失敗した場合、即時にXポップアップを試行する", async () => {
+    it("[auto-popup/3.3] WebShareAPI対応環境で実際の共有に失敗した場合、即時にXポップアップを試行する", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(true)
         vi.mocked(webShare.shareWithWebApi).mockResolvedValue({
             ok: false,
@@ -300,7 +300,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
         expect(result.openShareDialog).toBe(false)
     })
 
-    it("[auto-popup/AC-9] WebShareAPI対応環境で共有に失敗し、Xポップアップも開けない場合、投稿先選択ダイアログを開く", async () => {
+    it("[auto-popup/3.4] WebShareAPI対応環境で共有に失敗し、Xポップアップも開けない場合、投稿先選択ダイアログを開く", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(true)
         vi.mocked(webShare.shareWithWebApi).mockResolvedValue({
             ok: false,
@@ -315,7 +315,7 @@ describe("runShareDispatch - WebShareAPIフォールバック", () => {
         expect(result.openShareDialog).toBe(true)
     })
 
-    it("[auto-popup/AC-7] WebShareAPI対応環境で共有シートがキャンセルされた場合、Xポップアップは試行せず設定も変更しない", async () => {
+    it("[auto-popup/3.2] WebShareAPI対応環境で共有シートがキャンセルされた場合、Xポップアップは試行せず設定も変更しない", async () => {
         vi.mocked(webShare.canShareWithWebApi).mockReturnValue(true)
         vi.mocked(webShare.shareWithWebApi).mockResolvedValue({
             ok: false,

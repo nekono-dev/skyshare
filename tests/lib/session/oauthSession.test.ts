@@ -90,7 +90,7 @@ const tokenRequests = () =>
     )
 
 describe("OAuth のセッションの再開", () => {
-    test("oauth-session/AC-9: 期限まで余裕のあるセッションは更新も書き戻しもされず、期限の近いセッションは更新されて書き戻される", async () => {
+    test("[oauth-session/3.1] 期限まで余裕のあるセッションは更新も書き戻しもされず、期限の近いセッションは更新されて書き戻される", async () => {
         const fresh = await oauthSession(600)
         const first = await callApi(cookieOf(makeSessionSetCookie(fresh)))
         expect(first.res.status).toBe(200)
@@ -127,7 +127,7 @@ describe("OAuth のセッションの再開", () => {
         )
     })
 
-    test("oauth-session/AC-10: 更新用トークンが失効しているとき、v2 の API が401で拒否される", async () => {
+    test("[oauth-session/3.2] 更新用トークンが失効しているとき、v2 の API が401で拒否される", async () => {
         world.tokenError = { status: 400, error: "invalid_grant" }
         const next = vi.fn()
         const context = {
@@ -151,7 +151,7 @@ describe("OAuth のセッションの再開", () => {
         ).toEqual({ ok: false, status: 502 })
     })
 
-    test("oauth-session/AC-11: PDS への要求に DPoP の証明が付き、受け取った nonce が cookie に書かれて次のリクエストの証明に入る", async () => {
+    test("[oauth-session/4.1] PDS への要求に DPoP の証明が付き、受け取った nonce が cookie に書かれて次のリクエストの証明に入る", async () => {
         const session = cookieOf(makeSessionSetCookie(await oauthSession(600)))
         const first = await callApi(session)
         expect(world.pdsRequests).toHaveLength(2)
@@ -199,7 +199,7 @@ describe("OAuth のアカウントの切り替えとログアウト", () => {
             }),
         } as unknown as APIContext)) as Response
 
-    test("oauth-session/AC-12: 期限の近い OAuth のアカウントへの切り替えで更新が行われ、失効していれば401になる", async () => {
+    test("[oauth-session/3.3] 期限の近い OAuth のアカウントへの切り替えで更新が行われ、失効していれば401になる", async () => {
         const res = await callPut(await pooledCookie(10))
         expect(res.status).toBe(200)
         expect(tokenRequests()).toHaveLength(1)
@@ -226,7 +226,7 @@ describe("OAuth のアカウントの切り替えとログアウト", () => {
         expect((await callPut(await pooledCookie(10))).status).toBe(401)
     })
 
-    test("oauth-session/AC-13: OAuth のアカウントのログアウトで取消が依頼され、取消が失敗しても cookie から除かれる", async () => {
+    test("[oauth-session/4.2,4.3] OAuth のアカウントのログアウトで取消が依頼され、取消が失敗しても cookie から除かれる", async () => {
         const callDelete = async (cookie: string) =>
             (await DELETE({
                 request: new Request(`${ORIGIN}/v2/bsky/session/${DID}/`, {

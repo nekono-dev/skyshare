@@ -37,7 +37,7 @@ describe("getSessionOnce", () => {
         vi.unstubAllGlobals()
     })
 
-    it("[account-session/AC-16] 同時に2回取得すると実際のリクエストは1回になる", async () => {
+    it("[account-session/7.1,7.2] 同時に2回取得すると実際のリクエストは1回になる", async () => {
         mockedGetSession.mockResolvedValue({
             status: 200,
             data: { accounts: [] },
@@ -48,7 +48,7 @@ describe("getSessionOnce", () => {
         expect(mockedGetSession).toHaveBeenCalledTimes(1)
     })
 
-    it("[account-session/AC-16] 401 を受けた後は、リクエストを送らずに 401 を返す", async () => {
+    it("[account-session/7.1,7.2] 401 を受けた後は、リクエストを送らずに 401 を返す", async () => {
         mockedGetSession.mockResolvedValue({
             status: 401,
             data: { error: "x" },

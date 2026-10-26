@@ -2,14 +2,14 @@
  * ThreadComposer（スレッド投稿UI）のヘッドレスブラウザによる動作確認。
  *
  * 責務と処理概要:
- * - spec-driven-development スキル（`references/ui-verification.md`）が定める「UI実装の検証には
+ * - steering の `workflow.md`（UI 実装の検証）が定める「UI実装の検証には
  *   Playwrightによるヘッドレスブラウザでの実動作確認を必須とする」方針の対象テスト。
  * - `/post/?guest`（ログイン不要のゲスト表示、`src/lib/guestMode.ts`）を使い、
  *   実Blueskyアカウント無しでセグメントの追加・画像添付・アクティブ切り替えを検証する
  *   （実際のBluesky投稿はゲスト表示ではスキップされるため対象外。投稿そのものの検証は
  *   ログイン可能な環境での手動確認に委ねる）。
  * - 主眼は、非アクティブ化に伴う`ImagePicker`の再マウントで画像プレビューが消える
- *   不具合（`specs/thread-composer`のバグ修正）の回帰防止。
+ *   不具合（`.kiro/specs/thread-composer`のバグ修正）の回帰防止。
  */
 import { expect, test } from "./fixtures"
 import { type Locator } from "@playwright/test"
@@ -51,7 +51,7 @@ test.describe("ThreadComposer", () => {
         await page.close()
     })
 
-    test("[thread-composer/AC-3 thread-composer/AC-4 thread-composer/AC-13] セグメント追加後も、画像を添付したセグメントのプレビューが保持される", async ({
+    test("[thread-composer/2.1 thread-composer/2.2 thread-composer/2.4] セグメント追加後も、画像を添付したセグメントのプレビューが保持される", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -122,7 +122,7 @@ test.describe("ThreadComposer", () => {
         await expect(editor0).toContainText("1件目のテスト投稿")
     })
 
-    test("[thread-composer/AC-5] 先頭セグメントは削除できず、2件目以降は削除できる", async ({
+    test("[thread-composer/1.3] 先頭セグメントは削除できず、2件目以降は削除できる", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -160,7 +160,7 @@ test.describe("ThreadComposer", () => {
         await expect(segment1).toBeHidden()
     })
 
-    test("[thread-composer/AC-6] セグメントが2件以上あるときだけ、1件目のアバターの下に縦線が表示される", async ({
+    test("[thread-composer/2.3] セグメントが2件以上あるときだけ、1件目のアバターの下に縦線が表示される", async ({
         page,
     }) => {
         await page.goto("/post/?guest")
@@ -184,7 +184,7 @@ test.describe("ThreadComposer", () => {
         expect(box!.height).toBeGreaterThan(0)
     })
 
-    test("[thread-composer/AC-10] 2件のスレッドを投稿すると、共有文に先頭のセグメントの本文だけが含まれる", async ({
+    test("[thread-composer/3.5] 2件のスレッドを投稿すると、共有文に先頭のセグメントの本文だけが含まれる", async ({
         page,
         context,
     }) => {

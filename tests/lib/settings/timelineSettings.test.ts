@@ -26,7 +26,7 @@ afterEach(() => {
 })
 
 describe("readTimelineHiddenSetting / writeTimelineHiddenSetting", () => {
-    it("[timeline-hidden/AC-1] 保存した値を同じ値として読み取れる", () => {
+    it("[timeline-hidden/1.1] 保存した値を同じ値として読み取れる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         writeTimelineHiddenSetting(true)
         expect(readTimelineHiddenSetting(false)).toBe(true)
@@ -34,7 +34,7 @@ describe("readTimelineHiddenSetting / writeTimelineHiddenSetting", () => {
         expect(readTimelineHiddenSetting(true)).toBe(false)
     })
 
-    it("[timeline-hidden/AC-1] 未保存・不正な値のときはdefaultValue（OFF）を返す", () => {
+    it("[timeline-hidden/1.1] 未保存・不正な値のときはdefaultValue（OFF）を返す", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
         expect(readTimelineHiddenSetting(false)).toBe(false)

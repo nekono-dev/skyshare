@@ -5,7 +5,7 @@
  * - WebShareAPI の対応可否を、SSR/hydrationの不整合を避けつつクライアント側で判定する。
  * - skyshare entry の有無に応じて共有データを組み立て、WebShareAPI を実行する。
  *   - entry あり: 本文 + entry URL を text として共有（画像は添付しない）。「Skyshareのリンクカードを
- *     優先表示」が有効なら本文のURLを取り除く（`specs/link-card-priority`）。
+ *     優先表示」が有効なら本文のURLを取り除く（`.kiro/specs/link-card-priority`）。
  *   - entry なし・画像あり: 元投稿の画像を取り込み files として共有（URLは含めない）。
  *   - entry なし・画像なし: Bluesky投稿本文と同じ内容を text として共有する。
  * - entry の作成・削除状態そのものは `useSkyshareEntryStatus` の責務であり、ここでは扱わない。

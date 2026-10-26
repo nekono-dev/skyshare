@@ -25,31 +25,31 @@ const bluesky: CounterSpec = {
 }
 
 describe("CountedTextInput", () => {
-    it("[counted-text-input/AC-8] 複数行を指定するとテキストエリア、指定しないと1行の入力欄になる", () => {
+    it("[counted-text-input/3.1] 複数行を指定するとテキストエリア、指定しないと1行の入力欄になる", () => {
         expect(render({ multiline: true })).toContain("<textarea")
         const single = render({})
         expect(single).toContain("<input")
         expect(single).not.toContain("<textarea")
     })
 
-    it("[counted-text-input/AC-9] カウンタは「件数/上限:ラベル」の形式で表示される", () => {
+    it("[counted-text-input/3.2] カウンタは「件数/上限:ラベル」の形式で表示される", () => {
         const html = render({ value: "abc", counters: [bluesky] })
         expect(html).toContain("3/300:Bluesky")
     })
 
-    it("[counted-text-input/AC-10] 上限を超えると、カウンタが誤りの状態になる", () => {
+    it("[counted-text-input/3.3] 上限を超えると、カウンタが誤りの状態になる", () => {
         const html = render({ value: "a".repeat(301), counters: [bluesky] })
         expect(html).toContain("counters-error")
         expect(html).not.toContain("counters-warn")
     })
 
-    it("[counted-text-input/AC-11] 警告の閾値を超え上限以内のとき、カウンタが警告の状態になる", () => {
+    it("[counted-text-input/3.4] 警告の閾値を超え上限以内のとき、カウンタが警告の状態になる", () => {
         const html = render({ value: "a".repeat(290), counters: [bluesky] })
         expect(html).toContain("counters-warn")
         expect(html).not.toContain("counters-error")
     })
 
-    it("[counted-text-input/AC-12] 複数のカウンタがあるとき、最も深刻な状態で全体の表示が決まる", () => {
+    it("[counted-text-input/3.5] 複数のカウンタがあるとき、最も深刻な状態で全体の表示が決まる", () => {
         const x: CounterSpec = {
             key: "x",
             label: "X",

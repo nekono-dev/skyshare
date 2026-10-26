@@ -1,6 +1,6 @@
 /**
  * GET /v2/entries/ — 自分のBluesky投稿一覧を、紐づくskyshare entryとembedし、
- * バックエンド側で権威的にスレッド構造化して返す（`specs/timeline-api`）。
+ * バックエンド側で権威的にスレッド構造化して返す（`.kiro/specs/timeline-api`）。
  *
  * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
@@ -17,6 +17,20 @@ export const QueryParamsSchema = z
     .object({ limit: z.number().optional(), cursor: z.string().optional() })
     .strict()
 export type QueryParamsType = z.infer<typeof QueryParamsSchema>
+
+/** 動画の再生・表示に必要な情報（`SourceVideo`、`@/lib/entry/entry`）。 */
+const TimelineVideoSchema = z
+    .object({
+        cid: z.string(),
+        playlistUrl: z.string(),
+        thumbnailUrl: z.string(),
+        alt: z.string(),
+        aspectRatio: z
+            .object({ width: z.number(), height: z.number() })
+            .strict()
+            .optional(),
+    })
+    .strict()
 
 const TimelinePostSchema = z
     .object({
@@ -43,6 +57,8 @@ const TimelinePostSchema = z
                 })
                 .strict(),
         ),
+        video: TimelineVideoSchema.optional(),
+        unsupportedVideo: TimelineVideoSchema.optional(),
         skyshareEntry: z
             .object({
                 uri: z.string(),

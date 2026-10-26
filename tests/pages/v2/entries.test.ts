@@ -31,7 +31,7 @@ describe("GET /v2/entries", () => {
         expect(res.status).toBe(401)
     })
 
-    it("[timeline-api/AC-1 timeline-api/AC-11] リポストを除外し、自分の投稿のみを確定済みのスレッドグループの配列(threads)として返す", async () => {
+    it("[timeline-api/1.1 timeline-api/1.3,2.5] リポストを除外し、自分の投稿のみを確定済みのスレッドグループの配列(threads)として返す", async () => {
         const ownPost = {
             post: {
                 uri: "at://did:plc:author/app.bsky.feed.post/3lown",
@@ -64,7 +64,7 @@ describe("GET /v2/entries", () => {
         expect(json.threads[0].replies).toEqual([])
     })
 
-    it("[timeline-api/AC-10] 1ページ目がlimit未満の場合はcursorを辿って追加ページを取得する", async () => {
+    it("[timeline-api/1.2] 1ページ目がlimit未満の場合はcursorを辿って追加ページを取得する", async () => {
         const makeOwnPost = (rkey: string) => ({
             post: {
                 uri: `at://did:plc:author/app.bsky.feed.post/${rkey}`,
@@ -93,7 +93,7 @@ describe("GET /v2/entries", () => {
         expect(getAuthorFeed).toHaveBeenCalledTimes(2)
     })
 
-    it("[timeline-api/AC-9] 紐づくskyshare entryをsource.uriで突き合わせて付与する", async () => {
+    it("[timeline-api/4.1] 紐づくskyshare entryをsource.uriで突き合わせて付与する", async () => {
         const postUri = "at://did:plc:author/app.bsky.feed.post/3lown"
         const getAuthorFeed = vi.fn().mockResolvedValue({
             data: {
@@ -141,7 +141,7 @@ describe("GET /v2/entries", () => {
         expect(json.threads[0].rootPost.skyshareEntry.sourceUri).toBe(postUri)
     })
 
-    it("[timeline-api/AC-5] getAuthorFeedがスレッド中間の投稿を欠落させた場合、getPostThreadで補って1つのThreadGroupにまとめる", async () => {
+    it("[timeline-api/3.1] getAuthorFeedがスレッド中間の投稿を欠落させた場合、getPostThreadで補って1つのThreadGroupにまとめる", async () => {
         // 実際に観測された不具合の再現: getAuthorFeedのレスポンスに"root"(test)と
         // "tail"(test3、record.replyは一覧に無い"mid"を指す)のみが含まれ、
         // "mid"(test2)自体が欠落しているケース。
@@ -233,7 +233,7 @@ describe("GET /v2/entries", () => {
         ).toEqual([midUri, tailUri])
     })
 
-    it("[timeline-api/AC-5] root投稿は残るが後続投稿がすべて欠落する場合でも、replyCountを手がかりに補完する", async () => {
+    it("[timeline-api/3.1] root投稿は残るが後続投稿がすべて欠落する場合でも、replyCountを手がかりに補完する", async () => {
         // root(test)のみがgetAuthorFeedに含まれ、その後続(test2/test3)は
         // 1件もfeedに現れないケース（gap検出方式では検知不可能だった、より重度な欠落）。
         const rootUri = "at://did:plc:author/app.bsky.feed.post/3lroot"
@@ -438,7 +438,7 @@ describe("GET /v2/entries", () => {
             },
         })
 
-        it("[timeline-api/AC-12] entryを新しい順に取得し、表示する投稿より古いページは取得しない", async () => {
+        it("[timeline-api/4.2] entryを新しい順に取得し、表示する投稿より古いページは取得しない", async () => {
             const feedItem = ownFeedItem("3lnew", "2026-01-20T00:00:00.000Z")
             const getAuthorFeed = vi.fn().mockResolvedValue({
                 data: { feed: [feedItem], cursor: undefined },
@@ -493,7 +493,7 @@ describe("GET /v2/entries", () => {
             )
         })
 
-        it("[timeline-api/AC-12] 表示する投稿が0件のときはentryを取得しない", async () => {
+        it("[timeline-api/4.2] 表示する投稿が0件のときはentryを取得しない", async () => {
             const getAuthorFeed = vi.fn().mockResolvedValue({
                 data: { feed: [], cursor: undefined },
             })
@@ -512,7 +512,7 @@ describe("GET /v2/entries", () => {
             expect(listRecords).not.toHaveBeenCalled()
         })
 
-        it("[timeline-api/AC-13] 補完した起点が一覧より古くても、その起点のentryが付与される", async () => {
+        it("[timeline-api/4.3] 補完した起点が一覧より古くても、その起点のentryが付与される", async () => {
             const rootUri = "at://did:plc:author/app.bsky.feed.post/3lroot"
             const replyItem = ownFeedItem("3lreply", "2026-01-20T00:00:00.000Z")
             replyItem.post.record = {

@@ -20,21 +20,21 @@ afterEach(() => {
 })
 
 describe("isManagedByThisMiddleware", () => {
-    it("[account-session/AC-13] /v2/ 配下は対象", () => {
+    it("[account-session/6.1] /v2/ 配下は対象", () => {
         expect(isManagedByThisMiddleware("/v2/entry")).toBe(true)
         expect(isManagedByThisMiddleware("/v2/entries")).toBe(true)
     })
 
-    it("[account-session/AC-13] /v2/ 配下以外は対象外", () => {
+    it("[account-session/6.1] /v2/ 配下以外は対象外", () => {
         expect(isManagedByThisMiddleware("/v1/page")).toBe(false)
         expect(isManagedByThisMiddleware("/")).toBe(false)
     })
 
-    it("[account-session/AC-13] /v2/bsky/session そのものは対象外", () => {
+    it("[account-session/6.1] /v2/bsky/session そのものは対象外", () => {
         expect(isManagedByThisMiddleware("/v2/bsky/session")).toBe(false)
     })
 
-    it("[account-session/AC-13] /v2/bsky/session/{did} も対象外", () => {
+    it("[account-session/6.1] /v2/bsky/session/{did} も対象外", () => {
         expect(isManagedByThisMiddleware("/v2/bsky/session/did:plc:abc")).toBe(
             false,
         )
@@ -55,7 +55,7 @@ describe("refreshBskySession", () => {
             locals: {},
         }) as unknown as APIContext
 
-    it("[account-session/AC-14] 再開に成功すると、更新後のセッションを書き込む Set-Cookie が応答に加わる", async () => {
+    it("[account-session/6.2] 再開に成功すると、更新後のセッションを書き込む Set-Cookie が応答に加わる", async () => {
         const rotated = { did: "did:plc:a", handle: "a.test", accessJwt: "new" }
         mockedCreateAtpAgent.mockReturnValue({
             resumeSession: vi.fn().mockResolvedValue(undefined),
@@ -77,7 +77,7 @@ describe("refreshBskySession", () => {
         expect(setCookie).toContain("HttpOnly")
     })
 
-    it("[account-session/AC-15] セッションの cookie が無いと、後続を呼ばずに 401 で拒否する", async () => {
+    it("[account-session/6.3] セッションの cookie が無いと、後続を呼ばずに 401 で拒否する", async () => {
         const next = vi.fn(async () => new Response("ok"))
         const res = (await refreshBskySession(buildContext(), next)) as Response
         expect(res.status).toBe(401)

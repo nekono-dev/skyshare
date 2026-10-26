@@ -206,7 +206,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await page.close()
     })
 
-    test("[video-picker/AC-8] 動画を選ぶと進捗が表示され、完了後に投稿ボタンが有効になる（シナリオ1）", async ({
+    test("[video-picker/3.2] 動画を選ぶと進捗が表示され、完了後に投稿ボタンが有効になる（シナリオ1）", async ({
         page,
     }) => {
         await mockVideoApis(page)
@@ -220,7 +220,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(submitButton(page)).toBeEnabled()
     })
 
-    test("[video-picker/AC-7 video-picker/AC-8] 動画のプレビューは画像と同じ見た目の大きなサムネイルで、×・alt ボタンと進捗の配置が正しい（レイアウト）", async ({
+    test("[video-picker/3.1 video-picker/3.2] 動画のプレビューは画像と同じ見た目の大きなサムネイルで、×・alt ボタンと進捗の配置が正しい（レイアウト）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page, { holdJob: true })
@@ -296,7 +296,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         mocks.releaseJob()
     })
 
-    test("[entry-visual/AC-5] 「サムネ調整」ボタンは動画追加ボタンの下の追加操作の行に現れ、アップロード中でも調整できる（サムネ調整）", async ({
+    test("[entry-visual/3.1,3.3] 「サムネ調整」ボタンは動画追加ボタンの下の追加操作の行に現れ、アップロード中でも調整できる（サムネ調整）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page, { holdJob: true })
@@ -402,7 +402,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         expect(visual.whites).toBe(0)
     })
 
-    test("[video-picker/AC-10] 変換完了まで投稿ボタンが無効で理由が表示され、完了後に有効になる（シナリオ2・10）", async ({
+    test("[video-picker/3.4,3.5] 変換完了まで投稿ボタンが無効で理由が表示され、完了後に有効になる（シナリオ2・10）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page, { holdJob: true })
@@ -453,7 +453,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         }
     })
 
-    test("[video-picker/AC-5] 拡張子が mp4 でも中身が動画でないファイルは unreadable で添付されず、アップロードも始まらない（Phase 14）", async ({
+    test("[video-picker/2.3] 拡張子が mp4 でも中身が動画でないファイルは unreadable で添付されず、アップロードも始まらない（Phase 14）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page)
@@ -470,7 +470,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         expect(mocks.calls).toEqual([])
     })
 
-    test("[video-picker/AC-3 video-picker/AC-6] 対応形式以外・301MB の動画は添付されず理由が表示される（シナリオ3）", async ({
+    test("[video-picker/2.1 video-picker/2.4] 対応形式以外・301MB の動画は添付されず理由が表示される（シナリオ3）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page)
@@ -502,7 +502,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         expect(mocks.calls).toEqual([])
     })
 
-    test("[video-picker/AC-2] 動画添付済みの segment で画像・OGP が無効、画像添付済みで動画が無効（シナリオ4）", async ({
+    test("[video-picker/1.4,1.5] 動画添付済みの segment で画像・OGP が無効、画像添付済みで動画が無効（シナリオ4）", async ({
         page,
     }) => {
         await mockVideoApis(page, { holdJob: true })
@@ -520,7 +520,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         ).toHaveAttribute("title", "画像を添付済みのため動画は追加できません")
     })
 
-    test("[video-picker/AC-9] 動画を取り外すと画像・OGP のボタンが有効に戻り、アップロード中の取り外しで abortUpload が呼ばれる（シナリオ5・12）", async ({
+    test("[video-picker/3.3] 動画を取り外すと画像・OGP のボタンが有効に戻り、アップロード中の取り外しで abortUpload が呼ばれる（シナリオ5・12）", async ({
         page,
     }) => {
         await mockVideoApis(page, { holdJob: true })
@@ -573,7 +573,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         releasePart()
     })
 
-    test("[video-upload/AC-2] トークン発行が 400 なら動画は送信されず unsupportedPds が表示される（シナリオ6）", async ({
+    test("[video-upload/1.2] トークン発行が 400 なら動画は送信されず unsupportedPds が表示される（シナリオ6）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page, { tokenStatus: 400 })
@@ -586,7 +586,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         expect(mocks.calls).toEqual(["upload-token"])
     })
 
-    test("[video-picker/AC-10] アップロード失敗の動画が残る間は投稿できず、取り外すと投稿できる（シナリオ11）", async ({
+    test("[video-picker/3.4,3.5] アップロード失敗の動画が残る間は投稿できず、取り外すと投稿できる（シナリオ11）", async ({
         page,
     }) => {
         await mockVideoApis(page, { startError: "DailyLimitExceeded" })
@@ -613,7 +613,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(submitButton(page)).toBeEnabled()
     })
 
-    test("[video-picker/AC-12] アップロードが失敗しても、入力済みの本文が残っている", async ({
+    test("[video-picker/3.6] アップロードが失敗しても、入力済みの本文が残っている", async ({
         page,
     }) => {
         await mockVideoApis(page, { startError: "DailyLimitExceeded" })
@@ -630,7 +630,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(body).toContainText("失敗しても残る本文")
     })
 
-    test("[video-picker/AC-1] 動画追加ボタンは画像追加ボタンと別要素で、直後に並び、青い絵柄を使う（シナリオ13）", async ({
+    test("[video-picker/1.1] 動画追加ボタンは画像追加ボタンと別要素で、直後に並び、青い絵柄を使う（シナリオ13）", async ({
         page,
     }) => {
         await mockVideoApis(page)
@@ -660,7 +660,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         expect(svgText).toContain('fill="#0085ff"')
     })
 
-    test("[video-picker/AC-11] 動画をフォームへドロップすると添付され、アップロードが完了する", async ({
+    test("[video-picker/1.2,1.3] 動画をフォームへドロップすると添付され、アップロードが完了する", async ({
         page,
     }) => {
         await mockVideoApis(page)
@@ -673,7 +673,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(submitButton(page)).toBeEnabled()
     })
 
-    test("[video-picker/AC-4] MIME が空の mov をドロップしても、拡張子で動画と判定され添付される（Phase 14）", async ({
+    test("[video-picker/2.2] MIME が空の mov をドロップしても、拡張子で動画と判定され添付される（Phase 14）", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page)
@@ -704,7 +704,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(page.getByTestId("video-preview")).toHaveCount(0)
     })
 
-    test("[video-picker/AC-11] 動画添付済みのフォームへ動画をドロップしても差し替わらない", async ({
+    test("[video-picker/1.2,1.3] 動画添付済みのフォームへ動画をドロップしても差し替わらない", async ({
         page,
     }) => {
         const mocks = await mockVideoApis(page)
@@ -721,7 +721,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
         await expect(page.getByTestId("video-preview")).toHaveCount(1)
     })
 
-    test("[video-picker/AC-11] 画像添付済みのフォームへ動画をドロップしても添付されない", async ({
+    test("[video-picker/1.2,1.3] 画像添付済みのフォームへ動画をドロップしても添付されない", async ({
         page,
     }) => {
         await mockVideoApis(page)

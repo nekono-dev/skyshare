@@ -73,7 +73,7 @@ describe("readHashtagHistory", () => {
         expect(readHashtagHistory(DID)).toEqual([])
     })
 
-    it("[post-suggest/AC-13] 新しい順に並べ替えて返す", () => {
+    it("[post-suggest/3.1] 新しい順に並べ替えて返す", () => {
         const localStorage = createMemoryLocalStorage()
         localStorage.setItem(
             STORAGE_KEY,
@@ -86,7 +86,7 @@ describe("readHashtagHistory", () => {
         expect(readHashtagHistory(DID).map(e => e.tag)).toEqual(["new", "old"])
     })
 
-    it("[post-suggest/AC-14] 別アカウントの履歴は混ざらない", () => {
+    it("[post-suggest/3.1] 別アカウントの履歴は混ざらない", () => {
         const localStorage = createMemoryLocalStorage()
         vi.stubGlobal("window", { localStorage })
         addHashtagsToHistory(["猫"], "did:plc:alice")
@@ -120,7 +120,7 @@ describe("addHashtagsToHistory", () => {
         ])
     })
 
-    it("[post-suggest/AC-15] 同一タグ(大文字小文字無視)は最新の表記・時刻で1件にまとめる", () => {
+    it("[post-suggest/3.2] 同一タグ(大文字小文字無視)は最新の表記・時刻で1件にまとめる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         addHashtagsToHistory(["Bluesky"], DID)
         addHashtagsToHistory(["bluesky"], DID)
@@ -129,7 +129,7 @@ describe("addHashtagsToHistory", () => {
         expect(history[0].tag).toBe("bluesky")
     })
 
-    it("[post-suggest/AC-16] 上限件数を超えた古い履歴は切り詰められる", () => {
+    it("[post-suggest/3.2] 上限件数を超えた古い履歴は切り詰められる", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         vi.stubEnv("PUBLIC_HASHTAG_HISTORY_MAX", "5")
         for (let i = 0; i < 10; i++) {
@@ -157,7 +157,7 @@ describe("seedHashtagHistoryFromRankedTags", () => {
         expect(readHashtagHistory(DID)).toEqual([])
     })
 
-    it("[post-suggest/AC-17] 履歴が空の場合、渡した順（使用数順）で履歴として書き込む", () => {
+    it("[post-suggest/3.3] 履歴が空の場合、渡した順（使用数順）で履歴として書き込む", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         seedHashtagHistoryFromRankedTags(["猫", "犬", "bluesky"], DID)
         expect(readHashtagHistory(DID).map(e => e.tag)).toEqual([
@@ -167,7 +167,7 @@ describe("seedHashtagHistoryFromRankedTags", () => {
         ])
     })
 
-    it("[post-suggest/AC-18] 履歴が既にある場合は何もしない（上書きしない）", () => {
+    it("[post-suggest/3.3] 履歴が既にある場合は何もしない（上書きしない）", () => {
         vi.stubGlobal("window", { localStorage: createMemoryLocalStorage() })
         addHashtagsToHistory(["既存タグ"], DID)
         seedHashtagHistoryFromRankedTags(["猫", "犬"], DID)

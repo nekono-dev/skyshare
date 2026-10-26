@@ -6,3 +6,7 @@ astro/**
 _legacy/**
 atproto/**
 .claude/worktrees/**
+# cc-sdd の標準ファイル（上流との差分を保つため整形しない）
+CLAUDE.md
+.kiro/settings/**
+.claude/skills/**

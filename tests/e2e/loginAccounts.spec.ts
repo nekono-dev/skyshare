@@ -65,7 +65,7 @@ const mockSessionApi = async (
     return calls
 }
 
-test("[login-accounts/AC-1] アカウントの一覧で、アクティブなアカウントに使用中の表示が付く", async ({
+test("[login-accounts/1.1] アカウントの一覧で、アクティブなアカウントに使用中の表示が付く", async ({
     page,
 }) => {
     await mockSessionApi(page)
@@ -74,7 +74,7 @@ test("[login-accounts/AC-1] アカウントの一覧で、アクティブなア�
     await expect(page.getByText("使用中")).toHaveCount(1)
 })
 
-test("[login-accounts/AC-2] 使用中でないアカウントを選ぶと、そのアカウントへの切り替えが依頼される", async ({
+test("[login-accounts/2.1] 使用中でないアカウントを選ぶと、そのアカウントへの切り替えが依頼される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -90,7 +90,7 @@ test("[login-accounts/AC-2] 使用中でないアカウントを選ぶと、そ�
     })
 })
 
-test("[login-accounts/AC-3] 切り替えがセッション切れで拒否されると、要再ログインの表示と再ログインの案内が出る", async ({
+test("[login-accounts/2.2] 切り替えがセッション切れで拒否されると、要再ログインの表示と再ログインの案内が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -109,7 +109,7 @@ test("[login-accounts/AC-3] 切り替えがセッション切れで拒否され�
     await expect(page.locator("#username")).toHaveValue("other.bsky.social")
 })
 
-test("[login-accounts/AC-4] ログアウトを押すと、そのアカウントのログアウトが依頼される", async ({
+test("[login-accounts/2.3] ログアウトを押すと、そのアカウントのログアウトが依頼される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -129,7 +129,7 @@ test("[login-accounts/AC-4] ログアウトを押すと、そのアカウント�
     ).toContain("did:plc:other")
 })
 
-test("[login-accounts/AC-5] 未ログインでアカウントのページを開くと、ログインのページへ遷移する", async ({
+test("[login-accounts/1.2] 未ログインでアカウントのページを開くと、ログインのページへ遷移する", async ({
     page,
 }) => {
     await page.route(SESSION_URL, route =>
@@ -143,7 +143,7 @@ test("[login-accounts/AC-5] 未ログインでアカウントのページを開�
     await page.waitForURL(/\/login\/?/, { timeout: 30_000 })
 })
 
-test("[login-accounts/AC-6] ハンドルとパスワードを送信してログインに成功すると、成功の表示が出る", async ({
+test("[login-accounts/3.1] ハンドルとパスワードを送信してログインに成功すると、成功の表示が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -167,14 +167,14 @@ test("[login-accounts/AC-6] ハンドルとパスワードを送信してログ�
     ).toBeVisible()
 })
 
-test("[login-accounts/AC-7] 旧アプリのパスは、ログインのページへ転送される", async ({
+test("[login-accounts/5.2] 旧アプリのパスは、ログインのページへ転送される", async ({
     page,
 }) => {
     await page.goto("/app/")
     await page.waitForURL(/\/login\/?/, { timeout: 30_000 })
 })
 
-test("[login-accounts/AC-8] ログインのページに、旧UIとゲスト表示へのリンクを含む案内が表示される", async ({
+test("[login-accounts/5.1] ログインのページに、旧UIとゲスト表示へのリンクを含む案内が表示される", async ({
     page,
 }) => {
     await page.goto("/login/")
@@ -229,7 +229,7 @@ const mockOAuthApi = async (
     return calls
 }
 
-test("[login-accounts/AC-9] ログインのページを開くと OAuth のボタンだけが表示され、従来形式でのログインを開くとハンドルとパスワードの入力欄が表示される", async ({
+test("[login-accounts/3.2] ログインのページを開くと OAuth のボタンだけが表示され、従来形式でのログインを開くとハンドルとパスワードの入力欄が表示される", async ({
     page,
 }) => {
     await page.goto("/login/")
@@ -245,7 +245,7 @@ test("[login-accounts/AC-9] ログインのページを開くと OAuth のボタ
     await expect(page.locator("#password")).toBeVisible()
 })
 
-test("[login-accounts/AC-10] OAuth のボタンを押すとログインの開始が依頼され、返った住所へ遷移する", async ({
+test("[login-accounts/4.1] OAuth のボタンを押すとログインの開始が依頼され、返った住所へ遷移する", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -262,7 +262,7 @@ test("[login-accounts/AC-10] OAuth のボタンを押すとログインの開始
     await page.waitForURL(AUTHORIZE_PAGE, { timeout: 30_000 })
 })
 
-test("[login-accounts/AC-11] 戻りの項目を持つ住所でページを開くと、完了が依頼されて住所から項目が消え、成功ならトップへ遷移する", async ({
+test("[login-accounts/4.3] 戻りの項目を持つ住所でページを開くと、完了が依頼されて住所から項目が消え、成功ならトップへ遷移する", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -280,7 +280,7 @@ test("[login-accounts/AC-11] 戻りの項目を持つ住所でページを開く
     expect(calls.filter(c => c.kind === "complete")).toHaveLength(1)
 })
 
-test("[login-accounts/AC-12] 完了が失敗の分類を返すと、理由の文言が表示される", async ({
+test("[login-accounts/4.4] 完了が失敗の分類を返すと、理由の文言が表示される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -297,7 +297,7 @@ test("[login-accounts/AC-12] 完了が失敗の分類を返すと、理由の文
     expect(new URL(page.url()).pathname).toBe("/login/")
 })
 
-test("[login-accounts/AC-13] 再ログインの案内で OAuth のボタンを押すと、対象のハンドルを指定した開始が依頼される", async ({
+test("[login-accounts/4.5] 再ログインの案内で OAuth のボタンを押すと、対象のハンドルを指定した開始が依頼される", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -322,7 +322,7 @@ test("[login-accounts/AC-13] 再ログインの案内で OAuth のボタンを�
     })
 })
 
-test("[login-accounts/AC-14] 戻りの住所で開くと、完了の応答の前からログイン中の表示が出てフォームが押せず、失敗の後は押せるようになる", async ({
+test("[login-accounts/4.2,4.4] 戻りの住所で開くと、完了の応答の前からログイン中の表示が出てフォームが押せず、失敗の後は押せるようになる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

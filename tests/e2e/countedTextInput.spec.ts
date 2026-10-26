@@ -8,7 +8,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[counted-text-input/AC-8] 設定ページの1行の入力欄へ入力した値が反映される", async ({
+test("[counted-text-input/3.1] 設定ページの1行の入力欄へ入力した値が反映される", async ({
     page,
 }) => {
     test.setTimeout(90_000)

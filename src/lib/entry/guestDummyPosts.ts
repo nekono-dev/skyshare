@@ -47,7 +47,7 @@ const placeholderImage = (bg: string, label: string): string => {
  *
  * 処理の趣旨:
  * - ゲスト表示の本文は表示言語ごとに異なるため、固定のバイト位置を書かずに、
- *   リンクにしたい文字列を本文から探して範囲を求める（`specs/post-rich-text`）。
+ *   リンクにしたい文字列を本文から探して範囲を求める（`.kiro/specs/post-rich-text`）。
  *
  * Input:
  * - `text`: 翻訳後の本文
@@ -230,7 +230,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             },
         },
         // 画像6枚の投稿（entry未作成）。カードには全6枚が横スクロールのサムネイルで表示され、
-        // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/entry-visual）。
+        // 事後entry作成時に取得する画像は先頭4枚のみになる（.kiro/specs/entry-visual）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-multi-image",
             cid: "bafyreiguestmultiimage",
@@ -255,9 +255,9 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
                 cid: `bafkreiguestmulti${index + 1}`,
             })),
         },
-        // 以下、Timelineのスレッドグルーピング表示（specs/timeline-api）のゲスト確認用。
+        // 以下、Timelineのスレッドグルーピング表示（.kiro/specs/timeline-api）のゲスト確認用。
         // 本文にハッシュタグ・メンション・URLを持ち、entry作成済みの投稿
-        // （本文のリンク表示 `specs/post-rich-text` と、共有文のURLの除去 `specs/link-card-priority` の確認用）。
+        // （本文のリンク表示 `.kiro/specs/post-rich-text` と、共有文のURLの除去 `.kiro/specs/link-card-priority` の確認用）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-rich-text",
             cid: "bafyreiguestrichtext",
@@ -318,7 +318,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
         // スレッドA: entry未作成、ルート投稿(guest-thread-a-root)は画像を持たないが
         // 中間segment(guest-thread-a-mid)が画像を持つケース。事後entry作成ボタンは
         // ルート投稿のカードに表示され、Visualはguest-thread-a-midの画像から生成される
-        // （FR-3、ボタンは常にルートのカードに表示・Visualはルートに最も近い画像投稿から）。
+        // （timeline 要件2.1・2.3、ボタンは常にルートのカードに表示・Visualはルートに最も近い画像投稿から）。
         // 配列は indexedAt 降順（新しい順）を維持する。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-tail",
@@ -366,7 +366,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             images: [],
         },
         // スレッドB: ルート投稿に既にentryが紐づき、後続投稿があるケース
-        // （一覧上のスレッド由来バッジ表示確認、FR-4）。
+        // （一覧上のスレッド由来バッジ表示確認）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-tail",
             cid: "bafyreiguestthreadbtail",
@@ -412,7 +412,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
             },
         },
         // スレッドC: ルート投稿(guest-thread-c-root)自身が画像を持ち、entry未作成のケース
-        // （Visualがルート自身の画像から生成される正常系、FR-3）。
+        // （Visualがルート自身の画像から生成される正常系、timeline 要件2.3）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-c-tail",
             cid: "bafyreiguestthreadctail",
@@ -460,7 +460,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
         },
         // スレッドD: 旧実装で作成されたentry（スレッドの返信側にだけentryが付く）を再現する。
         // ルートは画像を持たないため、事後entry作成ボタンの表示条件には影響しない。
-        // 削除確認ダイアログでは「リンク・Bluesky投稿を削除」が無効化される（FR-5）。
+        // 削除確認ダイアログでは「リンク・Bluesky投稿を削除」が無効化される（entry-delete-dialog 要件3.1）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-d-mid",
             cid: "bafyreiguestthreaddmid",
@@ -501,7 +501,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
         },
         // 削除範囲を判定できない場合（Bluesky投稿の状態を確認できない）を再現する単独投稿。
         // スレッドE: どの投稿も画像・動画・entryを持たないケース
-        // （スレッド全体のグレーアウト、`specs/timeline`）。
+        // （スレッド全体のグレーアウト、`.kiro/specs/timeline`）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-e-tail",
             cid: "bafyreiguestthreadetail",
@@ -566,7 +566,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
 
     /**
      * `GET /v2/entries`のスレッド構造化済みレスポンス（`threads`）を模したゲスト表示用データ。
-     * バックエンドが`buildTimelineThreads`で確定させる形（`specs/timeline-api`）を、
+     * バックエンドが`buildTimelineThreads`で確定させる形（`.kiro/specs/timeline-api`）を、
      * `posts`の実体を再利用してあらかじめ手書きでネストしたもの。
      */
     const threads: ThreadGroup[] = [
@@ -682,7 +682,7 @@ const buildGuestDummyData = (t: Translator["t"]): GuestDummyData => {
 
     /**
      * ゲスト表示のEntry削除確認ダイアログが参照する、ダミーentryの`sourceUri`ごとの
-     * 削除範囲判定結果（`specs/entry-delete-dialog`）。実際の`getPostThread`は呼ばない。
+     * 削除範囲判定結果（`.kiro/specs/entry-delete-dialog`）。実際の`getPostThread`は呼ばない。
      */
     const deleteScopes: Record<string, EntryDeleteScope> = {
         "at://did:plc:guestdemo/app.bsky.feed.post/guest2": {

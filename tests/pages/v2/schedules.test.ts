@@ -69,7 +69,7 @@ beforeEach(() => {
 })
 
 describe("POST /v2/schedules", () => {
-    test("schedule-api/AC-1: 投稿が0件または101件は400、画像つき2件のスレッドは作成できる", async () => {
+    test("schedule-api/1.1,1.2: 投稿が0件または101件は400、画像つき2件のスレッドは作成できる", async () => {
         await withCredential()
         const zero = new FormData()
         zero.set("runAt", runAtIn(600))
@@ -94,7 +94,7 @@ describe("POST /v2/schedules", () => {
         expect(r2.objects.size).toBe(2)
     })
 
-    test("schedule-api/AC-2: 動画を含む投稿の予約は400で拒否される", async () => {
+    test("schedule-api/1.3: 動画を含む投稿の予約は400で拒否される", async () => {
         await withCredential()
         const fd = textForm()
         fd.set("posts[0][video]", JSON.stringify({ any: "blob" }))
@@ -103,7 +103,7 @@ describe("POST /v2/schedules", () => {
         expect(await countPending(db, DID)).toBe(0)
     })
 
-    test("schedule-api/AC-3: 4分後と15日後は400、10分後と14日後は成功する", async () => {
+    test("schedule-api/1.4: 4分後と15日後は400、10分後と14日後は成功する", async () => {
         await withCredential()
         expect(
             (
@@ -139,7 +139,7 @@ describe("POST /v2/schedules", () => {
         ).toBe(200)
     })
 
-    test("schedule-api/AC-4: 認証情報が未登録か再度の許可が必要だと、識別子つきの409になり、予約も画像も保存されない", async () => {
+    test("schedule-api/1.5: 認証情報が未登録か再度の許可が必要だと、識別子つきの409になり、予約も画像も保存されない", async () => {
         const fd = textForm()
         fd.append("posts[0][images]", new Blob(["x"], { type: "image/png" }))
         fd.set(
@@ -160,7 +160,7 @@ describe("POST /v2/schedules", () => {
         expect(await countPending(db, DID)).toBe(0)
     })
 
-    test("schedule-api/AC-10: 待機中が5件のアカウントの6件目は、1件の投稿でも3件のスレッドでも429になる", async () => {
+    test("schedule-api/1.6: 待機中が5件のアカウントの6件目は、1件の投稿でも3件のスレッドでも429になる", async () => {
         await withCredential()
         // 3件のスレッドも1件と数える
         expect(
@@ -184,7 +184,7 @@ describe("POST /v2/schedules", () => {
         expect(status.registered && status.updatedAt).toBeGreaterThan(1)
     })
 
-    test("schedule-api/AC-12: 成功すると200と識別子と実行時刻が返る", async () => {
+    test("schedule-api/1.1: 成功すると200と識別子と実行時刻が返る", async () => {
         await withCredential()
         const runAt = runAtIn(600)
         const res = await call(POST, postRequest(textForm({ runAt })))
@@ -219,7 +219,7 @@ describe("POST /v2/schedules", () => {
         expect(r2.objects.size).toBe(0)
     })
 
-    test("schedule-api/AC-14: 未認証は401、不正な入力は400で、キャッシュを禁止する", async () => {
+    test("schedule-api/6.2: 未認証は401、不正な入力は400で、キャッシュを禁止する", async () => {
         const unauth = await call(POST, postRequest(textForm()), {})
         expect(unauth.status).toBe(401)
         expect(unauth.headers.get("cache-control")).toBe("no-store")
@@ -233,7 +233,7 @@ describe("GET /v2/schedules", () => {
     const get = (qs = "", locals?: object) =>
         call(GET, new Request(`http://localhost/v2/schedules/${qs}`), locals)
 
-    test("schedule-api/AC-8: 他のアカウントの予約は含まれず、状態で絞り込まれ、続きがあればカーソルが返る", async () => {
+    test("schedule-api/2.1: 他のアカウントの予約は含まれず、状態で絞り込まれ、続きがあればカーソルが返る", async () => {
         await insertSchedule(db, {
             id: "a1",
             did: DID,
@@ -283,7 +283,7 @@ describe("GET /v2/schedules", () => {
         expect(none.items).toHaveLength(0)
     })
 
-    test("schedule-api/AC-14: 未認証は401、不正なクエリは400", async () => {
+    test("schedule-api/6.2: 未認証は401、不正なクエリは400", async () => {
         expect((await get("", {})).status).toBe(401)
         expect((await get("?limit=0")).status).toBe(400)
         expect((await get("?status=unknown")).status).toBe(400)
@@ -291,7 +291,7 @@ describe("GET /v2/schedules", () => {
 })
 
 describe("GET /v2/schedules/limits", () => {
-    test("schedule-api/AC-17: 制限値を返し、未認証では401になる", async () => {
+    test("schedule-api/5.1,5.2: 制限値を返し、未認証では401になる", async () => {
         const ok = await call(
             LIMITS,
             new Request("http://localhost/v2/schedules/limits/"),

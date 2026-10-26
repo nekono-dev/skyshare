@@ -22,7 +22,7 @@ const pending = (id: string): ScheduleItem => ({
 const scheduleSwitch = (page: Page) =>
     page.getByRole("switch", { name: "予約投稿" })
 
-test("[schedule-form/AC-1] 登録済みならオンで表示され、未登録でオンにすると許可の案内が現れ、取り消すとオフのまま", async ({
+test("[schedule-form/1.1,1.2] 登録済みならオンで表示され、未登録でオンにすると許可の案内が現れ、取り消すとオフのまま", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -43,7 +43,7 @@ test("[schedule-form/AC-1] 登録済みならオンで表示され、未登録�
     await expect(toggle).not.toBeChecked()
 })
 
-test("[schedule-form/AC-4 schedule-form/AC-21] 許可の案内に許可の内容とログイン中のアカウントとリンクがあり、ユーザー名とパスワードの欄が無い", async ({
+test("[schedule-form/2.1 schedule-form/2.3] 許可の案内に許可の内容とログイン中のアカウントとリンクがあり、ユーザー名とパスワードの欄が無い", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -68,7 +68,7 @@ test("[schedule-form/AC-4 schedule-form/AC-21] 許可の案内に許可の内容
     await expect(dialog.getByRole("button", { name: "認証する" })).toBeVisible()
 })
 
-test("[schedule-form/AC-2] 許可するで認可の開始が1回呼ばれて認可の画面へ移り、戻り先から設定へ戻ると完了が呼ばれてオンになり文言が出る", async ({
+test("[schedule-form/1.2,2.2] 許可するで認可の開始が1回呼ばれて認可の画面へ移り、戻り先から設定へ戻ると完了が呼ばれてオンになり文言が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -105,7 +105,7 @@ test("[schedule-form/AC-2] 許可するで認可の開始が1回呼ばれて認�
     expect(new URL(page.url()).search).toBe("")
 })
 
-test("[schedule-form/AC-28] 別のアカウントで許可して戻ると、その旨の文言が出てオフのままで、戻りの項目が住所から消える", async ({
+test("[schedule-form/1.5] 別のアカウントで許可して戻ると、その旨の文言が出てオフのままで、戻りの項目が住所から消える", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -121,7 +121,7 @@ test("[schedule-form/AC-28] 別のアカウントで許可して戻ると、そ�
     expect(new URL(page.url()).hash).toBe("")
 })
 
-test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の説明に画像のアイコンつきの注が続き、その下に動画のアイコンつきの Chronosky のロゴとリンクがある", async ({
+test("[schedule-guide/1.1 schedule-guide/2.1,2.2] 予約投稿の説明に画像のアイコンつきの注が続き、その下に動画のアイコンつきの Chronosky のロゴとリンクがある", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -153,7 +153,7 @@ test("[schedule-guide/AC-1 schedule-guide/AC-2] 予約投稿の説明に画像�
     ).toHaveCount(1)
 })
 
-test("[schedule-form/AC-3] 待機中が2件と失敗が1件のときオフにすると両方の件数の確認が出て、拒否するとオン、承諾するとオフになる", async ({
+test("[schedule-form/1.6] 待機中が2件と失敗が1件のときオフにすると両方の件数の確認が出て、拒否するとオン、承諾するとオフになる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -190,7 +190,7 @@ test("[schedule-form/AC-3] 待機中が2件と失敗が1件のときオフにす
 test.describe("狭い画面", () => {
     test.use({ viewport: { width: 390, height: 664 } })
 
-    test("[schedule-form/AC-23] 幅390・高さ664の画面で、認証情報の入力の全体が画面の内側に収まる", async ({
+    test("[schedule-form/2.4] 幅390・高さ664の画面で、認証情報の入力の全体が画面の内側に収まる", async ({
         page,
     }) => {
         test.setTimeout(90_000)

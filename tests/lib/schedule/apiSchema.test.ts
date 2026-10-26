@@ -13,7 +13,7 @@ type Op = {
 }
 
 describe("予約投稿 API のスキーマ", () => {
-    test("schedule-api/AC-13: 作成・一覧・取得・置き換え・取消の入力スキーマが API 文書の生成に使われる定義と同一", () => {
+    test("schedule-api/6.1: 作成・一覧・取得・置き換え・取消の入力スキーマが API 文書の生成に使われる定義と同一", () => {
         const post = (paths["/v2/schedules/"] as { post: Op }).post
         expect(post.requestBody!.content["multipart/form-data"]!.schema).toBe(
             Post.RequestBodySchema,

@@ -85,7 +85,7 @@ const editSchedule = async (page: Page, preview: string) => {
 const editor = (page: Page) => page.locator("[data-post-body-editor]").first()
 const submitButton = (page: Page) => page.getByTestId("composer-submit")
 
-test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時刻の順に並び、失敗の理由が出て、履歴を削除できる", async ({
+test("[schedule-form/5.1 schedule-form/5.3] 待機中と履歴が実行時刻の順に並び、失敗の理由が出て、履歴を削除できる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -120,7 +120,7 @@ test("[schedule-form/AC-12 schedule-form/AC-13] 待機中と履歴が実行時�
     expect(calls.deletes).toEqual(["b"])
 })
 
-test("[schedule-form/AC-14 image-picker/AC-8] 画像つきの待機中の予約を選ぶと、本文と画像と実行日時が戻り、ボタンが予約になる", async ({
+test("[schedule-form/5.4 image-picker/2.3] 画像つきの待機中の予約を選ぶと、本文と画像と実行日時が戻り、ボタンが予約になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -163,7 +163,7 @@ test("[schedule-form/AC-14 image-picker/AC-8] 画像つきの待機中の予約�
     ).toHaveCount(1)
 })
 
-test("[schedule-form/AC-10] 編集中の予約のボタンで置き換えが呼ばれ、作成は呼ばれない", async ({
+test("[schedule-form/4.3] 編集中の予約のボタンで置き換えが呼ばれ、作成は呼ばれない", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -183,7 +183,7 @@ test("[schedule-form/AC-10] 編集中の予約のボタンで置き換えが呼�
     await expect(editor(page)).not.toContainText("書き戻す本文")
 })
 
-test("[schedule-form/AC-15] 編集中のキャンセルで3つの選択肢が出て、取消を選ぶと取消が呼ばれフォームが空になる", async ({
+test("[schedule-form/4.6,4.7] 編集中のキャンセルで3つの選択肢が出て、取消を選ぶと取消が呼ばれフォームが空になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -210,7 +210,7 @@ test("[schedule-form/AC-15] 編集中のキャンセルで3つの選択肢が出
     await expect(editor(page)).not.toContainText("書き戻す本文")
 })
 
-test("[schedule-form/AC-16] 編集中に予約を残して閉じるを選ぶと、取消も置き換えも呼ばれずフォームが空になる", async ({
+test("[schedule-form/4.6,4.8] 編集中に予約を残して閉じるを選ぶと、取消も置き換えも呼ばれずフォームが空になる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -231,7 +231,7 @@ test("[schedule-form/AC-16] 編集中に予約を残して閉じるを選ぶと�
     await expect(submitButton(page)).toHaveText("投稿")
 })
 
-test("[schedule-form/AC-18] 編集中に日時を解除すると確認なしで取消が呼ばれ、本文が残り、変更せずにキャンセルしても下書きの確認が出る", async ({
+test("[schedule-form/4.11,4.12] 編集中に日時を解除すると確認なしで取消が呼ばれ、本文が残り、変更せずにキャンセルしても下書きの確認が出る", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -259,7 +259,7 @@ test("[schedule-form/AC-18] 編集中に日時を解除すると確認なしで�
     ).toBeVisible()
 })
 
-test("[schedule-form/AC-26] 失敗の予約を書き戻すと日時の無い新規の入力として戻り、予約に成功すると元の履歴の削除が呼ばれる", async ({
+test("[schedule-form/5.5,5.6] 失敗の予約を書き戻すと日時の無い新規の入力として戻り、予約に成功すると元の履歴の削除が呼ばれる", async ({
     page,
 }) => {
     test.setTimeout(90_000)
@@ -300,7 +300,7 @@ test("[schedule-form/AC-26] 失敗の予約を書き戻すと日時の無い新�
     await expect.poll(() => calls.deletes).toEqual(["f1"])
 })
 
-test("[schedule-form/AC-35] 予約投稿が無効で予約が空のとき、「予約はありません。」を表示しない", async ({
+test("[schedule-form/5.2] 予約投稿が無効で予約が空のとき、「予約はありません。」を表示しない", async ({
     page,
 }) => {
     test.setTimeout(120_000)
@@ -311,7 +311,7 @@ test("[schedule-form/AC-35] 予約投稿が無効で予約が空のとき、「�
     await expect(list.getByText("予約はありません。")).toHaveCount(0)
 })
 
-test("[schedule-form/AC-35] 予約投稿が無効のとき、予約のタブに設定を開くボタンが出て、本文があれば確認を挟んで設定へ移る", async ({
+test("[schedule-form/5.2] 予約投稿が無効のとき、予約のタブに設定を開くボタンが出て、本文があれば確認を挟んで設定へ移る", async ({
     page,
 }) => {
     test.setTimeout(120_000)
@@ -351,7 +351,7 @@ test("[schedule-form/AC-35] 予約投稿が無効のとき、予約のタブに�
 test.describe("狭い画面", () => {
     test.use({ viewport: { width: 390, height: 844 } })
 
-    test("[schedule-form/AC-19] 画面幅390のとき、予約のタブの操作の縦横が44ピクセル以上", async ({
+    test("[schedule-form/3.10] 画面幅390のとき、予約のタブの操作の縦横が44ピクセル以上", async ({
         page,
     }) => {
         test.setTimeout(90_000)

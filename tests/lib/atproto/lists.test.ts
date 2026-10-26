@@ -18,7 +18,7 @@ beforeEach(() => {
 })
 
 describe("getOwnLists", () => {
-    it("[atproto-access/AC-6] curatelistのみ抽出し、modlistを除外して{uri,name}へ整形する", async () => {
+    it("[atproto-access/3.2] curatelistのみ抽出し、modlistを除外して{uri,name}へ整形する", async () => {
         getLists.mockResolvedValue({
             data: {
                 lists: [
@@ -58,7 +58,7 @@ describe("getOwnLists", () => {
         expect(result).toEqual([])
     })
 
-    it("[atproto-access/AC-7] 失敗時は例外を呼び出し元へ投げる", async () => {
+    it("[atproto-access/3.3] 失敗時は例外を呼び出し元へ投げる", async () => {
         getLists.mockRejectedValue(new Error("network error"))
 
         await expect(getOwnLists("did:plc:abc")).rejects.toThrow(

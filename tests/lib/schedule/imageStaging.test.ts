@@ -29,7 +29,7 @@ const img = (bytes: number) => ({
 })
 
 describe("imageStaging", () => {
-    test("schedule-store/AC-7: 予約を削除すると画像がすべて削除される", async () => {
+    test("schedule-store/4.1,4.2: 予約を削除すると画像がすべて削除される", async () => {
         const db = createFakeD1()
         const { bucket, objects } = fakeBucket()
         const keys = await putImages(bucket, "did:plc:a", "s1", "g1", [
@@ -53,7 +53,7 @@ describe("imageStaging", () => {
         expect(objects.size).toBe(0)
     })
 
-    test("schedule-store/AC-11: 合計10メガバイトを超える保管は何も書かずに拒否される", async () => {
+    test("schedule-store/2.3,4.1: 合計10メガバイトを超える保管は何も書かずに拒否される", async () => {
         const { bucket, objects } = fakeBucket()
         await expect(
             putImages(bucket, "d", "s", "g", [img(6_000_000), img(4_000_001)]),
@@ -72,7 +72,7 @@ describe("imageStaging", () => {
         expect(objects.size).toBe(0)
     })
 
-    test("schedule-store/AC-18: 保管した画像を番号で読み出すと書き込んだバイト列が返り、他のアカウントでは返らない", async () => {
+    test("schedule-store/4.3: 保管した画像を番号で読み出すと書き込んだバイト列が返り、他のアカウントでは返らない", async () => {
         const bucket = createFakeR2()
         const bytes = new Uint8Array([1, 2, 3]).buffer
         const keys = await putImages(bucket, "did:plc:a", "s1", "g1", [
@@ -95,7 +95,7 @@ describe("imageStaging", () => {
         expect([...bucket.objects.keys()]).toEqual(b)
     })
 
-    test("schedule-store/AC-19: 画像のバケットに保管から15日で削除するライフサイクルの手順が記載されている", () => {
+    test("schedule-store/4.4: 画像のバケットに保管から15日で削除するライフサイクルの手順が記載されている", () => {
         const doc = readFileSync("DEVELOP.md", "utf8")
         expect(doc).toMatch(
             /r2 bucket lifecycle add "\$b" expire-15d --expire-days 15/,

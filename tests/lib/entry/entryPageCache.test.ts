@@ -87,7 +87,7 @@ describe("entryPageCacheKey", () => {
     })
 })
 
-describe("[entry-detail/AC-13] entryPageCache", () => {
+describe("[entry-detail/5.3,5.4] entryPageCache", () => {
     let cache: ReturnType<typeof createFakeCache>
 
     beforeEach(() => {

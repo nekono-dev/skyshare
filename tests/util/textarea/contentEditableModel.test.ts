@@ -19,7 +19,7 @@ describe("partsToPlainText", () => {
         expect(partsToPlainText(parts)).toBe("abcdef")
     })
 
-    it("[post-body-editor/AC-12] brを改行として連結する", () => {
+    it("[post-body-editor/3.1] brを改行として連結する", () => {
         const parts: TextPart[] = [
             { type: "text", value: "abc" },
             { type: "br" },
@@ -58,7 +58,7 @@ describe("resolvePartOffset", () => {
         })
     })
 
-    it("[post-body-editor/AC-14] part境界ちょうどのインデックスは直前partの末尾を返す", () => {
+    it("[post-body-editor/3.3] part境界ちょうどのインデックスは直前partの末尾を返す", () => {
         const parts: TextPart[] = [
             { type: "text", value: "abc" },
             { type: "text", value: "def" },
@@ -104,7 +104,7 @@ describe("resolvePartOffset", () => {
         })
     })
 
-    it("[post-body-editor/AC-13] 末尾を超えるインデックスは最後のpartの末尾にクランプする", () => {
+    it("[post-body-editor/3.2] 末尾を超えるインデックスは最後のpartの末尾にクランプする", () => {
         const parts: TextPart[] = [{ type: "text", value: "abc" }]
         expect(resolvePartOffset(parts, 100)).toEqual({
             partIndex: 0,

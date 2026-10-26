@@ -8,7 +8,7 @@
  */
 import { expect, test } from "@playwright/test"
 
-test("[app-settings/AC-11] 表示テーマをダークに切り替えると、data-theme が dark になり再読み込み後も保たれる", async ({
+test("[app-settings/1.4] 表示テーマをダークに切り替えると、data-theme が dark になり再読み込み後も保たれる", async ({
     page,
 }) => {
     test.setTimeout(90_000)

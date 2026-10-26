@@ -9,7 +9,7 @@ import { describe, expect, it } from "vitest"
 import * as ExtractSchema from "@/lib/api/schema/v1/extract/get"
 
 describe("v1/extract GET スキーマ", () => {
-    it("[ogp-link-card/AC-4] クエリはURLだけを受け付け、他のキーは拒否する", () => {
+    it("[ogp-link-card/2.1] クエリはURLだけを受け付け、他のキーは拒否する", () => {
         expect(
             ExtractSchema.QueryParamsSchema.safeParse({
                 url: "https://example.com",
@@ -23,7 +23,7 @@ describe("v1/extract GET スキーマ", () => {
         ).toBe(false)
     })
 
-    it("[ogp-link-card/AC-5] 応答は、画像を省略したOGPのメタ情報を受け付ける", () => {
+    it("[ogp-link-card/2.2] 応答は、画像を省略したOGPのメタ情報を受け付ける", () => {
         const base = {
             title: "t",
             description: "d",

@@ -1,10 +1,10 @@
 /**
- * スレッドグループ内の「事後entry作成のVisual取得元投稿」（FR-3）・
- * 「スレッド由来entryを持つ投稿」（FR-4）を判定するロジック。
+ * スレッドグループ内の「事後entry作成のVisual取得元投稿」（timeline 要件2.3）・
+ * 「スレッド由来entryを持つ投稿」（timeline 要件2.1）を判定するロジック。
  *
  * 責務と処理概要:
- * - `resolveEntryVisualSourcePost`: `specs/timeline`。
- * - `findEntryCarrier`: `specs/timeline`。
+ * - `resolveEntryVisualSourcePost`: `.kiro/specs/timeline`。
+ * - `findEntryCarrier`: `.kiro/specs/timeline`。
  * - いずれも`ThreadGroup`のみを入力に取る純粋関数で、UI（`ThreadCard`）から分離する。
  */
 import {

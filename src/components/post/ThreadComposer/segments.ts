@@ -4,7 +4,7 @@
  * 責務と処理概要:
  * - Reactの外側で完結する、セグメントの追加・削除・下書き変換・予約の書き戻しのロジックのみを持つ
  *   （DOM・API呼び出し・Reactの state 更新には一切触れない）。
- * - `specs/thread-composer`の決定により、先頭（1件目）segmentは
+ * - `.kiro/specs/thread-composer`の決定により、先頭（1件目）segmentは
  *   スレッドの起点のため削除できない。2件目以降は編集中かどうかに関わらずいつでも削除できる。
  */
 import type {

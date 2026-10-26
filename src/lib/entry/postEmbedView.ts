@@ -1,6 +1,6 @@
 /**
  * 投稿の埋め込み（AppView が hydrate した `PostView.embed`）から、entry詳細ページに表示する
- * リンクカードと引用を取り出すモジュール（`specs/entry-detail`）。
+ * リンクカードと引用を取り出すモジュール（`.kiro/specs/entry-detail`）。
  *
  * 責務と処理概要:
  * - `app.bsky.embed.external#view` からリンクカードを取り出す（http/https のリンク先に限る）。
