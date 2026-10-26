@@ -44,29 +44,28 @@
 
 ### Architecture Pattern & Boundary Map
 
-下書きAPIの入力検証と連携先の依存方向を示す。
+下書きAPIの入力検証と連携先の依存方向を示す。ハンドラは `draft.ts` の手書きパーサで入力と応答を検証し、`schema/` 配下の zod スキーマは OpenAPI ドキュメントの生成と上限定数の共有確認テストが参照する（ハンドラは import しない）。
 
 ```mermaid
 flowchart LR
-  drafts --> post
-  drafts --> put
-  drafts --> get
-  drafts --> delete
   drafts --> draft
-  post --> draft
-  put --> draft
+  draft --> limit["threadLimit"]
+  post["schema post"] --> limit
+  put["schema put"] --> limit
+  get["schema get"] --> limit
+  delete["schema delete"]
 ```
 
 ## File Structure Plan
 
-| パス                                          | 責務                               |
-| --------------------------------------------- | ---------------------------------- |
-| `src/pages/v2/bsky/drafts.ts`                 | GET・POST・PUT・DELETE のハンドラ  |
-| `src/lib/api/schema/v2/bsky/drafts/post.ts`   | 作成の入力スキーマ                 |
-| `src/lib/api/schema/v2/bsky/drafts/put.ts`    | 更新の入力スキーマ                 |
-| `src/lib/api/schema/v2/bsky/drafts/get.ts`    | 一覧のクエリと応答のスキーマ       |
-| `src/lib/api/schema/v2/bsky/drafts/delete.ts` | 削除の入力スキーマ                 |
-| `src/lib/atproto/draft.ts`                    | 入力と応答の検証、自己ラベルの変換 |
+| パス                                          | 責務                                       |
+| --------------------------------------------- | ------------------------------------------ |
+| `src/pages/v2/bsky/drafts.ts`                 | GET・POST・PUT・DELETE のハンドラ          |
+| `src/lib/api/schema/v2/bsky/drafts/post.ts`   | 作成の入力スキーマ（OpenAPI 用）           |
+| `src/lib/api/schema/v2/bsky/drafts/put.ts`    | 更新の入力スキーマ（OpenAPI 用）           |
+| `src/lib/api/schema/v2/bsky/drafts/get.ts`    | 一覧のクエリと応答のスキーマ（OpenAPI 用） |
+| `src/lib/api/schema/v2/bsky/drafts/delete.ts` | 削除の入力スキーマ（OpenAPI 用）           |
+| `src/lib/atproto/draft.ts`                    | 入力と応答の検証、自己ラベルの変換         |
 
 ## System Flows
 
@@ -77,7 +76,7 @@ sequenceDiagram
   participant drafts
   participant draft
   participant ext_bsky as Bluesky
-  drafts->>draft: parseDraftPostsInput
+  drafts->>draft: parseCreateDraftBody など（内部で parseDraftPostsInput）
   alt 未認証
     drafts-->>drafts: 401
   else 検証失敗
@@ -89,8 +88,7 @@ sequenceDiagram
       drafts-->>drafts: resolveXrpcStatus の値
     else 成功
       ext_bsky-->>drafts: 応答
-      drafts->>draft: DraftPostSchema を検証
-      drafts->>post: RequestBodySchema
+      drafts->>draft: parseDraftViewsResponse で検証
     end
   end
 ```
@@ -118,7 +116,7 @@ export const parseDraftPostsInput = (value: unknown): DraftPostPayload[] | undef
 export const buildSelfLabels = (labels: string[] | undefined) // ラベル値から com.atproto.label.defs#selfLabels を組み立てる
 ```
 
-`MAX_THREAD_POST_COUNT` は `src/lib/atproto/threadLimit.ts` から参照する。`posts` は `app.bsky.draft#draft.posts` にそのまま対応させる。
+上の zod スキーマ（`DraftPostSchema`・`RequestBodySchema`）は OpenAPI ドキュメントの生成用で、ハンドラの実行時の検証は `src/lib/atproto/draft.ts` の手書きのパーサ（`parseDraftPostsInput` など）が行う。このため実行時は未知のキーを拒否しない。`MAX_THREAD_POST_COUNT` の実体は `src/lib/atproto/threadLimit.ts` で、スキーマは直接、`draft.ts` は `post.ts` の再エクスポート経由で同じ定数を参照する。`posts` は `app.bsky.draft#draft.posts` にそのまま対応させる。
 
 #### D-2: ハンドラ
 

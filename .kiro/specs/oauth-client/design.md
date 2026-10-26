@@ -186,8 +186,8 @@ sequenceDiagram
 // loopback.ts（他のモジュールを読み込まない。開発サーバーの設定からも読み込む）
 export const LOOPBACK_CALLBACK_PORT = 4322
 export const isLoopbackOrigin = (origin: string): boolean // ホスト名が localhost・127.0.0.1・[::1]
-const isLoopbackClientId = (clientId: string): boolean // "http://localhost" で始まる
-const loopbackRedirectUri = (): string // "http://127.0.0.1:4322/oauth/callback/"
+export const isLoopbackClientId = (clientId: string): boolean // "http://localhost" で始まる
+export const loopbackRedirectUri = (): string // "http://127.0.0.1:4322/oauth/callback/"
 
 // client.ts
 export const SESSION_SCOPE = "atproto transition:generic"
@@ -322,7 +322,7 @@ export const createDpopFetch = (input: DpopFetchInput): ((path: string, init?: R
 export type ReturnPurpose = "schedule" | "session"
 const RETURN_COOKIE = "oauth_return"
 const DEFAULT_RETURN_PATHS: Record<ReturnPurpose, string> = { schedule: "/settings/", session: "/login/" }
-const isSafeReturnPath = (path: unknown): path is string
+export const isSafeReturnPath = (path: unknown): path is string
 export const returnCookie = (purpose: ReturnPurpose, path: string | undefined): string
 export const clearReturnCookie = (): string
 export const readReturn = (cookieHeader: string | null): { purpose: ReturnPurpose; path: string }

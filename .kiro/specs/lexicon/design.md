@@ -70,6 +70,7 @@ flowchart LR
 | `lexicons/dev/nekono/skyshare/entry.json` | entryレコードの定義                    |
 | `lexicons/dev/nekono/skyshare/defs.json`  | マニフェストの定義                     |
 | `lexicons/README.md`                      | 公開手順とドメイン変更の手順           |
+| `hack/lint-lexicon.sh`                    | `npm run test:lexicon`（goat の lint） |
 | `src/lib/atproto/nsid.ts`                 | NSIDの導出とentryのURIの組み立て・解析 |
 | `tests/lexicons/lexicons.test.ts`         | lexicon定義の検証                      |
 | `tests/lib/atproto/nsidLiteral.test.ts`   | NSIDの直書きの検出                     |
@@ -165,17 +166,26 @@ export const MANIFEST_TYPE = `${DEFS_NSID}#manifest`
 
 ```ts
 export const entryAtUri = (did: string, rkey: string): string => `at://${did}/${ENTRY_COLLECTION}/${rkey}`
-const ENTRY_AT_URI_PATTERN = new RegExp(`^at://([^/]+)/${escapeRegExp(ENTRY_COLLECTION)}/([^/?#]+)$`)
 export const parseEntryAtUri = (uri: string): { actor: string; rkey: string } | undefined
+
+// 上の3つは、entry の NSID から導出する値と URI の組み立て・解析を束ねた createNsidSet の結果である。
+// ドメインを書き換えたときも同じ導出規則で値が決まることを、テストがアプリ本体と同じ関数で確認できる。
+export type NsidSet = { entryCollection: string; defsNsid: string; manifestType: string; entryAtUri: ...; parseEntryAtUri: ... }
+export const createNsidSet = (entryId: string): NsidSet
+// 解析の正規表現は createNsidSet の内部: `^at://([^/]+)/${escapeRegExp(entryId)}/([^/?#]+)$`
 ```
 
-| 呼び出し側                          | 利用する値                                                   |
-| ----------------------------------- | ------------------------------------------------------------ |
-| `src/lib/entry/skyshareRecord.ts`   | `ENTRY_COLLECTION` / `MANIFEST_TYPE`                         |
-| `src/lib/entry/createBskyThread.ts` | `ENTRY_COLLECTION`                                           |
-| `src/lib/entry/entry.ts`            | `parseEntryAtUri`                                            |
-| `src/lib/entry/guestDummyPosts.ts`  | `entryAtUri`                                                 |
-| `src/lib/api/schema/v2/entry/*.ts`  | NSIDを含めない説明文（tsx実行のため `nsid.ts` を参照しない） |
+| 呼び出し側                                                                                     | 利用する値                                                   |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `src/lib/entry/skyshareRecord.ts`                                                              | `ENTRY_COLLECTION` / `MANIFEST_TYPE`                         |
+| `src/lib/entry/createBskyThread.ts`                                                            | `ENTRY_COLLECTION`                                           |
+| `src/lib/entry/entry.ts`                                                                       | `parseEntryAtUri`                                            |
+| `src/lib/entry/guestDummyPosts.ts`                                                             | `entryAtUri`                                                 |
+| `src/lib/entry/fromPost.ts`                                                                    | `ENTRY_COLLECTION`                                           |
+| `src/lib/oauth/client.ts`                                                                      | `ENTRY_COLLECTION`（予約の権限の書き込み対象）               |
+| `src/lib/schedule/executor.ts`                                                                 | `ENTRY_COLLECTION`                                           |
+| `src/pages/v2/entry.ts`・`entries.ts`・`entries/skyshare.ts`・`src/pages/entries/[slug].astro` | `ENTRY_COLLECTION`                                           |
+| `src/lib/api/schema/v2/entry/*.ts`                                                             | NSIDを含めない説明文（tsx実行のため `nsid.ts` を参照しない） |
 
 ドメインの変更手順（`lexicons/README.md`）: ディレクトリを新ドメインへ移す → `entry.json`・`defs.json` の `id` と `manifest` の `ref` を書き換える → `npm test` → `goat lex lint` と公開。
 

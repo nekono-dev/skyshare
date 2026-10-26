@@ -227,7 +227,7 @@ export const refreshBskySession: MiddlewareHandler
 ```
 
 - 対象外のパスは `next()` をそのまま返す。
-- 対象のパスは `parseSessionFromRequest` で得たセッションを再開し、cookie が無ければ 401 とする。
+- 対象のパスは `parseSessionFromRequest` で得たセッションを再開し、cookie が無いとき、または値が壊れていて復号できないときは 401 とする（壊れた値の例外は握りつぶして未認証として扱う）。
 - パスワードのセッションは `resumeSession` で再開し、失敗は `resolveXrpcStatus` のステータスで拒否する。再開は必ずトークンをローテーションするため、成功時は `agent.session` を `makeSessionSetCookie` で応答へ追加する。
 - OAuth のセッションは、再開・期限の前の更新・応答への書き戻しを OAuth のセッションの処理に委ねる。
 - `locals.agent` は `@atproto/api` の `Agent`、`locals.session` は `{ did, handle, didDoc? }` とし、ハンドラはセッションの種類を区別しない。
@@ -245,11 +245,11 @@ export const getSessionOnce = (): Promise<getSessionResponse>
 
 ## Error Handling
 
-| 事象                        | 処理                                          |
-| --------------------------- | --------------------------------------------- |
-| cookie の値が壊れている     | プールは空として扱い、セッションは 500 とする |
-| `sessionStorage` が使えない | 記録を諦め、毎回リクエストする                |
-| プロフィールの取得の失敗    | 空のメタ情報で一覧に含める                    |
+| 事象                        | 処理                                                                                    |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| cookie の値が壊れている     | プールの壊れた枠は飛ばす。セッション操作のハンドラは 500、自動再開の対象では 401 とする |
+| `sessionStorage` が使えない | 記録を諦め、毎回リクエストする                                                          |
+| プロフィールの取得の失敗    | 空のメタ情報で一覧に含める                                                              |
 
 ## Testing Strategy
 

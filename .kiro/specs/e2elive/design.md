@@ -77,27 +77,29 @@ flowchart LR
 
 ## File Structure Plan
 
-| パス                                  | 責務                                                                           |
-| ------------------------------------- | ------------------------------------------------------------------------------ |
-| `tests/e2e/live/env.ts`               | 認証情報の読み込み（検証用アカウント・第三者アカウント）とログイン状態の保存先 |
-| `tests/e2e/live/auth.setup.ts`        | テスト開始前のログインと、取りこぼしの掃除                                     |
-| `tests/e2e/live/pds.ts`               | PDSの直接操作（作成・削除・掃除）と削除対象の選別                              |
-| `tests/e2e/live/sweep.ts`             | 手動の掃除コマンド                                                             |
-| `tests/e2e/live/liveTest.ts`          | テストごとの識別子と、終了時の自動削除                                         |
-| `tests/e2e/live/helpers.ts`           | 画像の生成、公開APIでの確認、画素の判定                                        |
-| `tests/e2e/live/threadEntry.spec.ts`  | スレッド投稿から削除までの検証                                                 |
-| `tests/e2e/live/multiImage.spec.ts`   | 5枚の画像の投稿の検証                                                          |
-| `tests/e2e/live/video.spec.ts`        | 動画投稿と動画の事後entry作成の検証                                            |
-| `tests/e2e/live/postHocEntry.spec.ts` | 画像投稿の事後entry作成の検証                                                  |
-| `tests/e2e/live/visualSource.spec.ts` | 事後entryのvisualの生成元の検証                                                |
-| `tests/e2e/live/deleteFlow.spec.ts`   | 削除フローと旧実装のentryの検証                                                |
-| `tests/e2e/live/branch.spec.ts`       | 分岐したスレッドの検証                                                         |
-| `tests/e2e/live/peerReply.spec.ts`    | 第三者の返信の検証                                                             |
-| `tests/e2e/live/cleanup.spec.ts`      | 後始末と掃除の検証                                                             |
-| `tests/e2e/live/session.spec.ts`      | ログイン状態の検証                                                             |
-| `tests/e2e/live/loginForm.spec.ts`    | ログインフォームの検証                                                         |
-| `tests/repo/e2eliveIsolation.test.ts` | アプリ本体への混入と、設定ファイルの無視設定の検証                             |
-| `playwright.config.ts`                | ライブテストのプロジェクトの登録                                               |
+| パス                                  | 責務                                                                                |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| `tests/e2e/live/env.ts`               | 認証情報の読み込み（検証用アカウント・第三者アカウント）とログイン状態の保存先      |
+| `tests/e2e/live/auth.setup.ts`        | テスト開始前のログインと、取りこぼしの掃除                                          |
+| `tests/e2e/live/pds.ts`               | PDSの直接操作（作成・削除・掃除）と削除対象の選別                                   |
+| `tests/e2e/live/sweep.ts`             | 手動の掃除コマンド                                                                  |
+| `tests/e2e/live/liveTest.ts`          | テストごとの識別子と、終了時の自動削除                                              |
+| `tests/e2e/live/helpers.ts`           | 画像の生成、公開APIでの確認、画素の判定                                             |
+| `tests/e2e/live/threadEntry.spec.ts`  | スレッド投稿から削除までの検証                                                      |
+| `tests/e2e/live/multiImage.spec.ts`   | 5枚の画像の投稿の検証                                                               |
+| `tests/e2e/live/video.spec.ts`        | 動画投稿と動画の事後entry作成の検証                                                 |
+| `tests/e2e/live/postHocEntry.spec.ts` | 画像投稿の事後entry作成の検証                                                       |
+| `tests/e2e/live/visualSource.spec.ts` | 事後entryのvisualの生成元の検証                                                     |
+| `tests/e2e/live/deleteFlow.spec.ts`   | 削除フローと旧実装のentryの検証                                                     |
+| `tests/e2e/live/branch.spec.ts`       | 分岐したスレッドの検証                                                              |
+| `tests/e2e/live/peerReply.spec.ts`    | 第三者の返信の検証                                                                  |
+| `tests/e2e/live/cleanup.spec.ts`      | 後始末と掃除の検証                                                                  |
+| `tests/e2e/live/session.spec.ts`      | ログイン状態の検証                                                                  |
+| `tests/e2e/live/loginForm.spec.ts`    | ログインフォームの検証                                                              |
+| `tests/e2e/live/entryDetail.spec.ts`  | 補助（要件外）。entry-detail の実アカウントでの表示確認                             |
+| `tests/e2e/live/videoLarge.spec.ts`   | 補助（要件外）。大容量の動画の通し確認。`SKYSHARE_E2E_LARGE_VIDEO=1` のときだけ実行 |
+| `tests/repo/e2eliveIsolation.test.ts` | アプリ本体への混入と、設定ファイルの無視設定の検証                                  |
+| `playwright.config.ts`                | ライブテストのプロジェクトの登録                                                    |
 
 ## System Flows
 
@@ -308,4 +310,4 @@ const peerAgent = await createPdsAgent(peer!, "peer")
   - `tests/e2e/live/threadEntry.spec.ts` 画像付きの3件のスレッドを投稿して削除する → entryが1件作られ、削除の確定で3件とも消える
   - `tests/e2e/live/deleteFlow.spec.ts` 削除の最終確認でキャンセルして再度開き確定する → 一覧が再表示され投稿が消える
   - `tests/e2e/live/peerReply.spec.ts` 第三者が返信した後にルートを削除する → 第三者の返信が残る
-- テストの名前には、対応する基準 ID を `[e2elive/<ID>]` の形で付ける（例: `[e2elive/1.1]`）
+- テストの名前には、対応する基準 ID を `e2elive/<ID>: ` の形で先頭に付ける（例: `e2elive/1.1: ...`。複数の基準に対応するときは `e2elive/4.1 e2elive/4.4: ...`）。`[e2e <識別子>]` の投稿の識別子と紛れないよう角括弧は付けない。要件外の補助テスト（`entryDetail.spec.ts`・`videoLarge.spec.ts`）には付けない

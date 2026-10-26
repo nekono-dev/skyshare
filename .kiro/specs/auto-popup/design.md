@@ -191,6 +191,6 @@ export const openIntentPopup = (url: string, preOpenedWindow?: Window | null): b
   - `npm run build`
   - `npx vitest run tests/components/post/ThreadComposer/shareDispatch.test.ts`
 - E2E/UI Tests:
-  - `tests/e2e/intentShare.spec.ts` 投稿フォームでポップアップを開く設定をONにしてプルダウンを開く → 4つの選択肢が表示され、選択に応じて横幅が変わる
+  - `tests/e2e/intentShare.spec.ts` 投稿フォームでポップアップを開く設定をONにしてプルダウンを開く → 5つの選択肢が表示され、選択に応じて横幅が変わる
   - `tests/e2e/intentShare.spec.ts` 選択値をタイッツーにして投稿する → 事前に開いたウィンドウがタイッツーの投稿画面へ遷移する
 - テストの名前には、対応する基準 ID を `[auto-popup/<ID>]` の形で付ける（例: `[auto-popup/1.1]`）

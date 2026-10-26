@@ -143,22 +143,22 @@ export const customFetcher = async <T>(url: string, options: RequestInit): Promi
 export const customFormData = <T extends Record<string, unknown>>(body: T): FormData
 ```
 
-| 入力                                                                             | 出力                                                                                                  |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `/v1/extract` で始まる URL                                                       | `<抽出サービス>` + 末尾のスラッシュを外したパス                                                       |
-| `/v1/page` で始まる URL                                                          | `<旧バックエンド>` + `/v1` を除いて末尾のスラッシュを外したパス                                       |
-| `/v2/bsky/images` で始まる URL、または応答の `content-type` が `image/` で始まる | `{ data: Blob, status, headers }`                                                                     |
-| その他                                                                           | 本文を文字列で読み、JSON として解釈できる場合は解釈した値、できない場合は生の値（空なら `undefined`） |
-| `string` のフィールド                                                            | `JSON.stringify` した文字列                                                                           |
-| Blob / Blob の配列                                                               | そのまま積む / 同名のフィールドへ展開する                                                             |
-| `posts`（オブジェクトの配列）                                                    | `posts[i][key]` の添字付きフィールド名へ展開し、Blob 以外は JSON 文字列にする                         |
+| 入力                                                                             | 出力                                                                                                                            |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/v1/extract` で始まる URL                                                       | `<抽出サービス>` + 末尾のスラッシュを外したパス                                                                                 |
+| `/v1/page` で始まる URL                                                          | `<旧バックエンド>` + `/v1` を除いて末尾のスラッシュを外したパス                                                                 |
+| `/v2/bsky/images` で始まる URL、または応答の `content-type` が `image/` で始まる | `{ data: Blob, status, headers }`                                                                                               |
+| その他                                                                           | 本文を文字列で読み、JSON として解釈できる場合は解釈した値、できない場合は生の値（空なら `undefined`）                           |
+| `text`・`heading`・`caption` の `string` のフィールド                            | `JSON.stringify` した文字列（それ以外の文字列・数値・真偽値は `String` にしてそのまま積む）                                     |
+| Blob / Blob の配列                                                               | そのまま積む / 同名のフィールドへ展開する                                                                                       |
+| `posts`（オブジェクトの配列）                                                    | `posts[i][key]` の添字付きフィールド名へ展開する（各値は上の規則に従い、`text`・`heading`・`caption` だけが JSON 文字列になる） |
 
 #### D-3: サーバー側の復元と補助
 
 **Requirements**: 3.4, 3.5, 4.1, 4.2, 4.3, 4.4
 
 ```ts
-export type FormDataFieldKind = "text" | "texts" | "file" | "files" | "json" | { kind: "items"; fields: Record<string, FormDataFieldKind> }
+export type FormDataFieldKind = "text" | "texts" | "file" | "files" | "json" | { kind: "items"; itemFieldKinds: Record<string, FormDataFieldKind> }
 export const formDataToObject = (formData: FormData, kinds: Record<string, FormDataFieldKind>): Record<string, unknown>
 export const formDataIndexedArrayToObjects = (formData: FormData, name: string, kinds: Record<string, FormDataFieldKind>): Record<string, unknown>[]
 export const parseLimit = (value: string | null): number | null | undefined

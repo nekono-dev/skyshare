@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 2.5rem;
-  padding-top: 0.25rem;
+  padding-top: var(--space-1);
 }
 
 /* 全件読み込み完了時のメッセージ */
@@ -12,7 +12,7 @@
   align-items: center;
   justify-content: center;
   min-height: 2.5rem;
-  padding-top: 0.25rem;
+  padding-top: var(--space-1);
   color: var(--color-muted);
   font-size: var(--font-size-sm);
   text-align: center;

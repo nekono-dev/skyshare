@@ -126,12 +126,15 @@ export type TimelinePost = {
   indexedAt: string
   author: TimelinePostAuthor
   text: string
+  facets?: PostFacet[]
   images: SourceImage[]
+  video?: SourceVideo // 再生できる動画。video-player D-1
+  unsupportedVideo?: SourceVideo // 引用投稿の動画（再生不可）
   skyshareEntry?: TimelineSkyshareEntry // 派生元のURIで突き合わせる
 }
 export type ThreadGroup = { rootPost: TimelinePost; replies: TimelinePost[] } // replies は古い順。0件は単独の投稿
 // 200: { cursor?: string, threads: ThreadGroup[] }
-const feedRes = await fetchOwnAuthorFeed(agent, did, limit, cursor) // 件数が足りなければカーソルをたどる
+const feedRes = await fetchOwnAuthorFeed(agent, did, limit, cursor) // 件数が足りなければカーソルをたどる（最大 MAX_AUTHOR_FEED_PAGES = 5 ページ）
 const threads = await buildTimelineThreads(agent, did, feedRes.feed) // entryは付与しない
 const sinceMs = resolveEntryRangeStartMs(threads) // D-4
 const rawEntries =

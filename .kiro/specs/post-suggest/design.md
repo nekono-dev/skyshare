@@ -151,7 +151,7 @@ export type HashtagHistoryEntry = { tag: string; lastUsedAt: number }
 export const readHashtagHistory = (accountDid: string | null | undefined): HashtagHistoryEntry[] // 新しい順
 export const addHashtagsToHistory = (tags: string[], accountDid: string | null | undefined): void
 // 履歴が空のときだけ、使用数順のタグを履歴の初期値として書き込む
-const seedHashtagHistoryFromRankedTags = (tags: string[], accountDid: string | null | undefined): void
+export const seedHashtagHistoryFromRankedTags = (tags: string[], accountDid: string | null | undefined): void
 ```
 
 - 保存先は `localStorage` の `hashtagHistory:<did>` とする。DID が未解決の間は読み書きしない。

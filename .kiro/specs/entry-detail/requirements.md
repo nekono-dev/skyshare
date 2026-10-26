@@ -57,7 +57,7 @@ skyshare entryの詳細ページで、entryの情報と派生元の投稿を、�
 
 #### Acceptance Criteria
 
-1. If entry が存在しない、または取得に失敗したとき, then the 詳細ページ shall 404・500・503の状態ごとのエラー表示を行う
+1. If entry が存在しない、または取得に失敗したとき, then the 詳細ページ shall 404・500・503の状態ごとのエラー表示を用意する（503 の表示は用意するが、現状の entry 詳細のページからは 503 は発生しない）
 
 ### Requirement 5: 描画の性質と再利用
 

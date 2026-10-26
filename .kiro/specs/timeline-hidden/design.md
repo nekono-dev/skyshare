@@ -135,11 +135,11 @@ const showPinnedForm = !pinnedFormDisabled || timelineHidden === true
 
 **Requirements**: 1.2, 3.1, 3.2
 
-| 箇所                              | 表示                                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------------------- |
-| 設定ページの表示のグループ        | 表示言語の次にタイムラインを表示しない、その次に固定表示しないのスイッチを置く        |
-| 設定ページの固定表示しないの行    | `checked: pinnedFormDisabled && !timelineHidden`、`disabled: timelineHidden`          |
-| `ThreadComposer` の詳細オプション | 同じ `checked` と `disabled` にし、詳細オプションを初期状態で開く条件にも同じ値を使う |
+| 箇所                              | 表示                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| 設定ページの表示のグループ        | 表示言語の次にタイムラインを表示しない、その次に固定表示しないのスイッチを置く |
+| 設定ページの固定表示しないの行    | `checked: pinnedFormDisabled && !timelineHidden`、`disabled: timelineHidden`   |
+| `ThreadComposer` の詳細オプション | 同じ `checked` と `disabled` にする                                            |
 
 固定表示しないの保存値は書き換えない。設定をOFFに戻すと、保存値どおりの表示に戻る。
 

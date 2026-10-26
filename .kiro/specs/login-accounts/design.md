@@ -55,7 +55,7 @@ flowchart LR
   login --> LoginForm["LoginForm/index"]
   login --> LoginIntro["LoginIntro/index"]
   accounts --> Panel["AccountSwitchPanel/index"]
-  LoginForm --> ext_tabs["タブの部品"]
+  LoginForm --> ext_collapsible["折りたたみの部品"]
   Panel --> Switcher["AccountSwitcher/index"]
   Panel --> LoginForm
   Switcher --> ext_session["セッションAPI"]
@@ -96,7 +96,7 @@ sequenceDiagram
   end
 ```
 
-OAuth のタブでの開始から、戻りでの完了と結果の分岐を示す。
+OAuth のボタンでの開始から、戻りでの完了と結果の分岐を示す。
 
 ```mermaid
 sequenceDiagram

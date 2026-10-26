@@ -85,7 +85,7 @@ sequenceDiagram
   edc->>resolveEntryDeleteScope: resolveEntryDeleteScope
   opt ゲスト表示
     edc->>guestDummyPosts: resolveGuestDeleteScope
-    guestDummyPosts-->>edc: GUEST_DELETE_SCOPES の値
+    guestDummyPosts-->>edc: deleteScopes の値
   end
   alt deletable
     resolveEntryDeleteScope-->>edc: 投稿一覧
@@ -170,9 +170,13 @@ type Props = {
 **Requirements**: 4.1
 
 ```ts
-export const GUEST_DELETE_SCOPES: Record<string, EntryDeleteScope> // 単発・2件スレッド・legacy・unknown の4例
-export const resolveGuestDeleteScope = (sourceUri: string): EntryDeleteScope =>
-  GUEST_DELETE_SCOPES[sourceUri] ?? { kind: "unknown" }
+// 表示言語ごとに組み立ててキャッシュする。deleteScopes は単発・2件スレッド・legacy・unknown の4例
+export const getGuestDummyData = (translator: Translator): { deleteScopes: Record<string, EntryDeleteScope> /* ほか */ }
+export const resolveGuestDeleteScope = (
+  sourceUri: string,
+  translator: Translator,
+): EntryDeleteScope =>
+  getGuestDummyData(translator).deleteScopes[sourceUri] ?? { kind: "unknown" }
 ```
 
 ゲスト表示では、判定に `resolveGuestDeleteScope` を使い、削除APIを呼ばずに成功時と同じ状態遷移だけを行う。削除ボタンには作成・共有ボタンと別の `deleteDisabled` を使う。

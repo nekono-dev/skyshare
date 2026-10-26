@@ -114,6 +114,8 @@ sequenceDiagram
 
 ボタンの高さは必ず `--size-button-md` / `lg` を参照する。アイコンボタンは幅と高さ、テキストボタン（`.text-button`）・折りたたみの開閉ボタン・サムネイルのバッジ・ライトボックスの操作ボタンは高さ（テキストボタンは `min-height`）に適用する。ボタン専用のコンポーネントCSSで `px` / `rem` の高さを直書きしない。
 
+例外として、`src/components/common/TabButtons/index.module.css` のタブは、ボタン寸法トークンを使わず `min-height` を 36px（スマホ幅の 639px 以下は 44px）と直書きする。タブは一覧の見出しの行であり、スマホ幅では 44px 以上を満たすため、意図的な例外とする。
+
 #### D-2: 直書きの置換
 
 **Requirements**: 1.3

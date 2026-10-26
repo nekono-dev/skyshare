@@ -152,7 +152,7 @@ export const uploadBlob = async (
 
 ```ts
 export const listRecordsSince = async (agent, params: { repo: string; collection: string }, sinceMs: number) =>
-  // reverse: true・limit 100 でカーソルを辿り、records を結合する。ページ内が全件 sinceMs より古ければ打ち切る
+  // reverse: true・limit 100 でカーソルを辿り、records を結合する。ページ内が全件 sinceMs より古ければ打ち切る（古いレコードも結果に含みうる）
 export const resolveDisplayName = async (agent, did: string, fallbackHandle: string): Promise<string> =>
   (await agent.getProfile({ actor: did })).data.displayName || fallbackHandle
 export type OwnedList = { uri: string; name: string }

@@ -127,7 +127,7 @@ sequenceDiagram
 | 返信                   | `reply-list` で囲み左マージンで段を作る。`PostCard` の `muted` にグループ単位の判定を渡す              |
 | entryを開く            | フッターの `entry-link-box` に置き、container query で残り幅が4.5rem未満なら非表示にする               |
 
-ゲスト表示では `GUEST_DUMMY_THREADS` を返す。
+ゲスト表示では `getGuestDummyData(translator).threads` を返す。
 
 #### D-2: 後からのentryの作成
 

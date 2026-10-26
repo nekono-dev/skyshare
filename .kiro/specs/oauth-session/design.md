@@ -165,7 +165,7 @@ sequenceDiagram
 ```ts
 // POST /v2/bsky/session/authorization { returnTo?: string; loginHint?: string } -> 200 { url }
 const RequestBodySchema = z.object({
-  returnTo: z.string().max(512).optional(), // 戻り先のページ。不正なら /login/
+  returnTo: z.string().refine(isSafeReturnPath).optional(), // 戻り先のページ。安全なパス（oauth-client の isSafeReturnPath）のみ。不正は 400。省略時は /login/
   loginHint: z.string().min(1).max(253).optional(), // 再ログインのハンドル
 })
 const SESSION_AUTHORIZATION_SERVER = "https://bsky.social"
@@ -187,8 +187,8 @@ const PENDING_COOKIE = "oauth_login_pending"
 
 | 手順 | 処理                                                                                                                        | 失敗時 |
 | ---- | --------------------------------------------------------------------------------------------------------------------------- | ------ |
-| 1    | `SESSION_AUTHORIZATION_SERVER` の認可サーバーのメタデータを読む（Bluesky がホスティングするアカウントの共通の認可サーバー） | 502    |
-| 2    | 秘密鍵のシークレットを読み、配信元から識別子と戻り先を決める。開発用の公開クライアントでなく秘密鍵が無ければ失敗            | 500    |
+| 1    | 秘密鍵のシークレットを読み、配信元から識別子と戻り先を決める。開発用の公開クライアントでなく秘密鍵が無ければ失敗            | 500    |
+| 2    | `SESSION_AUTHORIZATION_SERVER` の認可サーバーのメタデータを読む（Bluesky がホスティングするアカウントの共通の認可サーバー） | 502    |
 | 3    | DPoP の鍵・`state`・verifier を作り、権限 `SESSION_SCOPE` と、あれば `loginHint` を `login_hint` に入れて PAR を送る        | 502    |
 | 4    | 応答に `pendingCookie` と、用途 `session` の戻り先の cookie を付け、`{ url }` を返す                                        | -      |
 

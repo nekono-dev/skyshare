@@ -205,7 +205,7 @@ sequenceDiagram
 | 想定外の例外                                 | 500    |
 
 - すべての応答に `cache-control: no-store` を付け、エラーの本文は `{ error: string }` とする。
-- `error` の値は機械可読の識別子とし、409 は `ScheduleCredentialRequired`・`ScheduleRunning` の2種を返し分ける。
+- `error` の値は機械可読の識別子とし、409 は `ScheduleCredentialRequired`・`ScheduleReauthRequired`・`ScheduleRunning` の3種を返し分ける。
 - 入力スキーマは `src/lib/api/schema/v2/schedules/` 配下に定義し、ハンドラはそのスキーマを `safeParse()` に直接渡す。OpenAPI 文書は同じスキーマから生成する。
 - ハンドラが静的に読み込むのは Zod・予約ストア・`fetch` のみとし、`@atproto/*` は静的にも動的にも読み込まない。ログには予約の識別子と分類コードだけを出力し、トークン・認可コード・鍵を含む値を出力しない。
 
@@ -332,8 +332,9 @@ type CompleteFailure = "Denied" | "StateInvalid" | "IssuerMismatch" | "AccountMi
 
 | 手順 | 完了（POST）                                                                                                   | 失敗の分類        |
 | ---- | -------------------------------------------------------------------------------------------------------------- | ----------------- |
-| 1    | `takeOAuthState` で `state` を取り出して消す。ログイン中のアカウントのものでなければ無効                       | `StateInvalid`    |
+| 1    | `takeOAuthState` で `state` を取り出して消す（拒否の戻りでも消費して使い回せないようにする）                   | -                 |
 | 2    | `error` が付いていれば、保管せずに終える                                                                       | `Denied`          |
+| 2a   | 取り出した `state` が無い・ログイン中のアカウントのものでない・`code` が無いときは無効                         | `StateInvalid`    |
 | 3    | `iss` が開始時の認可サーバーと一致することを確かめる                                                           | `IssuerMismatch`  |
 | 4    | 認可コードと verifier を、開始時と同じ DPoP の鍵とクライアントの証明を添えてトークンに替える                   | `TokenFailed`     |
 | 5    | トークンの `sub` がログイン中のアカウントと一致することを確かめる                                              | `AccountMismatch` |
@@ -362,6 +363,7 @@ const CredentialStatusSchema = z.object({
 })
 export const estimateCredentialExpiry = (s: { authorizedAt: number; updatedAt: number; latestRunAt: number | null }): number
 const DeleteResponseSchema = z.object({
+  registered: z.literal(false), // 削除後は常に未登録
   cancelled: z.number().int(), // 取り消した待機中の件数
   deletedHistory: z.number().int(), // 削除した失敗の件数
 })

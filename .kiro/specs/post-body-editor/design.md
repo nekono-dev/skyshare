@@ -92,8 +92,7 @@ sequenceDiagram
     contentEditableReconcile->>highlightNodeParts: computeHighlightNodeParts
     contentEditableReconcile->>highlightNodeParts: diffNodeParts
     alt 想定外の構造
-      contentEditableReconcile-->>index: null
-      index->>contentEditableReconcile: rebuildContentFully
+      contentEditableReconcile->>contentEditableReconcile: rebuildContentFully
     else 差分あり
       contentEditableReconcile-->>index: 差分区間だけ置換
     end
@@ -137,7 +136,7 @@ export type NodePart =
   | { type: "anchor" }
 // 末尾が改行のときだけ末尾に anchor（不可視の目印）を付ける
 export const computeHighlightNodeParts = (text: string): NodePart[]
-export const diffNodeParts = (oldParts: NodePart[], newParts: NodePart[]): { prefix: number; suffix: number }
+export const diffNodeParts = (oldParts: NodePart[], newParts: NodePart[]): { prefixLen: number; suffixLen: number }
 ```
 
 先頭と末尾の共通区間を数えるとき、共通の要素が1つだけの場合は先頭区間にだけ数える。
@@ -160,13 +159,14 @@ export const setPlainTextCaret = (root: HTMLElement, index: number): void
 **Requirements**: 1.5, 4.1
 
 ```ts
-// 一致する区間には触れず、差分の区間だけを置き換える。想定外の構造なら null
-export const reconcileContent = (root: HTMLElement, text: string, highlightClassName: string): boolean | null
+// 一致する区間には触れず、差分の区間だけを置き換える。想定外の構造なら関数の内部で rebuildContentFully に切り替える（戻り値なし）
+export const reconcileContent = (root: HTMLElement, text: string, highlightClassName: string): void
 export const rebuildContentFully = (root: HTMLElement, text: string, highlightClassName: string): void
 ```
 
 - 入力時点でブラウザは実 DOM を編集済みなので、現在の DOM と本文から計算した理想の構造を比べ、一致していれば触らない。ネイティブの取り消しを保つため。
 - Enter と Shift+Enter は `insertParagraph` と `insertLineBreak` を横取りして `<br>` の挿入に統一する。
+- `rebuildContentFully` は、`reconcileContent` の内部の切り替えのほか、編集欄がフォーカスを失ったとき（blur）に、実 DOM から読み取った本文で安全弁として呼ばれる。
 - IME の変換中（`compositionstart` から `compositionend`）は同期を止める。
 
 ## Error Handling

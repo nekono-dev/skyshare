@@ -18,7 +18,7 @@ const callCallback = (query: string, cookie?: string) =>
 const asCookie = (setCookie: string) => setCookie.split(";")[0]!
 
 describe("認可の戻りの受け渡し", () => {
-    test("oauth-client/5.1: ログインの用途で始めた戻りが、そのページのフラグメントへ用途と既知の項目だけを移して転送される", () => {
+    test("[oauth-client/5.1] ログインの用途で始めた戻りが、そのページのフラグメントへ用途と既知の項目だけを移して転送される", () => {
         const set = returnCookie("session", "/accounts/")
         expect(set).toContain("Path=/oauth/callback/")
         expect(set).toContain("SameSite=Lax")
@@ -42,7 +42,7 @@ describe("認可の戻りの受け渡し", () => {
         expect(res.headers.get("set-cookie")).toContain("Max-Age=0")
     })
 
-    test("oauth-client/5.2,5.3,5.4: 用途の無い戻りは予約の設定のページへ、別のオリジンへ向かうページの戻りは用途の既定のページへ転送される", () => {
+    test("[oauth-client/5.2,5.3,5.4] 用途の無い戻りは予約の設定のページへ、別のオリジンへ向かうページの戻りは用途の既定のページへ転送される", () => {
         const none = new URL(callCallback("?code=C").headers.get("location")!)
         expect(none.pathname).toBe("/settings/")
         expect(readAuthorizationFragment(none.hash, "schedule")).toEqual({

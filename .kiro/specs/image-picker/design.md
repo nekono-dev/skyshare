@@ -39,7 +39,7 @@
 ### Revalidation Triggers
 
 - 画像の枚数の上限（10枚）と代表画像の素材の枚数（4枚）を変えるとき
-- 圧縮後の容量の上限（2,000,000バイト）を変えるとき（Bluesky の上限に影響する）
+- 圧縮後の容量の上限（2,000,000バイト）と内部の予算（1,900,000バイト）を変えるとき（Bluesky の上限に影響する）
 - 下書きや外から渡された添付の組の扱いを変えるとき
 
 ## Architecture
@@ -127,12 +127,13 @@ const cropPixels = def
 ```ts
 type MediaThumbProps = {
   onRemove: () => void
-  onEditAlt: () => void
+  onEditAlt?: () => void // 省略時は代替テキストのボタンを出さない
   removeAriaLabel: string
-  altAriaLabel: string
-  altFilled: boolean // 代替テキストが入力済みなら強調色
+  altAriaLabel?: string
+  altFilled?: boolean // 代替テキストが入力済みなら強調色。既定は false
   disabled?: boolean
   style?: CSSProperties
+  className?: string // 配置先ごとの追加クラス
   testId?: string
   children: ReactNode
 }
@@ -140,8 +141,8 @@ type MediaThumbProps = {
 
 | ボタン               | 見た目                                                                       |
 | -------------------- | ---------------------------------------------------------------------------- |
-| 取り外し（右上）     | 40pxの円、文字 `--font-size-2xl`                                             |
-| 代替テキスト（右下） | 高さ36px、文字 `--font-size-lg`、左右の余白 `--space-3`                      |
+| 取り外し（右上）     | 幅と高さ `--size-button-md` の円、文字 `--font-size-2xl`                     |
+| 代替テキスト（右下） | 高さ `--size-button-md`、文字 `--font-size-lg`、左右の余白 `--space-3`       |
 | 共通                 | `border: 2px solid #fff`、背景 `rgb(0 0 0 / 60%)`、hoverで `--color-bluesky` |
 
 - `value` が null でなく内部のスロットが空のとき（予約の書き戻しのように外から渡されたとき）は、`originalBlobs` から object URL を作り、`meta` の寸法と代替テキストと `computeInitialCrop` の切り抜きでスロットを組み立てる。このときは `onChange` を呼ばず、渡された `thumbnailBlob` をそのまま使う。
@@ -151,10 +152,13 @@ type MediaThumbProps = {
 **Requirements**: 4.1, 4.2
 
 ```ts
-// JPEG か PNG で、容量が予算内ならそのまま使う
+// JPEG か PNG で、容量が予算（POST_IMAGE_BYTE_BUDGET = 1,900,000 バイト）以下ならそのまま使う
 export const canUsePostImageAsIs = (blob: Blob): boolean
-// それ以外は compressToByteBudget で 2,000,000 バイト以内に収まるまで縮小・再圧縮する
+// それ以外は compressToByteBudget で予算（1,900,000 バイト）以内に収まるまで縮小・再圧縮する
 ```
+
+- 容量の上限は 2,000,000 バイト（Bluesky の `app.bsky.embed.images` の上限）で、内部の予算 1,900,000 バイトは安全マージンを引いた値。圧縮結果は常に上限以内に収まる。
+- そのまま使う判定も予算以下で行うため、1,900,000 バイトを超え 2,000,000 バイト以下の JPEG・PNG は再圧縮される。
 
 全画像（最大10枚）を個別に処理し、代表画像の合成とは独立させる。
 

@@ -96,7 +96,7 @@ const begin = async () => {
 }
 
 describe("OAuth のログインの API", () => {
-    test("oauth-session/1.3: 開始の応答に、完了の API のパスに限った HttpOnly で10分の途中の状態の cookie が付く", async () => {
+    test("[oauth-session/1.3] 開始の応答に、完了の API のパスに限った HttpOnly で10分の途中の状態の cookie が付く", async () => {
         const { res, pending } = await begin()
         expect(pending).toContain("Path=/v2/bsky/session/authorization/")
         expect(pending).toContain("Max-Age=600")
@@ -109,7 +109,7 @@ describe("OAuth のログインの API", () => {
         expect((await res.json()).url).toMatch(`${BSKY}/oauth/authorize?`)
     })
 
-    test("oauth-session/2.5: [schedule-api/4.6,4.8,4.10] 照合と確認に成功すると OAuth のセッションがアクティブになり、別のアカウントがアクティブだったときはプールへ退避される", async () => {
+    test("[oauth-session/2.5] [schedule-api/4.6,4.8,4.10] 照合と確認に成功すると OAuth のセッションがアクティブになり、別のアカウントがアクティブだったときはプールへ退避される", async () => {
         const { pending, state } = await begin()
         const current = makeSessionSetCookie(password("did:plc:current"))
         const res = await callComplete(
@@ -140,7 +140,7 @@ describe("OAuth のログインの API", () => {
         ])
     })
 
-    test("oauth-session/2.6: プールが上限に達しているとき、別のアカウントでの完了が409で拒否される", async () => {
+    test("[oauth-session/2.6] プールが上限に達しているとき、別のアカウントでの完了が409で拒否される", async () => {
         const { pending, state } = await begin()
         const pool = makeAccountsSetCookies(
             Array.from({ length: MAX_POOLED_ACCOUNTS }, (_, i) => ({
@@ -168,7 +168,7 @@ describe("OAuth のログインの API", () => {
         ).toBe(false)
     })
 
-    test("oauth-session/2.7: 拒否の戻りで、途中の状態の cookie が消え、拒否の分類が返る", async () => {
+    test("[oauth-session/2.7] 拒否の戻りで、途中の状態の cookie が消え、拒否の分類が返る", async () => {
         const { pending, state } = await begin()
         const res = await callComplete(
             { error: "access_denied", state },
@@ -183,7 +183,7 @@ describe("OAuth のログインの API", () => {
         expect(cleared).toContain("Path=/v2/bsky/session/authorization/")
     })
 
-    test("oauth-session/2.8: 開始と完了の応答に、キャッシュを禁止する指定が付く", async () => {
+    test("[oauth-session/2.8] 開始と完了の応答に、キャッシュを禁止する指定が付く", async () => {
         const { res, pending, state } = await begin()
         expect(res.headers.get("cache-control")).toBe("no-store")
         for (const r of [
@@ -199,7 +199,7 @@ describe("OAuth のログインの API", () => {
         }
     })
 
-    test("oauth-session/2.9: 完了に失敗しても、トークン・認可コード・鍵がログと応答の本文に現れない", async () => {
+    test("[oauth-session/2.9] 完了に失敗しても、トークン・認可コード・鍵がログと応答の本文に現れない", async () => {
         const { pending, state } = await begin()
         world.tokenError = { status: 400, error: "invalid_grant" }
         const failedToken = await callComplete(

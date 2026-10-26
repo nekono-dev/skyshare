@@ -229,14 +229,14 @@ export const useScheduleAvailability = (enabled: boolean, revalidate?: boolean):
 
 **Requirements**: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6
 
-| 操作             | 処理                                                                                                                               |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする                                |
-| オンにする       | `CredentialDialog` を開く。閉じたらオフのままにする                                                                                |
-| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を開く（初回と同じ見出しと文）                  |
-| オフにする       | `listSchedules({ status: "pending", limit: 50 })` の件数を `ConfirmDialog` の文言に入れて確認する                                  |
-| オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` と `deletedHistory` の合計を表示して `notifyScheduleCredentialChange` を呼ぶ |
-| オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                                                |
+| 操作             | 処理                                                                                                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 表示             | `useScheduleAvailability(!guestMode)` の `registered` をスイッチの状態にし、`null` の間は無効にする                                                                     |
+| オンにする       | `CredentialDialog` を開く。閉じたらオフのままにする                                                                                                                     |
+| 再度の許可       | `reauthRequired` のときはオンのまま案内とボタンを出し、ボタンで `CredentialDialog` を開く（初回と同じ見出しと文）                                                       |
+| オフにする       | `listSchedules({ limit: 50 })` を `cursor` で最後まで取得し、待機中と失敗を別々に数えて `ConfirmDialog` の文言（両方・待機中のみ・失敗のみ・なしの4種）に入れて確認する |
+| オフの確認を承諾 | `deleteScheduleCredential` を呼び、応答の `cancelled` と `deletedHistory` の合計を表示して `notifyScheduleCredentialChange` を呼ぶ                                      |
+| オフの確認で409  | `schedule.error.running` を表示し、オンのままにする                                                                                                                     |
 
 ```tsx
 // 設定の投稿のグループの末尾に置く
@@ -289,6 +289,8 @@ type RunAtPickerProps = {
   onChange: (next: Date | null) => void
   open?: boolean // 実行日時の行からも開けるよう、開閉を呼び出し側が持てる
   onOpenChange?: (open: boolean) => void
+  onUnavailable?: () => void // 許可が無効なとき、ボタンを aria-disabled にして押下で再度の許可の案内を開く
+  expiresAt?: Date | null // 許可の有効期限の目安
   slots?: ScheduleSlots | null // 待機中の予約の枠。取得前と取得の失敗は null で、表示しない
 }
 export type ScheduleSlots = { used: number; max: number; consumes: boolean } // consumes はこの予約が新たに枠を使うか
@@ -387,17 +389,19 @@ type ScheduleListProps = {
 **Requirements**: 4.2, 4.3, 4.4, 6.1
 
 ```ts
-export const scheduleErrorKey = (status: number, code?: string, context?: "credential"): PlainMessageKey
+export const scheduleErrorKey = (status: number, code?: string): PlainMessageKey
 export const failureMessageKey = (code: string | null): PlainMessageKey // 未知のコードは schedule.failure.unknown
 ```
 
 | API の応答                       | 辞書のキー                          |
 | -------------------------------- | ----------------------------------- |
 | 400                              | `schedule.error.invalid`            |
-| 401（認証情報の登録時）          | `schedule.error.passwordRejected`   |
+| 401                              | `error.unauthorized`                |
 | 404                              | `schedule.error.notFound`           |
 | 409 `ScheduleCredentialRequired` | `schedule.error.credentialRequired` |
+| 409 `ScheduleReauthRequired`     | `schedule.error.reauthRequired`     |
 | 409 `ScheduleRunning`            | `schedule.error.running`            |
+| 409 その他                       | `error.conflict`                    |
 | 429                              | `schedule.error.tooMany`            |
 | 500                              | `schedule.error.server`             |
 

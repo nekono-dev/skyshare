@@ -184,9 +184,11 @@ const entryVisualImages: SourceImage[] | undefined = activeEntry?.visualUrl
       },
     ] // 1200×630
   : undefined
-const galleryImages = entryVisualImages ?? item.images
+const galleryImages = hasVideoDisplay ? [] : (entryVisualImages ?? item.images)
 const imagesInteractive = entryVisualImages === undefined
 ```
+
+- `hasVideoDisplay` は、動画のサムネイルまたは利用不可の動画の表示を出すときに真になる。entryの代表画像があるときは動画投稿でも代表画像を表示し、動画の表示は出さない（`hasVideoDisplay` は偽）。entryが無い動画投稿・利用不可の動画では、ギャラリーの画像は空配列になる。
 
 派生元が削除済みで添付画像の無いentryも、同じ規則で代表画像を表示する。
 

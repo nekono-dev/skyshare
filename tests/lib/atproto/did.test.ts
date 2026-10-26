@@ -72,6 +72,26 @@ describe("resolvePdsServiceForDid", () => {
         expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
     })
 
+    it("[atproto-access/4.4] fetch が例外を投げたら undefined", async () => {
+        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network")))
+
+        expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
+    })
+
+    it("[atproto-access/4.4] 応答本文の json() が失敗したら undefined", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => {
+                    throw new SyntaxError("bad json")
+                },
+            }),
+        )
+
+        expect(await resolvePdsServiceForDid("did:plc:abc")).toBeUndefined()
+    })
+
     it("正常なDID Documentからserviceを解決する", async () => {
         vi.stubGlobal(
             "fetch",

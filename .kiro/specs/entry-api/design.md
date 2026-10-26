@@ -18,7 +18,7 @@
 - entryの一覧の取得。
 - entryの作成対象とする投稿の選び方と、代表画像・見出し・説明文の生成。
 - 本文中のリンク・メンション・ハッシュタグの自動検出。
-- 動画の投稿。
+- 動画のアップロードと変換、動画の再生（video 系の仕様が担う。本仕様は先行アップロード済みの動画の参照を投稿に載せるだけを扱う）。
 
 ## Boundary Commitments
 
@@ -34,7 +34,7 @@
 - entryの一覧の取得。
 - entryの作成対象とする投稿の選び方と、代表画像・見出し・説明文の生成。
 - 本文中のリンク・メンション・ハッシュタグの自動検出。
-- 動画の投稿。
+- 動画のアップロードと変換、動画の再生（video 系の仕様が担う。本仕様は先行アップロード済みの動画の参照を投稿に載せるだけを扱う）。
 
 ### Allowed Dependencies
 
@@ -42,6 +42,7 @@
 - API の認証の再開（account-session）
 - lexicon（entry レコードの形式と見出し・説明文の上限）
 - 投稿の作成と下書きで共通のスレッドの上限（post-record、draft-api）
+- 先行アップロード済みの動画の参照と縦横比（video-upload、video-picker）
 
 ### Revalidation Triggers
 
@@ -158,7 +159,7 @@ type NewPostsBody = {
   heading?: string // 100バイトまで（UTF-8）。サーバは生成しない
   caption?: string // 300バイトまで（UTF-8）
 }
-// テキストのみ・リンクカード付き・画像付きの3分岐の union（各 .strict()）
+// テキストのみ・リンクカード付き・画像付き・動画付きの4分岐の union（各 .strict()）。動画付きは images・ogImage・ogMeta を持てない
 type EntryPostItem = {
   text?: string
   facets?: Facet[]
@@ -166,6 +167,8 @@ type EntryPostItem = {
   imagesMeta?: { width: number; height: number; alt?: string }[]
   ogImage?: Blob
   ogMeta?: { title: string; description: string; url: string; image?: string }
+  video?: VideoBlob // 先行アップロード済みの動画の blob 参照（JSON）。videoMeta と対
+  videoMeta?: { width: number; height: number; alt?: string }
   langs?: string[]
   selfLabels?: SelfLabel[]
   gate?: CommonGateSettings
@@ -174,7 +177,7 @@ type EntryPostItem = {
 
 - `formDataToObject` と `RequestBodyFieldKinds` で `posts[i][...]` を配列に復元する。空文字の `text` は未指定に正規化する。
 - 各投稿で、画像の枚数と `imagesMeta` の件数の一致と、facets の終端が本文のバイト長以内であることを検証する。全件の検証が通るまで書き込まない。
-- 埋め込みは画像を優先し、画像が1〜4枚なら `app.bsky.embed.images`、5〜10枚なら `app.bsky.embed.gallery`、画像が無くリンクカードがあれば `app.bsky.embed.external` にする。11枚以上はスキーマで400にする。
+- 埋め込みは動画を最優先とし（スキーマ上、動画は画像・リンクカードと排他で、`createVideoEmbed` が `app.bsky.embed.video` にする）、次に画像を優先し、画像が1〜4枚なら `app.bsky.embed.images`、5〜10枚なら `app.bsky.embed.gallery`、画像が無くリンクカードがあれば `app.bsky.embed.external` にする。11枚以上はスキーマで400にする。
 - `createEntry` が true で `visual` が無ければ400にする。投稿が画像を含むかは検証しない。
 - gate は公式の union 型を露出しない簡略化した `CommonGateSettings` で受け取り、`gate.ts` の builder が threadgate・postgate のレコード値に変換する。
 

@@ -126,7 +126,7 @@ export const extractUnsupportedEmbedVideo = (embed, repoDid): SourceVideo | unde
 
 - 再生URLは投稿レコードの埋め込みから組み立て、AppViewの表示用データに依存しない。投稿の直後にAppViewへ反映されていない期間があるため。
 - `TimelinePost` と `EntryPostView` に `video` と `unsupportedVideo` を持たせる。埋め込みは1種類のため、両方が同時に設定されることはない。
-- ゲスト表示のダミー投稿とサンプルページに動画の投稿を1件ずつ置く。
+- ゲスト表示のダミー投稿とサンプルページに、再生できる動画の投稿と再生できない動画の投稿（引用投稿の動画）をそれぞれ1件、計2件置く。
 
 #### D-2: 表示の切り替え
 

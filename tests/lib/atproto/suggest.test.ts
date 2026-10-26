@@ -68,6 +68,28 @@ describe("searchMentionSuggestions", () => {
         expect(timeoutSpy).toHaveBeenCalledWith(5000)
         timeoutSpy.mockRestore()
     })
+
+    it("[post-suggest/2.6] signalを渡した場合も、5秒のタイムアウトで打ち切られる", async () => {
+        const timeoutController = new AbortController()
+        const timeoutSpy = vi
+            .spyOn(AbortSignal, "timeout")
+            .mockReturnValue(timeoutController.signal)
+        try {
+            search.mockResolvedValue({ data: { actors: [] } } as any)
+            const caller = new AbortController()
+            await searchMentionSuggestions("a", { signal: caller.signal })
+            expect(timeoutSpy).toHaveBeenCalledWith(5000)
+            const passed = (search.mock.calls[0][1] as any)
+                .signal as AbortSignal
+            expect(passed).not.toBe(caller.signal)
+            expect(passed.aborted).toBe(false)
+            timeoutController.abort()
+            expect(passed.aborted).toBe(true)
+            expect(caller.signal.aborted).toBe(false)
+        } finally {
+            timeoutSpy.mockRestore()
+        }
+    })
 })
 
 describe("getTrendingTagSuggestions", () => {

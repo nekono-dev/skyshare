@@ -58,7 +58,7 @@ flowchart LR
   store --> cfTypes
   imageStaging --> cfTypes
   store --> credentialCrypto
-  store --> imageStaging
+  caller["呼び出し元（API・runner・executor）"] --> imageStaging
   imageStaging --> types
   credentialCrypto --> ext_secret["Worker シークレット"]
   store --> ext_d1["D1"]
@@ -83,10 +83,11 @@ flowchart LR
 sequenceDiagram
   participant store
   participant credentialCrypto
+  participant caller as 呼び出し元（API・runner・executor）
   participant imageStaging
   participant ext_d1 as D1
   participant ext_r2 as R2
-  store->>imageStaging: putImages
+  caller->>imageStaging: putImages
   imageStaging->>ext_r2: 画像の書き込み
   store->>credentialCrypto: encryptToken
   store->>ext_d1: insertSchedule
@@ -97,7 +98,7 @@ sequenceDiagram
   store->>ext_d1: deleteSchedule
   store->>ext_d1: updatePendingSchedule
   store->>ext_d1: deleteSchedulesExceptRunning
-  store->>imageStaging: getImage
+  caller->>imageStaging: getImage
   store->>ext_d1: claimDueSchedules
   alt 到来した予約がない
     ext_d1-->>store: 空の配列
@@ -107,7 +108,7 @@ sequenceDiagram
     store->>ext_d1: saveProgress
     store->>ext_d1: releaseSchedule
     store->>ext_d1: failSchedule/completeSchedule
-    store->>imageStaging: removeImages
+    caller->>imageStaging: removeImages
     store->>ext_d1: touchCredential
     store->>ext_d1: loadCredential
     store->>ext_d1: requeueStale

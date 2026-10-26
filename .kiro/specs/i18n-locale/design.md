@@ -46,6 +46,7 @@
 - 言語設定の保存先や形式を変えるとき（他タブへの追従に影響する）
 - ミドルウェアでの言語の決定を変えるとき（並行リクエスト間で言語が混ざらないことを再確認する）
 - 静的生成ページの出力を変えるとき（言語に依らず1種類を保つ）
+- ミドルウェアの合成順やキャッシュの対象を変えるとき（`entryPageCache` は表示言語をキャッシュキーに使うため、言語ごとに結果が分かれることを再確認する）
 
 ## Architecture
 
@@ -77,7 +78,7 @@ flowchart LR
 | `src/lib/i18n/applyDom.ts`                     | 静的DOMの文言・タイトルの書き換え  |
 | `src/lib/i18n/middleware.ts`                   | リクエストごとの表示言語の決定     |
 | `src/middleware.ts`                            | ミドルウェアの合成                 |
-| `src/layout/Baselayout.astro`                  | 言語属性と初期化スクリプト         |
+| `src/layout/Baselayout.astro`                  | 言語属性とストアの読み込み         |
 | `src/components/common/LocaleSelect/index.tsx` | 表示言語の選択欄                   |
 
 ## System Flows
@@ -95,7 +96,7 @@ sequenceDiagram
   im->>locale: resolveLocale
   locale->>locale: pickLocaleFromLanguages
   locale-->>im: DEFAULT_LOCALE か対応言語
-  store->>store: initLocaleFromBrowser
+  store->>store: syncLocaleFromBrowser
   store->>localeSetting: 保存値の読み取り
   alt 保存値が不正または未保存
     store->>locale: システム設定で決定
@@ -153,9 +154,11 @@ export const resolveLocale = (stored: string | null | undefined, languages: read
 let current: Locale = DEFAULT_LOCALE
 export const getLocale = () => current
 export const subscribe = (listener: () => void) => () => void
-export const initLocaleFromBrowser = () => void // 保存値とnavigator.languagesから決定
-export const setLocaleSetting = (setting: LocaleSetting) => void // 保存して反映
-// setCurrent: 値が変わるときだけ current → documentElement.lang → applyDomTranslations → 購読者へ通知
+export const syncLocaleFromBrowser = () => void // 保存値とnavigator.languagesから決定し、強制で反映
+export const setLocaleSetting = (setting: LocaleSetting) => void // 保存して反映（強制）
+// commit(locale, force): current → documentElement.lang → applyDomTranslations を更新し、値が変わったときだけ購読者へ通知
+//   force が偽で値が同じなら何もしない。force が真（初期化・ページ遷移後・設定変更）なら値が同じでも lang と静的DOMを更新する
+//   （サーバーが別の言語で描画している場合があるため）
 export const useLocale = () => useSyncExternalStore(subscribe, getLocale, () => DEFAULT_LOCALE)
 export const useT = () => useMemo(() => createTranslator(useLocale()), [locale])
 ```
@@ -163,7 +166,8 @@ export const useT = () => useMemo(() => createTranslator(useLocale()), [locale])
 - Astroの各islandは同じバンドルのモジュール状態を共有するため、1つのストアで全islandが同期する。
 - React は再描画のみで state とDOMを保持する。言語をコンポーネントの `key` に使って再マウントしない。
 - `.astro` が出力する静的部分は `data-i18n`（本文）・`data-i18n-aria-label`（属性）・`title[data-i18n-title]` を付け、`applyDomTranslations` が書き換える。Reactが管理するDOMには付けない。
-- `Baselayout.astro` は、初回ペイント前のインラインスクリプトで保存値を `lang` に反映し、`astro:page-load` ごとに `initLocaleFromBrowser()` を呼ぶ。`astro:before-swap` で遷移先文書へ `lang` を複製する。
+- `store.ts` はモジュールの読み込み時（ブラウザのみ）に `syncLocaleFromBrowser()` を呼び、自身で `astro:page-load` を購読して遷移のたびに再実行する。`Baselayout.astro` は `<script>import "@/lib/i18n/store"</script>` でストアを読み込むだけで、保存値を `lang` に反映する初回ペイント前のインラインスクリプトは持たない（初期描画後にストアが反映する）。
+- `Baselayout.astro` のインラインスクリプトは `astro:before-swap` で遷移先文書へ `lang` を複製する。
 - 他タブの変更は `storage` イベント（`key` が `uiLocale` または `null`）で受け、表示言語を再決定する。
 
 #### D-3: サーバーでの判定
@@ -171,12 +175,17 @@ export const useT = () => useMemo(() => createTranslator(useLocale()), [locale])
 **Requirements**: 4.1, 4.2, 4.3, 4.4
 
 ```ts
-export const onRequest = sequence(localeMiddleware, refreshBskySession)
+export const onRequest = sequence(
+  localeMiddleware,
+  entryPageCache,
+  refreshBskySession,
+)
 // localeMiddleware:
 //   context.isPrerendered なら locals.locale = DEFAULT_LOCALE
 //   それ以外は locals.locale = resolveLocale(undefined, parseAcceptLanguage(accept-language))
 ```
 
+- `entryPageCache`（Entry 詳細ページの SSR 結果の再利用）は表示言語をキャッシュキーに使うため、`localeMiddleware` の後に置く。
 - 表示言語はリクエストごとの `Astro.locals.locale` で受け渡し、モジュール状態を持たない。
 - `Baselayout.astro` は `<html lang={Astro.locals.locale}>` を出力する。静的生成ページは常に日本語で出力し、クライアントで切り替える。
 - 外部の翻訳ライブラリは使わず、型付き辞書と翻訳関数で実装する。

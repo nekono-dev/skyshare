@@ -68,7 +68,7 @@ const CODE_GRANT = {
 }
 
 describe("トークンの要求", () => {
-    test("oauth-client/3.2: nonce を求められた要求が、受け取った nonce を入れて1回だけやり直される", async () => {
+    test("[oauth-client/3.2] nonce を求められた要求が、受け取った nonce を入れて1回だけやり直される", async () => {
         const result = await pushAuthorizationRequest(
             {
                 as: AS,
@@ -95,7 +95,7 @@ describe("トークンの要求", () => {
         expect(pars[1]!.form).not.toHaveProperty("login_hint")
     })
 
-    test("oauth-client/3.4: 認可コードの交換で、DPoP 型で持ち主と2つのトークンがそろう応答だけがトークンとして返る", async () => {
+    test("[oauth-client/3.4] 認可コードの交換で、DPoP 型で持ち主と2つのトークンがそろう応答だけがトークンとして返る", async () => {
         expect(await tokens(CODE_GRANT)).toEqual({
             ok: true,
             tokens: {
@@ -139,7 +139,7 @@ describe("トークンの要求", () => {
         })
     })
 
-    test("oauth-client/3.5: 更新用トークンの失効が、再度の許可が必要な失敗として返る", async () => {
+    test("[oauth-client/3.5] 更新用トークンの失効が、再度の許可が必要な失敗として返る", async () => {
         const grant = { type: "refresh_token" as const, refreshToken: "OLD" }
         expect(
             await tokens(grant, tokenResponse({ error: "invalid_grant" }, 400)),
@@ -171,7 +171,7 @@ describe("トークンの要求", () => {
         expect(sent).not.toHaveBeenCalled()
     })
 
-    test("oauth-client/3.6: 認可とトークンの要求に失敗しても、トークン・認可コード・鍵がログに現れない", async () => {
+    test("[oauth-client/3.6] 認可とトークンの要求に失敗しても、トークン・認可コード・鍵がログに現れない", async () => {
         const logs: string[] = []
         for (const level of ["log", "warn", "error"] as const) {
             vi.spyOn(console, level).mockImplementation((...args) => {

@@ -83,12 +83,14 @@ sequenceDiagram
   participant db as [dbIndex]/[slug]
   participant ext_legacy as 旧バックエンド
   index->>page: 削除の依頼
-  alt cookie かセッションが無い
+  alt cookie が無い
     page-->>index: 401
+  else 本文か識別子が不正
+    page-->>index: 400
   else OAuth のセッション
     page-->>index: 403
-  else 識別子が不正
-    page-->>index: 400
+  else セッションが無い
+    page-->>index: 401
   else 検証を通過
     page->>pagedb: deletePageDbEntry
     pagedb->>ext_legacy: 削除

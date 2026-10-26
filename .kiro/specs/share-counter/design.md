@@ -148,7 +148,7 @@ export const resolveCounterReserve = (params: {
 }
 ```
 
-`ThreadSegmentForm` は、`index === 0` のときだけ `resolveCounterReserve` の結果を減算量とし、X・タイッツーのカウンタの上限と警告閾値を `140 - 減算量` にする。Blueskyのカウンタ（上限300）は常に先頭に置き、減算しない。
+`ThreadSegmentForm` は、`index === 0` のときだけ `resolveCounterReserve` の結果を減算量とし、X・タイッツーのカウンタの上限と警告閾値を `140 - 減算量` にする。Blueskyのカウンタ（上限300）は共有先カウンタの後ろに置き、減算しない。
 
 ## Error Handling
 

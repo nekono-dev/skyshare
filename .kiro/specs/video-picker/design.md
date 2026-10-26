@@ -150,13 +150,13 @@ export type VideoEntry = {
 }
 ```
 
-| 要素         | 内容                                                                                            |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| 追加ボタン   | `ImagePicker` と同じクラスとアイコン寸法。`<input type="file" accept={VIDEO_ACCEPT}>`           |
-| サムネイル   | `MediaThumb` に `thumbnailPreview` を `aspect-ratio: 1200 / 630; object-fit: cover` で表示      |
-| ボタン       | 取り外しは40pxの円、代替テキストは高さ36px。`border: 2px solid #fff`、hoverで `--color-bluesky` |
-| 進捗         | サムネイルの直下に `role="progressbar"` と状態の文言。失敗時は選び直しのボタン                  |
-| 代替テキスト | `ImageAltDialog` で入力する                                                                     |
+| 要素         | 内容                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 追加ボタン   | `ImagePicker` と同じクラスとアイコン寸法。`<input type="file" accept={VIDEO_ACCEPT}>`                                                                        |
+| サムネイル   | `MediaThumb` に `thumbnailPreview` を `aspect-ratio: 1200 / 630; object-fit: cover` で表示                                                                   |
+| ボタン       | 取り外しは `--size-button-md` の円、代替テキストは高さを同じ `--size-button-md`（40px、狭い幅では44px）。`border: 2px solid #fff`、hoverで `--color-bluesky` |
+| 進捗         | サムネイルの直下に `role="progressbar"` と状態の文言。失敗時は選び直しのボタン                                                                               |
+| 代替テキスト | `ImageAltDialog` で入力する                                                                                                                                  |
 
 - アップロードの進捗は最新の `valueRef.current` に `upload` だけを合成して通知し、アップロード中の調整や代替テキストを上書きしない。取り外し済みなら通知しない。
 - 取り外しはアップロード中なら `abort()` し、object URL を解放して `onChange(null)` する。
@@ -172,7 +172,7 @@ export const hasPendingVideo = (segments: SegmentState[]): boolean => pendingVid
 // submitDisabled = 既存条件 || hasPendingVideo(segments)。onSubmit の先頭でも再確認する
 ```
 
-- `imageEntry` か `ogpResult` があれば動画の追加ボタンを、`videoEntry` があれば画像とリンクカードのボタンを `disabled` にし、`title` に理由を出す。
+- `imageEntry`・`ogpResult` があるか、予約の日時を設定中（`scheduled`）なら動画の追加ボタンを、`videoEntry` があれば画像とリンクカードのボタンを `disabled` にし、`title` に理由を出す。
 - 理由（`video.submit.waitUpload` / `video.submit.removeFailed`）は、ツールバーの直後・プレビューの直前に `<p role="status" data-testid="video-submit-reason">` で表示する。
 - ドロップでは、ファイルの種別を `resolveVideoMimeType` で判定し、動画か画像が添付済みなら受け付けない。
 
