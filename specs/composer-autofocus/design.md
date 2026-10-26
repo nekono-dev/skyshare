@@ -25,7 +25,7 @@ type Props = {
 - `ThreadComposer` はマウント時の `useEffect` で、フォーム内の `[data-post-body-editor]` の先頭を `focus({ preventScroll: true })` で選ぶ。
 - `PostLauncher` の `Overlay` は開いたときにだけ内容をマウントするため、開くたびにマウントの効果が走り、閉じて開き直しても再びフォーカスされる。
 - `PostLauncher` だけが `autoFocus` を渡す。`PostPage` とタイムライン先頭のフォームは渡さないため、表示しただけで画面が動いたり、スマホのキーボードが出たりしない。
-- 本文の入力欄は無効（送信中など）のときは `contentEditable` が偽でフォーカスできないが、開いた直後は無効にならない。
+- 本文の入力欄は無効（送信中のとき）のときは `contentEditable` が偽でフォーカスできないが、開いた直後は無効にならない。
 
 ## 4. エラー処理
 
