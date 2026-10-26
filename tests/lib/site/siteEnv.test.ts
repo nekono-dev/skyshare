@@ -68,12 +68,23 @@ describe("resolveSiteConfig", () => {
         expect(broken.analyticsId).toBeNull()
     })
 
-    it("[site-config/1.5] 開発時は未設定の必須値をダミー値で補い、任意の値は使わない", () => {
+    it("[site-config/1.5] 開発時はサイトの設定を省略でき、必須の値はダミー値で補い、任意の値は補わず設定されていれば使う", () => {
         const config = resolveSiteConfig({}, true)
         expect(config.operator.email).toBe("operator@example.com")
         expect(config.privacy.enactedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
         expect(config.operator.blueskyHandle).toBeNull()
         expect(config.analyticsId).toBeNull()
+
+        const withOptional = resolveSiteConfig(
+            {
+                PUBLIC_OPERATOR_BLUESKY_HANDLE: "example.org",
+                PUBLIC_GA_MEASUREMENT_ID: "G-TEST123",
+            },
+            true,
+        )
+        expect(withOptional.operator.blueskyHandle).toBe("example.org")
+        expect(withOptional.analyticsId).toBe("G-TEST123")
+        expect(withOptional.operator.email).toBe("operator@example.com")
     })
 })
 

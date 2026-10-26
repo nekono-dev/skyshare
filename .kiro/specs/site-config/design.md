@@ -149,6 +149,7 @@ export const siteConfig: SiteConfig
 | `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | `YYYY-MM-DD`   |
 | `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | `G-` と英数字  |
 
+- 開発時（`dev` が真）は、必須の値を省略してよい。省略した値は `DEV_DEFAULTS` のダミー値で補う。任意の値はダミーで補わず、設定されていて形式が正しければ本番と同じく使う（未設定か形式違いなら null）。
 - `siteEnv.ts` は `import.meta.env` に依存せず、`astro.config.mjs` から読み込める。
 - 測定 ID は形式を検査した値だけを使うため、`AnalyticsTag` は GA の初期化スクリプトにそのまま埋め込める。
 - コード・テンプレート・ワークフローに運用者固有の値を書かない。直書きの検出をテストで行う（lexicon の NSID は対象外）。
