@@ -214,7 +214,7 @@ OS のパッケージ（フォント・ffmpeg・Playwright のブラウザが使
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にしている）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にし、セッション開始時のフック `.claude/hooks/install-brw.sh` が導入する。同フックは `brw` コマンドを `~/.local/bin` に置き、環境変数 `BRW_PLUGIN_DIR` を以降のコマンドへ渡す）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 

@@ -59,4 +59,17 @@ test.describe("entry詳細ページのスレッド表示", () => {
             page.getByRole("heading", { name: "Entry Not Found" }),
         ).toBeVisible()
     })
+
+    test("[entry-detail/4.1] 配備先（PDS）を解決できないentryの詳細ページを開くと、500のエラー表示になる", async ({
+        page,
+    }) => {
+        // 存在しない DID は PLC ディレクトリで引けず、PDS の解決に失敗する
+        const response = await page.goto(
+            "/entries/did:plc:aaaaaaaaaaaaaaaaaaaaaaaa@3kabcdefghij2/",
+        )
+        expect(response?.status()).toBe(500)
+        await expect(
+            page.getByRole("heading", { name: "Internal Server Error" }),
+        ).toBeVisible()
+    })
 })

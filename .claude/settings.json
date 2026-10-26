@@ -1,15 +1,4 @@
 {
-  "extraKnownMarketplaces": {
-    "nekono-dev": {
-      "source": {
-        "source": "github",
-        "repo": "nekono-dev/claude-plugins"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "branch-release-workflow@nekono-dev": true
-  },
   "hooks": {
     "SessionStart": [
       {
@@ -20,10 +9,25 @@
           },
           {
             "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/install-brw.sh"
+          },
+          {
+            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
           }
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "branch-release-workflow@nekono-dev": true
+  },
+  "extraKnownMarketplaces": {
+    "nekono-dev": {
+      "source": {
+        "source": "github",
+        "repo": "nekono-dev/branch-release-workflow"
+      }
+    }
   }
 }

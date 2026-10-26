@@ -68,6 +68,68 @@ const CODE_GRANT = {
 }
 
 describe("トークンの要求", () => {
+    test("[oauth-client/3.1,3.3] 事前送信・認可コードの交換・更新・取消のどれも提供され、認可サーバーへの要求のすべてに DPoP の証明が付く", async () => {
+        const client = await loadClientKey(await createTestClientSecret())
+        const dpop = await createDpopSession(await generateEcJwk())
+        const common = { client, clientId: clientIdFor(ORIGIN), dpop, now: NOW }
+
+        const pushed = await pushAuthorizationRequest(
+            {
+                ...common,
+                as: AS,
+                redirectUri: `${ORIGIN}/oauth/callback/`,
+                scope: "atproto",
+                state: "STATE",
+                verifier: "VERIFIER-VALUE",
+            },
+            world.fetch,
+        )
+        expect(pushed.ok).toBe(true)
+
+        for (const grant of [
+            CODE_GRANT,
+            { type: "refresh_token" as const, refreshToken: "REFRESH-OLD" },
+        ]) {
+            const result = await requestTokens(
+                {
+                    ...common,
+                    tokenEndpoint: AS.tokenEndpoint,
+                    issuer: AS.issuer,
+                    grant,
+                },
+                world.fetch,
+            )
+            expect(result.ok).toBe(true)
+        }
+        const grantTypes = world.requests
+            .filter(r => r.url === AS.tokenEndpoint)
+            .map(r => r.form.grant_type)
+        expect(grantTypes).toContain("authorization_code")
+        expect(grantTypes).toContain("refresh_token")
+
+        await revokeToken(
+            {
+                ...common,
+                revocationEndpoint: AS.revocationEndpoint,
+                issuer: AS.issuer,
+                refreshToken: "REFRESH-TOKEN-VALUE",
+            },
+            world.fetch,
+        )
+
+        // 事前送信・交換・更新・取消のそれぞれが、nonce を求められたやり直しも含めて証明を付けて送られる
+        const urls = new Set(world.requests.map(r => r.url))
+        expect(urls).toEqual(
+            new Set([AS.parEndpoint, AS.tokenEndpoint, AS.revocationEndpoint!]),
+        )
+        for (const request of world.requests) {
+            expect(request.dpop).toBeDefined()
+            const { header, payload } = decodeJwt(request.dpop!)
+            expect(header.typ).toBe("dpop+jwt")
+            expect(payload).toMatchObject({ htm: "POST", htu: request.url })
+        }
+    })
+
     test("[oauth-client/3.2] nonce を求められた要求が、受け取った nonce を入れて1回だけやり直される", async () => {
         const result = await pushAuthorizationRequest(
             {

@@ -85,6 +85,18 @@ let metaDescription = ""
 let notFoundReasonKey: PlainMessageKey = "entry.detail.error404Body"
 let sourcePostAvailable = true
 
+// フロントマターから数値を return すると Astro がエラーにするため、
+// 検証の失敗はこの例外で catch 節へ渡し、ステータスと理由を設定して描画する。
+class EntryPageError extends Error {
+    constructor(
+        readonly status: number,
+        readonly reasonKey: PlainMessageKey,
+        message: string,
+    ) {
+        super(message)
+    }
+}
+
 // 入力パラメータ検証→レコード取得→表示用整形の順で段階的に失敗点を切り分ける。
 if (typeof slug === "undefined") {
     statusCode = 404
@@ -102,13 +114,7 @@ if (typeof slug === "undefined") {
             const did = locator.actor
             const pdsService = await resolvePdsServiceForDid(did)
             if (!pdsService) {
-                statusCode = 500
-                console.warn("entries/[slug] SSR failed", {
-                    reason: "failed to resolve pds endpoint",
-                    slug,
-                    did,
-                })
-                return 500
+                throw new EntryPageError(500, "entry.detail.error404Body", "failed to resolve pds endpoint")
             }
             console.debug(`resolved PDS service for DID ${did}: ${pdsService}`)
 
@@ -132,9 +138,7 @@ if (typeof slug === "undefined") {
                       : ""
 
             if (!sourceUriFromEntry) {
-                statusCode = 404
-                notFoundReasonKey = "entry.detail.errorInvalid"
-                return 404
+                throw new EntryPageError(404, "entry.detail.errorInvalid", "entry has no source uri")
             }
             const parsedSourceUri = parseAtUri(sourceUriFromEntry)
 
@@ -145,9 +149,7 @@ if (typeof slug === "undefined") {
                     sourceWebUrl = bskyPostUrlgen(did, parsedSourceUri.rkey)
                     break
                 default:
-                    statusCode = 500
-                    notFoundReasonKey = "entry.detail.errorInvalid"
-                    return 500
+                    throw new EntryPageError(500, "entry.detail.errorInvalid", "unsupported source collection")
             }
 
             createdAt = typeof entry.createdAt === "string" ? entry.createdAt : ""
@@ -220,9 +222,14 @@ if (typeof slug === "undefined") {
             // entry レコード自体が見つからない場合（削除済み等）は RecordNotFound として
             // 404 を返す。source の Bluesky 投稿が見つからない場合は上の getPosts 分岐で
             // sourcePostAvailable = false として処理するため、ここには到達しない。
-            statusCode = resolveXrpcStatus(error)
-            if (statusCode === 404) {
-                notFoundReasonKey = "entry.detail.error404Body"
+            if (error instanceof EntryPageError) {
+                statusCode = error.status
+                notFoundReasonKey = error.reasonKey
+            } else {
+                statusCode = resolveXrpcStatus(error)
+                if (statusCode === 404) {
+                    notFoundReasonKey = "entry.detail.error404Body"
+                }
             }
             console.warn("entries/[slug] SSR failed", {
                 reason: error instanceof Error ? error.message : String(error),
