@@ -1,7 +1,9 @@
 #!/bin/bash
-# cc-sdd（仕様駆動開発フレームワーク）の skill とテンプレートをセッション開始時に導入する。
-# 生成物（.claude/skills/kiro-*・.kiro/settings/）は gitignore 対象で、リポジトリには含めない。
-# 固定バージョンが導入済みなら何もしない。バージョンを上げるときは CC_SDD_VERSION だけを変える。
+# cc-sdd（仕様駆動開発フレームワーク）の skill をセッション開始時に導入する。
+# - skill（.claude/skills/kiro-*）は gitignore 対象で、固定バージョンから毎回同じ内容を導入する
+# - CLAUDE.md と .kiro/settings（テンプレート）は cc-sdd の標準を追跡し、このフックは上書きしない
+#   （テンプレートは調整して使う前提のため。無いときだけ補う）
+# バージョンを上げるときは CC_SDD_VERSION を変え、CLAUDE.md と .kiro/settings の差分は手で取り込む。
 set -euo pipefail
 
 CC_SDD_VERSION="3.1.0"
@@ -9,25 +11,29 @@ CC_SDD_LANG="ja"
 
 cd "$CLAUDE_PROJECT_DIR"
 
-MARKER=".kiro/settings/.cc-sdd-version"
+MARKER=".claude/skills/.cc-sdd-version"
 if [ -f "$MARKER" ] && [ "$(cat "$MARKER")" = "$CC_SDD_VERSION" ] && [ -d .claude/skills/kiro-spec-init ]; then
   exit 0
 fi
 
-# 旧バージョンの残骸（廃止された skill 等）を残さないため、生成物を消してから入れ直す。
-# 追跡対象の .kiro/specs・.kiro/steering には触れない
-rm -rf .claude/skills/kiro-* .kiro/settings
+# インストーラーは CLAUDE.md などを書き換えるため、一時ディレクトリへ導入して skill だけを持ってくる
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
 
-# cc-sdd は追跡対象の CLAUDE.md（プロジェクト規約）を雛形で上書きする。--overwrite skip は新規ファイルまで
-# 全て飛ばす（50件中0件書き込み）ため使えない。退避して導入後に復元する
-CLAUDE_MD_BACKUP="$(mktemp)"
-cp CLAUDE.md "$CLAUDE_MD_BACKUP"
-restore_claude_md() { cp "$CLAUDE_MD_BACKUP" CLAUDE.md; rm -f "$CLAUDE_MD_BACKUP"; }
-trap restore_claude_md EXIT
-
-if ! npx --yes "cc-sdd@${CC_SDD_VERSION}" --claude-skills --lang "$CC_SDD_LANG" --overwrite force --yes >&2; then
+if ! (cd "$WORK" && npx --yes "cc-sdd@${CC_SDD_VERSION}" --claude-skills --lang "$CC_SDD_LANG" --overwrite force --yes >&2); then
   echo "cc-sdd ${CC_SDD_VERSION} の導入に失敗しました。ネットワークと npm レジストリへの到達性を確認してください" >&2
   exit 1
+fi
+
+# 旧バージョンの残骸（廃止された skill）を残さないため、kiro-* を消してから置き換える
+mkdir -p .claude/skills
+rm -rf .claude/skills/kiro-*
+cp -r "$WORK"/.claude/skills/kiro-* .claude/skills/
+
+# テンプレートは追跡対象。無いときだけ補う
+if [ ! -d .kiro/settings ]; then
+  mkdir -p .kiro
+  cp -r "$WORK/.kiro/settings" .kiro/settings
 fi
 
 echo "$CC_SDD_VERSION" > "$MARKER"

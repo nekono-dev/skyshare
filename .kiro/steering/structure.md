@@ -50,7 +50,7 @@
 
 **場所**: `.kiro/specs/<機能名>/`、`.kiro/steering/`
 **目的**: cc-sdd の仕様（requirements・design・tasks と `spec.json`）と、プロジェクトの規約
-**補足**: `.kiro/settings/` は cc-sdd の導入物で、gitignore 済み（編集しても保持されない）
+**補足**: `.kiro/settings/` は cc-sdd のテンプレート。追跡し、調整してよい
 
 ## lib と util の振り分け（ポータビリティテスト）
 
@@ -68,6 +68,10 @@
 - TypeScript の変数・関数・メソッド: キャメルケース
 - TypeScript の型・インターフェース: パスカルケース
 - import のパスエイリアス: `@/` は `src/` を指す
+
+## 作業の対象
+
+- 特に指示がない場合、作業は `src/` 配下のコードを対象とする。`_legacy/` を対象とする作業は明示的に示し、曖昧な場合は確認する
 
 ## 依存の規則
 

@@ -31,12 +31,11 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## 仕様駆動開発（cc-sdd）の準備
 
-仕様駆動開発には [cc-sdd](https://github.com/gotalab/cc-sdd) を使う。`/kiro-*` の skill と、仕様のテンプレート（`.kiro/settings/`）はリポジトリに含めず、セッション開始時のフック `.claude/hooks/install-cc-sdd.sh` が固定バージョンで導入する（`.claude/settings.json` の `SessionStart`）。
+仕様駆動開発には [cc-sdd](https://github.com/gotalab/cc-sdd) を使う。`/kiro-*` の skill はリポジトリに含めず、セッション開始時のフック `.claude/hooks/install-cc-sdd.sh` が固定バージョンで導入する（`.claude/settings.json` の `SessionStart`）。
 
-- 導入済みで版が一致していれば何もしない。導入物は `.gitignore` 対象（`.claude/skills/kiro-*`・`.kiro/settings/`）で、仕様（`.kiro/specs/`）と規約（`.kiro/steering/`）は追跡する
-- 版を上げるときは、`install-cc-sdd.sh` の `CC_SDD_VERSION` だけを変える。次のセッションで入れ直す
-- cc-sdd のインストーラーは、プロジェクトの `CLAUDE.md` を雛形で上書きする。フックは導入の前後で `CLAUDE.md` を退避・復元する（`--overwrite skip` は新規ファイルまで飛ばすため使えない）
-- `.kiro/settings/templates/` は導入のたびに作り直される。テンプレートの調整は、フックのあとに適用する仕組みを足すか、cc-sdd 側へ反映する
+- 導入済みで版が一致していれば何もしない。skill（`.claude/skills/kiro-*`）は `.gitignore` 対象
+- `CLAUDE.md`・`.kiro/settings/`（テンプレート）・`.kiro/steering/`・`.kiro/specs/` は追跡する。テンプレートは npm のパッケージの静的なファイルで、Claude が毎回生成するものではない。フックは上書きしないので、調整は保たれる
+- 版を上げるときは、フックの `CC_SDD_VERSION` を変える。skill は次のセッションで入れ直され、`CLAUDE.md` と `.kiro/settings/` の差分は手で取り込む
 - 仕様・規約・設計資料の整形は `npm run test:docs` で検査する（修正は `npx prettier --write .kiro/specs .kiro/steering docs`）
 
 # 実行方法

@@ -2,7 +2,7 @@
 
 ## 仕様駆動開発（cc-sdd）
 
-仕様駆動開発は [cc-sdd](https://github.com/gotalab/cc-sdd) に従う。skill（`/kiro-*`）は `.claude/skills/` に、テンプレートは `.kiro/settings/` に、セッション開始時のフック `.claude/hooks/install-cc-sdd.sh` が固定バージョンで導入する（リポジトリには含めない）。
+仕様駆動開発は [cc-sdd](https://github.com/gotalab/cc-sdd) に従う。skill（`/kiro-*`）は `.claude/skills/` に、テンプレートは `.kiro/settings/` に、セッション開始時のフック `.claude/hooks/install-cc-sdd.sh` が固定バージョンで導入する（skill はリポジトリに含めない）。`CLAUDE.md` と `.kiro/settings/`（テンプレート）は cc-sdd の標準を追跡し、プロジェクトに合わせて調整してよい。
 
 | 成果物                                                          | 場所                                             |
 | --------------------------------------------------------------- | ------------------------------------------------ |
