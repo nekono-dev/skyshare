@@ -53,3 +53,27 @@ test("[composer-autofocus/AC-2] 閉じて開き直しても入力欄にフォー
     await launcher.click()
     await expect(editorLocator(page)).toBeFocused()
 })
+
+test("[composer-autofocus/AC-3] スクロールした状態で開いても、背面の固定位置と閉じた後のスクロール位置が変わらない", async ({
+    page,
+}) => {
+    // スクロールできる高さを確保してから、下へスクロールする
+    await page.evaluate(() => {
+        document.body.style.minHeight = "3000px"
+        window.scrollTo(0, 400)
+    })
+    const before = await page.evaluate(() => window.scrollY)
+    expect(before).toBeGreaterThan(0)
+
+    await page.getByRole("button", { name: "新規投稿" }).first().click()
+    await expect(editorLocator(page)).toBeFocused()
+    // 開いている間は背面が固定され window.scrollY は 0 になるため、固定位置（body の top）で見る
+    expect(await page.evaluate(() => document.body.style.top)).toBe(
+        `-${before}px`,
+    )
+
+    // 閉じたあとは、開く前のスクロール位置へ戻る
+    await page.getByRole("button", { name: "キャンセル" }).click()
+    await expect(editorLocator(page)).toHaveCount(0)
+    expect(await page.evaluate(() => window.scrollY)).toBe(before)
+})
