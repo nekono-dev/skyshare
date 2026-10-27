@@ -32,7 +32,7 @@
 
 ## Existing Spec Updates
 
-- [ ] privacy-policy -- 収集する情報・利用目的・保持期間に、匿名のアンケート回答を追記する。回答の取り消しができないこと、did は回答と結びつかないハッシュで重複の判定にだけ使うことを明記する。Dependencies: survey-api
+- [ ] privacy-policy -- 収集する情報・利用目的・保持期間に、匿名のアンケート回答を追記する。回答の取り消しができないこと、did は回答と結びつかないハッシュで重複の判定にだけ使うこと、端末（localStorage）に回答済みの旗とアカウントの識別子を保持することを明記する。Dependencies: survey-api
 
 ## Direct Implementation Candidates
 
@@ -40,8 +40,8 @@
 
 ## Specs (dependency order)
 
-- [ ] choice-question -- 単一選択と複数選択を切り替えられる、選択式の質問の共通 UI 部品。Dependencies: none
+- [x] choice-question -- 単一選択と複数選択を切り替えられる、選択式の質問の共通 UI 部品。Dependencies: none
 - [x] survey-definition -- アンケートの設定の形式・検証・期間と保持期限の判定・多言語の文言・変数からの静的ファイルの生成と CI への組み込み。Dependencies: none
-- [ ] survey-api -- 回答の保存（D1 の 2 テーブル）・重複の防止・日次の削除。Dependencies: survey-definition
-- [ ] survey-form -- 起動時の判定・回答必須のダイアログ・端末側の回答済みの記録。Dependencies: survey-definition, survey-api, choice-question
-- [ ] survey-operation -- 施行ワークフロー（聞き取り・翻訳・登録・期限切れの変数の削除）。Dependencies: survey-definition, survey-api
+- [x] survey-api -- 回答の保存（D1 の 2 テーブル）・重複の防止・日次の削除。Dependencies: survey-definition
+- [x] survey-form -- 起動時の判定・回答必須のダイアログ・端末側の回答済みの記録。Dependencies: survey-definition, survey-api, choice-question
+- [x] survey-operation -- 施行ワークフロー（聞き取り・翻訳・登録・期限切れの変数の削除）。Dependencies: survey-definition, survey-api

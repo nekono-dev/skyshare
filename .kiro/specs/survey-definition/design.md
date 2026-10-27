@@ -180,22 +180,22 @@ sequenceDiagram
 
 ## Components and Interfaces
 
-| Component            | Domain/Layer | Intent                             | Req Coverage                         | Key Dependencies (P0/P1)                | Contracts |
-| -------------------- | ------------ | ---------------------------------- | ------------------------------------ | --------------------------------------- | --------- |
-| SurveyDefinition     | 共有ロジック | 設定の形式・検証・文言の選択       | 1.1–1.10, 2.1–2.5, 3.1–3.3, 4.4, 5.6 | `LOCALES`（P0）, Zod（P0）              | Service   |
-| SurveyPeriod         | 共有ロジック | 現在のアンケートと保持期限の判定   | 3.4–3.8                              | SurveyDefinition（P0）                  | Service   |
-| SurveyConfigLoader   | 取得         | 配信用の設定の取得。失敗は「なし」 | 4.1, 4.2                             | SurveyDefinition（P0）, `ASSETS`（P1）  | Service   |
-| SurveyConfigRenderer | 生成         | 変数から静的ファイルを生成         | 4.3, 4.4, 5.1–5.4, 5.6, 6.4, 6.5     | SurveyDefinition（P0）, `tsx`（P1）     | Batch     |
-| BuildIntegration     | ビルド・CI   | 生成と旗をビルドと CI に組み込む   | 4.1, 4.3, 5.5, 6.1–6.5               | SurveyConfigRenderer（P0）, Astro（P0） | Batch     |
+| Component            | Domain/Layer | Intent                             | Req Coverage                                                                                        | Key Dependencies (P0/P1)                | Contracts |
+| -------------------- | ------------ | ---------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------- | --------- |
+| SurveyDefinition     | 共有ロジック | 設定の形式・検証・文言の選択       | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 4.4, 5.6 | `LOCALES`（P0）, Zod（P0）              | Service   |
+| SurveyPeriod         | 共有ロジック | 現在のアンケートと保持期限の判定   | 3.4, 3.5, 3.6, 3.7, 3.8                                                                             | SurveyDefinition（P0）                  | Service   |
+| SurveyConfigLoader   | 取得         | 配信用の設定の取得。失敗は「なし」 | 4.1, 4.2                                                                                            | SurveyDefinition（P0）, `ASSETS`（P1）  | Service   |
+| SurveyConfigRenderer | 生成         | 変数から静的ファイルを生成         | 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.6, 6.4, 6.5                                                         | SurveyDefinition（P0）, `tsx`（P1）     | Batch     |
+| BuildIntegration     | ビルド・CI   | 生成と旗をビルドと CI に組み込む   | 4.1, 4.3, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5                                                              | SurveyConfigRenderer（P0）, Astro（P0） | Batch     |
 
 ### 共有ロジック
 
 #### SurveyDefinition
 
-| Field        | Detail                                           |
-| ------------ | ------------------------------------------------ |
-| Intent       | 設定の形式を定め、外部入力を検証して型付きで返す |
-| Requirements | 1.1–1.10, 2.1–2.5, 3.1, 3.2, 3.3, 4.4, 5.6       |
+| Field        | Detail                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| Intent       | 設定の形式を定め、外部入力を検証して型付きで返す                                                    |
+| Requirements | 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 4.4, 5.6 |
 
 **Responsibilities & Constraints**
 
@@ -456,7 +456,7 @@ export const renderSurveyConfig: (
 
 ### Unit Tests
 
-- SurveyDefinition: 有効な設定が通る。識別子の重複・不正な文字、選択肢 1 つ、`decline` が 2 つ、`single` の `maxSelect`、`maxSelect` の範囲外、定義にない項目、質問 0 件が拒否される（1.1–1.10）。各言語の欠落・空白・余計な言語が拒否され、`LocalizedText` のキーが `LOCALES` と一致する（2.1–2.5）。終了 ≦ 開始と期間の重複が拒否され、隣接は通る（3.1–3.3）。不正の報告に入力の値が含まれない（5.6）。
+- SurveyDefinition: 有効な設定が通る。識別子の重複・不正な文字、選択肢 1 つ、`decline` が 2 つ、`single` の `maxSelect`、`maxSelect` の範囲外、定義にない項目、質問 0 件が拒否される（1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10）。各言語の欠落・空白・余計な言語が拒否され、`LocalizedText` のキーが `LOCALES` と一致する（2.1, 2.2, 2.3, 2.4, 2.5）。終了 ≦ 開始と期間の重複が拒否され、隣接は通る（3.1, 3.2, 3.3）。不正の報告に入力の値が含まれない（5.6）。
 - SurveyPeriod: `opensAt` ちょうど・`closesAt` の直前と直後で現在のアンケートが変わる（3.4, 3.5）。保持期限が通常の月・1/31・うるう年の 1/29・12 月の繰り上がりで正しい。期限切れの判定が期限の直前・ちょうど・直後で変わる（3.6, 3.7, 3.8）。
 - SurveyConfigLoader: 旗が偽のとき取得の関数が呼ばれず「なし」。旗が真で 404・通信エラー・壊れた JSON・検証の失敗が「なし」、有効なら設定が返る。サーバー側も `ASSETS` のモックで同様に確認する（4.1, 4.2）。
 

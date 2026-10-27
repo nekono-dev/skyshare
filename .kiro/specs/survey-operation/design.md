@@ -41,14 +41,14 @@
 
 ### Allowed Dependencies
 
-- survey-definition の `parseSurveyConfig`・`retentionDeadlines`・`retentionExpired`・`SurveyConfig`・`Survey`、`src/lib/i18n/locale.ts` の `LOCALES`（型・定数のみ。`@atproto/*` に依存しない）。
+- survey-definition の `parseSurveyConfig`・`retentionExpired`・`SurveyConfig`・`Survey`、`src/lib/i18n/locale.ts` の `LOCALES`（型・定数のみ。`@atproto/*` に依存しない）。
 - `hack/sync-deploy-env.mjs` の `repositoryFromRemote`・`parseDeployEnv`（読み取りのみ）、`wrangler.template.jsonc` の D1 の名前（読み取りのみ）。
 - 手元で認証済みの `gh` と `wrangler`、`tsx`（既存の devDependency）、`node:util` の `parseArgs`。
 - 依存してはならないもの: CI のワークフローでの実行、`GITHUB_TOKEN`、Worker のコード、D1 への書き込み・削除の文。
 
 ### Revalidation Triggers
 
-- survey-definition のスキーマ・識別子の規則・`retentionDeadlines` の算出の変更（追加の検証と除去の判定を再確認する）。
+- survey-definition のスキーマ・識別子の規則・保持期限の判定（`retentionExpired`）の変更（追加の検証と除去の判定を再確認する）。
 - survey-api の表名・`survey_id` 列・D1 の名前の規則の変更（`SurveyRemote` の問い合わせを再確認する）。
 - 設定の元の名前 `SURVEY_CONFIG`、変数の容量の上限の変更。
 - `gh variable`・`wrangler d1 execute` の出力形式の変更。
@@ -246,14 +246,14 @@ flowchart TD
 
 ## Components and Interfaces
 
-| Component           | Domain/Layer | Intent                                   | Req Coverage                                                       | Key Dependencies (P0/P1)                                                     | Contracts      |
-| ------------------- | ------------ | ---------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- | -------------- |
-| SurveyConfigEditor  | 規則（純粋） | 追加・除去の変換、識別子、正規化、容量   | 1.4, 2.5, 3.1–3.7, 3.9, 4.2, 5.1, 7.4                              | survey-definition（P0）、`LOCALES`（P0）                                     | Service        |
-| SurveyLifecycle     | 規則（純粋） | 段階の判定と、除去の候補・判定           | 4.1, 5.1–5.5, 5.9, 5.10                                            | survey-definition の `retentionExpired`・`retentionDeadlines`（P0）          | Service        |
-| SurveyRemote        | 入出力       | `gh`・`wrangler` の呼び出しと失敗の分類  | 3.8, 5.4–5.6, 5.8, 7.1–7.3                                         | `gh`（P0）、`wrangler`（P0）、`repositoryFromRemote`・`parseDeployEnv`（P1） | Service, Batch |
-| SurveyCli           | 統合         | 引数・適用の流れ・1 行の要約・終了コード | 1.5, 3.1, 3.2, 3.4, 3.8, 4.1–4.4, 5.7–5.10, 6.3, 7.2, 7.3, 8.1–8.4 | 上の 3 部品（P0）                                                            | Batch          |
-| SurveyRunSkill      | 手順         | 聞き取り・翻訳・確認・登録・除去の手順   | 1.1–1.5, 2.1–2.5, 7.4                                              | SurveyCli（P0）                                                              | —              |
-| ReleaseWorkflowRule | 手順         | main へ取り込む前に除去を行う規則        | 6.1–6.5                                                            | SurveyCli（P0）、SurveyRunSkill（P1）                                        | —              |
+| Component           | Domain/Layer | Intent                                   | Req Coverage                                                                                        | Key Dependencies (P0/P1)                                                     | Contracts      |
+| ------------------- | ------------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------- |
+| SurveyConfigEditor  | 規則（純粋） | 追加・除去の変換、識別子、正規化、容量   | 1.4, 2.5, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.9, 4.2, 5.1, 7.4                                     | survey-definition（P0）、`LOCALES`（P0）                                     | Service        |
+| SurveyLifecycle     | 規則（純粋） | 段階の判定と、除去の候補・判定           | 4.1, 5.1, 5.2, 5.3, 5.4, 5.5, 5.9, 5.10                                                             | survey-definition の `retentionExpired`（P0）                                | Service        |
+| SurveyRemote        | 入出力       | `gh`・`wrangler` の呼び出しと失敗の分類  | 3.8, 5.4, 5.5, 5.6, 5.8, 7.1, 7.2, 7.3                                                              | `gh`（P0）、`wrangler`（P0）、`repositoryFromRemote`・`parseDeployEnv`（P1） | Service, Batch |
+| SurveyCli           | 統合         | 引数・適用の流れ・1 行の要約・終了コード | 1.5, 3.1, 3.2, 3.4, 3.8, 4.1, 4.2, 4.3, 4.4, 5.7, 5.8, 5.9, 5.10, 6.3, 7.2, 7.3, 8.1, 8.2, 8.3, 8.4 | 上の 3 部品（P0）                                                            | Batch          |
+| SurveyRunSkill      | 手順         | 聞き取り・翻訳・確認・登録・除去の手順   | 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 7.4                                               | SurveyCli（P0）                                                              | —              |
+| ReleaseWorkflowRule | 手順         | main へ取り込む前に除去を行う規則        | 6.1, 6.2, 6.3, 6.4, 6.5                                                                             | SurveyCli（P0）、SurveyRunSkill（P1）                                        | —              |
 
 ### 規則
 
@@ -582,7 +582,7 @@ export const run: (
 ### Integration Tests
 
 - SurveyCli と偽の SurveyRemote: `add` の新規・更新・変更なしで書き込みが 1 回・1 回・0 回、`--dry-run` で 0 回（3.1, 3.4, 8.4）。未設定からの追加（3.8）。
-- SurveyCli: `prune` で候補なしのとき `hasRows` が呼ばれず書き込みが 0 回（5.7, 5.10）。本番だけ 0 件・develop に行あり・確認不能のそれぞれで除かれない（5.3–5.5）。除いて残りがあれば書き込み、0 件なら削除（5.8）。繰り返しで 2 回目は書き込みなし（5.9）。
+- SurveyCli: `prune` で候補なしのとき `hasRows` が呼ばれず書き込みが 0 回（5.7, 5.10）。本番だけ 0 件・develop に行あり・確認不能のそれぞれで除かれない（5.3, 5.4, 5.5）。除いて残りがあれば書き込み、0 件なら削除（5.8）。繰り返しで 2 回目は書き込みなし（5.9）。
 - SurveyCli: 成功の出力が 1 行で本文・認証情報を含まず、失敗が `error:` の 1 行で終了コード 1（8.1, 8.2, 8.3, 7.2）。`status` が書き込みと D1 への問い合わせをしない（4.4）。
 - SurveyRemote: 固定の出力例から、変数が未設定の判別・認証切れの判別・D1 の JSON の解析（進捗行の混入を含む）・`wrangler` の失敗が `unknown` になること（3.8, 5.4, 7.3）。
 - スキルと規則: `survey-run/SKILL.md` が存在し `git check-ignore` の対象外であること、`workflow.md` に取り込み前の `prune` の規則があること（6.1, 6.5）。
