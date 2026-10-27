@@ -41,7 +41,7 @@
 ## Specs (dependency order)
 
 - [ ] choice-question -- 単一選択と複数選択を切り替えられる、選択式の質問の共通 UI 部品。Dependencies: none
-- [ ] survey-definition -- アンケートの設定の形式・検証・期間と保持期限の判定・多言語の文言・変数からの静的ファイルの生成と CI への組み込み。Dependencies: none
+- [x] survey-definition -- アンケートの設定の形式・検証・期間と保持期限の判定・多言語の文言・変数からの静的ファイルの生成と CI への組み込み。Dependencies: none
 - [ ] survey-api -- 回答の保存（D1 の 2 テーブル）・重複の防止・日次の削除。Dependencies: survey-definition
 - [ ] survey-form -- 起動時の判定・回答必須のダイアログ・端末側の回答済みの記録。Dependencies: survey-definition, survey-api, choice-question
 - [ ] survey-operation -- 施行ワークフロー（聞き取り・翻訳・登録・期限切れの変数の削除）。Dependencies: survey-definition, survey-api
