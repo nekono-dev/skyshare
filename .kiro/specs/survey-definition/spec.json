@@ -1,16 +1,16 @@
 {
   "feature_name": "survey-definition",
   "created_at": "2026-10-27T15:13:03Z",
-  "updated_at": "2026-10-27T19:50:24Z",
+  "updated_at": "2026-10-27T19:52:33Z",
   "language": "ja",
-  "phase": "requirements-generated",
+  "phase": "design-generated",
   "approvals": {
     "requirements": {
       "generated": true,
       "approved": true
     },
     "design": {
-      "generated": false,
+      "generated": true,
       "approved": false
     },
     "tasks": {
