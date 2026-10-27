@@ -191,3 +191,162 @@ describe("SurveyConfigSchema", () => {
         )
     })
 })
+
+/** 文言を差し替える対象。タイトル・説明・質問文・選択肢の表示文 */
+const textTargets: {
+    name: string
+    path: string
+    set: (config: ReturnType<typeof createValidConfig>, text: unknown) => void
+}[] = [
+    {
+        name: "タイトル",
+        path: "surveys.0.title",
+        set: (config, text) => {
+            config.surveys[0].title = text as never
+        },
+    },
+    {
+        name: "説明",
+        path: "surveys.0.description",
+        set: (config, text) => {
+            config.surveys[0].description = text as never
+        },
+    },
+    {
+        name: "質問文",
+        path: "surveys.0.questions.0.title",
+        set: (config, text) => {
+            config.surveys[0].questions[0].title = text as never
+        },
+    },
+    {
+        name: "選択肢の表示文",
+        path: "surveys.0.questions.0.options.0.label",
+        set: (config, text) => {
+            config.surveys[0].questions[0].options[0].label = text as never
+        },
+    },
+]
+
+/** 全対応言語の文言を作る（言語ごとに異なる値） */
+const fullText = (): Record<string, string> =>
+    Object.fromEntries(LOCALES.map(locale => [locale, `text-${locale}`]))
+
+describe("多言語の文言の規則", () => {
+    for (const target of textTargets) {
+        describe(target.name, () => {
+            it(`[survey-definition/2.1] 全対応言語の文言を持てば通る`, () => {
+                const config = createValidConfig()
+                target.set(config, fullText())
+                expect(parseSurveyConfig(config).ok).toBe(true)
+            })
+
+            for (const locale of LOCALES) {
+                it(`[survey-definition/2.2] ${locale} の文言が欠けると拒否し、位置を報告する`, () => {
+                    const config = createValidConfig()
+                    const text = fullText()
+                    delete text[locale]
+                    target.set(config, text)
+                    const result = parseSurveyConfig(config)
+                    expect(result.ok).toBe(false)
+                    if (result.ok) return
+                    expect(
+                        result.issues.some(issue =>
+                            issue.startsWith(`${target.path}.${locale}:`),
+                        ),
+                        result.issues.join("\n"),
+                    ).toBe(true)
+                })
+
+                for (const blank of ["", " ", "\t\n", "　　"]) {
+                    it(`[survey-definition/2.2] ${locale} の文言が空白だけ（${JSON.stringify(blank)}）だと拒否し、位置を報告する`, () => {
+                        const config = createValidConfig()
+                        target.set(config, { ...fullText(), [locale]: blank })
+                        const result = parseSurveyConfig(config)
+                        expect(result.ok).toBe(false)
+                        if (result.ok) return
+                        expect(
+                            result.issues.some(issue =>
+                                issue.startsWith(`${target.path}.${locale}:`),
+                            ),
+                            result.issues.join("\n"),
+                        ).toBe(true)
+                    })
+                }
+
+                it(`[survey-definition/2.2] ${locale} の文言が文字列でないと拒否する`, () => {
+                    const config = createValidConfig()
+                    target.set(config, { ...fullText(), [locale]: 1 })
+                    expect(parseSurveyConfig(config).ok).toBe(false)
+                })
+            }
+
+            it("[survey-definition/2.3] 未対応の言語の文言を含むと拒否し、キー名を報告しない", () => {
+                const config = createValidConfig()
+                target.set(config, { ...fullText(), unsupportedLang: "x" })
+                const result = parseSurveyConfig(config)
+                expect(result.ok).toBe(false)
+                if (result.ok) return
+                expect(result.issues.join("\n")).not.toContain(
+                    "unsupportedLang",
+                )
+            })
+
+            it("[survey-definition/2.3] 全言語が欠けた空のオブジェクトを拒否する", () => {
+                const config = createValidConfig()
+                target.set(config, {})
+                expect(parseSurveyConfig(config).ok).toBe(false)
+            })
+        })
+    }
+
+    it("[survey-definition/2.1] 説明は省略できるが、指定するなら全言語が必須（片方だけは拒否）", () => {
+        const omitted = createValidConfig()
+        delete (omitted.surveys[0] as { description?: unknown }).description
+        expect(parseSurveyConfig(omitted).ok).toBe(true)
+
+        const partial = createValidConfig()
+        partial.surveys[0].description = { ja: "のみ" } as never
+        expect(parseSurveyConfig(partial).ok).toBe(false)
+    })
+
+    it("[survey-definition/2.2] 前後に空白を含む文言は、そのまま（加工されず）通る", () => {
+        const config = createValidConfig()
+        config.surveys[0].title = { ja: " 題 ", en: " title " }
+        const result = parseSurveyConfig(config)
+        expect(result.ok).toBe(true)
+        if (result.ok)
+            expect(result.config.surveys[0].title).toEqual({
+                ja: " 題 ",
+                en: " title ",
+            })
+    })
+
+    it("[survey-definition/2.5] スキーマの言語キーは LOCALES と一致する（追加された言語が欠けた設定は拒否される）", () => {
+        // LOCALES ちょうどのキーを持つ文言は通る（スキーマに余分な言語が無い）
+        const exact = createValidConfig()
+        exact.surveys[0].title = fullText() as never
+        expect(parseSurveyConfig(exact).ok).toBe(true)
+
+        // LOCALES の各言語は必須（スキーマに言語の漏れが無い）
+        for (const locale of LOCALES) {
+            const missing = createValidConfig()
+            const text = fullText()
+            delete text[locale]
+            missing.surveys[0].title = text as never
+            expect(parseSurveyConfig(missing).ok, locale).toBe(false)
+        }
+
+        // LOCALES に無い言語は受け付けない
+        const extra = createValidConfig()
+        extra.surveys[0].title = { ...fullText(), zz: "x" } as never
+        expect(parseSurveyConfig(extra).ok).toBe(false)
+    })
+
+    it("[survey-definition/2.4] 全言語で、指定した言語の文言を返す", () => {
+        const text = fullText() as Record<(typeof LOCALES)[number], string>
+        for (const locale of LOCALES) {
+            expect(localize(text, locale)).toBe(`text-${locale}`)
+        }
+    })
+})

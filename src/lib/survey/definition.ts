@@ -94,10 +94,21 @@ const addDuplicateIdIssues = (
     })
 }
 
-/** 文言。各言語のキーを持つ strict なオブジェクト（言語ごとの規則は別タスクで加える） */
+/** 空白だけの文言を拒否するための固定の理由 */
+const BLANK_TEXT_REASON = "文言が空白だけ"
+
+/** 1 言語分の文言。空文字・空白だけ（全角空白を含む）は不正。値は加工しない */
+const textSchema = z
+    .string()
+    .refine(text => text.trim().length > 0, { message: BLANK_TEXT_REASON })
+
+/**
+ * 文言。対応言語（`LOCALES`）すべてのキーを必須とする strict なオブジェクト。
+ * 欠けた言語・未対応の言語キーは不正。言語を足すと `satisfies` が型エラーで追随を求める。
+ */
 const localizedTextSchema = z.strictObject({
-    ja: z.string(),
-    en: z.string(),
+    ja: textSchema,
+    en: textSchema,
 } satisfies Record<Locale, z.ZodType<string>>)
 
 const optionSchema = z.strictObject({
