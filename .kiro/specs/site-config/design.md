@@ -161,10 +161,10 @@ export const siteConfig: SiteConfig
 - `astro.config.mjs` の検査は `astro build` のときだけ行い、開発サーバーでは行わない。
 - `hack/render-deploy-config.mjs` は、配備先ごとにテンプレートを次のように置き換える。運用者ごとの値は `SITE_HOST` だけである。
 
-| 配備先                 | Worker             | ドメイン              | D1・R2                                                          | プレビュー |
-| ---------------------- | ------------------ | --------------------- | --------------------------------------------------------------- | ---------- |
-| 本番（既定、main）     | `skyshare`         | `<SITE_HOST>`         | `skyshare-schedule`・`skyshare-schedule-images`                 | 無効       |
-| develop（`--develop`） | `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-schedule-develop`・`skyshare-schedule-images-develop` | 有効       |
+| 配備先                 | Worker             | ドメイン              | D1・R2                                                 | プレビュー |
+| ---------------------- | ------------------ | --------------------- | ------------------------------------------------------ | ---------- |
+| 本番（既定、main）     | `skyshare`         | `<SITE_HOST>`         | `skyshare`・`skyshare-schedule-images`                 | 無効       |
+| develop（`--develop`） | `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-develop`・`skyshare-schedule-images-develop` | 有効       |
 
 - D1 は `database_id` を書かない。`wrangler deploy` が同じ名前の D1 を探してつなぎ、マイグレーションも名前で解決する。
 - 独自ドメインの routes に `zone_name` を書かない（ドメインからゾーンが決まる）。
