@@ -1,0 +1,89 @@
+# Implementation Plan
+
+- [ ] 1. 設定のスキーマ
+- [ ] 1.1 `src/lib/survey/definition.ts` に、設定のスキーマ・型・`parseSurveyConfig`・`localize` を実装する。
+  - 識別子の規則、`LocalizedText`（`satisfies Record<Locale, …>`）、質問・選択肢・アンケートの検証、期間の検証（終了が開始より後、重複なし、`closesAt === 次の opensAt` は許す）を含める。すべて strict にする。
+  - 不正の報告は「位置: 固定の理由」だけで組み立て、入力の値を含めない。
+  - 質問・選択肢・文言を `src/` に直接持たない（テスト用の設定は `tests/fixtures/survey/` に置く）。
+  - 完了: `parseSurveyConfig` が有効な設定で `ok: true`、不正な設定で `ok: false` と位置つきの `issues` を返す。
+  - _Boundary: definition_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 4.4_
+- [ ] 1.2 `tests/fixtures/survey/` に有効・不正の設定の組を置き、`tests/lib/survey/definition.test.ts` を受け入れ条件のタグ付きで追加する。
+  - 識別子の重複・不正な文字、選択肢 1 つ、`decline` が 2 つ、`single` の `maxSelect`、`maxSelect` の範囲外、定義にない項目、質問 0 件が拒否される。
+  - `ja`・`en` の欠落・空白・余計な言語が拒否され、`LocalizedText` のキーが `LOCALES` と一致する。
+  - 終了 ≦ 開始と期間の重複が拒否され、隣接は通る。不正の報告に入力の値が含まれない。
+  - 検証: `npx vitest run tests/lib/survey/definition.test.ts`
+  - _Depends: 1.1_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 5.6, 7.1_
+
+- [ ] 2. 期間と保持期限
+- [ ] 2.1 (P) `src/lib/survey/period.ts` に `currentSurvey`・`retentionDeadlines`・`retentionExpired` を実装する。
+  - 「1 か月後」は日本標準時の暦で進め、同じ日がなければ月末にする。期限は `now >= 期限` で過ぎたとする。`Date.now()` を内部で呼ばない。
+  - 完了: 時刻を引数に、現在のアンケートと 2 つの保持期限・期限切れの判定が得られる。
+  - _Boundary: period_
+  - _Depends: 1.1_
+  - _Requirements: 3.4, 3.5, 3.6, 3.7_
+- [ ] 2.2 `tests/lib/survey/period.test.ts` を受け入れ条件のタグ付きで追加する。
+  - `opensAt` ちょうど・`closesAt` の直前と直後で `currentSurvey` が変わる。
+  - 保持期限が、通常の月・1/31・うるう年の 1/29・12 月の繰り上がりで正しく、`retentionExpired` が期限の直前・ちょうど・直後で変わる。
+  - 検証: `npx vitest run tests/lib/survey/period.test.ts`
+  - _Depends: 2.1_
+  - _Requirements: 3.4, 3.5, 3.6, 3.7, 7.2_
+
+- [ ] 3. 設定の取得
+- [ ] 3.1 (P) `src/lib/survey/loadConfig.ts` に `isSurveyConfigPresent`・`fetchSurveyConfig`・`readSurveyConfig` を実装する。
+  - 旗が偽なら通信も読み出しもしない。真なら取得して `parseSurveyConfig` で検証し、404・通信エラー・JSON の不正・検証の失敗はすべて `undefined`（例外を投げず、表示もしない）。
+  - 画面側は `cache: "no-cache"` で再検証する。サーバー側は `ASSETS` から読み、設定の内容だけを 60 秒メモリにキャッシュしてよい。
+  - `@atproto/*` を読み込まない。
+  - 完了: 旗の真偽と失敗の種類ごとに、期待どおり `undefined` か検証済みの設定が返る。
+  - _Boundary: loadConfig_
+  - _Depends: 1.1_
+  - _Requirements: 4.1, 4.2_
+- [ ] 3.2 `tests/lib/survey/loadConfig.test.ts` を受け入れ条件のタグ付きで追加する。
+  - 旗が偽のとき `fetcher` が呼ばれず `undefined`。旗が真で 404・通信エラー・壊れた JSON・検証の失敗が `undefined`。有効なら設定が返る。サーバー側も `ASSETS` のモックで同様に確認する。
+  - 検証: `npx vitest run tests/lib/survey/loadConfig.test.ts`
+  - _Depends: 3.1_
+  - _Requirements: 4.1, 4.2, 7.4_
+
+- [ ] 4. 生成処理
+- [ ] 4.1 (P) `hack/render-survey-config.ts` に `renderSurveyConfig` と実行部を実装する。
+  - 未設定・空白だけなら、既存の生成物を削除して（なければ何もせず）終了コード 0。JSON の不正は固定の文言だけを標準エラーに出し、検証の失敗は位置と理由を出して、どちらも終了コード 1。
+  - 有効なら `parseSurveyConfig` の結果を `JSON.stringify` で書く（スキーマの順で出るため、同じ入力なら同じ内容）。親ディレクトリがなければ作る。
+  - 完了: `SURVEY_CONFIG='…' npx tsx hack/render-survey-config.ts` で `public/surveys/index.json` が生成される。
+  - _Boundary: render-survey-config_
+  - _Depends: 1.1_
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6_
+- [ ] 4.2 `tests/hack/renderSurveyConfig.test.ts` を受け入れ条件のタグ付きで追加する。
+  - 有効→書かれ、同じ入力の 2 回目で内容が同一。未設定・空→ファイルなし、古い生成物は削除。不正な JSON・検証の失敗→異常終了で、標準エラーに入力の値が含まれない。
+  - 検証: `npx vitest run tests/hack/renderSurveyConfig.test.ts`
+  - _Depends: 4.1_
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 7.3_
+- [ ] 4.3 `package.json` に `build:survey`（`tsx hack/render-survey-config.ts`）を追加し、`build` と `dev` で `build:pripare` の後、`build:v2`（`astro dev`）の前に実行する。`/public/surveys/` を `.gitignore` に追加する。
+  - 完了: `git status` に生成物が出ない。変数が未設定で `npm run build:survey` が正常終了する。
+  - _Depends: 4.1_
+  - _Requirements: 5.5, 6.5_
+
+- [ ] 5. ビルドと CI への組み込み
+- [ ] 5.1 `astro.config.mjs` で、`public/surveys/index.json` の有無を `vite.define` の `import.meta.env.PUBLIC_SURVEY_CONFIG_PRESENT`（"true" / "false"）に埋め込む。
+  - 完了: ファイルがあるビルドでは真、ないビルドでは偽になる（`isSurveyConfigPresent` が対応する）。
+  - _Depends: 3.1_
+  - _Requirements: 4.1, 4.3_
+- [ ] 5.2 `deploy.yaml` と `preview.yaml` の「Run build」の `env` に `SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}` を足す。
+  - 検証ジョブと e2e には渡さない。生成が失敗するとビルドが失敗し、配備に進まない。
+  - 完了: 2 つのワークフローの差分が「Run build」の `env` の 1 行だけである。
+  - _Depends: 4.3_
+  - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+
+- [ ] 6. 文書
+- [ ] 6.1 `DEVELOP.md` に設定の仕組み（変数 `SURVEY_CONFIG`・生成・手元で試す手順）を、`docs/architecture.md` にアンケートの設定の節を追記する。
+  - 過去のアンケートは、回答データの削除が終わるまで変数に残すことを明記する。
+  - 検証: `npm run test:docs`
+  - _Depends: 5.2_
+  - _Requirements: 4.4, 6.5_
+
+- [ ] 7. 総合の確認
+- [ ] 7.1 型検査・単体・整形の検査と、生成とビルドの確認を行う。
+  - `npm run test:type`、`npm run test:unit`、`npm run test:docs` が通る。`tests/lib/coldStart.test.ts` も通り、`@atproto/*` が混入していない。
+  - `SURVEY_CONFIG` を与えて `npm run build:survey && npm run build:v2` を行うと `dist/client/surveys/index.json` が生成され、与えないとファイルも旗も生成されない。
+  - _Depends: 1.2, 2.2, 3.2, 4.2, 5.1, 5.2, 6.1_
+  - _Requirements: 4.3, 6.4, 7.1, 7.2, 7.3, 7.4_
