@@ -28,6 +28,7 @@
 - 表示言語に応じた文言の選択。
 - 設定の取得（画面はビルドの旗を見てから静的ファイルを取得、サーバーは `ASSETS` から読む）と、失敗時に「アンケートなし」とする規則。
 - `SURVEY_CONFIG` から配信用の静的ファイルを生成する処理と、そのビルドと CI への組み込み。
+- 配信用の静的ファイルの場所。生成物は `public/surveys/index.json`（Git 管理外）、配信 URL は `/surveys/index.json` とする。運営者・画面・サーバーに見える契約である。
 
 ### Out of Boundary
 
@@ -65,7 +66,7 @@
 flowchart LR
   ext_var["GitHub 変数 SURVEY_CONFIG"] --> SurveyConfigRenderer
   SurveyConfigRenderer -->|parseSurveyConfig| SurveyDefinition
-  SurveyConfigRenderer -->|書き出し| ext_file["配信用の静的ファイル（Git 管理外）"]
+  SurveyConfigRenderer -->|書き出し| ext_file["配信用の静的ファイル Git 管理外"]
   BuildIntegration -->|存在の旗| ext_flag["ビルド定数 PUBLIC_SURVEY_CONFIG_PRESENT"]
   ext_file --> BuildIntegration
   SurveyConfigLoader -->|旗が真のとき取得| ext_file
@@ -105,6 +106,7 @@ src/lib/survey/
 └── loadConfig.ts      # SurveyConfigLoader: 配信用の設定の取得。失敗は「なし」
 hack/
 └── render-survey-config.ts   # SurveyConfigRenderer: 変数から静的ファイルを生成
+public/surveys/index.json     # 生成物（Git 管理外）。配信 URL は /surveys/index.json
 tests/lib/survey/              # 上の 3 部品の単体テスト
 tests/hack/renderSurveyConfig.test.ts
 tests/fixtures/survey/         # 検証用の設定（有効・不正の組）
@@ -114,7 +116,7 @@ tests/fixtures/survey/         # 検証用の設定（有効・不正の組）
 
 - `astro.config.mjs` — BuildIntegration: 配信用の設定の有無を旗として埋め込む。
 - `package.json` — BuildIntegration: 生成のスクリプトを足し、ビルドと開発の前に実行する。
-- `.gitignore` — 生成物を管理外にする。
+- `.gitignore` — 生成物 `public/surveys/index.json` を管理外にする。
 - `.github/workflows/deploy.yaml`・`preview.yaml` — BuildIntegration: ビルドの工程に変数を渡す（検証・e2e のジョブには渡さない）。
 - `DEVELOP.md`・`docs/architecture.md` — 設定の仕組みと手元で試す手順を追記する（実装と同じ変更で更新する）。
 
@@ -164,7 +166,7 @@ sequenceDiagram
 | 2.5           | 言語の追加で足りない設定を拒否       | SurveyDefinition                       | `LocalizedText`（`Record<Locale, …>`）      | —              |
 | 3.1, 3.2, 3.3 | 日時の形式・順序・重複               | SurveyDefinition                       | `parseSurveyConfig`                         | —              |
 | 3.4, 3.5      | 現在のアンケートの判定               | SurveyPeriod                           | `currentSurvey`                             | —              |
-| 3.6, 3.7      | 保持期限の算出と期限切れの判定       | SurveyPeriod                           | `retentionDeadlines`, `retentionExpired`    | —              |
+| 3.6, 3.7, 3.8 | 保持期限の算出と期限切れの判定       | SurveyPeriod                           | `retentionDeadlines`, `retentionExpired`    | —              |
 | 4.1, 4.2      | 設定が無い・読めないときの扱い       | SurveyConfigLoader, BuildIntegration   | `fetchSurveyConfig`, `readSurveyConfig`, 旗 | システムフロー |
 | 4.3           | 未設定のビルドに設定を含めない       | SurveyConfigRenderer, BuildIntegration | `renderSurveyConfig`, 旗                    | システムフロー |
 | 4.4           | 質問をコードに持たない               | SurveyDefinition, SurveyConfigRenderer | —                                           | —              |
@@ -181,7 +183,7 @@ sequenceDiagram
 | Component            | Domain/Layer | Intent                             | Req Coverage                         | Key Dependencies (P0/P1)                | Contracts |
 | -------------------- | ------------ | ---------------------------------- | ------------------------------------ | --------------------------------------- | --------- |
 | SurveyDefinition     | 共有ロジック | 設定の形式・検証・文言の選択       | 1.1–1.10, 2.1–2.5, 3.1–3.3, 4.4, 5.6 | `LOCALES`（P0）, Zod（P0）              | Service   |
-| SurveyPeriod         | 共有ロジック | 現在のアンケートと保持期限の判定   | 3.4–3.7                              | SurveyDefinition（P0）                  | Service   |
+| SurveyPeriod         | 共有ロジック | 現在のアンケートと保持期限の判定   | 3.4–3.8                              | SurveyDefinition（P0）                  | Service   |
 | SurveyConfigLoader   | 取得         | 配信用の設定の取得。失敗は「なし」 | 4.1, 4.2                             | SurveyDefinition（P0）, `ASSETS`（P1）  | Service   |
 | SurveyConfigRenderer | 生成         | 変数から静的ファイルを生成         | 4.3, 4.4, 5.1–5.4, 5.6, 6.4, 6.5     | SurveyDefinition（P0）, `tsx`（P1）     | Batch     |
 | BuildIntegration     | ビルド・CI   | 生成と旗をビルドと CI に組み込む   | 4.1, 4.3, 5.5, 6.1–6.5               | SurveyConfigRenderer（P0）, Astro（P0） | Batch     |
@@ -211,6 +213,7 @@ sequenceDiagram
 ##### Service Interface
 
 ```ts
+import type { z } from "zod"
 import type { Locale } from "@/lib/i18n/locale"
 
 /** 全対応言語の文言。言語を足すと、スキーマ側が型エラーで追随を求める */
@@ -280,7 +283,7 @@ export const localize: (text: LocalizedText, locale: Locale) => string
 | Field        | Detail                                       |
 | ------------ | -------------------------------------------- |
 | Intent       | 時刻から現在のアンケートと保持期限を判定する |
-| Requirements | 3.4, 3.5, 3.6, 3.7                           |
+| Requirements | 3.4, 3.5, 3.6, 3.7, 3.8                      |
 
 **Responsibilities & Constraints**
 
@@ -330,7 +333,7 @@ export const retentionExpired: (
 
 - ビルドの旗が偽なら、通信も読み出しもしない。
 - 404・通信エラー・解析の失敗・検証の失敗を区別せず「なし」にし、例外を投げず、表示もしない。
-- 画面側は再検証つきで取得し、期間の開始と終了の反映の遅れを抑える。サーバー側は設定の内容だけを 60 秒メモリに保持してよい（判定の時刻は呼び出し側が渡す）。
+- 取得先は `/surveys/index.json`。画面側は再検証つきで取得し、期間の開始と終了の反映の遅れを抑える。サーバー側は設定の内容だけを 60 秒メモリに保持してよい（判定の時刻は呼び出し側が渡す）。
 
 **Dependencies**
 
@@ -389,7 +392,7 @@ export const readSurveyConfig: (
 
 - Trigger: ビルドと開発サーバーの前のスクリプト、および手元での実行。
 - Input / validation: 設定の元の文字列（未設定可）。`parseSurveyConfig` で検証する。
-- Output / destination: 配信用の静的ファイル（`public/` の下。Git 管理外）。
+- Output / destination: `public/surveys/index.json`（Git 管理外。配信 URL は `/surveys/index.json`）。
 - Idempotency & recovery: 同じ入力で同じ出力。未設定のときは古い生成物を取り除く。失敗時はファイルを書かずに終了コード 1。
 
 ```ts
@@ -454,7 +457,7 @@ export const renderSurveyConfig: (
 ### Unit Tests
 
 - SurveyDefinition: 有効な設定が通る。識別子の重複・不正な文字、選択肢 1 つ、`decline` が 2 つ、`single` の `maxSelect`、`maxSelect` の範囲外、定義にない項目、質問 0 件が拒否される（1.1–1.10）。各言語の欠落・空白・余計な言語が拒否され、`LocalizedText` のキーが `LOCALES` と一致する（2.1–2.5）。終了 ≦ 開始と期間の重複が拒否され、隣接は通る（3.1–3.3）。不正の報告に入力の値が含まれない（5.6）。
-- SurveyPeriod: `opensAt` ちょうど・`closesAt` の直前と直後で現在のアンケートが変わる（3.4, 3.5）。保持期限が通常の月・1/31・うるう年の 1/29・12 月の繰り上がりで正しい。期限切れの判定が期限の直前・ちょうど・直後で変わる（3.6, 3.7）。
+- SurveyPeriod: `opensAt` ちょうど・`closesAt` の直前と直後で現在のアンケートが変わる（3.4, 3.5）。保持期限が通常の月・1/31・うるう年の 1/29・12 月の繰り上がりで正しい。期限切れの判定が期限の直前・ちょうど・直後で変わる（3.6, 3.7, 3.8）。
 - SurveyConfigLoader: 旗が偽のとき取得の関数が呼ばれず「なし」。旗が真で 404・通信エラー・壊れた JSON・検証の失敗が「なし」、有効なら設定が返る。サーバー側も `ASSETS` のモックで同様に確認する（4.1, 4.2）。
 
 ### Integration Tests
