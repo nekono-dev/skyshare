@@ -67,11 +67,11 @@ npm run deploy
 
 `main` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
 
-| ブランチ   | Worker                                  | ドメイン                   | D1・R2                                                          | 用途                                   |
-| ---------- | --------------------------------------- | -------------------------- | --------------------------------------------------------------- | -------------------------------------- |
-| `main`     | `skyshare`                              | `<SITE_HOST>`              | `skyshare-schedule`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
-| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-schedule-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
-| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                                  | ブランチごとの確認（Cron は動かない）  |
+| ブランチ   | Worker                                  | ドメイン                   | D1・R2                                                 | 用途                                   |
+| ---------- | --------------------------------------- | -------------------------- | ------------------------------------------------------ | -------------------------------------- |
+| `main`     | `skyshare`                              | `<SITE_HOST>`              | `skyshare`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
+| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
+| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                         | ブランチごとの確認（Cron は動かない）  |
 
 - develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
 - 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。
@@ -164,8 +164,8 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 本番用と develop 用の D1・R2 を作る。dev/\* のプレビューは develop 用の D1・R2 を共用する。
 
 ```sh
-npx wrangler d1 create skyshare-schedule # database_id の登録は不要（名前で解決する）
-npx wrangler d1 create skyshare-schedule-develop
+npx wrangler d1 create skyshare # database_id の登録は不要（名前で解決する）
+npx wrangler d1 create skyshare-develop
 for b in skyshare-schedule-images skyshare-schedule-images-develop; do
   npx wrangler r2 bucket create "$b"
   npx wrangler r2 bucket lifecycle add "$b" expire-15d --expire-days 15 -y # 削除漏れの画像を自動で消す（予約は14日後までのため15日）

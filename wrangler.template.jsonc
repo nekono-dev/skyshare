@@ -15,12 +15,12 @@
   "triggers": {
     "crons": ["* * * * *"],
   },
-  // 予約の保管（D1）と添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
+  // アプリ共通の D1（予約など。ほかの機能も同じ D1 にテーブルを足す）と、予約の添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
   // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい（develop は末尾に -develop）
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "skyshare-schedule",
+      "database_name": "skyshare",
       "migrations_dir": "migrations",
     },
   ],
