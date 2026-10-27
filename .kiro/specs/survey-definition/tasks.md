@@ -1,89 +1,87 @@
 # Implementation Plan
 
-- [ ] 1. 設定のスキーマ
-- [ ] 1.1 `src/lib/survey/definition.ts` に、設定のスキーマ・型・`parseSurveyConfig`・`localize` を実装する。
-  - 識別子の規則、`LocalizedText`（`satisfies Record<Locale, …>`）、質問・選択肢・アンケートの検証、期間の検証（終了が開始より後、重複なし、`closesAt === 次の opensAt` は許す）を含める。すべて strict にする。
-  - 不正の報告は「位置: 固定の理由」だけで組み立て、入力の値を含めない。
-  - 質問・選択肢・文言を `src/` に直接持たない（テスト用の設定は `tests/fixtures/survey/` に置く）。
-  - 完了: `parseSurveyConfig` が有効な設定で `ok: true`、不正な設定で `ok: false` と位置つきの `issues` を返す。
-  - _Boundary: definition_
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 4.4_
-- [ ] 1.2 `tests/fixtures/survey/` に有効・不正の設定の組を置き、`tests/lib/survey/definition.test.ts` を受け入れ条件のタグ付きで追加する。
-  - 識別子の重複・不正な文字、選択肢 1 つ、`decline` が 2 つ、`single` の `maxSelect`、`maxSelect` の範囲外、定義にない項目、質問 0 件が拒否される。
-  - `ja`・`en` の欠落・空白・余計な言語が拒否され、`LocalizedText` のキーが `LOCALES` と一致する。
-  - 終了 ≦ 開始と期間の重複が拒否され、隣接は通る。不正の報告に入力の値が含まれない。
-  - 検証: `npx vitest run tests/lib/survey/definition.test.ts`
+- [ ] 1. 基盤: 設定の形式と検証
+- [ ] 1.1 アンケート設定の構造・識別子・選択肢の規則を、スキーマと検証として作る。有効・不正の検証用の設定も用意する
+  - アンケート・質問・選択肢の構造を 1 つのスキーマとして定義し、サーバー・画面・生成処理が同じものを使えるようにする
+  - 識別子の形式と一意性、選択肢の最小数、「回答しない」の選択肢は 1 質問に 1 つまで、複数選択の上限の範囲、自由記述の質問を持たないこと、定義にない項目の拒否を検証する
+  - 不正の報告は「位置と理由」だけで組み立て、入力の値を含めない
+  - 質問・選択肢・文言をアプリのソースコードに持たない（検証用の設定はテストの資材として別に置く）
+  - 完了: 有効な設定が通り、上記の不正な設定が 1 件ずつ拒否される単体テストが通る。不正の報告に入力の値が含まれないことをテストで確認する
+  - _Boundary: SurveyDefinition_
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 4.4, 5.6_
+- [ ] 1.2 多言語の文言の規則と、表示言語に応じた文言の選択を作る
+  - タイトル・説明・質問文・選択肢の表示文を、全対応言語の文言を持つ形にする。説明は任意だが、指定するなら全言語を必須にする
+  - 欠けた言語・空白だけの文言・未対応の言語を拒否する。対応言語を増やしたときに、スキーマが追随を求める形にする
+  - 表示言語を指定すると、その言語の文言を返す
+  - 完了: 言語の欠落・空白・余計な言語が拒否され、スキーマの言語が対応言語の一覧と一致することと、指定した言語の文言が返ることを、単体テストで確認する
+  - _Boundary: SurveyDefinition_
   - _Depends: 1.1_
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 1.10, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 5.6, 7.1_
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+- [ ] 1.3 期間の規則（日時の形式・順序・重複）を作る
+  - 開始と終了を、UTC からのオフセットを含む日時として検証する
+  - 終了が開始より後であること、アンケートの期間が重ならないこと（終了と次の開始が等しい隣接は許す）を検証する
+  - 完了: 終了が開始以前、期間の重複、オフセットのない日時が拒否され、隣接する期間は通ることを、単体テストで確認する
+  - _Boundary: SurveyDefinition_
+  - _Depends: 1.1_
+  - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 2. 期間と保持期限
-- [ ] 2.1 (P) `src/lib/survey/period.ts` に `currentSurvey`・`retentionDeadlines`・`retentionExpired` を実装する。
-  - 「1 か月後」は日本標準時の暦で進め、同じ日がなければ月末にする。期限は `now >= 期限` で過ぎたとする。`Date.now()` を内部で呼ばない。
-  - 完了: 時刻を引数に、現在のアンケートと 2 つの保持期限・期限切れの判定が得られる。
-  - _Boundary: period_
-  - _Depends: 1.1_
+- [ ] 2. コア: 判定・取得・生成
+- [ ] 2.1 (P) 現在のアンケートと保持期限の判定を作る
+  - 時刻を引数に取り、開始以後かつ終了より前のアンケートを現在のアンケートとして返す。該当がなければ「なし」とする
+  - 回答済みの集合の保持期限を終了時刻、回答の保持期限を終了の 1 か月後（日本標準時の暦。同じ日がなければ月末）として算出する
+  - 期限は、その時刻を含めて過ぎたものとして判定する
+  - 完了: 開始ちょうど・終了の直前と直後、通常の月・1/31・うるう年の 1/29・12 月の繰り上がり、期限の直前・ちょうど・直後の単体テストが通る
+  - _Boundary: SurveyPeriod_
+  - _Depends: 1.3_
   - _Requirements: 3.4, 3.5, 3.6, 3.7_
-- [ ] 2.2 `tests/lib/survey/period.test.ts` を受け入れ条件のタグ付きで追加する。
-  - `opensAt` ちょうど・`closesAt` の直前と直後で `currentSurvey` が変わる。
-  - 保持期限が、通常の月・1/31・うるう年の 1/29・12 月の繰り上がりで正しく、`retentionExpired` が期限の直前・ちょうど・直後で変わる。
-  - 検証: `npx vitest run tests/lib/survey/period.test.ts`
-  - _Depends: 2.1_
-  - _Requirements: 3.4, 3.5, 3.6, 3.7, 7.2_
-
-- [ ] 3. 設定の取得
-- [ ] 3.1 (P) `src/lib/survey/loadConfig.ts` に `isSurveyConfigPresent`・`fetchSurveyConfig`・`readSurveyConfig` を実装する。
-  - 旗が偽なら通信も読み出しもしない。真なら取得して `parseSurveyConfig` で検証し、404・通信エラー・JSON の不正・検証の失敗はすべて `undefined`（例外を投げず、表示もしない）。
-  - 画面側は `cache: "no-cache"` で再検証する。サーバー側は `ASSETS` から読み、設定の内容だけを 60 秒メモリにキャッシュしてよい。
-  - `@atproto/*` を読み込まない。
-  - 完了: 旗の真偽と失敗の種類ごとに、期待どおり `undefined` か検証済みの設定が返る。
-  - _Boundary: loadConfig_
-  - _Depends: 1.1_
+- [ ] 2.2 (P) 配信用の設定の取得を作る
+  - 設計に定めたビルドの旗の名前を読む（名前は 3.2 の埋め込みと共有する契約）
+  - ビルドの旗が偽なら、通信も読み出しもせず「なし」を返す
+  - 旗が真なら、画面は再検証つきで取得し、サーバーは静的アセットから読んで、検証済みの設定を返す
+  - 404・通信エラー・解析の失敗・検証の失敗はすべて「なし」にし、例外を投げず、表示もしない
+  - サーバー側は設定の内容だけを短時間メモリに保持してよい
+  - 完了: 旗が偽のとき取得の関数が呼ばれないこと、旗が真で各種の失敗が「なし」になること、有効なら設定が返ることを、画面側とサーバー側（静的アセットのモック）の単体テストで確認する
+  - _Boundary: SurveyConfigLoader_
+  - _Depends: 1.2, 1.3_
   - _Requirements: 4.1, 4.2_
-- [ ] 3.2 `tests/lib/survey/loadConfig.test.ts` を受け入れ条件のタグ付きで追加する。
-  - 旗が偽のとき `fetcher` が呼ばれず `undefined`。旗が真で 404・通信エラー・壊れた JSON・検証の失敗が `undefined`。有効なら設定が返る。サーバー側も `ASSETS` のモックで同様に確認する。
-  - 検証: `npx vitest run tests/lib/survey/loadConfig.test.ts`
-  - _Depends: 3.1_
-  - _Requirements: 4.1, 4.2, 7.4_
+- [ ] 2.3 (P) 変数から配信用の設定を生成する処理を作る
+  - 未設定または空白だけなら、ファイルを作らず、以前の生成物が残っていれば取り除いて正常終了する
+  - 設定として読めない値には固定の文言だけを出し、検証に失敗した値には位置と理由を出して、どちらも異常終了する。入力の値を出力に含めない
+  - 有効な値は、検証を通した内容をスキーマの順で書き出す。同じ入力で同じ出力になり、繰り返し実行しても変わらない
+  - 入力を引数で受け取れる形にし、環境変数以外からも呼べるようにする
+  - 完了: 有効・未設定・空・不正な値・古い生成物がある場合の統合テストが通り、標準エラーに入力の値が含まれない
+  - _Boundary: SurveyConfigRenderer_
+  - _Depends: 1.2, 1.3_
+  - _Requirements: 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.6, 6.5_
 
-- [ ] 4. 生成処理
-- [ ] 4.1 (P) `hack/render-survey-config.ts` に `renderSurveyConfig` と実行部を実装する。
-  - 未設定・空白だけなら、既存の生成物を削除して（なければ何もせず）終了コード 0。JSON の不正は固定の文言だけを標準エラーに出し、検証の失敗は位置と理由を出して、どちらも終了コード 1。
-  - 有効なら `parseSurveyConfig` の結果を `JSON.stringify` で書く（スキーマの順で出るため、同じ入力なら同じ内容）。親ディレクトリがなければ作る。
-  - 完了: `SURVEY_CONFIG='…' npx tsx hack/render-survey-config.ts` で `public/surveys/index.json` が生成される。
-  - _Boundary: render-survey-config_
-  - _Depends: 1.1_
-  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6_
-- [ ] 4.2 `tests/hack/renderSurveyConfig.test.ts` を受け入れ条件のタグ付きで追加する。
-  - 有効→書かれ、同じ入力の 2 回目で内容が同一。未設定・空→ファイルなし、古い生成物は削除。不正な JSON・検証の失敗→異常終了で、標準エラーに入力の値が含まれない。
-  - 検証: `npx vitest run tests/hack/renderSurveyConfig.test.ts`
-  - _Depends: 4.1_
-  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 7.3_
-- [ ] 4.3 `package.json` に `build:survey`（`tsx hack/render-survey-config.ts`）を追加し、`build` と `dev` で `build:pripare` の後、`build:v2`（`astro dev`）の前に実行する。`/public/surveys/` を `.gitignore` に追加する。
-  - 完了: `git status` に生成物が出ない。変数が未設定で `npm run build:survey` が正常終了する。
-  - _Depends: 4.1_
-  - _Requirements: 5.5, 6.5_
-
-- [ ] 5. ビルドと CI への組み込み
-- [ ] 5.1 `astro.config.mjs` で、`public/surveys/index.json` の有無を `vite.define` の `import.meta.env.PUBLIC_SURVEY_CONFIG_PRESENT`（"true" / "false"）に埋め込む。
-  - 完了: ファイルがあるビルドでは真、ないビルドでは偽になる（`isSurveyConfigPresent` が対応する）。
-  - _Depends: 3.1_
+- [ ] 3. 統合: ビルドと CI への組み込み
+- [ ] 3.1 ビルドと開発サーバーの前に生成を実行し、生成物をバージョン管理の対象外にする
+  - ビルドと開発サーバーの前に、生成処理を実行する手順を加える
+  - 生成物をバージョン管理の対象外にする
+  - 完了: 変数が未設定でも手元のビルドが生成の段階を通過する。不正な変数を与えると、ビルドが生成の段階で失敗して終わる。バージョン管理の状態に生成物が現れない
+  - _Boundary: BuildIntegration_
+  - _Depends: 2.3_
+  - _Requirements: 4.3, 5.5, 6.3, 6.5_
+- [ ] 3.2 配信用の設定の有無を、画面とサーバーが読めるビルドの旗として埋め込む
+  - 旗の名前は、設定の取得（2.2）が読む名前と同じ契約として揃える
+  - 完了: 変数を与えたビルドの成果物に配信用の設定が含まれて旗が真になり、与えないビルドでは含まれず旗が偽になる
+  - _Boundary: BuildIntegration_
+  - _Depends: 2.2, 3.1_
   - _Requirements: 4.1, 4.3_
-- [ ] 5.2 `deploy.yaml` と `preview.yaml` の「Run build」の `env` に `SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}` を足す。
-  - 検証ジョブと e2e には渡さない。生成が失敗するとビルドが失敗し、配備に進まない。
-  - 完了: 2 つのワークフローの差分が「Run build」の `env` の 1 行だけである。
-  - _Depends: 4.3_
+- [ ] 3.3 本番・develop・プレビューのビルド工程にだけ、設定の元の変数を渡す
+  - 検証ジョブと e2e のジョブには変数を渡さず、テストはリポジトリ変数に依存しない。テスト用の設定を与える側（e2e のハーネス）は survey-form が担当し、本タスクは変数を渡さないことだけを担う
+  - 生成が失敗したときは、ビルドと配備の前に止まる順序にする
+  - 完了: ワークフローの定義を検査して、変数を受け取る工程が本番・develop・プレビューのビルド工程だけであり、その工程が配備より前にあることを確認する。変数が未設定でも他の工程に影響しない
+  - _Boundary: BuildIntegration_
+  - _Depends: 3.2_
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 6. 文書
-- [ ] 6.1 `DEVELOP.md` に設定の仕組み（変数 `SURVEY_CONFIG`・生成・手元で試す手順）を、`docs/architecture.md` にアンケートの設定の節を追記する。
-  - 過去のアンケートは、回答データの削除が終わるまで変数に残すことを明記する。
-  - 検証: `npm run test:docs`
-  - _Depends: 5.2_
-  - _Requirements: 4.4, 6.5_
-
-- [ ] 7. 総合の確認
-- [ ] 7.1 型検査・単体・整形の検査と、生成とビルドの確認を行う。
-  - `npm run test:type`、`npm run test:unit`、`npm run test:docs` が通る。`tests/lib/coldStart.test.ts` も通り、`@atproto/*` が混入していない。
-  - `SURVEY_CONFIG` を与えて `npm run build:survey && npm run build:v2` を行うと `dist/client/surveys/index.json` が生成され、与えないとファイルも旗も生成されない。
-  - _Depends: 1.2, 2.2, 3.2, 4.2, 5.1, 5.2, 6.1_
-  - _Requirements: 4.3, 6.4, 7.1, 7.2, 7.3, 7.4_
+- [ ] 4. 検証: 全体の確認
+- [ ] 4.1 全体の検査と、生成からビルドまでの実測を行う
+  - 型検査・単体テスト・仕様と文書の整形検査が通る。コールドスタートの検査が通り、依存してはならないパッケージが混入していない
+  - 変数を与えた場合と与えない場合の両方で、生成からビルドまでを実行し、成果物と旗が期待どおりになる
+  - 不正な変数でビルドが生成の段階で失敗し、配備に進まないことを確認する
+  - 完了: 上記の検査がすべて成功し、変数なしのビルドで成果物に設定が含まれないことを確認した
+  - _Boundary: SurveyDefinition, SurveyPeriod, SurveyConfigLoader, SurveyConfigRenderer, BuildIntegration_
+  - _Depends: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3.1, 3.2, 3.3_
+  - _Requirements: 4.1, 4.3, 5.1, 5.2, 6.3, 6.4, 6.5_
