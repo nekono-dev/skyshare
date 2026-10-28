@@ -350,3 +350,171 @@ describe("多言語の文言の規則", () => {
         }
     })
 })
+
+describe("期間の規則", () => {
+    /** 2 つのアンケートの期間を差し替えた設定を作る */
+    const withPeriods = (
+        a: [string, string],
+        b: [string, string],
+    ): ReturnType<typeof createValidConfig> => {
+        const config = createValidConfig()
+        ;[config.surveys[0].opensAt, config.surveys[0].closesAt] = a
+        ;[config.surveys[1].opensAt, config.surveys[1].closesAt] = b
+        return config
+    }
+
+    const issuesOf = (input: unknown): string[] => {
+        const result = parseSurveyConfig(input)
+        expect(result.ok).toBe(false)
+        return result.ok ? [] : result.issues
+    }
+
+    it("[survey-definition/3.1] Z・±hh:mm のオフセット付き日時を受け付ける", () => {
+        const config = withPeriods(
+            ["2026-11-01T00:00:00Z", "2026-12-01T00:00:00+09:00"],
+            ["2026-12-05T00:00:00-05:00", "2027-01-01T00:00:00.500Z"],
+        )
+        expect(parseSurveyConfig(config).ok).toBe(true)
+    })
+
+    it("[survey-definition/3.1] オフセットなしの日時を拒否し、位置を報告する", () => {
+        const config = withPeriods(
+            ["2026-11-01T00:00:00", "2026-12-01T00:00:00+09:00"],
+            ["2026-12-01T00:00:00+09:00", "2027-01-01T00:00:00"],
+        )
+        const issues = issuesOf(config)
+        expect(issues.some(i => i.startsWith("surveys.0.opensAt:"))).toBe(true)
+        expect(issues.some(i => i.startsWith("surveys.1.closesAt:"))).toBe(true)
+    })
+
+    it("[survey-definition/3.1] 日時でない文字列・日付だけを拒否する", () => {
+        for (const bad of [
+            "",
+            "tomorrow",
+            "2026-11-01",
+            "2026-13-01T00:00:00Z",
+        ]) {
+            const config = withPeriods(
+                [bad, "2026-12-01T00:00:00+09:00"],
+                ["2026-12-01T00:00:00+09:00", "2027-01-01T00:00:00+09:00"],
+            )
+            expect(parseSurveyConfig(config).ok, bad).toBe(false)
+        }
+    })
+
+    it("[survey-definition/3.2] 終了が開始と同時・以前の場合を拒否する", () => {
+        const same = withPeriods(
+            ["2026-11-01T00:00:00Z", "2026-11-01T00:00:00Z"],
+            ["2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+        )
+        expect(
+            issuesOf(same).some(i => i.startsWith("surveys.0.closesAt:")),
+        ).toBe(true)
+        const before = withPeriods(
+            ["2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z"],
+            ["2027-01-01T00:00:00Z", "2026-12-15T00:00:00Z"],
+        )
+        expect(
+            issuesOf(before).some(i => i.startsWith("surveys.1.closesAt:")),
+        ).toBe(true)
+    })
+
+    it("[survey-definition/3.2] オフセット違いは時刻値で比較する", () => {
+        // 文字列では終了が大きいが、時刻値では終了が開始より前
+        const config = withPeriods(
+            ["2026-11-01T00:00:00Z", "2026-11-01T05:00:00+09:00"],
+            ["2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+        )
+        expect(parseSurveyConfig(config).ok).toBe(false)
+    })
+
+    it("[survey-definition/3.3] 期間が重なるアンケートを拒否する", () => {
+        const config = withPeriods(
+            ["2026-11-01T00:00:00Z", "2026-12-01T00:00:01Z"],
+            ["2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+        )
+        const issues = issuesOf(config)
+        expect(issues.some(i => i.startsWith("surveys.1.opensAt:"))).toBe(true)
+    })
+
+    it("[survey-definition/3.3] 並び順に依存せず、離れた位置の重複も拒否する", () => {
+        const config = withPeriods(
+            ["2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+            ["2026-11-01T00:00:00Z", "2026-12-15T00:00:00Z"],
+        )
+        expect(parseSurveyConfig(config).ok).toBe(false)
+    })
+
+    it("[survey-definition/3.3] 終了と次の開始が同時刻の隣接は許可する（オフセット違いでも）", () => {
+        const config = withPeriods(
+            ["2026-11-01T00:00:00+09:00", "2026-12-01T00:00:00+09:00"],
+            ["2026-11-30T15:00:00Z", "2027-01-01T00:00:00+09:00"],
+        )
+        expect(parseSurveyConfig(config).ok).toBe(true)
+    })
+
+    it("[survey-definition/3.3] 報告に日時の値を含めない", () => {
+        const config = withPeriods(
+            ["2026-11-01T00:00:00Z", "2026-12-15T00:00:00Z"],
+            ["2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+        )
+        expect(issuesOf(config).join("\n")).not.toContain("2026")
+    })
+    /** 3 件目を加えた設定を、3 件の期間を指定して作る */
+    const withThree = (
+        a: [string, string],
+        b: [string, string],
+        c: [string, string],
+    ) => {
+        const config = withPeriods(a, b)
+        const third = structuredClone(config.surveys[1])
+        third.id = "survey-2026-c"
+        ;[third.opensAt, third.closesAt] = c
+        config.surveys.push(third)
+        return config
+    }
+
+    it("[survey-definition/3.3] 長い期間に内包される複数のアンケートが、それぞれ重複として報告される", () => {
+        const config = withThree(
+            ["2026-11-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+            ["2026-11-05T00:00:00Z", "2026-11-10T00:00:00Z"],
+            ["2026-11-20T00:00:00Z", "2026-11-25T00:00:00Z"],
+        )
+        const issues = issuesOf(config)
+        expect(issues.some(i => i.startsWith("surveys.1.opensAt:"))).toBe(true)
+        expect(issues.some(i => i.startsWith("surveys.2.opensAt:"))).toBe(true)
+    })
+
+    it("[survey-definition/3.2] 終了が開始以前の期間があっても、他の有効なアンケート同士の重複を報告する", () => {
+        const config = withThree(
+            ["2026-11-01T00:00:00Z", "2026-10-01T00:00:00Z"],
+            ["2026-11-10T00:00:00Z", "2026-11-20T00:00:00Z"],
+            ["2026-11-15T00:00:00Z", "2026-11-30T00:00:00Z"],
+        )
+        const issues = issuesOf(config)
+        expect(issues.some(i => i.startsWith("surveys.0.closesAt:"))).toBe(true)
+        expect(issues.some(i => i.startsWith("surveys.2.opensAt:"))).toBe(true)
+        expect(issues.some(i => i.startsWith("surveys.1.opensAt:"))).toBe(false)
+    })
+
+    it("[survey-definition/3.2] 終了が開始以前の期間は、重複の報告を余計に生まない", () => {
+        const config = withThree(
+            ["2026-11-01T00:00:00Z", "2026-10-01T00:00:00Z"],
+            ["2026-11-10T00:00:00Z", "2026-11-20T00:00:00Z"],
+            ["2026-11-20T00:00:00Z", "2026-11-30T00:00:00Z"],
+        )
+        const issues = issuesOf(config)
+        expect(issues.filter(i => i.includes("opensAt"))).toEqual([])
+        expect(issues.length).toBe(1)
+    })
+
+    it("[survey-definition/3.1] 存在しない暦日を拒否する", () => {
+        const config = withPeriods(
+            ["2026-02-30T00:00:00Z", "2026-12-01T00:00:00Z"],
+            ["2026-12-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+        )
+        expect(
+            issuesOf(config).some(i => i.startsWith("surveys.0.opensAt:")),
+        ).toBe(true)
+    })
+})

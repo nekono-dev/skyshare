@@ -167,19 +167,94 @@ const questionSchema = z.discriminatedUnion("kind", [
     multipleQuestionSchema,
 ])
 
-const surveySchema = z.strictObject({
-    id: idSchema,
-    opensAt: z.string(),
-    closesAt: z.string(),
-    title: localizedTextSchema,
-    description: localizedTextSchema.optional(),
-    questions: z
-        .array(questionSchema)
-        .min(1)
-        .superRefine((questions, ctx) => {
-            addDuplicateIdIssues(questions, ctx, "質問の識別子が重複している")
-        }),
-})
+/** UTC からのオフセット付き ISO 8601 の日時（Z または ±hh:mm。オフセットなしは不正） */
+const dateTimeSchema = z.string().datetime({ offset: true })
+
+/**
+ * 日時文字列を時刻値（ミリ秒）に変換する。
+ *
+ * Input:
+ * - `value`: 日時文字列
+ *
+ * Output:
+ * - 時刻値。解釈できなければ `null`
+ *
+ * 例:
+ * - `"2026-11-01T00:00:00+09:00"` → `1792854000000`（`"2026-10-31T15:00:00Z"` と同値）
+ */
+const toTime = (value: string): number | null => {
+    const time = new Date(value).getTime()
+    return Number.isNaN(time) ? null : time
+}
+
+const surveySchema = z
+    .strictObject({
+        id: idSchema,
+        opensAt: dateTimeSchema,
+        closesAt: dateTimeSchema,
+        title: localizedTextSchema,
+        description: localizedTextSchema.optional(),
+        questions: z
+            .array(questionSchema)
+            .min(1)
+            .superRefine((questions, ctx) => {
+                addDuplicateIdIssues(
+                    questions,
+                    ctx,
+                    "質問の識別子が重複している",
+                )
+            }),
+    })
+    .superRefine((survey, ctx) => {
+        const opens = toTime(survey.opensAt)
+        const closes = toTime(survey.closesAt)
+        if (opens !== null && closes !== null && closes <= opens) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["closesAt"],
+                message: "終了日時が開始日時より後になっていない",
+            })
+        }
+    })
+
+/**
+ * 複数アンケートの期間が重なる位置に、固定の理由で不正を追加する。
+ * 終了と次の開始が同時刻の隣接は重複としない。比較は時刻値で行う。
+ *
+ * Input:
+ * - `surveys`: アンケートの配列
+ * - `ctx`: superRefine の文脈
+ *
+ * Output:
+ * - なし（開始順に見て、それまでの最大の終了より前に始まるものの `[index, "opensAt"]` に不正を追加する）
+ *
+ * 例:
+ * - A: 11/1-12/1、B: 12/1-1/1 → 追加なし。B の開始が 11/30 なら B の `opensAt` に追加
+ */
+const addOverlapIssues = (
+    surveys: { opensAt: string; closesAt: string }[],
+    ctx: z.RefinementCtx,
+): void => {
+    const periods: { index: number; opens: number; closes: number }[] = []
+    surveys.forEach((survey, index) => {
+        const opens = toTime(survey.opensAt)
+        const closes = toTime(survey.closesAt)
+        if (opens === null || closes === null || closes <= opens) return
+        periods.push({ index, opens, closes })
+    })
+    periods.sort((a, b) => a.opens - b.opens || a.index - b.index)
+    let latestClose = -Infinity
+    for (const period of periods) {
+        if (period.opens < latestClose) {
+            ctx.addIssue({
+                code: "custom",
+                path: [period.index, "opensAt"],
+                message: "他のアンケートと期間が重なっている",
+            })
+        }
+        latestClose = Math.max(latestClose, period.closes)
+    }
+}
 
 /**
  * アンケート設定のスキーマ。サーバー・画面・生成処理が同じものを使う。
@@ -187,6 +262,7 @@ const surveySchema = z.strictObject({
 export const SurveyConfigSchema: z.ZodType<SurveyConfig> = z.strictObject({
     surveys: z.array(surveySchema).superRefine((surveys, ctx) => {
         addDuplicateIdIssues(surveys, ctx, "アンケートの識別子が重複している")
+        addOverlapIssues(surveys, ctx)
     }),
 })
 
