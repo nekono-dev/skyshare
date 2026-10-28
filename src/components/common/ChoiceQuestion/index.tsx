@@ -142,11 +142,11 @@ export const ChoiceQuestion = ({
 
   return (
     <fieldset
-      className={`${styles.question}${className ? ` ${className}` : ""}`}
+      className={`${styles["question"]}${className ? ` ${className}` : ""}`}
     >
-      <legend className={styles.legend}>{legend}</legend>
+      <legend className={styles["legend"]}>{legend}</legend>
       {choices.length > 0 && (
-        <div className={styles.choices}>
+        <div className={styles["choices"]}>
           {choices.map(choice => {
             const checked = selectedIds.includes(choice.id)
             return kind === "single" ? (
