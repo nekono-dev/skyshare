@@ -45,7 +45,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 ローカル実行の設定は、置き場所ごとに雛形を用意している（`.env` と `.dev.vars` は Git 管理対象外）。
 
 - `.env`（`.env.template`）: ビルド時に使う `PUBLIC_*`（接続先・運営者情報など）。未設定でもダミー値で動く。
-- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の暗号鍵（`SCHEDULE_ENC_KEY`）と OAuth のクライアントの署名鍵（`OAUTH_CLIENT_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
+- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の暗号鍵（`SCHEDULE_ENC_KEY`）と OAuth のクライアントの署名鍵（`OAUTH_CLIENT_KEY`）、アンケートの回答者の値を求める鍵（`SURVEY_HASH_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
 
 ```sh
 cp .env.template .env
@@ -172,7 +172,7 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 - Worker のシークレットの登録は、Worker が一度配備された後に行う（プレビューは develop の Worker の配備の後）。失敗した登録は、配備の後にもう一度実行すればよい。
 
 7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
-8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵と OAuth の署名鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
+8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵・OAuth の署名鍵・アンケートの鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
 
 ### 予約投稿の初期設定（初回のみ）
 
@@ -189,10 +189,10 @@ for b in skyshare-schedule-images skyshare-schedule-images-develop; do
 done
 ```
 
-- Worker のシークレット（予約用の認証情報の暗号鍵 `SCHEDULE_ENC_KEY` と、Bluesky の OAuth の署名鍵 `OAUTH_CLIENT_KEY`）は手で登録しない。`hack/ensure-worker-secrets.mjs` が、本番・develop への配備（deploy.yaml）の後と、プレビューの配備（preview.yaml）の前に、未登録のものだけを生成して登録する。登録済みの値は上書きしない。
-  - develop とプレビューの基本設定（`wrangler preview base-config`）は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）。本番は別の値になる。
+- Worker のシークレット（予約用の認証情報の暗号鍵 `SCHEDULE_ENC_KEY` と、Bluesky の OAuth の署名鍵 `OAUTH_CLIENT_KEY`、アンケートの回答者の値を求める鍵 `SURVEY_HASH_KEY`）は手で登録しない。`hack/ensure-worker-secrets.mjs` が、本番・develop への配備（deploy.yaml）の後と、プレビューの配備（preview.yaml）の前に、未登録のものだけを生成して登録する。登録済みの値は上書きしない。
+  - develop とプレビューの基本設定（`wrangler preview base-config`）は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）。本番は別の値になる。`SURVEY_HASH_KEY` は予約投稿の暗号鍵とは別のキー・別の値である。
   - 既にあるプレビューは、作られた時点の基本設定のシークレットを持ち続ける。必要なシークレットが欠けているプレビューは、preview.yaml が配備の前に削除し、同じ名前（同じ URL）で基本設定から作り直す。
-  - 片方にだけ登録済みのとき、`OAUTH_CLIENT_KEY` は作り直して両方へ登録する（古い鍵の予約の許可は、利用者が許可し直す）。`SCHEDULE_ENC_KEY` は作り直すと保管済みの認証情報を復号できなくなるため、CI を失敗させる。このときは、手で両方を同じ値にそろえる（`openssl rand -base64 32 > enc.key` の後、`npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key` と `npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key` を実行し、`enc.key` を消す）。
+  - 片方にだけ登録済みのとき、`OAUTH_CLIENT_KEY` は作り直して両方へ登録する（古い鍵の予約の許可は、利用者が許可し直す）。`SCHEDULE_ENC_KEY` は作り直すと保管済みの認証情報を復号できなくなるため、CI を失敗させる。このときは、手で両方を同じ値にそろえる（`openssl rand -base64 32 > enc.key` の後、`npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key` と `npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key` を実行し、`enc.key` を消す）。`SURVEY_HASH_KEY` も作り直すと保管済みの回答済みの記録と一致しなくなる（再び回答できてしまう）ため、同じく CI を失敗させる。手で両方を同じ値にそろえる（`SCHEDULE_ENC_KEY` の手順の名前を `SURVEY_HASH_KEY` に替える）。
   - 鍵を替えたいときは、配信先からシークレットを削除して配備し直す（`npx wrangler secret delete <名前> --name <Worker 名>`。develop ではプレビューの基本設定からも消す）。
 - ログイン（`/login/` とアカウントの追加）と予約の許可は、同じ Bluesky の OAuth のクライアントで得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は許可を始めたページから、ログインは `/v2/bsky/session/authorization/completion/`、予約は `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、本番とプレビューでは公開された https の配信元が必要になる。
 - シークレットの名前は `OAUTH_CLIENT_KEY`（以前の `SCHEDULE_OAUTH_KEY` から改名）。以前の名前の鍵は CI が引き継がず、新しい鍵を登録する。以前の名前のシークレットは、改名を取り込んだ版を配備した後に削除してよい。
