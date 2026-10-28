@@ -2,10 +2,12 @@
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/install-cc-sdd.sh"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx cc-sdd@latest --yes --claude-skills --lang ja",
+            "timeout": 600
           },
           {
             "type": "command",

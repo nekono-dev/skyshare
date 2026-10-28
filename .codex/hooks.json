@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^startup$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx cc-sdd@latest --yes --codex-skills --lang ja",
+            "timeout": 600,
+            "statusMessage": "Installing cc-sdd"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -50,3 +50,4 @@ _legacy/**/.env.test.*
 # cc-sdd の skill（セッション開始時に .claude/hooks/install-cc-sdd.sh が導入する）。CLAUDE.md・.kiro は追跡する
 /.claude/skills/kiro-*/
 /.claude/skills/.cc-sdd-version
+/.agents/skills/kiro-*/
