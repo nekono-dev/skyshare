@@ -8,7 +8,7 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は React のアイラ
 
 - **言語**: TypeScript（`tsc --noEmit` で型検査）
 - **フレームワーク**: Astro 7 + React 19（`@astrojs/cloudflare`）
-- **ランタイム**: Cloudflare Workers。Node.js 固有の API は使えない。Node.js は Cloudflare が扱える最新の **22.16.0** に固定する
+- **ランタイム**: Cloudflare Workers。`nodejs_compat` を有効にするが、Node.js API の全互換は前提にせず、Workers での利用可否を確認する。開発・ビルド用の Node.js は CI に合わせて **22.16.0** に固定する
 - **API 契約**: Zod スキーマ → OpenAPI 3.1 → orval クライアント
 - **AT Protocol**: `@atproto/api` ほか。lexicon は `lexicons/` で管理し、`goat` で lint する
 - **テスト**: vitest（単体・Astro）、Playwright（E2E、ヘッドレスブラウザ）
@@ -21,6 +21,7 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は React のアイラ
 
 ### 型・ライブラリ
 
+- TypeScript は `astro/tsconfigs/strict` を継承する。ただし `noImplicitAny: false` の上書きがあるため、完全な strict 設定とは区別する
 - `unknown` や外部入力は Zod の `.safeParse()` で検証してから使う
 - `map(fn)` などに関数参照を直接渡さず、アロー関数で引数を明示する（暗黙の追加引数による取り違えを防ぐ）
 
@@ -53,3 +54,5 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は React のアイラ
 ---
 
 _規約と判断を書く。依存の一覧は `package.json` が正_
+
+更新日（updated_at）: 2026-10-28。CI・Workers 設定と TypeScript 設定に合わせて説明を同期。

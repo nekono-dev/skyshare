@@ -2,7 +2,7 @@
 
 ## 仕様駆動開発（cc-sdd）
 
-仕様駆動開発は [cc-sdd](https://github.com/gotalab/cc-sdd) に従う。skill（`/kiro-*`）は `.claude/skills/` に、テンプレートは `.kiro/settings/` に、セッション開始時のフック `.claude/hooks/install-cc-sdd.sh` が固定バージョンで導入する（skill はリポジトリに含めない）。`CLAUDE.md` と `.kiro/settings/`（テンプレート）は cc-sdd の標準を追跡し、プロジェクトに合わせて調整してよい。
+仕様駆動開発は cc-sdd に従う。利用する環境の `kiro-*` スキルを使い、プロジェクトの指示に沿って進める。
 
 | 成果物                                                          | 場所                                             |
 | --------------------------------------------------------------- | ------------------------------------------------ |
@@ -26,7 +26,7 @@
 
 ## ブランチとプレビュー
 
-運用は skill `branch-release-workflow` に従う。正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、`develop`、保護ブランチ `main`）。
+運用は skill `branch-release-workflow` とその設定に従う（作業ブランチ `dev/*`、`develop`、保護ブランチ `main`）。導入方法は `DEVELOP.md` を参照する。
 
 - 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作る。`git checkout -b` などで直接作らない
 - 保護ブランチと宣言外のブランチでの commit・push は、プラグインの PreToolUse フックが拒否する
@@ -48,3 +48,5 @@ UI に関わる変更（`.tsx`・`.astro`・`.css`・コンポーネント・画
 ---
 
 _cc-sdd 自体の使い方は `/kiro-*` skill の説明に従う_
+
+更新日（updated_at）: 2026-10-28。承認・ブランチ運用の方針を保ち、環境固有の導入情報を開発手順書へ委ねる。
