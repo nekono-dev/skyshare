@@ -40,6 +40,9 @@ import { operation as scheduleAuthorizationCompletionPost } from "./v2/schedules
 import { operation as scheduleCredentialDelete } from "./v2/schedules/credential/delete"
 import { operation as bskyImagesGet } from "./v2/bsky/images/get"
 import { operation as bskyVideoUploadTokenPost } from "./v2/bsky/video/upload-token/post"
+import { operation as surveyRespondentGet } from "./v2/surveys/_surveyId/respondent/get"
+import { operation as surveyRespondentPut } from "./v2/surveys/_surveyId/respondent/put"
+import { operation as surveyAnswersPost } from "./v2/surveys/_surveyId/answers/post"
 import { operation as feedbackPost } from "./v2/feedback/post"
 
 export const paths: ZodOpenApiPathsObject = {
@@ -86,4 +89,9 @@ export const paths: ZodOpenApiPathsObject = {
     "/v2/bsky/images/": { get: bskyImagesGet },
     "/v2/bsky/video/upload-token/": { post: bskyVideoUploadTokenPost },
     "/v2/feedback/": { post: feedbackPost },
+    "/v2/surveys/{surveyId}/respondent/": {
+        get: surveyRespondentGet,
+        put: surveyRespondentPut,
+    },
+    "/v2/surveys/{surveyId}/answers/": { post: surveyAnswersPost },
 }

@@ -60,7 +60,8 @@ const ID_MAX_LENGTH = 40
 /** 識別子: 英小文字・数字・ハイフン（先頭・末尾・連続のハイフンは不可） */
 const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
-const idSchema = z.string().max(ID_MAX_LENGTH).regex(ID_PATTERN)
+/** 識別子（アンケート・質問・選択肢）の検証。API の契約も同じ形式で検証するため公開する */
+export const idSchema = z.string().max(ID_MAX_LENGTH).regex(ID_PATTERN)
 
 /**
  * 配列の要素の `id` が重複する位置に、固定の理由で不正を追加する。
