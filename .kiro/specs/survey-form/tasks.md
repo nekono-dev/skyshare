@@ -91,6 +91,8 @@
   - 型検査・単体テスト・仕様と文書の整形検査・E2E の全体が通る。コールドスタートの検査が通り、依存してはならないパッケージが混入していない
   - 実アカウントでのログイン直後（認可の戻りを含む）の初回のダイアログ、アカウントを追加しても再度聞かれないこと、辞退後に新しい起動で再度聞かれることを、プレビュー環境で手順に沿って確認する（自動化できない範囲）
   - 完了: 上記の検査がすべて成功し、手動の確認の結果を記録した
+  - 検査記録（2026-10-28）: `npm test` は終了コード 0（450 passed、5 flaky は再試行成功、1 skipped）。`SITE_HOST=example.invalid npm run build:v2` は成功し、ビルド成果物を使った Worker の `/settings/` は HTTP 200。コールドスタート検査を含む単体テスト 1987 件も成功。
+  - _Blocked: プレビューの `/surveys/index.json` が HTTP 404 で開催中の設定が無く、OAuth 認可戻り後のダイアログ、アカウント追加、辞退後の新しい起動を実アカウントで確認できなかった。OAuth 認可先への遷移までは確認。プレビューに検証可能な `SURVEY_CONFIG` を用意した後、手動確認を再実施する。_
   - _Boundary: SurveyGate, SurveyDialog, SurveyLaunchCheck, SurveyDeviceRecord, SurveyApiClient, SurveyAnswerDraft, SurveyMessages, SurveyE2eHarness_
   - _Depends: 4.1, 4.2_
   - _Requirements: 1.2, 2.2, 7.6_
