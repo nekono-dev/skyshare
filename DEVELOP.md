@@ -117,6 +117,23 @@ Worker・D1・R2 の名前は上の表のとおり固定である。名前は Cl
 
 プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は、このリポジトリの実装（Cloudflare での配信と保管、予約投稿の保存期間など）に合わせて書いてある。実装を変えて運用する場合は、本文も見直すこと。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう、変えない。
 
+### ログイン時アンケートの設定
+
+アンケートの質問・選択肢・文言・期間は、コードに持たず、変数 `SURVEY_CONFIG`（JSON 文字列）で渡す。設定の構造と規則は `.kiro/specs/survey-definition/` を参照する。
+
+- `npm run survey:render` が、`SURVEY_CONFIG` を検証して静的ファイル `public/surveys/index.json` を生成する（Git 管理外）。`npm run build`・`npm run build:v2`・`npm run dev` の前に自動で実行される。
+- 未設定か空白だけなら、ファイルを作らず、以前の生成物があれば取り除いて正常終了する。不正な値なら、不正な項目の位置だけを示して異常終了し、ビルドを止める（値は表示しない）。
+- ビルドは、`SURVEY_CONFIG` が空白でない、または `public/surveys/index.json` が存在するとき、ビルド定数 `import.meta.env.PUBLIC_SURVEY_CONFIG_PRESENT` を `"true"` にし、それ以外は `"false"` にして画面とサーバーの両方に埋め込む（`astro.config.mjs`）。旗が偽なら設定を取得せず、通信もコンソールのエラーも出ない。
+- 手元で試すには、設定の JSON を環境変数で渡して起動する。
+
+```sh
+SURVEY_CONFIG="$(cat my-survey.json)" npm run dev
+# 設定なしで確認するには、変数を渡さず public/surveys/ を消して起動する
+rm -rf public/surveys && npm run dev
+```
+
+本番・develop・プレビューのビルドの工程にだけ、リポジトリ変数 `SURVEY_CONFIG` を渡す（検証と e2e のジョブには渡さない）。
+
 ### フォークして動かす
 
 フォークした自分のリポジトリと Cloudflare のアカウントで動かす手順。GitHub への登録は `gh` コマンドで行う。
