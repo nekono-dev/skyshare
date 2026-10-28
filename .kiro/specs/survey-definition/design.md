@@ -104,6 +104,8 @@ src/lib/survey/
 ├── definition.ts      # SurveyDefinition: スキーマ・型・検証・文言の選択（純粋）
 ├── period.ts          # SurveyPeriod: 現在のアンケートと保持期限の判定（純粋）
 └── loadConfig.ts      # SurveyConfigLoader: 配信用の設定の取得。失敗は「なし」
+src/lib/site/
+└── surveyPresence.ts  # BuildIntegration: 旗の判定（純粋）
 hack/
 └── render-survey-config.ts   # SurveyConfigRenderer: 変数から静的ファイルを生成
 public/surveys/index.json     # 生成物（Git 管理外）。配信 URL は /surveys/index.json
@@ -414,7 +416,7 @@ export const renderSurveyConfig: (
 
 **Responsibilities & Constraints**
 
-- 配信用の設定の有無を、`vite.define` でビルド定数 `PUBLIC_SURVEY_CONFIG_PRESENT`（"true" / "false"）として埋め込む。
+- 配信用の設定の有無を、`vite.define` でビルド定数 `PUBLIC_SURVEY_CONFIG_PRESENT`（"true" / "false"）として埋め込む。判定は「`SURVEY_CONFIG` が空白でない、または生成物が存在する」で、純粋関数 `src/lib/site/surveyPresence.ts` に切り出す。旗が真で生成物が無い場合も、取得側が 404 を「なし」にするため害はない。
 - ビルドと開発サーバーの前に生成のスクリプトを実行する。
 - 本番・develop・プレビューのビルドの工程にだけ `SURVEY_CONFIG` を渡す。検証と e2e のジョブには渡さない。
 - 生成の失敗は、ビルドの失敗として配備の前に止まる。
