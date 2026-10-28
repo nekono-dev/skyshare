@@ -39,6 +39,8 @@ const ALLOWED_CJK_FILES: Record<string, string> = {
     "lib/atproto/languageFlag.ts": "言語コードと国の対応表（表示文言ではない）",
     "lib/feedback/issueContent.ts":
         "GitHub の Issue の本文の見出しと項目名（開発者向けで、表示言語によらず日本語に固定する）",
+    "lib/survey/definition.ts":
+        "アンケート設定の検証の不備の理由（ビルド時に開発者・運用者へ出す固定文言で、画面には出ない）",
     "lib/site/siteEnv.ts":
         "ビルド時の設定検査のメッセージ（開発者向けで、画面には出ない）",
     "pages/entries/sample.astro":
