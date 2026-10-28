@@ -8,7 +8,7 @@
  * - `video.bsky.app` の playlist・セグメントは `tests/fixtures/hls/` の小さな HLS を
  *   `page.route` で返す（実通信なし）。
  */
-import { expect, test } from "./fixtures"
+import { expect, routeDefaultSurveyRespondent, test } from "./fixtures"
 import { type Locator, type Page } from "@playwright/test"
 import fs from "node:fs"
 import path from "node:path"
@@ -91,6 +91,7 @@ test.describe("動画投稿の表示", () => {
     test.beforeAll(async ({ browser }) => {
         test.setTimeout(90_000)
         const page = await browser.newPage({ ignoreHTTPSErrors: true })
+        await routeDefaultSurveyRespondent(page.context())
         await page.goto("/entries/sample/", { timeout: 60_000 })
         await page.close()
     })

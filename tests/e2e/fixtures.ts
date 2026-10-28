@@ -12,13 +12,53 @@
  * - `net::ERR_NETWORK_CHANGED`による`goto`の失敗は再試行する。
  * - 待機が上限を超えても失敗にはせず、そのまま各テストの検証へ進める
  *   （ハイドレーション自体の不具合は各テストの検証で検出する）。
+ * - 回答済みの確認（`/v2/surveys/{id}/respondent/`）に既定で「回答済み」を返し、アンケートの確認を出さない。
+ *   検証用の設定が有効な間も既存の画面の確認に影響させないため。アンケートの spec は同じ宛先を後から登録して上書きする。
+ * - 配信用のアンケート設定が取得できないときに、アンケートの確認を見送る理由を返す（`publishedSurveyConfigSkipReason`）。
  */
+import type { APIRequestContext, BrowserContext } from "@playwright/test"
 import { expect, test as base } from "@playwright/test"
+import { surveyConfigSkipReason } from "../../hack/surveyE2eHarness.mjs"
 
 export { expect }
 
 /** ハイドレーション待ちの上限（ミリ秒） */
 const HYDRATION_TIMEOUT_MS = 10_000
+
+/** 回答済みの確認の宛先（`/v2/surveys/{surveyId}/respondent/`） */
+const RESPONDENT_PATH = /\/v2\/surveys\/[^/]+\/respondent\/?$/
+
+/** 配信用のアンケート設定の取得先（`npm run survey:render` が生成する） */
+const SURVEY_CONFIG_PATH = "/surveys/index.json"
+
+/**
+ * 回答済みの確認（`/v2/surveys/{id}/respondent/`）の GET に「回答済み」を返す経路を登録する。
+ *
+ * 処理の趣旨:
+ * - BrowserContext・Page のどちらにも登録できる（`browser.newPage` / `context.newPage` で作るページにも使う）。
+ *   ページ単位の経路は文脈単位の経路より先に評価されるため、spec がページに後から登録した経路が既定より優先される。
+ * - 同じ宛先への経路は、後から登録したものが先に評価される。GET 以外は素通しする（fallback）。
+ *
+ * Input: `target`（BrowserContext または Page）。ページ・文脈は、最初の goto の前に登録する
+ * Output: 登録の完了
+ *
+ * 例: `const context = await browser.newContext(); await routeDefaultSurveyRespondent(context)`
+ */
+export const routeDefaultSurveyRespondent = async (
+    target: Pick<BrowserContext, "route">,
+): Promise<void> => {
+    await target.route(
+        url => RESPONDENT_PATH.test(url.pathname),
+        route =>
+            route.request().method() === "GET"
+                ? route.fulfill({
+                      status: 200,
+                      contentType: "application/json",
+                      body: JSON.stringify({ answered: true }),
+                  })
+                : route.fallback(),
+    )
+}
 
 /**
  * `goto`を実行する。実行環境のネットワークインターフェース変動で起きる
@@ -50,6 +90,8 @@ export const test = base.extend({
                 subtree: true,
             })
         })
+        // 既定では「回答済み」として、ログイン後のアンケートの確認を出さない
+        await routeDefaultSurveyRespondent(page)
         const originalGoto = page.goto.bind(page)
         page.goto = (async (...args: Parameters<typeof originalGoto>) => {
             const res = await gotoWithRetry(originalGoto, args)
@@ -65,6 +107,28 @@ export const test = base.extend({
         await use(page)
     },
 })
+
+/**
+ * アンケートの確認の前に、配信用の設定が取得できるかを確かめる。取得できないときは見送る理由を返す。
+ *
+ * 処理の趣旨:
+ * - `npm run test:e2e` が自分で起動した dev サーバーでは、起動の前に生成されている。
+ *   起動済みの dev サーバーでは生成されないため、ここで確かめて理由を示して見送る。
+ *
+ * Input: `request`（baseURL を使う APIRequestContext）
+ * Output: 取得できれば undefined、できなければ見送る理由の文言
+ *
+ * 例: `const reason = await publishedSurveyConfigSkipReason(request); test.skip(Boolean(reason), reason)`
+ */
+export const publishedSurveyConfigSkipReason = async (
+    request: APIRequestContext,
+): Promise<string | undefined> => {
+    const available = await request
+        .get(SURVEY_CONFIG_PATH)
+        .then(res => res.ok())
+        .catch(() => false)
+    return surveyConfigSkipReason(available)
+}
 
 /**
  * ログインのフォームで、従来形式でのログイン（アプリパスワード）の折りたたみを開く（既定は閉じている）。

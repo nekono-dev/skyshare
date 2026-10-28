@@ -7,6 +7,12 @@
  *   ログイン中のアカウントのアイコンが補われることを検証する。
  */
 import { expect, test } from "@playwright/test"
+import { routeDefaultSurveyRespondent } from "./fixtures"
+
+// セッションをモックするため、アンケートの確認に既定で「回答済み」を返す（実際の API を呼ばない）
+test.beforeEach(async ({ context }) => {
+    await routeDefaultSurveyRespondent(context)
+})
 
 test("[app-navigation/3.1] デスクトップ幅ではサイドバーが、決まった順に表示される", async ({
     page,

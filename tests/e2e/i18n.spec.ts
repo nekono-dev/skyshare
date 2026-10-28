@@ -6,7 +6,12 @@
  * - 英語環境は `test.use({ locale: "en-US" })`、日本語環境は既定（playwright.config.ts の `ja-JP`）。
  * - ゲスト表示（`?guest`）で実アカウント不要。
  */
-import { openPasswordLogin, expect, test } from "./fixtures"
+import {
+    openPasswordLogin,
+    expect,
+    routeDefaultSurveyRespondent,
+    test,
+} from "./fixtures"
 import { type Locator, type Page } from "@playwright/test"
 
 test.describe("英語ブラウザ", () => {
@@ -558,6 +563,7 @@ test.describe("複数のタブ・リクエスト", () => {
     test("[i18n-locale/3.4] 別のタブで English を選ぶと、日本語で開いていたタブが英語に切り替わる", async ({
         context,
     }) => {
+        await routeDefaultSurveyRespondent(context)
         const settingsTab = await context.newPage()
         const loginTab = await context.newPage()
         await loginTab.goto("/login/", { timeout: 60_000 })

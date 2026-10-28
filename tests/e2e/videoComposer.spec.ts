@@ -9,7 +9,7 @@
  *   （`posts[i].video` 等）の検証は `tests/components/post/ThreadComposer/submitThread.test.ts`
  *   が担う。
  */
-import { expect, test } from "./fixtures"
+import { expect, routeDefaultSurveyRespondent, test } from "./fixtures"
 import { type Locator, type Page, type Route } from "@playwright/test"
 import { readFileSync } from "node:fs"
 import path from "node:path"
@@ -199,6 +199,7 @@ test.describe("動画投稿（ThreadComposer）", () => {
     test.beforeAll(async ({ browser }) => {
         test.setTimeout(90_000)
         const page = await browser.newPage({ ignoreHTTPSErrors: true })
+        await routeDefaultSurveyRespondent(page.context())
         await page.goto("/post/?guest", { timeout: 60_000 })
         await expect(page.getByTestId("thread-segment-0")).toBeVisible({
             timeout: 60_000,

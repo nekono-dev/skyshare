@@ -13,7 +13,7 @@
  *   ゲスト表示では skyshare entry の新規作成を伴う投稿ができないため、省略の実動作
  *   （ログイン状態での長文の画像投稿→ダイアログ→X）は手動確認に委ねる。
  */
-import { expect, test } from "./fixtures"
+import { expect, routeDefaultSurveyRespondent, test } from "./fixtures"
 import { type BrowserContext, type Page } from "@playwright/test"
 import { weightedLength } from "../../src/util/share/truncateText"
 
@@ -92,6 +92,7 @@ test.describe("intentShare", () => {
         // devサーバーの初回コンパイルを待つためのウォームアップ。
         test.setTimeout(90_000)
         const page = await browser.newPage({ ignoreHTTPSErrors: true })
+        await routeDefaultSurveyRespondent(page.context())
         await page.goto("/post/?guest", { timeout: 60_000 })
         await expect(page.getByTestId("thread-segment-0")).toBeVisible({
             timeout: 60_000,
