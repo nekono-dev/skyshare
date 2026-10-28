@@ -51,6 +51,22 @@ export const isDraftComplete = (
 }
 
 /**
+ * 1 つの質問で設定のdecline印付き選択肢が選ばれているか判定する。
+ * Input: `question`: 質問定義、`draft`: 現在の選択状態。
+ * Output: この質問の選択に辞退の選択肢が1件でもあればtrue。他の質問の選択は見ない。
+ * 例: 質問の選択が[skip]でskipにdecline印があればtrue。
+ */
+export const questionHasDecline = (
+    question: SurveyQuestion,
+    draft: SurveyDraft,
+): boolean => {
+    return question.options.some(
+        option =>
+            option.decline === true && draft[question.id]?.includes(option.id),
+    )
+}
+
+/**
  * いずれかの質問で設定のdecline印付き選択肢が選ばれているか判定する。
  * Input: `survey`: 質問と選択肢の定義、`draft`: 現在の選択状態。
  * Output: 辞退の選択が1件でもあればtrue。IDの文字列からは推測しない。
@@ -61,11 +77,7 @@ export const draftHasDecline = (
     draft: SurveyDraft,
 ): boolean => {
     return survey.questions.some(question =>
-        question.options.some(
-            option =>
-                option.decline === true &&
-                draft[question.id]?.includes(option.id),
-        ),
+        questionHasDecline(question, draft),
     )
 }
 

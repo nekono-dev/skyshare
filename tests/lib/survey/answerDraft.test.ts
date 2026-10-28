@@ -6,6 +6,7 @@ import {
     draftHasDecline,
     emptyDraft,
     isDraftComplete,
+    questionHasDecline,
     toAnswers,
 } from "@/lib/survey/answerDraft"
 
@@ -169,5 +170,33 @@ describe("SurveyAnswerDraft", () => {
             "c",
             "skip-multiple",
         ])
+    })
+})
+
+describe("questionHasDecline（質問ごとの辞退判定）", () => {
+    it("[5.3] この質問の選択に辞退があればtrue、他の質問の辞退は見ない", () => {
+        expect(
+            questionHasDecline(single, {
+                single: ["skip-single"],
+                multiple: [],
+            }),
+        ).toBe(true)
+        expect(
+            questionHasDecline(multiple, {
+                single: ["skip-single"],
+                multiple: ["a", "b"],
+            }),
+        ).toBe(false)
+    })
+
+    it("[5.3] 複数の質問で辞退を選んだ質問だけtrueになる", () => {
+        const draft = { single: [], multiple: ["skip-multiple"] }
+        expect(questionHasDecline(single, draft)).toBe(false)
+        expect(questionHasDecline(multiple, draft)).toBe(true)
+    })
+
+    it("辞退の印がない選択肢や、キーがない質問はfalse", () => {
+        expect(questionHasDecline(single, { single: ["ordinary"] })).toBe(false)
+        expect(questionHasDecline(single, {})).toBe(false)
     })
 })

@@ -1,0 +1,51 @@
+/*
+ * SurveyDialog のスタイル定義。
+ *
+ * 設計方針:
+ * - カードの高さを画面内に収め、質問の並びだけを内側でスクロールさせる。
+ *   取り消せない旨・案内・送信の操作は末尾に固定し、長い内容でも送信の操作に届くようにする。
+ * - レイヤー外に書き、色・余白・文字サイズは src/styles/tokens.css のトークンのみを使う。
+ * - カードの見た目（枠・背景・ボタン）は ui の共通クラスに委譲する。
+ */
+
+/* カードを画面の高さ以内に収める。内側のスクロール領域が縮められるよう縦積みにする。 */
+.card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 96px);
+  min-height: 0;
+  gap: var(--space-3);
+}
+
+/* 質問の並びのスクロール領域。はみ出た分だけ縦にスクロールする。 */
+.scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 質問ごとの間隔。部品の外側の配置は利用側（ここ）で決める。 */
+.question {
+  flex-shrink: 0;
+}
+
+/* 取り消せない旨・案内・送信の操作の固定の領域。縮まないようにする。 */
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2);
+}
+
+/* 送信の失敗の文言。警告の色で示す。 */
+.error {
+  color: var(--color-danger-text);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
