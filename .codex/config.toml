@@ -1,2 +1,6 @@
-approval_policy = "on-request"
+approval_policy = "never"
+sandbox_mode = "workspace-write"
 approvals_reviewer = "auto_review"
+
+[sandbox_workspace_write]
+network_access = true
