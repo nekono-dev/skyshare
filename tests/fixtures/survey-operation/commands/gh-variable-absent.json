@@ -1,0 +1,5 @@
+{
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "HTTP 404: Not Found (https://api.github.com/repos/example/skyshare/actions/variables/SURVEY_CONFIG)"
+}
