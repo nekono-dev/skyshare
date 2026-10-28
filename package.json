@@ -9,6 +9,7 @@
     "apigen": "npm run apigen:doc && npm run apigen:client",
     "codegen": "npm run apigen",
     "setup:local": "node hack/prepare-local-env.mjs",
+    "survey": "tsx ./hack/survey/cli.ts",
     "survey:render": "tsx ./hack/render-survey-config.ts",
     "build:pripare": "npm run codegen && npm run survey:render && npm run format",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
