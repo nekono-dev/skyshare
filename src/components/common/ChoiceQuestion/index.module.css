@@ -1,0 +1,39 @@
+/**
+ * ChoiceQuestion のスタイル定義。
+ *
+ * 設計方針:
+ * - 質問のまとまり(fieldset)の初期化、質問文(legend)の文字、選択肢の縦並びだけを定義する。
+ *   カードの見た目は RadioButton / Checkbox(card) に委譲する。
+ * - レイヤー外に書き、色・余白・文字サイズは src/styles/tokens.css のトークンのみを使う。
+ * - 外側の配置は、利用側が className で渡すクラスに任せる。
+ */
+
+/* fieldset のブラウザ既定(余白・枠・最小幅)を初期化する。 */
+.question {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* 質問文。長い文は折り返し、横にあふれさせない。 */
+.legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+/* 選択肢を縦 1 列に並べる。RadioButton の flex 指定に影響されないよう grid にする。 */
+.choices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+}
+
+/* 長い表示文を折り返す。 */
+.choices > * {
+  overflow-wrap: anywhere;
+}
