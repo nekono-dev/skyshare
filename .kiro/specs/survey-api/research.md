@@ -160,3 +160,9 @@
 - `.kiro/specs/survey-definition/design.md` — 設定の型・期間と保持期限の判定・設定の取得の契約。
 - `src/pages/v2/feedback.ts`・`src/pages/v2/schedules/[id].ts` — 既存の API の流儀。
 - `hack/ensure-worker-secrets.mjs`・`hack/prepare-local-env.mjs` — 秘密値の自動登録。
+
+## 実機での検証結果（タスク 4.1）
+
+- **重複の文言**: wrangler 4.147 の `getPlatformProxy`（workerd 上の D1、永続先は一時ディレクトリ）に `migrations/` の全移行を適用し、`survey_respondents` への重複 INSERT を含む `db.batch([...])` を実行した。`batch()` が投げる `Error.message` は `D1_ERROR: UNIQUE constraint failed: survey_respondents.survey_id, survey_respondents.did_hash: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_PRIMARYKEY)`。`node:sqlite` の文言（接頭辞なし）を含む部分一致の `UNIQUE constraint failed: survey_respondents` で両方に当たるため、判定は変更不要で、実測の文言をテストに固定した。
+- **原子性**: 重複したバッチの後、`survey_answers` には最初の 1 行だけが残り、2 回目の回答は残らなかった（ロールバックを確認）。
+- **定期実行と旗**: `src/worker.ts` の `scheduled` は `runSurveyRetention` を呼び、そこで `readSurveyConfig(env.ASSETS, 仮の原点, { present: true })` を明示している。`readSurveyConfig` は `options.present ?? 旗` なので、明示指定があれば旗の置換の有無に依存しない（コードで確認）。

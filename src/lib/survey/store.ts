@@ -15,7 +15,12 @@ import type { D1Database } from "@/lib/schedule/cfTypes"
 /** 保存の結果 */
 export type SaveAnswerResult = "saved" | "duplicate"
 
-/** 集合の主キー違反を示すメッセージの断片（実機 D1 での文言は 4.1 で実測する） */
+/**
+ * 集合の主キー違反を示すメッセージの断片。
+ * workerd 上の D1 の batch() が投げる実測の文言は
+ * "D1_ERROR: UNIQUE constraint failed: survey_respondents.survey_id, survey_respondents.did_hash: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_PRIMARYKEY)"。
+ * 接頭辞と末尾の違いを許すため、部分一致で判定する。
+ */
 const RESPONDENT_UNIQUE_MESSAGE = "UNIQUE constraint failed: survey_respondents"
 
 /**

@@ -108,6 +108,30 @@ describe("saveAnswer", () => {
         expect(await count(db, "survey_answers")).toBe(1)
     })
 
+    it("[survey-api/7.1][survey-api/7.2] 実機 D1 の batch が投げる実測の文言も duplicate と判定する", async () => {
+        const measured =
+            "D1_ERROR: UNIQUE constraint failed: survey_respondents.survey_id, survey_respondents.did_hash: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_PRIMARYKEY)"
+        const db = {
+            prepare: () => ({ bind: () => ({}) }),
+            batch: async () => {
+                throw new Error(measured)
+            },
+        } as unknown as D1Database
+        expect(await saveAnswer(db, input())).toBe("duplicate")
+    })
+
+    it("[survey-api/6.7] 回答の主キー違反の実機の文言は duplicate にしない", async () => {
+        const db = {
+            prepare: () => ({ bind: () => ({}) }),
+            batch: async () => {
+                throw new Error(
+                    "D1_ERROR: UNIQUE constraint failed: survey_answers.survey_id, survey_answers.id: SQLITE_CONSTRAINT (extended: SQLITE_CONSTRAINT_PRIMARYKEY)",
+                )
+            },
+        } as unknown as D1Database
+        await expect(saveAnswer(db, input())).rejects.toThrow(/survey_answers/)
+    })
+
     it("[survey-api/6.7] 無関係な失敗はそのまま投げる", async () => {
         const failing = {
             prepare: () => {
