@@ -93,10 +93,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node hack/render-deploy-config.mjs --develop
-      # サイトの URL（共有リンクなど）をプレビューのドメインにする
+      # サイトの URL（共有リンクなど）をプレビューのドメインにする。
+      # アンケートの設定の元の変数（SURVEY_CONFIG）はビルドにだけ渡す。生成に失敗するとビルドごと止まり、配備には進まない
       - name: Run build
         if: steps.alias.outputs.valid == 'true'
         env:
+          SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}
           SITE_HOST: ${{ steps.alias.outputs.alias }}.develop.${{ vars.SITE_HOST }}
         run: npm run build
 
