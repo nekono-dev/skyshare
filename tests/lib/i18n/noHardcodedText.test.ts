@@ -43,6 +43,10 @@ const ALLOWED_CJK_FILES: Record<string, string> = {
         "アンケート設定の検証の不備の理由（ビルド時に開発者・運用者へ出す固定文言で、画面には出ない）",
     "lib/site/siteEnv.ts":
         "ビルド時の設定検査のメッセージ（開発者向けで、画面には出ない）",
+    "components/common/ChoiceQuestionSample/index.tsx":
+        "選択式質問部品の確認用の固定の例文（Playwright が操作を確認する対象で、本番の画面では使わない）",
+    "pages/samples/choice-question.astro":
+        "選択式質問部品の確認用ページの固定の見出し（noindex の静的ページ）",
     "pages/entries/sample.astro":
         "ビルド時に固定される（SSG）サンプルEntryのデモデータ。ゲスト表示のリンク先",
 }
