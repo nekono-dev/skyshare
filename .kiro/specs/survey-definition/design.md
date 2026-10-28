@@ -399,8 +399,8 @@ export const readSurveyConfig: (
 export const renderSurveyConfig: (
   raw: string | undefined,
   outputPath: string,
-) => { status: "written" | "removed" | "absent"; issues?: string[] }
-// written / removed / absent は終了コード 0、検証の失敗は 1
+) => { status: "written" | "removed" | "absent" | "failed"; issues?: string[] }
+// written / removed / absent は終了コード 0、failed（読めない値・検証の失敗。issues に固定文言・位置と理由）は 1。例外は投げない
 ```
 
 ### ビルド・CI
