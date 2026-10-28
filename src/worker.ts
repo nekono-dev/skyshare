@@ -5,6 +5,8 @@
  * - 画面と API のリクエスト（fetch）は、Astro のアダプタが提供するハンドラに任せる。
  * - Cron Trigger による定期実行（scheduled）で、実行時刻が到来した予約投稿を毎分実行し、
  *   1日1回（`isHousekeepingTime`）だけ終了した予約と不要な認証情報の後片付けを行う。
+ *   同じ日次の枠で、保持期限を過ぎたアンケートのデータの削除（`runSurveyRetention`）も、
+ *   予約投稿の後片付けとは別の `waitUntil` で起動する（互いの失敗が影響しない）。毎分の予約実行には何も足さない。
  *   scheduled は Cloudflare のプラットフォームだけが呼び、HTTP の経路から到達できない。
  */
 import { handle } from "@astrojs/cloudflare/handler"
@@ -14,18 +16,26 @@ import {
     runHousekeeping,
     runScheduledPosts,
 } from "@/lib/schedule/runner"
+import {
+    runSurveyRetention,
+    type SurveyRetentionEnv,
+} from "@/lib/survey/retention"
 
 export default {
     fetch: handle,
     async scheduled(
         event: { scheduledTime: number },
-        env: ScheduleEnv,
+        env: ScheduleEnv & Pick<SurveyRetentionEnv, "ASSETS">,
         ctx: { waitUntil: (promise: Promise<unknown>) => void },
     ) {
         const now = Math.floor(Date.now() / 1000)
         ctx.waitUntil(runScheduledPosts(env, now))
         if (isHousekeepingTime(Math.floor(event.scheduledTime / 1000))) {
             ctx.waitUntil(runHousekeeping(env, now))
+            // 同期的な例外も他方へ波及させないよう、async 関数で包む
+            ctx.waitUntil(
+                (async () => runSurveyRetention(env, new Date(now * 1000)))(),
+            )
         }
     },
 }
