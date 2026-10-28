@@ -14,18 +14,19 @@ const absent = JSON.parse(fixture("gh-variable-absent.json"))
 const authFailure = JSON.parse(fixture("gh-auth-failure.json"))
 
 describe("survey remote", () => {
-    test("reads and writes SURVEY_CONFIG through gh without exposing the value in args", async () => {
+    test("reads one repository variable through the API and writes through stdin", async () => {
         const calls: { command: string; args: string[]; input?: string }[] = []
         const remote = createSurveyRemote({
             repo: "owner/repo",
             run: (command, args, input) => {
                 calls.push({ command, args, input })
                 return command === "gh" &&
-                    args[0] === "variable" &&
-                    args[1] === "get"
+                    args[0] === "api" &&
+                    args[1] ===
+                        "repos/owner/repo/actions/variables/SURVEY_CONFIG"
                     ? {
                           status: 0,
-                          stdout: '{"value":"safe-config"}',
+                          stdout: '{"name":"SURVEY_CONFIG","value":"safe-config"}',
                           stderr: "",
                       }
                     : { status: 0, stdout: "", stderr: "" }
@@ -36,6 +37,11 @@ describe("survey remote", () => {
         await remote.writeConfigValue("private-survey-config")
         await remote.deleteConfigValue()
 
+        expect(calls[0]).toEqual({
+            command: "gh",
+            args: ["api", "repos/owner/repo/actions/variables/SURVEY_CONFIG"],
+            input: undefined,
+        })
         expect(calls).toHaveLength(3)
         expect(calls[1]).toEqual({
             command: "gh",
@@ -61,6 +67,25 @@ describe("survey remote", () => {
         })
         await expect(unauthenticated.readConfigValue()).rejects.not.toThrow(
             /logged into|auth login/i,
+        )
+    })
+
+    test("rejects malformed API responses with a fixed parse error", async () => {
+        const remote = createSurveyRemote({
+            repo: "owner/repo",
+            run: () => ({
+                status: 0,
+                stdout: '{"name":"SURVEY_CONFIG","value":42}',
+                stderr: "private response detail",
+            }),
+        })
+
+        await expect(remote.readConfigValue()).rejects.toMatchObject({
+            kind: "parse",
+            message: "外部サービスの応答を読み取れません",
+        })
+        await expect(remote.readConfigValue()).rejects.not.toThrow(
+            /private response detail|42/,
         )
     })
 

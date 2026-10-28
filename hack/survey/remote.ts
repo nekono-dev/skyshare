@@ -140,10 +140,8 @@ export const wranglerEnvironment = (
 }
 
 const parseVariableValue = (output: string): string => {
-    const trimmed = output.trim()
-    if (trimmed === "") throw new RemoteError("parse")
     try {
-        const parsed: unknown = JSON.parse(trimmed)
+        const parsed: unknown = JSON.parse(output)
         if (
             parsed !== null &&
             typeof parsed === "object" &&
@@ -153,9 +151,9 @@ const parseVariableValue = (output: string): string => {
             return parsed.value
         }
     } catch {
-        // gh の既定出力は JSON ではなく値そのもの。
+        // API 応答に含まれる値や解析例外をエラーへ含めない。
     }
-    return trimmed
+    throw new RemoteError("parse")
 }
 
 const sqlLiteral = (value: string): string => `'${value.replaceAll("'", "''")}'`
@@ -218,10 +216,7 @@ export const createSurveyRemote = (
         return parsedRepo
     }
 
-    const gh = (
-        action: "get" | "set" | "delete",
-        input?: string,
-    ): CommandResult =>
+    const gh = (action: "set" | "delete", input?: string): CommandResult =>
         run(
             "gh",
             ["variable", action, VARIABLE_NAME, "-R", resolveRepo()],
@@ -230,12 +225,12 @@ export const createSurveyRemote = (
 
     return {
         async readConfigValue() {
-            const result = gh("get")
+            const result = run("gh", [
+                "api",
+                `repos/${resolveRepo()}/actions/variables/${VARIABLE_NAME}`,
+            ])
             if (result.status === 0) return parseVariableValue(result.stdout)
-            if (
-                /HTTP 404: Not Found|not found/i.test(result.stderr) &&
-                result.stderr.includes(VARIABLE_NAME)
-            ) {
+            if (/HTTP 404\b/.test(result.stderr)) {
                 return undefined
             }
             throw remoteErrorFor(result)
@@ -249,10 +244,7 @@ export const createSurveyRemote = (
         async deleteConfigValue() {
             const result = gh("delete")
             if (result.status !== 0) {
-                if (
-                    /HTTP 404: Not Found|not found/i.test(result.stderr) &&
-                    result.stderr.includes(VARIABLE_NAME)
-                ) {
+                if (/HTTP 404\b/.test(result.stderr)) {
                     return
                 }
                 throw remoteErrorFor(result)

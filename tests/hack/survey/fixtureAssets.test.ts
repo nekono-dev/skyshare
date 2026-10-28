@@ -65,7 +65,7 @@ describe("survey-operation の固定資材", () => {
         expect(parseSurveyConfig(readJson(file)).ok).toBe(false)
     })
 
-    it("[8.1] gh と wrangler の固定出力例が値を含まず用意されている", () => {
+    it("[8.1] GitHub API と wrangler の固定出力例が値を含まず用意されている", () => {
         const absent = readJson("commands/gh-variable-absent.json") as {
             exitCode: number
             stdout: string
@@ -76,8 +76,13 @@ describe("survey-operation の固定資材", () => {
             stdout: string
             stderr: string
         }
-        expect(absent).toMatchObject({ exitCode: 1, stdout: "" })
-        expect(absent.stderr).toMatch(/404|not found/i)
+        // 読み取りを gh variable get から gh api に変えたため、404 の JSON 本文は stdout に出る。
+        expect(absent).toMatchObject({ exitCode: 1 })
+        expect(JSON.parse(absent.stdout)).toMatchObject({
+            message: "Not Found",
+            status: "404",
+        })
+        expect(absent.stderr).toMatch(/HTTP 404/i)
         expect(authFailure).toMatchObject({ exitCode: 1, stdout: "" })
         expect(authFailure.stderr).toMatch(/auth|login/i)
 

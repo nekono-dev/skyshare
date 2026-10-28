@@ -51,7 +51,7 @@
 - survey-definition のスキーマ・識別子の規則・保持期限の判定（`retentionExpired`）の変更（追加の検証と除去の判定を再確認する）。
 - survey-api の表名・`survey_id` 列・D1 の名前の規則の変更（`SurveyRemote` の問い合わせを再確認する）。
 - 設定の元の名前 `SURVEY_CONFIG`、変数の容量の上限の変更。
-- `gh variable`・`wrangler d1 execute` の出力形式の変更。
+- `gh api` の単一変数 GET 応答、`gh variable`、`wrangler d1 execute` の出力形式の変更。
 - `workflow.md` の main への取り込みの手順の変更、branch-release-workflow の流れの変更。
 
 ## Architecture
@@ -159,7 +159,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-  start[add 下書き] --> read[変数を読む 未設定は空]
+  start[add 下書き] --> read[gh api で単一変数を読む 未設定は空]
   read --> build[識別子を決め全体を組み立てる]
   build --> parse{parseSurveyConfig}
   parse -->|不正| fail[error 行 位置と理由 書かない]
@@ -176,7 +176,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  start[prune] --> read[変数を読む]
+  start[prune] --> read[gh api で単一変数を読む]
   read --> cand[保持期限以後のアンケートを候補にする]
   cand --> none{候補があるか}
   none -->|なし| nothing[除く対象なしを要約 書かない 問い合わせない]
@@ -377,7 +377,7 @@ export const decidePrune: (
 
 **Responsibilities & Constraints**
 
-- 変数の取得・設定・削除（`gh variable get|set|delete SURVEY_CONFIG -R <owner/repo>`）。設定の値は標準入力で渡し、引数・ログ・要約に出さない。
+- 変数の取得は `gh api repos/<owner>/<repo>/actions/variables/SURVEY_CONFIG` で単一変数だけを読む。設定・削除は `gh variable set|delete SURVEY_CONFIG -R <owner/repo>` を使い、設定の値は標準入力で渡す。値を引数・ログ・要約に出さない。
 - 変数が未設定のときは `undefined` を返す。「見つからない」旨の失敗だけを未設定とみなし、認証切れなどは区別する。
 - 回答データの有無: D1 の名前（`wrangler.template.jsonc` の `database_name` と、その末尾に `-develop` を付けた名前）ごとに、`wrangler d1 execute <名前> --remote --json --command` で SELECT のみを発行する。1 回の問い合わせで 2 表の `EXISTS` を同時に読む。識別子が規則に合わないときは問い合わせず `unknown` にする。
 - 失敗は `RemoteError` の分類（`auth`・`unavailable`・`parse`）に固定し、`gh`・`wrangler` の標準エラーの文言は返さない（認証情報や値が混ざりうるため）。
@@ -427,7 +427,7 @@ export const createSurveyRemote: (options?: {
 
 **Implementation Notes**
 
-- Integration: `run` を注入できるようにして、テストでは固定の出力を返す。`gh variable get` の「見つからない」の判定と `wrangler d1 execute --json` の出力の形（結果の配列の 1 行目の `EXISTS` の列）は、固定の出力例を `tests/fixtures/survey-operation/` に置いてテストに使う。実装時に実機の出力で例を確かめる。
+- Integration: `run` を注入できるようにして、テストでは固定の出力を返す。単一変数 GET API の 404 による「見つからない」の判定と `wrangler d1 execute --json` の出力の形（結果の配列の 1 行目の `EXISTS` の列）は、固定の出力例を `tests/fixtures/survey-operation/` に置いてテストに使う。実装時に実機の出力で例を確かめる。
 - Validation: D1 の名前は、テンプレートに複数の D1 がある場合に備え、`database_name` が複数あっても `binding` が `DB` のものを使う。
 - Risks: `wrangler` の標準出力に進捗の行が混ざることがある。`--json` の出力から JSON の部分だけを取り出す。取り出せなければ `unknown`。
 

@@ -1,5 +1,5 @@
 {
   "exitCode": 1,
-  "stdout": "",
-  "stderr": "HTTP 404: Not Found (https://api.github.com/repos/example/skyshare/actions/variables/SURVEY_CONFIG)"
+  "stdout": "{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/variables#get-a-repository-variable\",\"status\":\"404\"}",
+  "stderr": "gh: Not Found (HTTP 404)"
 }
