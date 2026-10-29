@@ -92,7 +92,9 @@
   - 実アカウントでのログイン直後（認可の戻りを含む）の初回のダイアログ、アカウントを追加しても再度聞かれないこと、辞退後に新しい起動で再度聞かれることを、プレビュー環境で手順に沿って確認する（自動化できない範囲）
   - 完了: 上記の検査がすべて成功し、手動の確認の結果を記録した
   - 検査記録（2026-10-28）: `npm test` は終了コード 0（450 passed、5 flaky は再試行成功、1 skipped）。`SITE_HOST=example.invalid npm run build:v2` は成功し、ビルド成果物を使った Worker の `/settings/` は HTTP 200。コールドスタート検査を含む単体テスト 1987 件も成功。
-  - _Blocked: `dev/survey` のプレビューは更新済みで、`/surveys/index.json` に2026年12月の設定があることと HTTP 200 を確認した。OAuth 認可戻り後のダイアログ、アカウント追加、辞退後の新しい起動は実アカウントでの確認が必要だが、この環境に `.env.e2e` と `SKYSHARE_E2E_IDENTIFIER` / `SKYSHARE_E2E_APP_PASSWORD` が無く、検証用アカウントで認証できない。検証用アカウントの認証情報が利用できる環境で再実施する。_
+  - 検査記録（2026-10-29）: `BRW_PLUGIN_DIR` を指定した `npm test` は終了コード 0（unit 2028、Astro 8、E2E 448 passed、7 flaky は再試行成功、1 skipped）。cold-start 検査を含む。`SITE_HOST=example.com npm run build:v2` と `git diff --check` も成功。プレビューの `/surveys/index.json` は HTTP 200。
+  - 検査記録（2026-10-29）: 運営 CLI の dry-run 後に `SURVEY_CONFIG` を更新し、`2026-12-1` の開始を `2026-10-29T02:18:38Z` に変更、終了は `2026-12-31T15:00:00Z` のままとした。設定値はプレビューの次回ビルドで反映する。
+  - _Blocked: 旧プレビューでは設定が次回ビルド前のままのため、OAuth 認可戻り後の表示、アカウント追加時の非表示、辞退後の再起動をまだ確認できない。`dev/survey` のプレビュー更新後、実アカウントで再確認する。回答は送信しない。_
   - _Boundary: SurveyGate, SurveyDialog, SurveyLaunchCheck, SurveyDeviceRecord, SurveyApiClient, SurveyAnswerDraft, SurveyMessages, SurveyE2eHarness_
   - _Depends: 4.1, 4.2_
-  - _Requirements: 1.2, 2.2, 7.6_
+  - _Requirements: 1.2, 2.2, 8.1_
