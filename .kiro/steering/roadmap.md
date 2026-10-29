@@ -33,7 +33,7 @@
 
 ## Existing Spec Updates
 
-- [ ] privacy-policy -- 収集する情報・利用目的・保持期間に、匿名のアンケート回答を追記する。回答の取り消しができないこと、did は回答と結びつかないハッシュで重複の判定にだけ使うこと、端末（localStorage）に回答済みの旗とアカウントの識別子を保持することを明記する。Dependencies: survey-api
+- [x] privacy-policy -- 収集する情報・利用目的・保持期間に、匿名のアンケート回答を追記する。回答の取り消しができないこと、did は回答と結びつかないハッシュで重複の判定にだけ使うこと、端末（localStorage）に回答済みの旗とアカウントの識別子を保持することを明記する。Dependencies: survey-api
 
 ## Direct Implementation Candidates
 
