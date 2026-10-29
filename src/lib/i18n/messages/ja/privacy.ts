@@ -26,6 +26,8 @@ export const privacy = {
         "お問い合わせの際のメールアドレスまたは Bluesky のアカウントと、お問い合わせの内容",
     "privacy.collected.feedback":
         "不具合の報告・機能の提案の際の、入力した内容と Bluesky のハンドルと DID、端末と Skyshare の版の情報",
+    "privacy.collected.survey":
+        "アンケート回答の選択肢と、重複を防ぐため DID から作るハッシュを扱います。ハッシュは回答と結びつけません。端末には回答済みの印とアカウントの識別子を localStorage に保存します。",
     "privacy.collected.note":
         "通常の投稿や下書きは利用者の Bluesky に保存され、本サービスでは保管しません。",
     "privacy.purpose.title": "利用目的",
@@ -35,6 +37,8 @@ export const privacy = {
     "privacy.purpose.item3": "利用状況の把握と本サービスの改善",
     "privacy.purpose.item4": "不具合の調査と不正利用の防止",
     "privacy.purpose.item5": "お問い合わせへの回答",
+    "privacy.purpose.survey":
+        "アンケート回答を集計し、傾向の把握と重複回答の防止に使います。",
     "privacy.external.title": "情報の共有",
     "privacy.external.intro":
         "次の場合を除き、利用者の情報を第三者と共有しません。",
@@ -59,6 +63,12 @@ export const privacy = {
         "アクセス解析の情報は、Google アナリティクスの保持期間の設定に従います。",
     "privacy.retention.feedback":
         "不具合の報告・機能の提案は、GitHub の Issue として残ります。削除をご希望の場合は連絡先までご連絡ください。",
+    "privacy.retention.surveyHash":
+        "サーバーの重複判定用ハッシュは、アンケート終了後に削除します。",
+    "privacy.retention.surveyAnswer":
+        "アンケートの回答は、終了から1か月後に削除します。",
+    "privacy.retention.surveyDevice":
+        "端末の記録は、ブラウザの保存データを消すまで残ります。",
     "privacy.security.title": "セキュリティ",
     "privacy.security.intro":
         "利用者の情報を守るため、次の対策をとっています。",
@@ -82,6 +92,7 @@ export const privacy = {
         "利用者は、ご自身の情報の開示・訂正・削除を求めることができます。上記の連絡先までご連絡ください。",
     "privacy.rights.self":
         "予約の変更・取消・削除は投稿フォームの「下書き・予約」から行えます。設定で予約投稿を無効にすると、予約と認可の情報をすべて削除し、Bluesky での許可も取り消します。",
+    "privacy.rights.survey": "アンケートの回答は、送信後に取り消せません。",
     "privacy.revision.title": "このポリシーの変更",
     "privacy.revision.body":
         "このポリシーは、必要に応じて変更することがあります。変更後の内容は、このページに掲載した時点から適用します。",
