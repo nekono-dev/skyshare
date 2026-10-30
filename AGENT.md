@@ -9,12 +9,14 @@ branch-release-workflow の本体は skyshare に置かず、GitHub の `nekono-
 ```sh
 npm run setup:brw
 export BRW_PLUGIN_DIR="$(node hack/setup-brw.mjs)"
-node "$BRW_PLUGIN_DIR/scripts/brw.mjs" check
+node "$BRW_PLUGIN_DIR/scripts/brw.mjs" check --branches-only
 ```
 
 取得元と固定SHAは `.branch-release-workflow-source.json` に集約し、ローカルと全CIで同じ版を使う。`npm run setup:brw` は外部の `~/.cache/skyshare/brw` へ fetch / checkout し、`.agents/skills/branch-release-workflow` からリンクする。更新時は外部リポジトリの変更を先にpushしてから固定SHAを変更し、セットアップを再実行する。skill本体・生成リンクはcommitしない。
 
 新しい clone / worktree / クラウド環境でもこの準備を行う。skillが探索されないときは `$BRW_PLUGIN_DIR/SKILL.md` を直接読む。テスト・型検査の前提は DEVELOP.md の「テスト・型検査と作業ブランチの worktree の準備」に従う。
+
+本番用テンプレートは `previews_enabled: false` で、develop配備時の設定生成で `true` に切り替わる。ブランチとCIの整合は `check --branches-only` で検査する。通常の `check` はプレビュー用の生成済み設定も検査し、本番テンプレートだけでは未設定エラーを報告する。
 
 ## 作業手順
 
