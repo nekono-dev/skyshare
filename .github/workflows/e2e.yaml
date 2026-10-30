@@ -111,7 +111,7 @@ jobs:
         run: npx playwright install chromium firefox webkit
 
       # hack/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する（単体テストも使う）。
-      # 秘密情報を扱うジョブで実行するため、検証済みのコミットに固定する（取得元とSHAは .branch-release-workflow-source.json に集約）
+      # 秘密情報を扱うジョブで実行するため、指定ブランチの最新コミットを取得する（取得元は .branch-release-workflow-source.json）
       - name: Fetch branch-release-workflow
         run: |
           brw_dir="$(node hack/setup-brw.mjs)"

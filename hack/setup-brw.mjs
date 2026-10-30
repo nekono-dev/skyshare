@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 共有skillを外部Gitリポジトリから固定コミットで取得し、必要ならCodexへ登録する。
+ * 共有skillを外部Gitリポジトリから指定ブランチの最新コミットで取得し、必要ならCodexへ登録する。
  * Input: .branch-release-workflow-source.json、引数 --codex（省略時はCI向け取得のみ）。
  * Output: clone の絶対パスを標準出力へ出す。Gitの診断と導入ログは標準エラーへ出す。
  * 例: npm run setup:brw / BRW_PLUGIN_DIR=$(node hack/setup-brw.mjs)
@@ -16,16 +16,17 @@ const args = process.argv.slice(2)
 if (args.length > 1 || (args.length === 1 && args[0] !== "--codex")) {
   throw new Error("使い方: node hack/setup-brw.mjs [--codex]")
 }
-const { repository, ref } = JSON.parse(
+const { repository, branch } = JSON.parse(
   readFileSync(join(root, ".branch-release-workflow-source.json"), "utf8"),
 )
 if (
   typeof repository !== "string" ||
   !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\.git$/.test(repository) ||
-  !/^[a-f0-9]{40}$/.test(ref)
+  typeof branch !== "string" ||
+  !/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(branch)
 ) {
   throw new Error(
-    "skillの取得元にはGitHubのHTTPS URLと40桁のコミットSHAを指定してください",
+    "skillの取得元にはGitHubのHTTPS URLとブランチ名を指定してください",
   )
 }
 const clone = join(
@@ -44,11 +45,12 @@ const git = args =>
     stdio: ["ignore", "pipe", "inherit"],
   }).trim()
 if (!existsSync(join(clone, ".git"))) git(["init", "-q"])
-// 各実行で固定SHAへ戻す。キャッシュを使う場合も、異なる版を誤って利用しない。
-git(["fetch", "-q", "--depth", "1", repository, ref])
+// 各実行で指定ブランチの最新コミットを取り込み、cloneを更新する。
+git(["check-ref-format", "--branch", branch])
+git(["fetch", "-q", "--depth", "1", repository, `refs/heads/${branch}`])
 git(["checkout", "-q", "--detach", "--force", "FETCH_HEAD"])
-if (git(["rev-parse", "HEAD"]) !== ref)
-  throw new Error("取得したskillのSHAが一致しません")
+if (git(["rev-parse", "HEAD"]) !== git(["rev-parse", "FETCH_HEAD"]))
+  throw new Error("取得したskillのブランチ先頭と一致しません")
 if (args[0] === "--codex") {
   process.stderr.write(
     execFileSync(

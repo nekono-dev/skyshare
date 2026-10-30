@@ -69,7 +69,7 @@ npm run deploy
 
 `main` への push では本番デプロイしない。`release/*` はすべて同じ本番 Worker・D1・R2 に配備するため、異なるリリースブランチ間でもデプロイを直列化している。古いリリースへの再pushで本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
 
-Claude と Codex のブランチ宣言は `.branch-release-workflow.json` を共有する。旧 `.claude/branch-release-workflow.json` は正本へのリンク。Codex は `npm run setup:brw` で外部Git cloneを取得しskillを登録する（詳細は AGENT.md）。取得元と検証済みSHAは `.branch-release-workflow-source.json` に集約し、CIも `node hack/setup-brw.mjs` で同じ版を取得する。更新は共有skillの変更を先にpushしてからSHAを更新し、セットアップを再実行する。
+Claude と Codex のブランチ宣言は `.branch-release-workflow.json` を共有する。旧 `.claude/branch-release-workflow.json` は正本へのリンク。Codex は `npm run setup:brw` で外部Git cloneを取得しskillを登録する（詳細は AGENT.md）。取得元と追跡ブランチは `.branch-release-workflow-source.json` に集約し、CIも `node hack/setup-brw.mjs` で同じブランチの最新コミットを取得する。更新は共有skillの変更を選択したブランチへ取り込んでから、セットアップを再実行する。
 
 `wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
@@ -183,7 +183,7 @@ done
 - 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
 
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
-- D1 のマイグレーション（`migrations/`）は、`release/*` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。未リリースのため、予約投稿・OAuth・アンケートの最終構造を `migrations/0001_initial.sql` に統合している。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
+- D1 のマイグレーション（`migrations/`）は、`release/*` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。本番D1は未作成で、初回 `release/*` は空のDBへ `migrations/0001_initial.sql` を適用する。`main` は初期状態を保ち、マイグレーションを置かない。実環境に既存テーブルがある将来のリリースでは、対象DBの適用履歴を確認し、差分のSQLをそのリリースブランチで用意してから配備する。過去の分割マイグレーションを適用した開発DBは、新規DBに作り直してから統合版を適用する。
 
 ### 不具合の報告・新機能の提案の初期設定（初回のみ）
 

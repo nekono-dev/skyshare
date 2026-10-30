@@ -12,7 +12,7 @@ export BRW_PLUGIN_DIR="$(node hack/setup-brw.mjs)"
 node "$BRW_PLUGIN_DIR/scripts/brw.mjs" check --branches-only
 ```
 
-取得元と固定SHAは `.branch-release-workflow-source.json` に集約し、ローカルと全CIで同じ版を使う。`npm run setup:brw` は外部の `~/.cache/skyshare/brw` へ fetch / checkout し、`.agents/skills/branch-release-workflow` からリンクする。更新時は外部リポジトリの変更を先にpushしてから固定SHAを変更し、セットアップを再実行する。skill本体・生成リンクはcommitしない。
+取得元と追跡ブランチは `.branch-release-workflow-source.json` に集約し、ローカルと全CIで同じブランチの最新コミットを使う。`npm run setup:brw` は外部の `~/.cache/skyshare/brw` へ fetch / checkout し、`.agents/skills/branch-release-workflow` からリンクする。共有skillの変更が選択したブランチへ取り込まれたら、セットアップを再実行して更新する。skill本体・生成リンクはcommitしない。
 
 新しい clone / worktree / クラウド環境でもこの準備を行う。skillが探索されないときは `$BRW_PLUGIN_DIR/SKILL.md` を直接読む。テスト・型検査の前提は DEVELOP.md の「テスト・型検査と作業ブランチの worktree の準備」に従う。
 

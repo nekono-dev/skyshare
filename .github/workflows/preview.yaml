@@ -75,7 +75,7 @@ jobs:
           fi
 
       # hack/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する。
-      # 秘密情報を扱うジョブで実行するため、検証済みのコミットに固定する（取得元とSHAは .branch-release-workflow-source.json に集約）
+      # 秘密情報を扱うジョブで実行するため、指定ブランチの最新コミットを取得する（取得元は .branch-release-workflow-source.json）
       - name: Fetch branch-release-workflow
         if: steps.alias.outputs.valid == 'true'
         run: |
