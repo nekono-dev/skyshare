@@ -9,7 +9,9 @@ import partytown from "@astrojs/partytown"
 import { loadEnv } from "vite"
 import { checkSiteEnv, siteUrl } from "./src/lib/site/siteEnv.ts"
 import { resolveBuildInfo } from "./src/lib/site/buildEnv.ts"
+import { surveyConfigPresentFlag } from "./src/lib/site/surveyPresence.ts"
 import { execFileSync } from "node:child_process"
+import { existsSync } from "node:fs"
 
 // astro dev サーバーは HTTPS 化のため vite-plugin-basic-ssl 経由で
 // Node の http2 secure server を使う（Vite が https 設定時に自動選択するため）。
@@ -51,6 +53,13 @@ const build = resolveBuildInfo(env, {
   remoteUrl: readGit("remote", "get-url", "origin"),
 })
 
+// 配信用のアンケート設定の有無。変数が空白でない、または生成物が存在するとき "true"。
+// 画面とサーバーは、この旗が "true" のときだけ設定を取得する（`src/lib/survey/loadConfig.ts`）
+const surveyConfigPresent = surveyConfigPresentFlag(
+  env,
+  existsSync(new URL("./public/surveys/index.json", import.meta.url)),
+)
+
 export default defineConfig({
   output: "server",
   adapter: cloudflare({ imageService: "compile" }),
@@ -77,6 +86,8 @@ export default defineConfig({
       "import.meta.env.PUBLIC_SOURCE_REPOSITORY": JSON.stringify(
         build.repository ?? "",
       ),
+      "import.meta.env.PUBLIC_SURVEY_CONFIG_PRESENT":
+        JSON.stringify(surveyConfigPresent),
     },
     // バンドルが大きくなる旨の警告上限を引き上げる
     build: {

@@ -8,7 +8,12 @@
  *   戻りでの完了と結果の表示を検証する。
  */
 import { expect, test, type Page } from "@playwright/test"
-import { openPasswordLogin } from "./fixtures"
+import { openPasswordLogin, routeDefaultSurveyRespondent } from "./fixtures"
+
+// セッションをモックするため、アンケートの確認に既定で「回答済み」を返す（実際の API を呼ばない）
+test.beforeEach(async ({ context }) => {
+    await routeDefaultSurveyRespondent(context)
+})
 
 const ACCOUNTS = [
     {

@@ -7,7 +7,12 @@
  * - ステータスごとの文言の対応（409・500）は`i18n.spec.ts`で確認する。
  */
 import { expect, test } from "@playwright/test"
-import { openPasswordLogin } from "./fixtures"
+import { openPasswordLogin, routeDefaultSurveyRespondent } from "./fixtures"
+
+// セッションをモックするため、アンケートの確認に既定で「回答済み」を返す（実際の API を呼ばない）
+test.beforeEach(async ({ context }) => {
+    await routeDefaultSurveyRespondent(context)
+})
 
 test("[api-error-message/2.4] ログイン時に通信が失敗すると、接続できない旨の文言が表示される", async ({
     page,

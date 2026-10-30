@@ -2,8 +2,8 @@
 //
 // 責務:
 // - .dev.vars が無ければ .dev.vars.template から作る
-// - 予約投稿と OAuth のシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY）が未設定なら、ランダムに生成して書き込む
-// - 設定済みの値は決して上書きしない（鍵を替えると、保管済みの予約の認証情報が復号できなくなるため）
+// - 予約投稿・OAuth・アンケートのシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY・SURVEY_HASH_KEY）が未設定なら、ランダムに生成して書き込む
+// - 設定済みの値は決して上書きしない（鍵を替えると、保管済みの予約の認証情報が復号できなくなり、アンケートの回答済みの記録とも一致しなくなるため）
 //
 // 使い方: node hack/prepare-local-env.mjs
 // 生成した値は .dev.vars（.gitignore 対象）にだけ書き、標準出力には出さない。
@@ -17,6 +17,8 @@ import { generateOauthKey } from "./generate-oauth-key.mjs"
 export const GENERATORS = {
   SCHEDULE_ENC_KEY: async () => randomBytes(32).toString("base64"),
   OAUTH_CLIENT_KEY: generateOauthKey,
+  // アンケートの回答者の値を求める鍵（予約投稿の暗号鍵とは別のキーと値）
+  SURVEY_HASH_KEY: async () => randomBytes(32).toString("base64"),
 }
 
 /**

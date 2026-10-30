@@ -16,7 +16,10 @@ import {
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { fillMissingSecrets } from "../../hack/prepare-local-env.mjs"
+import {
+    GENERATORS,
+    fillMissingSecrets,
+} from "../../hack/prepare-local-env.mjs"
 
 const ROOT = path.resolve(__dirname, "../..")
 const generators = {
@@ -86,6 +89,24 @@ describe("prepare-local-env.mjs", () => {
 
         expect(run().status).toBe(0)
         expect(readFileSync(path.join(dir, ".dev.vars"), "utf8")).toBe(text)
+    })
+
+    it("[survey-api/10.2][survey-api/10.6] 回答者の値の鍵を、予約投稿の暗号鍵とは別の値で生成する", () => {
+        expect(Object.keys(GENERATORS)).toContain("SURVEY_HASH_KEY")
+        expect(run().status).toBe(0)
+        const text = readFileSync(path.join(dir, ".dev.vars"), "utf8")
+        const hash = /^SURVEY_HASH_KEY='(.+)'$/m.exec(text)?.[1] ?? ""
+        const enc = /^SCHEDULE_ENC_KEY='(.+)'$/m.exec(text)?.[1] ?? ""
+        expect(Buffer.from(hash, "base64")).toHaveLength(32)
+        expect(hash).not.toBe(enc)
+    })
+
+    it("[survey-api/10.2][survey-api/10.3] 設定済みの回答者の値の鍵は上書きせず、未設定の鍵だけを埋める", () => {
+        writeFileSync(path.join(dir, ".dev.vars"), "SURVEY_HASH_KEY=mine\n")
+        run()
+        const text = readFileSync(path.join(dir, ".dev.vars"), "utf8")
+        expect(text).toContain("SURVEY_HASH_KEY=mine")
+        expect(text).toContain("SCHEDULE_ENC_KEY='")
     })
 
     it("既存の .dev.vars の値は保つ", () => {

@@ -26,6 +26,8 @@ export const privacy = {
         "Your email address or Bluesky account and the content of your inquiry when you contact us",
     "privacy.collected.feedback":
         "When you report a bug or request a feature: what you enter, your Bluesky handle and DID, and your device and Skyshare version",
+    "privacy.collected.survey":
+        "For surveys, we process your selected answer. We hash your DID to prevent duplicate responses. The hash is not linked to your answer. We store an answered flag and account identifier in localStorage on your device.",
     "privacy.collected.note":
         "Regular posts and drafts are saved in your own Bluesky account and are not stored by the Service.",
     "privacy.purpose.title": "How we use information",
@@ -38,6 +40,8 @@ export const privacy = {
         "Understanding how the Service is used and improving it",
     "privacy.purpose.item4": "Investigating bugs and preventing misuse",
     "privacy.purpose.item5": "Answering your inquiries",
+    "privacy.purpose.survey":
+        "We aggregate survey responses to understand trends. We use a DID hash to prevent duplicate responses.",
     "privacy.external.title": "Sharing of information",
     "privacy.external.intro":
         "We do not share your information with third parties except in the following cases.",
@@ -62,6 +66,12 @@ export const privacy = {
         "Analytics data is kept according to the Google Analytics retention setting.",
     "privacy.retention.feedback":
         "Bug reports and feature requests remain as GitHub issues. Contact us if you want one deleted.",
+    "privacy.retention.surveyHash":
+        "The server-side hash for duplicate detection is deleted after the survey closes.",
+    "privacy.retention.surveyAnswer":
+        "Survey answers are deleted one month after the survey closes.",
+    "privacy.retention.surveyDevice":
+        "Device records remain until you clear your browser storage.",
     "privacy.security.title": "Security",
     "privacy.security.intro":
         "We take the following measures to protect your information.",
@@ -86,6 +96,8 @@ export const privacy = {
         "You may ask us to disclose, correct, or delete your information. Please use the contact details above.",
     "privacy.rights.self":
         "You can change, cancel, or delete scheduled posts from “Drafts & scheduled” in the post form. Turning off scheduled posts in Settings deletes all scheduled posts and authorization, and also revokes the permission on Bluesky.",
+    "privacy.rights.survey":
+        "You cannot withdraw survey answers after submitting them.",
     "privacy.revision.title": "Changes to this policy",
     "privacy.revision.body":
         "We may change this policy as needed. Changes apply from when they are posted on this page.",

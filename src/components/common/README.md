@@ -1,6 +1,6 @@
 # common
 
-特定の機能ドメインに依存しない汎用UI部品。モーダル基盤(`Overlay`/`ChoiceDialog`/`ConfirmDialog`/`Loading`)、リスト表示・ページング(`ComponentList`/`NavigationBar`/`PageSizeSelect`/`PaginationModeSelect`/`InfiniteScrollSentinel`)、フローティング表示(`FloatingBox`)、入力系(`CountedTextInput`/`ToggleSwitch`/`Dropdown`/`ListboxOption`/`LanguageSelect`/`ThemeModeSelect`/`AutoPopupTargetSelect`)、汎用UI(`Collapsible`/`Spinner`/`InlineIcon`/`Avatar`)から成る。
+特定の機能ドメインに依存しない汎用UI部品。モーダル基盤(`Overlay`/`ChoiceDialog`/`ConfirmDialog`/`Loading`)、リスト表示・ページング(`ComponentList`/`NavigationBar`/`PageSizeSelect`/`PaginationModeSelect`/`InfiniteScrollSentinel`)、フローティング表示(`FloatingBox`)、入力系(`CountedTextInput`/`ToggleSwitch`/`Dropdown`/`ListboxOption`/`LanguageSelect`/`ThemeModeSelect`/`AutoPopupTargetSelect`)、選択式の質問(`ChoiceQuestion`)、汎用UI(`Collapsible`/`Spinner`/`InlineIcon`/`Avatar`)から成る。
 
 ```mermaid
 graph TD
@@ -18,10 +18,13 @@ graph TD
   AutoPopupTargetSelect --> InlineIcon
   PageSizeSelect --> Dropdown
   PaginationModeSelect --> Dropdown
+  ChoiceQuestion --> RadioButton
+  ChoiceQuestion --> Checkbox
 ```
 
 上記以外は他のcommon部品への依存を持たない独立した部品(単体で完結するため図には含めていない): `Avatar`・`Collapsible`・`ComponentList`・`CountedTextInput`・`FloatingBox`・`InlineIcon`・`ListboxOption`・`NavigationBar`・`ToggleSwitch`
 
+- `ChoiceQuestion` は質問文を `legend` にした `fieldset` で選択肢を縦に並べ、単一選択は`RadioButton`、複数選択は`Checkbox`(`variant="card"`)で描画する。選択状態は持たず、`selectedIds`から表示を決め、操作は`onChange`に識別子の配列で通知する(無効の間は通知しない)。表示文は呼び出し側が渡した文言をそのまま使い、i18n 辞書は持たない。詳細は[.kiro/specs/choice-question](../../../specs/choice-question)。
 - `ConfirmDialog`は`ChoiceDialog`が定義する`DialogButtonVariant`型・`variantClassName`（ボタン配色）をimportして再利用するが、UI構造・責務は独立している（`ChoiceDialog`はボタン列挙（任意で`description`の説明文を1つ表示可）のみ、`ConfirmDialog`はタイトル・本文メッセージ・確定/キャンセルボタンを持つ）。
 
 - `FloatingBox` は`Overlay`と同じ`createPortal`技法で`document.body`直下へ描画するが、中身（`children`）を一切関知しない薄いプリミティブであり、`Overlay`への依存は持たない(z-indexの整合のみ`Overlay`が定義する`--overlay-z`変数をCSS上で参照する)。

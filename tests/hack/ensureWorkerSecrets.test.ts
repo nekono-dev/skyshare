@@ -6,7 +6,9 @@
  * - 同じ値にそろえる配信先の片方にだけあるとき、作り直してよいものは両方へ、そうでないものは失敗にすることを確かめる。
  */
 import { describe, expect, it } from "vitest"
+import { GENERATORS } from "../../hack/prepare-local-env.mjs"
 import {
+    REGENERATABLE,
     missingInPreview,
     planSecretWrites,
     readWorkerName,
@@ -42,6 +44,52 @@ describe("planSecretWrites", () => {
             writes: [{ name: "OAUTH_CLIENT_KEY", targets: [0, 1] }],
             errors: ["SCHEDULE_ENC_KEY"],
         })
+    })
+})
+
+describe("SURVEY_HASH_KEY の自動登録", () => {
+    const WITH_HASH = [...NAMES, "SURVEY_HASH_KEY"]
+
+    it("[survey-api/10.1][survey-api/10.6] 生成の対象に、予約投稿の暗号鍵とは別のキーとして含まれる", () => {
+        const keys = Object.keys(GENERATORS)
+        expect(keys).toContain("SURVEY_HASH_KEY")
+        expect(new Set(keys).size).toBe(keys.length)
+    })
+
+    it("[survey-api/10.1][survey-api/10.4] 未登録なら develop とプレビューの基本設定の両方へ同じ値を登録する", () => {
+        const base = new Set(NAMES)
+        expect(planSecretWrites(WITH_HASH, [base, base], regen).writes).toEqual(
+            [{ name: "SURVEY_HASH_KEY", targets: [0, 1] }],
+        )
+    })
+
+    it("[survey-api/10.3] 登録済みなら上書きしない", () => {
+        const all = new Set(WITH_HASH)
+        expect(planSecretWrites(WITH_HASH, [all, all], regen)).toEqual({
+            writes: [],
+            errors: [],
+        })
+    })
+
+    it("[survey-api/10.5] 作り直してよい名前に含まれない", () => {
+        expect(REGENERATABLE.has("SURVEY_HASH_KEY")).toBe(false)
+        expect(REGENERATABLE.has("SCHEDULE_ENC_KEY")).toBe(false)
+    })
+
+    it("[survey-api/10.5] 片方にだけ登録済みなら、作り直さずに失敗にする", () => {
+        const withKey = new Set(WITH_HASH)
+        const without = new Set(NAMES)
+        for (const present of [
+            [withKey, without],
+            [without, withKey],
+        ]) {
+            expect(planSecretWrites(WITH_HASH, present, REGENERATABLE)).toEqual(
+                {
+                    writes: [],
+                    errors: ["SURVEY_HASH_KEY"],
+                },
+            )
+        }
     })
 })
 

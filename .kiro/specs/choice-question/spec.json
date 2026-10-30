@@ -1,0 +1,22 @@
+{
+  "feature_name": "choice-question",
+  "created_at": "2026-10-27T21:28:05Z",
+  "updated_at": "2026-10-27T21:30:37Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

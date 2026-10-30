@@ -16,6 +16,10 @@ export type D1Statement = {
 
 export type D1Database = {
     prepare: (sql: string) => D1Statement
+    /** 複数の文を 1 回の呼び出しで原子的に実行する。どれかが失敗したら全体を取り消す */
+    batch: (
+        statements: D1Statement[],
+    ) => Promise<{ meta?: { changes?: number } }[]>
 }
 
 export type R2Bucket = {

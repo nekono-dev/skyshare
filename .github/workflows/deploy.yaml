@@ -129,9 +129,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TARGET_FLAG: ${{ github.ref_name == 'develop' && '--develop' || '' }}
         run: node hack/render-deploy-config.mjs $TARGET_FLAG
-      # サイトの URL（共有リンクなど）を配備先のドメインにする
+      # サイトの URL（共有リンクなど）を配備先のドメインにする。
+      # アンケートの設定の元の変数（SURVEY_CONFIG）はビルドにだけ渡す。生成に失敗するとビルドごと止まり、配備には進まない
       - name: Run build
         env:
+          SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}
           SITE_HOST: ${{ github.ref_name == 'develop' && format('develop.{0}', vars.SITE_HOST) || vars.SITE_HOST }}
         run: npm run build
       - name: Dry run cloudflare deploy
