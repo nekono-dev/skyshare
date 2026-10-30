@@ -9,9 +9,11 @@
     "apigen": "npm run apigen:doc && npm run apigen:client",
     "codegen": "npm run apigen",
     "setup:local": "node hack/prepare-local-env.mjs",
-    "build:pripare": "npm run codegen && npm run format",
+    "survey": "tsx ./hack/survey/cli.ts",
+    "survey:render": "tsx ./hack/render-survey-config.ts",
+    "build:pripare": "npm run codegen && npm run survey:render && npm run format",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
-    "build:v2": "PUBLIC_VERSION=$npm_package_version astro build",
+    "build:v2": "npm run survey:render && PUBLIC_VERSION=$npm_package_version astro build",
     "build": "npm run build:pripare && npm run build:v2 && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
     "dev": "npm run build:pripare && npm run setup:local && PUBLIC_VERSION=$npm_package_version astro dev",
     "dev:build": "npm run build && npm run setup:local && wrangler dev --ip 0.0.0.0",
@@ -28,7 +30,8 @@
     "test:watch": "vitest",
     "test:e2e": "node hack/run-e2e.mjs",
     "deploy:env": "node hack/sync-deploy-env.mjs",
-    "e2e:live:sweep": "tsx tests/e2e/live/sweep.ts"
+    "e2e:live:sweep": "tsx tests/e2e/live/sweep.ts",
+    "setup:brw": "node hack/setup-brw.mjs --codex"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.1.4",

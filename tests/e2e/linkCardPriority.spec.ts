@@ -8,7 +8,7 @@
  * - 投稿フォームからの共有はゲスト表示では skyshare URL が発行されないため、
  *   共有文の組み立ては単体テスト（`tests/lib/share/shareBody.test.ts`）で検証する。
  */
-import { expect, test } from "./fixtures"
+import { expect, routeDefaultSurveyRespondent, test } from "./fixtures"
 import { type BrowserContext, type Locator, type Page } from "@playwright/test"
 
 const LABEL_MANUAL_ATTACH_COMPOSER = "画像を自分で添付する（URLを発行しない）"
@@ -76,6 +76,7 @@ test.describe("Skyshareのリンクカードを優先表示", () => {
         // devサーバーの初回コンパイルを待つためのウォームアップ。
         test.setTimeout(90_000)
         const page = await browser.newPage({ ignoreHTTPSErrors: true })
+        await routeDefaultSurveyRespondent(page.context())
         await page.goto("/post/?guest", { timeout: 60_000 })
         await page.close()
     })

@@ -125,7 +125,7 @@ const replaceOnce = (from, to) => {
   }
   wrangler = wrangler.replace(from, () => to)
 }
-// 配備先を決める。既定は本番（main）。`--develop` では develop 用の別の Worker にし、
+// 配備先を決める。既定は本番（release/*）。`--develop` では develop 用の別の Worker にし、
 // テンプレートにある D1・R2 は名前の末尾に -develop を付けた develop 専用のものを使う（本番のデータに触れない）。
 // 運用者ごとの値は SITE_HOST だけ（develop は develop.<SITE_HOST>、プレビューは <名前>.develop.<SITE_HOST>）
 if (process.argv.includes("--develop")) {

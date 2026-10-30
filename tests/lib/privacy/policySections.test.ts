@@ -61,7 +61,7 @@ describe("buildPrivacyPolicy", () => {
         for (const s of ja()) expect(s.title).not.toBe("")
     })
 
-    it("[privacy-policy/AC-2] 収集する情報の節が、6つの区分をすべて持つ", () => {
+    it("[privacy-policy/AC-2] 収集する情報の節が、7つの区分をすべて持つ", () => {
         const keywords = [
             "ログイン",
             "予約投稿",
@@ -69,10 +69,114 @@ describe("buildPrivacyPolicy", () => {
             "Google アナリティクス",
             "お問い合わせ",
             "不具合の報告",
+            "アンケート",
         ]
         const list = items("collected").map(itemText)
         expect(list).toHaveLength(keywords.length)
         keywords.forEach((k, i) => expect(list[i]).toContain(k))
+    })
+
+    it("[privacy-policy/AC-12] アンケートの回答・分離したDIDハッシュ・端末記録を日本語と英語で説明する", () => {
+        const jaCollected = items("collected").map(itemText).join(" ")
+        for (const phrase of [
+            "アンケート",
+            "回答の選択肢",
+            "DID",
+            "ハッシュ",
+            "回答と結びつけません",
+            "回答済み",
+            "アカウント",
+            "localStorage",
+        ]) {
+            expect(jaCollected).toContain(phrase)
+        }
+
+        const enCollected = items("collected", en()).map(itemText).join(" ")
+        for (const phrase of [
+            "survey",
+            "selected answer",
+            "DID",
+            "hash",
+            "not linked",
+            "answered flag",
+            "account identifier",
+            "localStorage",
+        ]) {
+            expect(enCollected.toLowerCase()).toContain(phrase.toLowerCase())
+        }
+
+        const jaPurpose = JSON.stringify(find("purpose").blocks)
+        expect(jaPurpose).toContain("集計")
+        expect(jaPurpose).toContain("傾向")
+        expect(jaPurpose).toContain("重複回答")
+
+        const enPurpose = JSON.stringify(
+            en().find(section => section.id === "purpose")!.blocks,
+        ).toLowerCase()
+        expect(enPurpose).toContain("aggregate")
+        expect(enPurpose).toContain("trends")
+        expect(enPurpose).toContain("duplicate responses")
+    })
+
+    it("[privacy-policy/1.8] サーバーの保持期限と端末の保存期間を日本語と英語で区別する", () => {
+        const jaRetention = items("retention").map(itemText)
+        expect(
+            jaRetention.some(
+                line => line.includes("重複判定用") && line.includes("終了"),
+            ),
+        ).toBe(true)
+        expect(
+            jaRetention.some(
+                line => line.includes("回答") && line.includes("1か月"),
+            ),
+        ).toBe(true)
+        expect(
+            jaRetention.some(
+                line =>
+                    line.includes("端末") &&
+                    line.includes("ブラウザ") &&
+                    line.includes("保存データ") &&
+                    line.includes("消すまで"),
+            ),
+        ).toBe(true)
+
+        const enRetention = items("retention", en())
+            .map(itemText)
+            .map(line => line.toLowerCase())
+        expect(
+            enRetention.some(
+                line => line.includes("hash") && line.includes("survey closes"),
+            ),
+        ).toBe(true)
+        expect(
+            enRetention.some(
+                line =>
+                    line.includes("answer") &&
+                    line.includes("one month") &&
+                    line.includes("survey closes"),
+            ),
+        ).toBe(true)
+        expect(
+            enRetention.some(
+                line =>
+                    line.includes("device") &&
+                    line.includes("browser") &&
+                    line.includes("storage") &&
+                    line.includes("until") &&
+                    line.includes("clear"),
+            ),
+        ).toBe(true)
+
+        const jaRights = JSON.stringify(find("rights").blocks)
+        expect(jaRights).toContain("回答")
+        expect(jaRights).toContain("取り消")
+
+        const enRights = JSON.stringify(
+            en().find(section => section.id === "rights")!.blocks,
+        ).toLowerCase()
+        expect(enRights).toContain("answer")
+        expect(enRights).toContain("cannot")
+        expect(enRights).toContain("withdraw")
     })
 
     it("[privacy-policy/AC-3] 情報の共有の節が、5つの例外を1項目ずつ持つ", () => {
@@ -111,6 +215,32 @@ describe("buildPrivacyPolicy", () => {
                         expect(sentence.length).toBeLessThanOrEqual(80)
                     }
                 }
+            }
+        }
+        const english = en()
+        const surveyText = [
+            ...items("collected", english)
+                .map(itemText)
+                .filter(line => line.includes("selected answer")),
+            ...items("purpose", english)
+                .map(itemText)
+                .filter(line => line.includes("aggregate survey")),
+            ...items("retention", english)
+                .map(itemText)
+                .filter(
+                    line =>
+                        line.includes("survey closes") ||
+                        line.includes("Device records"),
+                ),
+            ...english
+                .find(section => section.id === "rights")!
+                .blocks.filter(block => block.kind === "text")
+                .map(block => block.text)
+                .filter(line => line.includes("withdraw survey answers")),
+        ]
+        for (const line of surveyText) {
+            for (const sentence of line.split(/(?<=[.!?])\s+/)) {
+                expect(sentence.length).toBeLessThanOrEqual(80)
             }
         }
         expect(allText()).not.toContain("AES")

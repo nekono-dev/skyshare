@@ -5,6 +5,7 @@
  * - Node 標準の SQLite（`node:sqlite`）の上に、予約ストアが使う D1 の API
  *   （`prepare().bind().run()/first()/all()`）だけを載せる。
  * - `migrations/` の SQL を昇順に適用した状態で返す。
+ * - `batch` はトランザクション（BEGIN/COMMIT/ROLLBACK）で再現し、まとめた実行全体を 1 回と数える。
  * - 発行した問い合わせの回数を `queryCount` で数えられる（問い合わせ回数の検査用）。
  */
 import { DatabaseSync } from "node:sqlite"
@@ -55,8 +56,30 @@ export const createFakeD1 = (): FakeD1 => {
         __params: params,
     })
 
+    // まとめた実行をトランザクションで再現し、全体を 1 回の呼び出しとして数える
+    const batch = async (statements: unknown[]) => {
+        state.queryCount += 1
+        const items = statements as { __sql: string; __params: Params }[]
+        sqlite.exec("BEGIN")
+        try {
+            const results = items.map(s => {
+                const info = sqlite.prepare(s.__sql).run(...s.__params)
+                return {
+                    success: true,
+                    meta: { changes: Number(info.changes) },
+                }
+            })
+            sqlite.exec("COMMIT")
+            return results
+        } catch (e) {
+            sqlite.exec("ROLLBACK")
+            throw e
+        }
+    }
+
     const db = {
         prepare: (sql: string) => makeStatement(sql),
+        batch,
         get queryCount() {
             return state.queryCount
         },

@@ -25,14 +25,18 @@
 
 # ブランチ・プレビューの規則
 
-- ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.claude/branch-release-workflow.json`（作業ブランチ `dev/*`、`develop`、保護ブランチ `main`）。
+- ブランチ運用とプレビューは skill `branch-release-workflow` に従う。運用の正本は `.branch-release-workflow.json`（作業ブランチ `dev/*`、`develop`、保護ブランチ `main`・`release/**`）。旧パス `.claude/branch-release-workflow.json` は正本へのシンボリックリンクで、Claude・Codex・CLI が同じ値を読む。
 - スキルはリポジトリに同梱せず、プラグイン `branch-release-workflow@nekono-dev`（https://github.com/nekono-dev/branch-release-workflow）として `.claude/settings.json` で有効にしている。マーケットプレイス `nekono-dev` は https://github.com/nekono-dev/claude-plugins で、両プラグインを載せている。
+- 本番デプロイは `release/XXX` への push で実行する。`main` への push では実行しない。`develop` の確認環境と `dev/*` のプレビューは維持する。リリースはユーザーから明示的に依頼されたときだけ行い、通常の開発依頼では `release/*` を作成・push しない。
+- 複数の `release/*` は同じ本番 Worker・D1・R2 を更新する。最新のリリース対象コミットから新しい名前で切り出し、既存の古いリリースブランチへ push して本番を巻き戻さない。`main` は引き続き履歴管理のため保護する。
 - 保護ブランチと宣言外のブランチでの commit・push は、プラグインの PreToolUse フックが拒否する。
+- `main` はデータベースの初期状態としてマイグレーションファイルを置かない。本番の初回リリースでは空のD1に `release/*` の `0001_initial.sql` を適用する。以後は本番DBの適用履歴と実スキーマを確認し、必要な差分を対象のリリースブランチで用意する。
 - `develop` と `main` は、マージコミットだけで構成されるブランチとして保つ。作業ブランチ（`dev/*`）のコミットは、`develop` へ取り込む前に `develop` の先頭へ rebase し、1つのコミットに圧縮してから `--no-ff` でマージする（`develop` や `main` へ通常のコミットを直接積まない）。
 - `develop` へ取り込む圧縮コミットのメッセージは、題のみの1行（可能な限り短く）とし、本文は書かない（Co-Authored-By 等の付記は除く）。
 - 新機能の実装・要望追加・要件追加の依頼を受けたら、作業前に `brw create <名前>` で作業ブランチを作成すること。`git checkout -b` 等で直接作らない。
 - ユーザーが製造したコードの挙動を確認したい旨を示したら、`brw url` が返す `https://XXXX.develop.skyshare.nekono.dev` を案内すること。`*.workers.dev` や version-id 形式のURLは案内しない。
 - 作業ブランチへの commit・push は許可を求めずに行う。worktree は push しただけでは片付けず、`develop` へのマージ後（または `main` への PR 作成後）に `brw finish`（取り込み済みをまとめて片付けるなら `brw finish --merged`）で片付ける。続きの作業は `brw resume <ブランチ>`、新しい作業は `brw create <名前>` で始める。
+- Codex の導入は `npm run setup:brw`。取得元と追跡ブランチは `.branch-release-workflow-source.json`、導入先は外部Git clone、`.agents/skills/branch-release-workflow` はそのリンク。詳細は `AGENT.md`。Claude のフックは Codex には自動適用されない。
 - 詳細はプラグインの `SKILL.md` を参照（`brw` はプラグインの `scripts/brw.mjs`）。
 
 # lib / util の使い分け

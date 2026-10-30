@@ -1,0 +1,42 @@
+{
+  "id": "2027-03-1",
+  "closesAt": "2027-03-15T00:00:00Z",
+  "title": {
+    "ja": "Skyshare v1 と v2 どちらの UI が好みか",
+    "en": "Which Skyshare UI do you prefer, v1 or v2?"
+  },
+  "questions": [
+    {
+      "id": "preferred-ui",
+      "kind": "single",
+      "title": {
+        "ja": "どちらの UI が好みですか？",
+        "en": "Which UI do you prefer?"
+      },
+      "options": [
+        {
+          "id": "v1",
+          "label": {
+            "ja": "Skyshare v1",
+            "en": "Skyshare v1"
+          }
+        },
+        {
+          "id": "v2",
+          "label": {
+            "ja": "Skyshare v2",
+            "en": "Skyshare v2"
+          }
+        },
+        {
+          "id": "decline",
+          "label": {
+            "ja": "回答しない",
+            "en": "Prefer not to answer"
+          },
+          "decline": true
+        }
+      ]
+    }
+  ]
+}

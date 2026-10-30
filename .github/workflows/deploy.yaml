@@ -1,6 +1,6 @@
-# main と develop への push をトリガーに、Cloudflare Workers へ自動デプロイする。
+# release/* と develop への push をトリガーに、Cloudflare Workers へ自動デプロイする。
 #
-# - main: 本番の Worker（skyshare、SITE_HOST のドメイン）
+# - release/*: 本番の Worker（skyshare、SITE_HOST のドメイン）
 # - develop: develop 用の別の Worker（skyshare-develop、develop.<SITE_HOST>）。Cron が動く確認用の環境で、
 #   D1・R2 も develop 専用。dev/* のプレビュー（preview.yaml）はこの Worker に作られる
 #
@@ -14,7 +14,7 @@ name: deploy
 
 on:
   push:
-    branches: [main, develop]
+    branches: ["release/**", develop]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -22,9 +22,9 @@ on:
         type: boolean
         default: true
 
-# 同一ブランチのデプロイが同時に走らないようにする。デプロイ中の処理は中断せず、後続を待たせる
+# 同じ配備先へのデプロイを直列化する。別の release ブランチ同士も本番を同時更新しない
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: deploy-${{ github.ref_name == 'develop' && 'develop' || 'production' }}
   cancel-in-progress: false
 
 permissions:
@@ -65,15 +65,11 @@ jobs:
       - run: npm run codegen
       - run: npm run test:type
       # 単体テスト（tests/hack/renderDeployConfig.test.ts）が使う branch-release-workflow プラグインを取得する。
-      # deploy ジョブと同じコミットに固定する（更新時は両方の BRW_REF を書き換える）
+      # deploy ジョブと同じブランチから取得する（取得元は .branch-release-workflow-source.json）
       - name: Fetch branch-release-workflow
-        env:
-          BRW_REF: 4549dc157056b63d2aff95e64f60a47af1ca55d2
         run: |
-          git init -q "$RUNNER_TEMP/brw"
-          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 https://github.com/nekono-dev/branch-release-workflow.git "$BRW_REF"
-          git -C "$RUNNER_TEMP/brw" checkout -q FETCH_HEAD
-          echo "BRW_PLUGIN_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
+          brw_dir="$(node hack/setup-brw.mjs)"
+          echo "BRW_PLUGIN_DIR=$brw_dir" >> "$GITHUB_ENV"
       - run: npm run test:unit
       - run: npm run test:astro
       # 仕様書（specs・docs/architecture・poc）の検証。検査コマンド spec-lint は GitHub Packages から取得する
@@ -109,7 +105,7 @@ jobs:
   deploy:
     needs: [verify, e2e]
     # 手動実行で他のブランチを選んでも、本番や develop 環境へ配備しない
-    if: github.ref_name == 'main' || github.ref_name == 'develop'
+    if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -122,15 +118,11 @@ jobs:
           cache: npm
       - run: npm ci
       # hack/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する。
-      # 秘密情報を扱うジョブで実行するため、検証済みのコミットに固定する（更新時は BRW_REF を書き換える）
+      # 秘密情報を扱うジョブで実行するため、指定ブランチの最新コミットを取得する（取得元は .branch-release-workflow-source.json）
       - name: Fetch branch-release-workflow
-        env:
-          BRW_REF: 4549dc157056b63d2aff95e64f60a47af1ca55d2
         run: |
-          git init -q "$RUNNER_TEMP/brw"
-          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 https://github.com/nekono-dev/branch-release-workflow.git "$BRW_REF"
-          git -C "$RUNNER_TEMP/brw" checkout -q FETCH_HEAD
-          echo "BRW_PLUGIN_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
+          brw_dir="$(node hack/setup-brw.mjs)"
+          echo "BRW_PLUGIN_DIR=$brw_dir" >> "$GITHUB_ENV"
       # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
       # develop へは develop 用の Worker として配備する（D1 の ID を名前から引くため Cloudflare の認証情報を渡す）
       - name: Configure build setting
@@ -139,14 +131,16 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TARGET_FLAG: ${{ github.ref_name == 'develop' && '--develop' || '' }}
         run: node hack/render-deploy-config.mjs $TARGET_FLAG
-      # サイトの URL（共有リンクなど）を配備先のドメインにする
+      # サイトの URL（共有リンクなど）を配備先のドメインにする。
+      # アンケートの設定の元の変数（SURVEY_CONFIG）はビルドにだけ渡す。生成に失敗するとビルドごと止まり、配備には進まない
       - name: Run build
         env:
+          SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}
           SITE_HOST: ${{ github.ref_name == 'develop' && format('develop.{0}', vars.SITE_HOST) || vars.SITE_HOST }}
         run: npm run build
       - name: Dry run cloudflare deploy
         run: npx wrangler deploy --dry-run
-      # 配備先の D1（main は本番、develop は develop 用）に、未適用のマイグレーションを適用する（適用済みのものは再実行されない）
+      # 配備先の D1（release/* は本番、develop は develop 用）に、未適用のマイグレーションを適用する（適用済みのものは再実行されない）
       - name: Apply D1 migrations
         if: ${{ hashFiles('migrations/*.sql') != '' && (github.event_name == 'push' || inputs.dry_run == false) }}
         run: npx wrangler d1 migrations apply DB --remote -c dist/server/wrangler.json

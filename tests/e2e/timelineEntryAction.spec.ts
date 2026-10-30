@@ -8,6 +8,12 @@
  *   差し替えて確認する。
  */
 import { expect, test } from "@playwright/test"
+import { routeDefaultSurveyRespondent } from "./fixtures"
+
+// セッションをモックするため、アンケートの確認に既定で「回答済み」を返す（実際の API を呼ばない）
+test.beforeEach(async ({ context }) => {
+    await routeDefaultSurveyRespondent(context)
+})
 
 const PNG_1X1 = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",

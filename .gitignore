@@ -23,6 +23,9 @@ pnpm-debug.log*
 src/client/**/
 /openapi/generated.json
 
+# 変数 SURVEY_CONFIG から生成する配信用のアンケート設定（npm run survey:render）
+/public/surveys/
+
 # Astro build
 .astro
 /dist
@@ -46,3 +49,6 @@ _legacy/**/.env.test.*
 
 # brw create が作る作業ブランチの worktree
 .claude/worktrees/
+
+# 外部 Git clone への Codex skill のリンク（本体は同梱しない）
+.agents/skills/branch-release-workflow

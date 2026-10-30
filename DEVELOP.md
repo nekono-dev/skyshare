@@ -7,7 +7,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## 準備
 
-1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。このスクリプトは [branch-release-workflow](https://github.com/nekono-dev/branch-release-workflow) を使うため、clone した場所を環境変数 `BRW_PLUGIN_DIR` で渡す（例: `git clone --depth 1 https://github.com/nekono-dev/branch-release-workflow.git /tmp/brw` の後に `BRW_PLUGIN_DIR=/tmp/brw node hack/render-deploy-config.mjs`）。CI では各 workflow が固定したコミットを取得して渡す。
+1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。このスクリプトは [branch-release-workflow](https://github.com/nekono-dev/branch-release-workflow) を使うため、`BRW_PLUGIN_DIR="$(node hack/setup-brw.mjs)" node hack/render-deploy-config.mjs` として共有 skill の場所を渡す。CI も `.branch-release-workflow-source.json` が指定するブランチを取得して渡す。
 
 ```json
   "vars": {
@@ -36,7 +36,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 ローカル実行の設定は、置き場所ごとに雛形を用意している（`.env` と `.dev.vars` は Git 管理対象外）。
 
 - `.env`（`.env.template`）: ビルド時に使う `PUBLIC_*`（接続先・運営者情報など）。未設定でもダミー値で動く。
-- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の暗号鍵（`SCHEDULE_ENC_KEY`）と OAuth のクライアントの署名鍵（`OAUTH_CLIENT_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
+- `.dev.vars`（`.dev.vars.template`）: Worker のランタイム設定（`PUBLIC_NODE_ENV`・`SCHEDULE_ENC_KEY` など）。wrangler は `.dev.vars` がある間 `.env` を読まない。`npm run dev` の準備（`npm run setup:local`）が、無ければ雛形から作り、予約投稿の暗号鍵（`SCHEDULE_ENC_KEY`）と OAuth のクライアントの署名鍵（`OAUTH_CLIENT_KEY`）、アンケートの回答者の値を求める鍵（`SURVEY_HASH_KEY`）が未設定ならランダムに生成して書き込む（設定済みの値は上書きしない）。
 
 ```sh
 cp .env.template .env
@@ -56,16 +56,20 @@ npm run deploy
 
 ## CI/CD（GitHub Actions）
 
-`main` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
+`release/XXX` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
 
-| ブランチ   | Worker                                  | ドメイン                   | D1・R2                                                 | 用途                                   |
-| ---------- | --------------------------------------- | -------------------------- | ------------------------------------------------------ | -------------------------------------- |
-| `main`     | `skyshare`                              | `<SITE_HOST>`              | `skyshare`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
-| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
-| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                         | ブランチごとの確認（Cron は動かない）  |
+| ブランチ      | Worker                                  | ドメイン                   | D1・R2                                                 | 用途                                   |
+| ------------- | --------------------------------------- | -------------------------- | ------------------------------------------------------ | -------------------------------------- |
+| `release/XXX` | `skyshare`                              | `<SITE_HOST>`              | `skyshare`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
+| `develop`     | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
+| `dev/XXXX`    | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                         | ブランチごとの確認（Cron は動かない）  |
 
 - develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
-- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。
+- 手動実行で `release/*`・`develop` 以外のブランチを選んでも、配備はしない。
+
+`main` への push では本番デプロイしない。`release/*` はすべて同じ本番 Worker・D1・R2 に配備するため、異なるリリースブランチ間でもデプロイを直列化している。古いリリースへの再pushで本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
+
+Claude と Codex のブランチ宣言は `.branch-release-workflow.json` を共有する。旧 `.claude/branch-release-workflow.json` は正本へのリンク。Codex は `npm run setup:brw` で外部Git cloneを取得しskillを登録する（詳細は AGENT.md）。取得元と追跡ブランチは `.branch-release-workflow-source.json` に集約し、CIも `node hack/setup-brw.mjs` で同じブランチの最新コミットを取得する。更新は共有skillの変更を選択したブランチへ取り込んでから、セットアップを再実行する。
 
 `wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
@@ -109,6 +113,23 @@ Worker・D1・R2 の名前は上の表のとおり固定である。名前は Cl
 
 プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は、このリポジトリの実装（Cloudflare での配信と保管、予約投稿の保存期間など）に合わせて書いてある。実装を変えて運用する場合は、本文も見直すこと。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう、変えない。
 
+### ログイン時アンケートの設定
+
+アンケートの質問・選択肢・文言・期間は、コードに持たず、変数 `SURVEY_CONFIG`（JSON 文字列）で渡す。設定の構造と規則は `docs/features/survey-definition/` を参照する。
+
+- `npm run survey:render` が、`SURVEY_CONFIG` を検証して静的ファイル `public/surveys/index.json` を生成する（Git 管理外）。`npm run build`・`npm run build:v2`・`npm run dev` の前に自動で実行される。
+- 未設定か空白だけなら、ファイルを作らず、以前の生成物があれば取り除いて正常終了する。不正な値なら、不正な項目の位置だけを示して異常終了し、ビルドを止める（値は表示しない）。
+- ビルドは、`SURVEY_CONFIG` が空白でない、または `public/surveys/index.json` が存在するとき、ビルド定数 `import.meta.env.PUBLIC_SURVEY_CONFIG_PRESENT` を `"true"` にし、それ以外は `"false"` にして画面とサーバーの両方に埋め込む（`astro.config.mjs`）。旗が偽なら設定を取得せず、通信もコンソールのエラーも出ない。
+- 手元で試すには、設定の JSON を環境変数で渡して起動する。
+
+```sh
+SURVEY_CONFIG="$(cat my-survey.json)" npm run dev
+# 設定なしで確認するには、変数を渡さず public/surveys/ を消して起動する
+rm -rf public/surveys && npm run dev
+```
+
+本番・develop・プレビューのビルドの工程にだけ、リポジトリ変数 `SURVEY_CONFIG` を渡す（検証と e2e のジョブには渡さない）。
+
 ### フォークして動かす
 
 フォークした自分のリポジトリと Cloudflare のアカウントで動かす手順。GitHub への登録は `gh` コマンドで行う。
@@ -146,8 +167,8 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 - GitHub のリポジトリは git の remote の origin から判定する（SSH の別名でもよい）。判定できないときは `-- --repo <owner>/<repo>` を付ける。
 - Worker のシークレットの登録は、Worker が一度配備された後に行う（プレビューは develop の Worker の配備の後）。失敗した登録は、配備の後にもう一度実行すればよい。
 
-7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
-8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵と OAuth の署名鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
+7. 確定した対象コミットから `release/XXX` を作成して push し本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
+8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵・OAuth の署名鍵・アンケートの鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
 
 - 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
 
@@ -166,10 +187,10 @@ for b in skyshare-schedule-images skyshare-schedule-images-develop; do
 done
 ```
 
-- Worker のシークレット（予約用の認証情報の暗号鍵 `SCHEDULE_ENC_KEY` と、Bluesky の OAuth の署名鍵 `OAUTH_CLIENT_KEY`）は手で登録しない。`hack/ensure-worker-secrets.mjs` が、本番・develop への配備（deploy.yaml）の後と、プレビューの配備（preview.yaml）の前に、未登録のものだけを生成して登録する。登録済みの値は上書きしない。
-  - develop とプレビューの基本設定（`wrangler preview base-config`）は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）。本番は別の値になる。
+- Worker のシークレット（予約用の認証情報の暗号鍵 `SCHEDULE_ENC_KEY` と、Bluesky の OAuth の署名鍵 `OAUTH_CLIENT_KEY`、アンケートの回答者の値を求める鍵 `SURVEY_HASH_KEY`）は手で登録しない。`hack/ensure-worker-secrets.mjs` が、本番・develop への配備（deploy.yaml）の後と、プレビューの配備（preview.yaml）の前に、未登録のものだけを生成して登録する。登録済みの値は上書きしない。
+  - develop とプレビューの基本設定（`wrangler preview base-config`）は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）。本番は別の値になる。`SURVEY_HASH_KEY` は予約投稿の暗号鍵とは別のキー・別の値である。
   - 既にあるプレビューは、作られた時点の基本設定のシークレットを持ち続ける。必要なシークレットが欠けているプレビューは、preview.yaml が配備の前に削除し、同じ名前（同じ URL）で基本設定から作り直す。
-  - 片方にだけ登録済みのとき、`OAUTH_CLIENT_KEY` は作り直して両方へ登録する（古い鍵の予約の許可は、利用者が許可し直す）。`SCHEDULE_ENC_KEY` は作り直すと保管済みの認証情報を復号できなくなるため、CI を失敗させる。このときは、手で両方を同じ値にそろえる（`openssl rand -base64 32 > enc.key` の後、`npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key` と `npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key` を実行し、`enc.key` を消す）。
+  - 片方にだけ登録済みのとき、`OAUTH_CLIENT_KEY` は作り直して両方へ登録する（古い鍵の予約の許可は、利用者が許可し直す）。`SCHEDULE_ENC_KEY` は作り直すと保管済みの認証情報を復号できなくなるため、CI を失敗させる。このときは、手で両方を同じ値にそろえる（`openssl rand -base64 32 > enc.key` の後、`npx wrangler secret put SCHEDULE_ENC_KEY --name skyshare-develop < enc.key` と `npx wrangler preview base-config secret put SCHEDULE_ENC_KEY --worker-name skyshare-develop < enc.key` を実行し、`enc.key` を消す）。`SURVEY_HASH_KEY` も作り直すと保管済みの回答済みの記録と一致しなくなる（再び回答できてしまう）ため、同じく CI を失敗させる。手で両方を同じ値にそろえる（`SCHEDULE_ENC_KEY` の手順の名前を `SURVEY_HASH_KEY` に替える）。
   - 鍵を替えたいときは、配信先からシークレットを削除して配備し直す（`npx wrangler secret delete <名前> --name <Worker 名>`。develop ではプレビューの基本設定からも消す）。
 - ログイン（`/login/` とアカウントの追加）と予約の許可は、同じ Bluesky の OAuth のクライアントで得る。クライアントの情報は配信元ごとに `/oauth/client-metadata.json`（client_id）と `/oauth/jwks.json`（公開鍵）で公開し、戻り先は `/oauth/callback/` とする（戻りでは cookie が届かないため、完了は許可を始めたページから、ログインは `/v2/bsky/session/authorization/completion/`、予約は `/v2/schedules/credential/authorization/completion/` を呼ぶ）。Bluesky の認可サーバーがこれらを取りに来るため、本番とプレビューでは公開された https の配信元が必要になる。
 - シークレットの名前は `OAUTH_CLIENT_KEY`（以前の `SCHEDULE_OAUTH_KEY` から改名）。以前の名前の鍵は CI が引き継がず、新しい鍵を登録する。以前の名前のシークレットは、改名を取り込んだ版を配備した後に削除してよい。
@@ -179,7 +200,12 @@ done
 - 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
 
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
+  <<<<<<< HEAD
 - D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。未リリースのため、予約投稿・OAuth・アンケートの最終構造を `migrations/0001_initial.sql` に統合している。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
+  \=======
+- D1 のマイグレーション（`migrations/`）は、`release/*` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。本番D1は未作成で、初回 `release/*` は空のDBへ `migrations/0001_initial.sql` を適用する。`main` は初期状態を保ち、マイグレーションを置かない。実環境に既存テーブルがある将来のリリースでは、対象DBの適用履歴を確認し、差分のSQLをそのリリースブランチで用意してから配備する。過去の分割マイグレーションを適用した開発DBは、新規DBに作り直してから統合版を適用する。
+
+> > > > > > > dev/readopt-features
 
 ### 不具合の報告・新機能の提案の初期設定（初回のみ）
 
@@ -208,7 +234,7 @@ OS のパッケージ（フォント・ffmpeg・Playwright のブラウザが使
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にしている）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にしている）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 
@@ -300,3 +326,11 @@ npx playwright test --project=firefox --project=webkit --project=webkit-iphone
 これらのprojectが実行するのは、ブラウザ差が出る機能のspec（Dropdown・動画の表示・添付制限）と、iPhoneエミュレーション専用の`*.ios.spec.ts`だけである。
 
 300MB級の動画を実アカウントへ投稿するライブテスト（時間とBlueskyの動画アップロード残量を消費する）は、`SKYSHARE_E2E_LARGE_VIDEO=1`を付けたときだけ実行される。
+
+## main への取り込み前のアンケート除去
+
+main へのマージまたは取り込み（PR の作成を含む）を依頼されたら、マージ前にローカルで `npm run survey -- prune` を実行し、結果の1行を利用者に報告する。手順や結果の読み方は [Claude の survey-run スキル](.claude/skills/survey-run/SKILL.md) と [Codex の survey-run スキル](.agents/skills/survey-run/SKILL.md) を参照する。
+
+本番配備のビルドは `SURVEY_CONFIG` を読むため、除去で変数が更新された場合、その更新が本番配備のビルドより先に反映されるようにする。除去と回答データの確認には運営者のローカル認証済み CLI を使う。CI に変数の書き込み権限は与えない。
+
+除去に失敗した場合、または回答データを確認できず対象が保持された場合は、その結果の1行を報告する。失敗時は設定の元を変更せず、確認不能の対象も保持したまま、利用者へ状況を伝えてマージを続けられる。

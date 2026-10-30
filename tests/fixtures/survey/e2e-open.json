@@ -1,0 +1,70 @@
+{
+  "surveys": [
+    {
+      "id": "e2e-open",
+      "opensAt": "2020-01-01T00:00:00Z",
+      "closesAt": "9999-12-01T00:00:00Z",
+      "title": {
+        "ja": "Skyshare の利用について",
+        "en": "Using Skyshare"
+      },
+      "description": {
+        "ja": "今後の改善のため、利用状況を教えてください。",
+        "en": "Tell us how you use Skyshare to help us improve it."
+      },
+      "questions": [
+        {
+          "id": "frequency",
+          "kind": "single",
+          "title": {
+            "ja": "どのくらいの頻度で使いますか？",
+            "en": "How often do you use Skyshare?"
+          },
+          "options": [
+            {
+              "id": "daily",
+              "label": { "ja": "毎日", "en": "Every day" }
+            },
+            {
+              "id": "sometimes",
+              "label": { "ja": "ときどき", "en": "Sometimes" }
+            },
+            {
+              "id": "decline",
+              "label": { "ja": "回答しない", "en": "Prefer not to answer" },
+              "decline": true
+            }
+          ]
+        },
+        {
+          "id": "features",
+          "kind": "multiple",
+          "maxSelect": 2,
+          "title": {
+            "ja": "使っている機能を2つまで選んでください。",
+            "en": "Choose up to two features you use."
+          },
+          "options": [
+            {
+              "id": "share",
+              "label": { "ja": "投稿の共有", "en": "Sharing posts" }
+            },
+            {
+              "id": "compose",
+              "label": { "ja": "投稿の作成", "en": "Composing posts" }
+            },
+            {
+              "id": "schedule",
+              "label": { "ja": "予約投稿", "en": "Scheduling posts" }
+            },
+            {
+              "id": "decline",
+              "label": { "ja": "回答しない", "en": "Prefer not to answer" },
+              "decline": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
