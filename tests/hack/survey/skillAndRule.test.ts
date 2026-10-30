@@ -35,6 +35,7 @@ describe("アンケートの運用手順", () => {
         expect(workflow).toMatch(/^## main への取り込み前のアンケート除去$/m)
         expect(workflow).toContain("npm run survey -- prune")
         expect(workflow).toContain(skillPath)
+        expect(workflow).toContain(codexSkillPath)
     })
 
     it("[survey-operation/4.1] スキル文書が Git の作業ツリーで読める", () => {
