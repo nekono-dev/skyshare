@@ -12,6 +12,9 @@ const fixture = (name: string) =>
 
 const absent = JSON.parse(fixture("gh-variable-absent.json"))
 const authFailure = JSON.parse(fixture("gh-auth-failure.json"))
+const unauthenticatedCli = JSON.parse(
+    fixture("gh-auth-cli-unauthenticated.json"),
+)
 
 describe("survey remote", () => {
     test("reads one repository variable through the API and writes through stdin", async () => {
@@ -67,6 +70,24 @@ describe("survey remote", () => {
         })
         await expect(unauthenticated.readConfigValue()).rejects.not.toThrow(
             /logged into|auth login/i,
+        )
+    })
+
+    test("classifies the unauthenticated gh CLI guidance as auth without exposing it", async () => {
+        const unauthenticated = createSurveyRemote({
+            repo: "owner/repo",
+            run: () => ({
+                ...unauthenticatedCli,
+                status: unauthenticatedCli.exitCode,
+            }),
+        })
+
+        await expect(unauthenticated.readConfigValue()).rejects.toMatchObject({
+            kind: "auth",
+            message: "認証が必要です",
+        })
+        await expect(unauthenticated.readConfigValue()).rejects.not.toThrow(
+            /gh auth login|authentication token/i,
         )
     })
 

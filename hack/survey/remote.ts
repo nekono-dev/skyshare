@@ -81,7 +81,7 @@ const runLocal: RunCommand = (command, args, input, options) => {
 }
 
 const isAuthFailure = (result: CommandResult): boolean =>
-    /not logged in|authentication required|requires authentication|unauthorized|\b401\b|\b403\b/i.test(
+    /not logged in|authentication required|requires authentication|unauthorized|\b401\b|\b403\b|\bgh\s+auth\s+login\b|authentication token/i.test(
         result.stderr,
     )
 
