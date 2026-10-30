@@ -28,7 +28,8 @@
     "test:watch": "vitest",
     "test:e2e": "node hack/run-e2e.mjs",
     "deploy:env": "node hack/sync-deploy-env.mjs",
-    "e2e:live:sweep": "tsx tests/e2e/live/sweep.ts"
+    "e2e:live:sweep": "tsx tests/e2e/live/sweep.ts",
+    "setup:brw": "node hack/setup-brw.mjs --codex"
   },
   "dependencies": {
     "@astrojs/cloudflare": "14.1.4",

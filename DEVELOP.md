@@ -56,16 +56,20 @@ npm run deploy
 
 ## CI/CD（GitHub Actions）
 
-`main` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
+`release/XXX` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通過した場合のみ Cloudflare Workers へデプロイする。
 
-| ブランチ   | Worker                                  | ドメイン                   | D1・R2                                                 | 用途                                   |
-| ---------- | --------------------------------------- | -------------------------- | ------------------------------------------------------ | -------------------------------------- |
-| `main`     | `skyshare`                              | `<SITE_HOST>`              | `skyshare`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
-| `develop`  | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
-| `dev/XXXX` | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                         | ブランチごとの確認（Cron は動かない）  |
+| ブランチ      | Worker                                  | ドメイン                   | D1・R2                                                 | 用途                                   |
+| ------------- | --------------------------------------- | -------------------------- | ------------------------------------------------------ | -------------------------------------- |
+| `release/XXX` | `skyshare`                              | `<SITE_HOST>`              | `skyshare`・`skyshare-schedule-images`                 | 本番。ブランチ別のプレビューは作らない |
+| `develop`     | `skyshare-develop`                      | `develop.<SITE_HOST>`      | `skyshare-develop`・`skyshare-schedule-images-develop` | Cron を含む確認用の環境                |
+| `dev/XXXX`    | `skyshare-develop` の Preview（`XXXX`） | `XXXX.develop.<SITE_HOST>` | develop と共用                                         | ブランチごとの確認（Cron は動かない）  |
 
 - develop 用の設定は `node hack/render-deploy-config.mjs --develop` が作る。Worker と、テンプレートにある D1・R2 の名前の末尾に `-develop` を付ける。プレビューの D1 は、D1 の一覧から名前で ID を引いて入れる（CI の API トークンに D1 の権限が要る）。
-- 手動実行で `main`・`develop` 以外のブランチを選んでも、配備はしない。
+- 手動実行で `release/*`・`develop` 以外のブランチを選んでも、配備はしない。
+
+`main` への push では本番デプロイしない。`release/*` はすべて同じ本番 Worker・D1・R2 に配備するため、異なるリリースブランチ間でもデプロイを直列化している。古いリリースへの再pushで本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
+
+Claude と Codex のブランチ宣言は `.branch-release-workflow.json` を共有する。旧 `.claude/branch-release-workflow.json` は正本へのリンク。Codex は `npm run setup:brw` で外部Git cloneを取得しskillを登録する（詳細は AGENT.md）。取得元と検証済みSHAは `.branch-release-workflow-source.json` に集約し、CIも `node hack/setup-brw.mjs` で同じ版を取得する。更新は共有skillの変更を先にpushしてからSHAを更新し、セットアップを再実行する。
 
 `wrangler.jsonc` と `_legacy/frontend/.env.production` は `.gitignore` 対象のため、CI では `hack/render-deploy-config.mjs` が GitHub の Variables から生成する。
 
@@ -146,7 +150,7 @@ gh variable list -R <owner>/<repo>  # 登録できたか確認する
 - GitHub のリポジトリは git の remote の origin から判定する（SSH の別名でもよい）。判定できないときは `-- --repo <owner>/<repo>` を付ける。
 - Worker のシークレットの登録は、Worker が一度配備された後に行う（プレビューは develop の Worker の配備の後）。失敗した登録は、配備の後にもう一度実行すればよい。
 
-7. `main` に push して本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
+7. 確定した対象コミットから `release/XXX` を作成して push し本番へ、`develop` に push して develop 環境へ配備する（Actions → deploy → Run workflow で `dry_run` を外して実行してもよい）。
 8. develop 環境を1回配備した後、もう一度 `npm run deploy:env` を実行して develop とプレビューのシークレットを登録する。以降、`dev/XXXX` への push でプレビューが作られる。Worker のシークレットのうち予約の暗号鍵と OAuth の署名鍵は、配備のたびに CI が未登録のものだけを生成して登録する（下の「予約投稿の初期設定」）。
 
 - 仕様書の検査（verify ジョブの `spec-lint`）は、GitHub Packages の `@nekono-dev/spec-lint` を Secret `SPEC_LINT_TOKEN` で取得する。取得できない場合は、`.github/workflows/deploy.yaml` の該当の手順を外す。
@@ -179,7 +183,7 @@ done
 - 鍵を替えるときは `kid` が変わる。古い鍵で得た認可の情報は更新できなくなるため、利用者は設定で許可し直す。
 
 - プレビューの D1 は、`hack/render-deploy-config.mjs --develop` が名前から ID を引いて設定に入れる（`wrangler preview` は `database_id` のない D1 を使えないため）。CI の API トークンに D1 の権限が要る。
-- D1 のマイグレーション（`migrations/`）は、`main` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。未リリースのため、予約投稿・OAuth・アンケートの最終構造を `migrations/0001_initial.sql` に統合している。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
+- D1 のマイグレーション（`migrations/`）は、`release/*` と `develop` への配備のときに deploy.yaml が、それぞれの D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。ローカルで試すときは `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run dev` が自動で作る）。未リリースのため、予約投稿・OAuth・アンケートの最終構造を `migrations/0001_initial.sql` に統合している。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
 
 ### 不具合の報告・新機能の提案の初期設定（初回のみ）
 
@@ -208,7 +212,7 @@ OS のパッケージ（フォント・ffmpeg・Playwright のブラウザが使
 
 ## PRブランチの動作確認（プレビュー）
 
-ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.claude/branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にしている）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
+ブランチ運用とプレビューは skill `branch-release-workflow` に従う（宣言は `.branch-release-workflow.json`。スキルはリポジトリに同梱せず、`.claude/settings.json` でプラグイン `branch-release-workflow@nekono-dev` を有効にしている）。`dev/XXXX` へ push すると `.github/workflows/preview.yaml` が develop 用の Worker の `wrangler preview` を実行し、`https://XXXX.develop.<SITE_HOST>` で確認できる（XXXX は46文字以内。develop の Worker が一度配備済みであること）（同じブランチへ再 push しても URL は変わらない）。URL は `node <branch-release-workflow の clone>/scripts/brw.mjs url` でも確認できる。
 
 手元から実行する場合は次のとおり（要 wrangler 4.135.0 以上）。
 

@@ -6,7 +6,7 @@
 # - ブランチ名は dev/XXXX（XXXX は小文字英数字とハイフンのみ）のルールに合うものだけが対象。Preview 名は XXXX
 # - URLはカスタムドメイン（wrangler.jsonc の previews_enabled）で配信される。ジョブの Summary に出力する
 #
-# 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは branch-release-workflow プラグインと .claude/branch-release-workflow.json）。
+# 必要な Secrets / Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは branch-release-workflow プラグインと .branch-release-workflow.json）。
 # 前提: Worker が一度デプロイ済みで、カスタムドメインの previews_enabled が true であること（wrangler 4.135.0 以上）。
 # D1・R2 がある場合は develop 用を共用する。マイグレーションは develop への配備（deploy.yaml）で適用する。
 # 前提: develop の Worker が一度デプロイ済みであること（Preview は既存の Worker に作られる）。
@@ -56,7 +56,7 @@ jobs:
       - run: npm ci
 
       # ブランチ名（dev/XXXX）から Preview 名（XXXX）を作る。
-      # ブランチ命名ルール（.claude/branch-release-workflow.json の namePattern 参照）: XXXX は小文字英数字とハイフンのみ・先頭末尾はハイフン不可・
+      # ブランチ命名ルール（.branch-release-workflow.json の namePattern 参照）: XXXX は小文字英数字とハイフンのみ・先頭末尾はハイフン不可・
       # 連続ハイフン不可・46文字以内。ルールに合わないブランチは警告を出してプレビューを行わない
       # （alias は DNS ラベルになるため。Worker名（skyshare-develop）込みで63文字以内に収めるための上限）。
       - name: Resolve preview alias
@@ -75,18 +75,13 @@ jobs:
           fi
 
       # hack/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する。
-      # 秘密情報を扱うジョブで実行するため、検証済みのコミットに固定する（更新時は BRW_REF を書き換える）
+      # 秘密情報を扱うジョブで実行するため、検証済みのコミットに固定する（取得元とSHAは .branch-release-workflow-source.json に集約）
       - name: Fetch branch-release-workflow
         if: steps.alias.outputs.valid == 'true'
-        env:
-          BRW_REF: 4549dc157056b63d2aff95e64f60a47af1ca55d2
         run: |
-          git init -q "$RUNNER_TEMP/brw"
-          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 https://github.com/nekono-dev/branch-release-workflow.git "$BRW_REF"
-          git -C "$RUNNER_TEMP/brw" checkout -q FETCH_HEAD
-          echo "BRW_PLUGIN_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
-      # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
-      # develop 用の Worker の設定で作る（D1 の ID を名前から引くため Cloudflare の認証情報を渡す）
+          brw_dir="$(node hack/setup-brw.mjs)"
+          echo "BRW_PLUGIN_DIR=$brw_dir" >> "$GITHUB_ENV"
+
       - name: Configure build setting
         if: steps.alias.outputs.valid == 'true'
         env:

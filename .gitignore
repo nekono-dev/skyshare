@@ -46,3 +46,6 @@ _legacy/**/.env.test.*
 
 # brw create が作る作業ブランチの worktree
 .claude/worktrees/
+
+# 外部 Git clone への Codex skill のリンク（本体は同梱しない）
+.agents/skills/branch-release-workflow
