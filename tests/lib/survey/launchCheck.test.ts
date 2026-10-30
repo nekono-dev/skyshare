@@ -108,7 +108,7 @@ describe("SurveyLaunchCheck: decideLaunch", () => {
         })
     })
 
-    it.each(["gone", "failed"] as const)(
+    it.each(["gone"] as const)(
         "[2.2][2.6][2.7] 端末が回答済みで登録が %s なら none、記録は変えない",
         async result => {
             const storage = createStorage()
@@ -158,7 +158,7 @@ describe("SurveyLaunchCheck: decideLaunch", () => {
         expect(readRecord(storage)).toEqual({ answered: true, dids: [did] })
     })
 
-    it.each(["gone", "failed"] as const)(
+    it.each(["gone"] as const)(
         "[2.6][2.7] 未記録で確認が %s なら none、記録は変えない",
         async result => {
             const storage = createStorage()
@@ -171,11 +171,18 @@ describe("SurveyLaunchCheck: decideLaunch", () => {
         },
     )
 
-    it("[2.7] 未記録で確認が例外を投げても none、記録は変えない", async () => {
+    it("未記録で確認に失敗したら入口を残し、回答済みとは記録しない", async () => {
+        const storage = createStorage()
+        const { api } = createApi("failed")
+        expect(await decideLaunch({ surveyId, did, api, storage })).toBe("ask")
+        expect(storage.getItem(key)).toBeNull()
+    })
+
+    it("[2.7] 未記録で確認が例外を投げても ask、記録は変えない", async () => {
         const storage = createStorage()
         const { api } = createApi("throw")
 
-        expect(await decideLaunch({ surveyId, did, api, storage })).toBe("none")
+        expect(await decideLaunch({ surveyId, did, api, storage })).toBe("ask")
         expect(storage.getItem(key)).toBeNull()
     })
 

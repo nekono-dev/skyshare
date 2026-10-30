@@ -1,0 +1,6 @@
+/* 投稿フォームと同じ横幅でアンケートの入口を表示する。 */
+.entry {
+  display: block;
+  width: 100%;
+  margin-block: var(--space-2);
+}

@@ -32,6 +32,7 @@ const did = "did:plc:alice"
 /** ダイアログを出している状態の例 */
 const shown: GateState = {
     pending: { survey, did },
+    open: true,
     busy: false,
     failed: false,
     judgedKey: "/",
@@ -260,6 +261,7 @@ describe("gateReducer", () => {
     it("初期状態は、ダイアログも送信中も失敗も判定済みも無い", () => {
         expect(initialGateState).toEqual({
             pending: null,
+            open: false,
             busy: false,
             failed: false,
             judgedKey: null,
@@ -269,6 +271,7 @@ describe("gateReducer", () => {
     it("reset は表示・送信中・失敗・判定済みをすべて消す", () => {
         const state: GateState = {
             pending: { survey, did },
+            open: true,
             busy: true,
             failed: true,
             judgedKey: "/entries/",
@@ -279,7 +282,8 @@ describe("gateReducer", () => {
     it("close は表示を閉じ、判定済みは残す", () => {
         const state: GateState = { ...shown, busy: true, failed: true }
         expect(gateReducer(state, { type: "close" })).toEqual({
-            pending: null,
+            pending: { survey, did },
+            open: false,
             busy: false,
             failed: false,
             judgedKey: "/",
@@ -290,6 +294,7 @@ describe("gateReducer", () => {
         const state: GateState = { ...shown, busy: true }
         expect(gateReducer(state, { type: "submitFailed" })).toEqual({
             pending: { survey, did },
+            open: true,
             busy: false,
             failed: true,
             judgedKey: "/",
@@ -300,6 +305,7 @@ describe("gateReducer", () => {
         const state: GateState = { ...shown, failed: true }
         expect(gateReducer(state, { type: "submitStart" })).toEqual({
             pending: { survey, did },
+            open: true,
             busy: true,
             failed: false,
             judgedKey: "/",
@@ -321,6 +327,7 @@ describe("gateReducer", () => {
             }),
         ).toEqual({
             pending: { survey, did },
+            open: false,
             busy: false,
             failed: false,
             judgedKey: "/entries/",
@@ -331,6 +338,7 @@ describe("gateReducer", () => {
         const state: GateState = { ...shown, judgedKey: null, failed: true }
         expect(gateReducer(state, { type: "judged", key: "/" })).toEqual({
             pending: { survey, did },
+            open: true,
             busy: false,
             failed: true,
             judgedKey: "/",
@@ -426,7 +434,7 @@ describe("applySubmitResult", () => {
             applySubmitResult(result, target, rt)
             expect(calls).toEqual([
                 `remember:${survey.id}:${did}`,
-                "dispatch:close",
+                "dispatch:hide",
             ])
         }
     })
@@ -435,7 +443,7 @@ describe("applySubmitResult", () => {
         for (const result of ["gone", "unauthenticated"] as const) {
             const { rt, calls } = createRuntime()
             applySubmitResult(result, target, rt)
-            expect(calls).toEqual(["dispatch:close"])
+            expect(calls).toEqual(["dispatch:hide"])
             expect(rt.remember).not.toHaveBeenCalled()
         }
     })
@@ -470,7 +478,8 @@ describe("handleDecline", () => {
         ])
         expect(rt.remember).not.toHaveBeenCalled()
         expect(actions.reduce(gateReducer, shown)).toEqual({
-            pending: null,
+            pending: { survey, did },
+            open: false,
             busy: false,
             failed: false,
             judgedKey: "/",
@@ -504,7 +513,7 @@ describe("handleSubmit", () => {
         expect(calls).toEqual([
             "dispatch:submitStart",
             `remember:${survey.id}:${did}`,
-            "dispatch:close",
+            "dispatch:hide",
         ])
     })
 
@@ -515,6 +524,7 @@ describe("handleSubmit", () => {
         expect(calls).toEqual(["dispatch:submitStart", "dispatch:submitFailed"])
         expect(actions.reduce(gateReducer, shown)).toEqual({
             pending: { survey, did },
+            open: true,
             busy: false,
             failed: true,
             judgedKey: "/",
@@ -556,7 +566,7 @@ describe("createDialogHandlers", () => {
         expect(calls).toEqual([
             "dispatch:submitStart",
             `remember:${survey.id}:${did}`,
-            "dispatch:close",
+            "dispatch:hide",
         ])
     })
 })

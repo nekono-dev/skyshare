@@ -28,6 +28,7 @@ import NavigationBar from "@/components/common/NavigationBar"
 import ThreadCard from "@/components/post/ThreadCard"
 import ThreadComposer from "@/components/post/ThreadComposer"
 import PostLauncher from "@/components/post/PostLauncher"
+import SurveyGate from "@/components/survey/SurveyGate"
 import {
   getActiveAccountInfo,
   getSessionOnce,
@@ -340,6 +341,7 @@ const Component = ({ avatarUrl }: Props) => {
           />
         </div>
       )}
+      {!guestMode && <SurveyGate />}
       {timelineHidden !== true && (
         <PostLauncher
           avatarUrl={resolvedAvatarUrl}

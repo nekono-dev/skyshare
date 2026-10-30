@@ -12,9 +12,17 @@
 .card {
   display: flex;
   flex-direction: column;
+  padding-inline: var(--space-2);
   max-height: calc(100dvh - 96px);
   min-height: 0;
   gap: var(--space-3);
+}
+
+/* 見出しは本文と同じ強さにし、本文とボタンの左右端をそろえる。 */
+.title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 400;
 }
 
 /* 質問の並びのスクロール領域。はみ出た分だけ縦にスクロールする。 */
@@ -23,6 +31,7 @@
   flex-direction: column;
   gap: var(--space-3);
   min-height: 0;
+  width: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -39,6 +48,7 @@
   flex-direction: column;
   gap: var(--space-2);
   flex-shrink: 0;
+  width: 100%;
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-2);
 }

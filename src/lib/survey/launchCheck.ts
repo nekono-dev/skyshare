@@ -6,7 +6,7 @@
  * - 端末の記録にアカウントがあれば通信せず何もしない。
  * - 記録にアカウントが無くて端末が回答済みなら、サーバーへ回答済みとして登録し、成功したらアカウントを記録に加える。
  * - 記録にも端末の回答済みにも無ければ、サーバーに回答済みかを確認する。回答済みなら記録し、未回答と明示されたときだけ「聞く」を返す。
- * - 終了または無い・失敗・想定外の例外のときは、記録を変えずに何もしない（次の起動で再度判定される）。
+ * - 終了時は何もしない。確認失敗時は回答済みと断定できないため、入口を表示する。
  * - アンケートの内容や表示には触れない。React・D1には依存しない。
  */
 import type { SurveyApi } from "@/lib/survey/client"
@@ -29,8 +29,8 @@ const privacyPagePath = "/privacy"
  * - `storage`: 端末の記録の保存先。省略時はlocalStorage
  *
  * Output:
- * - `ask`: サーバーが未回答と明示したときだけ
- * - `none`: それ以外（記録にあり・端末が回答済み・回答済み・終了・失敗・例外）
+ * - `ask`: 未回答、または回答済みを確認できなかったとき
+ * - `none`: 回答済みの記録・確認、または終了したとき
  *
  * 例: 記録にdidがあれば`none`を返し、`api`は呼ばない。
  */
@@ -48,9 +48,12 @@ export const decideLaunch = async (input: {
 
         // 端末が回答済みなら、サーバーへ回答済みとして登録する
         if (record.answered) {
-            const registered = await api.registerAnswered(surveyId)
-            if (registered === "registered") {
-                rememberAnswered(surveyId, did, storage)
+            try {
+                const registered = await api.registerAnswered(surveyId)
+                if (registered === "registered")
+                    rememberAnswered(surveyId, did, storage)
+            } catch {
+                // この端末で回答済みのため入口は再表示しない。
             }
             return "none"
         }
@@ -61,11 +64,11 @@ export const decideLaunch = async (input: {
             rememberAnswered(surveyId, did, storage)
             return "none"
         }
-        // 未回答と明示されたときだけ聞く
-        return checked === "unanswered" ? "ask" : "none"
+        // 回答済みと確認できなければ、手動で開ける入口を残す。
+        return checked === "gone" ? "none" : "ask"
     } catch {
-        // 想定外の例外でも、利用者の操作を妨げずに何もしない
-        return "none"
+        // 通信などが失敗しても、自動表示はせず入口だけを残す。
+        return "ask"
     }
 }
 

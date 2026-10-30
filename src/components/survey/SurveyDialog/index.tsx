@@ -1,5 +1,5 @@
 /**
- * SurveyDialog（回答必須のアンケートダイアログ）。
+ * SurveyDialog（ボタンから開くアンケートダイアログ）。
  *
  * 責務と処理概要:
  * - 検証済みのアンケートを `Overlay` の上に `role="dialog"` のカードとして描画する。
@@ -187,7 +187,7 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
         tabIndex={-1}
       >
         <div className={styles["scroll"]}>
-          <h2 id={titleId} className={ui.subject}>
+          <h2 id={titleId} className={styles["title"]}>
             {localize(survey.title, locale)}
           </h2>
           {description ? (

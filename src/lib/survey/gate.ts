@@ -145,8 +145,10 @@ export const planGateEntry = (input: {
 
 /** ダイアログの状態。表示中のアンケートと、送信・失敗・判定済みの鍵を持つ */
 export type GateState = {
-    /** 表示中のアンケートとアカウント。表示していなければ null */
+    /** 未回答のアンケートとアカウント。無ければ null */
     pending: { survey: Survey; did: string } | null
+    /** 回答画面が開いているか */
+    open: boolean
     /** 送信中。質問と操作を押せなくする */
     busy: boolean
     /** 直近の送信が失敗したか */
@@ -157,6 +159,7 @@ export type GateState = {
 
 export const initialGateState: GateState = {
     pending: null,
+    open: false,
     busy: false,
     failed: false,
     judgedKey: null,
@@ -168,12 +171,16 @@ export type GateAction =
     | { type: "reset" }
     /** 「聞く」と判定された: 表示し、判定済みの鍵を設定する */
     | { type: "ask"; survey: Survey; did: string; key: string }
+    /** 入口から回答画面を開く */
+    | { type: "open" }
     /** 送信を始める: 失敗の表示を消して送信中にする */
     | { type: "submitStart" }
     /** 送信が失敗した: 表示は残し、失敗を示して送信中を解く */
     | { type: "submitFailed" }
-    /** 閉じる（保存・重複・終了・未認証・辞退）: 表示を消す。判定済みは残す */
+    /** 辞退時は画面だけ閉じ、入口を残す */
     | { type: "close" }
+    /** 保存・重複による回答済み、または終了・未認証で入口を消す */
+    | { type: "hide" }
     /** 画面を判定済みにする */
     | { type: "judged"; key: string }
 
@@ -193,6 +200,7 @@ export const gateReducer = (
         case "reset":
             return {
                 pending: null,
+                open: false,
                 busy: false,
                 failed: false,
                 judgedKey: null,
@@ -200,16 +208,27 @@ export const gateReducer = (
         case "ask":
             return {
                 pending: { survey: action.survey, did: action.did },
+                open: false,
                 busy: false,
                 failed: false,
                 judgedKey: action.key,
             }
+        case "open":
+            return state.pending ? { ...state, open: true } : state
         case "submitStart":
             return { ...state, busy: true, failed: false }
         case "submitFailed":
             return { ...state, busy: false, failed: true }
         case "close":
-            return { ...state, pending: null, busy: false, failed: false }
+            return { ...state, open: false, busy: false, failed: false }
+        case "hide":
+            return {
+                ...state,
+                pending: null,
+                open: false,
+                busy: false,
+                failed: false,
+            }
         case "judged":
             return { ...state, judgedKey: action.key }
     }
@@ -301,7 +320,7 @@ export const applySubmitResult = (
         return
     }
     if (outcome.remember) rt.remember(target.surveyId, target.did)
-    rt.dispatch({ type: "close" })
+    rt.dispatch({ type: "hide" })
 }
 
 /**

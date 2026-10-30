@@ -58,6 +58,7 @@ const declineLabel = (question: FixtureQuestion): string => {
     return option.label.ja
 }
 
+const ENTRY = surveyMessages["survey.entry"]
 const SUBMIT = surveyMessages["survey.submit"]
 const CLOSE = surveyMessages["survey.close"]
 const SUBMIT_FAILED = surveyMessages["survey.submitFailed"]
@@ -174,6 +175,9 @@ const mockSurveyApi = async (page: Page, api: Api): Promise<void> => {
 
 /** セッションの応答。`did` が null のときは未ログイン（401） */
 const mockSession = async (page: Page, did: string | null): Promise<void> => {
+    await page.route(isPath("/v2/entries"), route =>
+        fulfill(route, { status: 200, body: { threads: [] } }),
+    )
     await page.route(isSession, route =>
         did === null
             ? fulfill(route, { status: 401, body: { error: "Unauthorized" } })
@@ -198,6 +202,16 @@ const mockSession = async (page: Page, did: string | null): Promise<void> => {
 // ---- 画面の操作と読み取り ----
 
 const dialog = (page: Page) => page.getByRole("dialog", { name: TITLE })
+const entry = (page: Page) => page.getByRole("button", { name: ENTRY })
+
+/** 未回答の入口から回答画面を開く。既に開いている場合は表示だけ確かめる。 */
+const openSurvey = async (page: Page): Promise<void> => {
+    if (!(await dialog(page).isVisible())) {
+        await expect(entry(page)).toBeVisible()
+        await entry(page).click()
+    }
+    await expect(dialog(page)).toBeVisible()
+}
 
 const choose = async (
     page: Page,
@@ -319,11 +333,31 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
 
         const config = configLoaded(page)
-        await page.goto("/settings/")
+        await page.goto("/")
         await config
 
-        // 肯定的な確認: ダイアログが出て、判定は一度だけ行われる
-        await expect(dialog(page)).toBeVisible()
+        // 投稿フォームの下の入口からだけ開ける。
+        await expect(entry(page)).toBeVisible()
+        await expect(dialog(page)).toBeHidden()
+        expect(
+            await page.evaluate(() => {
+                const composer = document.querySelector(
+                    '[data-testid="composer-submit"]',
+                )
+                const survey = document.querySelector(
+                    '[aria-haspopup="dialog"]',
+                )
+                return Boolean(
+                    composer &&
+                    survey &&
+                    composer.compareDocumentPosition(survey) &
+                        Node.DOCUMENT_POSITION_FOLLOWING,
+                )
+            }),
+        ).toBe(true)
+
+        // 回答して送信すると入口も消え、判定は一度だけ行われる。
+        await openSurvey(page)
         await settle(page)
         expect(api.gets).toBe(1)
         expect(await readRecord(page)).toBeNull()
@@ -337,6 +371,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await submit.click()
 
         await expect(dialog(page)).toBeHidden()
+        await expect(entry(page)).toBeHidden()
         expect(api.submitted).toEqual([
             {
                 answers: {
@@ -369,8 +404,8 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await page.goto("/")
+        await openSurvey(page)
         expect(api.gets).toBe(1)
 
         // 同じ画面でページの初期化の通知（astro:page-load）が起きても、判定は行われない。
@@ -383,7 +418,7 @@ test.describe("起動時の判定と端末の記録", () => {
             document.dispatchEvent(new Event("astro:page-load")),
         )
         expect(await again).toBe(false)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(api.gets).toBe(1)
         expect(log.survey).toEqual([`GET /v2/surveys/${SURVEY_ID}/respondent/`])
     })
@@ -398,7 +433,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await seedRecord(page, { answered: false, dids: [DID_A] })
 
         const config = configLoaded(page)
-        await page.goto("/settings/")
+        await page.goto("/")
         await config
         // 設定の取得の後、記録による判定は通信を伴わない。遅れて出る確認の要求が無いことを固定の猶予で確かめる
         await settle(page)
@@ -408,7 +443,7 @@ test.describe("起動時の判定と端末の記録", () => {
         // 対照: 同じ端末の記録に無いアカウントでは、確認が行われてダイアログが出る
         await mockSession(page, DID_B)
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(log.survey).toEqual([`GET /v2/surveys/${SURVEY_ID}/respondent/`])
         expect(await readRecord(page)).toEqual({
             answered: false,
@@ -425,7 +460,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSession(page, DID_B)
         await seedRecord(page, { answered: true, dids: [DID_A] })
 
-        await page.goto("/settings/")
+        await page.goto("/")
         // 判定が動いたことの確認: 登録の要求が 1 回出て、記録にアカウントが加わる（記録は応答の後に書かれるため待つ）
         await expect.poll(() => api.registers).toBe(1)
         await expect
@@ -446,7 +481,7 @@ test.describe("起動時の判定と端末の記録", () => {
             RECORD_KEY,
         )
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(api.gets).toBe(1)
     })
 
@@ -458,7 +493,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
+        await page.goto("/")
         await expect.poll(() => api.gets).toBe(1)
         // 記録は確認の応答の後に書かれるため、書かれるのを待つ
         await expect
@@ -480,7 +515,7 @@ test.describe("起動時の判定と端末の記録", () => {
         )
         api.respondent = { status: 200, body: { answered: false } }
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(api.gets).toBe(2)
     })
 
@@ -492,7 +527,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
+        await page.goto("/")
         await expect.poll(() => api.gets).toBe(1)
         await settle(page)
         await expect(dialog(page)).toBeHidden()
@@ -501,7 +536,7 @@ test.describe("起動時の判定と端末の記録", () => {
         // 対照: 次の起動で未回答と返せば、ダイアログが出る
         api.respondent = { status: 200, body: { answered: false } }
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(api.gets).toBe(2)
         expect(log.survey).toEqual([
             `GET /v2/surveys/${SURVEY_ID}/respondent/`,
@@ -516,7 +551,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
+        await page.goto("/")
         await expect.poll(() => api.gets).toBe(1)
         await settle(page)
         await expect(dialog(page)).toBeHidden()
@@ -525,11 +560,11 @@ test.describe("起動時の判定と端末の記録", () => {
         // 対照: 次の起動で未回答と返せば、ダイアログが出る
         api.respondent = { status: 200, body: { answered: false } }
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(api.gets).toBe(2)
     })
 
-    test("[survey-form/5.4 survey-form/5.5 survey-form/5.7 survey-form/8.1] 「回答しない」で閉じると、送信も記録もせず、同じタブでは再表示も通信もない（新しいタブの対照あり）", async ({
+    test("[survey-form/5.4 survey-form/8.1] 「回答しない」で閉じても入口を残し、再度開ける", async ({
         page,
     }) => {
         const api = newApi({ status: 200, body: { answered: false } })
@@ -537,8 +572,8 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await page.goto("/")
+        await openSurvey(page)
         await choose(page, single, declineLabel(single))
         const close = dialog(page).getByRole("button", { name: CLOSE })
         await expect(close).toBeEnabled()
@@ -549,18 +584,25 @@ test.describe("起動時の判定と端末の記録", () => {
         expect(api.registers).toBe(0)
         expect(await readRecord(page)).toBeNull()
         expect(await readDeclined(page)).toBe("1")
+        await expect(entry(page)).toBeVisible()
+        await openSurvey(page)
+        await expect(dialog(page)).toBeVisible()
 
-        // 同じタブで再読み込み: 再表示せず、アンケートの確認の通信もない
+        // 同じタブで再読み込みしても、未回答なら入口を表示する。
         await reloadAndSettle(page)
         await expect(dialog(page)).toBeHidden()
-        expect(api.gets).toBe(1)
-        expect(log.survey).toEqual([`GET /v2/surveys/${SURVEY_ID}/respondent/`])
+        await expect(entry(page)).toBeVisible()
+        expect(api.gets).toBe(2)
+        expect(log.survey).toEqual([
+            `GET /v2/surveys/${SURVEY_ID}/respondent/`,
+            `GET /v2/surveys/${SURVEY_ID}/respondent/`,
+        ])
 
-        // 対照: 新しいタブ（タブの印を消した状態）では、判定し直してダイアログが出る
+        // 新しいタブでも同じ入口を表示する。
         await newTabState(page)
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
-        expect(api.gets).toBe(2)
+        await openSurvey(page)
+        expect(api.gets).toBe(3)
     })
 
     test("[survey-form/4.4] 送信が重複（409）と返したときは、回答済みとして記録して閉じ、エラーを示さない", async ({
@@ -571,8 +613,8 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await page.goto("/")
+        await openSurvey(page)
         await choose(page, single, optionLabel(single, "sometimes"))
         await choose(page, multiple, optionLabel(multiple, "schedule"))
         await dialog(page).getByRole("button", { name: SUBMIT }).click()
@@ -598,8 +640,8 @@ test.describe("起動時の判定と端末の記録", () => {
             await mockSurveyApi(page, api)
             await mockSession(page, DID_A)
 
-            await page.goto("/settings/")
-            await expect(dialog(page)).toBeVisible()
+            await page.goto("/")
+            await openSurvey(page)
             await choose(page, single, optionLabel(single, "daily"))
             await choose(page, multiple, optionLabel(multiple, "share"))
             await dialog(page).getByRole("button", { name: SUBMIT }).click()
@@ -619,8 +661,8 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await page.goto("/")
+        await openSurvey(page)
         await choose(page, single, optionLabel(single, "daily"))
         await choose(page, multiple, optionLabel(multiple, "share"))
         await dialog(page).getByRole("button", { name: SUBMIT }).click()
@@ -657,8 +699,8 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await page.goto("/")
+        await openSurvey(page)
         await settle(page)
         const before = [...log.survey]
         const configBefore = log.configFetches
@@ -704,8 +746,8 @@ test.describe("起動時の判定と端末の記録", () => {
             ;(window as unknown as Record<string, unknown>).surveyMarker =
                 "kept"
         })
-        await navigateInApp(page, "/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await navigateInApp(page, "/")
+        await openSurvey(page)
         expect(
             await page.evaluate(
                 () =>
@@ -724,7 +766,7 @@ test.describe("起動時の判定と端末の記録", () => {
         await mockSurveyApi(page, api)
         await mockSession(page, DID_A)
 
-        await page.goto("/settings/?guest")
+        await page.goto("/?guest")
         // ゲスト表示は判定しないため要求は出ない。決定的な信号が無いので、初期化の後の固定の猶予で確かめる
         await settle(page)
         await expect(dialog(page)).toBeHidden()
@@ -732,8 +774,8 @@ test.describe("起動時の判定と端末の記録", () => {
         expect(log.configFetches).toBe(0)
 
         // 対照: ゲスト表示の印が無いページでは、判定されてダイアログが出る
-        await page.goto("/settings/")
-        await expect(dialog(page)).toBeVisible()
+        await page.goto("/")
+        await openSurvey(page)
         expect(api.gets).toBe(1)
     })
 
@@ -749,7 +791,7 @@ test.describe("起動時の判定と端末の記録", () => {
         const session = page.waitForResponse(response =>
             isSession(new URL(response.url())),
         )
-        await page.goto("/settings/")
+        await page.goto("/")
         await session
         await settle(page)
         await expect(dialog(page)).toBeHidden()
@@ -763,7 +805,7 @@ test.describe("起動時の判定と端末の記録", () => {
             UNAUTHENTICATED_KEY,
         )
         await reloadAndSettle(page)
-        await expect(dialog(page)).toBeVisible()
+        await openSurvey(page)
         expect(api.gets).toBe(1)
     })
 })

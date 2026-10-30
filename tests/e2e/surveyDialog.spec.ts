@@ -14,12 +14,7 @@
  */
 import fs from "node:fs"
 import path from "node:path"
-import type {
-    BrowserContext,
-    ElementHandle,
-    Page,
-    Route,
-} from "@playwright/test"
+import type { ElementHandle, Page, Route } from "@playwright/test"
 import { expect, publishedSurveyConfigSkipReason, test } from "./fixtures"
 import { survey as surveyMessagesJa } from "../../src/lib/i18n/messages/ja/survey"
 import { survey as surveyMessagesEn } from "../../src/lib/i18n/messages/en/survey"
@@ -195,6 +190,9 @@ const mockSurveyApi = async (page: Page, api: Api): Promise<void> => {
 
 /** セッションの応答（ログイン中のアカウント） */
 const mockSession = async (page: Page, did: string): Promise<void> => {
+    await page.route(isPath("/v2/entries"), route =>
+        fulfill(route, { status: 200, body: { threads: [] } }),
+    )
     await page.route(isSession, route =>
         fulfill(route, {
             status: 200,
@@ -310,7 +308,15 @@ const gotoRetry = async (page: Page, url: string): Promise<void> => {
 const openDialog = async (page: Page, timeout = 10_000): Promise<void> => {
     // 一過性の失敗（エラーページへの遷移を含む）は、移動をやり直す。やり直しても出なければ失敗にする
     for (let attempt = 1; ; attempt++) {
-        await gotoRetry(page, "/settings/")
+        await gotoRetry(page, "/")
+        const entry = page.getByRole("button", {
+            name: surveyMessagesJa["survey.entry"],
+        })
+        const ready = await entry.waitFor({ state: "visible", timeout }).then(
+            () => true,
+            () => false,
+        )
+        if (ready) await entry.click()
         const shown = await dialog(page)
             .waitFor({ state: "visible", timeout })
             .then(
@@ -672,9 +678,8 @@ test.describe("「回答しない」", () => {
         expect(api.submitted).toEqual([])
     })
 
-    test("[survey-form/5.4 survey-form/5.5 survey-form/5.7 survey-form/8.1] 「回答しない」で閉じると、送信も記録もせず、同じタブの再読み込みで出ず、アンケートの API の通信も無い（新しいタブ・新しいコンテキストでは出る）", async ({
+    test("[survey-form/5.4 survey-form/8.1] 「回答しない」で閉じても入口が残り、再読み込み後も開ける", async ({
         page,
-        browser,
     }) => {
         const api = newApi({ status: 200, body: { answered: false } })
         const log = trafficOf(page)
@@ -689,46 +694,32 @@ test.describe("「回答しない」", () => {
         expect(api.registers).toBe(0)
         expect(await readRecord(page)).toBeNull()
         expect(await readDeclined(page)).toBe("1")
+        await expect(
+            page.getByRole("button", {
+                name: surveyMessagesJa["survey.entry"],
+            }),
+        ).toBeVisible()
 
-        // 同じタブの再読み込み: 再表示しない。配信用の設定は取得されるが（判定は行われる）、アンケートの API は呼ばない
+        // 同じタブの再読み込み後も未回答の入口は残る。
         const configBefore = log.configFetches
         await reloadAndSettle(page)
         expect(log.configFetches).toBeGreaterThan(configBefore)
         await expect(dialog(page)).toBeHidden()
-        expect(api.gets).toBe(1)
-        expect(log.survey).toEqual([`GET /v2/surveys/${SURVEY_ID}/respondent/`])
+        expect(api.gets).toBe(2)
+        expect(log.survey).toEqual([
+            `GET /v2/surveys/${SURVEY_ID}/respondent/`,
+            `GET /v2/surveys/${SURVEY_ID}/respondent/`,
+        ])
         expect(await readRecord(page)).toBeNull()
 
         // 対照（同じタブ内）: タブの印を消した状態（新しいタブ相当）では、再び判定されて出る
         await newTabState(page)
         await reloadAndSettle(page)
+        await page
+            .getByRole("button", { name: surveyMessagesJa["survey.entry"] })
+            .click()
         await expect(dialog(page)).toBeVisible()
-        expect(api.gets).toBe(2)
-
-        // 対照（同じブラウザの新しいタブ）: 同じコンテキストの別のページでも、判定されて出る
-        const context = page.context()
-        const newTab = await context.newPage()
-        await mockPage(newTab, api)
-        await openDialog(newTab)
         expect(api.gets).toBe(3)
-        await newTab.close()
-
-        // 対照（新しいコンテキスト）: 別のコンテキストでも、判定されて出る
-        // 新しいコンテキストは、設定の既定値（baseURL・ロケール）を明示して作る（playwright.config.ts の use と同じ値）
-        const other: BrowserContext = await browser.newContext({
-            baseURL: "https://localhost:4321",
-            locale: "ja-JP",
-            ignoreHTTPSErrors: true,
-        })
-        try {
-            const otherPage = await other.newPage()
-            await mockPage(otherPage, api)
-            // 新しいコンテキストの初回の表示は、キャッシュが空のため遅れうる。その分を見込んで待つ
-            await openDialog(otherPage, 30_000)
-            expect(api.gets).toBe(4)
-        } finally {
-            await other.close()
-        }
     })
 })
 
@@ -741,7 +732,10 @@ test.describe("表示言語", () => {
         }) => {
             const api = newApi({ status: 200, body: { answered: false } })
             await mockPage(page, api)
-            await gotoRetry(page, "/settings/")
+            await gotoRetry(page, "/")
+            await page
+                .getByRole("button", { name: surveyMessagesEn["survey.entry"] })
+                .click()
             await expect(dialogEn(page)).toBeVisible()
 
             // 設定の英語の文言（タイトル・質問・選択肢）
