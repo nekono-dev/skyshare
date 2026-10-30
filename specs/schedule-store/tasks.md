@@ -4,7 +4,7 @@
 
 - 対応: D-1
 - [x] T-1.1: `src/lib/schedule/types.ts` に予約の型・状態・上限値を定義する。
-- [x] T-1.2: `migrations/0001_schedule.sql` に2つのテーブルと索引を作成する。
+- [x] T-1.2: `migrations/0001_initial.sql` に2つのテーブルと索引を作成する。
 - [x] T-1.3: D1 互換の SQLite アダプタを `tests/helpers/fakeD1.ts` に作成し、マイグレーションを適用できるようにする。
 - 検証: `npx vitest run tests/lib/schedule/types.test.ts`
 
@@ -28,5 +28,5 @@
 - [x] T-3.5: `imageStaging.ts` に世代つきのキーと画像の読み出しを実装し、AC-18 のテストをタグ付きで追加する。
 - [x] T-3.6: `DEVELOP.md` のライフサイクルを15日に改め、AC-19 のテストをタグ付きで追加する。
 - [x] T-3.7: 認可の途中の状態の保管と取り出しを加え、AC-20 のテストをタグ付きで追加する。
-- [x] T-3.8: `migrations/0005_schedule_owner_index.sql` で予約の所有者の索引に `run_at` を加え、AC-22 のテストをタグ付きで追加する。
+- [x] T-3.8: `migrations/0001_initial.sql` で予約の所有者の索引に `run_at` を加え、AC-22 のテストをタグ付きで追加する。
 - 検証: `npx vitest run tests/lib/schedule/credentialCrypto.test.ts tests/lib/schedule/imageStaging.test.ts tests/lib/schedule/store.test.ts tests/lib/schedule/ownerIndex.test.ts`
