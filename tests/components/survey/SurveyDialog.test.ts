@@ -330,7 +330,7 @@ describe("SurveyDialogBody（描画）", () => {
         })
         expect(html).toContain("閉じる</button>")
         expect(html).not.toContain("送信する</button>")
-        expect(html).toContain("次の起動でもう一度お聞きします。")
+        expect(html).toContain("後からボタンで開き直せます。")
         const closeTag = tagsOf(html, "button").at(-1) ?? ""
         expect(closeTag).not.toContain("disabled")
     })

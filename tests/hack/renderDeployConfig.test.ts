@@ -6,7 +6,7 @@
  *   必須の値が欠けたときに異常終了することを確かめる（リポジトリの wrangler.jsonc には触れない）。
  * - D1 の ID の問い合わせ（`npx wrangler d1 list`）は、PATH の先頭に置いた偽のコマンドで置き換える。
  * - スクリプトが使う branch-release-workflow プラグインの所在（環境変数 BRW_PLUGIN_DIR）は、テストの実行環境から引き継ぐ
- *   （CI では各 workflow が固定したコミットを取得して渡す。手元では DEVELOP.md の手順で clone して渡す）。
+ *   （CI では各 workflow が宣言されたブランチを取得して渡す。手元では `node hack/setup-brw.mjs` の出力を渡す）。
  */
 import { spawnSync } from "node:child_process"
 import {

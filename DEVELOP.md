@@ -7,7 +7,7 @@ v1と異なり、他サービスとの依存関係はありませんが、v1の�
 
 ## 準備
 
-1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。このスクリプトは [branch-release-workflow](https://github.com/nekono-dev/branch-release-workflow) を使うため、clone した場所を環境変数 `BRW_PLUGIN_DIR` で渡す（例: `git clone --depth 1 https://github.com/nekono-dev/branch-release-workflow.git /tmp/brw` の後に `BRW_PLUGIN_DIR=/tmp/brw node hack/render-deploy-config.mjs`）。CI では各 workflow が固定したコミットを取得して渡す。
+1. `wrangler.jsonc` を作る。下の「運用者ごとの設定」と次の `PUBLIC_*` を環境変数に設定し、`node hack/render-deploy-config.mjs` を実行する（`wrangler.template.jsonc` の値が置き換わる）。このスクリプトは [branch-release-workflow](https://github.com/nekono-dev/branch-release-workflow) を使うため、`BRW_PLUGIN_DIR="$(node hack/setup-brw.mjs)" node hack/render-deploy-config.mjs` として共有 skill の場所を渡す。CI も `.branch-release-workflow-source.json` が指定するブランチを取得して渡す。
 
 ```json
   "vars": {
