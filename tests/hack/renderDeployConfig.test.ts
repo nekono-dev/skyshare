@@ -53,7 +53,7 @@ beforeEach(() => {
     const fake = path.join(dir, "bin/npx")
     writeFileSync(
         fake,
-        `#!/bin/sh\necho '[{"uuid":"00000000-0000-0000-0000-000000000000","name":"skyshare-schedule"},{"uuid":"${DEVELOP_D1_ID}","name":"skyshare-schedule-develop"}]'\n`,
+        `#!/bin/sh\necho '[{"uuid":"00000000-0000-0000-0000-000000000000","name":"skyshare"},{"uuid":"${DEVELOP_D1_ID}","name":"skyshare-develop"}]'\n`,
     )
     chmodSync(fake, 0o755)
 })
@@ -85,7 +85,7 @@ describe("render-deploy-config", () => {
         expect(status).toBe(0)
         expect(config).toContain('"name": "skyshare"')
         expect(config).toContain('"pattern": "s.example.org"')
-        expect(config).toContain('"database_name": "skyshare-schedule"')
+        expect(config).toContain('"database_name": "skyshare"')
         expect(config).toContain('"bucket_name": "skyshare-schedule-images"')
         expect(config).toContain('"previews_enabled": false')
         expect(config).not.toContain(DEVELOP_D1_ID)
@@ -102,11 +102,11 @@ describe("render-deploy-config", () => {
         expect(config).toContain('"name": "skyshare-develop"')
         expect(config).toContain('"pattern": "develop.s.example.org"')
         expect(config).toContain('"previews_enabled": true')
-        expect(config).toContain('"database_name": "skyshare-schedule-develop"')
+        expect(config).toContain('"database_name": "skyshare-develop"')
         expect(config).toContain(
             '"bucket_name": "skyshare-schedule-images-develop"',
         )
-        expect(config).not.toContain('"database_name": "skyshare-schedule"')
+        expect(config).not.toContain('"database_name": "skyshare"')
         expect(config).toContain(`"database_id":"${DEVELOP_D1_ID}"`)
     })
 })
