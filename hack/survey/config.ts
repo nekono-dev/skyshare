@@ -7,8 +7,8 @@ import {
 /** 変数の容量の上限（GitHub の変数は 48KB まで） */
 export const VARIABLE_LIMIT_BYTES = 48 * 1024
 
-/** 聞き取りの結果。識別子は省略できる */
-export type DraftSurvey = Omit<Survey, "id"> & { id?: string }
+/** 聞き取りの結果。識別子は省略でき、開始日時は登録時に補う。 */
+export type DraftSurvey = Omit<Survey, "id" | "opensAt"> & { id?: string }
 
 export type AddOutcome =
     | {
@@ -19,8 +19,6 @@ export type AddOutcome =
       }
     | { status: "invalid"; issues: string[] }
     | { status: "too-large"; bytes: number }
-
-const INVALID_OPENS_AT = "opensAt: 開始時刻が日時として読めない"
 
 /** 設定の各項目をスキーマの定義順に並べ直す。 */
 const canonicalSurvey = (survey: Survey): Survey => ({
@@ -69,8 +67,8 @@ export const serializeConfig = (config: SurveyConfig): string =>
 export const byteLength = (value: string): number =>
     new TextEncoder().encode(value).byteLength
 
-const contentWithoutId = (survey: Survey): string => {
-    const { id: _id, ...content } = canonicalSurvey(survey)
+const contentWithoutIdAndOpensAt = (survey: Survey): string => {
+    const { id: _id, opensAt: _opensAt, ...content } = canonicalSurvey(survey)
     return JSON.stringify(content)
 }
 
@@ -79,77 +77,84 @@ const monthOf = (opensAt: string): string => {
     return `${String(jst.getUTCFullYear()).padStart(4, "0")}-${String(jst.getUTCMonth() + 1).padStart(2, "0")}`
 }
 
-const candidateSurvey = (draft: unknown): Survey | null => {
+/**
+ * 開始日時と仮 ID を補い、下書き単体を上流スキーマで検証する。
+ *
+ * Input:
+ * - `draft`: 開始日時を含まない下書き
+ * - `opensAt`: 検証時に使う登録候補時刻
+ *
+ * Output:
+ * - 有効なら正規化された Survey、不正なら `null`
+ *
+ * 例:
+ * - 入力: startless 下書きと ISO 日時 / 出力: `draft` ID と開始日時付き Survey
+ */
+const candidateSurvey = (draft: unknown, opensAt: string): Survey | null => {
     if (draft === null || typeof draft !== "object" || Array.isArray(draft)) {
         return null
     }
-    const opensAt = (draft as Record<string, unknown>).opensAt
-    if (typeof opensAt !== "string" || Number.isNaN(Date.parse(opensAt))) {
-        return null
-    }
-    const result = parseSurveyConfig({ surveys: [{ ...draft, id: "draft" }] })
+    const result = parseSurveyConfig({
+        surveys: [{ ...draft, id: "draft", opensAt }],
+    })
     return result.ok ? result.config.surveys[0] : null
 }
 
-/** 下書きを設定に加え、検証・正規化した結果を返す。 */
+/**
+ * 下書きを登録候補時刻とともに設定へ加え、検証・正規化した結果を返す。
+ *
+ * Input:
+ * - `current`: 検証済みの現在の設定
+ * - `draft`: 開始時刻を含まない任意の下書き入力
+ * - `registeredAt`: 有限の初回登録候補日時
+ *
+ * Output:
+ * - 検証済みの追加・更新結果、入力値を含まない不正、または容量超過
+ *
+ * 例:
+ * - 入力: 2026年11月の下書き / 出力: `2026-11-1` と ISO 開始時刻を持つ設定
+ */
 export const addSurvey = (
     current: SurveyConfig,
     draft: unknown,
+    registeredAt: Date,
 ): AddOutcome => {
     const source =
         draft !== null && typeof draft === "object" && !Array.isArray(draft)
             ? (draft as Record<string, unknown>)
             : null
-    const opensAt = source?.opensAt
-    if (typeof opensAt !== "string" || Number.isNaN(Date.parse(opensAt))) {
-        return { status: "invalid", issues: [INVALID_OPENS_AT] }
-    }
-
-    const provisional = candidateSurvey(draft)
-    if (!provisional) {
-        const hasId =
-            source !== null &&
-            Object.prototype.hasOwnProperty.call(source, "id")
-        let temporaryId = "draft"
-        while (current.surveys.some(survey => survey.id === temporaryId)) {
-            temporaryId = `${temporaryId}-draft`
-        }
-        const invalidCandidate =
-            source === null
-                ? draft
-                : hasId
-                  ? source
-                  : { ...source, id: temporaryId }
-        const invalidId = hasId ? source?.id : temporaryId
-        const validation = parseSurveyConfig({
-            surveys: [
-                ...current.surveys.filter(survey => survey.id !== invalidId),
-                invalidCandidate as Survey,
-            ],
-        })
+    if (
+        !(registeredAt instanceof Date) ||
+        !Number.isFinite(registeredAt.getTime())
+    ) {
         return {
             status: "invalid",
-            issues: validation.ok
-                ? ["survey: 条件を満たしていない"]
-                : validation.issues,
+            issues: ["registeredAt: 日時として読めない"],
         }
     }
+    const candidateOpensAt = registeredAt.toISOString()
 
-    let id: string
     const hasExplicitId =
         source !== null && Object.prototype.hasOwnProperty.call(source, "id")
+    const match = hasExplicitId
+        ? undefined
+        : current.surveys.find(survey => {
+              const candidate = candidateSurvey(draft, survey.opensAt)
+              return (
+                  candidate !== null &&
+                  contentWithoutIdAndOpensAt(survey) ===
+                      contentWithoutIdAndOpensAt(candidate)
+              )
+          })
+    let id: string
     if (hasExplicitId) {
         // 全体の検証器が、値を漏らさず不正な明示 ID を報告する。
         id = source.id as string
     } else {
-        const match = current.surveys.find(
-            survey =>
-                contentWithoutId(survey) === contentWithoutId(provisional),
-        )
         if (match) {
             id = match.id
         } else {
-            const month = monthOf(provisional.opensAt)
+            const month = monthOf(candidateOpensAt)
             const used = new Set(current.surveys.map(survey => survey.id))
             let sequence = 1
             while (used.has(`${month}-${sequence}`)) sequence += 1
@@ -157,14 +162,18 @@ export const addSurvey = (
         }
     }
 
-    const replacement: Survey = { ...provisional, id }
     const previous = current.surveys.find(survey => survey.id === id)
-    const surveys = previous
-        ? current.surveys.map(survey =>
-              survey.id === id ? replacement : survey,
-          )
-        : [...current.surveys, replacement]
-    const validation = parseSurveyConfig({ surveys })
+    const replacement = {
+        ...(source ?? {}),
+        id,
+        opensAt: previous?.opensAt ?? candidateOpensAt,
+    } as Survey
+    const validation = parseSurveyConfig({
+        surveys: [
+            ...current.surveys.filter(survey => survey.id !== id),
+            replacement,
+        ],
+    })
     if (!validation.ok) return { status: "invalid", issues: validation.issues }
 
     const config = { surveys: sortSurveys(validation.config.surveys) }

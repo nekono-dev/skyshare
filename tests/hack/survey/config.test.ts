@@ -11,8 +11,7 @@ import {
 
 const makeSurvey = (
     overrides: Partial<Survey> = {},
-): Omit<Survey, "id"> & { id?: string } => ({
-    opensAt: "2026-11-01T00:00:00+09:00",
+): Omit<Survey, "id" | "opensAt"> & { id?: string } => ({
     closesAt: "2026-11-08T00:00:00+09:00",
     title: { ja: "SkyshareのUI", en: "Skyshare UI" },
     questions: [
@@ -30,26 +29,45 @@ const makeSurvey = (
 })
 
 const configWith = (...surveys: Survey[]): SurveyConfig => ({ surveys })
+const registeredAt = new Date("2026-11-01T00:00:00+09:00")
 
 describe("survey config helpers", () => {
     test("creates an item with the JST month and smallest available sequence", () => {
-        const result = addSurvey({ surveys: [] }, makeSurvey())
+        const result = addSurvey({ surveys: [] }, makeSurvey(), registeredAt)
 
         expect(result).toMatchObject({
             status: "created",
             id: "2026-11-1",
-            config: { surveys: [{ id: "2026-11-1" }] },
+            config: {
+                surveys: [
+                    { id: "2026-11-1", opensAt: registeredAt.toISOString() },
+                ],
+            },
         })
         expect(result.status === "created" && result.value).toBe(
             serializeConfig({
-                surveys: [{ id: "2026-11-1", ...makeSurvey() }],
+                surveys: [
+                    {
+                        id: "2026-11-1",
+                        opensAt: registeredAt.toISOString(),
+                        ...makeSurvey(),
+                    },
+                ],
             }),
         )
     })
 
     test("reuses the id of an existing survey with identical normalized content", () => {
-        const existing = { id: "existing-survey", ...makeSurvey() } as Survey
-        const result = addSurvey(configWith(existing), makeSurvey())
+        const existing = {
+            id: "existing-survey",
+            opensAt: registeredAt.toISOString(),
+            ...makeSurvey(),
+        } as Survey
+        const result = addSurvey(
+            configWith(existing),
+            makeSurvey(),
+            new Date("2026-12-01T00:00:00+09:00"),
+        )
 
         expect(result).toMatchObject({
             status: "unchanged",
@@ -66,7 +84,11 @@ describe("survey config helpers", () => {
                 closesAt: "2026-11-17T00:00:00+09:00",
             }),
         } as Survey
-        const result = addSurvey(configWith(existing), makeSurvey())
+        const result = addSurvey(
+            configWith(existing),
+            makeSurvey(),
+            registeredAt,
+        )
 
         expect(result).toMatchObject({
             status: "created",
@@ -79,19 +101,35 @@ describe("survey config helpers", () => {
     })
 
     test("replaces the survey with the explicitly supplied id", () => {
-        const existing = { id: "picked-ui", ...makeSurvey() } as Survey
+        const existing = {
+            id: "picked-ui",
+            opensAt: registeredAt.toISOString(),
+            ...makeSurvey(),
+        } as Survey
         const revised = makeSurvey({
             title: { ja: "新しい題", en: "New title" },
         })
-        const result = addSurvey(configWith(existing), {
-            ...revised,
-            id: "picked-ui",
-        })
+        const result = addSurvey(
+            configWith(existing),
+            {
+                ...revised,
+                id: "picked-ui",
+            },
+            new Date("2026-12-01T00:00:00+09:00"),
+        )
 
         expect(result).toMatchObject({
             status: "updated",
             id: "picked-ui",
-            config: { surveys: [{ id: "picked-ui", title: revised.title }] },
+            config: {
+                surveys: [
+                    {
+                        id: "picked-ui",
+                        opensAt: existing.opensAt,
+                        title: revised.title,
+                    },
+                ],
+            },
         })
     })
 
@@ -100,9 +138,12 @@ describe("survey config helpers", () => {
         const result = addSurvey(
             { surveys: [] },
             {
-                ...makeSurvey(),
-                opensAt: secret,
+                ...makeSurvey({
+                    title: { ja: secret, en: "private" },
+                    unexpected: secret,
+                } as Partial<Survey>),
             },
+            registeredAt,
         )
 
         expect(result).toMatchObject({ status: "invalid" })
@@ -116,6 +157,7 @@ describe("survey config helpers", () => {
             makeSurvey({
                 title: { ja: "あ".repeat(VARIABLE_LIMIT_BYTES), en: "Title" },
             }),
+            registeredAt,
         )
 
         expect(result.status).toBe("too-large")
@@ -126,7 +168,11 @@ describe("survey config helpers", () => {
     })
 
     test("serializes survey order and schema keys deterministically", () => {
-        const earlier = { id: "early", ...makeSurvey() } as Survey
+        const earlier = {
+            id: "early",
+            opensAt: "2026-11-01T00:00:00+09:00",
+            ...makeSurvey(),
+        } as Survey
         const later = {
             id: "late",
             ...makeSurvey({
@@ -165,5 +211,48 @@ describe("survey config helpers", () => {
         expect(once).toEqual(configWith(keep))
         expect(removeSurveys(once, ["remove"])).toEqual(once)
         expect(initial).toEqual(configWith(keep, remove))
+    })
+
+    test("assigns the smallest available sequence using registeredAt's JST month", () => {
+        const existing = {
+            id: "2026-12-2",
+            opensAt: "2026-12-10T00:00:00+09:00",
+            ...makeSurvey({ closesAt: "2026-12-17T00:00:00+09:00" }),
+        } as Survey
+        const result = addSurvey(
+            configWith(existing),
+            makeSurvey({ closesAt: "2026-12-08T00:00:00+09:00" }),
+            new Date("2026-12-01T00:00:00+09:00"),
+        )
+
+        expect(result).toMatchObject({ status: "created", id: "2026-12-1" })
+    })
+
+    test("rejects an end time before registeredAt and reports no input values", () => {
+        const privateTitle = "private survey title"
+        const result = addSurvey(
+            { surveys: [] },
+            makeSurvey({
+                closesAt: "2026-10-31T23:59:59+09:00",
+                title: { ja: privateTitle, en: "private" },
+            }),
+            registeredAt,
+        )
+
+        expect(result.status).toBe("invalid")
+        expect(JSON.stringify(result)).not.toContain(privateTitle)
+    })
+
+    test("rejects a non-finite registration candidate without echoing it", () => {
+        const result = addSurvey(
+            { surveys: [] },
+            makeSurvey(),
+            new Date(Number.NaN),
+        )
+
+        expect(result).toMatchObject({
+            status: "invalid",
+            issues: ["registeredAt: 日時として読めない"],
+        })
     })
 })
