@@ -3,18 +3,23 @@
     "nekono-dev": {
       "source": {
         "source": "github",
-        "repo": "nekono-dev/claude-plugins"
+        "repo": "nekono-dev/branch-release-workflow"
       }
     }
   },
   "enabledPlugins": {
-    "branch-release-workflow@nekono-dev": true,
-    "spec-driven-development@nekono-dev": true
+    "branch-release-workflow@nekono-dev": true
   },
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "startup",
         "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx cc-sdd@latest --yes --claude-skills --lang ja",
+            "timeout": 600
+          },
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"

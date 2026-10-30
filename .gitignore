@@ -52,3 +52,6 @@ _legacy/**/.env.test.*
 
 # 外部 Git clone への Codex skill のリンク（本体は同梱しない）
 .agents/skills/branch-release-workflow
+
+.claude/skills/kiro-*/
+.agents/skills/kiro-*/
