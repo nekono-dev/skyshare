@@ -178,8 +178,6 @@ export const run = async (
     try {
         const loaded = await readConfig(remote)
         if ("code" in loaded) return loaded
-        const currentTime = now()
-
         if (command.name === "add") {
             let draft: unknown
             try {
@@ -190,7 +188,7 @@ export const run = async (
                     line: "error: invalid: 下書きを読み取れません",
                 }
             }
-            const result = addSurvey(loaded.config, draft)
+            const result = addSurvey(loaded.config, draft, now())
             const problem = outcomeError(result)
             if (problem) return problem
             if (result.status === "invalid" || result.status === "too-large")
@@ -210,6 +208,7 @@ export const run = async (
         }
 
         if (command.name === "status") {
+            const currentTime = now()
             if (loaded.config.surveys.length === 0)
                 return { code: 0, line: "status: no surveys" }
             const items = loaded.config.surveys.map(
@@ -222,6 +221,7 @@ export const run = async (
             }
         }
 
+        const currentTime = now()
         const candidates = pruneCandidates(loaded.config, currentTime)
         if (candidates.length === 0)
             return {
