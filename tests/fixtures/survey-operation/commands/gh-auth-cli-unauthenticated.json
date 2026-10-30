@@ -1,0 +1,5 @@
+{
+  "exitCode": 4,
+  "stdout": "",
+  "stderr": "To get started with GitHub CLI, please run: gh auth login\nSet the GH_TOKEN environment variable to an authentication token."
+}

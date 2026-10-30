@@ -1,0 +1,28 @@
+---
+/**
+ * ChoiceQuestion(選択式質問部品)の確認用ページ。
+ *
+ * 責務と処理概要:
+ * - 単一・複数・上限つき・操作できない状態の 4 例(`ChoiceQuestionSample`)を載せる。
+ * - 固定の例文のみ。ログインに依存せず、静的に配信し(prerender)、検索エンジンに載せない(noindex)。
+ * - Playwright(`tests/e2e/choiceQuestion.spec.ts`)が操作後の表示を確認する対象。URL は変更しない。
+ */
+export const prerender = true
+
+import ui from "@/styles/ui.module.css"
+import Baselayout from "@/layout/Baselayout.astro"
+import ChoiceQuestionSample from "@/components/common/ChoiceQuestionSample"
+import { serviceName } from "@/vars"
+
+const robots = ["noindex", "nofollow", "noarchive", "noimageindex"]
+const heading = "選択式質問の確認"
+const pageTitle = `${heading} | ${serviceName}`
+---
+
+<Baselayout cardPath="/materials/ogp_main.png" pageTitle={pageTitle} pageHeading={heading} robots={robots}>
+    <div class={ui.center}>
+        <div class={`${ui.page} ${ui["width-lg"]}`}>
+            <ChoiceQuestionSample client:load />
+        </div>
+    </div>
+</Baselayout>

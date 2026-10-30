@@ -52,7 +52,7 @@ import { siteConfig, type SiteConfig } from "@/lib/site/siteConfig"
 - 測定 ID が null なら、収集する情報・情報の共有・保持期間・Cookie の節からアクセス解析の項目を除き、Cookie の節の見出しを「Cookie」だけにする。
 - ハンドルが null なら、連絡先から Bluesky のアカウントの項目を除く。
 
-### D-2: 節の組み立て (FR-1, FR-2, FR-3, FR-4, FR-6, FR-8, FR-9)
+### D-2: 節の組み立て (FR-1, FR-2, FR-3, FR-4, FR-6, FR-8, FR-9, FR-12)
 
 ```ts
 export type PolicyItem = string | { label: string; value: string; href?: string }

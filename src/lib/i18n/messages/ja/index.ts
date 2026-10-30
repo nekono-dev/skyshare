@@ -15,6 +15,7 @@ import { post } from "./post"
 import { privacy } from "./privacy"
 import { schedule } from "./schedule"
 import { settings } from "./settings"
+import { survey } from "./survey"
 import { video } from "./video"
 
 export const ja = {
@@ -31,5 +32,6 @@ export const ja = {
     ...privacy,
     ...schedule,
     ...settings,
+    ...survey,
     ...video,
 } as const

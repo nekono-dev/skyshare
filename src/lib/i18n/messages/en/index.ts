@@ -16,6 +16,7 @@ import { post } from "./post"
 import { privacy } from "./privacy"
 import { schedule } from "./schedule"
 import { settings } from "./settings"
+import { survey } from "./survey"
 import { video } from "./video"
 
 export const en: EnglishMessages = {
@@ -32,5 +33,6 @@ export const en: EnglishMessages = {
     ...privacy,
     ...schedule,
     ...settings,
+    ...survey,
     ...video,
 }

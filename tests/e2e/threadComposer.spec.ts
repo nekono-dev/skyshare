@@ -11,7 +11,7 @@
  * - 主眼は、非アクティブ化に伴う`ImagePicker`の再マウントで画像プレビューが消える
  *   不具合（`specs/thread-composer`のバグ修正）の回帰防止。
  */
-import { expect, test } from "./fixtures"
+import { expect, routeDefaultSurveyRespondent, test } from "./fixtures"
 import { type Locator } from "@playwright/test"
 
 /**
@@ -44,6 +44,7 @@ test.describe("ThreadComposer", () => {
         // コールドコンパイルを待つのに十分な長さへこの1回だけ延長する。
         test.setTimeout(90_000)
         const page = await browser.newPage({ ignoreHTTPSErrors: true })
+        await routeDefaultSurveyRespondent(page.context())
         await page.goto("/post/?guest", { timeout: 60_000 })
         await expect(page.getByTestId("thread-segment-0")).toBeVisible({
             timeout: 60_000,

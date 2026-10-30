@@ -1,4 +1,4 @@
-// 配備の前後に、Worker が使うシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY）が未登録なら生成して登録するスクリプト。
+// 配備の前後に、Worker が使うシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY・SURVEY_HASH_KEY）が未登録なら生成して登録するスクリプト。
 //
 // 責務:
 // - 配備先（`wrangler.jsonc` の name の Worker。`--develop` ではそのプレビューの基本設定も）に登録済みのシークレットの名前を調べ、
@@ -9,6 +9,8 @@
 // 片方にだけ登録済みのとき（値を写せないため、そろえ直すしかない）:
 // - OAUTH_CLIENT_KEY: 作り直して両方へ登録する。古い鍵で得た予約の許可は、利用者が許可し直す
 // - SCHEDULE_ENC_KEY: 作り直すと保管済みの認証情報が復号できなくなるため、登録せずに失敗で終える（手で対処する）
+// - SURVEY_HASH_KEY: 作り直すと保管済みの回答済みの記録と一致しなくなる（再回答できてしまう）ため、登録せずに失敗で終える（手で対処する）
+//   本番は独立した D1 を持つので、develop とは別の値になる。SCHEDULE_ENC_KEY とも別のキー・別の値である
 //
 // 既にある Preview は、作られた時点の基本設定のシークレットを持ち続ける（後から基本設定に足しても届かず、値も読み出せない）。
 // `--preview <名前>` を付けると、その Preview に必要なシークレットが欠けているとき Preview を削除する。
@@ -22,7 +24,7 @@ import { pathToFileURL } from "node:url"
 import { GENERATORS } from "./prepare-local-env.mjs"
 
 /** 片方にだけ登録済みのとき、作り直して両方へ登録してよいシークレット */
-const REGENERATABLE = new Set(["OAUTH_CLIENT_KEY"])
+export const REGENERATABLE = new Set(["OAUTH_CLIENT_KEY"])
 
 /**
  * 登録の計画を立てる。
@@ -213,7 +215,7 @@ const main = async () => {
   if (errors.length > 0) {
     console.error(
       `::error::${errors.join(", ")} が ${targets.map(t => t.label(worker)).join(" と ")} の片方にだけ登録されています。` +
-        "作り直すと保管済みのデータを復号できなくなるため自動では登録しません（DEVELOP.md の「予約投稿の初期設定」を参照）",
+        "作り直すと保管済みのデータを復号できなくなる、または回答済みの記録と一致しなくなるため自動では登録しません（DEVELOP.md の「予約投稿の初期設定」を参照）",
     )
     process.exitCode = 1
   }

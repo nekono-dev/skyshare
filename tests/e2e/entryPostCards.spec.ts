@@ -2,7 +2,7 @@
  * Entry詳細ページの投稿カード表示（specs/entry-detail）の
  * ヘッドレスブラウザによる動作確認。`entries/sample` の固定サンプルページを使う。
  */
-import { expect, test } from "./fixtures"
+import { expect, routeDefaultSurveyRespondent, test } from "./fixtures"
 
 test.describe("Entry詳細ページの投稿カード", () => {
     test("[entry-detail/AC-1 entry-detail/AC-6 entry-detail/AC-7] スレッドサンプル: 6カードが順に並び、連結線があり、リアクションは各カード別", async ({
@@ -78,6 +78,7 @@ test.describe("Entry詳細ページの投稿カード", () => {
             javaScriptEnabled: false,
             ignoreHTTPSErrors: true,
         })
+        await routeDefaultSurveyRespondent(context)
         const page = await context.newPage()
         await page.goto("https://localhost:4321/entries/sample/")
         await expect(page.locator("ol li img").first()).toBeVisible()

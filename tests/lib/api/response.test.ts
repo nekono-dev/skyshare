@@ -9,17 +9,22 @@ describe("errorResponseFromStatus", () => {
         [401, "Unauthorized"],
         [403, "Forbidden"],
         [404, "Not Found"],
+        [409, "Conflict"],
+        [422, "Unprocessable Content"],
         [429, "Too Many Requests"],
         [500, "Internal Server Error"],
         [503, "Service Unavailable"],
         [418, "Internal Server Error"],
-    ])("status %i は %s を返す", async (status, message) => {
-        const res = errorResponseFromStatus(status)
-        expect(res.status).toBe(status)
-        expect(res.headers.get("content-type")).toBe("application/json")
-        expect(res.headers.get("cache-control")).toBe("no-store")
-        await expect(res.json()).resolves.toEqual({ error: message })
-    })
+    ])(
+        "[survey-api/1.3][survey-api/5.7] status %i は %s を返す",
+        async (status, message) => {
+            const res = errorResponseFromStatus(status)
+            expect(res.status).toBe(status)
+            expect(res.headers.get("content-type")).toBe("application/json")
+            expect(res.headers.get("cache-control")).toBe("no-store")
+            await expect(res.json()).resolves.toEqual({ error: message })
+        },
+    )
 })
 
 describe("resolveXrpcStatus", () => {

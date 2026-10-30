@@ -49,6 +49,9 @@ export const errorResponseFromStatus = (status: number): Response => {
         case 409:
             message.error = "Conflict"
             break
+        case 422:
+            message.error = "Unprocessable Content"
+            break
         case 429:
             message.error = "Too Many Requests"
             break
