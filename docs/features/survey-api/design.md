@@ -109,7 +109,7 @@ flowchart LR
 | Layer                    | Choice / Version                    | Role in Feature                              | Notes                                              |
 | ------------------------ | ----------------------------------- | -------------------------------------------- | -------------------------------------------------- |
 | API                      | Astro のルート＋Zod（既存）         | 3 つの操作の契約と検証                       | 契約は `src/lib/api/schema/v2/surveys/` に置く     |
-| Data / Storage           | Cloudflare D1（既存の `DB`）        | 回答済みの集合と匿名の回答の保管             | 移行 `0006_survey.sql`。`batch` を使う             |
+| Data / Storage           | Cloudflare D1（既存の `DB`）        | 回答済みの集合と匿名の回答の保管             | 移行 `0001_initial.sql`。`batch` を使う            |
 | Crypto                   | Web Crypto（HMAC-SHA256・乱数）     | 回答者のハッシュ、回答の識別子               | 依存の追加なし                                     |
 | Infrastructure / Runtime | Workers の Cron と `ASSETS`（既存） | 日次の削除、設定の読み出し                   | 既存の毎分の定期実行の日次の枠に相乗りする         |
 | Secrets                  | `GENERATORS`（既存の仕組み）        | `SURVEY_HASH_KEY` の自動登録とローカルの生成 | Base64 の 32 バイト。`SCHEDULE_ENC_KEY` とは別の値 |
@@ -120,7 +120,7 @@ flowchart LR
 
 ```
 migrations/
-└── 0006_survey.sql                  # SurveyTables: 回答済みの集合と匿名の回答の 2 表（WITHOUT ROWID）
+└── 0001_initial.sql                  # SurveyTables: 回答済みの集合と匿名の回答の 2 表（WITHOUT ROWID）
 src/lib/api/schema/v2/surveys/
 └── _surveyId/
     ├── respondent/
@@ -267,7 +267,7 @@ flowchart TD
 | 10.4        | 共用する環境に同じ値             | HashKeyProvisioning                              | `planSecretWrites`                                             | —              |
 | 10.5        | 片方だけのとき失敗               | HashKeyProvisioning                              | `planSecretWrites` の errors                                   | —              |
 | 10.6        | 暗号鍵とは別の値                 | HashKeyProvisioning                              | 独立した `GENERATORS` のキー                                   | —              |
-| 10.7        | 構造が用意される                 | SurveyTables                                     | `0006_survey.sql`（既存の移行の適用）                          | —              |
+| 10.7        | 構造が用意される                 | SurveyTables                                     | `0001_initial.sql`（既存の移行の適用）                         | —              |
 
 ## Components and Interfaces
 
@@ -723,7 +723,7 @@ export const runSurveyRetention: (
 
 **Responsibilities & Constraints**
 
-- 詳細は Data Models に記す。移行 `migrations/0006_survey.sql` は、既存の配備の手順（`wrangler d1 migrations apply`）で適用される。
+- 詳細は Data Models に記す。移行 `migrations/0001_initial.sql` は、既存の配備の手順（`wrangler d1 migrations apply`）で適用される。
 
 **Contracts**: State [x]
 

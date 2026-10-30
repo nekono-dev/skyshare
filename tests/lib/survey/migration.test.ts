@@ -1,5 +1,5 @@
 /**
- * 責務: アンケートの 2 つのテーブルを作る移行（0006_survey.sql）の構造を確かめる。
+ * 責務: アンケートの 2 つのテーブルを作る移行（0001_initial.sql）の構造を確かめる。
  * 処理概要: 既存の移行をすべて適用した SQLite から、列・主キー・挿入順（rowid）の有無・外部キーを調べる。
  */
 import { describe, expect, test } from "vitest"
@@ -24,6 +24,42 @@ const columnsOf = (db: DatabaseSync, table: string): Column[] =>
     db.prepare(`PRAGMA table_info(${table})`).all() as Column[]
 
 describe("アンケートの表の移行", () => {
+    test("初期マイグレーション 1 本で予約・OAuth・アンケートの最終構造を作る", () => {
+        const dir = path.resolve(__dirname, "../../../migrations")
+        expect(readdirSync(dir).filter(file => file.endsWith(".sql"))).toEqual([
+            "0001_initial.sql",
+        ])
+        const db = migrated()
+        const tables = db
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
+            )
+            .all()
+            .map(row => row.name)
+        expect(tables).toEqual([
+            "schedule_credentials",
+            "schedule_oauth_states",
+            "scheduled_posts",
+            "survey_answers",
+            "survey_respondents",
+        ])
+        const credentials = columnsOf(db, "schedule_credentials")
+        expect(credentials.map(column => column.name)).toEqual([
+            "did",
+            "service",
+            "token_enc",
+            "updated_at",
+            "authorized_at",
+            "reauth_required",
+        ])
+        expect(
+            db
+                .prepare("PRAGMA index_info(scheduled_posts_owner)")
+                .all()
+                .map(row => row.name),
+        ).toEqual(["did", "status", "run_at"])
+    })
+
     test("[survey-api/10.7] 全移行の適用で 2 つの表ができる", () => {
         const db = migrated()
         const names = (
