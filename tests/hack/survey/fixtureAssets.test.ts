@@ -2,7 +2,7 @@
  * survey-operation の固定資材が上流の設定契約を満たし、外部出力例を持つことを確認する。
  *
  * 責務と処理概要:
- * - DraftSurvey の識別子あり・なしと既存設定を survey-definition の入口で検証する。
+ * - 開始日時のない下書き資材は形状を確認し、登録済み設定と不正設定資材は survey-definition の入口で解析する。
  * - 不正な設定例が個別に拒否されることを確かめる。
  * - gh・wrangler の固定出力例が、値を含まず構造化されていることを確かめる。
  */
@@ -25,21 +25,20 @@ const readJson = (relativePath: string): unknown =>
     JSON.parse(fixture(relativePath)) as unknown
 
 describe("survey-operation の固定資材", () => {
-    it("[3.5] 識別子ありの下書きは上流の設定検証を通る", () => {
+    it("[3.5] 識別子ありの下書きは開始日時を含まない", () => {
         const draft = readJson("drafts/with-id.json")
-        const result = parseSurveyConfig({ surveys: [draft] })
-
-        expect(result.ok).toBe(true)
+        expect(draft).toBeTypeOf("object")
+        if (!draft || typeof draft !== "object") throw new Error("下書きが不正")
+        expect("id" in draft).toBe(true)
+        expect("opensAt" in draft).toBe(false)
     })
 
-    it("[3.5] 識別子なしの下書きは識別子を除く内容が有効である", () => {
+    it("[3.5] 識別子なしの下書きは開始日時と識別子を含まない", () => {
         const draft = readJson("drafts/without-id.json")
         expect(draft).toBeTypeOf("object")
         if (!draft || typeof draft !== "object") throw new Error("下書きが不正")
         expect("id" in draft).toBe(false)
-
-        const completed = { ...draft, id: "2027-03-1" }
-        expect(parseSurveyConfig({ surveys: [completed] }).ok).toBe(true)
+        expect("opensAt" in draft).toBe(false)
     })
 
     it("[3.5] 既存設定は複数件を検証でき、期限切れの例を含む", () => {
