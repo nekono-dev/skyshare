@@ -1,16 +1,14 @@
 import type { APIRoute } from "astro"
 
 import { Agent } from "@atproto/api"
-import {
-    errorResponseFromStatus,
-    resolveXrpcStatus,
-} from "@/lib/api/response.js"
+import { resolveXrpcStatus } from "@/lib/api/response"
+import { errorResponseFromStatus } from "@/util/http"
 import { parseLimit } from "@/util/http"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
     normalizeTimelineEntry,
     type TimelineSkyshareEntry,
-} from "@/lib/entry/posts"
+} from "@/lib/timeline/posts"
 
 /**
  * Skyshare v2 entries/skyshare API。

@@ -10,13 +10,9 @@
  */
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import { respondentHash } from "@/lib/survey/respondentHash"
-import {
-    noStoreEmpty,
-    noStoreJson,
-    resolveSurveyRequest,
-} from "@/lib/survey/request"
+import { noStoreEmpty, resolveSurveyRequest } from "@/lib/survey/request"
 import { isRespondent, registerRespondent } from "@/lib/survey/store"
 
 /**
@@ -47,7 +43,10 @@ export const GET: APIRoute = async ({ request, params, locals }) => {
         const { survey, did, db, hashKey } = gate.context
         const hash = await respondentHash(hashKey, survey.id, did)
         const answered = await isRespondent(db, survey.id, hash)
-        return noStoreJson({ answered })
+        return jsonResponse(
+            { answered },
+            { headers: { "cache-control": "no-store" } },
+        )
     } catch {
         return internalError("get")
     }

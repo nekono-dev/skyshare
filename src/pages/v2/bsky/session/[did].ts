@@ -9,9 +9,9 @@ import {
     sessionIdentity,
     SESSION_COOKIE_NAME,
     type StoredSession,
-} from "@/lib/session/cookies.js"
+} from "@/lib/session/cookies"
 import { revokeOAuthSession } from "@/lib/session/oauthSession"
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus } from "@/util/http"
 
 /**
  * Skyshare v2 bsky/session ログアウト API。

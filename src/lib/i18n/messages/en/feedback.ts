@@ -1,5 +1,5 @@
 /** 不具合の報告・新機能の提案のフォームの文言（英語）。キー集合は日本語辞書と一致させる。 */
-import type { MessageEntries } from "../../translate"
+import type { MessageEntries } from "../../messageEntries"
 
 export const feedback = {
     "feedback.heading": "Report a bug / Request a feature",

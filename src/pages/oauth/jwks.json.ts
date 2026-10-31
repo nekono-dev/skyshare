@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import { getOAuthClientSecret } from "@/lib/oauth/env"
 import { clientJwks, loadClientKey } from "@/lib/oauth/client"
 
@@ -12,7 +12,7 @@ import { clientJwks, loadClientKey } from "@/lib/oauth/client"
 export const GET: APIRoute = async () => {
     const client = await loadClientKey(await getOAuthClientSecret())
     if (!client) return errorResponseFromStatus(500)
-    return new Response(JSON.stringify(clientJwks(client)), {
+    return jsonResponse(clientJwks(client), {
         headers: {
             "content-type": "application/json",
             "cache-control": "public, max-age=300",

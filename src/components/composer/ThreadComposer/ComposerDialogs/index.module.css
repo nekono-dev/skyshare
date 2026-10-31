@@ -1,0 +1,19 @@
+.draft-list-backdrop {
+  align-items: flex-start;
+  padding-top: 0;
+}
+
+.draft-list-body {
+  padding: var(--space-2) var(--space-1);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.draft-list-header {
+  min-height: var(--size-button-md);
+}
+
+.draft-list-overlay {
+  max-height: 80vh;
+  overflow: hidden;
+}

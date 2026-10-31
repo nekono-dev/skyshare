@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
-import ChoiceDialog from "@/components/common/ChoiceDialog"
-import { useT } from "@/lib/i18n/react"
+import ChoiceDialog from "@/components/common/dialog/ChoiceDialog"
+import { useT } from "@/components/i18n/useTranslation"
 import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
-import { notifyScheduleCredentialChange } from "@/lib/schedule/useScheduleAvailability"
+import { notifyScheduleCredentialChange } from "@/components/schedule/ScheduleSetting/useScheduleAvailability"
 
 /**
  * 予約投稿の許可の画面から戻ったときの完了と結果の表示（全ページ共通）。

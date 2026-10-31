@@ -8,7 +8,7 @@
  */
 import type { AutoPopupTarget } from "@/lib/settings/shareSettings"
 import { buildIntentSuffix } from "@/util/share/intent"
-import { resolveIntentMeasure } from "@/util/share/intentLength"
+import { halfUnitLength, resolveIntentMeasure } from "@/util/share/intentLength"
 
 /** 字数カウンタを持つ共有先 */
 export type CounterTarget = "x" | "taittsuu"
@@ -79,5 +79,5 @@ export const resolveCounterReserve = (params: {
     const { target, body, entryUrl, linkCardUrl } = params
     const suffix = buildIntentSuffix(body.trim(), entryUrl ?? "", linkCardUrl)
     if (suffix.length === 0) return 0
-    return Math.ceil(resolveIntentMeasure(target)(`\n${suffix}`) / 2)
+    return halfUnitLength(resolveIntentMeasure(target), `\n${suffix}`)
 }

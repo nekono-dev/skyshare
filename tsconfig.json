@@ -4,14 +4,16 @@
     ".astro/types.d.ts",
     "src/**/*",
     "tests/**/*",
-    "hack/**/*",
+    "scripts/**/*",
     "./worker-configuration.d.ts",
-    "./orval.config.ts",
-    "./vitest.config.ts",
-    "./vitest.astro.config.ts",
-    "./playwright.config.ts"
+    "./config/orval.config.ts",
+    "./config/test/vitest.unit.config.ts",
+    "./config/test/vitest.component.config.ts",
+    "./config/test/vitest.route.config.ts",
+    "./config/test/vitest.astro.config.ts",
+    "./config/test/playwright.config.ts"
   ],
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist", "tests/fixtures/import-rules"],
   "compilerOptions": {
     "verbatimModuleSyntax": false,
     "jsx": "react-jsx",

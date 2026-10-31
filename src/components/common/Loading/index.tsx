@@ -1,6 +1,5 @@
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
-import Spinner from "@/components/common/Spinner"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -10,6 +9,7 @@ import styles from "./index.module.css"
  * 責務と処理概要:
  * - インライン表示と全画面オーバーレイ表示を切り替える。
  * - 読み上げ補助のため `role="status"` と `aria-live` を設定する。
+ * - 回転するスピナーは、同じフォルダの `.spinner` で描画する（見た目だけで、読み上げは `role="status"` が担う）。
  */
 
 type Props = {
@@ -42,7 +42,7 @@ export const Component = ({ message, messageKey, overlay = false }: Props) => {
     return (
       <div className={styles.overlay} role="status" aria-live="polite">
         <div className={`${ui["base-card"]} ${styles.panel}`}>
-          <Spinner />
+          <span className={styles.spinner} aria-hidden="true" />
           <p className={styles.message}>{text}</p>
         </div>
       </div>
@@ -51,7 +51,7 @@ export const Component = ({ message, messageKey, overlay = false }: Props) => {
 
   return (
     <div className={styles.inline} role="status" aria-live="polite">
-      <Spinner />
+      <span className={styles.spinner} aria-hidden="true" />
       <p className={styles.message}>{text}</p>
     </div>
   )

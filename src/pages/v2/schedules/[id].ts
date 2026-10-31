@@ -1,25 +1,16 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import { convertHeaderToObj } from "@/util/http"
-import * as DeleteSchema from "@/lib/api/schema/v2/schedules/_id/delete"
-import * as GetSchema from "@/lib/api/schema/v2/schedules/_id/get"
-import * as PutSchema from "@/lib/api/schema/v2/schedules/_id/put"
-import { getScheduleEnv } from "@/lib/schedule/env"
-import { removeImages } from "@/lib/schedule/imageStaging"
+import * as DeleteSchema from "@/lib/api/schema/v2/schedules/[id]/delete"
+import * as GetSchema from "@/lib/api/schema/v2/schedules/[id]/get"
+import * as PutSchema from "@/lib/api/schema/v2/schedules/[id]/put"
+import { codeErrorResponse } from "@/lib/schedule/scheduleResponse"
 import {
-    codeErrorResponse,
-    jsonResponse,
-    toIso,
-} from "@/lib/schedule/scheduleResponse"
-import { parseScheduleBody, stageSchedule } from "@/lib/schedule/stageSchedule"
-import {
-    deleteSchedule,
-    getSchedule,
-    parseKeys,
-    updatePendingSchedule,
-} from "@/lib/schedule/store"
-import type { StoredPayload } from "@/lib/schedule/validateSchedule"
+    cancelSchedule,
+    getScheduleDetail,
+    replaceSchedule,
+} from "@/lib/schedule/scheduleItem"
 
 /**
  * Skyshare v2 schedules/{id} API（1件の予約）。
@@ -46,49 +37,17 @@ export const GET: APIRoute = async ({ params, locals }) => {
         const path = GetSchema.PathParamsSchema.safeParse(params)
         if (!path.success) return errorResponseFromStatus(400)
 
-        const env = await getScheduleEnv()
-        const row = await getSchedule(env.DB, session.did, path.data.id)
-        if (!row) return errorResponseFromStatus(404)
-        if (row.status === "running") {
-            return codeErrorResponse(409, "ScheduleRunning")
+        const result = await getScheduleDetail({
+            did: session.did,
+            id: path.data.id,
+        })
+        if (!result.ok) {
+            return result.code
+                ? codeErrorResponse(result.status, result.code)
+                : errorResponseFromStatus(result.status)
         }
-        // 待機中と失敗だけが内容を返せる（成功した予約は履歴に残さない）
-        if (row.status !== "pending" && row.status !== "failed") {
-            return errorResponseFromStatus(404)
-        }
-
-        let payload: StoredPayload = { posts: [] }
-        try {
-            payload = JSON.parse(row.payload)
-        } catch {
-            return errorResponseFromStatus(500)
-        }
-        const res: GetSchema.ResponseBody200Type = {
-            id: row.id,
-            status: row.status,
-            runAt: toIso(row.runAt),
-            posts: payload.posts.map(post => {
-                // facets は返さない。分割代入で取り除く
-                const { facets: _facets, ...rest } = post
-                return rest as GetSchema.ResponseBody200Type["posts"][number]
-            }),
-            ...(payload.reply
-                ? {
-                      reply: payload.reply as GetSchema.ResponseBody200Type["reply"],
-                  }
-                : {}),
-            ...(payload.createEntry !== undefined
-                ? { createEntry: payload.createEntry }
-                : {}),
-            ...(payload.visual !== undefined ? { visual: payload.visual } : {}),
-            ...(payload.heading !== undefined
-                ? { heading: payload.heading }
-                : {}),
-            ...(payload.caption !== undefined
-                ? { caption: payload.caption }
-                : {}),
-        }
-        return jsonResponse(res)
+        const res: GetSchema.ResponseBody200Type = result.value
+        return jsonResponse(res, { headers: { "cache-control": "no-store" } })
     } catch (err) {
         console.error("schedules GET {id}: unexpected error", err)
         return errorResponseFromStatus(500)
@@ -98,7 +57,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 /**
  * PUT /v2/schedules/{id} — 待機中の予約を置き換える。
  *
- * 処理の順序:
+ * 処理の順序（判断は `replaceSchedule` が行う）:
  * 1. 所有と状態の確認（他人・存在しない・終了済みは 404、実行中は 409）
  * 2. 作成と同じ検証と画像の保管（新しい世代のキーに書く）
  * 3. 待機中の行に限った置き換え。間に実行が始まっていたら、新しい画像を消して 409
@@ -117,62 +76,18 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         const path = PutSchema.PathParamsSchema.safeParse(params)
         if (!path.success) return errorResponseFromStatus(400)
 
-        const env = await getScheduleEnv()
-        const id = path.data.id
-        const current = await getSchedule(env.DB, session.did, id)
-        if (!current) return errorResponseFromStatus(404)
-        if (current.status === "running") {
-            return codeErrorResponse(409, "ScheduleRunning")
-        }
-        if (current.status !== "pending") return errorResponseFromStatus(404)
-
-        const body = await parseScheduleBody(request, session.did)
-        if (!body) return errorResponseFromStatus(400)
-
-        const now = Math.floor(Date.now() / 1000)
-        const staged = await stageSchedule(env, session.did, id, body, now, {
-            countPending: false,
+        const result = await replaceSchedule({
+            did: session.did,
+            id: path.data.id,
+            request,
         })
-        if (!staged.ok) {
-            return staged.error
-                ? codeErrorResponse(staged.status, staged.error)
-                : errorResponseFromStatus(staged.status)
+        if (!result.ok) {
+            return result.code
+                ? codeErrorResponse(result.status, result.code)
+                : errorResponseFromStatus(result.status)
         }
-
-        const replaced = await updatePendingSchedule(
-            env.DB,
-            session.did,
-            id,
-            {
-                runAt: staged.runAt,
-                payload: staged.payload,
-                imageKeys: staged.imageKeys,
-            },
-            now,
-        ).catch(async err => {
-            console.error(`schedules PUT: update failed id=${id}`, err)
-            await removeImages(env.SCHEDULE_IMAGES, staged.imageKeys).catch(
-                () => {},
-            )
-            throw err
-        })
-        if (!replaced) {
-            await removeImages(env.SCHEDULE_IMAGES, staged.imageKeys).catch(
-                () => {},
-            )
-            return codeErrorResponse(409, "ScheduleRunning")
-        }
-        try {
-            await removeImages(env.SCHEDULE_IMAGES, replaced.previousImageKeys)
-        } catch (err) {
-            console.error(`schedules PUT: removeImages failed id=${id}`, err)
-        }
-
-        const res: PutSchema.ResponseBody200Type = {
-            id,
-            runAt: toIso(staged.runAt),
-        }
-        return jsonResponse(res)
+        const res: PutSchema.ResponseBody200Type = result.value
+        return jsonResponse(res, { headers: { "cache-control": "no-store" } })
     } catch (err) {
         console.error("schedules PUT: unexpected error", err)
         return errorResponseFromStatus(500)
@@ -191,26 +106,16 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
         const path = DeleteSchema.PathParamsSchema.safeParse(params)
         if (!path.success) return errorResponseFromStatus(400)
 
-        const env = await getScheduleEnv()
-        const current = await getSchedule(env.DB, session.did, path.data.id)
-        if (!current) return errorResponseFromStatus(404)
-        if (current.status === "running") {
-            return codeErrorResponse(409, "ScheduleRunning")
+        const result = await cancelSchedule({
+            did: session.did,
+            id: path.data.id,
+        })
+        if (!result.ok) {
+            return result.code
+                ? codeErrorResponse(result.status, result.code)
+                : errorResponseFromStatus(result.status)
         }
-
-        // 確認と削除の間に実行が始まった場合は、削除せず null が返る
-        const deleted = await deleteSchedule(env.DB, session.did, path.data.id)
-        if (!deleted) return codeErrorResponse(409, "ScheduleRunning")
-
-        try {
-            await removeImages(
-                env.SCHEDULE_IMAGES,
-                parseKeys(deleted.imageKeys),
-            )
-        } catch (err) {
-            console.error("schedules DELETE: removeImages failed", err)
-        }
-        return jsonResponse({})
+        return jsonResponse({}, { headers: { "cache-control": "no-store" } })
     } catch (err) {
         console.error("schedules DELETE: unexpected error", err)
         return errorResponseFromStatus(500)

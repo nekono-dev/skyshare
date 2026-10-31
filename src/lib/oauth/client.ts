@@ -12,7 +12,7 @@
  *
  * 前提:
  * - クライアントの秘密鍵は Worker のシークレット `OAUTH_CLIENT_KEY` に、P-256 の秘密鍵の
- *   JWK（`kid` を含む）の JSON で置く。生成は `hack/generate-oauth-key.mjs` で行う。
+ *   JWK（`kid` を含む）の JSON で置く。生成は `scripts/secrets/generators.mjs`（`OAUTH_CLIENT_KEY`）で行う。
  */
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {

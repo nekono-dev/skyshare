@@ -10,7 +10,7 @@
  * - 削除はアンケートごとに表別で、削除した行数を返す。SQL は常にバインド変数を使う。
  */
 
-import type { D1Database } from "@/lib/schedule/cfTypes"
+import type { D1Database } from "@/lib/platform/cfTypes"
 
 /** 保存の結果 */
 export type SaveAnswerResult = "saved" | "duplicate"

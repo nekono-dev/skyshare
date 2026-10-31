@@ -1,19 +1,14 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import { convertHeaderToObj } from "@/util/http"
 import * as PostSchema from "@/lib/api/schema/v2/schedules/post"
 import * as GetSchema from "@/lib/api/schema/v2/schedules/get"
-import { getScheduleEnv } from "@/lib/schedule/env"
-import { removeImages } from "@/lib/schedule/imageStaging"
+import { codeErrorResponse } from "@/lib/schedule/scheduleResponse"
 import {
-    codeErrorResponse,
-    jsonResponse,
-    toIso,
-} from "@/lib/schedule/scheduleResponse"
-import { parseScheduleBody, stageSchedule } from "@/lib/schedule/stageSchedule"
-import { insertSchedule, listSchedules } from "@/lib/schedule/store"
-import type { StoredPayload } from "@/lib/schedule/validateSchedule"
+    createSchedule,
+    listScheduleSummaries,
+} from "@/lib/schedule/scheduleCollection"
 
 /**
  * Skyshare v2 schedules API（予約の作成と一覧）。
@@ -27,15 +22,14 @@ import type { StoredPayload } from "@/lib/schedule/validateSchedule"
  *
  * 実装上の制約:
  * - `@atproto/*` を静的にも動的にも読み込まない（無料枠の CPU 時間を守るため）。
+ * - ページは判断を持たない。ヘッダー・セッション・クエリの確認と、判断の結果の応答への変換だけを行う。
  */
-
-const PREVIEW_LENGTH = 100
 
 /**
  * POST /v2/schedules — 予約を作成する。
  *
- * 検証の順序: 入力 → 実行時刻 → 認証情報の登録 → 待機中の件数 → 画像の保管 → 予約の保存
- * （入力から画像の保管までは `stageSchedule` が行う）。保存が失敗したときは、保管した画像を削除する。
+ * 検証の順序: ヘッダー → セッション → 入力 → 実行時刻 → 認証情報の登録 → 待機中の件数 → 画像の保管 → 予約の保存
+ * （セッションの後の判断は `createSchedule` が行う）。
  */
 export const POST: APIRoute = async ({ request, locals }) => {
     try {
@@ -47,42 +41,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const { session } = locals
         if (!session) return errorResponseFromStatus(401)
 
-        const body = await parseScheduleBody(request, session.did)
-        if (!body) return errorResponseFromStatus(400)
-
-        const now = Math.floor(Date.now() / 1000)
-        const env = await getScheduleEnv()
-        const id = crypto.randomUUID()
-        const staged = await stageSchedule(env, session.did, id, body, now, {
-            countPending: true,
-        })
-        if (!staged.ok) {
-            return staged.error
-                ? codeErrorResponse(staged.status, staged.error)
-                : errorResponseFromStatus(staged.status)
-        }
-        try {
-            await insertSchedule(env.DB, {
-                id,
-                did: session.did,
-                runAt: staged.runAt,
-                payload: staged.payload,
-                imageKeys: staged.imageKeys,
-                now,
-            })
-        } catch (err) {
-            console.error("schedules POST: insertSchedule failed", err)
-            await removeImages(env.SCHEDULE_IMAGES, staged.imageKeys).catch(
-                () => {},
-            )
-            return errorResponseFromStatus(500)
+        const result = await createSchedule({ did: session.did, request })
+        if (!result.ok) {
+            return result.code
+                ? codeErrorResponse(result.status, result.code)
+                : errorResponseFromStatus(result.status)
         }
 
-        const res: PostSchema.ResponseBody200Type = {
-            id,
-            runAt: toIso(staged.runAt),
-        }
-        return jsonResponse(res)
+        const res: PostSchema.ResponseBody200Type = result.value
+        return jsonResponse(res, { headers: { "cache-control": "no-store" } })
     } catch (err) {
         console.error("schedules POST: unexpected error", err)
         return errorResponseFromStatus(500)
@@ -102,36 +69,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
         )
         if (!query.success) return errorResponseFromStatus(400)
 
-        const env = await getScheduleEnv()
-        const { items, cursor } = await listSchedules(env.DB, session.did, {
-            status: query.data.status,
-            limit: query.data.limit,
-            cursor: query.data.cursor,
+        const res: GetSchema.ResponseBody200Type = await listScheduleSummaries({
+            did: session.did,
+            query: query.data,
         })
-
-        const res: GetSchema.ResponseBody200Type = {
-            items: items.map(row => {
-                let payload: StoredPayload = { posts: [] }
-                try {
-                    payload = JSON.parse(row.payload)
-                } catch {
-                    // 壊れた本文は空の表示にする
-                }
-                return {
-                    id: row.id,
-                    runAt: toIso(row.runAt),
-                    status: row.status,
-                    postCount: payload.posts.length,
-                    preview: (payload.posts[0]?.text ?? "").slice(
-                        0,
-                        PREVIEW_LENGTH,
-                    ),
-                    lastError: row.lastError,
-                }
-            }),
-            ...(cursor ? { cursor } : {}),
-        }
-        return jsonResponse(res)
+        return jsonResponse(res, { headers: { "cache-control": "no-store" } })
     } catch (err) {
         console.error("schedules GET: unexpected error", err)
         return errorResponseFromStatus(500)

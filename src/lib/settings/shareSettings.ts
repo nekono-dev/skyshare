@@ -4,10 +4,7 @@
  * 責務と処理概要:
  * - 投稿フォームが参照する共有設定を localStorage で管理する。
  * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする。
- * - 「自動ポップアップするSNS」の読み取り時に、公開済みの旧共有設定からの引き継ぎ
- *   （`legacyShareSettings.ts`）を先に実行する。
  */
-import { migrateLegacyShareSettings } from "@/lib/settings/legacyShareSettings"
 import { isValidInstanceDomain } from "@/util/share/intent"
 
 const POPUP_INTENT_INSTEAD_OF_WEBSHARE_KEY = "popupIntentInsteadOfWebshare"
@@ -29,15 +26,13 @@ export const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
 /** Misskeyインスタンスドメインが未設定の場合に使う既定値。 */
 export const DEFAULT_MISSKEY_INSTANCE_DOMAIN = "misskey.io"
 
-/** 投稿後に自動でポップアップするSNS（"ask" は投稿先選択ダイアログを開く）。 */
-export const AUTO_POPUP_TARGETS = [
-    "ask",
-    "x",
-    "taittsuu",
-    "mastodon",
-    "misskey",
-] as const
-export type AutoPopupTarget = (typeof AUTO_POPUP_TARGETS)[number]
+// 自動ポップアップの値と型は依存のない位置に置く（移行処理と循環しないため）。ここから再エクスポートする。
+import {
+    AUTO_POPUP_TARGETS,
+    type AutoPopupTarget,
+} from "@/lib/settings/autoPopupTarget"
+
+export { AUTO_POPUP_TARGETS, type AutoPopupTarget }
 
 /** 「自動ポップアップするSNS」が未設定の場合に使う既定値。 */
 export const DEFAULT_AUTO_POPUP_TARGET: AutoPopupTarget = "x"
@@ -61,10 +56,6 @@ export const isAutoPopupTarget = (value: unknown): value is AutoPopupTarget =>
 /**
  * 「自動ポップアップするSNS」設定を localStorage から読み取る。
  *
- * 処理の趣旨:
- * - 公開済みの旧共有設定が残っている場合に備え、読み取りの前に引き継ぎ
- *   （`migrateLegacyShareSettings`）を実行する。
- *
  * Input:
  * - `defaultValue`: localStorage が利用できない場合・未設定時・不正な値の場合に返す既定値
  *
@@ -81,8 +72,6 @@ export const readAutoPopupTargetSetting = (
     if (typeof window === "undefined") {
         return defaultValue
     }
-
-    migrateLegacyShareSettings()
 
     try {
         const rawValue = window.localStorage.getItem(AUTO_POPUP_TARGET_KEY)

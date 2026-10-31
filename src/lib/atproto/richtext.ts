@@ -1,5 +1,5 @@
 import { RichText } from "@atproto/api"
-import type * as Components from "@/lib/api/schema/common"
+import type { BskyFacets } from "@/lib/atproto/recordTypes"
 import { publicAtpAgent } from "./publicAgent"
 import {
     filterLinkFacets,
@@ -243,7 +243,7 @@ function countHashtagUsage(texts: string[]): { tag: string; count: number }[] {
  */
 const detectFacetsForSubmission = async (
     text: string,
-): Promise<Components.CommonFacetsType | undefined> => {
+): Promise<BskyFacets | undefined> => {
     const rt = new RichText({ text })
     await rt.detectFacets(publicAtpAgent)
     // `RichText.detectFacets`が実際に生成するfeatureはmention/link/tagの3種のみ
@@ -251,7 +251,7 @@ const detectFacetsForSubmission = async (
     // 検出ロジック(`detection.js`)がそれ以外を生成することはない)。
     // バックエンドのfacetsスキーマ(`src/lib/api/schema/common.ts`)もこの3種のみを
     // 受理するため、ここで契約を確定させる。
-    return rt.facets as Components.CommonFacetsType | undefined
+    return rt.facets as BskyFacets | undefined
 }
 
 /**

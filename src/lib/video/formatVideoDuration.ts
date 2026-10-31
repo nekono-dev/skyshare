@@ -1,3 +1,5 @@
+import { padTwoDigits } from "@/util/padTwoDigits"
+
 /**
  * 秒数を `m:ss`（1時間以上は `h:mm:ss`）へ整形する。四捨五入し、最小は `0:01`。
  * 分・時は桁揃えなし、秒（1時間以上は分も）は2桁。
@@ -13,8 +15,8 @@ export const formatVideoDuration = (sec: number): string => {
     const total = Math.max(1, Math.round(sec))
     const hours = Math.floor(total / 3600)
     const minutes = Math.floor((total % 3600) / 60)
-    const seconds = String(total % 60).padStart(2, "0")
+    const seconds = padTwoDigits(total % 60)
     return hours > 0
-        ? `${hours}:${String(minutes).padStart(2, "0")}:${seconds}`
+        ? `${hours}:${padTwoDigits(minutes)}:${seconds}`
         : `${minutes}:${seconds}`
 }

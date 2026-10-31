@@ -14,10 +14,8 @@
 
 import type { APIRoute } from "astro"
 
-import {
-    errorResponseFromStatus,
-    resolveXrpcStatus,
-} from "@/lib/api/response.js"
+import { resolveXrpcStatus } from "@/lib/api/response"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import {
     buildSelfLabels,
     parseCreateDraftBody,
@@ -67,7 +65,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(500)
         }
 
-        return new Response(JSON.stringify(validatedResponse), {
+        return jsonResponse(validatedResponse, {
             status: 200,
             headers: { "Content-Type": "application/json" },
         })
@@ -113,10 +111,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
             },
         })
 
-        return new Response(JSON.stringify({ id: response.data.id }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-        })
+        return jsonResponse(
+            { id: response.data.id },
+            {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            },
+        )
     } catch (error) {
         console.error("drafts.ts POST:", error)
         return errorResponseFromStatus(resolveXrpcStatus(error))

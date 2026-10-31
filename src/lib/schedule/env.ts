@@ -3,7 +3,7 @@
  *
  * テストではこのモジュールを差し替えて、フェイクのバインディングを返す。
  */
-import type { ScheduleEnv } from "./cfTypes"
+import type { ScheduleEnv } from "@/lib/platform/cfTypes"
 
 export const getScheduleEnv = async (): Promise<ScheduleEnv> => {
     const { env } = await import("cloudflare:workers")

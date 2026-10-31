@@ -5,7 +5,7 @@
  * - 画像枚数と縦横比から、サムネイル表示の構成（grid / strip）を決める純関数を提供する。
  * - 4枚以下は比率固定のグリッド、5枚以上は高さ固定の横スクロール（specs/image-gallery）。
  */
-import type { SourceImage } from "@/lib/entry/entry"
+import type { SourceImage } from "@/lib/image/sourceImage"
 
 export type GalleryLayout =
     | { kind: "grid"; count: 1 | 2 | 3 | 4; singleRatio?: number } // singleRatio は count===1 のときのみ

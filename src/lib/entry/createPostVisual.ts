@@ -11,7 +11,17 @@
  *   しなかった場合と同じデフォルト配置で合成する。
  */
 import { getBskyImage } from "@/client/openapi/client"
-import type { TimelinePost } from "@/lib/entry/posts"
+import type { SourceVideo } from "@/lib/entry/entry"
+import type { SourceImage } from "@/lib/image/sourceImage"
+
+/**
+ * 投稿の画像・動画の素材（このモジュールが使う項目だけ）。
+ * timeline の投稿（`TimelinePost`）はこの形に代入できるため、timeline を import しない。
+ */
+export type PostVisualSource = {
+    images: SourceImage[]
+    video?: SourceVideo
+}
 import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import { createDefaultThumbnail } from "@/lib/image/postImageProcessing"
 import { fetchVideoDurationSec } from "@/lib/video/fetchVideoDuration"
@@ -50,7 +60,7 @@ const fetchVideoPoster = async (thumbnailUrl: string): Promise<Blob> => {
  * - 素材の取得・再生時間の取得・合成のいずれかに失敗したら Error を throw する。
  */
 export const createPostVisualBlob = async (
-    source: TimelinePost,
+    source: PostVisualSource,
 ): Promise<PostVisual> => {
     const objectUrls: string[] = []
     try {

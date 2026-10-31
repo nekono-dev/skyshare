@@ -8,10 +8,8 @@
  */
 import type { APIRoute } from "astro"
 
-import {
-    errorResponseFromStatus,
-    resolveXrpcStatus,
-} from "@/lib/api/response.js"
+import { resolveXrpcStatus } from "@/lib/api/response"
+import { errorResponseFromStatus } from "@/util/http"
 import { createVideoUploadToken } from "@/lib/atproto/videoAuth"
 
 /**

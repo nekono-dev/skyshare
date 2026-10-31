@@ -9,19 +9,18 @@ pnpm-debug.log*
 
 
 # environment variables（雛形 `*.template` のみ管理対象）
+# 移行済みの旧ファイル（.env.e2e は廃止。削除されるまで誤コミットしないよう除外する）
+.env.e2e
 .env
 .dev.vars
 .env.staging
 .env.production
-# 認証情報を含み得るenvファイル（雛形 `*.template` のみ管理対象）
-.env.e2e
 
 # macOS-specific files
 .DS_Store
 
 # Gen clients
 src/client/**/
-/openapi/generated.json
 
 # 変数 SURVEY_CONFIG から生成する配信用のアンケート設定（npm run survey:render）
 /public/surveys/
@@ -31,21 +30,20 @@ src/client/**/
 /dist
 .wrangler
 /wrangler.jsonc
+# 非秘密の設定（config/<名前>.json）は運用者ごとの値を含むため追跡しない。例（*.example.json）だけを追跡する。wrangler.jsonc はここから生成する
+/config/*.json
+!/config/*.example.json
 /.memo
 
 # Playwright
-/test-results
 /playwright-report
 /blob-report
-/playwright/.cache
-/playwright/.auth
+/tests/e2e/.auth/
 
 _legacy/**/.env.test
 _legacy/**/.env.test.*
 !_legacy/**/.env.test.template
 
-# 配備に使う設定値（deploy.env.template のコピー。運用者の値と認証情報を含む。npm run deploy:env で登録する）
-/deploy.env
 
 # brw create が作る作業ブランチの worktree
 .claude/worktrees/
@@ -55,3 +53,5 @@ _legacy/**/.env.test.*
 
 .claude/skills/kiro-*/
 .agents/skills/kiro-*/
+# テストの実行で生成される計測の出力と変異テストの一時領域
+/.cache/

@@ -30,11 +30,9 @@ import {
     makeSessionSetCookie,
     type OAuthSession,
     type StoredSession,
-} from "@/lib/session/cookies.js"
-import {
-    errorResponseFromStatus,
-    resolveXrpcStatus,
-} from "@/lib/api/response.js"
+} from "@/lib/session/cookies"
+import { resolveXrpcStatus } from "@/lib/api/response"
+import { errorResponseFromStatus } from "@/util/http"
 
 /**
  * このミドルウェアが認証処理の対象とするパスかどうかを判定する。

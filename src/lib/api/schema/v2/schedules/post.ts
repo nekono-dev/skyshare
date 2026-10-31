@@ -8,7 +8,7 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import type { FormDataFieldKind } from "@/util/formData"
-import { MAX_THREAD_POST_COUNT } from "../../../../atproto/threadLimit"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
 import * as Common from "../../common"
 import { EntryPostItemSchema, PostItemFieldKinds } from "../entry/post"
 

@@ -13,65 +13,6 @@
  */
 
 /**
- * HTTP ステータスに対応する JSON エラーレスポンスを生成する。
- *
- * 処理の趣旨:
- * - API 層で共通のエラー形式 `{ error: string }` を維持する。
- * - `switch` で主要なクライアント/認証/レート制限エラーを明示し、未定義は 500 相当へ寄せる。
- * - `cache-control: no-store` を付与し、cookie 依存のレスポンスをブラウザ/CDNにキャッシュさせない
- *   （キャッシュされると、ログイン直後でも古い 401 応答が返り続ける不具合につながるため）。
- *
- * Input:
- * - `status`: 返却する HTTP ステータス
- *
- * Output:
- * - `content-type: application/json` と `cache-control: no-store` を持つ `Response`
- *
- * 例:
- * - 入力: `401`
- * - 出力: `{"error":"Unauthorized"}` を含む `Response`
- */
-export const errorResponseFromStatus = (status: number): Response => {
-    const message = { error: "Unknown Error" }
-    switch (status) {
-        case 400:
-            message.error = "Bad Request"
-            break
-        case 401:
-            message.error = "Unauthorized"
-            break
-        case 403:
-            message.error = "Forbidden"
-            break
-        case 404:
-            message.error = "Not Found"
-            break
-        case 409:
-            message.error = "Conflict"
-            break
-        case 422:
-            message.error = "Unprocessable Content"
-            break
-        case 429:
-            message.error = "Too Many Requests"
-            break
-        case 503:
-            message.error = "Service Unavailable"
-            break
-        default:
-            message.error = "Internal Server Error"
-            break
-    }
-    return new Response(JSON.stringify(message), {
-        status: status,
-        headers: {
-            "content-type": "application/json",
-            "cache-control": "no-store",
-        },
-    })
-}
-
-/**
  * XRPC エラーを HTTP ステータスへ変換する。
  *
  * 処理の趣旨:

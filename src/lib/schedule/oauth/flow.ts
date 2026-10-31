@@ -15,7 +15,7 @@
  * - Cron の実行からも使うため、atproto のライブラリを読み込まず WebCrypto と fetch だけを使う。
  * - トークン・鍵・応答の本文をログに出さない。
  */
-import type { ScheduleEnv } from "../cfTypes"
+import type { ScheduleEnv } from "@/lib/platform/cfTypes"
 import { saveCredential, saveOAuthState, takeOAuthState } from "../store"
 import {
     SCHEDULE_SCOPE,

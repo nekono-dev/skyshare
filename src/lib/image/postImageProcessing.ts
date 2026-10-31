@@ -1,4 +1,3 @@
-import type { Area } from "react-easy-crop"
 import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 
 /**
@@ -11,10 +10,24 @@ import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
  * - 複数画像をレイアウト合成したサムネイルと、個別のリサイズ済み原本を同時に作成する。
  */
 
+/**
+ * 切り抜きの範囲（元画像のピクセル座標）。
+ *
+ * 部品の側（react-easy-crop の `Area`）と同じ形の値を、lib の側で型として持つ。
+ * lib は UI のライブラリを import しないため、ここで定義する（構造的な型付けにより、
+ * 部品が渡す `Area` の値はそのまま使える）。
+ */
+export type CropArea = {
+    x: number
+    y: number
+    width: number
+    height: number
+}
+
 export type SlotCropState = {
     crop: { x: number; y: number }
     zoom: number
-    cropPixels: Area | null
+    cropPixels: CropArea | null
 }
 
 export type SlotDef = {
@@ -213,14 +226,14 @@ export const getSlotDefs = (count: number): SlotDef[] => {
  *
  * 例:
  * - 入力: `(1920, 1080, 1200, 630)`
- * - 出力: 中央に寄せた `Area`
+ * - 出力: 中央に寄せた `CropArea`
  */
 export const computeInitialCrop = (
     naturalWidth: number,
     naturalHeight: number,
     targetWidth: number,
     targetHeight: number,
-): Area => {
+): CropArea => {
     return computeCropAroundCenter(
         naturalWidth,
         naturalHeight,
@@ -245,11 +258,11 @@ export const computeInitialCrop = (
  * - `centerY`: クロップ中心Y（省略時は画像中央）
  *
  * Output:
- * - `Area`（`x`, `y`, `width`, `height`）
+ * - `CropArea`（`x`, `y`, `width`, `height`）
  *
  * 例:
  * - 入力: `(1000, 1000, 1200, 630, 500, 500)`
- * - 出力: 正方画像から横長比率へ切り出した `Area`
+ * - 出力: 正方画像から横長比率へ切り出した `CropArea`
  */
 export const computeCropAroundCenter = (
     naturalWidth: number,
@@ -258,7 +271,7 @@ export const computeCropAroundCenter = (
     targetHeight: number,
     centerX: number = naturalWidth / 2,
     centerY: number = naturalHeight / 2,
-): Area => {
+): CropArea => {
     const targetAspect = targetWidth / targetHeight
     const sourceAspect = naturalWidth / naturalHeight
 

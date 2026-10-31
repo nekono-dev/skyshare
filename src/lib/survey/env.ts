@@ -6,7 +6,7 @@
  * - テストではこのモジュールを差し替えて、フェイクのバインディングを返す。
  * - `@atproto/*` に依存しない。
  */
-import type { D1Database } from "@/lib/schedule/cfTypes"
+import type { D1Database } from "@/lib/platform/cfTypes"
 
 /** アンケートの API が使うバインディング */
 export type SurveyEnv = {

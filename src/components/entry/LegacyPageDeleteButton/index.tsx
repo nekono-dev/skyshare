@@ -1,4 +1,4 @@
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useState } from "react"
 import Loading from "@/components/common/Loading"

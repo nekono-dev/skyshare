@@ -1,5 +1,8 @@
-import twitterText from "twitter-text"
-import { taittsuuIntentMeasure } from "@/util/share/intentLength"
+import {
+    halfUnitLength,
+    taittsuuIntentMeasure,
+    xIntentMeasure,
+} from "@/util/share/intentLength"
 
 /**
  * grapheme（書記素）単位で文字数を数える。
@@ -22,17 +25,12 @@ export const countGraphemes = (rawText: string): number => {
  * X.com投稿本文の文字数換算値を返す。
  * twitter-textの重み付きカウントを2で割って切り上げる（旧実装 TextInputBox を踏襲）。
  */
-export const countWeightedTweetLength = (rawText: string): number => {
-    try {
-        return Math.ceil(twitterText.parseTweet(rawText).weightedLength / 2)
-    } catch {
-        return rawText.length
-    }
-}
+export const countWeightedTweetLength = (rawText: string): number =>
+    halfUnitLength(xIntentMeasure, rawText)
 
 /**
  * タイッツー投稿本文の文字数換算値（全角1・半角0.5、URLも全文字）を返す。
  * 半角単位の長さを2で割って切り上げる（X側の `countWeightedTweetLength` と同じ単位）。
  */
 export const countTaittsuuLength = (rawText: string): number =>
-    Math.ceil(taittsuuIntentMeasure(rawText) / 2)
+    halfUnitLength(taittsuuIntentMeasure, rawText)

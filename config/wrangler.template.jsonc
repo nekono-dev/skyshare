@@ -1,0 +1,80 @@
+{
+  // routes の pattern（SITE_HOST）は scripts/config/render-deploy-config.mjs が環境変数で置き換える。
+  // `--develop` では Worker・D1・R2 の名前の末尾に -develop を付ける
+  "name": "skyshare",
+  // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
+  "main": "src/worker.ts",
+  // Set this to today's date
+  "compatibility_date": "2026-10-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client/",
+    "binding": "ASSETS",
+  },
+  // 予約投稿を実行時刻に実行する定期実行（無料枠で使える最短の1分間隔）
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
+  // アプリ共通の D1（予約など。ほかの機能も同じ D1 にテーブルを足す）と、予約の添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
+  // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい（develop は末尾に -develop）
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "skyshare",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SCHEDULE_IMAGES",
+      "bucket_name": "skyshare-schedule-images",
+    },
+  ],
+  // 不具合の報告と機能の提案の送信の回数の制限（アカウントごとに60秒に1件。期間は10秒か60秒しか選べない）。
+  // namespace_id はアカウントの中で制限を区別する任意の数字で、運用者ごとに変えなくてよい
+  "ratelimits": [
+    {
+      "name": "FEEDBACK_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 1, "period": 60 },
+    },
+  ],
+  "observability": {
+    "enabled": true,
+  },
+  "routes": [
+    {
+      "pattern": "SITE_HOST",
+      "custom_domain": true,
+      "enabled": true,
+      "previews_enabled": true,
+    },
+  ],
+  "vars": {
+    "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
+    "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",
+    "PUBLIC_NODE_ENV": "develop",
+    "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
+    "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  // プレビューは develop の Worker（--develop）だけで作る。D1・R2 は scripts/config/render-deploy-config.mjs が加える
+  "previews": {
+    // ratelimits は previews に継承されないため、本番と同じ制限を宣言する
+    "ratelimits": [
+      {
+        "name": "FEEDBACK_RATE_LIMITER",
+        "namespace_id": "1001",
+        "simple": { "limit": 1, "period": 60 },
+      },
+    ],
+    "vars": {
+      "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
+      "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",
+      "PUBLIC_NODE_ENV": "develop",
+      "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
+      "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
+    },
+  },
+}

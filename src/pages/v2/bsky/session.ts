@@ -12,17 +12,15 @@ import {
     toPooledAccount,
     upsertPooledAccount,
     type StoredSession,
-} from "@/lib/session/cookies.js"
+} from "@/lib/session/cookies"
 import { ensureFreshOAuthSession } from "@/lib/session/oauthSession"
 import * as PostSchema from "@/lib/api/schema/v2/bsky/session/post"
 import * as PutSchema from "@/lib/api/schema/v2/bsky/session/put"
 
-import {
-    errorResponseFromStatus,
-    resolveXrpcStatus,
-} from "@/lib/api/response.js"
+import { resolveXrpcStatus } from "@/lib/api/response"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
+import { atpService, publicAuthServer } from "@/env"
 import { hasCookieHeader } from "@/util/http"
-import { atpService } from "@/env.js"
 
 /**
  * Skyshare v2 bsky/session API。
@@ -127,13 +125,16 @@ export const GET: APIRoute = async ({ request }: { request: Request }) => {
             }),
         )
 
-        return new Response(JSON.stringify({ accounts }), {
-            status: 200,
-            headers: {
-                "Content-Type": "application/json",
-                "Cache-Control": "no-store",
+        return jsonResponse(
+            { accounts },
+            {
+                status: 200,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Cache-Control": "no-store",
+                },
             },
-        })
+        )
     } catch (err) {
         console.error("session.ts GET:", err)
         return errorResponseFromStatus(500)
@@ -175,7 +176,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
 
         const identifier = body.data.identifier
         const password = body.data.password
-        const service = body.data.service || "https://bsky.social"
+        const service = body.data.service || publicAuthServer
 
         const agent = createAtpAgent(service)
         const response = await agent.login({

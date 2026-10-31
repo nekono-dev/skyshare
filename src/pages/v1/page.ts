@@ -15,8 +15,8 @@
  */
 
 import type { APIRoute } from "astro"
-import { parseSessionFromRequest } from "@/lib/session/cookies.js"
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { parseSessionFromRequest } from "@/lib/session/cookies"
+import { errorResponseFromStatus } from "@/util/http"
 import { hasCookieHeader } from "@/util/http"
 import { deletePageDbEntry } from "@/lib/legacy/pagedb"
 

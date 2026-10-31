@@ -34,7 +34,7 @@ goat version v0.2.2-rev-83684f7
 npm run test:lexicon
 ```
 
-`hack/lint-lexicon.sh`が`entry.json`の位置から独自lexiconを特定して`goat lex lint`を実行する。`npm run test:unit`（`tests/lexicons/`）とは別の検証で、CIの`verify`ジョブでは両方を実行する。
+`scripts/build/lint-lexicon.sh`が`entry.json`の位置から独自lexiconを特定して`goat lex lint`を実行する。`npm run test:unit`（`tests/lexicons/`）とは別の検証で、CIの`verify`ジョブでは両方を実行する。
 
 ## LexiconのDNSチェック
 

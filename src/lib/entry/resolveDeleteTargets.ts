@@ -15,7 +15,7 @@ import {
     isThreadRootPost,
 } from "@/lib/atproto/threadChain"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
-import { parseOwnedAtUri } from "@/lib/entry/url"
+import { parseOwnedAtUri } from "@/lib/atproto/atUri"
 
 export type DeleteTargetsResult =
     | { kind: "targets"; rkeys: string[] }

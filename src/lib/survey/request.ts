@@ -9,9 +9,9 @@
  * - 応答はすべて `cache-control: no-store`。鍵や did を応答・ログに出さない。
  * - `@atproto/*` に依存しない（バインディングは env.ts が動的 import で得る）。
  */
-import { errorResponseFromStatus } from "@/lib/api/response"
-import { PathParamsSchema } from "@/lib/api/schema/v2/surveys/_surveyId/path"
-import type { D1Database } from "@/lib/schedule/cfTypes"
+import { errorResponseFromStatus } from "@/util/http"
+import { PathParamsSchema } from "@/lib/survey/pathParams"
+import type { D1Database } from "@/lib/platform/cfTypes"
 import type { Survey } from "@/lib/survey/definition"
 import { getSurveyEnv } from "@/lib/survey/env"
 import { readSurveyConfig } from "@/lib/survey/loadConfig"
@@ -30,22 +30,6 @@ export type SurveyRequestContext = {
 export type SurveyRequestResult =
     | { ok: true; context: SurveyRequestContext }
     | { ok: false; response: Response }
-
-/**
- * JSON の応答にキャッシュ禁止を付けて返す。
- *
- * Input: 本文、状態コード（既定 200）
- * Output: `content-type: application/json` と `cache-control: no-store` を持つ Response
- * 例: noStoreJson({ answered: true }) → 200
- */
-export const noStoreJson = (body: unknown, status = 200): Response =>
-    new Response(JSON.stringify(body), {
-        status,
-        headers: {
-            "content-type": "application/json",
-            "cache-control": "no-store",
-        },
-    })
 
 /**
  * 本文のない応答にキャッシュ禁止を付けて返す。

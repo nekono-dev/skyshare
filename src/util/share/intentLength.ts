@@ -13,6 +13,26 @@ import twitterText from "twitter-text"
 export type IntentMeasure = (text: string) => number
 
 /**
+ * 半角単位の長さを 2 で割って切り上げ、全角換算の文字数を返す。
+ *
+ * 処理の趣旨:
+ * - 投稿フォームの文字数（X・タイッツー）と、共有の予約の文字数が、同じ換算の規則を使う。
+ *
+ * Input:
+ * - `measure`: 計量の関数（宛先ごとの `IntentMeasure`）
+ * - `text`: 計測対象の文字列
+ *
+ * Output:
+ * - 2 で割って切り上げた値
+ *
+ * 例:
+ * - 入力: `xIntentMeasure`, `"abc"`
+ * - 出力: `2`（半角 3 字は 1.5 を切り上げて 2）
+ */
+export const halfUnitLength = (measure: IntentMeasure, text: string): number =>
+    Math.ceil(measure(text) / 2)
+
+/**
  * X（twitter-text）の重み付き長を返す。
  *
  * 失敗時の方針:

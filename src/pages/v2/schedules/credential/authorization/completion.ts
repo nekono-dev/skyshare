@@ -1,11 +1,10 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import * as Schema from "@/lib/api/schema/v2/schedules/credential/authorization/completion/post"
 import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { completeAuthorization } from "@/lib/schedule/oauth/flow"
-import { jsonResponse } from "@/lib/schedule/scheduleResponse"
 
 /**
  * Skyshare v2 schedules/credential/authorization/completion API（予約投稿の OAuth の認可の完了）。
@@ -41,7 +40,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
             result: result.ok ? "ok" : result.code,
         }
         // 登録状態が変わるため、ヒント cookie を失効させて次の表示で取り直させる
-        return jsonResponse(res, 200, [makeScheduleHintClearCookie()])
+        return jsonResponse(res, {
+            headers: [
+                ["cache-control", "no-store"],
+                ["set-cookie", makeScheduleHintClearCookie()],
+            ],
+        })
     } catch {
         console.error("schedule authorization completion: unexpected error")
         return errorResponseFromStatus(500)

@@ -8,7 +8,7 @@
  * - 途中で書き込みに失敗したときは、書き込み済みの画像を削除してから例外を投げる。
  * - 保管した画像を、所有アカウントのキーに限って番号で読み出す。
  */
-import type { R2Bucket } from "./cfTypes"
+import type { R2Bucket } from "@/lib/platform/cfTypes"
 import { MAX_IMAGE_BYTES_PER_SCHEDULE } from "./types"
 
 /**

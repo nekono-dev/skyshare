@@ -9,7 +9,7 @@
 import type { Agent } from "@atproto/api"
 
 import { readPdsServiceFromDidDoc, resolvePdsServiceForDid } from "./did"
-import { VIDEO_UPLOAD_TOKEN_TTL_SEC } from "../video/postVideoLimits"
+import { VIDEO_UPLOAD_TOKEN_TTL_SEC } from "@/lib/video/postVideoLimits"
 
 /**
  * PDS の URL が動画投稿の対応PDS（bsky.social 系）か判定する。

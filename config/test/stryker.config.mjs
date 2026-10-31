@@ -1,0 +1,37 @@
+// 変異テスト（要件 4.6）: P0 の unit 層モジュールに変異を入れ、生き残った変異体を報告する。
+// 数値の下限は置かず（break: null）、ゲートにしない。ローカルか定期実行で `npm run test:mutation` を使う。
+export default {
+  testRunner: "vitest",
+  vitest: { configFile: "config/test/vitest.unit.config.ts" },
+  mutate: [
+    "src/lib/session/cookies.ts",
+    "src/lib/schedule/credentialCrypto.ts",
+    "src/lib/survey/respondentHash.ts",
+    "src/lib/entry/createBskyThread.ts",
+    "src/lib/entry/resolveEntryDeleteScope.ts",
+    "src/lib/entry/resolveDeleteTargets.ts",
+    "src/lib/feedback/issueContent.ts",
+    "src/lib/feedback/githubIssue.ts",
+    "src/lib/i18n/locale.ts",
+    "src/lib/share/shareBody.ts",
+    "src/lib/share/counterReserve.ts",
+  ],
+  coverageAnalysis: "perTest",
+  reporters: ["clear-text", "progress"],
+  thresholds: { high: 80, low: 60, break: null },
+  tempDirName: ".cache/stryker-tmp",
+  // 作業ツリーの複製から、エージェントの設定や生成物などを外す（複製が失敗するため）
+  ignorePatterns: [
+    ".agents",
+    ".claude",
+    ".kiro",
+    ".git",
+    ".wrangler",
+    ".astro",
+    "dist",
+    "node_modules",
+    "_legacy",
+    "_tests",
+    "hack",
+  ],
+}

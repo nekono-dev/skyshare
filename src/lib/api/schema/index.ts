@@ -5,12 +5,12 @@
  * - 各operationの実体(バリデーション用Zodスキーマ+OpenAPIメタデータ)は
  *   `src/lib/api/schema/**` の各エンドポイント別ファイルで定義され、ここでは
  *   URLパスへの割り当てのみを行う。
- * - `hack/build-openapi-document.ts` がこのファイルをimportしてOpenAPIドキュメントを組み立てる。
+ * - `scripts/build/build-openapi-document.ts` がこのファイルをimportしてOpenAPIドキュメントを組み立てる。
  */
 import type { ZodOpenApiPathsObject } from "zod-openapi"
 
 import { operation as extractUrlGet } from "./v1/extract/get"
-import { operation as legacyPageGetByKey } from "./v1/page/_dbIndex/_dbKey/get"
+import { operation as legacyPageGetByKey } from "./v1/page/[dbIndex]/[dbKey]/get"
 import { operation as legacyPageDelete } from "./v1/page/delete"
 import { operation as entryPost } from "./v2/entry/post"
 import { operation as entryPut } from "./v2/entry/put"
@@ -20,7 +20,7 @@ import { operation as skyshareEntriesGet } from "./v2/entries/skyshare/get"
 import { operation as bskySessionGet } from "./v2/bsky/session/get"
 import { operation as bskySessionPost } from "./v2/bsky/session/post"
 import { operation as bskySessionPut } from "./v2/bsky/session/put"
-import { operation as bskySessionDeleteByDid } from "./v2/bsky/session/_did/delete"
+import { operation as bskySessionDeleteByDid } from "./v2/bsky/session/[did]/delete"
 import { operation as bskySessionAuthorizationPost } from "./v2/bsky/session/authorization/post"
 import { operation as bskySessionAuthorizationCompletionPost } from "./v2/bsky/session/authorization/completion/post"
 import { operation as bskyDraftsGet } from "./v2/bsky/drafts/get"
@@ -29,10 +29,10 @@ import { operation as bskyDraftsPut } from "./v2/bsky/drafts/put"
 import { operation as bskyDraftsDelete } from "./v2/bsky/drafts/delete"
 import { operation as schedulesGet } from "./v2/schedules/get"
 import { operation as schedulesPost } from "./v2/schedules/post"
-import { operation as schedulesDeleteById } from "./v2/schedules/_id/delete"
-import { operation as schedulesGetById } from "./v2/schedules/_id/get"
-import { operation as schedulesPutById } from "./v2/schedules/_id/put"
-import { operation as scheduleImageGet } from "./v2/schedules/_id/images/_index/get"
+import { operation as schedulesDeleteById } from "./v2/schedules/[id]/delete"
+import { operation as schedulesGetById } from "./v2/schedules/[id]/get"
+import { operation as schedulesPutById } from "./v2/schedules/[id]/put"
+import { operation as scheduleImageGet } from "./v2/schedules/[id]/images/[index]/get"
 import { operation as scheduleLimitsGet } from "./v2/schedules/limits/get"
 import { operation as scheduleCredentialGet } from "./v2/schedules/credential/get"
 import { operation as scheduleAuthorizationPost } from "./v2/schedules/credential/authorization/post"
@@ -40,9 +40,9 @@ import { operation as scheduleAuthorizationCompletionPost } from "./v2/schedules
 import { operation as scheduleCredentialDelete } from "./v2/schedules/credential/delete"
 import { operation as bskyImagesGet } from "./v2/bsky/images/get"
 import { operation as bskyVideoUploadTokenPost } from "./v2/bsky/video/upload-token/post"
-import { operation as surveyRespondentGet } from "./v2/surveys/_surveyId/respondent/get"
-import { operation as surveyRespondentPut } from "./v2/surveys/_surveyId/respondent/put"
-import { operation as surveyAnswersPost } from "./v2/surveys/_surveyId/answers/post"
+import { operation as surveyRespondentGet } from "./v2/surveys/[surveyId]/respondent/get"
+import { operation as surveyRespondentPut } from "./v2/surveys/[surveyId]/respondent/put"
+import { operation as surveyAnswersPost } from "./v2/surveys/[surveyId]/answers/post"
 import { operation as feedbackPost } from "./v2/feedback/post"
 
 export const paths: ZodOpenApiPathsObject = {

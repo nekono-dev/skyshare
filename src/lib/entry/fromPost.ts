@@ -15,7 +15,8 @@ import {
     toCreatedSkyshareEntry,
     type CreatedSkyshareEntry,
 } from "@/lib/entry/skyshareRecord"
-import { bskyPostUrlgen, parseOwnedAtUri } from "@/lib/entry/url"
+import { bskyPostUrlgen } from "@/lib/entry/url"
+import { parseOwnedAtUri } from "@/lib/atproto/atUri"
 
 type FromPostAgent = Pick<Agent, "uploadBlob" | "getProfile"> & {
     com: {

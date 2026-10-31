@@ -5,8 +5,8 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
-import { MAX_THREAD_POST_COUNT } from "../../../../../atproto/threadLimit"
-import * as Common from "../../../common"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
+import * as Common from "@/lib/api/schema/common"
 import { DraftPostSchema } from "./post"
 
 export const RequestHeaderSchema = z.object({

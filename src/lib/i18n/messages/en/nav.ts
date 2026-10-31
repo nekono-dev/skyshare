@@ -1,5 +1,5 @@
 /** ナビゲーション・ページタイトル文言（英語）。キー集合は日本語辞書と一致させる。 */
-import type { MessageEntries } from "../../translate"
+import type { MessageEntries } from "../../messageEntries"
 
 export const nav = {
     "nav.main": "Main navigation",

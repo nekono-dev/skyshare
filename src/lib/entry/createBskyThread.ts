@@ -20,7 +20,11 @@
 import { TID } from "@atproto/common-web"
 import { cidForLex, type LexValue } from "@atproto/lex-cbor"
 import type { Agent } from "@atproto/api"
-import type * as Components from "@/lib/api/schema/common"
+import type {
+    BskyFacets,
+    BskyReplyRef,
+    BskyStrongRef,
+} from "@/lib/atproto/recordTypes"
 import { buildBskyPostRecord, BSKY_POST_COLLECTION } from "@/lib/atproto/post"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import {
@@ -45,7 +49,7 @@ type ApplyWritesAgent = {
 /** 1件分の投稿入力。 */
 export type ThreadPostInput = {
     text: string
-    facets?: Components.CommonFacetsType
+    facets?: BskyFacets
     langs?: string[]
     embed?: any
     selfLabel?: string
@@ -110,20 +114,20 @@ export const createBskyThread = async (
     agent: ApplyWritesAgent,
     did: string,
     posts: ThreadPostInput[],
-    firstReply?: Components.CommonReplyRefType,
+    firstReply?: BskyReplyRef,
     entryInput?: ThreadEntryInput,
 ): Promise<CreateBskyThreadResult> => {
     const writes: WriteOp[] = []
     const postWriteIndexes: number[] = []
 
     let prevTid: InstanceType<typeof TID> | undefined
-    let rootRef: Components.CommonStrongRefType | undefined
-    let prevPostRef: Components.CommonStrongRefType | undefined
+    let rootRef: BskyStrongRef | undefined
+    let prevPostRef: BskyStrongRef | undefined
     // スレッド先頭(posts[0])自身のuri/cid。`rootRef`は`reply`で指定された既存スレッドへ
     // 継ぎ足す場合、その既存投稿(このリクエストの外)を指すことがあるため、
     // entryの`source`が指す「posts[0]自身」を別途保持する
     // (specs/entry-api)。
-    let firstPostRef: Components.CommonStrongRefType | undefined
+    let firstPostRef: BskyStrongRef | undefined
 
     for (const [i, post] of posts.entries()) {
         const tid = TID.next(prevTid)
@@ -132,7 +136,7 @@ export const createBskyThread = async (
         const uri = `at://${did}/${BSKY_POST_COLLECTION}/${rkey}`
         const createdAt = new Date().toISOString()
 
-        const reply: Components.CommonReplyRefType | undefined =
+        const reply: BskyReplyRef | undefined =
             i === 0
                 ? firstReply
                 : rootRef && prevPostRef
@@ -150,7 +154,7 @@ export const createBskyThread = async (
         })
 
         const cid = (await cidForLex(record as unknown as LexValue)).toString()
-        const postRef: Components.CommonStrongRefType = { uri, cid }
+        const postRef: BskyStrongRef = { uri, cid }
 
         writes.push({
             $type: "com.atproto.repo.applyWrites#create",

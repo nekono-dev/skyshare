@@ -7,16 +7,15 @@
  * - `entries/[slug].astro`が投稿2件以上のスレッドを描画する場合の `EntryDetailView` を、
  *   実際のPDSレコード・ログインに依存せず確認できるようにする。
  * - 投稿カードごとに異なるリアクション数・画像枚数（1/3/5枚）を持たせ、
- *   Playwright e2e（`tests/e2e/entryThreadDetail.spec.ts`・`entryPostCards.spec.ts`・`imageGallery.spec.ts`）が使う。
- * - 5件目に動画と引用（recordWithMedia）、6件目にリンクカードと本文のリンク（facets）を持たせ、
- *   `tests/e2e/entryEmbed.spec.ts`・`postRichText.spec.ts` が使う。
- * - 説明文にスキームを省略した URL を持たせ、`postRichText.spec.ts` が説明文のリンク表示に使う。
+ *   Playwright の確認（`tests/e2e/flows/entry.spec.ts`）が使う。
+ * - 5件目に動画と引用（recordWithMedia）、6件目にリンクカードと本文のリンク（facets）を持たせる。
+ * - 説明文にスキームを省略した URL を持たせ、説明文のリンク表示に使う。
  * - サンプルページはこの`entries/sample.astro`1枚に集約している（状態別の追加ページは作らない）。
  */
 export const prerender = true
 
 import ui from "@/styles/ui.module.css"
-import LocaleSelect from "@/components/common/LocaleSelect"
+import LocaleSelect from "@/components/common/select/LocaleSelect"
 import Baselayout from "@/layout/Baselayout.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
 import type { EntryPostView } from "@/components/entry/EntryDetailView/index.astro"

@@ -5,10 +5,10 @@
  * - `buildHelpEntries` が表示言語で組み立てた記事リストを `ComponentList` で縦に並べて表示する。
  * - 記事の追加・編集は `helpEntries.tsx` の `buildHelpEntries` と辞書を変更するだけで完結する。
  */
-import ComponentList from "@/components/common/ComponentList"
-import { buildHelpEntries } from "@/components/help/helpEntries"
-import { HelpItem } from "@/components/help/HelpItem"
-import { useT } from "@/lib/i18n/react"
+import ComponentList from "@/components/common/list/ComponentList"
+import { buildHelpEntries } from "./helpEntries"
+import { HelpItem } from "@/components/help/Help/HelpItem"
+import { useT } from "@/components/i18n/useTranslation"
 import styles from "./index.module.css"
 
 /**

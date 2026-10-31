@@ -9,7 +9,7 @@
  * - 予約用の認証情報の保管は、同じファイルの後半（認証情報の節）にある。
  */
 import { decryptToken, encryptToken } from "./credentialCrypto"
-import type { D1Database } from "./cfTypes"
+import type { D1Database } from "@/lib/platform/cfTypes"
 import {
     CLAIM_LIMIT,
     type NewSchedule,

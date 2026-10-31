@@ -10,7 +10,7 @@
  *   scheduled は Cloudflare のプラットフォームだけが呼び、HTTP の経路から到達できない。
  */
 import { handle } from "@astrojs/cloudflare/handler"
-import type { ScheduleEnv } from "@/lib/schedule/cfTypes"
+import type { ScheduleEnv } from "@/lib/platform/cfTypes"
 import {
     isHousekeepingTime,
     runHousekeeping,

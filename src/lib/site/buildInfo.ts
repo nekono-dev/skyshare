@@ -6,6 +6,7 @@
  *   `PUBLIC_SOURCE_REPOSITORY`）を、画面とサーバーの両方に同じ形で渡す。
  * - 未設定の値（単体テストなど）は "unknown"・null として扱う。
  */
+import { buildVersion } from "@/vars"
 import type { BuildInfo } from "./buildEnv"
 
 export type { BuildInfo }
@@ -16,7 +17,7 @@ const orNull = (value: string | undefined): string | null =>
 
 /** 実行中のビルドの値。値はビルド時に埋め込まれる */
 export const buildInfo: BuildInfo = {
-    version: import.meta.env.PUBLIC_VERSION || "unknown",
+    version: buildVersion || "unknown",
     commit: orNull(import.meta.env.PUBLIC_COMMIT_SHA),
     repository: orNull(import.meta.env.PUBLIC_SOURCE_REPOSITORY),
 }

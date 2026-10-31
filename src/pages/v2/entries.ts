@@ -1,18 +1,16 @@
 import type { APIRoute } from "astro"
 
 import { Agent, AppBskyFeedDefs } from "@atproto/api"
-import {
-    errorResponseFromStatus,
-    resolveXrpcStatus,
-} from "@/lib/api/response.js"
+import { resolveXrpcStatus } from "@/lib/api/response"
+import { errorResponseFromStatus } from "@/util/http"
 import { parseLimit } from "@/util/http"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
-import { groupTimelineEntriesBySourceUri } from "@/lib/entry/posts"
+import { groupTimelineEntriesBySourceUri } from "@/lib/timeline/posts"
 import {
     attachSkyshareEntries,
     buildTimelineThreads,
     resolveEntryRangeStartMs,
-} from "@/lib/entry/timelineThreads"
+} from "@/lib/timeline/timelineThreads"
 import { listRecordsSince } from "@/lib/atproto/repo"
 
 /**

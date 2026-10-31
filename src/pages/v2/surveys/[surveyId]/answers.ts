@@ -13,8 +13,8 @@
  */
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response"
-import { RequestBodySchema } from "@/lib/api/schema/v2/surveys/_surveyId/answers/post"
+import { errorResponseFromStatus } from "@/util/http"
+import { RequestBodySchema } from "@/lib/api/schema/v2/surveys/[surveyId]/answers/post"
 import { answeredOn, checkAnswers } from "@/lib/survey/answers"
 import { respondentHash } from "@/lib/survey/respondentHash"
 import { noStoreEmpty, resolveSurveyRequest } from "@/lib/survey/request"

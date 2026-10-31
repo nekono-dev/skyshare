@@ -1,24 +1,24 @@
 import { useState } from "react"
 import chronoskyLogo from "@/images/chronosky.svg"
 import InlineIcon from "@/components/common/InlineIcon"
-import { renderSlots } from "@/lib/i18n/rich"
+import { renderSlots } from "@/components/i18n/renderSlots"
 import {
   deleteScheduleCredential,
   listSchedules,
 } from "@/client/openapi/client"
-import ConfirmDialog from "@/components/common/ConfirmDialog"
+import ConfirmDialog from "@/components/common/dialog/ConfirmDialog"
 import CredentialDialog from "@/components/schedule/CredentialDialog"
 import SettingList from "@/components/settings/SettingList"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import { isGuestModeRequested } from "@/lib/guestMode"
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import { deferMessage, type DeferredMessage } from "@/lib/i18n/translate"
 import { scheduleErrorKey } from "@/lib/schedule/scheduleErrorKey"
 import {
   notifyScheduleCredentialChange,
   useScheduleAvailability,
-} from "@/lib/schedule/useScheduleAvailability"
+} from "./useScheduleAvailability"
 
 /**
  * 設定画面の「予約投稿」のスイッチ。

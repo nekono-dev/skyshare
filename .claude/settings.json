@@ -1,15 +1,4 @@
 {
-  "extraKnownMarketplaces": {
-    "nekono-dev": {
-      "source": {
-        "source": "github",
-        "repo": "nekono-dev/branch-release-workflow"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "branch-release-workflow@nekono-dev": true
-  },
   "hooks": {
     "SessionStart": [
       {
@@ -17,15 +6,23 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd \"$CLAUDE_PROJECT_DIR\" && npx cc-sdd@latest --yes --claude-skills --lang ja",
+            "command": "\"$CLAUDE_PROJECT_DIR/scripts/agent/install-cc-sdd.sh\" --claude",
             "timeout": 600
           },
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent/setup-brw.mjs\" --install",
+            "timeout": 600
           }
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "branch-release-workflow@nekono-dev": true
   }
 }

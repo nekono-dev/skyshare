@@ -11,7 +11,8 @@
  * - 外部入力を扱うため、`@atproto/*` の型に頼らず `$type` と値の型を確かめる純粋関数で構成する。
  */
 import type { SourceImage } from "@/lib/entry/entry"
-import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
+import { bskyPostUrlgen } from "@/lib/entry/url"
+import { parseAtUri } from "@/lib/atproto/atUri"
 import {
     normalizePostFacets,
     type PostFacet,

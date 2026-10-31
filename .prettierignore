@@ -6,3 +6,9 @@ astro/**
 _legacy/**
 atproto/**
 .claude/worktrees/**
+# cc-sdd が導入する文書と設定（導入の結果をそのまま正本にする。整形すると導入のたびに差分が出る）
+CLAUDE.md
+AGENTS.md
+.kiro/settings/**
+.claude/skills/**
+.agents/skills/**

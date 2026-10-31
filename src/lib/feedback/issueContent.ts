@@ -8,7 +8,7 @@
  *   解釈されない形（閉じられない囲いのコードブロック・インラインコード）で載せる。
  * - 本文の見出しと項目名は、開発者が読むため日本語に固定する（表示言語に依存しない）。
  */
-import type { RequestBodyType } from "@/lib/api/schema/v2/feedback/post"
+import type { FeedbackSubmission } from "@/lib/feedback/submission"
 import type { Reproducibility } from "./limits"
 
 export type IssueReporter = { did: string; handle: string }
@@ -113,7 +113,7 @@ const commitLink = (commit: string | null, repository: string): string =>
  * - 出力: `{ title: "落ちる", body: "## 不具合の報告\n...", labels: ["bug"] }`
  */
 export const buildIssue = (
-    input: RequestBodyType,
+    input: FeedbackSubmission,
     reporter: IssueReporter,
     build: IssueBuild,
 ): IssueContent => {

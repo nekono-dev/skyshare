@@ -1,11 +1,10 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import * as PostSchema from "@/lib/api/schema/v2/schedules/credential/authorization/post"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { startAuthorization } from "@/lib/schedule/oauth/flow"
 import { returnCookie } from "@/lib/oauth/returnPath"
-import { jsonResponse } from "@/lib/schedule/scheduleResponse"
 
 /**
  * Skyshare v2 schedules/credential/authorization API（予約投稿の OAuth の認可）。
@@ -49,7 +48,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(result.status)
         }
         const res: PostSchema.ResponseBody200Type = { url: result.url }
-        const response = jsonResponse(res)
+        const response = jsonResponse(res, {
+            headers: { "cache-control": "no-store" },
+        })
         response.headers.append(
             "set-cookie",
             returnCookie("schedule", body.returnTo),

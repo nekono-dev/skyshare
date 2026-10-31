@@ -16,7 +16,7 @@
 
 import type { AtpSessionData } from "@atproto/api"
 import type { EcPrivateJwk } from "@/lib/oauth/jose"
-import { atpService } from "../../env"
+import { atpService } from "@/env"
 
 // Cloudflare Workers 環境では Node の `Buffer` が存在しないため
 // Web 標準 API (TextEncoder/TextDecoder + atob/btoa) を使って
@@ -52,6 +52,15 @@ export function decodeBase64Utf8(b64: string) {
  * 戻り値:
  * - 各 cookie 名をキー、対応する値を値とするオブジェクト。ヘッダが空なら空オブジェクトを返す。
  */
+/** Cookie の値を復号する。不正なエンコードは値をそのまま返す（後段の検査で扱う） */
+const decodeCookieValue = (v: string): string => {
+    try {
+        return decodeURIComponent(v)
+    } catch {
+        return v
+    }
+}
+
 export function parseCookies(header = ""): Record<string, string> {
     if (!header) return {}
     return header
@@ -63,7 +72,8 @@ export function parseCookies(header = ""): Record<string, string> {
             if (idx === -1) return acc
             const k = cur.slice(0, idx)
             const v = cur.slice(idx + 1)
-            acc[k] = decodeURIComponent(v)
+            // 不正なエンコードの値 1 つで、同じ Cookie ヘッダの他の値まで失わないよう、そのまま残す
+            acc[k] = decodeCookieValue(v)
             return acc
         }, {})
 }
@@ -213,6 +223,7 @@ const toStoredSession = (value: unknown): StoredSession | undefined => {
     return {
         kind: "password",
         session: session as unknown as AtpSessionData,
+        // 保存時に service を書かなかった旧形式の Cookie は、本番と同じ既定値として読む（同期の関数のため実行時の環境は使わない）
         service: typeof value.service === "string" ? value.service : atpService,
     }
 }
