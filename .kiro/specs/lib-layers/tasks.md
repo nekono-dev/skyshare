@@ -57,7 +57,7 @@
   - _Boundary: Site（policySections）_
   - _Requirements: 4.2, 5.1, 5.3_
 
-- [ ] 3.4 (P) `legacy` を `entry` へ統合する
+- [x] 3.4 (P) `legacy` を `entry` へ統合する
   - 旧 pageDB の投稿の取得と削除の処理を `entry` の領域へ移す
   - 旧投稿の表示ページ・旧 API の削除の経路・その経路のテストの `vi.mock` のパスを移した先に変える
   - 完了の条件: `lib/legacy` が存在せず、旧投稿の表示と削除のテストが同じ結果を返す

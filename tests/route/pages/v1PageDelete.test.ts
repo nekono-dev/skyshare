@@ -6,7 +6,7 @@ const pagedb = vi.hoisted(() => ({
         async () => ({ ok: true }) as { ok: true } | { error: string },
     ),
 }))
-vi.mock("@/lib/legacy/pagedb", () => pagedb)
+vi.mock("@/lib/entry/legacyPagedb", () => pagedb)
 
 import { DELETE } from "@/pages/v1/page"
 import { encodeBase64Utf8 } from "@/lib/session/cookies"
