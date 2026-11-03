@@ -129,7 +129,7 @@
   - _Requirements: 2.1, 3.1_
 
 - [ ] 6. 最終検証
-- [ ] 6.1 生成物と古い参照が無いことを確かめる
+- [x] 6.1 生成物と古い参照が無いことを確かめる
   - `npm run apigen` を実行し、`src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる
   - 移動前のパス（`lib/account`・`lib/draft`・`lib/privacy`・`lib/legacy`・`lib/feedback/limits`・`lib/feedback/submission`・`lib/survey/pathParams`）が、ソース・テスト・設定のどこにも残っていないことを検索で確かめる
   - 完了の条件: 差分が 0 件で、移動前のパスの参照が 0 件
