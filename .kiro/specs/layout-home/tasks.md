@@ -8,7 +8,7 @@
   - _Requirements: 2.1, 4.2_
 
 - [ ] 2. 骨格を移動し、参照を更新する
-- [ ] 2.1 骨格を `components/layout/` の部品フォルダへ移動する
+- [x] 2.1 骨格を `components/layout/` の部品フォルダへ移動する
   - 骨格を `git mv` で `src/components/layout/Baselayout/index.astro` へ移動し、履歴を残す
   - 移動の後、骨格の中身（表示・props・スクリプト・import）を変えていないことを差分で確かめる
   - 移動の後、`src/layout/` が存在しない状態になっている
@@ -16,7 +16,7 @@
   - _Boundary: Baselayout_
   - _Requirements: 1.1, 1.2, 1.3, 2.3_
 
-- [ ] 2.2 骨格を読み込む画面の import を新しい置き場へ更新する
+- [x] 2.2 骨格を読み込む画面の import を新しい置き場へ更新する
   - `src/pages/` の 13 ファイルの import を、旧パスから `@/components/layout/Baselayout/index.astro` へ変更する
   - `src/pages/posts/[dbIndex]/[slug].astro` は lib-layers 3.4 も import を変える。同じファイルを lib-layers 3.4 が先に変えてから、本タスクが骨格の import を変える
   - `src/` 配下に旧パス（`@/layout/`）の参照が残っていない状態になっている
