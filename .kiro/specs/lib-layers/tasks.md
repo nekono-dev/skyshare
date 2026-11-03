@@ -43,7 +43,7 @@
   - _Boundary: Session（activeAccountSession）_
   - _Requirements: 4.1, 5.1, 5.3_
 
-- [ ] 3.2 (P) `draft` を `timeline` へ統合する
+- [x] 3.2 (P) `draft` を `timeline` へ統合する
   - 下書きの一覧の整形を `timeline` の領域へ移す
   - 下書きの一覧を表示する部品と、下書きの読み込みの処理の import を移した先に変える
   - 完了の条件: `lib/draft` が存在せず、下書きの整形の結果が変わらない

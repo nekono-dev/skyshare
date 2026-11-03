@@ -14,7 +14,7 @@ import ComponentList from "@/components/common/list/ComponentList"
 import type { CursorPaginationViewModel } from "@/components/common/list/ComponentList"
 import NavigationBar from "@/components/common/list/NavigationBar"
 import { SELF_LABEL_OPTIONS } from "@/components/composer/ThreadComposer/SelfLabelsSelect"
-import type { DraftListItem } from "@/lib/draft/draftList"
+import type { DraftListItem } from "@/lib/timeline/draftList"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

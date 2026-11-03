@@ -18,7 +18,7 @@ import {
     type DeferredMessage,
     type PlainMessageKey,
 } from "@/lib/i18n/translate"
-import { normalizeDraftList } from "@/lib/draft/draftList"
+import { normalizeDraftList } from "@/lib/timeline/draftList"
 import {
     cancelAction,
     initialScheduleMode,
