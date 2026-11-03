@@ -25,7 +25,7 @@
   - _Requirements: 1.4, 1.5_
 
 - [ ] 3. 文書を移動後の配置に合わせる
-- [ ] 3.1 (P) 部品の README の骨格の参照先を更新する
+- [x] 3.1 (P) 部品の README の骨格の参照先を更新する
   - `components/layout/README.md` の骨格の参照先を `components/layout/` 配下の新しい置き場として示す
   - README に旧パス（`src/layout/`）が現行の配置として残っていない状態になっている
   - _Boundary: Layout README_
