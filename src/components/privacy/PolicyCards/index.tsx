@@ -10,7 +10,7 @@ import {
   buildPrivacyPolicy,
   type PolicyBlock,
   type PolicyItem,
-} from "@/lib/privacy/policySections"
+} from "@/lib/site/policySections"
 import { useT } from "@/components/i18n/useTranslation"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"

@@ -50,7 +50,7 @@
   - _Boundary: Timeline（draftList）_
   - _Requirements: 4.2, 5.1, 5.3_
 
-- [ ] 3.3 (P) `privacy` を `site` へ統合する
+- [x] 3.3 (P) `privacy` を `site` へ統合する
   - プライバシーポリシーの文面を組み立てる処理を `site` の領域へ移す
   - 文面を表示する部品の import を移した先に変える
   - 完了の条件: `lib/privacy` が存在せず、文面の組み立ての結果が変わらない
