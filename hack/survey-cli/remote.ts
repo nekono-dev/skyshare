@@ -11,7 +11,7 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { idSchema } from "@/lib/survey/definition"
+import { idSchema } from "@/lib/api/contract/surveyPath"
 import type { RowPresence } from "./lifecycle"
 
 // 配備スクリプトと同じ Git リモート解析・JSONC 解析を再利用する（宣言されていない jsonc-parser は使わない）。

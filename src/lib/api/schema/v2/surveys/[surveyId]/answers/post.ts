@@ -8,7 +8,7 @@
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import * as Common from "@/lib/api/schema/common"
-import { idSchema } from "@/lib/survey/definition"
+import { idSchema } from "@/lib/api/contract/surveyPath"
 import { PathParamsSchema } from "../path"
 
 export { PathParamsSchema }

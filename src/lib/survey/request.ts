@@ -10,7 +10,7 @@
  * - `@atproto/*` に依存しない（バインディングは env.ts が動的 import で得る）。
  */
 import { errorResponseFromStatus } from "@/util/http"
-import { PathParamsSchema } from "@/lib/survey/pathParams"
+import { PathParamsSchema } from "@/lib/api/contract/surveyPath"
 import type { D1Database } from "@/lib/platform/cfTypes"
 import type { Survey } from "@/lib/survey/definition"
 import { getSurveyEnv } from "@/lib/survey/env"
