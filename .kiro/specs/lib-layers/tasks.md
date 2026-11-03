@@ -92,7 +92,7 @@
   - _Requirements: 2.3, 2.5, 3.2_
 
 - [ ] 5. steering の改訂
-- [ ] 5.1 `structure.md` の領域の一覧と層の表を改訂する
+- [x] 5.1 `structure.md` の領域の一覧と層の表を改訂する
   - 層の表（基盤・業務）を追加し、`guestMode.ts` の層を明記する
   - 領域の一覧から統合で消えた領域（`account`・`draft`・`privacy`・`legacy`）を外し、`session`・`timeline`・`site`・`entry` の説明に統合した内容を足す
   - `api/contract/` の役割（業務から下ろした入力の制約と送信内容の型）を `api` の説明に書く

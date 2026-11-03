@@ -22,9 +22,9 @@
 **Purpose**: 領域ごとの判断（検証・状態遷移・外部の呼び出し）。画面と API の両方から使う。
 **Example**: `src/lib/schedule/` は予約の受付・保管・実行・後片付けを持つ
 
-- 領域は `session`・`oauth`・`schedule`・`survey`・`entry`・`timeline`・`draft`・`atproto`・`settings`・`i18n`・`platform`・`feedback`・`share`・`legacy` など。
+- 領域は「領域の一覧」の節の表のとおり（`session`・`oauth`・`schedule`・`survey`・`entry`・`timeline`・`atproto`・`settings`・`i18n`・`platform`・`feedback`・`share` など）。
 - `platform/` は複数の領域が使う Cloudflare の型（D1・R2・Cron）と宣言。特定の機能に属さない共有の型はここに置く。
-- `timeline/` はスレッドのまとめと一覧の整形、`draft/` は下書きの一覧。`entry/` は Entry のレコードと作成・更新・削除に限る。
+- `timeline/` はスレッドのまとめと一覧の整形、下書きの一覧（`draftList.ts`、旧 `draft/` を統合）。`entry/` は Entry のレコードと作成・更新・削除に限る。例外として、旧 pageDB の投稿の取得と削除（`legacyPagedb.ts`、旧 `legacy/` を統合）を持つ。
 - `atproto/` は Bluesky の仕様に従うレコードの組み立てと読み取り。
 - `api/schema/` は endpoint の入出力スキーマで、`src/pages/` の経路と同じ階層にする（`api/schema/v2/feedback/post.ts`）。
 
@@ -69,12 +69,41 @@
 
 ## 領域の一覧
 
-`src/lib/` の領域（業務の判断。`lib/<領域>` の形で書く）:
+`src/lib/` の領域（業務の判断。`lib/<領域>` の形で書く）は、基盤と業務の二つの層に分ける。依存は業務 → 基盤の一方向だけにする（規則 `libLayer`。対応表は `scripts/architecture/libLayers.ts` にあり、下の表と一致させる）。
 
-- `lib/account`・`lib/api`・`lib/atproto`・`lib/codegen`・`lib/draft`・`lib/entry`・`lib/feedback`・`lib/i18n`・`lib/image`・`lib/legacy`・`lib/oauth`・`lib/platform`・`lib/privacy`・`lib/schedule`・`lib/session`・`lib/settings`・`lib/share`・`lib/site`・`lib/survey`・`lib/timeline`・`lib/video`
-- `lib` の直下のファイル: `lib/guestMode.ts`（ゲストモードの判断。ゲストのダミーデータは `lib/timeline/guest/`）
+### 層の表
 
-`src/components/` の領域（部品。`components/<領域>` の形で書く）:
+| 層   | 領域               | 役割                                                                                                                                                                                                                                                                                               |
+| ---- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 基盤 | `lib/api`          | API の契約。`api/schema/`（endpoint の入出力スキーマ）と `api/contract/`（業務から下ろした入力の制約と送信内容の型。`contract/feedbackLimits`・`contract/feedbackSubmission`・`contract/surveyPath`）。`lib/api` は業務（`feedback`・`survey`）を参照しない。業務の側が `api/contract/` を参照する |
+| 基盤 | `lib/atproto`      | Bluesky の仕様に従うレコードの組み立てと読み取り                                                                                                                                                                                                                                                   |
+| 基盤 | `lib/codegen`      | 生成物（`src/client/openapi/`）が import する fetch と form-data の処理。生成物の import 経路を保つため移動しない（下の「残す領域」）                                                                                                                                                              |
+| 基盤 | `lib/i18n`         | 表示言語の判断と辞書                                                                                                                                                                                                                                                                               |
+| 基盤 | `lib/image`        | 画像の上限・処理・ギャラリーの配置                                                                                                                                                                                                                                                                 |
+| 基盤 | `lib/oauth`        | OAuth のクライアント・トークン・DPoP の判断                                                                                                                                                                                                                                                        |
+| 基盤 | `lib/platform`     | Cloudflare の型と宣言（D1・R2・Cron）、Bluesky・公開の endpoint                                                                                                                                                                                                                                    |
+| 基盤 | `lib/session`      | 利用者のセッションの保持と更新（Cookie・OAuth・セッションの更新）。アクティブアカウントの共有キャッシュ（`activeAccountSession.ts`）を持つ。旧 `lib/account` を統合した                                                                                                                            |
+| 基盤 | `lib/site`         | ビルド情報・サイト設定・プライバシーポリシーの文面（`policySections.ts`）。旧 `lib/privacy` を統合した                                                                                                                                                                                             |
+| 基盤 | `lib/video`        | 動画の判断                                                                                                                                                                                                                                                                                         |
+| 業務 | `lib/entry`        | Entry のレコードと作成・更新・削除。旧 pageDB の投稿の取得と削除（`legacyPagedb.ts`）を持つ。旧 `lib/legacy` を統合した                                                                                                                                                                            |
+| 業務 | `lib/feedback`     | 不具合の報告と機能の提案                                                                                                                                                                                                                                                                           |
+| 業務 | `lib/guestMode.ts` | ゲストモードの判断。`lib` 直下の業務のファイル（ゲストのダミーデータは `lib/timeline/guest/`）                                                                                                                                                                                                     |
+| 業務 | `lib/schedule`     | 予約投稿                                                                                                                                                                                                                                                                                           |
+| 業務 | `lib/settings`     | 利用者の設定                                                                                                                                                                                                                                                                                       |
+| 業務 | `lib/share`        | 他 SNS への共有の本文と文字数の補正。`util-placement` 6.1 で説明を改訂する（下の「残す領域」）                                                                                                                                                                                                     |
+| 業務 | `lib/survey`       | アンケート                                                                                                                                                                                                                                                                                         |
+| 業務 | `lib/timeline`     | スレッドのまとめ・一覧の整形・下書きの一覧（`draftList.ts`）。旧 `lib/draft` を統合した                                                                                                                                                                                                            |
+
+### 残す領域
+
+1〜2 ファイルの領域のうち、統合せず残すもの（要件 4.2）:
+
+- `lib/codegen`: 生成物 `src/client/openapi/client.ts`（相対 import の `lib/codegen/fetcher.ts`・`openapiFormData.ts`）と `config/orval.config.ts`（出力先の `src/lib/codegen/`）が、このフォルダを参照する。`lib/codegen` を移すと生成物の import 経路が変わり、`npm run apigen` の差分になるため、基盤として残す。
+- `lib/share`: 他 SNS への共有の判断をまとめる領域として残す。`util-placement` で `util/share/` の内容を `lib/share` へ統合するため、統合の後はファイルが増える。その時点で、この説明（残す理由と役割）を改める（`util-placement` 6.1）。
+
+### `src/components/` の領域
+
+部品の領域（`components/<領域>` の形で書く）:
 
 - `components/account`・`components/common`・`components/composer`・`components/entry`・`components/feedback`・`components/help`・`components/i18n`・`components/image`・`components/layout`・`components/privacy`・`components/schedule`・`components/settings`・`components/share`・`components/timeline`
 
