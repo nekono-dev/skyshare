@@ -27,7 +27,7 @@ import {
   type GateDeps,
   type GateState,
 } from "@/lib/survey/gate"
-import { getActiveAccountInfo } from "@/lib/account/activeAccountSession"
+import { getActiveAccountInfo } from "@/lib/session/activeAccountSession"
 
 /** 判定の依存の実物。画面の外の I/O をここに集める */
 const liveDeps: GateDeps = {

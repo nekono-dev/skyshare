@@ -6,7 +6,7 @@ import {
 } from "@/client/openapi/client"
 import Collapsible from "@/components/common/section/Collapsible"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
-import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
+import { clearKnownUnauthenticated } from "@/lib/session/activeAccountSession"
 import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
 import { useT } from "@/components/i18n/useTranslation"
 import { renderSlots } from "@/components/i18n/renderSlots"

@@ -19,7 +19,7 @@ import {
   deleteSession,
 } from "@/client/openapi/client"
 import type { GetSession200AccountsItem } from "@/client/openapi/model"
-import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
+import { clearKnownUnauthenticated } from "@/lib/session/activeAccountSession"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

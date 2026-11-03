@@ -1,7 +1,7 @@
 import {
     getActiveAccountInfo,
     resetActiveAccountInfoCache,
-} from "@/lib/account/activeAccountSession"
+} from "@/lib/session/activeAccountSession"
 
 const syncAccountAvatar = async () => {
     try {

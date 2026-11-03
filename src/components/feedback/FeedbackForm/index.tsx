@@ -17,7 +17,7 @@ import CountedTextInput, {
 } from "@/components/common/input/CountedTextInput"
 import Loading from "@/components/common/Loading"
 import RadioButton from "@/components/common/input/RadioButton"
-import { getSessionOnce } from "@/lib/account/activeAccountSession"
+import { getSessionOnce } from "@/lib/session/activeAccountSession"
 import {
   emptyDraft,
   isDraftSubmittable,

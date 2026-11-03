@@ -20,7 +20,7 @@ import type {
 import { useInfiniteScrollController } from "@/components/common/list/ComponentList"
 import InfiniteScrollSentinel from "@/components/common/list/InfiniteScrollSentinel"
 import EntryCard from "@/components/entry/EntryList/EntryCard"
-import { isSessionKnownUnauthenticated } from "@/lib/account/activeAccountSession"
+import { isSessionKnownUnauthenticated } from "@/lib/session/activeAccountSession"
 import { getGuestDummyData } from "@/lib/timeline/guest"
 import type { TimelineSkyshareEntry } from "@/lib/timeline/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"

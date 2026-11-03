@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { startScheduleAuthorization } from "@/client/openapi/client"
 import Overlay from "@/components/common/dialog/Overlay"
-import { getActiveAccountHandle } from "@/lib/account/activeAccountSession"
+import { getActiveAccountHandle } from "@/lib/session/activeAccountSession"
 import { useT } from "@/components/i18n/useTranslation"
 import { renderSlots } from "@/components/i18n/renderSlots"
 import type { PlainMessageKey } from "@/lib/i18n/translate"

@@ -29,7 +29,7 @@ import {
   getActiveAccountInfo,
   getSessionOnce,
   isSessionKnownUnauthenticated,
-} from "@/lib/account/activeAccountSession"
+} from "@/lib/session/activeAccountSession"
 import { countHashtagUsage } from "@/lib/atproto/richtext"
 import { getGuestDummyData } from "@/lib/timeline/guest"
 import type { ThreadGroup } from "@/lib/timeline/posts"

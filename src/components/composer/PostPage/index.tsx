@@ -12,7 +12,7 @@ import ThreadComposer from "@/components/composer/ThreadComposer"
 import {
   getActiveAccountInfo,
   getSessionOnce,
-} from "@/lib/account/activeAccountSession"
+} from "@/lib/session/activeAccountSession"
 import { isGuestModeRequested } from "@/lib/guestMode"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
