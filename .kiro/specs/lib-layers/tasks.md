@@ -65,7 +65,7 @@
   - _Requirements: 4.2, 5.1, 5.3_
 
 - [ ] 4. 層の分類と層の逆流の検査
-- [ ] 4.1 領域の層の対応表と、層の逆流の規則を追加する
+- [x] 4.1 領域の層の対応表と、層の逆流の規則を追加する
   - `src/lib/` の各領域と `guestMode.ts` を基盤か業務に分類する対応表を、検査の部品に持つ
   - 基盤の領域から業務の領域への import を違反として数える規則（`libLayer`）を、既存の規則の一覧に加える。業務 → 基盤・基盤どうし・業務どうしは違反にしない
   - 規則の識別子を三か所に明示して加える: `rules.ts` の `RuleId` の union に `libLayer` を加える。`allowlist.ts` の `RULE_IDS` 配列に `libLayer` を加える。`allowlist.ts` の `DEFAULT_OWNERS`（`Record<RuleId, string>`）に `libLayer: "lib-layers"` を加える（`RULE_BASIS` も同じ型のため `libLayer` を持つ）

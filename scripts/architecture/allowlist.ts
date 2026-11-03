@@ -38,6 +38,7 @@ const RULE_IDS: readonly RuleId[] = [
     "crossRegionRelative",
     "relativeDepth",
     "jsExtension",
+    "libLayer",
 ]
 
 /** 規則ごとの既定の所有 spec（設計の表と一致させる）。 */
@@ -48,6 +49,7 @@ export const DEFAULT_OWNERS: Record<RuleId, string> = {
     crossRegionRelative: "src-import-style",
     relativeDepth: "src-import-style",
     jsExtension: "src-import-style",
+    libLayer: "lib-layers",
 }
 
 const keyOf = (item: {

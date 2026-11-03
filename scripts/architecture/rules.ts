@@ -7,6 +7,7 @@
  * - 型だけの辺にも、値の辺と同じ規則を適用する（要件 5.1）。
  */
 import type { ModuleGraph, ImportEdge } from "./importGraph"
+import { libLayerOf } from "./libLayers"
 import { regionOf } from "./regions"
 
 export type RuleId =
@@ -16,6 +17,7 @@ export type RuleId =
     | "crossRegionRelative"
     | "relativeDepth"
     | "jsExtension"
+    | "libLayer"
 
 export type Violation = {
     ruleId: RuleId
@@ -34,6 +36,8 @@ export const RULE_BASIS: Record<RuleId, string> = {
         "structure.md「Import Organization」（領域をまたぐ import は @/）",
     relativeDepth: "structure.md「Import Organization」（../ は 3 段未満）",
     jsExtension: "structure.md「Import Organization」（拡張子は付けない）",
+    libLayer:
+        "structure.md「lib の領域の依存の向き」（基盤は業務を import しない）",
 }
 
 const REACT_PACKAGE = /^react(-|\/|$)/
@@ -120,15 +124,28 @@ const jsExtensionRule = (edge: ImportEdge): Violation | null => {
     return violation("jsExtension", edge, "拡張子は付けない（方式の統一）")
 }
 
+/**
+ * 基盤の領域から業務の領域への import を見つける（R5）。
+ * 業務 → 基盤・基盤どうし・業務どうしは対象外。`src/lib/` の外との辺も対象外。
+ */
+const libLayerRule = (edge: ImportEdge): Violation | null => {
+    if (edge.target.kind !== "module") return null
+    const to = edge.target.path
+    if (libLayerOf(edge.from) !== "基盤") return null
+    if (libLayerOf(to) !== "業務") return null
+    return violation("libLayer", edge, "基盤は業務を import しない（層の逆流）")
+}
+
 const RULES = [
     layerRule,
     uiInLibRule,
     crossRegionRelativeRule,
     relativeDepthRule,
     jsExtensionRule,
+    libLayerRule,
 ]
 
-/** R1・R2・R4a・R4b・R4c の違反を、辺の順序のまま返す。 */
+/** R1・R2・R4a・R4b・R4c・R5 の違反を、辺の順序のまま返す。 */
 export const evaluateImportRules = (graph: ModuleGraph): Violation[] => {
     const found: Violation[] = []
     for (const edge of graph.edges) {
