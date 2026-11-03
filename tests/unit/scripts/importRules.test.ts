@@ -446,3 +446,59 @@ describe("想定の構成からの独立（要件 10）", () => {
         }
     })
 })
+
+describe("層の逆流の規則（libLayer）", () => {
+    // 基盤 → 業務の辺だけを違反にする。fixture の各辺の層は対応表（libLayers.ts）に従う
+    const libLayerRoot = path.resolve(
+        __dirname,
+        "../../fixtures/import-rules/lib-layers",
+    )
+    const libLayerViolations = evaluateImportRules(scanModules(libLayerRoot))
+        .filter(v => v.ruleId === "libLayer")
+        .map(v => [v.from, v.specifier])
+
+    it("基盤 → 業務の import を違反にする（要件 2.1・3.1）", () => {
+        expect(libLayerViolations).toContainEqual([
+            "src/lib/api/bad.ts",
+            "@/lib/feedback/y",
+        ])
+        expect(libLayerViolations).toContainEqual([
+            "src/lib/site/bad-guest.ts",
+            "@/lib/guestMode",
+        ])
+    })
+
+    it("業務 → 基盤・基盤どうし・業務どうしは違反にしない（要件 2.2）", () => {
+        // 違反は上の 2 件だけで、正例（業務 → 基盤、基盤 → 基盤、業務 → 業務）は含まれない
+        expect(libLayerViolations).toHaveLength(2)
+        expect(
+            libLayerViolations.some(
+                ([from]) => from === "src/lib/session/x.ts",
+            ),
+        ).toBe(false)
+        expect(
+            libLayerViolations.some(([from]) => from === "src/lib/entry/x.ts"),
+        ).toBe(false)
+        expect(
+            libLayerViolations.some(([from]) => from === "src/lib/entry/z.ts"),
+        ).toBe(false)
+    })
+
+    it("guestMode.ts は業務として扱い、業務の import（timeline）を違反にしない（要件 1.1・2.2）", () => {
+        expect(
+            libLayerViolations.some(
+                ([from]) => from === "src/lib/guestMode.ts",
+            ),
+        ).toBe(false)
+    })
+
+    it("基盤から guestMode.ts（業務）を import すると違反にする（要件 1.1・2.1）", () => {
+        expect(
+            libLayerViolations.some(
+                ([from, spec]) =>
+                    from === "src/lib/site/bad-guest.ts" &&
+                    spec === "@/lib/guestMode",
+            ),
+        ).toBe(true)
+    })
+})
