@@ -115,7 +115,7 @@
   - _Depends: 5.1_
   - _Requirements: 2.2, 3.3_
 
-- [ ] 5.3 steering と実装の一致を確かめる
+- [x] 5.3 steering と実装の一致を確かめる
   - `structure.md` の更新日（末尾の `updated_at`）を、この変更の日付に直す
   - `steeringRegions.test.ts`・`libLayers.test.ts` が通ることを確かめる
   - 完了の条件: 両方のテストが通り、`structure.md` の記載と実装の差が 0 件

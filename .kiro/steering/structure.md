@@ -148,7 +148,7 @@ import styles from "./index.module.css" // 同じフォルダ
 ---
 
 _Document patterns, not file trees. New files following these patterns shouldn't require updates._
-_updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外を追補。利用元の内側に置く規則と common の基盤・分類フォルダ（役割）の定義を追補）_
+_updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外を追補。利用元の内側に置く規則と common の基盤・分類フォルダ（役割）の定義を追補。lib の層の表と依存の節、統合後の領域の説明を改訂）_
 
 ## lib の領域の依存の向き
 
