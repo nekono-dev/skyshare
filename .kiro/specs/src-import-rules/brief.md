@@ -47,6 +47,7 @@ steering の規約を検査ルールとして書き、現状の違反を許容�
 
 - **Extends**: なし（既存の振る舞いは変えない）
 - **Adjacent**: `test-foundation`（テストの配置と設定に触れない）、`ops-tooling-layout`（検査スクリプトの置き場所は運用ツールの規約に従う）
+- **Adjacent（`libLayer`）**: `lib-layers`。`lib` を基盤と業務の二つの層に分け、基盤から業務への import を違反とする規則 `libLayer` を定める。本 spec の検査の枠組み（`npm run test:imports`・許容リスト・CI）の上に載る規則の一つであり、規則の中身（層の対応表と辺）は `lib-layers` が持つ。紐づけ先は `lib-layers` の要件 2.1（基盤は業務を import しない）と要件 3.1（未記録の基盤→業務の import を `test:imports` が失敗させる）。本 spec は `libLayer` の検査を新たに作らず、`lib-layers` の変更で検査の実装に触れない
 
 ## Constraints
 

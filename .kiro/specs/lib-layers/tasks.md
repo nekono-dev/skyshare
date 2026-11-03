@@ -122,7 +122,7 @@
   - _Depends: 5.2_
   - _Requirements: 1.3, 3.3_
 
-- [ ] 5.4 src-import-rules に libLayer を紐づける
+- [x] 5.4 src-import-rules に libLayer を紐づける
   - src-import-rules の brief・requirements に libLayer（lib の基盤と業務の層の規則）を紐づける。検査の変更はしない。
   - 完了の条件: src-import-rules の brief・requirements に libLayer の規則（2.1・3.1）への紐づけが書かれ、`scripts/architecture/` と `tests/` に変更が無い
   - _Depends: 4.1_
