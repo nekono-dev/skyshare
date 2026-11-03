@@ -154,6 +154,8 @@ _updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外
 
 `lib` の領域どうしの依存は、閉路を作らない（A → B と B → A の両方も、長さ 3 以上の閉路も作らない）。共有の型・定数・スキーマは、参照される側（下位）に置き、上位は再エクスポートで参照を保つ。型のみの import も依存として数える。
 
+層の規則: 基盤の領域（層の表の「基盤」）は業務の領域（「業務」）を import しない（規則 `libLayer`）。業務の領域は基盤を import してよい。層の分類は「領域の一覧」の層の表のとおり。
+
 許可された依存（2026-11-01 の実測。型のみの辺を含む）。表に無い領域どうしの依存を加える場合は、この節を先に改訂する（規則の変更は、steering の改訂と同じ変更で行う）。
 
 - `lib/api`（API の契約）→ `lib/atproto`・`lib/image`・`lib/oauth`・`lib/video`・`util`。業務の型と制約は `lib/api/contract/` に下ろしてあるため、`lib/feedback`・`lib/survey` を参照しない。`lib/schedule`・`lib/session` も `lib/api` を参照する（下の一覧を参照）。
@@ -165,10 +167,12 @@ _updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外
 - `lib/session` → `lib/api`・`lib/atproto`・`lib/oauth`・`util`
 - `lib/settings` → `lib/atproto`・`lib/share`。`lib/share` → `lib/atproto`（`lib/settings`・`util` を参照しない）
 - `lib/survey` → `lib/api`（契約 `contract/surveyPath`）・`lib/guestMode.ts`・`lib/platform`（型のみ）・`lib/i18n`（型のみ）・`util`（`util/http`）
-- `lib/video` → `lib/image`（`lib/i18n` は型のみ）
+- `lib/video` → `lib/image`・`util`（`util/padTwoDigits`）（`lib/i18n` は型のみ）
 - `lib/feedback`（不具合の報告・提案）→ `lib/api`（契約 `contract/feedbackLimits`・`contract/feedbackSubmission`）・`lib/site`（ビルド情報）・`src/types`（`ClientEnvironment`・`Outcome` の型）。`util` は参照しない。
 - `lib/site`（ビルド情報・サイト設定・プライバシーポリシーの文面。`lib/privacy` を統合した領域）→ `lib/i18n`（型のみ）
 - `lib/guestMode.ts`（`lib` 直下の業務のファイル）→ `lib/timeline`（ゲストのダミーデータ・削除範囲の型）・`lib/i18n`（型のみ）
+
+上の一覧と現在の import（実測）の差分は、`util-placement` が解消する。解消の後に一覧と実測が一致する: `lib/atproto` → `util`（`util-placement` 4.1 で `lib/atproto` の内側へ移す）、`lib/feedback` → `util` の型 `clientEnvironment`・`outcome`（4.2・4.3 で `src/types` へ移す）、`lib/share` と `lib/settings` の参照（2・3.1 で循環を解消し、共有の判断を `lib/share` へ移す）。
 
 `src/` 直下（`env.ts`・`vars.ts`）の扱い: `lib` の領域は `@/env`・`@/vars`（設定）を参照してよい。`src/` 直下の `env.ts`・`middleware.ts`・`worker.ts` は組み立ての層で、`lib` を参照する。閉路の確認（`libRegionPairs` テスト）は `lib` の領域どうしだけを対象にするため、`src/` 直下を経由する閉路は対象外である。
 
@@ -178,13 +182,14 @@ _updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外
 
 `npm run test:imports` が、上の規約を次の規則で検査する（`scripts/architecture/`）。既存の違反は `config/architecture/import-allowlist.json` に、所有 spec 付きで記録する。許容リストに無い違反は失敗になる。
 
-| 規則                | 内容                                                               | 根拠                        |
-| ------------------- | ------------------------------------------------------------------ | --------------------------- |
-| layer               | `lib` → `components`・`pages`、`util` → 上位層の import を禁止する | 依存の向き                  |
-| uiInLib             | `lib` から `react`・`react-*` の import を禁止する                 | `lib` は UI に依存しない    |
-| cycle               | 循環 import を禁止する（型だけの import を含む）                   | 循環 import は作らない      |
-| crossRegionRelative | 領域をまたぐ相対 import を禁止する                                 | 領域をまたぐ import は `@/` |
-| relativeDepth       | `../` が 3 段以上の相対 import を禁止する                          | `../` は 3 段未満           |
-| jsExtension         | 拡張子 `.js` を付けた import を禁止する                            | 拡張子は付けない            |
+| 規則                | 内容                                                               | 根拠                                                   |
+| ------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
+| layer               | `lib` → `components`・`pages`、`util` → 上位層の import を禁止する | 依存の向き                                             |
+| uiInLib             | `lib` から `react`・`react-*` の import を禁止する                 | `lib` は UI に依存しない                               |
+| cycle               | 循環 import を禁止する（型だけの import を含む）                   | 循環 import は作らない                                 |
+| crossRegionRelative | 領域をまたぐ相対 import を禁止する                                 | 領域をまたぐ import は `@/`                            |
+| relativeDepth       | `../` が 3 段以上の相対 import を禁止する                          | `../` は 3 段未満                                      |
+| jsExtension         | 拡張子 `.js` を付けた import を禁止する                            | 拡張子は付けない                                       |
+| libLayer            | 基盤の領域から業務の領域への import を禁止する（層の逆流）         | `lib` の領域の依存の向き（基盤は業務を import しない） |
 
 規則の根拠は、この文書の規約だけに限る。規則の追加・変更・緩和は、この文書の改訂と同じ変更で行う。想定の構成（リファクタリングの目標）を理由に規則を変えない。

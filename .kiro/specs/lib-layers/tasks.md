@@ -102,7 +102,7 @@
   - _Depends: 4.3_
   - _Requirements: 1.2, 1.3, 4.2, 4.3_
 
-- [ ] 5.2 `structure.md` の依存の節と検査の表を改訂する
+- [x] 5.2 `structure.md` の依存の節と検査の表を改訂する
   - 「lib の領域の依存の向き」の許可された依存を、移動後の実測に合わせて書き換える。書く行は次の最終の辺である（`structure.md` と同じ内容にする）
     - `lib/api`: `lib/atproto`・`lib/image`・`lib/oauth`・`lib/video`・`util`（`lib/feedback`・`lib/survey` の行を削る）
     - `lib/feedback`: `lib/api`（契約 `contract/feedbackLimits`・`contract/feedbackSubmission`）・`lib/site`・`src/types`（`ClientEnvironment`・`Outcome` の型）。`util` は参照しない（util-placement 6.1 が確かめる）
