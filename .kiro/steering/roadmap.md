@@ -253,3 +253,83 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 ### New Specs
 
 - [x] src-component-nesting -- 利用元の内側に部品を置く規則（部品 P の利用元がすべて H の中にあれば H の子フォルダへ）を steering に定め、部品 37 件を入れ子にする。`common/` を役割の分類（dialog・select・input・list・media・section）に分け、Spinner を Loading に統合し、SettingsDialog を削除する。Dependencies: src-folder-layout, src-composer-layout（実装・検証済み。コミット 4e52886）
+
+## Phase 5: 全体の構成の見直し（2026-11-03 discovery: lib・util・components・骨格）
+
+### Overview
+
+Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の全体（`lib`・`util`・`components`・骨格）を探査し、利用者に見える振る舞いを変えずに配置を組み替える。探査で、`util/` と `lib/` に業務固有の物が混ざり、`lib/` は業務と基盤が区別されず、骨格の置き場が二つあることが分かった。既存の検査（`test:imports`・`componentLayout`）は `components/` と import 規則しか見ないため、`lib`・`util`・骨格の配置は誰も検査していない。
+
+### Approach Decision
+
+- **Chosen**（利用者の決定 2026-11-03）:
+  - `lib/` は「基盤」と「業務」に二分する（L-B）。小さい領域は統合する。
+  - `util/` は業務固有の物を利用元の領域へ移し、汎用だけを残す（U-A）。
+  - `components/` は規約（1 部品 1 フォルダ・利用元の内側・`common/` の分類）を保ち、小さい領域だけを統合する（C-A）。
+  - 骨格は `src/layout/` を `components/layout/` へ一本化する（Y-A）。`pages/`・`src/` 直下は現状を保つ（P-A）。
+  - 400 行を超える大ファイルは、振る舞いを変えずに分割する（含める）。
+- **Why**: 振る舞いは変えず、配置と層の規約だけを機械検査できる形にする。`lib` の二分は依存の向きを明示し、`util` の整理は「どこから使われるか」の実測に基づく。
+- **Rejected alternatives**:
+  - `lib/` を業務の単位のまま据え置く（L-C）: 基盤から業務への依存（`lib/api` → `lib/survey`）が見えないまま残る。
+  - `util/` を `lib/shared/` へ統合する（U-B）: 汎用と業務の境界が消え、`steering` の規約を広く改訂することになる。
+  - `components/` を画面単位に再編する（C-B）: composer と timeline の共有部品の置き場が決まらない。
+
+### 利用者の決定（2026-11-03: types/ と util の分類）
+
+- **決定**:
+  - 型の規則（厳格）: 複数の領域が使う型と、`lib` が `util`・`components` で定義された型を使う場合は、`src/types/` に置く。`src/types/` は葉で、型だけを持ち、外部パッケージを含めて外の層を import しない。`lib` で定義し `components` だけが使う型は `lib` に残す。
+  - `util/` の業務の判断は `lib/` の領域へ移す。
+  - ブラウザや DOM を操作する処理は、それを使う `components/` の部品へ移す（純粋な部分は `lib/` へ分ける）。
+  - 領域に依存せず DOM も使わない汎用の関数だけを `util/` に残す（例外: `waitForImageLoad`）。
+  - U-1（ブラウザ側の共有の処理）: 案 C。`lib/share` は純粋な URL・本文の組み立てだけを持つ。呼び出し側が `lib/share` の関数とブラウザ側の関数を組み合わせる。`window.open`・`navigator.share` を行う関数は `components/share/IntentShareDialog/` の内側に置く（利用元が composer と share・timeline にまたがるため）。
+  - U-2（`util/waitForImageLoad.ts`）: `util/` に残す（DOM を使う例外として `structure.md` に明記する）。
+  - U-3（`parseUserAgent`）: 利用元が部品だけのため、`components/feedback/FeedbackForm/` の内側に置く。`lib/feedback` は `ClientEnvironment` の型だけを `src/types` から使う。
+- **実測で境界が曖昧だった箇所**（詳細は `util-placement` の design）:
+  - `util/clientEnvironment.ts`: 型・純粋な判定・ブラウザの読み取りが一つのファイルにある → 三つに分ける（型は `src/types/`、判定とブラウザの読み取りは `components/feedback/FeedbackForm/`）
+  - `util/share/intent.ts`・`util/share/webShare.ts`: 純粋な組み立てと `window.open`・`navigator.share` が一つのファイルにある → 純粋な部分は `lib/share/`、ブラウザ側は `components/share/IntentShareDialog/`
+  - `util/outcome.ts`（型のみ）・`util/formData.ts`（型一つと関数）: `lib` が使う型なので `src/types/` へ移す
+  - `util/object.ts`・`util/autoLink.ts`・`util/emoji/countryFlag.ts`: 純粋で利用元が一つの `lib` 領域 → `lib/atproto/`
+  - `util/http.ts`・`formData.ts`（関数）・`utf8Bytes.ts`・`padTwoDigits.ts`・`waitForImageLoad.ts`: 汎用 → `util/` に残す（5 件）
+- **順序**: `tests/unit/scripts/importRules.test.ts` は lib-layers → util-placement → structure-checks の順に編集する。util-placement の 6.2 は lib-layers 4.2 の後、structure-checks の 2.3・3.5 は util-placement の後（各 `tasks.md` の先頭に記載）。
+
+### Scope
+
+- **In**: `src/lib/`・`src/util/`・`src/components/`（小さい領域）・`src/layout/`・大ファイル 7 件、それに対応する steering（`structure.md`・`roadmap.md` の領域一覧）と検査（`scripts/architecture/`・`tests/unit/scripts/`）。
+- **Out**: 利用者に見える振る舞い、API の入出力と DB スキーマ、`pages/`・`src/` 直下（P-A）、`styles/`・`images/`、`scripts/`（Phase 2）、生成物（`src/client/openapi/`）、`_legacy/`、`atproto/`（submodule）。
+
+### Constraints
+
+- 検証の基準は `npm run test:all` が終了コード 0 で通ること。件数は現状（2026-11-03）の `test:all` の結果を、着手時に記録して基準にする。各 spec は完了時にこの件数以上を保つ。
+- 規約の正は steering。規約を変えるときは、steering の改訂と同じ変更で行う（`structure.md` の「規則の変更は同じ変更で」）。
+- テストの import パスは、実装と同じ変更で更新する。テストの意味は変えない。
+- 既存 spec の振る舞いは変えない。
+
+### Boundary Strategy
+
+- **Why this split**: 層（`lib`）・汎用性（`util`）・部品（`components`）・骨格（`layout`）・大ファイル・検査の 6 つは、変更と検証が互いに閉じる。検査（`structure-checks`）は最後に置き、各段階の結果を固定する。
+- **Shared seams to watch**:
+  1. **`lib` の層（`lib-layers`）**: `util-placement`・`lib-large-files` は、層の決定に従って移動先が決まる。層の決定が先。
+  2. **`util/share` と `lib/share`**（`util-placement`）: `src-duplicates` で決めた share の責務を変える。既存の決定を覆すため、`src-duplicates` の brief に追記して記録する。
+  3. **`lib/api` と業務の型**（`lib-layers`）: `lib/api` は `lib/feedback`・`lib/survey` の型を参照している。層の決め方（`lib/api` を入口側の層とみなすか、型を基盤へ下ろすか）は `lib-layers` の design で決める。
+  4. **検査の許容リスト**（`src-import-rules`）: 移動のたびに減らす。増やすのは理由を書く例外だけ。
+
+### Specs (dependency order)
+
+- [x] lib-layers -- `lib/` を基盤と業務に分け、1〜2 ファイルだけの領域を統合する。`steering` の依存表と `test:imports` の規則を改訂する。Dependencies: none
+- [x] layout-home -- `src/layout/Baselayout.astro` を `components/layout/` へ移し、骨格の置き場を一つにする。`pages/posts/[dbIndex]/[slug].astro` の import と `structure.md` の編集は lib-layers の完了の後に行う。Dependencies: lib-layers（3.4・5.3）
+- [x] util-placement -- `util/` の業務固有の物を利用元の領域へ移し、汎用だけを残す。`util/share` を `lib/share` へ統合する。`src/types/` を新設し、型を置く。Dependencies: lib-layers
+- [x] components-small-areas -- 小さい部品領域（`share`・`feedback`・`privacy`・`help`）を、利用元の実測に基づいて統合するか残すかを決める。`components/i18n` は多くの部品から import される翻訳の入口のため移動しない。Dependencies: util-placement。`structure.md` の編集順: lib-layers 5.3・util-placement 6.1・structure-checks 5.1 の後に、本仕様の 2.1〜2.3 を行う（structure-checks 7.1 は本仕様の後）
+- [x] lib-large-files -- 400 行を超える 7 件（`postImageProcessing.ts`・`shareSettings.ts`・`schedule/store.ts`・`timeline/guest/posts.ts`・`session/cookies.ts`・`survey/gate.ts`・`contentEditableModel.ts`）を、振る舞いを変えずに分割する。Dependencies: lib-layers, util-placement
+- [x] structure-checks -- `lib` の層の方向・`util` の汎用性・骨格の一本化を機械で検査する（`componentLayout` と同じ方式）。`src/types/` の葉と型だけの規則（`typesLeaf`・`typesOnly`）を加える。Dependencies: layout-home, lib-layers, util-placement, components-small-areas, lib-large-files
+
+### Existing Spec Updates
+
+- [ ] src-duplicates -- share の責務（5 フォルダ）の統合の結論を、`util/share` の `lib/share` への統合（`util-placement`）に合わせて追記する（既存の内容は残す）。Dependencies: util-placement
+- [ ] src-import-rules -- 紐づけは lib-layers の 5.4 が行う（lib-layers が追加した libLayer を、src-import-rules の brief・requirements に紐づける。検査の変更は行わない）。Dependencies: lib-layers
+
+### 探査の根拠（2026-11-03）
+
+- `lib/api` → `lib/feedback`（`limits`・`submission`）と `lib/survey`（`definition`・`pathParams`）の依存。`lib/session/bskySessionRefresh.ts` → `lib/api` の依存。
+- `util/` の利用元: `util/share`（components/composer・share・timeline・settings、lib/share・lib/settings）、`util/textarea`（composer のみ）、`util/listbox`（common/select のみ）、`util/clientEnvironment.ts`（feedback のみ）、`util/emoji/countryFlag.ts`（`lib/atproto/languageFlag` のみ）、`util/autoLink.ts`（`lib/atproto` のみ）、`util/scrollLock.ts`（components/common のみ）。
+- `lib/` の 1〜2 ファイル領域: `account`・`draft`・`privacy`・`legacy`・`codegen`・`share`。
+- 骨格: `src/layout/Baselayout.astro` と `src/components/layout/`。

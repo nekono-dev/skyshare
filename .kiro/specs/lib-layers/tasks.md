@@ -20,6 +20,7 @@
   - 受付の API のスキーマと、報告フォームの文字数カウンタ・送信の可否の判定が、移した先を参照する
   - 完了の条件: 業務の領域の `feedback/limits` への参照が無く、API スキーマと画面が同じ値を読む
   - _Requirements: 2.4, 5.1, 5.3_
+  - _Blocked: TASK_DECOMPOSITION_PROBLEM — 2.1 単独（2.2 との閉路）で lib/api <-> lib/feedback の双方向依存が生じ、libRegionPairs が 2 件失敗する。2.1 と 2.2 を一つの作業単位にまとめるか、途中状態の赤を許容するかは人間の判断が必要_
 
 - [ ] 2.2 送信内容の型を API 契約へ移す
   - 送信内容の型を API 契約の 1 ファイルに移し、API の型検査（`typeCompat`）が移した先を参照する

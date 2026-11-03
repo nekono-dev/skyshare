@@ -1,0 +1,22 @@
+{
+  "feature_name": "lib-layers",
+  "created_at": "2026-11-03T10:47:38.000Z",
+  "updated_at": "2026-11-03T12:00:00.000Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

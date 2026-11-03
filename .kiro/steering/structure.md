@@ -41,15 +41,26 @@
 
 - フォルダ名とコンポーネント名は PascalCase。
 - 部品の判断は同じフォルダの `camelCase.ts` に置く（例: `ThreadComposer/rules/segments.ts`）。フックは `useX.ts`。
-- 判断の層（`rules/`）は部品を import しない。部品が使う型は `rules/` に置き、部品がそれを参照する（例: `ThreadComposer/rules/entries.ts`）。
+- 判断の層（`rules/`）は部品を import しない。部品が使う型は `rules/` に置き、部品がそれを参照する（例: `ThreadComposer/rules/entries.ts`）。`rules/` の判断は純粋な関数に限るのが原則だが、`ThreadComposer/rules/shareDispatch.ts` は既にブラウザの副作用（`runShareDispatch`）を持つ例外である。
 - 部品の判断やフックが多いときは、部品フォルダの直下に子フォルダ `rules/`（判断）と `hooks/`（フック）を作り、そこにまとめてよい。直下には配線（`index.tsx` と `index.module.css`）と子フォルダだけを置く。
 - 子フォルダの名前は小文字にする（部品フォルダの PascalCase と区別するため）。部品の子フォルダ（`ComposerOptions/` など）は、従来どおり PascalCase のままにする。
-- **利用元の内側に置く**: 部品 P の利用元（P を import しているファイル）がすべて部品 H の中にあるとき、P は H の子フォルダ（`H/P/`）に置く（例: `composer/ThreadComposer/ImagePicker/`、`timeline/Timeline/ThreadCard/PostCard/`）。利用元が一つでも H の外（`pages/`・他の領域）にあるときは、領域の直下に置く。子の子も同じ規則で置く。`common/`・`layout/` の部品には、この規則を当てはめない（基盤）。
+- **利用元の内側に置く**: 部品 P の利用元（P を import しているファイル）がすべて部品 H の中にあるとき、P は H の子フォルダ（`H/P/`）に置く（例: `composer/ThreadComposer/ImagePicker/`、`timeline/Timeline/ThreadCard/PostCard/`）。利用元が一つでも H の外（`pages/`・他の領域）にあるときは、領域の直下に置く。子の子も同じ規則で置く。`common/`・`layout/` の部品には、この規則を当てはめない（基盤）。部品フォルダの内側にあるブラウザ側の `.ts`（`openIntentPopup.ts`・`webShare.ts`）は、利用元が一つの部品に限らないとき「共通（`src/util/`・`src/styles/`）」の節の規則 (3)（共通に import できる部品フォルダ）に従い、この「利用元の内側」の規則より優先する。
 
 ### 共通（`src/util/`・`src/styles/`）
 
-- `util/` は領域に依存しない小さな関数。`util/share/` のように下位フォルダで分けることもある。
+- `util/` は、利用元が複数領域のときだけ `util` に置く（領域に依存せず、DOM も使わない汎用の関数）。利用元が一つになった関数は利用元の領域へ移し、`util/` へ戻さない。`util/share/` のような下位フォルダは置かない。
+- 置き場の判断は四つの規則による: (1) 型は `src/types/`（「型（`src/types/`）」の節）、(2) 業務の判断は `lib/<領域>/`、(3) ブラウザや DOM を操作する処理（`window`・`document`・`navigator`・`Image`・`Node`）は、それを使う `components/` の部品の内側（純粋な部分は `lib/` へ分ける。利用元が複数の部品領域にまたがるときは、それらが共通に import できる部品フォルダの内側）、(4) 領域に依存せず DOM も使わない汎用の関数は `util/`。
+- 例外: `util/waitForImageLoad.ts` は DOM の `Image` を使うが、利用元が二つの部品領域のため `util/` に残す。
 - `styles/` は CSS Modules。`tokens.css` が値、`ui.module.css` と `*.ui.module.css` が共通のクラス。
+
+### 型（`src/types/`）
+
+- 複数の領域が参照する型の置き場。`lib` が `util` または `components` で定義された型を使うときは、その型を `src/types/` へ移し、`lib` と `components` の両方がそこから import する（`lib` が `util` の型を使う場合も含む）。
+- `lib` で定義され `components` だけが使う型は `lib` に残す（`components` は `lib` を import してよい）。
+- `src/types/` は葉である。`src/types/` のファイルは `src/types/` の外（`lib`・`components`・`util`・`pages`）と、外部パッケージ（DOM の型を含む）を import しない。外部の型が要る場合は、その型を import せず、型の持ち主の層に残す。
+- `src/types/` の文は型だけにする（`export type`・`export interface`・`import type` のみ）。値の宣言（`const`・`let`・`function`・`class`・`enum`）・`export default`・`export *`・値の import は置かない。
+- Cloudflare の型と宣言は、既存の規則どおり `lib/platform/` に置く（この節の対象外）。
+- 検査は「依存規則の検査」の `typesLeaf`（葉）と `typesOnly`（型だけ）が行う。
 
 ### 生成物
 
@@ -91,7 +102,7 @@ import styles from "./index.module.css" // 同じフォルダ
 
 ## Code Organization Principles
 
-- **依存の向き**: `pages` → `lib` → `util`。`lib` が `components` を import しない。`util` は `lib`・`components`・`pages` を import しない。
+- **依存の向き**: `pages` → `lib` → `util`。`lib` が `components` を import しない。`util` は `lib`・`components`・`pages` を import しない。`src/types/` は葉で、他の層と外部パッケージを import しない。
 - **循環 import は作らない**: 型だけの import を含め、モジュール間の循環を作らない。
 - **`lib` は UI に依存しない**: `lib` は `react` と、名前が `react-` で始まるパッケージを import しない。判断は React に依存しない `.ts` に置く。
 - **領域をまたぐ import は `@/` に統一する**: 同じ部品フォルダの内部だけ相対 import（`./`）を使う。
@@ -116,18 +127,19 @@ _updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外
 
 許可された依存（2026-11-01 の実測。型のみの辺を含む）。表に無い領域どうしの依存を加える場合は、この節を先に改訂する（規則の変更は、steering の改訂と同じ変更で行う）。
 
-- `lib/api`（API の契約）→ `lib/atproto`・`lib/feedback`・`lib/image`・`lib/oauth`・`lib/survey`・`lib/video`・`util`。`lib/schedule`・`lib/session` も `lib/api` を参照する（下の一覧を参照）。
-- `lib/atproto` → `lib/image`・`lib/video`・`util`・`util/emoji`
+- `lib/api`（API の契約）→ `lib/atproto`・`lib/image`・`lib/oauth`・`lib/video`・`util`。業務の型と制約は `lib/api/contract/` に下ろしてあるため、`lib/feedback`・`lib/survey` を参照しない。`lib/schedule`・`lib/session` も `lib/api` を参照する（下の一覧を参照）。
+- `lib/atproto` → `lib/image`・`lib/video`（`util` を参照しない）
 - `lib/entry`（Entry）→ `lib/atproto`・`lib/image`・`lib/video`・`util`。`lib/timeline` を参照しない。
 - `lib/timeline`（タイムライン）→ `lib/entry`・`lib/atproto`・`lib/i18n`（型）
 - `lib/oauth` → `lib/atproto`
 - `lib/schedule` → `lib/api`・`lib/atproto`・`lib/entry`・`lib/oauth`・`util`（`lib/i18n`・`lib/platform` は型のみ）
 - `lib/session` → `lib/api`・`lib/atproto`・`lib/oauth`・`util`
-- `lib/settings` → `lib/atproto`・`util/share`。`lib/share` → `lib/atproto`・`lib/settings`（型）・`util/share`
-- `lib/survey` → `util`・`lib` 直下のファイル（`lib/api` を参照しない）
+- `lib/settings` → `lib/atproto`・`lib/share`。`lib/share` → `lib/atproto`（`lib/settings`・`util` を参照しない）
+- `lib/survey` → `lib/api`（契約 `contract/surveyPath`）・`lib/guestMode.ts`・`lib/platform`（型のみ）・`lib/i18n`（型のみ）・`util`（`util/http`）
 - `lib/video` → `lib/image`（`lib/i18n` は型のみ）
-- `lib/feedback`（不具合の報告・提案）→ `lib/site`（ビルド情報）・`util`（型のみ）。`lib/api` は参照しない（`lib/api` が `lib/feedback` を参照するため循環になる）
-- `lib/privacy` → `lib/site`（`lib/i18n` は型のみ）
+- `lib/feedback`（不具合の報告・提案）→ `lib/api`（契約 `contract/feedbackLimits`・`contract/feedbackSubmission`）・`lib/site`（ビルド情報）・`src/types`（`ClientEnvironment`・`Outcome` の型）。`util` は参照しない。
+- `lib/site`（ビルド情報・サイト設定・プライバシーポリシーの文面。`lib/privacy` を統合した領域）→ `lib/i18n`（型のみ）
+- `lib/guestMode.ts`（`lib` 直下の業務のファイル）→ `lib/timeline`（ゲストのダミーデータ・削除範囲の型）・`lib/i18n`（型のみ）
 
 `src/` 直下（`env.ts`・`vars.ts`）の扱い: `lib` の領域は `@/env`・`@/vars`（設定）を参照してよい。`src/` 直下の `env.ts`・`middleware.ts`・`worker.ts` は組み立ての層で、`lib` を参照する。閉路の確認（`libRegionPairs` テスト）は `lib` の領域どうしだけを対象にするため、`src/` 直下を経由する閉路は対象外である。
 
