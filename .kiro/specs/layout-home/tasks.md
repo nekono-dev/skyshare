@@ -41,7 +41,7 @@
   - _Requirements: 3.1, 3.2, 3.4_
 
 - [ ] 4. 出力と既存の検証を確かめる
-- [ ] 4.1 移動の前後で HTML 出力が一致することを確かめる
+- [x] 4.1 移動の前後で HTML 出力が一致することを確かめる
   - 移動の後に `npm run build` を実行し、全ページの HTML を 1.1 で退避した出力と比較する
   - 差分が 0 件であり、骨格を使う全画面の構成（ヘッダー・サイドバー・フッター・`<head>` のメタ情報）が移動の前と同じである
   - _Depends: 2.2, 3.1, 3.2_
@@ -68,5 +68,25 @@
 - `npm run build`: 終了コード 0。退避先はリポジトリの外（scratchpad）
   - 退避した HTML: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/html-before/` の 24 ファイル（`dist/client` の `*.html` をそのまま複製）
   - 各ファイルの SHA-256 は同じ scratchpad の `html-before.sha256` に記録
-  - 骨格を使う 13 画面（`src/pages/` で `@/layout/` を import するページ）の出力を含む。動的ルート（`entries/[slug]`・`posts/[dbIndex]/[slug]`）は事前生成されず、HTML の退避に含まれない
+  - `src/pages/` で骨格（`components/layout/Baselayout`）を import するページは 13 件（`grep -rl` で確認）。そのうち事前生成される（`prerender = true`）のは 11 画面（accounts・entries/index・entries/sample・feedback・help・index・jump・login・post・privacy・settings）で、その HTML を退避に含む。退避の 24 件のうち 11 件がこの 11 画面の HTML で、残りの 13 件（`legacy/`・`app/`・`~partytown/` の HTML）は骨格を使わない。動的ルート（`entries/[slug]`・`posts/[dbIndex]/[slug]`、`prerender = false` の SSR）は事前生成されず、HTML の退避に含まれない
 - ビルドの前提: `npm run build` は `wrangler.jsonc` の本番設定（`siteHost`）を必要とするため、退避の時のみ `node scripts/config/render-wrangler.mjs production` で生成し、ビルド後に開発用の `wrangler.jsonc` を元に戻した
+
+### 4.1 移動の前後で HTML 出力が一致することを確かめる
+
+- 比較の手順: 移動の後に `node scripts/config/render-wrangler.mjs production` → `npm run build`（終了コード 0）→ 開発用の `wrangler.jsonc` を退避コピーから戻し、`cmp` でバイト一致を確認した。比較対象は 1.1 の退避 24 件（`dist/client` の `*.html`）。ファイル一覧は 24 件で一致
+- 生の比較（バイト単位）: 24 件中 13 件が一致、11 件が差分あり（`accounts`・`index`・`entries/index`・`entries/sample`・`feedback`・`help`・`jump`・`login`・`post`・`privacy`・`settings`）
+- 差分の内容は、すべて `/_astro/` 配下の資産名（ハッシュ付きファイル名）だけである。資産名を正規化（`/_astro/*.js|css` と骨格のスクリプト名の置換）して比べると、24 件すべてが一致した。差分の種類は次の 2 つ
+  - (a) 骨格のスクリプトの資産名（差分のある 11 件すべて）: `Baselayout.astro_astro_type_script_index_0_lang.BuHSHFEw.js` → `index.astro_astro_type_script_index_0_lang.BuHSHFEw.js`。骨格のファイル名（`index.astro`）から決まる名前であり、移動に伴う変化。ハッシュ（`BuHSHFEw`）は同じで内容は同一。骨格の CSS（`Baselayout.DCW3V2pc.css`）は変わらない
+  - (b) 部品のチャンクのハッシュ（`astro-island` の `component-url`）が変わったのは 4 件（`index`・`feedback`・`post`・`settings`）。残りの 7 件（`accounts`・`entries/index`・`entries/sample`・`help`・`jump`・`login`・`privacy`）は (a) の資産名だけが変わっている。4 件のチャンクの変化（`index` は `index.BSrryBI5.js` → `index.CJ3-cYVZ.js`、`feedback` は `index.DMnJqTuf.js` → `index.Q3RumwEU.js`、`post` は `index.CP8w13XC.js` → `index.CraOh2eG.js`、`settings` は `index.CwXleX1R.js` → `index.DzPFUJ4D.js`）の原因は下のとおりで、いずれも移動とは無関係な要因で説明できる
+- (b) の原因の確認（移動の前のツリーを `git archive 56b8d10` で別ディレクトリに展開し、同じ手順で再ビルド）:
+  - `index`（`Timeline`）: 移動の後のチャンクは、移動の前の再ビルドの `index.BSrryBI5.js` と、import 先の `ThreadComposer` のチャンク名の差だけで一致する（トークン単位で比較）
+  - `feedback`（`FeedbackForm`）: 移動の後のチャンクは、ビルド時に埋め込まれる git の commit SHA（`05575e0…`。移動の前の展開先は `.git` を持たないため空）の差だけでバイト一致する（SHA を除いて比較）。チャンク名の差は SHA の埋め込みによる。SHA は commit に依存する値で、移動とは無関係
+  - `post`: import 先の `ThreadComposer` のチャンク名の違いだけで、トークン列は一致する
+  - `settings`: store モジュールの import 順の入れ替わりだけで、本体のトークン列は一致する。store と `client.DOeCimWF`・`guestMode` は互いに依存しないため、評価順の差は振る舞いに影響しない
+  - `ThreadComposer`（移動の前 `CnuY84Lt.js` / 移動の後 `BT8dnh40.js`）: import 文を除くと本体は一致する。差は import 文の並び（store が `client.DOeCimWF` より先に評価される順）と、4 文字以下の識別子（ミニファイの変数名）の割り当てだけ。文字列リテラル・数値・プロパティ名の出現数は一致
+  - 移動の前のツリーは、退避のビルド（リポジトリのパス）と別パスの再ビルドで `Timeline` = `BSrryBI5`・`ThreadComposer` = `CnuY84Lt` が再現した。移動の前の出力は場所に依らず安定している
+- 骨格の中身: `git diff -M 56b8d10 HEAD` で骨格は rename の類似度 100%（中身の差分 0 行）。骨格を使う 13 画面の変更は import の 1 行ずつ
+- 動的ルート（`entries/[slug]`・`posts/[dbIndex]/[slug]`）: 退避に含まれないため、`npm run build` の成功（終了コード 0）と構成の比較で確かめた。両ファイルの変更は import の 1 行（`@/layout/Baselayout.astro` → `@/components/layout/Baselayout/index.astro`）のみで、骨格の中身は変わらない
+- 判定: HTML の内容（ヘッダー・サイドバー・フッター・`<head>` のメタ情報を含む全体）は、資産名を正規化すると移動の前後で一致する。残る差分は (a) の資産名（移動によるファイル名の変化、内容は同一）と (b) のビルド時の SHA 埋め込み・ミニファイの変数名による無関係なハッシュ差
+- 既存の検証: `npm run test:all` 終了コード 0（unit 49 ファイル / 321 件、component 5 / 13、route 23 / 212、render 1 / 2、e2e 7 件。基準と一致）。`npm run test:imports` 終了コード 0。`npm run apigen` 終了コード 0（`src/client/openapi`・`docs` に差分なし）
+- 退避のファイル: 移動の後の出力は scratchpad の `html-after.sha256` に記録。比較の作業用の出力は scratchpad のみで、リポジトリには追加していない
