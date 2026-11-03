@@ -332,4 +332,4 @@ Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の�
 - `lib/api` → `lib/feedback`（`limits`・`submission`）と `lib/survey`（`definition`・`pathParams`）の依存。`lib/session/bskySessionRefresh.ts` → `lib/api` の依存。
 - `util/` の利用元: `util/share`（components/composer・share・timeline・settings、lib/share・lib/settings）、`util/textarea`（composer のみ）、`util/listbox`（common/select のみ）、`util/clientEnvironment.ts`（feedback のみ）、`util/emoji/countryFlag.ts`（`lib/atproto/languageFlag` のみ）、`util/autoLink.ts`（`lib/atproto` のみ）、`util/scrollLock.ts`（components/common のみ）。
 - `lib/` の 1〜2 ファイル領域: `account`・`draft`・`privacy`・`legacy`・`codegen`・`share`。
-- 骨格: `src/layout/Baselayout.astro` と `src/components/layout/`。
+- 骨格: `src/components/layout/Baselayout/index.astro`（探査の時点の `src/layout/Baselayout.astro` から layout-home で移動）。

@@ -31,7 +31,7 @@
   - _Boundary: Layout README_
   - _Requirements: 3.3, 3.4_
 
-- [ ] 3.2 steering の骨格の記述を移動後の配置に合わせる
+- [x] 3.2 steering の骨格の記述を移動後の配置に合わせる
   - `structure.md` の骨格（`layout`）の記述に、置き場が `components/layout/Baselayout/` であることを示す。書く位置は「部品（`src/components/<領域>/<Name>/`）」の節の「画面全体で共有する部品は `common`（UI 部品）、`layout`（骨格）」の文の直後の一文に限る（骨格の一文はこの一箇所だけに書き、他の節に重複して書かない。structure-checks 5.1 はこの一文を参照する）
   - `structure.md` の編集は lib-layers 5.3 の完了の後に行う（lib-layers が同じ文書の節を改訂するため）
   - `roadmap.md` の「探査の根拠」の骨格の行を、`src/layout/` を現行の配置として示さない記述に直す。作業ツリーに未コミットの変更があるため、その変更は保ち、骨格の行だけを変える
