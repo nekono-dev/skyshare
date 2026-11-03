@@ -29,7 +29,7 @@
   - 完了の条件: アンケート設定の fixture テストが移動の前と同じ検証結果を返し、`scripts/survey` の読み込みが動く
   - _Requirements: 2.4, 5.1, 5.3_
 
-- [ ] 2.3 基盤から業務への参照が残らないことを確かめる
+- [x] 2.3 基盤から業務への参照が残らないことを確かめる
   - API 契約と API 領域のファイルが、業務の領域（`feedback`・`survey`・`schedule` など）を import しないことを、`test:imports` と import の検索で確かめる
   - 完了の条件: `test:type` と `test:imports` が終了コード 0 で、`lib/api` から `lib/feedback`・`lib/survey` への辺が 0 件
   - _Depends: 2.1, 2.2_
