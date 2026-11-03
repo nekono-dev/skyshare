@@ -1,7 +1,7 @@
 # Implementation Plan
 
 - [ ] 1. 着手前の基準を記録する
-- [ ] 1.1 移動の前の基準（テスト件数と HTML 出力）を退避する
+- [x] 1.1 移動の前の基準（テスト件数と HTML 出力）を退避する
   - 着手前に `npm run test:all` を実行し、終了コードと件数を完了メモに記録する
   - 着手前に `npm run build` を実行し、全ページの HTML 出力をリポジトリの外の退避先へ保存する
   - 完了の状態: 件数と HTML 出力の退避先が記録され、以降の比較の基準として参照できる
@@ -54,3 +54,19 @@
   - 完了の状態: 検査とテストの結果が、着手前の件数以上で全て成功している
   - _Depends: 4.1_
   - _Requirements: 1.5, 4.1, 4.2, 4.3_
+
+## Implementation Notes
+
+### 1.1 移動の前の基準（テスト件数と HTML 出力）
+
+- `npm run test:all`: 終了コード 0（type / lexicon / imports 通過）
+  - unit: 49 ファイル / 321 件 通過
+  - component: 5 ファイル / 13 件 通過
+  - route: 23 ファイル / 212 件 通過
+  - render: 1 ファイル / 2 件 通過
+  - e2e: 7 件 通過
+- `npm run build`: 終了コード 0。退避先はリポジトリの外（scratchpad）
+  - 退避した HTML: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/html-before/` の 24 ファイル（`dist/client` の `*.html` をそのまま複製）
+  - 各ファイルの SHA-256 は同じ scratchpad の `html-before.sha256` に記録
+  - 骨格を使う 13 画面（`src/pages/` で `@/layout/` を import するページ）の出力を含む。動的ルート（`entries/[slug]`・`posts/[dbIndex]/[slug]`）は事前生成されず、HTML の退避に含まれない
+- ビルドの前提: `npm run build` は `wrangler.jsonc` の本番設定（`siteHost`）を必要とするため、退避の時のみ `node scripts/config/render-wrangler.mjs production` で生成し、ビルド後に開発用の `wrangler.jsonc` を元に戻した
