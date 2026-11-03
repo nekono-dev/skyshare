@@ -224,8 +224,8 @@ graph TD
 - `src/components/composer/ThreadComposer/rules/shareDispatch.ts`: `openIntentPopupFor` と `canShareWithWebApi`・`shareWithWebApi` の呼び出しを、`@/lib/share/intent`（`buildIntentUrl`）・`@/components/share/IntentShareDialog/openIntentPopup`・`@/components/share/IntentShareDialog/webShare` の組み合わせに置き換える（composer の領域の外の参照のため `@/`）
 - `src/components/composer/ThreadComposer/hooks/useThreadSubmit.ts`: `preOpenPopupWindow` の import を `@/components/share/IntentShareDialog/openIntentPopup` へ
 - `src/components/timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts`: `canShareWithWebApi`・`shareWithWebApi` の import を `@/components/share/IntentShareDialog/webShare` へ
-- `src/lib/feedback/feedbackDraft.ts`: `ClientEnvironment` の import 元を `@/types/clientEnvironment` にする（`lib-layers` 2.2 の後に行う）
-- `src/lib/feedback/submitFeedback.ts`・`src/lib/entry/*`（4 件）・`src/lib/schedule/*`（4 件）: `Outcome` の import 元を `@/types/outcome` にする（`lib/feedback/submitFeedback.ts` は `lib-layers` 2.2 の後）
+- `src/lib/feedback/feedbackDraft.ts`: `ClientEnvironment` の import 元を `@/types/clientEnvironment` にする（`lib-layers` 2.1 の後に行う）
+- `src/lib/feedback/submitFeedback.ts`・`src/lib/entry/*`（4 件）・`src/lib/schedule/*`（4 件）: `Outcome` の import 元を `@/types/outcome` にする（`lib/feedback/submitFeedback.ts` は `lib-layers` 2.1 の後）
 - `src/lib/api/schema/v2/entry/post.ts`・`schedules/post.ts`: `FormDataFieldKind` の import 元を `@/types/formData` にする。`lib/schedule/stageSchedule.ts`・`pages/v2/entry.ts` は関数（`formDataToObject`）を使うため `@/util/formData` のまま
 - `src/lib/atproto/draft.ts`・`src/lib/atproto/languageFlag.ts`・`src/lib/atproto/richTextSegments.ts`: 同じ領域の中の相対 import（`./object`・`./countryFlag`・`./autoLink`）へ
 - `src/components/feedback/FeedbackForm/index.tsx`: `@/util/clientEnvironment` の import を、型は `@/types/clientEnvironment`、`collectClientEnvironment` は `./clientEnvironment`（同じ部品フォルダの内側の相対 import）へ
@@ -384,7 +384,7 @@ graph TD
 1. `lib/settings/autoPopupTarget.ts` → `lib/share/autoPopupTarget.ts` と、`shareSettings.ts`・`counterReserve.ts` の参照の付け替え（循環の解消を先に行う）
 2. `util/share/intentLength.ts`・`truncateText.ts`・`util/textCount.ts` → `lib/share/`、`webShare.ts` の純粋部分 → `lib/share/webShareData.ts`、`intent.ts` の純粋部分 → `lib/share/intent.ts`。`openIntentPopupFor` の削除と呼び出し側の合成。`webShare.ts` と `openIntentPopup.ts` のブラウザ部分 → `components/share/IntentShareDialog/`（一括で行う）
 3. `lib/atproto` への 3 件（`object`・`countryFlag`・`autoLink`）
-4. `src/types/clientEnvironment.ts`・`src/types/outcome.ts`・`src/types/formData.ts`、`FeedbackForm/userAgent.ts`・`FeedbackForm/clientEnvironment.ts`（`lib-layers` 2.2 の後）
+4. `src/types/clientEnvironment.ts`・`src/types/outcome.ts`・`src/types/formData.ts`、`FeedbackForm/userAgent.ts`・`FeedbackForm/clientEnvironment.ts`（`lib-layers` 2.1 の後）
 5. `ThreadComposer/rules/`（`textarea` 5 件・`links.ts`）、`Dropdown/`（`listbox` 2 件）、`Overlay/scrollLock.ts`
 6. `structure.md`・`src-duplicates` の brief・テストの移動とパス更新
 7. `test:all` と grep による残存の確認

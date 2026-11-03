@@ -8,8 +8,8 @@
  *   解釈されない形（閉じられない囲いのコードブロック・インラインコード）で載せる。
  * - 本文の見出しと項目名は、開発者が読むため日本語に固定する（表示言語に依存しない）。
  */
-import type { FeedbackSubmission } from "@/lib/feedback/submission"
-import type { Reproducibility } from "./limits"
+import type { FeedbackSubmission } from "@/lib/api/contract/feedbackSubmission"
+import type { Reproducibility } from "@/lib/api/contract/feedbackLimits"
 
 export type IssueReporter = { did: string; handle: string }
 export type IssueBuild = {

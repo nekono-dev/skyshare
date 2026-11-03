@@ -29,7 +29,7 @@ import {
   FEEDBACK_LIMITS,
   REPRODUCIBILITY_VALUES,
   countFeedbackLength,
-} from "@/lib/feedback/limits"
+} from "@/lib/api/contract/feedbackLimits"
 import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"

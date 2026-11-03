@@ -30,7 +30,7 @@ vi.mock("@/lib/site/buildInfo", () => ({
 }))
 
 import { submitFeedback } from "@/lib/feedback/submitFeedback"
-import type { FeedbackSubmission } from "@/lib/feedback/submission"
+import type { FeedbackSubmission } from "@/lib/api/contract/feedbackSubmission"
 
 const TOKEN = "github_pat_SECRET_TOKEN_VALUE_123"
 

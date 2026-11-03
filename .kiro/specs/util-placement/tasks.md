@@ -3,7 +3,7 @@
 着手条件と順序（lib-layers との関係）:
 
 - 本仕様は lib-layers の完了の後に始める。`structure.md` の「lib の領域の依存の向き」と「領域の一覧」は、lib-layers 5.1・5.2 が先に改訂する。本仕様の 6.1 は、その結果（lib-layers 5.2 で併合された依存の表）に、本仕様の変更（`lib/share`・`lib/feedback` の参照、`util` の残り 5 件、`src/types/`）を重ねて書き換える。併合の手順は 6.1 に書く。
-- 共有ファイルの編集順: `tests/unit/scripts/importRules.test.ts` は lib-layers 4.2 の後に本仕様 6.2 で例のパスを直す（lib-layers → util-placement → structure-checks の順）。`components/feedback/FeedbackForm/index.tsx`・`lib/feedback/*` は lib-layers 2.1・2.2 の後に本仕様 4.2・4.3 で import を付け替える。`components/composer/ThreadComposer/hooks/useDraftFlow.ts` は lib-layers 3.2（`draftList`）の後に本仕様 5.2（`util/links`）で付け替える。
+- 共有ファイルの編集順: `tests/unit/scripts/importRules.test.ts` は lib-layers 4.2 の後に本仕様 6.2 で例のパスを直す（lib-layers → util-placement → structure-checks の順）。`components/feedback/FeedbackForm/index.tsx`・`lib/feedback/*` は lib-layers 2.1 の後に本仕様 4.2・4.3 で import を付け替える。`components/composer/ThreadComposer/hooks/useDraftFlow.ts` は lib-layers 3.2（`draftList`）の後に本仕様 5.2（`util/links`）で付け替える。
 - 利用者の決定はすべて design の「決定の記録」の節に記録済み（U-1 は案 C、U-2 は `util/` に残す、U-3 は部品の内側、型の規則）。未決定の項目は無い。
 
 - [ ] 1. 着手前の基準と決定の記録
@@ -57,16 +57,16 @@
   - `lib/feedback/feedbackDraft.ts` の型の import を `@/types/clientEnvironment` へ、`FeedbackForm/index.tsx` の import を `@/types/clientEnvironment`・`./clientEnvironment` へ付け替える
   - 完了の条件: `util/clientEnvironment.ts` が存在せず、`src/types/` に `clientEnvironment.ts` がある。`lib/feedback` が `window`・`navigator`・React を参照しない。既存のテストが移動の前と同じ結果を返す
   - _Boundary: lib/feedback, components/feedback, src/types_
-  - _Depends: 1.1, lib-layers 2.2_
+  - _Depends: 1.1, lib-layers 2.1_
   - _Requirements: 1.6, 7.1, 7.2, 5.2_
 - [ ] 4.3 (P) Outcome と FormDataFieldKind の型を src/types へ移す
   - `util/outcome.ts` を `src/types/outcome.ts` へ移し、`util/outcome.ts` を削除する（型だけのモジュール。冒頭の説明は残す）
   - `util/formData.ts` の `FormDataFieldKind`・`LeafFormDataFieldKind` を `src/types/formData.ts` へ移す（両方とも export する。`LeafFormDataFieldKind` は `util/formData.ts` の関数が使うため）。`formData.ts` には関数（`formDataIndexedArrayToObjects`・`formDataToObject`）を残し、型は `import type` で `@/types/formData` から読む
-  - 利用元の `Outcome` の import を `@/types/outcome` へ付け替える: `lib/entry/`（`postEntry`・`editEntry`・`deleteEntry`・`postEntryMedia`）、`lib/schedule/`（`scheduleCredential`・`scheduleItem`・`scheduleCollection`・`scheduleImage`）、`lib/feedback/submitFeedback.ts`（`submitFeedback.ts` は lib-layers 2.2 の後）
+  - 利用元の `Outcome` の import を `@/types/outcome` へ付け替える: `lib/entry/`（`postEntry`・`editEntry`・`deleteEntry`・`postEntryMedia`）、`lib/schedule/`（`scheduleCredential`・`scheduleItem`・`scheduleCollection`・`scheduleImage`）、`lib/feedback/submitFeedback.ts`（`submitFeedback.ts` は lib-layers 2.1 の後）
   - 利用元の `FormDataFieldKind` の import を `@/types/formData` へ付け替える: `lib/api/schema/v2/entry/post.ts`・`lib/api/schema/v2/schedules/post.ts`。関数を使う `lib/schedule/stageSchedule.ts`・`pages/v2/entry.ts` は `@/util/formData` のまま
   - 完了の条件: `util/outcome.ts` が無く、`src/types/` に 3 ファイル（`clientEnvironment.ts`・`outcome.ts`・`formData.ts`）があり、どれも型だけで外を import しない。`npm run apigen` の後に生成物の差分が無い
   - _Boundary: src/types, lib/entry, lib/schedule, lib/api, lib/feedback_
-  - _Depends: 1.1, lib-layers 2.2_
+  - _Depends: 1.1, lib-layers 2.1_
   - _Requirements: 7.1, 7.2, 3.1, 3.2, 5.2, 5.3_
 
 - [ ] 5. 利用元の部品の内側へ移す

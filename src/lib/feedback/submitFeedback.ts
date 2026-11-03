@@ -11,12 +11,12 @@
  * - HTTP の応答の形は作らない（ページが `Outcome` を応答に変換する）。
  * - 想定しない例外は捕まえず、呼び出し側（ページ）に伝える。
  * - 外部トークンの値は、戻り値にもエラーの内容にも含めない。
- * - `lib/api` を参照しない（`lib/api → lib/feedback` の一方向の依存を保つため）。
+ * - `lib/api` のうち契約（`lib/api/contract`）だけを参照する。スキーマ・ルートには触れない（`lib/api → lib/feedback` の逆流を作らないため）。
  */
 import { getFeedbackEnv } from "@/lib/feedback/env"
 import { createGithubIssue } from "@/lib/feedback/githubIssue"
 import { buildIssue } from "@/lib/feedback/issueContent"
-import type { FeedbackSubmission } from "@/lib/feedback/submission"
+import type { FeedbackSubmission } from "@/lib/api/contract/feedbackSubmission"
 import { buildInfo } from "@/lib/site/buildInfo"
 import type { Outcome } from "@/util/outcome"
 

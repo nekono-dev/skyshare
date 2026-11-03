@@ -25,7 +25,7 @@ import type {
     BskyVideoBlob,
     BskyVideoMeta,
 } from "@/lib/atproto/recordTypes"
-import type { FeedbackSubmission } from "@/lib/feedback/submission"
+import type { FeedbackSubmission } from "@/lib/api/contract/feedbackSubmission"
 
 type AssertAssignable<T extends U, U> = T
 

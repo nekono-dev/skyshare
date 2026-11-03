@@ -3,7 +3,7 @@
 共有ファイルの編集順（本仕様の位置）:
 
 - `tests/unit/scripts/importRules.test.ts`: lib-layers（4.2 で `libLayer` の正例を加える）→ util-placement（6.2 で例のパスを直す。util-placement は本仕様の完了が前提）→ structure-checks（2.2・2.3 で `reason` の fixture を加える）。
-- `src/components/feedback/FeedbackForm/index.tsx`・`src/lib/feedback/*`: 本仕様（2.1・2.2 で `@/lib/api/contract/*` へ付け替える）が先。util-placement 4.2 は、その後の状態に対して `clientEnvironment` の import を付け替える。
+- `src/components/feedback/FeedbackForm/index.tsx`・`src/lib/feedback/*`: 本仕様（2.1 で `@/lib/api/contract/*` へ付け替える）が先。util-placement 4.2 は、その後の状態に対して `clientEnvironment` の import を付け替える。
 - `src/components/composer/ThreadComposer/hooks/useDraftFlow.ts`: 本仕様 3.2（`draftList` の import を `@/lib/timeline/draftList` へ）が先。util-placement 5.2（`util/links` の import）は、その後の状態に対して行う。
 - `src/pages/posts/[dbIndex]/[slug].astro`: 本仕様 3.4（`legacy/pagedb` の import を `@/lib/entry/legacyPagedb` へ）が先。layout-home 2.2（骨格の import を変える）は、本仕様の 3.4 の後に行う（layout-home 2.2 の `_Depends` に本仕様の 3.4 を記す）。
 
@@ -15,30 +15,24 @@
   - _Requirements: 5.2, 5.4_
 
 - [ ] 2. API 契約の基盤への移動（feedback・survey の逆流の解消）
-- [ ] 2.1 入力の制約値を API 契約へ移す
-  - 不具合の報告の文字数上限・再現頻度の値・文字数の数え方を、API 契約（基盤）の 1 ファイルに移す（旧 `feedback/limits` の内容を変えない）
-  - 受付の API のスキーマと、報告フォームの文字数カウンタ・送信の可否の判定が、移した先を参照する
-  - 完了の条件: 業務の領域の `feedback/limits` への参照が無く、API スキーマと画面が同じ値を読む
-  - _Requirements: 2.4, 5.1, 5.3_
-  - _Blocked: TASK_DECOMPOSITION_PROBLEM — 2.1 単独（2.2 との閉路）で lib/api <-> lib/feedback の双方向依存が生じ、libRegionPairs が 2 件失敗する。2.1 と 2.2 を一つの作業単位にまとめるか、途中状態の赤を許容するかは人間の判断が必要_
-
-- [ ] 2.2 送信内容の型を API 契約へ移す
-  - 送信内容の型を API 契約の 1 ファイルに移し、API の型検査（`typeCompat`）が移した先を参照する
-  - 業務の Issue 本文の組み立てと送信の処理が、移した先の型を参照する
-  - 完了の条件: `typeCompat` の検査が通り、Issue 本文の組み立てのテストが移動の前と同じ結果を返す
-  - _Depends: 2.1_
+- [x] 2.1 不具合の報告の制約値と送信内容の型を API 契約へ移す
+  - 不具合の報告の文字数上限・再現頻度の値・文字数の数え方を、API 契約（基盤）の 1 ファイル（`contract/feedbackLimits`）に移す（旧 `feedback/limits` の内容を変えない）
+  - 送信内容の型を API 契約の 1 ファイル（`contract/feedbackSubmission`）に移し、API の型検査（`typeCompat`）が移した先を参照する
+  - 受付の API のスキーマと、報告フォームの文字数カウンタ・送信の可否の判定が、移した先の制約値を参照する。業務の Issue 本文の組み立てと送信の処理が、移した先の型を参照する
+  - 二つの移動は一つの作業単位として同時に行う（片方だけでは `lib/api` と `lib/feedback` の双方向の依存が残り、`libRegionPairs` が失敗する）
+  - 完了の条件: 業務の領域の `feedback/limits` への参照が無く、`lib/api` から `lib/feedback` への import が 0 件。`typeCompat` の検査が通り、API スキーマと画面が同じ値を読み、Issue 本文の組み立てのテストが移動の前と同じ結果を返す。`npm run test:all` が終了コード 0 で通る
   - _Requirements: 2.4, 5.1, 5.3_
 
-- [ ] 2.3 アンケートの識別子とパスの検証を API 契約へ移す
+- [ ] 2.2 アンケートの識別子とパスの検証を API 契約へ移す
   - 識別子の検証（最大文字数・形式）と、パスの変数の検証を、API 契約の 1 ファイルに移す
   - アンケート設定の定義は、識別子の検証を移した先から読み込む。パスの検証を使う回答の処理と、API のパス・回答のスキーマも移した先を参照する
   - 完了の条件: アンケート設定の fixture テストが移動の前と同じ検証結果を返し、`scripts/survey` の読み込みが動く
   - _Requirements: 2.4, 5.1, 5.3_
 
-- [ ] 2.4 基盤から業務への参照が残らないことを確かめる
+- [ ] 2.3 基盤から業務への参照が残らないことを確かめる
   - API 契約と API 領域のファイルが、業務の領域（`feedback`・`survey`・`schedule` など）を import しないことを、`test:imports` と import の検索で確かめる
   - 完了の条件: `test:type` と `test:imports` が終了コード 0 で、`lib/api` から `lib/feedback`・`lib/survey` への辺が 0 件
-  - _Depends: 2.1, 2.2, 2.3_
+  - _Depends: 2.1, 2.2_
   - _Requirements: 2.4, 5.3_
 
 - [ ] 3. 1〜2 ファイル領域の統合
@@ -79,7 +73,7 @@
   - 規則の根拠（`RULE_BASIS`）を `structure.md` の依存の節に向ける
   - 完了の条件: 対応表が `src/lib/` の全領域を覆い、規則が基盤から業務への辺を 1 件として数える
   - _Boundary: LibLayerTable, libLayer rule_
-  - _Depends: 2.4, 3.1, 3.2, 3.3, 3.4_
+  - _Depends: 2.3, 3.1, 3.2, 3.3, 3.4_
   - _Requirements: 1.1, 2.1, 2.2, 3.1_
 
 - [ ] 4.2 層の検査と対応表のテストを追加する

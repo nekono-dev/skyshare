@@ -5,7 +5,7 @@
  * - 両方の種別の入力を1つの状態に持ち、種別を切り替えても他の種別の入力を残す。
  * - 種別に合う必須の項目がそろい、すべての欄が上限以内かを判定する（送信のボタンの可否）。
  * - 種別に合う項目だけを載せた、受付の API の本文を組み立てる。
- * - 文字数の数え方と上限は受付と共有する（`./limits`）。
+ * - 文字数の数え方と上限は受付と共有する（`@/lib/api/contract/feedbackLimits`）。
  */
 import type { CreateFeedbackBody } from "@/client/openapi/model"
 import type { ClientEnvironment } from "@/util/clientEnvironment"
@@ -13,7 +13,7 @@ import {
     FEEDBACK_LIMITS,
     countFeedbackLength,
     type Reproducibility,
-} from "./limits"
+} from "@/lib/api/contract/feedbackLimits"
 
 export type FeedbackKind = "bug" | "enhancement"
 export type { Reproducibility }

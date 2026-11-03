@@ -11,7 +11,7 @@ import {
     FEEDBACK_LIMITS,
     REPRODUCIBILITY_VALUES,
     countFeedbackLength,
-} from "@/lib/feedback/limits"
+} from "@/lib/api/contract/feedbackLimits"
 import * as Common from "../../common"
 
 /**
