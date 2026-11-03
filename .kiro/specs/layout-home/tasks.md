@@ -47,7 +47,7 @@
   - _Depends: 2.2, 3.1, 3.2_
   - _Requirements: 2.1, 2.2_
 
-- [ ] 4.2 既存の検査とテストを通す
+- [x] 4.2 既存の検査とテストを通す
   - `components/` の部品規約の検査（`componentLayout`）と `npm run test:imports` が通る
   - `npm run test:all` が終了コード 0 で終わり、件数が 1.1 で記録した件数を下回らない
   - 旧パスを import するテストは存在せず、更新は不要であることを確かめる（テストの意味は変えない）
