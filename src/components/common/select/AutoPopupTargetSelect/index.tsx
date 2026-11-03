@@ -6,9 +6,9 @@ import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import {
   AUTO_POPUP_TARGETS,
-  isAutoPopupTarget,
   type AutoPopupTarget,
-} from "@/lib/settings/shareSettings"
+} from "@/lib/share/autoPopupTarget"
+import { isAutoPopupTarget } from "@/lib/settings/shareSettings"
 import styles from "./index.module.css"
 
 /**

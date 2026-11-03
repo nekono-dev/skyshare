@@ -18,7 +18,7 @@
   - _Requirements: 1.9, 2.6, 3.1, 7.2_
 
 - [ ] 2. lib/share と lib/settings の循環の解消
-- [ ] 2.1 AutoPopupTarget の値と型を lib/share へ移す
+- [x] 2.1 AutoPopupTarget の値と型を lib/share へ移す
   - 投稿後に自動でポップアップする SNS の一覧と型を、lib/share の 1 ファイルへ移す（中身と名前は変えない）
   - 設定の読み書き（shareSettings）と、共有の文字数の予約（counterReserve）が、移した先を参照する
   - 完了の条件: lib/share から lib/settings への参照が 0 件で、設定の読み込みと既存の共有のテストが移動の前と同じ結果を返す

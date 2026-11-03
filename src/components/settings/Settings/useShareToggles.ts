@@ -34,8 +34,8 @@ import {
     writeMisskeyInstanceDomainSetting,
     writePopupIntentInsteadOfWebshareSetting,
     writeTruncateIntentTextSetting,
-    type AutoPopupTarget,
 } from "@/lib/settings/shareSettings"
+import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
 import { isValidInstanceDomain } from "@/util/share/intent"
 
 export type UseShareTogglesResult = {

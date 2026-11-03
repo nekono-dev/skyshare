@@ -6,7 +6,7 @@
  *   宛先SNSで何文字ぶんに換算されるかを求め、カウンタ単位で返す。
  * - 自動ポップアップ先の設定から、表示すべきカウンタ（X / タイッツー）を決める。
  */
-import type { AutoPopupTarget } from "@/lib/settings/shareSettings"
+import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
 import { buildIntentSuffix } from "@/util/share/intent"
 import { halfUnitLength, resolveIntentMeasure } from "@/util/share/intentLength"
 

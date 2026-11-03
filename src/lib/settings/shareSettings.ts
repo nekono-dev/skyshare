@@ -26,13 +26,11 @@ export const DEFAULT_MASTODON_INSTANCE_DOMAIN = "mastodon.social"
 /** Misskeyインスタンスドメインが未設定の場合に使う既定値。 */
 export const DEFAULT_MISSKEY_INSTANCE_DOMAIN = "misskey.io"
 
-// 自動ポップアップの値と型は依存のない位置に置く（移行処理と循環しないため）。ここから再エクスポートする。
+// 自動ポップアップの値と型は lib/share 側に置く（lib/share から lib/settings を参照しないため）。
 import {
     AUTO_POPUP_TARGETS,
     type AutoPopupTarget,
-} from "@/lib/settings/autoPopupTarget"
-
-export { AUTO_POPUP_TARGETS, type AutoPopupTarget }
+} from "@/lib/share/autoPopupTarget"
 
 /** 「自動ポップアップするSNS」が未設定の場合に使う既定値。 */
 export const DEFAULT_AUTO_POPUP_TARGET: AutoPopupTarget = "x"

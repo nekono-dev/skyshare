@@ -11,10 +11,8 @@
  */
 import type { ImageEntry } from "./entries"
 import type { MessageFormatter } from "@/lib/i18n/translate"
-import {
-    resolveInstanceDomainFor,
-    type AutoPopupTarget,
-} from "@/lib/settings/shareSettings"
+import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
+import { resolveInstanceDomainFor } from "@/lib/settings/shareSettings"
 import {
     IntentTarget,
     buildIntentText,
