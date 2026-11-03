@@ -7,12 +7,12 @@
 - 利用者の決定はすべて design の「決定の記録」の節に記録済み（U-1 は案 C、U-2 は `util/` に残す、U-3 は部品の内側、型の規則）。未決定の項目は無い。
 
 - [ ] 1. 着手前の基準と決定の記録
-- [ ] 1.1 test:all の基準と生成物の差分を記録する
+- [x] 1.1 test:all の基準と生成物の差分を記録する
   - 着手前の `npm run test:all` の終了コードと通過件数を、実装の記録に残す（以降の完了の条件の基準にする）
   - 着手前の `npm run apigen` の後に `src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる（差分がある場合は本仕様の着手前に別途直す）
   - 完了の条件: 基準の件数、終了コード、apigen に差分が無いことが記録されている
   - _Requirements: 5.3, 5.4, 5.5_
-- [ ] 1.2 利用者の決定を design の「決定の記録」に記録する（記録済み）
+- [x] 1.2 利用者の決定を design の「決定の記録」に記録する（記録済み）
   - U-1（案 C。`lib/share` は純粋な組み立てのみ。ブラウザ側は `components/share/IntentShareDialog/` の内側）、U-2（`waitForImageLoad` は `util/` に残す）、U-3（`parseUserAgent` は `components/feedback/FeedbackForm/` の内側）、型の規則（`lib` が使う `util`・`components` の型は `src/types/`。外部パッケージを import しない）を design に書く
   - 完了の条件: design の「決定の記録」と「決定から生じる例外と差分」の節があり、タスクの対象がそれと一致している
   - _Requirements: 1.9, 2.6, 3.1, 7.2_
@@ -135,3 +135,21 @@
   - 完了の条件: test:all の終了コードが 0、件数が基準以上、apigen の差分が 0
   - _Depends: 7.2_
   - _Requirements: 1.8, 5.1, 5.3, 5.4, 5.5_
+
+## Implementation Notes
+
+### 1.1 test:all の基準と生成物の差分（着手前・HEAD 1c65503）
+
+- `npm run test:all`: 終了コード 0（codegen・test:type・test:lexicon・test:imports・test:unit・test:component・test:route・test:render・test:e2e の全段が通過）
+  - unit: Test Files 49/49、Tests 321/321
+  - component: Test Files 5/5、Tests 13/13
+  - route: Test Files 23/23、Tests 212/212
+  - render: Test Files 1/1、Tests 2/2
+  - e2e: 7 passed
+- `npm run apigen`: 終了コード 0。実行後の `git status --porcelain src/client docs` は空で、`src/client/openapi/` と OpenAPI 文書に生成物の差分は無い。
+- 作業ツリーの未コミット変更は `.kiro/steering/tech.md`・`.kiro/steering/testing.md`（利用者の既存の編集）のみで、test:all と apigen の実行による変化は無い。
+- 以降の完了の条件の基準: 終了コード 0、通過件数は unit 321・component 13・route 212・render 2・e2e 7 を下回らないこと、apigen の差分 0。
+
+### 1.2 利用者の決定の記録（確認のみ）
+
+- design.md の「決定の記録（利用者の決定 2026-11-03）」に U-1（案 C）・U-2（`util/` に残す）・U-3（部品の内側）・型の規則が記録されている。「決定から生じる例外と差分（記録）」の節も存在する。タスク本文の対象と一致するため、design.md は変更していない。
