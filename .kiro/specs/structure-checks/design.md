@@ -354,6 +354,15 @@ export const findTypesOnlyViolations: (
 **Implementation Notes**
 
 - `src/layout/` が既に無いことは、`layout-home` の完了で成り立つ。本テストは完了時の状態を固定する
+- 検査の動作確認（変異テスト・記録）: 一時的に次の四つを作り、`npx vitest run tests/unit/scripts/layoutSingle.test.ts --coverage.enabled=false` で実行した。どれも失敗することを確かめ、後始末で取り除いた。
+  - 空のフォルダ `src/layout/zz-dir`: 「src/ のエントリ」の検査が失敗（`src/layout` と `src/layout/zz-dir` を報告）
+  - css だけのフォルダ `src/layout/zz-dir2/x.css`: 同じ検査が失敗（`src/layout`・`src/layout/zz-dir2`・`src/layout/zz-dir2/x.css` を報告）
+  - `src/pages/zz-probe.astro`（`@/layout/zz-probe.astro` を import）: 「ソースの本文」の検査が失敗（`src/pages/zz-probe.astro` を報告）
+  - 上の三つをすべて置いた場合: 二つの検査が失敗し、残りの四つは通過した
+- 要件外として判断した三つのギャップ（テストは変えない）:
+  - (a) `src/` 直下や `src/components/` 直下の、非ソースの拡張子のファイル（例: `src/zz.md`）: 要件 3.1 は `src/layout/` の存在だけを禁じる。`src/` 直下の任意のファイルは要件の対象外のため、違反にしない。
+  - (b) テンプレートリテラル・コメント内の `@/layout/` の文字列: 検査の正規表現は引用符（`"`・`'`・バッククォート）の直後の `@/layout/` を探すため、テンプレートリテラルの先頭にある場合は違反になる（import 以外の文字列も対象になるため、要件より厳しい）。引用符の無いコメント内の記述は違反にしない。要件 3.2 は import を対象とし、import の指定子は必ず引用符で囲まれるため、import の検出は漏れない。このまま残す。
+  - (c) `src/pages` からの相対パス（`../layout/` など）: 要件 3.2 の対象は `@/layout/` で始まる指定子だけである。`src/layout/` を相対パスで指す import は、3.1 の検査（ディレクトリの不在）に通っていれば解決できないため、3.1 の欠落にはならない。相対パスで別の `layout` フォルダ（例: `../components/layout/`）を指すことは正当なため、違反にしない。このまま残す。
 
 #### SteeringRules（steeringRules.test.ts）
 
