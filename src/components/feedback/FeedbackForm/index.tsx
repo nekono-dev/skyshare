@@ -34,10 +34,8 @@ import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { buildInfo } from "@/lib/site/buildInfo"
-import {
-  collectClientEnvironment,
-  type ClientEnvironment,
-} from "@/util/clientEnvironment"
+import type { ClientEnvironment } from "@/types/clientEnvironment"
+import { collectClientEnvironment } from "./clientEnvironment"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 

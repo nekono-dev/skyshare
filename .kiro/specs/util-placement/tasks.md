@@ -50,7 +50,7 @@
   - _Boundary: lib/atproto_
   - _Depends: 1.1_
   - _Requirements: 1.4, 1.7, 5.2_
-- [ ] 4.2 (P) clientEnvironment を三つに分ける（型・純粋な判定・ブラウザの読み取り）
+- [x] 4.2 (P) clientEnvironment を三つに分ける（型・純粋な判定・ブラウザの読み取り）
   - `ClientEnvironment` の型を `src/types/clientEnvironment.ts` へ移す（この 1 ファイルだけを持つ。import を持たない）
   - `parseUserAgent` と補助（`detectOs`・`detectBrowser`・`dotted`・`UNKNOWN`・`BROWSER_RULES`）を `components/feedback/FeedbackForm/userAgent.ts` へ移す（import を持たない。U-3 の決定）
   - `detectStandalone`・`UserAgentData`・`refineWithUserAgentData`・`collectClientEnvironment` を `components/feedback/FeedbackForm/clientEnvironment.ts` へ移し、`parseUserAgent` は `./userAgent` から import する

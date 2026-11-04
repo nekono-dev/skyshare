@@ -8,7 +8,7 @@
  * - 文字数の数え方と上限は受付と共有する（`@/lib/api/contract/feedbackLimits`）。
  */
 import type { CreateFeedbackBody } from "@/client/openapi/model"
-import type { ClientEnvironment } from "@/util/clientEnvironment"
+import type { ClientEnvironment } from "@/types/clientEnvironment"
 import {
     FEEDBACK_LIMITS,
     countFeedbackLength,
