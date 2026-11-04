@@ -73,7 +73,7 @@
   - _Boundary: postImageProcessing_
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 4.3 画像のテストで検証し、コミットする
+- [x] 4.3 画像のテストで検証し、コミットする
   - `tests/unit/lib/image/postImageProcessing.test.ts` を実行し、件数と結果が分割前と同じであることを確かめる
   - 完了の状態: 対象のテストが通り、この分割だけのコミットが作られている
   - _Boundary: postImageProcessing_
@@ -195,3 +195,8 @@
 - `codec.ts` 単体の分岐は 50%（base64 と Cookie 解析の異常系が未テスト）。合計の余裕は 0.28 点で、他のファイルの後退で閾値を割りうる。テストの追加か、この合計の扱いを利用者が決める。
 - `config/test/stryker.config.mjs` の mutate も 4 ファイルへ変えた。
 - 3.3: Cookie・セッションのテスト（unit 1 ファイル 12 件、route の session・pages 12 ファイル 139 件）が通過した。
+
+### 4.1〜4.3 postImageProcessing の分割（記録）
+
+- 4 ファイル（geometry・source・encode・compose）と index を作り、旧ファイルを削除した（コミット 30bc320・192fab6）。公開名 16 件は変わらない。
+- 画像のテスト（unit 1 ファイル 9 件）と route 全体（23 ファイル 212 件）が通過した。
