@@ -143,7 +143,7 @@ config/architecture/
 - `scripts/architecture/allowlist.ts` — 内部の `RULE_IDS` を削除し、`rules.ts` から import する。`AllowlistEntry` に `reason: string` を加える。`loadAllowlist` は `reason` が無い・空白だけの場合に `entries[i]: 理由（reason）が空` のエラーを返す。`DEFAULT_OWNERS` に `utilShared: "structure-checks"` を加える。`emitAllowlist` は各項目の `reason` を `""` で出す。
 - `scripts/architecture/check-imports.ts` — `runImportCheck` の違反の合流に `findUtilSharingViolations(graph)` を加える。`src/types/` の `.ts` の本文を読み、`findTypesOnlyViolations` の結果も加える。`--emit-allowlist` の出力にも同じ違反が入る。
 - `tests/unit/scripts/importRules.test.ts` — 許容リストの節の fixture に `reason` を加える。`--emit-allowlist` の往復のテストは、理由を埋めてから読み込む手順に変える（理由が空の下書きは読み込みで失敗することを確かめる負例を加える）。
-- `.kiro/steering/structure.md` — 「依存規則の検査」の表に `utilShared` の行を加える（内容: `src/util/` の各モジュールは、`src/util/` の外の二つ以上の領域から使われること。根拠: 「共通（`src/util/`・`src/styles/`）」の節）。表の下の文に、許容リストの項目は理由を持つことを加える。「共通（`src/util/`・`src/styles/`）」の節に「`src/layout/` を置かない（骨格は `src/components/layout/` の部品フォルダ）」を一文として加える。「型（`src/types/`）」の節は `util-placement` が書き、本仕様は表の行だけを加える。
+- `.kiro/steering/structure.md` — 「依存規則の検査」の表に `utilShared` の行を加える（内容: `src/util/` の各モジュールは、`src/util/` の外の二つ以上の領域から使われること。根拠: 「共通（`src/util/`・`src/styles/`）」の節）。表の下の文に、許容リストの項目は理由を持つことを加える。骨格の一文（「`src/layout/` を置かない（骨格は `src/components/layout/` の部品フォルダ）」）は、「部品（`src/components/<領域>/<Name>/`）」の節の `layout`（骨格）の記述に layout-home 3.2 が書いた既存の一文であり、本仕様は加えない（`steeringRules.test.ts` が部品の節でこの一文を確かめる）。「型（`src/types/`）」の節は `util-placement` が書き、本仕様は表の行だけを加える。
 
 （`libLayer` の行は `lib-layers` が加える。本仕様は表が両方の行を持つことを検査する。）
 
@@ -346,7 +346,7 @@ export const findTypesOnlyViolations: (
 
 **Responsibilities & Constraints**
 
-- 純粋関数 `findLayoutViolations(paths: readonly string[]): string[]` は、`src/layout/` で始まる相対パスを返す（ファイル名の一覧に対して判定し、モジュールを読み込まない）
+- 純粋関数 `findLayoutViolations(paths: readonly string[]): string[]` は、`src/layout` とその下のすべてのエントリ（ファイル・フォルダ・拡張子を問わない）の相対パスを返す（エントリの一覧に対して判定し、モジュールを読み込まない）
 - `src/` の全ソース（`.ts`・`.tsx`・`.astro`）の本文を読み、`@/layout/` で始まる文字列リテラルを持つファイルを列挙する。違反が 0 件であることを確かめる（3.2）
 - `src/components/layout/Baselayout/index.astro` が存在することを確かめる（3.3）
 - 負例: `["src/layout/Baselayout.astro", "src/components/layout/Baselayout/index.astro"]` を与え、`src/layout/Baselayout.astro` だけが報告されることを確かめる（3.4）
@@ -367,7 +367,7 @@ export const findTypesOnlyViolations: (
 - `structure.md` の「## 依存規則の検査」の節から、表の行の一列目（規則名）を集める（見出し行と区切り行は除く）
 - 集めた名前と `RULE_IDS` が、双方向に一致することを確かめる（表に無い規則、規則に無い表の行の両方を失敗にする）
 - `RULE_BASIS` の各値の「」で囲まれた名前が `structure.md` の見出し（`#` で始まる行の本文）と一致することを確かめる
-- `structure.md` に「共通（`src/util/`・`src/styles/`）」の節と、`src/layout/` を置かない旨（文字列 `` `src/layout/` ``）が含まれることを確かめる
+- `structure.md` に「共通（`src/util/`・`src/styles/`）」の節があり、「部品」の節の骨格（`layout`）に、`src/layout/` を置かない旨（文字列 `` `src/layout/` ``）の一文があることを確かめる
 - `structure.md` に「型（`src/types/`）」の節が含まれることを確かめる（`typesLeaf`・`typesOnly` の根拠）
 - 負例: 規則が 1 つ足りない表・余分な行を持つ表の文字列を与え、差が報告されることを確かめる
 

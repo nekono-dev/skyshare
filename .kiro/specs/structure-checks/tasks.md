@@ -2,14 +2,14 @@
 
 共有ファイルの編集順: `tests/unit/scripts/importRules.test.ts` は lib-layers 4.2 → util-placement 6.2 → 本仕様（2.3・3.5）の順に編集する。`structure.md` の「依存規則の検査」の表と「型（`src/types/`）」の節は、util-placement 6.1 → 本仕様 5.1 の順に編集する。
 
-- [ ] 1. 実装の前提の確認
+- [x] 1. 実装の前提の確認
 - [x] 1.1 着手時の基準を記録し、上流の完了を確かめる
   - `npm run test:all` の終了コードと通過件数を、実装の作業記録に書き残す（以後の完了条件の基準）
   - `src/util/` の残りが util-placement の結果の 5 件、`src/types/` が型だけの 3 件（util-placement の結果）、`src/layout/` が存在せず、`config/architecture/import-allowlist.json` の項目が 0 件であることを確かめる
   - 完了時の状態: 基準の件数と、上流の完了の確認結果が記録されている
   - _Requirements: 7.3_
 
-- [ ] 2. 規則の一覧と許容リストの理由（基盤）
+- [x] 2. 規則の一覧と許容リストの理由（基盤）
 - [x] 2.1 規則の一覧を一本化し、規則 utilShared・typesLeaf・typesOnly を加える
   - _Depends: lib-layers 4.1, util-placement 6.1_
   - `RULE_IDS` を `rules.ts` で定義し、`RuleId` をそこから導き、`allowlist.ts` はそれを import する。これにより、lib-layers 4.1 が `RuleId`（`rules.ts`）と `allowlist.ts` の `RULE_IDS` に加えた `libLayer` の二つの定義を、`rules.ts` の一つの定義に置き換える（規則の一覧の単一の正は `rules.ts`）
@@ -32,7 +32,7 @@
   - _Depends: 2.2_
   - _Requirements: 4.2, 4.3, 6.1_
 
-- [ ] 3. util の汎用性の検査
+- [x] 3. util の汎用性の検査
 - [x] 3.1 (P) 規則 utilShared の判定を純粋な関数で加える
   - `src/util/` の各モジュールについて、`src/util/` の外からの利用元の領域（`regionOf`）の集合を作る
   - 領域が二つ未満（0 件を含む）のモジュールを、`ruleId` が `utilShared` の違反にする（`specifier` は空文字）
@@ -67,7 +67,7 @@
   - _Depends: 3.2, 3.4_
   - _Requirements: 8.4, 7.1_
 
-- [ ] 4. 骨格の静的な検査
+- [x] 4. 骨格の静的な検査
 - [x] 4.1 (P) 骨格の置き場が一つであることを静的に検査するテストを加える
   - `src/layout/` で始まるパスを違反とする純粋な判定を、ファイル名の一覧に対して行う
   - `src/` のソースの本文を文字列として読み、`@/layout/` で始まる文字列リテラルが無いことを確かめる（モジュールは実行しない。要件 6.3）
@@ -77,7 +77,7 @@
   - _Boundary: LayoutSingle test_
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 6.3_
 
-- [ ] 5. steering と規則の一致
+- [x] 5. steering と規則の一致
 - [x] 5.1 structure.md の依存規則の表と util の規約を改訂する
   - 「依存規則の検査」の表に `utilShared` の行（内容: 各 `src/util/` モジュールは `src/util/` の外の二つ以上の領域から使われること。根拠: 「共通（`src/util/`・`src/styles/`）」）を加える
   - 表に `typesLeaf`（根拠: 「型（`src/types/`）」）と `typesOnly`（同左）の行を加える（`utilShared` の行と同じ形）
@@ -100,7 +100,7 @@
   - _Depends: 2.1, 5.1_
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 6. 完了時の固定
+- [x] 6. 完了時の固定
 - [x] 6.1 許容リストの完了時の状態を検査するテストを加える
   - `config/architecture/import-allowlist.json` を `loadAllowlist` で読み、エラーが無いことを確かめる
   - 読み込んだ項目のうち `ruleId` が `libLayer`・`utilShared`・`typesLeaf`・`typesOnly` のものが 0 件であることを確かめる
@@ -114,7 +114,7 @@
   - _Depends: 3.1_
   - _Requirements: 2.6, 8.5_
 
-- [ ] 7. 完了の確認
+- [x] 7. 完了の確認
 - [x] 7.1 検査と全体のテストを実行し、終了コードを確かめる
   - `npm run test:imports` が終了コード 0 で、違反・許容のエラー・stale が 0 件であることを確かめる
   - `npm run test:all` が終了コード 0 で終わることを確かめる
