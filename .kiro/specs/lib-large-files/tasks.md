@@ -159,7 +159,7 @@
   - _Boundary: contentEditableModel_
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 8.3 入力の経路で検証し、コミットする
+- [x] 8.3 入力の経路で検証し、コミットする
   - `npm run test:component` のうち、`ThreadComposer` の本文欄を含む対象を実行し、件数と結果が分割前と同じであることを確かめる
   - 完了の状態: 対象のテストが通り、この分割だけのコミットが作られている
   - _Boundary: contentEditableModel_
@@ -230,3 +230,4 @@
 - 設計からの逸脱（許容）: `hasLeadingAnchor`・`stripLeadingAnchor` は design で内部とされていたが、Dom が使うため `Parts` から export した。入口からは出していない。Parts は DOM に依存しない。レビュー APPROVED。
 - 検証: `test:all` 終了コード 0（unit 437・component 13・route 212・render 2・e2e 7）。unit の件数は前回の 434 から 3 増えたが、テストファイルの追加は無い（原因は未確認。件数は基準以上）。
 - 8.2: 入口 `contentEditableModel.ts` の 11 件（TextPart の型を含む）は元と一致。呼び出し側の import は変更なし。`test:type`・`test:imports` 0。コード変更なし（8.1 で済んでいたため確認のみ）。レビュー APPROVED。
+- 8.3: 検証のみ。component 13 件・ThreadComposer 3 件が分割前と同じ。unit の `composerSplit.test.ts` は rules/ のファイルごとに検査を生成するため、新規 3 ファイル分で件数が 73 → 76 に増えた（条件は緩めていない）。レビュー APPROVED。
