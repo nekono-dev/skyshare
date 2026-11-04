@@ -107,13 +107,13 @@
 
 部品を移動していないことを、既存の検査と git の記録で確かめた。新しいテストは追加していない（既存の検査で足りる部分を重ねないため）。
 
-| 要件 | 確認の内容 | 確かめた手段と結果 |
-| ---- | ---------- | ------------------ |
-| 4.2・5.1 | `components/i18n` の import パスが変わらない | `componentLayout.test.ts` の例外の一覧（`i18n/useTranslation.ts`・`i18n/renderSlots.tsx`）が実在することの検査が通過。`npm run test:type`（`tsc --noEmit`）が終了コード 0 で、`@/components/i18n/...` の import がすべて解決する（`src/`・`tests/`・`scripts/` で 72 行） |
-| 5.2・5.3 | 部品の移動が無いため、import とテストの同時更新は発生しない | `git diff --name-status 091eed4^ HEAD -- src config scripts` が空（この仕様の作業の範囲は 2.1 以降） |
-| 5.5 | 部品フォルダの規約（1 部品 1 フォルダ・`index.tsx`/`index.astro` と `index.module.css` の配置）が変わらない | `git ls-tree` で `src/components` の `index.tsx`/`index.astro` が 93 件、`index.module.css` が 77 件で、着手時（`091eed4^`）と完了時（`HEAD`）が一致。規約の静的な検査は既存になく、件数は記録として残す（`index.module.css` を持たない部品フォルダは 16 件で、着手時から変わらない） |
-| 6.1 | `components/common/` の分類を変えない | `git diff --name-status 091eed4^ HEAD -- src/components/common` が空 |
-| 完了の条件 | 変更ファイルが `structure.md` のみ | `git diff --name-status 091eed4^ HEAD` の結果は 3 件: `.kiro/specs/components-small-areas/tasks.md`（進捗）・`.kiro/steering/structure.md`（2.1 の記録）・`tests/unit/scripts/structureDecisions.test.ts`（2.3 の検査）。`src/` と `config/`・`scripts/` は含まない |
+| 要件       | 確認の内容                                                                                                  | 確かめた手段と結果                                                                                                                                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.2・5.1   | `components/i18n` の import パスが変わらない                                                                | `componentLayout.test.ts` の例外の一覧（`i18n/useTranslation.ts`・`i18n/renderSlots.tsx`）が実在することの検査が通過。`npm run test:type`（`tsc --noEmit`）が終了コード 0 で、`@/components/i18n/...` の import がすべて解決する（`src/`・`tests/`・`scripts/` で 72 行）             |
+| 5.2・5.3   | 部品の移動が無いため、import とテストの同時更新は発生しない                                                 | `git diff --name-status 091eed4^ HEAD -- src config scripts` が空（この仕様の作業の範囲は 2.1 以降）                                                                                                                                                                                  |
+| 5.5        | 部品フォルダの規約（1 部品 1 フォルダ・`index.tsx`/`index.astro` と `index.module.css` の配置）が変わらない | `git ls-tree` で `src/components` の `index.tsx`/`index.astro` が 93 件、`index.module.css` が 77 件で、着手時（`091eed4^`）と完了時（`HEAD`）が一致。規約の静的な検査は既存になく、件数は記録として残す（`index.module.css` を持たない部品フォルダは 16 件で、着手時から変わらない） |
+| 6.1        | `components/common/` の分類を変えない                                                                       | `git diff --name-status 091eed4^ HEAD -- src/components/common` が空                                                                                                                                                                                                                  |
+| 完了の条件 | 変更ファイルが `structure.md` のみ                                                                          | `git diff --name-status 091eed4^ HEAD` の結果は 3 件: `.kiro/specs/components-small-areas/tasks.md`（進捗）・`.kiro/steering/structure.md`（2.1 の記録）・`tests/unit/scripts/structureDecisions.test.ts`（2.3 の検査）。`src/` と `config/`・`scripts/` は含まない                   |
 
 既存の検査の通過:
 
@@ -128,3 +128,9 @@
 - `.kiro/specs/util-placement/design.md` — `util/` から部品フォルダへ移る import（`IntentShareDialog` の `util/share/intent` を含む）
 - `tests/unit/scripts/componentLayout.test.ts` — 部品フォルダの外のファイルの例外の検査
 - `tests/unit/scripts/steeringRegions.test.ts` — `structure.md` の領域一覧と実装の一致の検査
+
+### 4.1 検証（記録）
+
+- `npm run test:all` は終了コード 0。unit 356 件（着手時 341 件から、2.3 の構成の検査 15 件を加えた）、component 13 件、route 212 件、render 2 件、e2e 7 件。着手時の件数以上である。
+- `componentLayout`・`steeringRegions` の 2 ファイル（5 件）と `npm run test:imports` は通過した（違反・許容・stale は 0 件）。
+- 手順の逸脱: この検証は実行のみで文書もコードも変えないため、implementer と reviewer のサブエージェントを介さず、コントローラが実行して結果を記録した。

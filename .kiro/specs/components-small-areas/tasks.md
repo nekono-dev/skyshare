@@ -36,7 +36,7 @@ structure.md の編集順: 本仕様の 2.1〜2.3 は、lib-layers 5.3・util-pl
   - _Requirements: 4.2, 5.1, 5.2, 5.3, 5.5, 6.1, 6.2_
 
 - [ ] 4. 検証
-- [ ] 4.1 `npm run test:all` を実行し、終了コードと件数を確かめる
+- [x] 4.1 `npm run test:all` を実行し、終了コードと件数を確かめる
   - 着手時の `npm run test:all` の件数を記録し、完了時の件数がそれを下回らないことを確かめる
   - `npm run test:imports`・`componentLayout`・`steeringRegions` の各検査が通ることを確かめる
   - 完了の条件: `npm run test:all` が終了コード 0 で完了し、件数が着手時以上である
