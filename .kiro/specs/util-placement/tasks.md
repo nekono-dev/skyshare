@@ -123,7 +123,7 @@
   - _Requirements: 6.1, 6.2, 5.2_
 
 - [ ] 7. 最終確認
-- [ ] 7.1 util の残りと旧パスの参照を確認する
+- [x] 7.1 util の残りと旧パスの参照を確認する
   - util 直下が 5 件（`http.ts`・`formData.ts`・`utf8Bytes.ts`・`padTwoDigits.ts`・`waitForImageLoad.ts`）だけであり、残した各モジュールの内容が変わっていない（`formData.ts` は型を除く）ことを確かめる
   - 各残したモジュールの利用元が二つ以上の領域にあることを grep で確認する
   - 移動した旧パス（util/share・util/textarea・util/listbox・util/emoji・util/autoLink・util/scrollLock・util/clientEnvironment・util/textCount・util/object・util/links・util/outcome・`util/formData` の型）を参照する箇所が 0 件
@@ -170,3 +170,14 @@
 
 - 5.3・5.4 が直下に置いた `Dropdown/filter.ts`・`Dropdown/navigation.ts`・`Overlay/scrollLock.ts` を、子フォルダ `rules/` へ移した（内容は同一）。
 - `scrollLock.ts` は DOM を使うため、`rules/` は純粋な関数に限るという規則と完全には一致しない。利用者の決定により `rules/` に置いた。レビューでは注記として扱い、テストは通過した。
+
+### 6.2 の内容の出所（記録）
+
+- 6.2 のチェック（1f170d6）の時点では、三つの内容（importRules の例のパス・jump.astro のコメント・src-duplicates の追記）は既に 70de585 と c2d8dcc で入っていた。6.2 は内容を確認して完了とした。
+
+### 7.1 旧パスの検査の基準（記録）
+
+- 旧パスの 0 件は、コード（src・tests・scripts・config）と現在の規約（structure.md の規則）を対象とした。コードに旧パスの参照は 0 件、`util/formData` からの型の import は 0 件。
+- 残るのは経緯の記録だけである: `.kiro/steering/roadmap.md` の分析の節（移動の前の利用元の一覧。統合の計画の記録）、`structure.md` の禁止の例（`util/share/` のような下位フォルダは置かない）と統合の経緯、util-placement 自身の requirements・design・tasks の本文（移動の経緯）。
+- 利用者の判断（未決）: roadmap.md の 333 行（`util/` の利用元の一覧）は移動の前の状態を書いたままである。これを現況に直すか、分析の記録として残すかは利用者が決める。
+- util 直下は 5 件（formData・http・padTwoDigits・utf8Bytes・waitForImageLoad）と一致した。`formData.ts` の型以外は HEAD（基準は 1c65503）から変わっていない。
