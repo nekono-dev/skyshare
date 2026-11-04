@@ -48,6 +48,7 @@
 
 1. When a target file is split, the system shall keep every export name of the original file reachable under the original module path
 2. When a target file is split, the system shall keep the parameters, return values, and thrown errors of every exported function unchanged
+   - 注記（2026-11-04、利用者の決定 (a)）: 関数のシグネチャが変わるのは `planGateEntry`（`survey/gate`）だけで、入力に `excluded: boolean` を加える。除外の判定（`isSurveyPageExcluded`）は呼び出し側の `enterPage` が行い、結果を渡す。戻り値と例外は変えない。ほかの export 関数のシグネチャは変えない。
 3. Where the original module path is referenced by callers, the system shall re-export from the original module path (for example through `index.ts`) so that callers need no change beyond the import statement the design records
 4. When a caller's import path changes because of a split, the system shall update the import in the same change, and the import shall follow the `@/` rule in `structure.md`
 

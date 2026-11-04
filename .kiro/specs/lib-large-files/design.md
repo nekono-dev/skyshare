@@ -225,11 +225,11 @@ src/components/composer/ThreadComposer/rules/
 
 #### settings/shareSettings
 
-- `autoPopup.ts`: `DEFAULT_AUTO_POPUP_TARGET`・`isAutoPopupTarget`・`readAutoPopupTargetSetting`・`writeAutoPopupTargetSetting`。`AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `@/lib/share/autoPopupTarget`（`util-placement` 後は `@/lib/share/autoPopupTarget`）から再エクスポートする。
+- `autoPopup.ts`: `DEFAULT_AUTO_POPUP_TARGET`・`isAutoPopupTarget`・`readAutoPopupTargetSetting`・`writeAutoPopupTargetSetting`。`AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `@/lib/share/autoPopupTarget` から import し、そのまま再エクスポートする（元の `shareSettings.ts` は、この 2 件を import するだけで export していなかった。下の `index.ts` を参照）。
 - `instanceDomain.ts`: `DEFAULT_MASTODON_INSTANCE_DOMAIN`・`DEFAULT_MISSKEY_INSTANCE_DOMAIN`・`resolveInstanceDomain`（内部）・`resolveMastodonInstanceDomain`・`resolveMisskeyInstanceDomain`・`resolveInstanceDomainFor`・Mastodon/Misskey の read/write/remove（`isValidInstanceDomain` を `@/lib/share/intent` から import）。
 - `toggles.ts`: `DEFAULT_LINK_CARD_PRIORITY`・真偽値の read/write（ポップアップの代わりの Web Share・長さの切り詰め・固定フォーム・手動の画像添付・リンクカード優先）・`readEffectiveLinkCardPriority`。
 - `textareaRows.ts`: `readTextareaRowsSetting`・`writeTextareaRowsSetting`。
-- `index.ts`: 元の export をすべて再エクスポート（`AUTO_POPUP_TARGETS`・`AutoPopupTarget` を含む）。
+- `index.ts`: 元の export（29 件）をすべて再エクスポートする。加えて `AUTO_POPUP_TARGETS`・`AutoPopupTarget`（`@/lib/share/autoPopupTarget` からの再エクスポート）を export する。この 2 件は元の export ではなく、設計の指定により新たに加えた export である（決定の記録は `tasks.md` の 5.1〜5.3）。
 
 #### schedule/store
 
@@ -268,7 +268,7 @@ src/components/composer/ThreadComposer/rules/
 #### components/composer/ThreadComposer/rules/contentEditableModel
 
 - フォルダ化しない理由: `structure.md` は `rules/` の子フォルダの名前を小文字に定め（`components` の部品フォルダの PascalCase と区別する）、`rules/` の判断は同じフォルダの `camelCase.ts` に置く。`contentEditableModel/` のような camelCase の子フォルダを作ると、この規則と合わない。そのため、同じフォルダに接頭辞 `contentEditableModel` を付けた平置きファイルに分け、元のファイルは再エクスポートの入口として残す（参照のパスが変わらない）。
-- `contentEditableModelParts.ts`（純粋）: `TextPart`・`CARET_ANCHOR`・`hasLeadingAnchor`（内部）・`stripLeadingAnchor`（内部）・`partsToPlainText`・`resolvePartOffset`。
+- `contentEditableModelParts.ts`（純粋）: `TextPart`・`CARET_ANCHOR`・`hasLeadingAnchor`・`stripLeadingAnchor`・`partsToPlainText`・`resolvePartOffset`。`hasLeadingAnchor`・`stripLeadingAnchor` は、設計では内部の関数としていたが、実装では `contentEditableModelDom.ts` が使うため `Parts` から export した（理由は `tasks.md` の 8.1。入口の `contentEditableModel.ts` からは出さない。`Parts` は DOM に依存しない）。
 - `contentEditableModelDom.ts`: `CollectedPart`（内部）・`collectParts`（内部）・`extractPlainText`・`resolveIndexToNodeOffset`・`nodeOffsetToPlainTextIndex`（内部）・`getPlainTextSelection`・`setPlainTextCaret`・`findCaretAnchorNode`。`parts.ts` を使う。
 - `contentEditableModelEdit.ts`: `resolveAnchorAwareDeleteText`・`measureIndexPixelPosition`。`contentEditableModelDom.ts` を使う。
 - `contentEditableModel.ts`: 元の export をすべて再エクスポート（`contentEditableModelParts`・`contentEditableModelDom`・`contentEditableModelEdit` から）。
@@ -296,6 +296,7 @@ src/components/composer/ThreadComposer/rules/
 
 - `tests/unit/lib/image/postImageProcessing.test.ts`: 切り抜きの幾何（`computeCropAroundCenter`）・スロット定義の結果が分割の前後で同じこと。
 - `tests/unit/lib/session/cookies.test.ts`: Cookie の解析（`parseCookies`）・セッションの検証・プールの判断（`admitSession`・`upsertPooledAccount`）が同じ結果になること。
+- カバレッジの閾値（`tasks.md` の 3.2）: `cookies/` の `codec.ts`・`model.ts`・`pool.ts`・`headers.ts` は、それぞれ単独で分岐カバレッジ 80% 以上であること（フォルダ合算ではなく、ファイルごとの閾値。`config/test/vitest.unit.config.ts`）。`codec.ts` が閾値を満たすため、`tests/unit/lib/session/codecEdgeCases.test.ts`（14 件）を追加した。既存の `cookies.test.ts` は変えていない。
 - `tests/unit/lib/settings/shareSettingsLegacyRead.test.ts`: 旧形式の設定の読み取り（自動ポップアップ・インスタンスドメイン）が変わらないこと。
 - `tests/unit/lib/timeline/resolveEntryDeleteScope.test.ts`: 既存のまま通ること（guest の削除範囲は `@/lib/guestMode` 側の判断であり、本仕様では変えない）。
 
