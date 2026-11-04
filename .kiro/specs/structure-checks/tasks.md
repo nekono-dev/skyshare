@@ -33,7 +33,7 @@
   - _Requirements: 4.2, 4.3, 6.1_
 
 - [ ] 3. util の汎用性の検査
-- [ ] 3.1 (P) 規則 utilShared の判定を純粋な関数で加える
+- [x] 3.1 (P) 規則 utilShared の判定を純粋な関数で加える
   - `src/util/` の各モジュールについて、`src/util/` の外からの利用元の領域（`regionOf`）の集合を作る
   - 領域が二つ未満（0 件を含む）のモジュールを、`ruleId` が `utilShared` の違反にする（`specifier` は空文字）
   - `src/util/` 内からの import は利用元に数えない。型だけの import は数える
