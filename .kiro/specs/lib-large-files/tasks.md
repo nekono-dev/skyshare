@@ -88,7 +88,7 @@
   - _Boundary: shareSettings_
   - _Requirements: 1.1, 1.2, 2.1, 2.3, 2.4_
 
-- [ ] 5.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
+- [x] 5.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
   - 元の export（既定値の定数・読み書きの関数・`AUTO_POPUP_TARGETS`・`AutoPopupTarget` を含む）をすべて出す
   - `isValidInstanceDomain` の import 元は `@/lib/share/intent` とする
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0
