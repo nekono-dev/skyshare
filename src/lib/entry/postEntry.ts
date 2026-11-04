@@ -30,7 +30,7 @@ import {
 } from "@/lib/entry/postEntryMedia"
 import { toEntrySummary, type EntrySummaryDto } from "@/lib/entry/entryResponse"
 import { bskyPostUrlgen } from "@/lib/entry/url"
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 
 /** 作成の入力の認証情報（呼び出し者）。 */
 export type EntryPostSession = {

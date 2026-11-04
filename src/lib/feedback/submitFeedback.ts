@@ -18,7 +18,7 @@ import { createGithubIssue } from "@/lib/feedback/githubIssue"
 import { buildIssue } from "@/lib/feedback/issueContent"
 import type { FeedbackSubmission } from "@/lib/api/contract/feedbackSubmission"
 import { buildInfo } from "@/lib/site/buildInfo"
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 
 /** 送信を判定する入力。報告者はログインのセッションのアカウントを渡す。 */
 export type SubmitFeedbackInput = {

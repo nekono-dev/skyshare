@@ -9,7 +9,7 @@
  * 実装上の制約:
  * - `lib/api` を import しない（HTTP の形は持たない）。
  */
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { getImage } from "@/lib/schedule/imageStaging"
 import { getSchedule, parseKeys } from "@/lib/schedule/store"

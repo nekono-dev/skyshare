@@ -33,7 +33,7 @@ import type {
     ThreadEntryInput,
     ThreadPostInput,
 } from "@/lib/entry/createBskyThread"
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 
 /** blob のアップロードに使う Agent（最小インターフェース）。 */
 export type EntryMediaAgent = Parameters<typeof uploadBlob>[0]

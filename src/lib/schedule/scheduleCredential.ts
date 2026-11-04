@@ -10,7 +10,7 @@
  * - `lib/api` を import しない（HTTP の形は持たない）。応答の本体は、このファイルのローカルの型で表す。
  * - Cookie の組み立て（Set-Cookie の値）は行わない。ページが `hint` から組み立てる。
  */
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 import type { ScheduleHint } from "@/lib/schedule/availabilityHint"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { estimateCredentialExpiry } from "@/lib/schedule/credentialExpiry"

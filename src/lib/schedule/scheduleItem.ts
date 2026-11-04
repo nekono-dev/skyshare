@@ -12,7 +12,7 @@
  * - `lib/api` を import しない（HTTP の形は持たない）。応答の本体は、このファイルのローカルの型で表す。
  * - 入力の認証（セッション）と形式の確認（ヘッダー・パス）はページが行う。
  */
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { removeImages } from "@/lib/schedule/imageStaging"
 import { toIso } from "@/lib/schedule/scheduleResponse"

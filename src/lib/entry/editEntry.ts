@@ -13,7 +13,7 @@
  */
 import type { Agent } from "@atproto/api"
 import { updateSkyshareEntry } from "@/lib/entry/skyshareRecord"
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 
 /** 更新の入力の認証情報（呼び出し者）。 */
 export type EditEntrySession = {

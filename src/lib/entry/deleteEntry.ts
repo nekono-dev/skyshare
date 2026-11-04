@@ -16,7 +16,7 @@ import type { Agent } from "@atproto/api"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"
 import { parseOwnedAtUri } from "@/lib/atproto/atUri"
 import { resolveDeleteTargets } from "@/lib/entry/resolveDeleteTargets"
-import type { Outcome } from "@/util/outcome"
+import type { Outcome } from "@/types/outcome"
 
 /** 削除の入力の認証情報（呼び出し者）。 */
 export type DeleteEntrySession = {

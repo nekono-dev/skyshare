@@ -59,7 +59,7 @@
   - _Boundary: lib/feedback, components/feedback, src/types_
   - _Depends: 1.1, lib-layers 2.1_
   - _Requirements: 1.6, 7.1, 7.2, 5.2_
-- [ ] 4.3 (P) Outcome と FormDataFieldKind の型を src/types へ移す
+- [x] 4.3 (P) Outcome と FormDataFieldKind の型を src/types へ移す
   - `util/outcome.ts` を `src/types/outcome.ts` へ移し、`util/outcome.ts` を削除する（型だけのモジュール。冒頭の説明は残す）
   - `util/formData.ts` の `FormDataFieldKind`・`LeafFormDataFieldKind` を `src/types/formData.ts` へ移す（両方とも export する。`LeafFormDataFieldKind` は `util/formData.ts` の関数が使うため）。`formData.ts` には関数（`formDataIndexedArrayToObjects`・`formDataToObject`）を残し、型は `import type` で `@/types/formData` から読む
   - 利用元の `Outcome` の import を `@/types/outcome` へ付け替える: `lib/entry/`（`postEntry`・`editEntry`・`deleteEntry`・`postEntryMedia`）、`lib/schedule/`（`scheduleCredential`・`scheduleItem`・`scheduleCollection`・`scheduleImage`）、`lib/feedback/submitFeedback.ts`（`submitFeedback.ts` は lib-layers 2.1 の後）
