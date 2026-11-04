@@ -78,7 +78,7 @@
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 6.3_
 
 - [ ] 5. steering と規則の一致
-- [ ] 5.1 structure.md の依存規則の表と util の規約を改訂する
+- [x] 5.1 structure.md の依存規則の表と util の規約を改訂する
   - 「依存規則の検査」の表に `utilShared` の行（内容: 各 `src/util/` モジュールは `src/util/` の外の二つ以上の領域から使われること。根拠: 「共通（`src/util/`・`src/styles/`）」）を加える
   - 表に `typesLeaf`（根拠: 「型（`src/types/`）」）と `typesOnly`（同左）の行を加える（`utilShared` の行と同じ形）
   - 表の下の文に、許容リストの項目は理由を持つことを加える
@@ -140,3 +140,10 @@
   - `src/layout/` は存在しない。
   - `config/architecture/import-allowlist.json` の項目は 0 件（`"entries": []`）。
 - 不一致は無いため、着手は可能（BLOCKED ではない）。
+
+### 5.1 structure.md の表と util の規約（記録）
+
+- 表に `utilShared`・`typesLeaf`・`typesOnly` の行を加えた。規則の実装（3.2・3.3・3.5）の完了まで、表の上と下の注で「予定」と明記している。
+- 完了の時点で、`structure.md` の 63 行目「葉と型だけの規則（typesLeaf・typesOnly）は、現時点の npm run test:imports では検査しない」は、3.3・3.5 の完了時に直す。同じ理由で `utilShared` も 3.2・3.5 の完了時に注を直す。
+- 部品の節の骨格の記述（「骨格は `components/layout/Baselayout/` に置く」）は layout-home 3.2 で書かれ、5.2 の検査は「`src/layout/` を置かない旨」の文言を見る。文言が足りなければ 5.2 で扱う。
+- util 節の「複数領域」を「二つ以上の領域」へ言い換えた（意味は同じ）。
