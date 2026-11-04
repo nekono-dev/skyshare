@@ -187,3 +187,6 @@
 
 - `npm run test:all`: 終了コード 0。unit 49/49（327 件）、component 5/5（13 件）、route 23/23（212 件）、render 1/1（2 件）、e2e 7 件。基準（1.1）を満たす。
 - `npm run apigen` の後、`src/client/openapi/` と OpenAPI 文書に差分は無い。`git diff 1c65503..HEAD -- src/client docs` も空。
+
+- 利用者の決定（2026-11-04）: validate-impl の「e2e は手動確認が必要」の判定は、test:all の中の e2e 7 件が通過しているため GO として扱う。
+- 利用者の決定（2026-11-04）: 5.1 はレビュー前に、7.1 の検証記録は承認前に commit した。履歴は書き換えず、この記録を残す。以後は承認後に commit する。

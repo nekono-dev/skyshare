@@ -31,7 +31,7 @@
 ### 部品（`src/components/<領域>/<Name>/`）
 
 **Location**: `src/components/<領域>/<Name>/`
-**Purpose**: 1 部品 1 フォルダ。`index.tsx`（または `index.astro`）と `index.module.css` を置く。
+**Purpose**: 1 部品 1 フォルダ。`index.tsx`（または `index.astro`）を置く。スタイルを持つ部品だけ `index.module.css` を置く（スタイルのない部品にファイルを増やさない。2026-11-04 の決定）。
 **Example**: `src/components/common/Checkbox/index.tsx` と `index.module.css`
 
 - 領域は機能の単位で分ける: `composer`（投稿フォーム・下書き・予約の入力）、`timeline`（タイムラインと投稿の表示）、`share`（他 SNS への共有）、`entry`（Entry の一覧・操作）、`account`・`settings`・`feedback`・`schedule`・`image`・`help`・`privacy`。アンケート（`survey`）と動画（`video`）の部品は、利用する親の子に置く（下の「利用元の内側に置く」）。

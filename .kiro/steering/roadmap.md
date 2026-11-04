@@ -285,16 +285,16 @@ Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の�
   - U-2（`util/waitForImageLoad.ts`）: `util/` に残す（DOM を使う例外として `structure.md` に明記する）。
   - U-3（`parseUserAgent`）: 利用元が部品だけのため、`components/feedback/FeedbackForm/` の内側に置く。`lib/feedback` は `ClientEnvironment` の型だけを `src/types` から使う。
 - **実測で境界が曖昧だった箇所**（詳細は `util-placement` の design）:
-  - `util/clientEnvironment.ts`: 型・純粋な判定・ブラウザの読み取りが一つのファイルにある → 三つに分ける（型は `src/types/`、判定とブラウザの読み取りは `components/feedback/FeedbackForm/`）
-  - `util/share/intent.ts`・`util/share/webShare.ts`: 純粋な組み立てと `window.open`・`navigator.share` が一つのファイルにある → 純粋な部分は `lib/share/`、ブラウザ側は `components/share/IntentShareDialog/`
-  - `util/outcome.ts`（型のみ）・`util/formData.ts`（型一つと関数）: `lib` が使う型なので `src/types/` へ移す
-  - `util/object.ts`・`util/autoLink.ts`・`util/emoji/countryFlag.ts`: 純粋で利用元が一つの `lib` 領域 → `lib/atproto/`
+  - `src/types/clientEnvironment.ts`・`lib/feedback/userAgent.ts`・`components/feedback/FeedbackForm/clientEnvironment.ts`（旧 `util/clientEnvironment.ts`: 型・純粋な判定・ブラウザの読み取りが一つのファイルにあった） → 三つに分ける（型は `src/types/`、判定とブラウザの読み取りは `components/feedback/FeedbackForm/`）
+  - `lib/share/intent.ts`・`components/share/IntentShareDialog/webShare.ts`（旧 `util/share/`: 純粋な組み立てと `window.open`・`navigator.share` が一つのファイルにある → 純粋な部分は `lib/share/`、ブラウザ側は `components/share/IntentShareDialog/`
+  - `src/types/outcome.ts`・`src/types/formData.ts`（型）と `util/formData.ts`（関数）: `lib` が使う型なので `src/types/` へ移した
+  - `lib/atproto/object.ts`・`lib/atproto/autoLink.ts`・`lib/atproto/countryFlag.ts`（旧 `util/`: 純粋で利用元が一つの `lib` 領域）
   - `util/http.ts`・`formData.ts`（関数）・`utf8Bytes.ts`・`padTwoDigits.ts`・`waitForImageLoad.ts`: 汎用 → `util/` に残す（5 件）
 - **順序**: `tests/unit/scripts/importRules.test.ts` は lib-layers → util-placement → structure-checks の順に編集する。util-placement の 6.2 は lib-layers 4.2 の後、structure-checks の 2.3・3.5 は util-placement の後（各 `tasks.md` の先頭に記載）。
 
 ### Scope
 
-- **In**: `src/lib/`・`src/util/`・`src/components/`（小さい領域）・`src/layout/`・大ファイル 7 件、それに対応する steering（`structure.md`・`roadmap.md` の領域一覧）と検査（`scripts/architecture/`・`tests/unit/scripts/`）。
+- **In**: `src/lib/`・`src/util/`・`src/components/`（小さい領域）・`src/layout/`（現況: `components/layout/` に統合済み）・大ファイル 7 件、それに対応する steering（`structure.md`・`roadmap.md` の領域一覧）と検査（`scripts/architecture/`・`tests/unit/scripts/`）。
 - **Out**: 利用者に見える振る舞い、API の入出力と DB スキーマ、`pages/`・`src/` 直下（P-A）、`styles/`・`images/`、`scripts/`（Phase 2）、生成物（`src/client/openapi/`）、`_legacy/`、`atproto/`（submodule）。
 
 ### Constraints
@@ -309,7 +309,7 @@ Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の�
 - **Why this split**: 層（`lib`）・汎用性（`util`）・部品（`components`）・骨格（`layout`）・大ファイル・検査の 6 つは、変更と検証が互いに閉じる。検査（`structure-checks`）は最後に置き、各段階の結果を固定する。
 - **Shared seams to watch**:
   1. **`lib` の層（`lib-layers`）**: `util-placement`・`lib-large-files` は、層の決定に従って移動先が決まる。層の決定が先。
-  2. **`util/share` と `lib/share`**（`util-placement`）: `src-duplicates` で決めた share の責務を変える。既存の決定を覆すため、`src-duplicates` の brief に追記して記録する。
+  2. **`util/share`（現況: `lib/share` に統合済み）と `lib/share`**（`util-placement`）: `src-duplicates` で決めた share の責務を変える。既存の決定を覆すため、`src-duplicates` の brief に追記して記録する。
   3. **`lib/api` と業務の型**（`lib-layers`）: `lib/api` は `lib/feedback`・`lib/survey` の型を参照している。層の決め方（`lib/api` を入口側の層とみなすか、型を基盤へ下ろすか）は `lib-layers` の design で決める。
   4. **検査の許容リスト**（`src-import-rules`）: 移動のたびに減らす。増やすのは理由を書く例外だけ。
 
@@ -324,12 +324,12 @@ Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の�
 
 ### Existing Spec Updates
 
-- [ ] src-duplicates -- share の責務（5 フォルダ）の統合の結論を、`util/share` の `lib/share` への統合（`util-placement`）に合わせて追記する（既存の内容は残す）。Dependencies: util-placement
+- [ ] src-duplicates -- share の責務（5 フォルダ）の統合の結論を、`lib/share` への統合（`util-placement`、完了済み）に合わせて追記する（既存の内容は残す）。Dependencies: util-placement
 - [ ] src-import-rules -- 紐づけは lib-layers の 5.4 が行う（lib-layers が追加した libLayer を、src-import-rules の brief・requirements に紐づける。検査の変更は行わない）。Dependencies: lib-layers
 
 ### 探査の根拠（2026-11-03）
 
 - `lib/api` → `lib/feedback`（`limits`・`submission`）と `lib/survey`（`definition`・`pathParams`）の依存。`lib/session/bskySessionRefresh.ts` → `lib/api` の依存。
-- `util/` の利用元: `util/share`（components/composer・share・timeline・settings、lib/share・lib/settings）、`util/textarea`（composer のみ）、`util/listbox`（common/select のみ）、`util/clientEnvironment.ts`（feedback のみ）、`util/emoji/countryFlag.ts`（`lib/atproto/languageFlag` のみ）、`util/autoLink.ts`（`lib/atproto` のみ）、`util/scrollLock.ts`（components/common のみ）。
+- `util/` の利用元（探査時点。現況は移動先に置いた）: `util/share`（components/composer・share・timeline・settings、lib/share・lib/settings）→ 現況 `lib/share`、`util/textarea`（composer のみ）→ 現況 `components/composer/ThreadComposer/rules/`、`util/listbox`（common/select のみ）→ 現況 `components/common/select/Dropdown/rules/`、`util/clientEnvironment.ts`（feedback のみ）→ 現況 `src/types/` ・`lib/feedback/`・`components/feedback/FeedbackForm/`、`util/emoji/countryFlag.ts`（`lib/atproto/languageFlag` のみ）→ 現況 `lib/atproto/`、`util/autoLink.ts`（`lib/atproto` のみ）→ 現況 `lib/atproto/`、`util/scrollLock.ts`（components/common のみ）→ 現況 `components/common/dialog/Overlay/rules/`。
 - `lib/` の 1〜2 ファイル領域: `account`・`draft`・`privacy`・`legacy`・`codegen`・`share`。
 - 骨格: `src/components/layout/Baselayout/index.astro`（探査の時点の `src/layout/Baselayout.astro` から layout-home で移動）。
