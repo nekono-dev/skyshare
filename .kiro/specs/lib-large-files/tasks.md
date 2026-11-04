@@ -81,7 +81,7 @@
 
 - [ ] 5. `lib/settings/shareSettings` を `shareSettings/` に分割する（コミット 4）
   - _Depends: 1.2_
-- [ ] 5.1 自動ポップアップ・インスタンスドメイン・真偽値の設定・本文欄の行数を、種類ごとのファイルに移す
+- [x] 5.1 自動ポップアップ・インスタンスドメイン・真偽値の設定・本文欄の行数を、種類ごとのファイルに移す
   - 自動ポップアップ（`autoPopup`）・インスタンスドメイン（`instanceDomain`）・真偽値（`toggles`。リンクカード優先の実効値を含む）・本文欄の行数（`textareaRows`）に分ける
   - `AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `@/lib/share/autoPopupTarget` から再エクスポートする
   - 完了の状態: 各ファイルが 400 行以下で、先頭コメントが責務を一文で示す
