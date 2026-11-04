@@ -107,7 +107,7 @@
   - _Depends: 3.2, 4.1, 4.2, 4.3, 5.4, lib-layers 5.2_
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
   - _Blocked: 利用者の判断待ち。lib/api の依存の行に src/types（FormDataFieldKind の型。schema/v2/entry/post.ts・schedules/post.ts が import）を追記してよいか。6.1 の文言は lib/api の行を変えないと定めるため、追記するなら文言も合わせて直す。判断が出るまで完了の条件は満たさない（structure.md の作業中の変更は未コミット）_
-- [ ] 6.2 関連 spec とコメント・例の参照を更新する
+- [x] 6.2 関連 spec とコメント・例の参照を更新する
   - src-duplicates の brief に、share の責務が lib/share へ統合された結論を追記する（既存の内容は残す）
   - importRules テストの例（`tests/unit/scripts/importRules.test.ts` の 97 行目 `["src/util/share/intent.ts", "util/share"]`）を、`["src/util/http.ts", "util"]` に直す（移動後に実在しないため。lib-layers 4.2 の後に行う）
   - `pages/jump.astro` のコメントにある `src/util/share/openIntentPopup.ts` のパスを、`src/components/share/IntentShareDialog/openIntentPopup.ts` に直す
