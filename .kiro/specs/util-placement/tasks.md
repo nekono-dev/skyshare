@@ -94,19 +94,26 @@
   - _Boundary: common/dialog/Overlay_
   - _Depends: 1.1_
   - _Requirements: 1.5, 5.2_
+- [x] 5.5 置き場を子フォルダ `rules/` へ直す（5.3・5.4 の訂正）
+  - 理由: 5.3・5.4 は `Dropdown/filter.ts`・`Dropdown/navigation.ts`・`Overlay/scrollLock.ts` を部品フォルダの直下に置いた。`structure.md` の規則では部品フォルダの直下は配線（`index.tsx`・`index.module.css`）と子フォルダだけである。判断は子フォルダ `rules/` に置く（フックなら `hooks/`）
+  - 作業: `Dropdown/filter.ts`・`Dropdown/navigation.ts` を `Dropdown/rules/` へ、`Overlay/scrollLock.ts` を `Overlay/rules/` へ移す。利用元（Dropdown・Overlay の import）と、移動した兄弟どうしの import を付け替える。design.md・tasks.md のうち移動先のパスを書いた箇所を `rules/` のパスに直す
+  - 利用者の決定により、`rules/` に置くことを優先する。`scrollLock` が DOM を使うため `rules/` の純粋性の検査に引っかかる場合は、検査を弱めず、_Blocked_ の理由として報告する
+  - 完了の条件: `Dropdown/`・`Overlay/` の直下に `.ts` が無い（`index.tsx`・`index.module.css` と子フォルダだけ）。`tests/unit/scripts/componentLayout.test.ts` と既存のテストが通る。選択肢の絞り込み・矢印キー・スクロールロックの結果が変わらない
+  - _Boundary: common/select/Dropdown, common/dialog/Overlay_
+  - _Depends: 5.3, 5.4_
+  - _Requirements: 1.2, 1.5, 5.2_
 
 - [ ] 6. 規約と文書の改訂
 - [ ] 6.1 structure.md の util・src/types の規約と lib の依存の表を改訂する
-  - 依存の表の併合: lib-layers 5.2 が書いた依存の表（`lib/api`・`lib/site` の行を含む）を土台にし、本仕様の行（`lib/share`・`lib/settings`・`lib/atproto`・`lib/feedback`）だけを書き換える。`lib/api`・`lib/site` の行は変えない
+  - 依存の表の併合: lib-layers 5.2 が書いた依存の表（`lib/api`・`lib/site` の行を含む）を土台にし、本仕様の行（`lib/share`・`lib/settings`・`lib/atproto`・`lib/feedback`）を書き換える。`lib/api` の行には `src/types`（`FormDataFieldKind` の型。`schema/v2/entry/post.ts`・`schedules/post.ts` が import する）を加える（利用者の決定。`src/types` は型だけの葉のため、依存の向きは変わらない）。`lib/site` の行は変えない
   - util の節に「利用元が複数領域のときだけ util に置く」と四つの分類規則を書き、利用元が一つになった関数は利用元へ移し、util へ戻さないと書く。`util/waitForImageLoad.ts` の例外（DOM を使うが二つの部品領域が使うため残す）を書く。「util/share/ のように下位フォルダで分ける」の文を削除する（既に無ければ確認のみ）
   - 新しい節「型（`src/types/`）」を書く（葉の規則: 外部パッケージを含めて外を import しない。型だけの宣言: `export type`・`export interface`・`import type` のみ。置く条件: `lib` が `util`・`components` で定義された型を使う場合）
   - 「依存の向き」（Code Organization Principles）の `src/types/` の記述を、外部パッケージを含めた葉の規則に合わせる（既に記述があれば確認のみ）
   - lib の依存の表（lib/atproto・lib/settings・lib/share・lib/feedback）を、移動後の実際の import と一致させる。`lib/feedback` の行は、lib-layers 5.2 の辺のうち `lib/api`（契約）と `lib/site` を残す（削除しない）。本仕様が変えるのは `util` と `src/types` の参照だけで、`util` を参照せず、`src/types`（`ClientEnvironment`・`Outcome`）を参照することを grep で確かめる
   - 「領域の一覧」は領域の名前だけを書くため、本仕様では変えない（`lib/share` の説明は追加しない）
   - 完了の条件: structure.md の util・src/types の記述と依存の表が、grep で確認した移動後の import と一致する
-  - _Depends: 3.2, 4.1, 4.2, 4.3, 5.4, lib-layers 5.2_
+  - _Depends: 3.2, 4.1, 4.2, 4.3, 5.5, lib-layers 5.2_
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6_
-  - _Blocked: 利用者の判断待ち。lib/api の依存の行に src/types（FormDataFieldKind の型。schema/v2/entry/post.ts・schedules/post.ts が import）を追記してよいか。6.1 の文言は lib/api の行を変えないと定めるため、追記するなら文言も合わせて直す。判断が出るまで完了の条件は満たさない（structure.md の作業中の変更は未コミット）_
 - [x] 6.2 関連 spec とコメント・例の参照を更新する
   - src-duplicates の brief に、share の責務が lib/share へ統合された結論を追記する（既存の内容は残す）
   - importRules テストの例（`tests/unit/scripts/importRules.test.ts` の 97 行目 `["src/util/share/intent.ts", "util/share"]`）を、`["src/util/http.ts", "util"]` に直す（移動後に実在しないため。lib-layers 4.2 の後に行う）
@@ -154,3 +161,12 @@
 ### 1.2 利用者の決定の記録（確認のみ）
 
 - design.md の「決定の記録（利用者の決定 2026-11-03）」に U-1（案 C）・U-2（`util/` に残す）・U-3（部品の内側）・型の規則が記録されている。「決定から生じる例外と差分（記録）」の節も存在する。タスク本文の対象と一致するため、design.md は変更していない。
+
+### 5.1 実施の順序（記録）
+
+- 5.1 は実装の後、レビューの前にコミットした（kiro-impl の手順は、レビューの承認の後にコミットする）。その後にレビューを行い、承認された。履歴は書き換えていない。以降のタスクは承認の後にコミットする。
+
+### 5.5 置き場の訂正（記録）
+
+- 5.3・5.4 が直下に置いた `Dropdown/filter.ts`・`Dropdown/navigation.ts`・`Overlay/scrollLock.ts` を、子フォルダ `rules/` へ移した（内容は同一）。
+- `scrollLock.ts` は DOM を使うため、`rules/` は純粋な関数に限るという規則と完全には一致しない。利用者の決定により `rules/` に置いた。レビューでは注記として扱い、テストは通過した。

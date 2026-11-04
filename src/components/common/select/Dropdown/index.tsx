@@ -10,14 +10,14 @@ import React, {
 import { flushSync } from "react-dom"
 import ComponentList from "@/components/common/list/ComponentList"
 import ListboxOption from "@/components/common/select/ListboxOption"
-import { filterOptions } from "./filter"
+import { filterOptions } from "./rules/filter"
 import {
   findPrefixIndex,
   firstEnabledIndex,
   indexOfEnabled,
   lastEnabledIndex,
   nextEnabledIndex,
-} from "./navigation"
+} from "./rules/navigation"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

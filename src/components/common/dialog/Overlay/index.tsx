@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
-import { acquireScrollLock, releaseScrollLock } from "./scrollLock"
+import { acquireScrollLock, releaseScrollLock } from "./rules/scrollLock"
 import styles from "./index.module.css"
 
 /**
