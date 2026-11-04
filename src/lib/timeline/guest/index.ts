@@ -5,7 +5,7 @@
  * - ログイン不要の見た目確認用に、`TimelinePost`/`TimelineSkyshareEntry` と同じ形の
  *   固定データを、表示言語ごとに組み立てて提供する（Timeline/EntryList が未ログイン時の代替表示として使う）。
  * - 実際の Bluesky API を叩かないよう、画像・アバターは data URI の SVG で完結させる。
- * - データは `assets.ts`（資材のパス）・`posts.ts`（投稿とスレッド）・`entries.ts`（Entry と削除範囲）に分ける。
+ * - データは `assets.ts`（資材のパス）・`posts.ts`（投稿の連結・検索・スレッドの組み立て。投稿のデータは `postsBasic.ts`・`postsThread.ts`、組み立て補助は `postFacets.ts`）・`entries.ts`（Entry と削除範囲）に分ける。
  *   削除範囲の判断（`resolveGuestDeleteScope`）は `@/lib/guestMode` に置き、ここには置かない。
  */
 import type { Locale } from "@/lib/i18n/locale"

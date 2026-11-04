@@ -109,7 +109,7 @@
   - _Boundary: guest/posts_
   - _Requirements: 1.1, 2.2, 2.3_
 
-- [ ] 6.2 `posts.ts` で連結し、外向きの export を保つ
+- [x] 6.2 `posts.ts` で連結し、外向きの export を保つ
   - `posts.ts` に `findGuestPost`・`buildGuestPosts`（単独の投稿 → スレッドの投稿と不明な投稿の順に連結）・`buildGuestThreads` を残し、元の export を変えない
   - `guest/index.ts` のヘッダコメントのファイル一覧を更新する（処理は変えない）
   - 完了の状態: `buildGuestPosts(t)` の件数・順序・uri が分割前と同じで、`npm run test:type`・`npm run test:imports` が終了コード 0
