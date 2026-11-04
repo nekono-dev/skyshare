@@ -84,7 +84,6 @@
 - **Selected Approach**: 2。規約の根拠は利用元の数であり、関数の性質ではない。
 - **Rationale**: 性質で残すと、規約と実際の配置が食い違う。`structure-checks` は利用元の数で検査できる。
 - **Trade-offs**: `object.ts` のように一般的な関数が `lib/atproto/` に入る。将来の再利用は、利用元が増えた時点で移す。
-- **Follow-up**: 実装後に `util/` 直下を grep し、残りの 6 件の利用元が二つ以上あることを確認する。
 
 ### Decision: `lib/share` と `lib/settings` の循環は `AutoPopupTarget` の型を `lib/share` へ移して解消する
 
@@ -96,7 +95,6 @@
 - **Selected Approach**: 2。`autoPopupTarget.ts` は import を持たないため、移動しても依存が増えない。`shareSettings.ts` は `lib/share/autoPopupTarget` を参照する。
 - **Rationale**: 共有の型は参照される側（下位）に置く（steering の規則）。`lib/share` は `lib/settings` より下位になる。
 - **Trade-offs**: `lib/settings/autoPopupTarget.ts` の位置が変わり、その型を import している箇所の import 文を書き換える。
-- **Follow-up**: 実装時に `AutoPopupTarget` と `AUTO_POPUP_TARGETS` の importer を grep し、すべて新しいパスへ更新する。
 
 ### Decision: `clientEnvironment.ts` は `lib/feedback/` へ移す
 
@@ -110,8 +108,7 @@
 
 - 循環の見落とし — `libRegionPairs`・`test:imports` の循環検査で確認する。`lib/share` ↔ `lib/settings` を重点的に見る。
 - `structure.md` の依存表（`lib/settings`・`lib/share`・`lib/atproto`・`lib/feedback`）と実装の食い違い — 同じ変更で改訂する。
-- 移動先の名前の衝突（`lib/share/textCount.ts` と既存の関数名）— 実装時に grep で確認する。
-- brief と実測の食い違い（`textCount`・`object`・`links`）— design のレビュー（人の承認）で確認を受ける。
+- 移動先の名前の衝突（`lib/share/textCount.ts` と既存の関数名）— grep で確認する。
 
 ## References
 
@@ -124,8 +121,7 @@
 - **Context**: 利用元の実測で、`util/clientEnvironment.ts` が型・純粋な判定・ブラウザの読み取りを一つのファイルに持つこと、`util/share/intent.ts`・`util/share/webShare.ts` が純粋な組み立てと `window.open`・`navigator.share` を持つことが分かった。`componentLayout` は部品フォルダの外の `.ts` を違反にする。
 - **Selected Approach**: 型は `src/types/`（`lib` が `util`・`components` の型を必要とする場合）、業務は `lib/`、ブラウザと DOM は `components/` の部品の内側（純粋な部分は `lib/` へ分ける）、汎用で利用元が二つ以上は `util/`。ファイル単位ではなく関数単位で分ける。
 - **Rationale**: 利用元の数だけでは、ブラウザの副作用が `lib` に入る問題を防げない。型の置き場は、`lib` から `util`・`components` への参照を消すために必要。
-- **Trade-offs**: 分割で新しいファイルが 4 件増える。`util/share` のブラウザ側と `util/waitForImageLoad.ts` は、`componentLayout` の制約により配置が決まらないため、未決定（U-1・U-2）として残す。
-- **Follow-up**: U-1・U-2・U-3 の決定を design に記録してから、3 の塊（util/share の純粋な部分と textCount）と 6.2 を行う。
+- **Trade-offs**: 分割で新しいファイルが 4 件増える。`util/share` のブラウザ側と `util/waitForImageLoad.ts` は、`componentLayout` の制約により配置が決まらないため、U-1・U-2 として分けて記録する。
 
 ### 追補（2026-11-03 利用者の決定。上の記録は残す）
 

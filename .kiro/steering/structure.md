@@ -49,7 +49,7 @@
 ### 共通（`src/util/`・`src/styles/`）
 
 - `util/` は、利用元が複数領域のときだけ `util` に置く（領域に依存せず、DOM も使わない汎用の関数）。利用元が一つになった関数は利用元の領域へ移し、`util/` へ戻さない。`util/share/` のような下位フォルダは置かない。
-- 置き場の判断は四つの規則による: (1) 型は `src/types/`（「型（`src/types/`）」の節）、(2) 業務の判断は `lib/<領域>/`、(3) ブラウザや DOM を操作する処理（`window`・`document`・`navigator`・`Image`・`Node`）は、それを使う `components/` の部品の内側（純粋な部分は `lib/` へ分ける。利用元が複数の部品領域にまたがるときは、それらが共通に import できる部品フォルダの内側）、(4) 領域に依存せず DOM も使わない汎用の関数は `util/`。
+- 置き場の判断は四つの規則による: (1) 型は `src/types/`（「型（`src/types/`）」の節）、(2) 業務の判断は `lib/<領域>/`（例外: 利用元が一つの部品だけの純粋な判定は、その部品の内側に置く。例: `components/feedback/FeedbackForm/userAgent.ts`）、(3) ブラウザや DOM を操作する処理（`window`・`document`・`navigator`・`Image`・`Node`）は、それを使う `components/` の部品の内側（純粋な部分は `lib/` へ分ける。利用元が複数の部品領域にまたがるときは、それらが共通に import できる部品フォルダの内側）、(4) 領域に依存せず DOM も使わない汎用の関数は `util/`。
 - 例外: `util/waitForImageLoad.ts` は DOM の `Image` を使うが、利用元が二つの部品領域のため `util/` に残す。
 - `styles/` は CSS Modules。`tokens.css` が値、`ui.module.css` と `*.ui.module.css` が共通のクラス。
 
@@ -60,7 +60,7 @@
 - `src/types/` は葉である。`src/types/` のファイルは `src/types/` の外（`lib`・`components`・`util`・`pages`）と、外部パッケージ（DOM の型を含む）を import しない。外部の型が要る場合は、その型を import せず、型の持ち主の層に残す。
 - `src/types/` の文は型だけにする（`export type`・`export interface`・`import type` のみ）。値の宣言（`const`・`let`・`function`・`class`・`enum`）・`export default`・`export *`・値の import は置かない。
 - Cloudflare の型と宣言は、既存の規則どおり `lib/platform/` に置く（この節の対象外）。
-- 検査は「依存規則の検査」の `typesLeaf`（葉）と `typesOnly`（型だけ）が行う。
+- 葉と型だけの規則（`typesLeaf`・`typesOnly`）は、現時点の `npm run test:imports` では検査しない。
 
 ### 生成物
 
@@ -90,7 +90,7 @@
 | 業務 | `lib/guestMode.ts` | ゲストモードの判断。`lib` 直下の業務のファイル（ゲストのダミーデータは `lib/timeline/guest/`）                                                                                                                                                                                                     |
 | 業務 | `lib/schedule`     | 予約投稿                                                                                                                                                                                                                                                                                           |
 | 業務 | `lib/settings`     | 利用者の設定                                                                                                                                                                                                                                                                                       |
-| 業務 | `lib/share`        | 他 SNS への共有の本文と文字数の補正。`util-placement` 6.1 で説明を改訂する（下の「残す領域」）                                                                                                                                                                                                     |
+| 業務 | `lib/share`        | 他 SNS への共有の本文と文字数の補正。                                                                                                                                                                                                                                                              |
 | 業務 | `lib/survey`       | アンケート                                                                                                                                                                                                                                                                                         |
 | 業務 | `lib/timeline`     | スレッドのまとめ・一覧の整形・下書きの一覧（`draftList.ts`）。旧 `lib/draft` を統合した                                                                                                                                                                                                            |
 
@@ -99,7 +99,7 @@
 1〜2 ファイルの領域のうち、統合せず残すもの（要件 4.2）:
 
 - `lib/codegen`: 生成物 `src/client/openapi/client.ts`（相対 import の `lib/codegen/fetcher.ts`・`openapiFormData.ts`）と `config/orval.config.ts`（出力先の `src/lib/codegen/`）が、このフォルダを参照する。`lib/codegen` を移すと生成物の import 経路が変わり、`npm run apigen` の差分になるため、基盤として残す。
-- `lib/share`: 他 SNS への共有の判断をまとめる領域として残す。`util-placement` で `util/share/` の内容を `lib/share` へ統合するため、統合の後はファイルが増える。その時点で、この説明（残す理由と役割）を改める（`util-placement` 6.1）。
+- `lib/share`: 他 SNS への共有の判断をまとめる領域として残す。`util/share/` の純粋な部分（URL・本文・文字数・切り詰め・File の組み立て）を統合した。ブラウザ側（`window.open`・`navigator.share`）は `lib/share` に置かず、`components/share/IntentShareDialog/` の内側に置く。`lib/share` は `lib/settings` を参照しない（自動ポップアップの型は `lib/share/autoPopupTarget.ts` に置く）。
 
 ### `src/components/` の領域
 
@@ -148,7 +148,7 @@ import styles from "./index.module.css" // 同じフォルダ
 ---
 
 _Document patterns, not file trees. New files following these patterns shouldn't require updates._
-_updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外を追補。利用元の内側に置く規則と common の基盤・分類フォルダ（役割）の定義を追補。lib の層の表と依存の節、統合後の領域の説明を改訂）_
+_updated_at: 2026-11-04（util の分類規則に利用元が一つの純粋な判定の例外を追補。`lib/share` の残す領域の説明と、lib の依存の表を現在の import に合わせて改訂。型（`src/types/`）の検査の記述を現状に合わせた。以前の追補: 領域の一覧と、部品フォルダの外の例外を追補。利用元の内側に置く規則と common の基盤・分類フォルダ（役割）の定義を追補。lib の層の表と依存の節、統合後の領域の説明を改訂）_
 
 ## lib の領域の依存の向き
 
@@ -158,12 +158,12 @@ _updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外
 
 許可された依存（2026-11-01 の実測。型のみの辺を含む）。表に無い領域どうしの依存を加える場合は、この節を先に改訂する（規則の変更は、steering の改訂と同じ変更で行う）。
 
-- `lib/api`（API の契約）→ `lib/atproto`・`lib/image`・`lib/oauth`・`lib/video`・`util`。業務の型と制約は `lib/api/contract/` に下ろしてあるため、`lib/feedback`・`lib/survey` を参照しない。`lib/schedule`・`lib/session` も `lib/api` を参照する（下の一覧を参照）。
+- `lib/api`（API の契約）→ `lib/atproto`・`lib/image`・`lib/oauth`・`lib/video`・`util`・`src/types`（型 `FormDataFieldKind` のみ）。業務の型と制約は `lib/api/contract/` に下ろしてあるため、`lib/feedback`・`lib/survey` を参照しない。`lib/schedule`・`lib/session` も `lib/api` を参照する（下の一覧を参照）。
 - `lib/atproto` → `lib/image`・`lib/video`（`util` を参照しない）
-- `lib/entry`（Entry）→ `lib/atproto`・`lib/image`・`lib/video`・`util`。`lib/timeline` を参照しない。
+- `lib/entry`（Entry）→ `lib/atproto`・`lib/image`・`lib/video`・`util`・`src/types`（`Outcome` の型）。`lib/timeline` を参照しない。
 - `lib/timeline`（タイムライン）→ `lib/entry`・`lib/atproto`・`lib/i18n`（型）
 - `lib/oauth` → `lib/atproto`
-- `lib/schedule` → `lib/api`・`lib/atproto`・`lib/entry`・`lib/oauth`・`util`（`lib/i18n`・`lib/platform` は型のみ）
+- `lib/schedule` → `lib/api`・`lib/atproto`・`lib/entry`・`lib/oauth`・`util`・`src/types`（`Outcome` の型。`lib/i18n`・`lib/platform` は型のみ）
 - `lib/session` → `lib/api`・`lib/atproto`・`lib/oauth`・`util`
 - `lib/settings` → `lib/atproto`・`lib/share`。`lib/share` → `lib/atproto`（`lib/settings`・`util` を参照しない）
 - `lib/survey` → `lib/api`（契約 `contract/surveyPath`）・`lib/guestMode.ts`・`lib/platform`（型のみ）・`lib/i18n`（型のみ）・`util`（`util/http`）
@@ -172,7 +172,7 @@ _updated_at: 2026-11-03（領域の一覧と、部品フォルダの外の例外
 - `lib/site`（ビルド情報・サイト設定・プライバシーポリシーの文面。`lib/privacy` を統合した領域）→ `lib/i18n`（型のみ）
 - `lib/guestMode.ts`（`lib` 直下の業務のファイル）→ `lib/timeline`（ゲストのダミーデータ・削除範囲の型）・`lib/i18n`（型のみ）
 
-上の一覧と現在の import（実測）の差分は、`util-placement` が解消する。解消の後に一覧と実測が一致する: `lib/atproto` → `util`（`util-placement` 4.1 で `lib/atproto` の内側へ移す）、`lib/feedback` → `util` の型 `clientEnvironment`・`outcome`（4.2・4.3 で `src/types` へ移す）、`lib/share` と `lib/settings` の参照（2・3.1 で循環を解消し、共有の判断を `lib/share` へ移す）。
+上の一覧のうち、`lib/entry`・`lib/schedule`・`lib/feedback`・`lib/atproto`・`lib/settings`・`lib/share` の行は現在の import と一致する。`lib/atproto` は `util` と `src/types` を参照しない。`lib/feedback` は `util` を参照せず、型（`ClientEnvironment`・`Outcome`）を `src/types` から読む。`lib/share` と `lib/settings` の間に循環はなく、`lib/settings` → `lib/share` の一方向だけである。
 
 `src/` 直下（`env.ts`・`vars.ts`）の扱い: `lib` の領域は `@/env`・`@/vars`（設定）を参照してよい。`src/` 直下の `env.ts`・`middleware.ts`・`worker.ts` は組み立ての層で、`lib` を参照する。閉路の確認（`libRegionPairs` テスト）は `lib` の領域どうしだけを対象にするため、`src/` 直下を経由する閉路は対象外である。
 

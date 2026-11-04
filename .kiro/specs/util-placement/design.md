@@ -84,7 +84,7 @@
 - `util/clientEnvironment.ts` は、純粋な判定（`parseUserAgent`）とブラウザの読み取り（`detectStandalone`・`collectClientEnvironment`）と型（`ClientEnvironment`）が一つのファイルにある。型は `lib/feedback` と `components/feedback` の両方が使う。
 - `util/share/intent.ts` は純粋な組み立てと、`window.open` を呼ぶ `openIntentPopupFor` が一つのファイルにある。`util/share/webShare.ts` も、純粋な組み立てと `navigator.share` の呼び出しが一つのファイルにある。
 - `util/outcome.ts` は型だけのモジュールで、`lib/entry`・`lib/feedback`・`lib/schedule` が使う。`util/formData.ts` は関数と型 `FormDataFieldKind` を持ち、型は `lib/api` が使う。
-- 既存の依存の表（`structure.md` の「lib の領域の依存の向き」）は、`lib/settings` → `util/share`、`lib/share` → `util/share` と `lib/settings`（型）、`lib/atproto` → `util/emoji`、`lib/feedback` → `util`（型）を記録している。移動後は、この表を書き換える。
+- 既存の依存の表（`structure.md` の「lib の領域の依存の向き」）は、`lib/settings` → `util/share`、`lib/share` → `util/share` と `lib/settings`（型）、`lib/atproto` → `util/emoji`、`lib/feedback` → `util`（型）を記録している。
 - `scripts/architecture/rules.ts` の `layer` 規則は `util` から `lib` への import を違反にする。このため、`util` の中に置けるのは `lib` を import しないものだけである。
 - `tests/unit/scripts/componentLayout.test.ts` の `findOutsidePartViolations` は、部品フォルダ（`index.tsx` を持つフォルダ）の外の `.ts` を違反にする（許容は `i18n/useTranslation.ts` と `layout/nav/*` だけ）。したがって、`components/<領域>/` の直下に `.ts` を新しく置けない。
 
@@ -187,7 +187,7 @@ graph TD
 | `util/listbox/navigation.ts`                                                                                                        | `components/common/select/Dropdown/rules/navigation.ts`                                             | `components/common/select/Dropdown/index.tsx`                                                                                                                                                                                    | 同上                                                                                                                     |
 | `util/scrollLock.ts`                                                                                                                | `components/common/dialog/Overlay/rules/scrollLock.ts`                                              | `components/common/dialog/Overlay/index.tsx`                                                                                                                                                                                     | 規則 3（`document.body` を操作。分類フォルダ `dialog/` に直接置けない）                                                  |
 
-- 表のうち `util/` から出るのは 20 件（`util/share/` の 5 件、型の 1 件 `outcome`、単一領域の 14 件）。`util/formData.ts` は残るが、型の 1 件を移す。`lib/settings/autoPopupTarget.ts` は `util/` 由来ではない。`util/textarea/`・`util/listbox/`・`util/emoji/` の 3 フォルダは空になり削除する。`util/share/` は、5 件すべての移動が完了した時点で削除する。
+- 表のうち `util/` から出るのは 20 件（`util/share/` の 5 件、型の 1 件 `outcome`、単一領域の 14 件）。`util/formData.ts` は残るが、型の 1 件を移す。`lib/settings/autoPopupTarget.ts` は `util/` 由来ではない。`util/textarea/`・`util/listbox/`・`util/emoji/` の 3 フォルダは空になり削除する。`util/share/` は空になるため削除する。
 - 「分割」の行は、一つのファイルを複数の移動先に分ける。分割後の各ファイルの中身は、元の関数の本体と export 名を変えない（import の付け替えを除く）。
 - `util/share/intent.ts` の `openIntentPopupFor` は、`lib/share` の `buildIntentUrl` と `openIntentPopup` を組み合わせるだけの関数である。`lib/` は `window.open` を行えず（規則 3）、`util/` は `lib/` を import できない（`layer` 規則）ため、関数を残さず、呼び出し側（部品と `ThreadComposer/rules/`）で二つを組み合わせる。振る舞いは変えない。
 
@@ -340,16 +340,16 @@ graph TD
 
 ## 決定から生じる例外と差分（記録）
 
-利用者の決定を具体化した結果、次の点が既定の案（controller の旧案と brief）と異なる。実装の前に、この節の内容で足りることを確認する。
+利用者の決定を具体化した結果、次の点が既定の案（初期の検討案）と異なる。
 
 1. **残す `util/` の件数は 5 件**: 旧案は 6 件（`outcome` を含む）だった。`util/outcome.ts` は型だけで、`lib` が使うため、型の規則により `src/types/outcome.ts` へ移す。`util/formData.ts` は、型 `FormDataFieldKind` を `lib/api` が使うため、型だけ `src/types/formData.ts` へ移し、関数は残す。
 2. **`lib/feedback` の `src/types` の参照は 2 件**: 旧案の「`ClientEnvironment` のみ」に、`Outcome`（`submitFeedback.ts`）が加わる。
 3. **`webShare.ts` のブラウザ側の配置は、呼び出し元の共通の祖先ではなく共通の部品フォルダ**: 利用元が composer と timeline の二つにまたがり、両方が import できる部品フォルダは `IntentShareDialog/` のみのため、そこに置く。「利用元の内側に置く」の規則は、部品 P の利用元がすべて H の中にあるときに当てはまるため、このファイルには当てはまらない。`structure.md` の規約はこの場合を「共通の部品フォルダ」と書く。
 4. **`textCount.ts` は利用元が components のみだが、`lib/share` に置く**: 3 件の塊の決定（`intentLength` と同じ X・taittsuu の文字数の規則）に従う。U-3 の `parseUserAgent` と判断の基準が一致しないため、差分として記録する。
-5. **`waitForImageLoad.ts` は DOM を使うが `util/` に残す**: 規則 4 の例外（U-2）。`structure.md` に明記する。
+5. **`waitForImageLoad.ts` は DOM を使うが `util/` に残す**: 規則 4 の例外（U-2）。`structure.md` の util の節に明記している。
 6. **`util/share/intent.ts` の `openIntentPopupFor` を削除する**: 関数を残すと `util/` か `lib/` に置く必要があり、どちらも制約に当たる（layer 規則と規則 3）。呼び出し側が二つの関数を組み合わせる。
 
-## 実測による controller 決定との差分（記録）
+## 実測による決定との差分（記録）
 
 - 旧案の `components/share/` 直下への配置（`openIntentPopupFor`・`openIntentPopup`・`webShare`）は、`componentLayout` の制約で置けない。U-1 の案 C により、`components/share/IntentShareDialog/` の内側に置く
 - `util/share/intent.ts` と `util/share/webShare.ts` は、純粋な部分と副作用の部分が一つのファイルにあるため、分割して扱う（旧案は一括の移動）

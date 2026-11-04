@@ -104,8 +104,8 @@
   - _Requirements: 1.2, 1.5, 5.2_
 
 - [ ] 6. 規約と文書の改訂
-- [ ] 6.1 structure.md の util・src/types の規約と lib の依存の表を改訂する
-  - 依存の表の併合: lib-layers 5.2 が書いた依存の表（`lib/api`・`lib/site` の行を含む）を土台にし、本仕様の行（`lib/share`・`lib/settings`・`lib/atproto`・`lib/feedback`）を書き換える。`lib/api` の行には `src/types`（`FormDataFieldKind` の型。`schema/v2/entry/post.ts`・`schedules/post.ts` が import する）を加える（利用者の決定。`src/types` は型だけの葉のため、依存の向きは変わらない）。`lib/site` の行は変えない
+- [x] 6.1 structure.md の util・src/types の規約と lib の依存の表を改訂する
+  - 依存の表: 既存の依存の表（`lib/api`・`lib/site` の行を含む）を土台にし、`lib/share`・`lib/settings`・`lib/atproto`・`lib/feedback` の行を実際の import に合わせて書き換える。`lib/api` の行には `src/types`（`FormDataFieldKind` の型。`schema/v2/entry/post.ts`・`schedules/post.ts` が import する）を加える（`src/types` は型だけの葉のため、依存の向きは変わらない）。`lib/site` の行は変えない
   - util の節に「利用元が複数領域のときだけ util に置く」と四つの分類規則を書き、利用元が一つになった関数は利用元へ移し、util へ戻さないと書く。`util/waitForImageLoad.ts` の例外（DOM を使うが二つの部品領域が使うため残す）を書く。「util/share/ のように下位フォルダで分ける」の文を削除する（既に無ければ確認のみ）
   - 新しい節「型（`src/types/`）」を書く（葉の規則: 外部パッケージを含めて外を import しない。型だけの宣言: `export type`・`export interface`・`import type` のみ。置く条件: `lib` が `util`・`components` で定義された型を使う場合）
   - 「依存の向き」（Code Organization Principles）の `src/types/` の記述を、外部パッケージを含めた葉の規則に合わせる（既に記述があれば確認のみ）
