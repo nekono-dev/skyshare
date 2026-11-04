@@ -116,7 +116,7 @@
   - _Boundary: guest/posts_
   - _Requirements: 2.4, 3.1, 3.2, 4.1_
 
-- [ ] 6.3 ゲストの経路で検証し、コミットする
+- [x] 6.3 ゲストの経路で検証し、コミットする
   - `tests/unit/lib/site/envValues.test.ts` と、`@/lib/timeline/guest` を参照する経路のテストを実行し、件数と結果が分割前と同じであることを確かめる
   - 完了の状態: 対象のテストが通り、この分割だけのコミットが作られている
   - _Boundary: guest/posts_
@@ -207,3 +207,8 @@
 - index は元の公開名（29 件）に、設計の指定に従い `AUTO_POPUP_TARGETS`・`AutoPopupTarget`（`@/lib/share/autoPopupTarget` からの再エクスポート）を加えた。元のファイルは import のみでこの 2 件を export していなかったため、設計の指定を優先した。
 - 設定のテストが通過した（unit の settings・share 系）。全体は 5.2 の検査で確認済み。
 - 旧パスを指す古いコメントが 4 箇所残る（`lib/share/autoPopupTarget.ts`・`suggestSettings.ts`・`hashtagHistorySettings.ts`・`postGateSettings.ts`）。振る舞いに影響しないため本タスクでは直さない。
+
+### 6.1〜6.3 ゲストのダミーデータの分割（記録）
+
+- `timeline/guest/posts.ts` のデータを `postsBasic.ts`・`postsThread.ts`・`postFacets.ts` へ分け、`posts.ts` は連結と検索だけにした（コミット 576e203・7a36cb8）。外向きの名前 3 件と出力は HEAD と一致した（一時テストで比較）。
+- ゲストの経路を含む unit・route のテストが通過した。
