@@ -101,6 +101,26 @@
 - 利用元の実測が判断後に変わる（新しい import が追加される） → Requirement 1.4 の再検討の条件を記録する。`structure-checks`（Downstream）でも領域の配置を検査できる。
 - `util-placement` の完了前に実測すると、`util/` から移る import の行が変わる → Adjacent expectation として、`util-placement` の完了後に実測を取り直す（tasks で前提確認を入れる）。
 
+## Implementation Notes
+
+### 配置の不変の確認（task 3.1、2026-11-04）
+
+部品を移動していないことを、既存の検査と git の記録で確かめた。新しいテストは追加していない（既存の検査で足りる部分を重ねないため）。
+
+| 要件 | 確認の内容 | 確かめた手段と結果 |
+| ---- | ---------- | ------------------ |
+| 4.2・5.1 | `components/i18n` の import パスが変わらない | `componentLayout.test.ts` の例外の一覧（`i18n/useTranslation.ts`・`i18n/renderSlots.tsx`）が実在することの検査が通過。`npm run test:type`（`tsc --noEmit`）が終了コード 0 で、`@/components/i18n/...` の import がすべて解決する（`src/`・`tests/`・`scripts/` で 72 行） |
+| 5.2・5.3 | 部品の移動が無いため、import とテストの同時更新は発生しない | `git diff --name-status 091eed4^ HEAD -- src config scripts` が空（この仕様の作業の範囲は 2.1 以降） |
+| 5.5 | 部品フォルダの規約（1 部品 1 フォルダ・`index.tsx`/`index.astro` と `index.module.css` の配置）が変わらない | `git ls-tree` で `src/components` の `index.tsx`/`index.astro` が 93 件、`index.module.css` が 77 件で、着手時（`091eed4^`）と完了時（`HEAD`）が一致。規約の静的な検査は既存になく、件数は記録として残す（`index.module.css` を持たない部品フォルダは 16 件で、着手時から変わらない） |
+| 6.1 | `components/common/` の分類を変えない | `git diff --name-status 091eed4^ HEAD -- src/components/common` が空 |
+| 完了の条件 | 変更ファイルが `structure.md` のみ | `git diff --name-status 091eed4^ HEAD` の結果は 3 件: `.kiro/specs/components-small-areas/tasks.md`（進捗）・`.kiro/steering/structure.md`（2.1 の記録）・`tests/unit/scripts/structureDecisions.test.ts`（2.3 の検査）。`src/` と `config/`・`scripts/` は含まない |
+
+既存の検査の通過:
+
+- `npm run test:unit`: 51 ファイル・356 件が通過（基準の 356 件と一致。増減なし）
+- `npm run test:imports`: 終了コード 0（違反 0 件・許容 0 件・stale 0 件）
+- `npm run test:type`: 終了コード 0
+
 ## References
 
 - `.kiro/steering/structure.md` — 部品フォルダの規則（利用元の内側に置く・`common/` の基盤）

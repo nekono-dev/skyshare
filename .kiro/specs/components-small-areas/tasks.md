@@ -28,7 +28,7 @@ structure.md の編集順: 本仕様の 2.1〜2.3 は、lib-layers 5.3・util-pl
   - _Requirements: 3.2, 3.3_
 
 - [ ] 3. 配置の不変の確認
-- [ ] 3.1 部品を移動せず、import パスと部品フォルダの規約が変わっていないことを確かめる
+- [x] 3.1 部品を移動せず、import パスと部品フォルダの規約が変わっていないことを確かめる
   - 本仕様の変更は `structure.md` の記録に限られ、四つの領域と `components/i18n` の部品は移動しない
   - `components/i18n` の import パス、部品フォルダの `index.tsx`・`index.module.css` の配置は変わらない
   - 移動が必要になった場合は、移動先に合わせてその部品を import するファイルとテストの import パスを同じ変更で更新し、判断を見直してから進める
