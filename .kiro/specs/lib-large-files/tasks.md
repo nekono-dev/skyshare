@@ -95,7 +95,7 @@
   - _Boundary: shareSettings_
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 5.3 設定のテストで検証し、コミットする
+- [x] 5.3 設定のテストで検証し、コミットする
   - `tests/unit/lib/settings/shareSettingsLegacyRead.test.ts` と、`shareSettings` を参照する経路のテストを実行し、件数と結果が分割前と同じであることを確かめる
   - 完了の状態: 対象のテストが通り、この分割だけのコミットが作られている
   - _Boundary: shareSettings_
@@ -200,3 +200,10 @@
 
 - 4 ファイル（geometry・source・encode・compose）と index を作り、旧ファイルを削除した（コミット 30bc320・192fab6）。公開名 16 件は変わらない。
 - 画像のテスト（unit 1 ファイル 9 件）と route 全体（23 ファイル 212 件）が通過した。
+
+### 5.1〜5.3 shareSettings の分割（記録）
+
+- `lib/settings/shareSettings.ts` を `shareSettings/` に分けた（autoPopup・instanceDomain・toggles・textareaRows と index）。コミット 6936fb5・8f23dd1。
+- index は元の公開名（29 件）に、設計の指定に従い `AUTO_POPUP_TARGETS`・`AutoPopupTarget`（`@/lib/share/autoPopupTarget` からの再エクスポート）を加えた。元のファイルは import のみでこの 2 件を export していなかったため、設計の指定を優先した。
+- 設定のテストが通過した（unit の settings・share 系）。全体は 5.2 の検査で確認済み。
+- 旧パスを指す古いコメントが 4 箇所残る（`lib/share/autoPopupTarget.ts`・`suggestSettings.ts`・`hashtagHistorySettings.ts`・`postGateSettings.ts`）。振る舞いに影響しないため本タスクでは直さない。
