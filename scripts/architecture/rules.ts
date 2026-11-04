@@ -150,6 +150,24 @@ const libLayerRule = (edge: ImportEdge): Violation | null => {
     return violation("libLayer", edge, "基盤は業務を import しない（層の逆流）")
 }
 
+/**
+ * 型の領域（`src/types/`）から、型の領域の外のモジュールまたはパッケージへの辺を見つける。
+ * 型は葉で、外へ依存しない。型だけの辺（`import type`）も数える。
+ */
+const typesLeafRule = (edge: ImportEdge): Violation | null => {
+    if (!edge.from.startsWith("src/types/")) return null
+    if (
+        edge.target.kind === "module" &&
+        edge.target.path.startsWith("src/types/")
+    )
+        return null
+    return violation(
+        "typesLeaf",
+        edge,
+        "型（src/types/）は外のモジュール・パッケージを import しない（型は葉）",
+    )
+}
+
 const RULES = [
     layerRule,
     uiInLibRule,
@@ -157,9 +175,10 @@ const RULES = [
     relativeDepthRule,
     jsExtensionRule,
     libLayerRule,
+    typesLeafRule,
 ]
 
-/** R1・R2・R4a・R4b・R4c・R5 の違反を、辺の順序のまま返す。 */
+/** R1・R2・R4a・R4b・R4c・R5・型の葉の規則の違反を、辺の順序のまま返す。 */
 export const evaluateImportRules = (graph: ModuleGraph): Violation[] => {
     const found: Violation[] = []
     for (const edge of graph.edges) {

@@ -49,7 +49,7 @@
   - _Depends: 3.1_
   - _Requirements: 2.5, 7.1_
 
-- [ ] 3.3 (P) 規則 typesLeaf を辺の規則として加える
+- [x] 3.3 (P) 規則 typesLeaf を辺の規則として加える
   - `evaluateImportRules` に `typesLeaf` を加える。importer が `src/types/` で、target が `src/types/` の外のモジュールまたはパッケージの辺を違反にする（ruleId `typesLeaf`、型だけの辺も数える）
   - 完了の条件: `tests/unit/scripts/typesRules.test.ts` の fixture で、`src/types/a.ts` → `src/lib/x.ts`・`src/util/y.ts`・パッケージが違反になり、`src/types/a.ts` → `src/types/b.ts` と `src/lib/x.ts` → `src/types/a.ts` が違反にならない
   - _Boundary: TypesRules（typesLeaf）_
