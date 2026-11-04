@@ -3,7 +3,7 @@
 structure.md の編集順: 本仕様の 2.1〜2.3 は、lib-layers 5.3・util-placement 6.1・structure-checks 5.1 の後に行う（いずれも `structure.md` を編集するため）。structure-checks 7.1 は本仕様の後である。
 
 - [ ] 1. 前提と実測の確認
-- [ ] 1.1 util-placement の完了後に、四つの領域の利用元を取り直す
+- [x] 1.1 util-placement の完了後に、四つの領域の利用元を取り直す
   - util-placement の成果（`util/` から部品フォルダへ移った import）が反映された状態で、`share`・`feedback`・`privacy`・`help` の利用元を検索する
   - 取り直した利用元と `research.md` の記録を比べ、差分があれば判断への影響を記録する
   - 完了の条件: 利用元の一覧が `research.md` の記録と一致する、または差分が判断を変えないことが記録されている
