@@ -35,6 +35,27 @@
   - `components/i18n`（2 件）の利用元: 多数の部品から import される。2026-11-03 の観測では、`@/components/i18n/` または相対で `i18n/useTranslation`・`i18n/renderSlots` を import する行が 72 行、ファイルが 65 ファイル（`src`・`tests`）。この数は観測の参考であり、判断の根拠にしない（数え方で変わるため）。判断には件数を使わず、「多数の部品から import される入口」であることだけを根拠にする。
 - **Implications**: 統合先となる親の部品フォルダは、`share` では一意に定まらず、`feedback`・`privacy`・`help` では存在しない（利用元が `pages/`）。よって四つとも「残す」になる。
 
+### util-placement 完了後の利用元の取り直し（2026-11-04、task 1.1）
+
+- **Context**: util-placement の完了後（コミット `12b25d9` 時点）に、四つの領域の利用元を検索し直し、上の実測（2026-11-03）と比べる。
+- **Sources Consulted**: `grep -rn` と `grep -rln` を `src/`・`tests/`・`scripts/`・`config/` に対して実行した（検索式と件数は次のとおり）。`e2e/` はリポジトリに存在しないため検索していない（`ls -d e2e` で該当なし）。
+- **Findings**:
+  - `components/share/` を参照する import は、値の import と型の import を合わせて 6 ファイル（上の実測では 5 ファイル）。差分は次の二点である。
+    - `timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts` が `components/share/IntentShareDialog/webShare` を値として import している（上の実測には無かった。実測の検索が `IntentShareDialog` の本体の import を対象にし、サブパスの import を拾わなかったため）。
+    - `composer/ThreadComposer/hooks/useThreadSubmit.ts` は「型のみ」と記録したが、実際には `IntentShareDialog/openIntentPopup`（`openIntentPopup`・`preOpenPopupWindow`）と `IntentShareDialog/webShare`（`canShareWithWebApi`・`shareWithWebApi`）を値として import している。型の import は `IntentShareDialog` の本体の 1 件だけである。
+  - 利用元の親は二つのまま（`composer/ThreadComposer/` と `timeline/Timeline/`）。`pages/` からの利用は増えていない。`share` の利用元が単一の親にまとまった事実はない。
+  - `components/feedback/FeedbackForm`・`components/privacy/PolicyCards`・`components/help/Help` の利用元は、上の実測と同じである（`pages/feedback.astro`・`pages/privacy.astro`・`pages/help.astro` のみ。`help` の内部は `Help/index.tsx`・`Help/HelpItem/index.tsx`・`Help/helpEntries` の組み合わせで変わらない）。
+  - `composer/ThreadComposer/rules/shareDispatch.ts`・`pages/jump.astro`・`lib/share/intent.ts`・`lib/share/webShareData.ts` の該当行（`grep -rln "components/share"` の 10 ファイルのうち 4 ファイル）は、いずれも import ではなくコメント（`components/share/...` のパスの言及）である。利用元の数には含めない。
+  - `privacy` の部品が参照する文面は、util-placement の統合により `lib/privacy` から `lib/site/policySections`へ移った。部品の配置には影響しない。
+  - `lib/share` を含む行のあるファイルは `src/`・`tests/` を合わせて 23 ファイル（`grep -rln "lib/share" src tests` の件数。`components/share`・`composer`・`timeline`・`settings`・`common/select`・`lib/settings`・テストを含む）。`lib/feedback` を含む行のあるファイルは 11 ファイル（`grep -rln "lib/feedback" src tests` の件数。`components/feedback/FeedbackForm`・`pages/v2/feedback.ts`・テストを含む）。これらの件数は参考であり、判断の根拠にしない。`lib` 側は残す判断の対象外である。
+  - 検索コマンドと件数（`2026-11-04` 時点）:
+    - `grep -rln "components/share" src tests scripts config` → 10 ファイル（コメントを含む）。値・型の import に限ると `grep -rln 'from "@/components/share/' src tests scripts config` → 6 ファイル。
+    - `grep -rln "components/feedback" src tests scripts config` → 1 ファイル（`src/pages/feedback.astro`）。
+    - `grep -rln "components/privacy" src tests scripts config` → 1 ファイル（`src/pages/privacy.astro`）。
+    - `grep -rln "components/help" src tests scripts config` → 3 ファイル（`src/pages/help.astro`・`Help/index.tsx`・`Help/HelpItem/index.tsx`）。
+    - 相対 import（`../share/`・`./feedback/` など）による参照は 0 件。
+- **Implications**: 利用元の差分（`useWebShareCrosspost.ts` の追加と `useThreadSubmit.ts` の値 import）は、利用元の親が二つのまま変わらないため、判断「残す」を変えない。統合の候補の検討（下の節）の結論も変わらない。`composer` と `timeline` の両方が `share` を使う事実は、再検討の条件（利用元が一方の親だけになること）に該当しない。
+
 ### 統合の候補の検討
 
 - **Context**: 「統合する」の候補がないかを確かめる。
