@@ -7,7 +7,7 @@
 
 /*
   リンクカード用画像（1200x630）と同じ比率・配置で個別画像を並べるグリッド。
-  枚数ごとの分割パターンは src/lib/image/postImageProcessing.ts の getSlotDefs と同一にし、
+  枚数ごとの分割パターンは src/lib/image/postImageProcessing/geometry.ts の getSlotDefs と同一にし、
   実際にBlueskyへ投稿されるリンクカード画像の見た目と一致させる。
 */
 .thumb-grid {

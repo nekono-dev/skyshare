@@ -67,7 +67,7 @@
   - _Boundary: postImageProcessing_
   - _Requirements: 1.1, 1.2, 2.1, 2.3, 2.4_
 
-- [ ] 4.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
+- [x] 4.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
   - 元の export（`TARGET_WIDTH`・`TARGET_HEIGHT`・`CropArea`・`SlotCropState`・`SlotDef`・`loadImage`・`loadImageSize`・`getSlotDefs`・`computeInitialCrop`・`computeCropAroundCenter`・`canUsePostImageAsIs`・`createOgpThumbnailFromBlob`・`CompositeOverlay`・`createProcessedImages`・`createCroppedThumbnail`・`createDefaultThumbnail`）をすべて出す
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0
   - _Boundary: postImageProcessing_
