@@ -41,11 +41,14 @@ export const findUtilSharingViolations = (graph: ModuleGraph): Violation[] => {
     const found: Violation[] = []
     for (const [module, regions] of regionsByUtil) {
         if (regions.size >= MIN_REGIONS) continue
+        // 見つかった領域の名前を並べ、要件 2.2 の「領域を示す」を満たす（0 件のときは「なし」）
+        const names = [...regions].sort()
+        const label = names.length === 0 ? "なし" : names.join(", ")
         found.push({
             ruleId: "utilShared",
             from: module,
             specifier: "",
-            message: `util は二つ以上の領域から使われる（利用元の領域: ${regions.size} 件）`,
+            message: `util は二つ以上の領域から使われる（利用元の領域: ${label}、${names.length} 件）`,
         })
     }
     return found

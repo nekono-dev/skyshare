@@ -116,6 +116,20 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         expect(utilViolations(graph)).toEqual([])
     })
 
+    it("違反の message に、見つかった利用元の領域の名前を含める（要件 2.2）", () => {
+        const one = findUtilSharingViolations(
+            graphOf([useUtil("src/lib/timeline/a.ts")]),
+        ).find(v => v.from === UTIL)
+        expect(one?.message).toContain("lib/timeline")
+        expect(one?.message).toContain("1 件")
+
+        const none = findUtilSharingViolations(graphOf([])).find(
+            v => v.from === UTIL,
+        )
+        expect(none?.message).toContain("なし")
+        expect(none?.message).toContain("0 件")
+    })
+
     it("同じ領域の型だけの import と値の import は一つの領域として数える", () => {
         const graph = graphOf([
             useUtil("src/lib/timeline/a.ts", true),
