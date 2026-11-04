@@ -101,7 +101,7 @@
   - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
 - [ ] 6. 完了時の固定
-- [ ] 6.1 許容リストの完了時の状態を検査するテストを加える
+- [x] 6.1 許容リストの完了時の状態を検査するテストを加える
   - `config/architecture/import-allowlist.json` を `loadAllowlist` で読み、エラーが無いことを確かめる
   - 読み込んだ項目のうち `ruleId` が `libLayer`・`utilShared`・`typesLeaf`・`typesOnly` のものが 0 件であることを確かめる
   - 負例として `utilShared` の項目を持つ一時ファイル（`fs.mkdtempSync`）を読み、その項目が検出されることを確かめる
