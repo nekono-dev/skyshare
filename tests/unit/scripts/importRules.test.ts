@@ -476,11 +476,13 @@ describe("CLI（check-imports）", () => {
     })
 
     it("許容リストにエラーがあると終了コードは 1 になる（要件 6.3）", () => {
+        // reason は埋めておき、失敗の原因を owner の検査の経路だけに絞る
         const bad = {
             ruleId: "cycle",
             from: "src/a.ts",
             specifier: "./b",
             owner: "no-such-spec",
+            reason: "テスト用の理由",
         }
         const result = runImportCheck({
             root: violationsRoot,
@@ -489,6 +491,15 @@ describe("CLI（check-imports）", () => {
             ownerExists,
         })
         expect(result.exitCode).toBe(1)
+        // 終了コード 1 は未許容の違反でも起きるため、owner のエラー行が出ていることも確かめる
+        expect(
+            result.lines.some(
+                line =>
+                    line.startsWith("エラー") &&
+                    line.includes("所有 spec no-such-spec"),
+            ),
+        ).toBe(true)
+        expect(result.lines.some(line => line.includes("reason"))).toBe(false)
     })
 })
 
