@@ -166,7 +166,7 @@
   - _Requirements: 4.1, 4.3, 5.1, 5.2_
 
 - [ ] 9. 最終確認
-- [ ] 9.1 全体の検証を行う
+- [x] 9.1 全体の検証を行う
   - `npm run apigen` を実行し、`git status` で `src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる
   - 分割後の全ファイル（6 件のフォルダの中身・`guest/posts.ts`・`contentEditableModel*.ts`）について、`wc -l` が 400 行以下であることを確かめる
   - 完了の状態: 生成物に差分が無く、全ファイルが 400 行以下
@@ -231,3 +231,4 @@
 - 検証: `test:all` 終了コード 0（unit 437・component 13・route 212・render 2・e2e 7）。unit の件数は前回の 434 から 3 増えたが、テストファイルの追加は無い（原因は未確認。件数は基準以上）。
 - 8.2: 入口 `contentEditableModel.ts` の 11 件（TextPart の型を含む）は元と一致。呼び出し側の import は変更なし。`test:type`・`test:imports` 0。コード変更なし（8.1 で済んでいたため確認のみ）。レビュー APPROVED。
 - 8.3: 検証のみ。component 13 件・ThreadComposer 3 件が分割前と同じ。unit の `composerSplit.test.ts` は rules/ のファイルごとに検査を生成するため、新規 3 ファイル分で件数が 73 → 76 に増えた（条件は緩めていない）。レビュー APPROVED。
+- 9.1: `npm run apigen` を 2 回実行して exit 0、生成物と `docs/` に差分なし（`src/client/openapi/` は gitignore のため sha256 で比較）。分割後 32 ファイル（index を含む）はすべて 400 行以下（最大 329 行）。元ファイルは削除済み。レビュー APPROVED。
