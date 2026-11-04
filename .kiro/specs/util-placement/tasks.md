@@ -88,7 +88,7 @@
   - _Boundary: common/select/Dropdown_
   - _Depends: 1.1_
   - _Requirements: 1.2, 5.2_
-- [ ] 5.4 (P) util/scrollLock を Overlay の内側へ移す
+- [x] 5.4 (P) util/scrollLock を Overlay の内側へ移す
   - util/scrollLock を Overlay の内側へ移し、Overlay の import を付け替える（分類フォルダ dialog の直下には置かない）
   - 完了の条件: util/scrollLock が存在せず、モーダルの表示中の参照カウントの振る舞いが変わらない
   - _Boundary: common/dialog/Overlay_
