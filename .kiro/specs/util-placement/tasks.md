@@ -43,7 +43,7 @@
   - _Requirements: 1.7, 5.2_
 
 - [ ] 4. 業務の判断を lib/atproto と lib/feedback へ、型を src/types へ移す
-- [ ] 4.1 (P) 国旗・リンク化・オブジェクト判定を lib/atproto へ移す
+- [x] 4.1 (P) 国旗・リンク化・オブジェクト判定を lib/atproto へ移す
   - util/emoji/countryFlag・util/autoLink・util/object を lib/atproto の内側へ移し、利用元（languageFlag・richTextSegments・draft）の import を付け替える
   - 移動した兄弟どうしの import（例: `draft` → `object`）は、相対 import（`./`）にする
   - 完了の条件: util/emoji が存在せず、三つの利用元が移動の前と同じ結果を返し、lib/atproto から util への参照が 0 件

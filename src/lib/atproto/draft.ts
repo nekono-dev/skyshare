@@ -9,7 +9,7 @@
  *   下書きを表す（`app.bsky.draft#draft.posts` にそのまま対応）。
  */
 
-import { isObjectRecord } from "@/util/object"
+import { isObjectRecord } from "./object"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 
 export type DraftPostPayload = {

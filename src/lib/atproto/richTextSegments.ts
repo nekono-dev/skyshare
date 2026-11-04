@@ -8,7 +8,7 @@
  * - 指定した facets の範囲の文字を本文から取り除く（`specs/link-card-priority`）。
  * - `@atproto/*` を import しない純粋関数のみで構成する（クライアントの bundle と cold start の負担を増やさないため）。
  */
-import { findHashtagRanges, findUrlRanges } from "@/util/autoLink"
+import { findHashtagRanges, findUrlRanges } from "./autoLink"
 
 export type PostFacetFeature =
     | { $type: "app.bsky.richtext.facet#mention"; did: string }
