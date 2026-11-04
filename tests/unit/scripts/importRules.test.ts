@@ -339,7 +339,9 @@ describe("許容リスト（allowlist）", () => {
 })
 
 describe("CLI（check-imports）", () => {
-    const ownerExists = (owner: string) => owner.startsWith("src-")
+    // 実際の検査は .kiro/specs の存在を見る。規則の既定の所有 spec（structure-checks など）も存在するものとして扱う
+    const ownerExists = (owner: string) =>
+        owner.startsWith("src-") || owner === "structure-checks"
     const writeAllowlist = (entries: unknown[]) => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "import-cli-"))
         const file = path.join(dir, "import-allowlist.json")
@@ -500,6 +502,84 @@ describe("CLI（check-imports）", () => {
             ),
         ).toBe(true)
         expect(result.lines.some(line => line.includes("reason"))).toBe(false)
+    })
+
+    describe("utilShared の合流（structure-checks 3.2）", () => {
+        const utilSharedRoot = path.resolve(
+            __dirname,
+            "../../fixtures/import-rules/util-shared",
+        )
+        const utilSharedOkRoot = path.resolve(
+            __dirname,
+            "../../fixtures/import-rules/util-shared-ok",
+        )
+        const lonelyEntry = {
+            ruleId: "utilShared",
+            from: "src/util/lonely.ts",
+            specifier: "",
+            owner: "structure-checks",
+            reason: "テスト用の理由",
+        }
+
+        it("利用元の領域が一つだけの util は違反として表示され、終了コード 1 になる（要件 2.5・7.1）", () => {
+            const result = runImportCheck({
+                root: utilSharedRoot,
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.exitCode).toBe(1)
+            expect(
+                result.lines.some(line =>
+                    line.startsWith("違反: [utilShared] src/util/lonely.ts"),
+                ),
+            ).toBe(true)
+        })
+
+        it("理由付きで許容リストに載れば、終了コード 0 になる（要件 2.5・7.1）", () => {
+            const result = runImportCheck({
+                root: utilSharedRoot,
+                allowlistPath: writeAllowlist([lonelyEntry]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.exitCode).toBe(0)
+            expect(result.lines.some(line => line.startsWith("違反:"))).toBe(
+                false,
+            )
+        })
+
+        it("利用元が二つの領域にある util は違反にならず、終了コード 0 になる（要件 2.5）", () => {
+            const result = runImportCheck({
+                root: utilSharedOkRoot,
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.exitCode).toBe(0)
+            expect(result.lines.some(line => line.includes("utilShared"))).toBe(
+                false,
+            )
+        })
+
+        it("--emit-allowlist の下書きに utilShared の項目が出て、所有 spec は structure-checks になる（要件 7.1）", () => {
+            const draft = runImportCheck({
+                root: utilSharedRoot,
+                allowlistPath: "",
+                emit: true,
+                ownerExists: ownerExists,
+            })
+            const parsed = JSON.parse(draft.lines.join("\n")) as {
+                entries: { ruleId: string; owner: string; from: string }[]
+            }
+            expect(parsed.entries).toContainEqual(
+                expect.objectContaining({
+                    ruleId: "utilShared",
+                    from: "src/util/lonely.ts",
+                    owner: "structure-checks",
+                }),
+            )
+        })
     })
 })
 

@@ -17,6 +17,7 @@ import { checkAllowlist, emitAllowlist, loadAllowlist } from "./allowlist"
 import { findCycleViolations } from "./cycles"
 import { scanModules } from "./importGraph"
 import { evaluateImportRules, type Violation } from "./rules"
+import { findUtilSharingViolations } from "./utilSharing"
 
 export type ImportCheckOptions = {
     root: string
@@ -40,6 +41,7 @@ export const runImportCheck = (
     const violations = [
         ...evaluateImportRules(graph),
         ...findCycleViolations(graph),
+        ...findUtilSharingViolations(graph),
     ]
 
     if (options.emit) {

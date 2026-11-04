@@ -42,7 +42,7 @@
   - _Boundary: UtilSharingRule_
   - _Depends: 2.1_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 6.2_
-- [ ] 3.2 utilShared の違反を検査の CLI に合流させる
+- [x] 3.2 utilShared の違反を検査の CLI に合流させる
   - `check-imports.ts` の違反の一覧に `findUtilSharingViolations` の結果を加える。`typesLeaf` は `evaluateImportRules` の辺の規則（3.3）として自動で加わる
   - 許容されない `utilShared` の違反は「違反」として表示され、終了コード 1 になる。許容リストに理由付きで載れば終了コード 0 になる
   - 完了時の状態: 既存の CLI の負例（終了コード・許容・stale）が変わらず通り、`utilShared` の負例が終了コード 1 を返す
