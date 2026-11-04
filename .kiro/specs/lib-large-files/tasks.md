@@ -152,7 +152,7 @@
   - _Boundary: contentEditableModel_
   - _Requirements: 1.1, 2.1, 2.3, 2.4_
 
-- [ ] 8.2 `contentEditableModel.ts` で元の export を再エクスポートする（ファイルは残す）
+- [x] 8.2 `contentEditableModel.ts` で元の export を再エクスポートする（ファイルは残す）
   - 元の export（`TextPart`・`CARET_ANCHOR`・`partsToPlainText`・`resolvePartOffset`・`extractPlainText`・`resolveIndexToNodeOffset`・`getPlainTextSelection`・`setPlainTextCaret`・`findCaretAnchorNode`・`resolveAnchorAwareDeleteText`・`measureIndexPixelPosition`）をすべて出す
   - 元のパス（`contentEditableModel.ts`）を残すため、呼び出し側（`useSuggest`・`PostBodyEditor`・`contentEditableReconcile`・`highlightNodeParts`）の import は変えない
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0
@@ -229,3 +229,4 @@
 - `contentEditableModelParts.ts`（純粋）・`contentEditableModelDom.ts`・`contentEditableModelEdit.ts` に分け、元のパスの `contentEditableModel.ts` は再エクスポートの入口として残した（11 件）。呼び出し側の import は変えていない。
 - 設計からの逸脱（許容）: `hasLeadingAnchor`・`stripLeadingAnchor` は design で内部とされていたが、Dom が使うため `Parts` から export した。入口からは出していない。Parts は DOM に依存しない。レビュー APPROVED。
 - 検証: `test:all` 終了コード 0（unit 437・component 13・route 212・render 2・e2e 7）。unit の件数は前回の 434 から 3 増えたが、テストファイルの追加は無い（原因は未確認。件数は基準以上）。
+- 8.2: 入口 `contentEditableModel.ts` の 11 件（TextPart の型を含む）は元と一致。呼び出し側の import は変更なし。`test:type`・`test:imports` 0。コード変更なし（8.1 で済んでいたため確認のみ）。レビュー APPROVED。
