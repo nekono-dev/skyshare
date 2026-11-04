@@ -137,7 +137,7 @@
   - 完了の条件: 三つの検査が終了コード 0 で、循環の検出が 0 件、grep の該当が 0 件
   - _Depends: 7.1_
   - _Requirements: 2.4, 5.4, 7.3_
-- [ ] 7.3 全体の検査と生成物の差分を確認する
+- [x] 7.3 全体の検査と生成物の差分を確認する
   - `npm run test:all` が終了コード 0 で、通過件数が 1.1 で記録した基準を下回らないことを確かめる
   - `npm run apigen` の後に `src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる
   - 完了の条件: test:all の終了コードが 0、件数が基準以上、apigen の差分が 0
@@ -182,3 +182,8 @@
 - 利用者の判断（未決）: これらの文書の旧パスを「経緯の記録」として残すか、「現況」として直すか。
 - 利用者の判断（未決）: roadmap.md の 333 行（`util/` の利用元の一覧）は移動の前の状態を書いたままである。これを現況に直すか、分析の記録として残すかは利用者が決める。
 - util 直下は 5 件（formData・http・padTwoDigits・utf8Bytes・waitForImageLoad）と一致した。`formData.ts` の型以外は HEAD（基準は 1c65503）から変わっていない。
+
+### 7.3 全体の検査（記録）
+
+- `npm run test:all`: 終了コード 0。unit 49/49（327 件）、component 5/5（13 件）、route 23/23（212 件）、render 1/1（2 件）、e2e 7 件。基準（1.1）を満たす。
+- `npm run apigen` の後、`src/client/openapi/` と OpenAPI 文書に差分は無い。`git diff 1c65503..HEAD -- src/client docs` も空。
