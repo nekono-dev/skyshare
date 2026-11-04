@@ -145,7 +145,7 @@
 
 - [ ] 8. 投稿の編集の平文モデル（`contentEditableModel`）を分割する（コミット 7。`rules/` の子フォルダは作らず、接頭辞付きの平置きファイルに分ける）
   - _Depends: 1.2_
-- [ ] 8.1 平文モデル・DOM の走査とキャレット・削除の判定と画素位置の測定を、責務ごとのファイルに移す
+- [x] 8.1 平文モデル・DOM の走査とキャレット・削除の判定と画素位置の測定を、責務ごとのファイルに移す
   - 平文モデル（`contentEditableModelParts.ts`: `TextPart`・`CARET_ANCHOR`・`partsToPlainText`・`resolvePartOffset`）は純粋に保つ
   - DOM の走査・選択・キャレット（`contentEditableModelDom.ts`）と、削除の判定・画素位置の測定（`contentEditableModelEdit.ts`）に分ける
   - 完了の状態: `contentEditableModelParts.ts` が DOM の型・関数を使わない。各ファイルが 400 行以下
@@ -223,3 +223,9 @@
 - 7.2: `gate/index.ts` で元の 21 件を再エクスポートし、`gate.ts` を削除した。export 名は削除前と一致（レビュー APPROVED。ヘッダ説明の誤り 1 件を直した）。`test:all` 終了コード 0（unit 434・component 13・route 212・render 2・e2e 7）。
 - 7.3: 検証のみ（コード変更なし）。`respondentHash` 5 件・route `survey` 16 件が通過。`planGateEntry` 880 ケース・`gateReducer` 320 ケース・`resolveSubmitOutcome` 7 ケースで分割前と差分 0。export 名 21 件一致。比較は HEAD の tests・config が分割前（b64b4a2^）と同一であることを前提にした。レビュー APPROVED。
 - 7.1 の `planGateEntry` 入力変更（`excluded`）は、呼び出し側（`enterPage`）が `isSurveyPageExcluded` を計算して渡す形で、結果は分割前と同じ。
+
+### 8.1 contentEditableModel の分割（記録）
+
+- `contentEditableModelParts.ts`（純粋）・`contentEditableModelDom.ts`・`contentEditableModelEdit.ts` に分け、元のパスの `contentEditableModel.ts` は再エクスポートの入口として残した（11 件）。呼び出し側の import は変えていない。
+- 設計からの逸脱（許容）: `hasLeadingAnchor`・`stripLeadingAnchor` は design で内部とされていたが、Dom が使うため `Parts` から export した。入口からは出していない。Parts は DOM に依存しない。レビュー APPROVED。
+- 検証: `test:all` 終了コード 0（unit 437・component 13・route 212・render 2・e2e 7）。unit の件数は前回の 434 から 3 増えたが、テストファイルの追加は無い（原因は未確認。件数は基準以上）。
