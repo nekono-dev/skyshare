@@ -37,7 +37,7 @@
   - _Requirements: 1.1, 4.1, 4.3, 5.1, 5.2_
 
 - [ ] 3. `lib/session/cookies` を `cookies/` に分割する（コミット 2）
-- [ ] 3.1 Cookie の codec・セッションのモデル・プールの判断・ヘッダの組み立てを、責務ごとのファイルに移す
+- [x] 3.1 Cookie の codec・セッションのモデル・プールの判断・ヘッダの組み立てを、責務ごとのファイルに移す
   - codec（base64・Cookie の解析）→ model（型と検証）→ pool（プールの判断）→ headers（Set-Cookie と Request の解析）の順に参照が一方向になるようにする
   - `@/env` の `atpService` は、それを使う `model.ts` が import する
   - 完了の状態: 循環が無く、各ファイルの先頭コメントが責務を一文で示す
