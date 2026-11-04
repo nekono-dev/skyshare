@@ -10,7 +10,7 @@
   - _Requirements: 7.3_
 
 - [ ] 2. 規則の一覧と許容リストの理由（基盤）
-- [ ] 2.1 規則の一覧を一本化し、規則 utilShared・typesLeaf・typesOnly を加える
+- [x] 2.1 規則の一覧を一本化し、規則 utilShared・typesLeaf・typesOnly を加える
   - _Depends: lib-layers 4.1, util-placement 6.1_
   - `RULE_IDS` を `rules.ts` で定義し、`RuleId` をそこから導き、`allowlist.ts` はそれを import する。これにより、lib-layers 4.1 が `RuleId`（`rules.ts`）と `allowlist.ts` の `RULE_IDS` に加えた `libLayer` の二つの定義を、`rules.ts` の一つの定義に置き換える（規則の一覧の単一の正は `rules.ts`）
   - 規則 `utilShared` の根拠（`RULE_BASIS`）を「共通（`src/util/`・`src/styles/`）」の節として書く
@@ -147,3 +147,8 @@
 - 完了の時点で、`structure.md` の 63 行目「葉と型だけの規則（typesLeaf・typesOnly）は、現時点の npm run test:imports では検査しない」は、3.3・3.5 の完了時に直す。同じ理由で `utilShared` も 3.2・3.5 の完了時に注を直す。
 - 部品の節の骨格の記述（「骨格は `components/layout/Baselayout/` に置く」）は layout-home 3.2 で書かれ、5.2 の検査は「`src/layout/` を置かない旨」の文言を見る。文言が足りなければ 5.2 で扱う。
 - util 節の「複数領域」を「二つ以上の領域」へ言い換えた（意味は同じ）。
+
+### 2.1 規則の一覧の一本化（記録）
+
+- `DEFAULT_OWNERS` に `utilShared`・`typesLeaf`・`typesOnly`（所有 spec は `structure-checks`）を 2.1 で加えた。`RuleId` を広げると型の `Record<RuleId, string>` が欠けて `test:type` が失敗するため、型の整合のために前倒しした。2.2 では重複して加えない。2.2 は `reason` の追加と読み込みの検証だけを行う。
+- 「すべての規則に根拠の節が紐づく」検査は `RULE_IDS` の全件で回す（手書きの配列は廃止）。根拠の節名（`structure.md` の見出し）との一致は、現状ではファイル名（`structure.md`）の包含だけを見ている。節名の一致の検査は後続で加える余地がある。

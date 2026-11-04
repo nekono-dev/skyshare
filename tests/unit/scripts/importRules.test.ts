@@ -14,7 +14,7 @@ import { regionOf } from "../../../scripts/architecture/regions"
 import {
     evaluateImportRules,
     RULE_BASIS,
-    type RuleId,
+    RULE_IDS,
 } from "../../../scripts/architecture/rules"
 import { findCycleViolations } from "../../../scripts/architecture/cycles"
 import {
@@ -433,15 +433,7 @@ describe("想定の構成からの独立（要件 10）", () => {
     })
 
     it("すべての規則に、根拠となる steering の節が紐づいている（要件 10.1）", () => {
-        const ids: RuleId[] = [
-            "layer",
-            "uiInLib",
-            "cycle",
-            "crossRegionRelative",
-            "relativeDepth",
-            "jsExtension",
-        ]
-        for (const id of ids) {
+        for (const id of RULE_IDS) {
             expect(RULE_BASIS[id]).toMatch(/structure\.md/)
         }
     })

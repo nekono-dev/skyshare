@@ -10,14 +10,24 @@ import type { ModuleGraph, ImportEdge } from "./importGraph"
 import { libLayerOf } from "./libLayers"
 import { regionOf } from "./regions"
 
-export type RuleId =
-    | "layer"
-    | "uiInLib"
-    | "cycle"
-    | "crossRegionRelative"
-    | "relativeDepth"
-    | "jsExtension"
-    | "libLayer"
+/**
+ * 規則の一覧（規則の単一の正）。`RuleId` はここから導き、許容リスト（allowlist.ts）も
+ * この一覧を import する。規則を加えるときは、ここと `RULE_BASIS` を同じ変更で更新する。
+ */
+export const RULE_IDS = [
+    "layer",
+    "uiInLib",
+    "cycle",
+    "crossRegionRelative",
+    "relativeDepth",
+    "jsExtension",
+    "libLayer",
+    "utilShared",
+    "typesLeaf",
+    "typesOnly",
+] as const
+
+export type RuleId = (typeof RULE_IDS)[number]
 
 export type Violation = {
     ruleId: RuleId
@@ -38,6 +48,10 @@ export const RULE_BASIS: Record<RuleId, string> = {
     jsExtension: "structure.md「Import Organization」（拡張子は付けない）",
     libLayer:
         "structure.md「lib の領域の依存の向き」（基盤は業務を import しない）",
+    utilShared:
+        "structure.md「共通（`src/util/`・`src/styles/`）」（util は二つ以上の領域から使われる）",
+    typesLeaf: "structure.md「型（`src/types/`）」（型は葉で、外へ依存しない）",
+    typesOnly: "structure.md「型（`src/types/`）」（型の文だけを置く）",
 }
 
 const REACT_PACKAGE = /^react(-|\/|$)/

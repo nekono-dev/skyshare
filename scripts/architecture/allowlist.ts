@@ -11,7 +11,7 @@
  * - 所有 spec は存在だけを見る（承認の状態は見ない）。
  */
 import fs from "node:fs"
-import type { RuleId, Violation } from "./rules"
+import { RULE_IDS, type RuleId, type Violation } from "./rules"
 
 export type AllowlistEntry = {
     ruleId: RuleId
@@ -31,16 +31,6 @@ export type CheckResult = {
     listedCount: number
 }
 
-const RULE_IDS: readonly RuleId[] = [
-    "layer",
-    "uiInLib",
-    "cycle",
-    "crossRegionRelative",
-    "relativeDepth",
-    "jsExtension",
-    "libLayer",
-]
-
 /** 規則ごとの既定の所有 spec（設計の表と一致させる）。 */
 export const DEFAULT_OWNERS: Record<RuleId, string> = {
     layer: "src-pages-thin",
@@ -50,6 +40,9 @@ export const DEFAULT_OWNERS: Record<RuleId, string> = {
     relativeDepth: "src-import-style",
     jsExtension: "src-import-style",
     libLayer: "lib-layers",
+    utilShared: "structure-checks",
+    typesLeaf: "structure-checks",
+    typesOnly: "structure-checks",
 }
 
 const keyOf = (item: {
