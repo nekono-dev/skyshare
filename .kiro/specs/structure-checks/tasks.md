@@ -107,7 +107,7 @@
   - 負例として `utilShared` の項目を持つ一時ファイル（`fs.mkdtempSync`）を読み、その項目が検出されることを確かめる
   - 完了時の状態: `tests/unit/scripts/allowlistCompletion.test.ts` が通る
   - _Requirements: 1.4, 4.4, 8.5_
-- [ ] 6.2 実リポジトリで util の汎用性の違反が 0 件であることを確かめる
+- [x] 6.2 実リポジトリで util の汎用性の違反が 0 件であることを確かめる
   - `scanModules` で実リポジトリを読み、`findUtilSharingViolations` の結果が 0 件であることを `utilSharing.test.ts` で確かめる
   - 同じ `scanModules` の結果で、`src/types/` の `.ts` の本文に `findTypesOnlyViolations` を適用し、`typesLeaf` の辺が 0 件であることを `typesRules.test.ts` で確かめる
   - 完了時の状態: 実リポジトリの `src/util/` の残り 5 件がすべて二つ以上の領域から使われ、テストが通る

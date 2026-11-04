@@ -5,14 +5,18 @@
  * - `evaluateImportRules` に加わった辺の規則 typesLeaf を、ModuleGraph の値（fixture）で固定する。
  * - 違反（`src/types/` から、`src/types/` の外のモジュール・パッケージへの辺）と、正例（型どうし・外から型への辺）を確かめる。
  * - 型だけの辺（`import type`）も違反として数えることを確かめる。
- * - 実リポジトリの検査は `npm run test:imports` が受け持つ（このテストは読まない）。
+ * - 末尾の describe で、実リポジトリの `src/types/` の辺と本文が 0 件であることを確かめる（6.2）。
  */
+import { readFileSync } from "node:fs"
+import path from "node:path"
 import { describe, expect, it } from "vitest"
 import type {
     ImportEdge,
     ModuleGraph,
 } from "../../../scripts/architecture/importGraph"
+import { scanModules } from "../../../scripts/architecture/importGraph"
 import { evaluateImportRules } from "../../../scripts/architecture/rules"
+import { findTypesOnlyViolations } from "../../../scripts/architecture/typesOnly"
 
 /** `from` から `specifier` の import 辺を作る。target はモジュールまたはパッケージ。 */
 const edgeTo = (
@@ -104,5 +108,30 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
             edgeTo("src/lib/x.ts", { kind: "module", path: "src/types/a.ts" }),
         ])
         expect(found).toEqual([])
+    })
+})
+
+// 実リポジトリの走査（6.2）。`src/types/` の型だけの辺と本文が 0 件であること
+const repoRoot = path.resolve(__dirname, "../../..")
+
+describe("実リポジトリの src/types/（structure-checks 6.2）", () => {
+    const graph = scanModules(repoRoot)
+    const typesFiles = graph.modules
+        .filter(m => m.startsWith("src/types/") && m.endsWith(".ts"))
+        .map(m => ({
+            path: m,
+            text: readFileSync(path.join(repoRoot, m), "utf8"),
+        }))
+
+    it("typesLeaf の辺が 0 件である（要件 8.5）", () => {
+        const found = evaluateImportRules(graph).filter(
+            v => v.ruleId === "typesLeaf",
+        )
+        expect(found).toEqual([])
+    })
+
+    it("src/types/ の本文に typesOnly の違反が 0 件である（要件 8.5）", () => {
+        expect(typesFiles.length).toBeGreaterThan(0)
+        expect(findTypesOnlyViolations(typesFiles)).toEqual([])
     })
 })

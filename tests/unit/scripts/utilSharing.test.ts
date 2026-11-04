@@ -5,13 +5,15 @@
  * - `findUtilSharingViolations` の判定を、fixture のグラフ（ModuleGraph の値）で固定する。
  * - 負例（領域が一つ・0 件・util 内からのみ・pages 直下の二つのファイル）と正例（領域が二つ）を確かめる。
  * - tests/・scripts/ からの import は利用元に数えず、型だけの import は数えることを確かめる。
- * - 実リポジトリの `src/util/` は読まない（6.2 の範囲）。
+ * - 末尾の describe で、実リポジトリの `scanModules` の結果に対して違反が 0 件であることを確かめる（6.2）。
  */
+import path from "node:path"
 import { describe, expect, it } from "vitest"
 import type {
     ImportEdge,
     ModuleGraph,
 } from "../../../scripts/architecture/importGraph"
+import { scanModules } from "../../../scripts/architecture/importGraph"
 import { findUtilSharingViolations } from "../../../scripts/architecture/utilSharing"
 
 const UTIL = "src/util/format.ts"
@@ -120,5 +122,15 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
             useUtil("src/lib/timeline/b.ts", false),
         ])
         expect(utilViolations(graph).map(v => v.from)).toEqual([UTIL])
+    })
+})
+
+// 実リポジトリの走査（6.2）。`src/util/` の各モジュールは二つ以上の領域から使われること
+const repoRoot = path.resolve(__dirname, "../../..")
+
+describe("実リポジトリの util の汎用性（structure-checks 6.2）", () => {
+    it("src/util/ の違反が 0 件である（要件 2.6）", () => {
+        const graph = scanModules(repoRoot)
+        expect(findUtilSharingViolations(graph)).toEqual([])
     })
 })
