@@ -130,7 +130,7 @@
   - _Boundary: survey/gate_
   - _Requirements: 1.1, 2.1, 2.3, 2.4_
   - 決定（2026-11-04、利用者の判断 (a)）: `planGateEntry` の入力に `excluded: boolean` を足し、除外の判定（`isSurveyPageExcluded`）は呼び出し側の `enterPage`（`runtime.ts`）で行って結果を渡す。`state.ts` は `launchCheck`・`deviceRecord` を import しない。入力が同じなら結果は HEAD と同じで、export 名（`planGateEntry`）は残す。シグネチャ変更はこの 1 点のみ。design.md の `survey/gate` の節にも同じ決定を書いた。
-- [ ] 7.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
+- [x] 7.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
   - 元の export（`GateCheckResult`・`GateDeps`・`SubmitAnswers`・`SubmitOutcome`・`runGateCheck`・`resolveSubmitOutcome`・`GateEntryPlan`・`planGateEntry`・`GateState`・`initialGateState`・`GateAction`・`gateReducer`・`GateRuntime`・`DeclineRuntime`・`enterPage`・`applySubmitResult`・`applyDecline`・`handleDecline`・`handleSubmit`・`createLiveRuntime`・`createDialogHandlers`）をすべて出す
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0。`SurveyGate` の import（`@/lib/survey/gate`）が変わらない
   - _Boundary: survey/gate_
@@ -220,3 +220,4 @@
 
 - `planGateEntry` に `excluded` 入力を足し（利用者の決定 (a)）、`state.ts`・`check.ts`・`runtime.ts` に分けた。`gate.ts` は 7.2 まで再エクスポートの入口として残す。
 - 検証: `test:all` 終了コード 0（unit 434・component 13・route 212・render 2・e2e 7）。レビュー APPROVED（指摘は任意の Suggestion のみ）。
+- 7.2: `gate/index.ts` で元の 21 件を再エクスポートし、`gate.ts` を削除した。export 名は削除前と一致（レビュー APPROVED。ヘッダ説明の誤り 1 件を直した）。`test:all` 終了コード 0（unit 434・component 13・route 212・render 2・e2e 7）。
