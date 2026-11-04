@@ -59,7 +59,7 @@
   - _Requirements: 1.1, 4.1, 5.1, 5.2_
 
 - [ ] 4. `lib/image/postImageProcessing` を `postImageProcessing/` に分割する（コミット 3）
-- [ ] 4.1 幾何・画像の読み込み・Canvas の圧縮・合成の公開の処理を、責務ごとのファイルに移す
+- [x] 4.1 幾何・画像の読み込み・Canvas の圧縮・合成の公開の処理を、責務ごとのファイルに移す
   - 切り抜きの幾何（純粋）・画像の読み込み・Canvas の Blob 化と圧縮（バイト予算）・合成と公開の処理（`compose`）を分ける
   - `compose` が `encode` と `geometry` を参照し、逆向きの参照を作らない
   - `VISUAL_IMAGE_COUNT` の import は、それを使う `compose` が持つ
