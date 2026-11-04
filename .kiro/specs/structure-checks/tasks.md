@@ -115,13 +115,13 @@
   - _Requirements: 2.6, 8.5_
 
 - [ ] 7. 完了の確認
-- [ ] 7.1 検査と全体のテストを実行し、終了コードを確かめる
+- [x] 7.1 検査と全体のテストを実行し、終了コードを確かめる
   - `npm run test:imports` が終了コード 0 で、違反・許容のエラー・stale が 0 件であることを確かめる
   - `npm run test:all` が終了コード 0 で終わることを確かめる
   - 完了時の状態: 両方のコマンドの終了コードが 0 である
   - _Depends: 2.3, 3.2, 3.3, 3.5, 4.1, 5.1, 5.2, 6.1, 6.2, lib-layers 4.2, util-placement 7.3, components-small-areas, lib-large-files_
   - _Requirements: 7.1, 7.2_
-- [ ] 7.2 通過件数と非変更を確かめる
+- [x] 7.2 通過件数と非変更を確かめる
   - `npm run test:all` の通過件数が 1.1 で記録した基準を下回らないことを確かめる
   - 変更が `scripts/`・`tests/`・`config/architecture/`・`.kiro/steering/structure.md` だけに限られ、`src/` の製品コードと生成物（`src/client/openapi/`）に差分が無いことを `git status` で確かめる
   - 完了時の状態: 件数が基準以上で、製品コードと生成物に差分が無い
@@ -153,3 +153,11 @@
 - `DEFAULT_OWNERS` に `utilShared`・`typesLeaf`・`typesOnly`（所有 spec は `structure-checks`）を 2.1 で加えた。`RuleId` を広げると型の `Record<RuleId, string>` が欠けて `test:type` が失敗するため、型の整合のために前倒しした。2.2 では重複して加えない。2.2 は `reason` の追加と読み込みの検証だけを行う。
 - 「すべての規則に根拠の節が紐づく」検査は `RULE_IDS` の全件で回す（手書きの配列は廃止）。根拠の節名（`structure.md` の見出し）との一致は、現状ではファイル名（`structure.md`）の包含だけを見ている。節名の一致の検査は後続で加える余地がある。
 - 2.2 の記録: CLI の「存在しない owner」テストの項目に `reason` が無いため、owner の検査ではなく reason の欠落で終了コード 1 になっている。2.3 で `reason` を加えて owner の経路を単独で検証し直す。
+
+### 7.1・7.2 完了の確認（記録）
+
+- `npm run test:imports`: 終了コード 0（違反 0・許容 0・stale 0）。
+- `npm run test:all`: 終了コード 0。unit 437（基準 341 以上）・component 13・route 212・render 2・e2e 7（基準と一致または以上）。
+- 非変更: structure-checks の範囲（2842cca^〜ce836e7）で `src/` の差分は無い。生成物 `src/client/openapi/` は apigen 前後で sha256 一致。
+- 注記: 検証時の HEAD には、structure-checks の範囲の後に入った lib-large-files 由来の `src/` 変更（14926bf・4b1281a・b64b4a2）が含まれる。これは別 spec の作業で、structure-checks の完了条件の対象外。
+- レビュー APPROVED（検証のみ）。
