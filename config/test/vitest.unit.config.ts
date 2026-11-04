@@ -33,8 +33,8 @@ export default defineConfig({
         environment: "node",
         include: ["tests/unit/**/*.test.ts"],
         // P0 の unit 層モジュール（要件 4.1）。閾値は分岐 80%。
-        // cookies/ は 1 ファイルから 4 ファイルへ分割したため、ファイル単位ではなくフォルダ合算で判定する
-        // （vitest は glob の閾値を該当ファイルの合算で評価する。perFile は使わない）
+        // cookies/ は 1 ファイルから 4 ファイルへ分割した。フォルダ合算の回避策は使わず、
+        // 4 ファイルのそれぞれを単独で分岐 80% 以上と判定する（index.ts は再エクスポートのみのため対象外）
         coverage: {
             enabled: true,
             provider: "istanbul",
@@ -56,7 +56,10 @@ export default defineConfig({
                 "src/lib/share/counterReserve.ts",
             ],
             thresholds: {
-                "src/lib/session/cookies/**": { branches: 80 },
+                "src/lib/session/cookies/codec.ts": { branches: 80 },
+                "src/lib/session/cookies/model.ts": { branches: 80 },
+                "src/lib/session/cookies/pool.ts": { branches: 80 },
+                "src/lib/session/cookies/headers.ts": { branches: 80 },
                 "src/lib/schedule/credentialCrypto.ts": { branches: 80 },
                 "src/lib/survey/respondentHash.ts": { branches: 80 },
                 "src/lib/entry/createBskyThread.ts": { branches: 80 },

@@ -189,10 +189,13 @@
 - 2.1 はレビュー承認の後に、2.2 は承認の後にコミットした（コミットは b09377d・c5f16f6）。
 - 予約の経路のテスト（route 23 ファイル 212 件、unit のスケジュール 3 ファイル 13 件）が通過した。
 
-### 3.2 カバレッジの閾値（記録・利用者の判断待ち）
+### 3.2 カバレッジの閾値（利用者の決定により解決）
 
-- `session/cookies` を分けたため、分岐カバレッジの閾値（80%）は単一ファイルから `src/lib/session/cookies/**` の合計へ変えた（`config/test/vitest.unit.config.ts`）。閾値の値は変えていない。合計は 80.28%。
-- `codec.ts` 単体の分岐は 50%（base64 と Cookie 解析の異常系が未テスト）。合計の余裕は 0.28 点で、他のファイルの後退で閾値を割りうる。テストの追加か、この合計の扱いを利用者が決める。
+- 利用者の決定: `session/cookies` の各ファイルが、フォルダ合算ではなく単独で分岐カバレッジ 80% を満たすこと。フォルダ合算の回避策は使わない。
+- 対応: `codec.ts`・`model.ts`・`pool.ts`・`headers.ts` それぞれにファイル単位の閾値（分岐 80%）を置いた（`config/test/vitest.unit.config.ts`）。`index.ts` は再エクスポートのみのため閾値の対象外。
+- 変更前の分岐: `codec.ts` 50.00%、`model.ts` 87.50%、`pool.ts` 83.33%、`headers.ts` 82.60%（合計 80.28%）。`codec.ts` の base64 と Cookie 解析の異常系が未テストだった。
+- 変更後の分岐: `codec.ts` 90.00%、`model.ts` 87.50%、`pool.ts` 83.33%、`headers.ts` 82.60%。テストは `tests/unit/lib/session/codecEdgeCases.test.ts`（14 件）を新規に追加した。既存の `cookies.test.ts` は変えていない。
+- `model.ts`・`pool.ts`・`headers.ts` は 80% を超えているが余裕は小さい。今後の変更で割れやすい。
 - `config/test/stryker.config.mjs` の mutate も 4 ファイルへ変えた。
 - 3.3: Cookie・セッションのテスト（unit 1 ファイル 12 件、route の session・pages 12 ファイル 139 件）が通過した。
 
