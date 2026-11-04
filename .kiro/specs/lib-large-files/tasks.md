@@ -29,7 +29,7 @@
   - _Boundary: schedule/store_
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 2.3 予約の経路のテストで検証し、コミットする
+- [x] 2.3 予約の経路のテストで検証し、コミットする
   - `tests/route/schedule/*`・`tests/route/pages/schedule*.test.ts`・`tests/route/pages/scheduleCleanup.test.ts` を実行し、件数と結果が分割前と同じであることを確かめる
   - `wc -l` で分割後の全ファイルが 400 行以下であることを確かめる
   - 完了の状態: 対象のテストが通り、この分割だけのコミットが作られている
@@ -182,3 +182,9 @@
 - `npm run test:all`（着手前）: 終了コード 0。unit 49/49（327 件）、component 5/5（13 件）、route 23/23（212 件）、render 1/1（2 件）、e2e 7 件。`npm run apigen` の差分は無い。
 - 分割対象 7 件の行数は、design の表と一致する。`lib/settings/shareSettings.ts` は util-placement の import 変更（70de585）により 718 行から 716 行になっていたため、design の表を 716 に直した（記録の日付は 2026-11-04）。
 - 上流（lib-layers・util-placement）は完了している。`contentEditableModel` の所在と、`shareSettings` の import 元（`@/lib/share/intent`・`@/lib/share/autoPopupTarget`）を確認した。
+
+### 2.1〜2.3 store の分割（記録）
+
+- `lib/schedule/store.ts` を `store/` に分けた（rows・schedules・execution・credentials・oauthState と index）。公開名 32 件は index で変わらない。
+- 2.1 はレビュー承認の後に、2.2 は承認の後にコミットした（コミットは b09377d・c5f16f6）。
+- 予約の経路のテスト（route 23 ファイル 212 件、unit のスケジュール 3 ファイル 13 件）が通過した。
