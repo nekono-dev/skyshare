@@ -109,6 +109,47 @@
 
 領域を追加・削除したときは、この一覧を更新する（`tests/unit/scripts/steeringRegions.test.ts` が、実装と一覧の差を報告する）。
 
+## 領域の判断の記録
+
+小さい部品領域（`share`・`feedback`・`privacy`・`help`）を、統合するか残すかの判断の記録。判断は下の統合の条件から導き、判断の時点の利用元を表に残す。判断は配置だけを対象とし、部品の内部は変えない。
+
+### 統合の条件
+
+部品 P を親 H の子フォルダ（`H/P/`）へ統合するのは、P のすべての利用元が H の部品フォルダの内側にあるときだけである（「利用元の内側に置く」の規則の適用）。次のどちらかに当たるときは統合せず、現在の領域の直下に残す。
+
+- 利用元が二つ以上の親にまたがる。
+- 利用元に `src/pages/` のファイルを含む（統合先の親の部品フォルダの外にある）。
+
+### 判断の表
+
+| 領域       | 部品                                   | 利用元                                                         | 判断       | 理由                                                                 |
+| ---------- | -------------------------------------- | -------------------------------------------------------------- | ---------- | -------------------------------------------------------------------- |
+| `share`    | `IntentShareDialog`                    | `composer/ThreadComposer`（3 件）・`timeline/Timeline`（3 件） | 残す       | 利用元が二つの親にまたがる                                           |
+| `feedback` | `FeedbackForm`                         | `pages/feedback.astro`                                         | 残す       | 利用元が部品フォルダの外（`pages/`）のみ。統合先の親がない           |
+| `privacy`  | `PolicyCards`                          | `pages/privacy.astro`                                          | 残す       | 同上                                                                 |
+| `help`     | `Help`（`HelpItem` は内側）            | `pages/help.astro`・`Help/HelpItem`                            | 残す       | 利用元に `pages/` を含む。`HelpItem` は既に `Help` の内側にある      |
+| `i18n`     | `useTranslation.ts`・`renderSlots.tsx` | 多数（件数は判断の根拠にしない）                               | 移動しない | 翻訳の入口（多数の部品から import される入口であることを根拠とする） |
+
+判断の時点は 2026-11-04 の取り直し時点（判断の結果は 2026-11-03 の実測から変わらない）。`share` の利用元の件数は、util-placement の完了後の 2026-11-04 の取り直し（`research.md` の記録）に合わせた。`IntentShareDialog` の利用元は 6 ファイル。`composer/ThreadComposer/` の 3 件（`index.tsx`・`ComposerDialogs/index.tsx` は本体を import し、`hooks/useThreadSubmit.ts` は型と `openIntentPopup`・`webShare` のサブパスを import）と、`timeline/Timeline/` の 3 件（`PostLauncher/index.tsx`・`ThreadCard/PostCard/index.tsx` は本体を import し、`ThreadCard/PostCard/useWebShareCrosspost.ts` は `webShare` のサブパスを import）。親の数は二つのままで、判断は変わらない。
+
+### `common/` へ移さない理由
+
+`common/` は、呼び出し側の文言と状態を受け取り、業務を持たない汎用の部品だけを置く（「`src/components/` の領域」の節）。四つの部品はいずれも特定の業務に固有であるため、`common/` へ移さない。
+
+- `IntentShareDialog`: 他 SNS への共有という業務を持つ。
+- `FeedbackForm`・`PolicyCards`・`Help`: 特定の画面（不具合の報告・プライバシーポリシー・ヘルプ）の内容を持つ。
+
+利用元が複数の親にまたがることを理由に `common/` へ移すと、業務の部品を `common/` に置くことになるため、しない。`src/pages/` へ移すことも、`pages/` は薄い入口だけを持つ規約に反するため、しない。
+
+### 再検討の条件
+
+判断は、判断の時点の利用元に基づく。次の変化があったときは、実測を取り直して判断を見直し、上の表と判断の時点を更新する（利用元が変わったら再検討し、理由を記録する）。
+
+- 利用元が一つの親の部品フォルダの内側にまとまった（例: `share` の利用元が `composer/ThreadComposer` だけになった）。統合の条件に当てはめ、統合を検討する。
+- 利用元に新しい親や `src/pages/` のファイルが加わった、または減った。統合の条件に当てはめ直す。
+- 判断の根拠（利用元の一覧）が実測と合わないことが分かった。判断を取り消さず、実測を取り直してから見直す。
+- 判断を変えて部品を移動する場合は、移動先に合わせて import とテストの import パスを同じ変更で更新する。
+
 ## Naming Conventions
 
 - **Files**: コンポーネントは PascalCase のフォルダ、`lib` と `util` は camelCase（`oauthLogin.ts`、`postImageLimits.ts`）。
@@ -148,7 +189,7 @@ import styles from "./index.module.css" // 同じフォルダ
 ---
 
 _Document patterns, not file trees. New files following these patterns shouldn't require updates._
-_updated_at: 2026-11-04（util の分類規則に利用元が一つの純粋な判定の例外を追補。`lib/share` の残す領域の説明と、lib の依存の表を現在の import に合わせて改訂。型（`src/types/`）の検査の記述を現状に合わせた。以前の追補: 領域の一覧と、部品フォルダの外の例外を追補。利用元の内側に置く規則と common の基盤・分類フォルダ（役割）の定義を追補。lib の層の表と依存の節、統合後の領域の説明を改訂）_
+_updated_at: 2026-11-04（領域の判断の記録の節を追加（components-small-areas 2.1）。util の分類規則に利用元が一つの純粋な判定の例外を追補。`lib/share` の残す領域の説明と、lib の依存の表を現在の import に合わせて改訂。型（`src/types/`）の検査の記述を現状に合わせた。以前の追補: 領域の一覧と、部品フォルダの外の例外を追補。利用元の内側に置く規則と common の基盤・分類フォルダ（役割）の定義を追補。lib の層の表と依存の節、統合後の領域の説明を改訂）_
 
 ## lib の領域の依存の向き
 
