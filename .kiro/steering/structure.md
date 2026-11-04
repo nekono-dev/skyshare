@@ -41,7 +41,7 @@
 
 - フォルダ名とコンポーネント名は PascalCase。
 - 部品の判断は同じフォルダの `camelCase.ts` に置く（例: `ThreadComposer/rules/segments.ts`）。フックは `useX.ts`。
-- 判断の層（`rules/`）は部品を import しない。部品が使う型は `rules/` に置き、部品がそれを参照する（例: `ThreadComposer/rules/entries.ts`）。`rules/` の判断は純粋な関数に限る。ブラウザの関数（`window.open`・`navigator.share`）を使う判断は、それを引数で受け取る（例: `ThreadComposer/rules/shareDispatch.ts` の `runShareDispatch`）。
+- 判断の層（`rules/`）は部品を import しない。部品が使う型は `rules/` に置き、部品がそれを参照する（例: `ThreadComposer/rules/entries.ts`）。`rules/` の判断は純粋な関数に限る（例外: `common/dialog/Overlay/rules/scrollLock.ts` は `body` のスクロールロックのため DOM を使う。利用者の決定により `rules/` に置いた）。ブラウザの関数（`window.open`・`navigator.share`）を使う判断は、それを引数で受け取る（例: `ThreadComposer/rules/shareDispatch.ts` の `runShareDispatch`）。
 - 部品の判断やフックが多いときは、部品フォルダの直下に子フォルダ `rules/`（判断）と `hooks/`（フック）を作り、そこにまとめてよい。直下には配線（`index.tsx` と `index.module.css`）と子フォルダだけを置く。
 - 子フォルダの名前は小文字にする（部品フォルダの PascalCase と区別するため）。部品の子フォルダ（`ComposerOptions/` など）は、従来どおり PascalCase のままにする。
 - **利用元の内側に置く**: 部品 P の利用元（P を import しているファイル）がすべて部品 H の中にあるとき、P は H の子フォルダ（`H/P/`）に置く（例: `composer/ThreadComposer/ImagePicker/`、`timeline/Timeline/ThreadCard/PostCard/`）。利用元が一つでも H の外（`pages/`・他の領域）にあるときは、領域の直下に置く。子の子も同じ規則で置く。`common/`・`layout/` の部品には、この規則を当てはめない（基盤）。部品フォルダの内側にあるブラウザ側の `.ts`（`openIntentPopup.ts`・`webShare.ts`）は、利用元が一つの部品に限らないとき「共通（`src/util/`・`src/styles/`）」の節の規則 (3)（共通に import できる部品フォルダ）に従い、この「利用元の内側」の規則より優先する。
