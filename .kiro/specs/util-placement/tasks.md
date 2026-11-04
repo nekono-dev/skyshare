@@ -70,7 +70,7 @@
   - _Requirements: 7.1, 7.2, 3.1, 3.2, 5.2, 5.3_
 
 - [ ] 5. 利用元の部品の内側へ移す
-- [ ] 5.1 util/textarea の 5 件を ThreadComposer の rules へ移す
+- [x] 5.1 util/textarea の 5 件を ThreadComposer の rules へ移す
   - util/textarea の contentEditableModel・contentEditableReconcile・highlightNodeParts・facetHighlightSegments・suggestTrigger を ThreadComposer の rules の内側へ移し、利用元（useSuggest と PostBodyEditor）の import を相対のパスに付け替える
   - 移動先の内側どうしの import（例: `contentEditableReconcile` → `contentEditableModel`）は、`@/util/…` ではなく相対のパス（`./`）にする（同じ部品フォルダの内部は相対 import、`structure.md` の規則）
   - 完了の条件: util/textarea が存在せず、編集欄の入力・候補・ハイライトのテストが移動の前と同じ結果を返す

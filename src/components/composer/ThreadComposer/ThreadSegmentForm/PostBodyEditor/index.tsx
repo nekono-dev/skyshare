@@ -27,11 +27,11 @@ import type { CounterSpec } from "@/components/common/input/CountedTextInput"
 import {
   extractPlainText,
   resolveAnchorAwareDeleteText,
-} from "@/util/textarea/contentEditableModel"
+} from "../../rules/contentEditableModel"
 import {
   reconcileContent,
   rebuildContentFully,
-} from "@/util/textarea/contentEditableReconcile"
+} from "../../rules/contentEditableReconcile"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

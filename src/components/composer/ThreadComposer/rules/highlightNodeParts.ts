@@ -15,7 +15,7 @@
 import {
     computeHighlightSegments,
     type HighlightSegment,
-} from "@/util/textarea/facetHighlightSegments"
+} from "./facetHighlightSegments"
 
 export type NodePart =
     | { type: "text"; value: string; highlighted: boolean }

@@ -19,12 +19,12 @@ import {
     CARET_ANCHOR,
     getPlainTextSelection,
     setPlainTextCaret,
-} from "@/util/textarea/contentEditableModel"
+} from "./contentEditableModel"
 import {
     computeHighlightNodeParts,
     diffNodeParts,
     type NodePart,
-} from "@/util/textarea/highlightNodeParts"
+} from "./highlightNodeParts"
 
 const buildNodePartElement = (
     part: NodePart,

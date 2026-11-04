@@ -13,12 +13,12 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import {
     detectSuggestTrigger,
     type SuggestTrigger,
-} from "@/util/textarea/suggestTrigger"
+} from "../rules/suggestTrigger"
 import {
     getPlainTextSelection,
     measureIndexPixelPosition,
     setPlainTextCaret,
-} from "@/util/textarea/contentEditableModel"
+} from "../rules/contentEditableModel"
 import { searchMentionSuggestions } from "@/lib/atproto/suggest"
 import { getHashtagCandidates } from "../rules/suggestHashtags"
 import type { SuggestCandidate } from "../rules/suggestCandidate"
