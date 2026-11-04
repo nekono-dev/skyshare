@@ -36,7 +36,7 @@
   - 完了の条件: `util/share/` と `util/textCount.ts` が無い。`ThreadComposer/rules/shareDispatch.ts` が `@/components/` を import しない（`composerSplit` の検査が通る）。`lib/share/` に `window`・`navigator`・`document` の参照が 0 件。`lib/share/` の内側の import が `util` と `lib/settings` を参照しない。共有の操作と設定の表示のテストが移動の前と同じ結果を返す
   - _Depends: 2.1_
   - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6, 1.7, 5.2_
-- [ ] 3.2 文字数のテストを tests の lib/share 配下へ移す
+- [x] 3.2 文字数のテストを tests の lib/share 配下へ移す
   - `tests/unit/util/textCount.test.ts`・`textCountFallback.test.ts` を `tests/unit/lib/share/` へ移し、import のパスだけを変える（期待値は変えない）
   - 完了の条件: `tests/unit/util/textCount*.test.ts` が無く、文字数のテストが移動の前と同じ結果を返す
   - _Depends: 3.1_
