@@ -16,8 +16,8 @@ import {
     resolveSubmitOutcome,
     type GateAction,
     type GateState,
-} from "@/lib/survey/gate/state"
-import { runGateCheck, type GateDeps } from "@/lib/survey/gate/check"
+} from "./state"
+import { runGateCheck, type GateDeps } from "./check"
 
 /** 送信の呼び出し口（`surveyApi.submitAnswers` と同じ形） */
 export type SubmitAnswers = (
