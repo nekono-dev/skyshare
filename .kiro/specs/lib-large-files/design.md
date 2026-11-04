@@ -122,7 +122,7 @@ src/lib/image/postImageProcessing/
 ├── compose.ts        # 合成サムネイル・原本の作成（公開の処理）
 └── index.ts          # 元の export をすべて再エクスポート
 src/lib/settings/shareSettings/
-├── autoPopup.ts      # 自動ポップアップの設定（AutoPopupTarget は lib/share/autoPopupTarget から再エクスポート）
+├── autoPopup.ts      # 自動ポップアップの設定（AutoPopupTarget は lib/share/autoPopupTarget から import して使う。再エクスポートは 2026-11-04 に削除）
 ├── instanceDomain.ts # Mastodon・Misskey のインスタンスドメインの既定値・検証・保存
 ├── toggles.ts        # 真偽値の共有設定と、リンクカード優先の実効値
 ├── textareaRows.ts   # 本文欄の行数の設定
@@ -225,11 +225,11 @@ src/components/composer/ThreadComposer/rules/
 
 #### settings/shareSettings
 
-- `autoPopup.ts`: `DEFAULT_AUTO_POPUP_TARGET`・`isAutoPopupTarget`・`readAutoPopupTargetSetting`・`writeAutoPopupTargetSetting`。`AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `@/lib/share/autoPopupTarget` から import し、そのまま再エクスポートする（元の `shareSettings.ts` は、この 2 件を import するだけで export していなかった。下の `index.ts` を参照）。
+- `autoPopup.ts`: `DEFAULT_AUTO_POPUP_TARGET`・`isAutoPopupTarget`・`readAutoPopupTargetSetting`・`writeAutoPopupTargetSetting`。`AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `@/lib/share/autoPopupTarget` から import して使う。2026-11-04 に利用者の決定で再エクスポートを削除した（元の `shareSettings.ts` も、この 2 件を import するだけで export していなかった。下の `index.ts` を参照）。
 - `instanceDomain.ts`: `DEFAULT_MASTODON_INSTANCE_DOMAIN`・`DEFAULT_MISSKEY_INSTANCE_DOMAIN`・`resolveInstanceDomain`（内部）・`resolveMastodonInstanceDomain`・`resolveMisskeyInstanceDomain`・`resolveInstanceDomainFor`・Mastodon/Misskey の read/write/remove（`isValidInstanceDomain` を `@/lib/share/intent` から import）。
 - `toggles.ts`: `DEFAULT_LINK_CARD_PRIORITY`・真偽値の read/write（ポップアップの代わりの Web Share・長さの切り詰め・固定フォーム・手動の画像添付・リンクカード優先）・`readEffectiveLinkCardPriority`。
 - `textareaRows.ts`: `readTextareaRowsSetting`・`writeTextareaRowsSetting`。
-- `index.ts`: 元の export（29 件）をすべて再エクスポートする。加えて `AUTO_POPUP_TARGETS`・`AutoPopupTarget`（`@/lib/share/autoPopupTarget` からの再エクスポート）を export する。この 2 件は元の export ではなく、設計の指定により新たに加えた export である（決定の記録は `tasks.md` の 5.1〜5.3）。
+- `index.ts`: 元の export（29 件）をすべて再エクスポートする。当初は設計の指定により `AUTO_POPUP_TARGETS`・`AutoPopupTarget` も再エクスポートしていたが、2026-11-04 に利用者の決定で削除した。利用箇所はすべて `@/lib/share/autoPopupTarget` から import しているため、削除による影響はない（決定の記録は `tasks.md` の 5.1〜5.3）。
 
 #### schedule/store
 

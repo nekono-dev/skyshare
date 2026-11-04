@@ -208,6 +208,7 @@
 
 - `lib/settings/shareSettings.ts` を `shareSettings/` に分けた（autoPopup・instanceDomain・toggles・textareaRows と index）。コミット 6936fb5・8f23dd1。
 - index は元の公開名（29 件）に、設計の指定に従い `AUTO_POPUP_TARGETS`・`AutoPopupTarget`（`@/lib/share/autoPopupTarget` からの再エクスポート）を加えた。元のファイルは import のみでこの 2 件を export していなかったため、設計の指定を優先した。
+- 2026-11-04、利用者の決定（削除する）により、この 2 件の再エクスポートを削除した。`index.ts` と `autoPopup.ts` から export を外し、`autoPopup.ts` は import して使うだけにした。index の公開名は元の 29 件のみ。利用箇所はすべて `@/lib/share/autoPopupTarget` から import しており（`shareSettings` 経由の利用はない）、影響はない。
 - 設定のテストが通過した（unit の settings・share 系）。全体は 5.2 の検査で確認済み。
 - 旧パスを指す古いコメントが 4 箇所残る（`lib/share/autoPopupTarget.ts`・`suggestSettings.ts`・`hashtagHistorySettings.ts`・`postGateSettings.ts`）。振る舞いに影響しないため本タスクでは直さない。
 

@@ -3,14 +3,12 @@
  *
  * 責務と処理概要:
  * - 自動ポップアップ先の既定値、値の判定、localStorage への読み書きを提供する。
- * - `AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `lib/share/autoPopupTarget` の定義を再エクスポートする。
+ * - `AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `lib/share/autoPopupTarget` の定義を import して使うだけで、このファイルからは再エクスポートしない。
  */
 import {
     AUTO_POPUP_TARGETS,
     type AutoPopupTarget,
 } from "@/lib/share/autoPopupTarget"
-
-export { AUTO_POPUP_TARGETS, type AutoPopupTarget }
 
 const AUTO_POPUP_TARGET_KEY = "autoPopupTarget"
 

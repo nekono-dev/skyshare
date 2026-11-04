@@ -13,10 +13,6 @@ export {
     readAutoPopupTargetSetting,
     writeAutoPopupTargetSetting,
 } from "./autoPopup"
-export {
-    AUTO_POPUP_TARGETS,
-    type AutoPopupTarget,
-} from "@/lib/share/autoPopupTarget"
 
 // インスタンスドメインの設定
 export {
