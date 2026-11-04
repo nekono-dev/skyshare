@@ -581,6 +581,118 @@ describe("CLI（check-imports）", () => {
             )
         })
     })
+
+    describe("typesOnly の合流（structure-checks 3.5）", () => {
+        const typesOnlyRoot = path.resolve(
+            __dirname,
+            "../../fixtures/import-rules/types-only",
+        )
+        const typesOnlyOkRoot = path.resolve(
+            __dirname,
+            "../../fixtures/import-rules/types-only-ok",
+        )
+        const badEntry = {
+            ruleId: "typesOnly",
+            from: "src/types/bad.ts",
+            specifier: "",
+            owner: "structure-checks",
+            reason: "テスト用の理由",
+        }
+
+        it("値の宣言を含む src/types/ の .ts は違反として表示され、終了コード 1 になる（要件 8.4・7.1）", () => {
+            const result = runImportCheck({
+                root: typesOnlyRoot,
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.exitCode).toBe(1)
+            expect(
+                result.lines.some(line =>
+                    line.startsWith("違反: [typesOnly] src/types/bad.ts"),
+                ),
+            ).toBe(true)
+        })
+
+        it("理由付きで許容リストに載れば、終了コード 0 になる（要件 8.4・7.1）", () => {
+            const result = runImportCheck({
+                root: typesOnlyRoot,
+                allowlistPath: writeAllowlist([badEntry]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.exitCode).toBe(0)
+            expect(result.lines.some(line => line.startsWith("違反:"))).toBe(
+                false,
+            )
+        })
+
+        it("型だけの文だけの src/types/ の .ts は違反にならず、終了コード 0 になる（要件 8.4）", () => {
+            const result = runImportCheck({
+                root: typesOnlyOkRoot,
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.exitCode).toBe(0)
+            expect(result.lines.some(line => line.includes("typesOnly"))).toBe(
+                false,
+            )
+        })
+
+        it("astro は typesOnly の対象外で、値の宣言を含んでも違反として表示しない（要件 8.4）", () => {
+            const result = runImportCheck({
+                root: typesOnlyRoot,
+                allowlistPath: writeAllowlist([badEntry]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            expect(result.lines.some(line => line.includes("page.astro"))).toBe(
+                false,
+            )
+        })
+
+        it("specifier が空の違反の表示は「で import」を含まず、二重空白にならない（前回の残件）", () => {
+            const result = runImportCheck({
+                root: typesOnlyRoot,
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            const line = result.lines.find(l => l.includes("[typesOnly]"))
+            expect(line).toBeDefined()
+            expect(line).not.toContain("で import")
+            expect(line).not.toContain("  ")
+        })
+
+        it("specifier が空の utilShared の表示も「で import」を含まない（前回の残件）", () => {
+            const result = runImportCheck({
+                root: path.resolve(
+                    __dirname,
+                    "../../fixtures/import-rules/util-shared",
+                ),
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            const line = result.lines.find(l => l.includes("[utilShared]"))
+            expect(line).toBeDefined()
+            expect(line).not.toContain("で import")
+            expect(line).not.toContain("  ")
+        })
+
+        it("specifier がある違反の表示は従来どおり「を … で import」の形を保つ", () => {
+            const result = runImportCheck({
+                root: violationsRoot,
+                allowlistPath: writeAllowlist([]),
+                emit: false,
+                ownerExists: ownerExists,
+            })
+            const line = result.lines.find(l => l.startsWith("違反: [cycle]"))
+            expect(line).toBeDefined()
+            expect(line).toMatch(/ を \S+ で import: /)
+        })
+    })
 })
 
 describe("想定の構成からの独立（要件 10）", () => {

@@ -61,7 +61,7 @@
   - _Boundary: TypesRules（typesOnly）_
   - _Depends: 2.1_
   - _Requirements: 8.3, 8.4, 8.6_
-- [ ] 3.5 typesOnly の違反を検査の CLI に合流させる
+- [x] 3.5 typesOnly の違反を検査の CLI に合流させる
   - `check-imports.ts` が `src/types/` の `.ts` の本文を読み、`findTypesOnlyViolations` の結果を違反に加える（`.astro` は対象外）
   - 完了の条件: 許容されない `typesOnly` の違反は終了コード 1、許容リストに理由付きで載れば 0
   - _Depends: 3.2, 3.4_
