@@ -5,7 +5,7 @@
  * - 投稿フォームが参照する共有設定を localStorage で管理する。
  * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする。
  */
-import { isValidInstanceDomain } from "@/util/share/intent"
+import { isValidInstanceDomain } from "@/lib/share/intent"
 
 const POPUP_INTENT_INSTEAD_OF_WEBSHARE_KEY = "popupIntentInsteadOfWebshare"
 const AUTO_POPUP_TARGET_KEY = "autoPopupTarget"

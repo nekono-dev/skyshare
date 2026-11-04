@@ -36,7 +36,7 @@ import {
     writeTruncateIntentTextSetting,
 } from "@/lib/settings/shareSettings"
 import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
-import { isValidInstanceDomain } from "@/util/share/intent"
+import { isValidInstanceDomain } from "@/lib/share/intent"
 
 export type UseShareTogglesResult = {
     popupIntentInsteadOfWebshare: boolean

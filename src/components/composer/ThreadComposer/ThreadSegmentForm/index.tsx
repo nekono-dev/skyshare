@@ -40,7 +40,7 @@ import {
   countGraphemes,
   countTaittsuuLength,
   countWeightedTweetLength,
-} from "@/util/textCount"
+} from "@/lib/share/textCount"
 import {
   resolveCounterReserve,
   type CounterTarget,

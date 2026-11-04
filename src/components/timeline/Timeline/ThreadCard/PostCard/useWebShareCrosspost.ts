@@ -16,12 +16,11 @@
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useEffect, useRef, useState } from "react"
 import { getBskyImage } from "@/client/openapi/client"
+import { buildWebShareText, toShareFile } from "@/lib/share/webShareData"
 import {
-    buildWebShareText,
     canShareWithWebApi,
     shareWithWebApi,
-    toShareFile,
-} from "@/util/share/webShare"
+} from "@/components/share/IntentShareDialog/webShare"
 import type { TimelinePost } from "@/lib/timeline/posts"
 import { resolveShareBody } from "@/lib/share/shareBody"
 import { readEffectiveLinkCardPriority } from "@/lib/settings/shareSettings"

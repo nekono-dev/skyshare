@@ -11,7 +11,14 @@ import {
 } from "@/lib/settings/postGateSettings"
 import { resolveInstanceDomainFor } from "@/lib/settings/shareSettings"
 import { resolveShareBody } from "@/lib/share/shareBody"
-import { preOpenPopupWindow } from "@/util/share/openIntentPopup"
+import {
+    openIntentPopup,
+    preOpenPopupWindow,
+} from "@/components/share/IntentShareDialog/openIntentPopup"
+import {
+    canShareWithWebApi,
+    shareWithWebApi,
+} from "@/components/share/IntentShareDialog/webShare"
 import { submitSchedule } from "@/lib/schedule/submitSchedule"
 import type { submitTarget } from "@/lib/schedule/scheduleMode"
 import type { useShareToggles } from "@/components/settings/Settings/useShareToggles"
@@ -285,6 +292,11 @@ export const useThreadSubmit = ({
             })
 
             const dispatch = await runShareDispatch({
+                browser: {
+                    openIntentPopup,
+                    canShareWithWebApi,
+                    shareWithWebApi,
+                },
                 text: shareBody.text,
                 skyshareUri,
                 linkCardUrl: shareBody.linkCardUrl,

@@ -7,7 +7,7 @@
  * - 末尾要素（URL等）は削らない。URL は twitter-text の規則で、長さに関わらず
  *   重み23として数えられる。
  */
-import { xIntentMeasure, type IntentMeasure } from "@/util/share/intentLength"
+import { xIntentMeasure, type IntentMeasure } from "@/lib/share/intentLength"
 
 /** 重み付き長の上限（全角140字相当。全角=2、半角=1、改行=1、URL=23として数える）。 */
 export const INTENT_WEIGHTED_LIMIT = 280

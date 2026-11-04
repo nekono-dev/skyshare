@@ -12,8 +12,8 @@ vi.mock("twitter-text", () => ({
     },
 }))
 
-import { countWeightedTweetLength } from "@/util/textCount"
-import { resolveIntentMeasure } from "@/util/share/intentLength"
+import { countWeightedTweetLength } from "@/lib/share/textCount"
+import { resolveIntentMeasure } from "@/lib/share/intentLength"
 
 describe("計量が例外になる場合の退避の値", () => {
     it("X の換算は文字列長をそのまま返す（2 で割った後の値が文字列長）", () => {

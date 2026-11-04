@@ -14,7 +14,7 @@ import CountedTextInput, {
   type CounterSpec,
 } from "@/components/common/input/CountedTextInput"
 import Overlay from "@/components/common/dialog/Overlay"
-import { countGraphemes } from "@/util/textCount"
+import { countGraphemes } from "@/lib/share/textCount"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

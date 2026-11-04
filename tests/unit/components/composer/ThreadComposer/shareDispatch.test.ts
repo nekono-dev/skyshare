@@ -6,9 +6,24 @@ import {
     type ShareDispatchParams,
 } from "@/components/composer/ThreadComposer/rules/shareDispatch"
 
+// ブラウザ依存の実体は注入する。このテストではポップアップ/WebShare を実行しない分岐のみ見るため、
+// 呼ばれたら失敗になるダミーを渡す（呼ばれないことも暗黙に確かめる）。
+const unusedBrowser = {
+    openIntentPopup: () => {
+        throw new Error("ポップアップは呼ばれない想定")
+    },
+    canShareWithWebApi: () => {
+        throw new Error("WebShareAPI は呼ばれない想定")
+    },
+    shareWithWebApi: async () => {
+        throw new Error("WebShareAPI は呼ばれない想定")
+    },
+}
+
 const baseParams = (
     overrides: Partial<ShareDispatchParams> = {},
 ): ShareDispatchParams => ({
+    browser: unusedBrowser,
     text: "本文",
     skyshareUri: "at://did:example/app.bsky.feed.post/1",
     linkCardUrl: "",

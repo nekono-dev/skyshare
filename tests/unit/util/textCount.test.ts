@@ -3,7 +3,10 @@
  * 移す前の現行の値を固定する。振る舞いを変えるためのテストではない。
  */
 import { describe, expect, it } from "vitest"
-import { countTaittsuuLength, countWeightedTweetLength } from "@/util/textCount"
+import {
+    countTaittsuuLength,
+    countWeightedTweetLength,
+} from "@/lib/share/textCount"
 
 describe("X の文字数（半角換算を 2 で割って切り上げ）", () => {
     it.each([

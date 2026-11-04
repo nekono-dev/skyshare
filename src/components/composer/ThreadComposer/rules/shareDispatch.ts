@@ -16,17 +16,32 @@ import { resolveInstanceDomainFor } from "@/lib/settings/shareSettings"
 import {
     IntentTarget,
     buildIntentText,
-    openIntentPopupFor,
+    buildIntentUrl,
     resolveTruncateLimit,
-} from "@/util/share/intent"
-import { resolveIntentMeasure } from "@/util/share/intentLength"
-import {
-    canShareWithWebApi,
-    shareWithWebApi,
-    toShareFile,
-} from "@/util/share/webShare"
+} from "@/lib/share/intent"
+import { resolveIntentMeasure } from "@/lib/share/intentLength"
+import { toShareFile } from "@/lib/share/webShareData"
+
+/**
+ * ブラウザ依存の共有処理（ポップアップ起動・WebShareAPI）。
+ *
+ * 判断の層（rules/）は部品（components/）を import しないため、実体は呼び出し側から
+ * 注入する。型は components 側の実装と構造的に一致させる（import はしない）。
+ */
+export type ShareBrowserApi = {
+    /** `components/share/IntentShareDialog/openIntentPopup` の `openIntentPopup` と同じ形 */
+    openIntentPopup: (url: string, preOpenedWindow?: Window | null) => boolean
+    /** `components/share/IntentShareDialog/webShare` の `canShareWithWebApi` と同じ形 */
+    canShareWithWebApi: (shareData?: ShareData) => boolean
+    /** `components/share/IntentShareDialog/webShare` の `shareWithWebApi` と同じ形 */
+    shareWithWebApi: (
+        shareData: ShareData,
+    ) => Promise<{ ok: boolean; reason?: "aborted" | "failed" }>
+}
 
 export type ShareDispatchParams = {
+    /** ポップアップ起動・WebShareAPI の実体（呼び出し側で部品から渡す） */
+    browser: ShareBrowserApi
     text: string
     skyshareUri: string
     /**
@@ -161,6 +176,7 @@ export const runShareDispatch = async (
     params: ShareDispatchParams,
 ): Promise<ShareDispatchResult> => {
     const {
+        browser,
         text,
         skyshareUri,
         linkCardUrl,
@@ -231,14 +247,15 @@ export const runShareDispatch = async (
                   : autoPopupTarget === "misskey"
                     ? "post.share.service.misskey"
                     : "post.share.service.x"
-        const opened = openIntentPopupFor(
+        // URL が組み立てられなければ（不正なドメイン等）ポップアップを開かない
+        const autoPopupUrl = buildIntentUrl(
             autoPopupTarget,
             buildTextFor(autoPopupTarget),
-            {
-                instanceDomain,
-                preOpenedWindow: popupWindow,
-            },
+            { instanceDomain },
         )
+        const opened = autoPopupUrl
+            ? browser.openIntentPopup(autoPopupUrl, popupWindow)
+            : false
 
         if (opened) {
             return {
@@ -283,8 +300,8 @@ export const runShareDispatch = async (
 
     let webShareUnavailableReason: "unsupported" | "failed" | null = null
 
-    if (canShareWithWebApi(webShareData)) {
-        const shareResult = await shareWithWebApi(webShareData)
+    if (browser.canShareWithWebApi(webShareData)) {
+        const shareResult = await browser.shareWithWebApi(webShareData)
         if (shareResult.ok) {
             return {
                 status: tr =>
@@ -324,7 +341,9 @@ export const runShareDispatch = async (
             ? "post.share.reason.unsupported"
             : "post.share.reason.failed"
 
-    const opened = openIntentPopupFor("x", buildTextFor("x"))
+    // URL が組み立てられなければ開かない（X は必ず URL になる）
+    const xIntentUrl = buildIntentUrl("x", buildTextFor("x"))
+    const opened = xIntentUrl ? browser.openIntentPopup(xIntentUrl) : false
     if (opened) {
         return {
             status: tr =>

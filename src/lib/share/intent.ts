@@ -2,16 +2,16 @@
  * 外部SNS（x.com / タイッツー / Mastodon / Misskey）向け intent 共通処理。
  *
  * 責務と処理概要:
- * - intent 本文の組み立て、intent URL の組み立て、ポップアップの起動
- *   （実処理は `openIntentPopup` に委譲）を対象SNS共通で担う。
+ * - intent 本文の組み立てと intent URL の組み立てを対象SNS共通で担う（純粋な関数のみ）。
+ * - ポップアップの起動（window.open）は持たない。呼び出し側が
+ *   `components/share/IntentShareDialog/openIntentPopup` と組み合わせて使う。
  */
-import type { IntentMeasure } from "@/util/share/intentLength"
-import { openIntentPopup } from "@/util/share/openIntentPopup"
+import type { IntentMeasure } from "@/lib/share/intentLength"
 import {
     INTENT_TRAILING_MARGIN,
     INTENT_WEIGHTED_LIMIT,
     truncateBodyWithSuffix,
-} from "@/util/share/truncateText"
+} from "@/lib/share/truncateText"
 
 export type IntentTarget = "x" | "taittsuu" | "mastodon" | "misskey"
 
@@ -213,40 +213,4 @@ export const buildIntentUrl = (
             }
         }
     }
-}
-
-export type OpenIntentPopupOptions = IntentUrlOptions & {
-    /**
-     * `preOpenPopupWindow`で事前に開いておいたポップアップウィンドウ
-     * （省略時は新規にポップアップを開く。詳細は`openIntentPopup`を参照）
-     */
-    preOpenedWindow?: Window | null
-}
-
-/**
- * 対象SNSの intent 投稿ページをポップアップで開く。
- *
- * Input:
- * - `target`: 対象SNS
- * - `intentText`: intent に渡す投稿文
- * - `options.instanceDomain`: `target` が "mastodon"・"misskey" の場合の投稿先インスタンスドメイン
- * - `options.preOpenedWindow`: 事前に開いておいたポップアップウィンドウ
- *
- * Output:
- * - ウィンドウオープンに成功したら `true`（URL組み立てに失敗した場合は `false`）
- *
- * 例:
- * - 入力: `"x"`, `"hello\nhttps://example.com"`
- * - 出力: `true`
- */
-export const openIntentPopupFor = (
-    target: IntentTarget,
-    intentText: string,
-    options: OpenIntentPopupOptions = {},
-): boolean => {
-    const url = buildIntentUrl(target, intentText, options)
-    if (!url) {
-        return false
-    }
-    return openIntentPopup(url, options.preOpenedWindow)
 }

@@ -56,7 +56,7 @@ import {
 import type { MessageKey } from "@/lib/i18n/translate"
 import { useShareToggles } from "./useShareToggles"
 import AutoPopupTargetSelect from "@/components/common/select/AutoPopupTargetSelect"
-import { isValidInstanceDomain } from "@/util/share/intent"
+import { isValidInstanceDomain } from "@/lib/share/intent"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 

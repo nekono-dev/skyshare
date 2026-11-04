@@ -7,8 +7,8 @@
  * - 自動ポップアップ先の設定から、表示すべきカウンタ（X / タイッツー）を決める。
  */
 import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
-import { buildIntentSuffix } from "@/util/share/intent"
-import { halfUnitLength, resolveIntentMeasure } from "@/util/share/intentLength"
+import { buildIntentSuffix } from "./intent"
+import { halfUnitLength, resolveIntentMeasure } from "./intentLength"
 
 /** 字数カウンタを持つ共有先 */
 export type CounterTarget = "x" | "taittsuu"

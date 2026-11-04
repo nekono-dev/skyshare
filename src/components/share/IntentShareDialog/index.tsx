@@ -25,10 +25,11 @@ import {
 } from "@/lib/settings/shareSettings"
 import {
   buildIntentText,
-  openIntentPopupFor,
+  buildIntentUrl,
   resolveTruncateLimit,
   type IntentTarget,
-} from "@/util/share/intent"
+} from "@/lib/share/intent"
+import { openIntentPopup } from "./openIntentPopup"
 
 export type IntentShareRequest = {
   /** intent テキストの元になる投稿本文 */
@@ -97,7 +98,10 @@ const Component = ({ request, keepOpenOnSelect = false, onClose }: Props) => {
         ),
       },
     )
-    openIntentPopupFor(target, text, { instanceDomain })
+    const url = buildIntentUrl(target, text, { instanceDomain })
+    if (url) {
+      openIntentPopup(url)
+    }
     if (!keepOpenOnSelect) {
       onClose()
     }

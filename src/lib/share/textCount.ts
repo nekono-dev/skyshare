@@ -2,7 +2,7 @@ import {
     halfUnitLength,
     taittsuuIntentMeasure,
     xIntentMeasure,
-} from "@/util/share/intentLength"
+} from "@/lib/share/intentLength"
 
 /**
  * grapheme（書記素）単位で文字数を数える。

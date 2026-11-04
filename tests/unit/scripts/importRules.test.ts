@@ -94,7 +94,7 @@ describe("領域の判定（regionOf）", () => {
         ["src/components/common/Badge/index.tsx", "components/common/Badge"],
         ["src/components/common/Icon.tsx", "components/common"],
         ["src/pages/index.astro", "pages"],
-        ["src/util/share/intent.ts", "util/share"],
+        ["src/util/http.ts", "util"],
         ["src/env.ts", "(root)"],
     ])("%s は %s", (file, region) => {
         expect(regionOf(file)).toBe(region)
