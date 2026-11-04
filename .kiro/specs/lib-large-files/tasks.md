@@ -22,7 +22,7 @@
   - _Boundary: schedule/store_
   - _Requirements: 1.2, 2.1, 2.3, 2.4_
 
-- [ ] 2.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
+- [x] 2.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
   - 元の export（`insertSchedule`・`getSchedule`・`listSchedules`・`STALE_SECONDS`・`CredentialStatus` などの型を含む）をすべて `index.ts` から出す
   - `schedule/store.ts` を削除し、`@/lib/schedule/store` の参照（`src/lib/schedule/*` とテスト）がそのまま解決されることを確かめる
   - 完了の状態: `npm run test:type` が終了コード 0、`npm run test:imports` が終了コード 0
