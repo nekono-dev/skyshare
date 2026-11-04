@@ -177,7 +177,8 @@
 
 ### 7.1 旧パスの検査の基準（記録）
 
-- 旧パスの 0 件は、コード（src・tests・scripts・config）と現在の規約（structure.md の規則）を対象とした。コードに旧パスの参照は 0 件、`util/formData` からの型の import は 0 件。
-- 残るのは経緯の記録だけである: `.kiro/steering/roadmap.md` の分析の節（移動の前の利用元の一覧。統合の計画の記録）、`structure.md` の禁止の例（`util/share/` のような下位フォルダは置かない）と統合の経緯、util-placement 自身の requirements・design・tasks の本文（移動の経緯）。
+- 旧パスの 0 件は、コード（src・tests・scripts・config）を対象とした。コードに旧パスの参照は 0 件、`util/formData` からの型の import は 0 件。
+- 文書に残る旧パスは、この確認の対象外として残した。主な残存箇所: `.kiro/steering/roadmap.md`（288–291・312・320・327・333 行）、`structure.md` の禁止の例と統合の経緯、util-placement 自身の requirements・design・tasks の本文、他の spec 文書（`src-duplicates`・`lib-layers`・`lib-large-files`・`components-small-areas` など。`util/share`・`util/links` 等の経緯の記述）。他の spec 文書の件数は確認していない範囲を含む。
+- 利用者の判断（未決）: これらの文書の旧パスを「経緯の記録」として残すか、「現況」として直すか。
 - 利用者の判断（未決）: roadmap.md の 333 行（`util/` の利用元の一覧）は移動の前の状態を書いたままである。これを現況に直すか、分析の記録として残すかは利用者が決める。
 - util 直下は 5 件（formData・http・padTwoDigits・utf8Bytes・waitForImageLoad）と一致した。`formData.ts` の型以外は HEAD（基準は 1c65503）から変わっていない。
