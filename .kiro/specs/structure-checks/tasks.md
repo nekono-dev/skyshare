@@ -55,7 +55,7 @@
   - _Boundary: TypesRules（typesLeaf）_
   - _Depends: 2.1_
   - _Requirements: 8.1, 8.2, 8.6_
-- [ ] 3.4 (P) 規則 typesOnly の判定を純粋な関数で加える
+- [x] 3.4 (P) 規則 typesOnly の判定を純粋な関数で加える
   - `scripts/architecture/typesOnly.ts` に `findTypesOnlyViolations(files)` を置く。文字列の本文を構文木（`typescript`）で読み、`type` 宣言・`interface` 宣言・`export type`・`export interface`・`import type` 以外の文を違反にする（ruleId `typesOnly`、specifier は空文字）
   - 完了の条件: fixture で `export const`・`export enum`・`export default`・値の `import`・`export *` が違反になり、`export type`・`export interface`・`import type` が違反にならない
   - _Boundary: TypesRules（typesOnly）_
