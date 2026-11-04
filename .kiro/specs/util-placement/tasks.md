@@ -82,7 +82,7 @@
   - 完了の条件: 現在のタブで別のページへ移るクリックの判定が、移動の前と同じ結果を返す
   - _Depends: 5.1, lib-layers 3.2_
   - _Requirements: 1.7, 5.2_
-- [ ] 5.3 (P) util/listbox の 2 件を Dropdown の内側へ移す
+- [x] 5.3 (P) util/listbox の 2 件を Dropdown の内側へ移す
   - util/listbox の filter と navigation を Dropdown の内側へ移し、Dropdown の import を付け替える（分類フォルダ select の直下には置かない）
   - 完了の条件: util/listbox が存在せず、選択肢の絞り込みと矢印キーの移動の結果が変わらない
   - _Boundary: common/select/Dropdown_
