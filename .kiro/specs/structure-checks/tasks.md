@@ -3,7 +3,7 @@
 共有ファイルの編集順: `tests/unit/scripts/importRules.test.ts` は lib-layers 4.2 → util-placement 6.2 → 本仕様（2.3・3.5）の順に編集する。`structure.md` の「依存規則の検査」の表と「型（`src/types/`）」の節は、util-placement 6.1 → 本仕様 5.1 の順に編集する。
 
 - [ ] 1. 実装の前提の確認
-- [ ] 1.1 着手時の基準を記録し、上流の完了を確かめる
+- [x] 1.1 着手時の基準を記録し、上流の完了を確かめる
   - `npm run test:all` の終了コードと通過件数を、実装の作業記録に書き残す（以後の完了条件の基準）
   - `src/util/` の残りが util-placement の結果の 5 件、`src/types/` が型だけの 3 件（util-placement の結果）、`src/layout/` が存在せず、`config/architecture/import-allowlist.json` の項目が 0 件であることを確かめる
   - 完了時の状態: 基準の件数と、上流の完了の確認結果が記録されている
@@ -127,3 +127,16 @@
   - 完了時の状態: 件数が基準以上で、製品コードと生成物に差分が無い
   - _Depends: 7.1_
   - _Requirements: 7.3, 7.4_
+
+## Implementation Notes
+
+### 1.1 着手時の基準と上流の確認（記録）
+
+- `npm run test:all`（着手時、2026-11-04）: 終了コード 0。unit 50 ファイル 341 件、component 5 ファイル 13 件、route 23 ファイル 212 件、render 1 ファイル 2 件、e2e 7 件（すべて通過）。以後の完了条件の基準は、この通過件数とする。
+- `npm run apigen`: 終了コード 0。実行後の `git status` で、生成物（`src/client/openapi/`）に差分は無い。
+- 上流の確認（util-placement の結果と一致）:
+  - `src/util/` の残りは 5 件（`formData.ts`・`http.ts`・`padTwoDigits.ts`・`utf8Bytes.ts`・`waitForImageLoad.ts`）。
+  - `src/types/` は型だけの 3 件（`clientEnvironment.ts`・`formData.ts`・`outcome.ts`）。
+  - `src/layout/` は存在しない。
+  - `config/architecture/import-allowlist.json` の項目は 0 件（`"entries": []`）。
+- 不一致は無いため、着手は可能（BLOCKED ではない）。
