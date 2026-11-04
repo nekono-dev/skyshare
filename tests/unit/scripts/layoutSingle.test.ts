@@ -9,7 +9,7 @@
  * - 負例（検査が機能することの確認）: 固定のエントリの一覧と固定の本文を与え、違反だけが報告されることを確かめる（要件 3.4）。
  * - 検査はパスと文字列の走査だけを行い、対象のモジュールは実行・import しない（要件 6.3）。
  */
-import { existsSync, readdirSync, readFileSync } from "node:fs"
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
@@ -48,9 +48,11 @@ const listEntries = (relativeDir = "src"): string[] =>
         return [relative]
     })
 
-/** `src/` の下の全ソースファイルの相対パスを返す。 */
+/** `src/` の下の全ソースファイルの相対パスを返す（名前が `.ts` でもフォルダは含めない）。 */
 const listSourceFiles = (): string[] =>
-    listEntries().filter(e => SOURCE_FILE.test(e))
+    listEntries().filter(
+        e => SOURCE_FILE.test(e) && statSync(path.join(repoRoot, e)).isFile(),
+    )
 
 describe("骨格の置き場（src/layout を置かない）", () => {
     const entries = listEntries()
