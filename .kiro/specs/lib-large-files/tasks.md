@@ -44,7 +44,7 @@
   - _Boundary: session/cookies_
   - _Requirements: 1.2, 2.1, 2.3, 2.4_
 
-- [ ] 3.2 `index.ts` で再エクスポートし、テストの mock パスを直す
+- [x] 3.2 `index.ts` で再エクスポートし、テストの mock パスを直す
   - 元の export をすべて `index.ts` から出し、`lib/session/cookies.ts` を削除する
   - `tests/route/pages/bskySessionCompletion.test.ts` の `vi.mock("@/lib/session/cookies.js", …)` を `vi.mock("@/lib/session/cookies", …)` に変え、mock の内容は変えない
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0、mock が効いて `bskySessionCompletion` のテストが分割前と同じ結果で通る
@@ -188,3 +188,9 @@
 - `lib/schedule/store.ts` を `store/` に分けた（rows・schedules・execution・credentials・oauthState と index）。公開名 32 件は index で変わらない。
 - 2.1 はレビュー承認の後に、2.2 は承認の後にコミットした（コミットは b09377d・c5f16f6）。
 - 予約の経路のテスト（route 23 ファイル 212 件、unit のスケジュール 3 ファイル 13 件）が通過した。
+
+### 3.2 カバレッジの閾値（記録・利用者の判断待ち）
+
+- `session/cookies` を分けたため、分岐カバレッジの閾値（80%）は単一ファイルから `src/lib/session/cookies/**` の合計へ変えた（`config/test/vitest.unit.config.ts`）。閾値の値は変えていない。合計は 80.28%。
+- `codec.ts` 単体の分岐は 50%（base64 と Cookie 解析の異常系が未テスト）。合計の余裕は 0.28 点で、他のファイルの後退で閾値を割りうる。テストの追加か、この合計の扱いを利用者が決める。
+- `config/test/stryker.config.mjs` の mutate も 4 ファイルへ変えた。

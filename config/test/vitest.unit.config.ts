@@ -32,13 +32,18 @@ export default defineConfig({
     test: {
         environment: "node",
         include: ["tests/unit/**/*.test.ts"],
-        // P0 の unit 層モジュール（要件 4.1）。閾値はファイル単位の分岐 80%
+        // P0 の unit 層モジュール（要件 4.1）。閾値は分岐 80%。
+        // cookies/ は 1 ファイルから 4 ファイルへ分割したため、ファイル単位ではなくフォルダ合算で判定する
+        // （vitest は glob の閾値を該当ファイルの合算で評価する。perFile は使わない）
         coverage: {
             enabled: true,
             provider: "istanbul",
             reportsDirectory: path.resolve(rootDir, ".cache/coverage"),
             include: [
-                "src/lib/session/cookies.ts",
+                "src/lib/session/cookies/codec.ts",
+                "src/lib/session/cookies/model.ts",
+                "src/lib/session/cookies/pool.ts",
+                "src/lib/session/cookies/headers.ts",
                 "src/lib/schedule/credentialCrypto.ts",
                 "src/lib/survey/respondentHash.ts",
                 "src/lib/entry/createBskyThread.ts",
@@ -51,7 +56,7 @@ export default defineConfig({
                 "src/lib/share/counterReserve.ts",
             ],
             thresholds: {
-                "src/lib/session/cookies.ts": { branches: 80 },
+                "src/lib/session/cookies/**": { branches: 80 },
                 "src/lib/schedule/credentialCrypto.ts": { branches: 80 },
                 "src/lib/survey/respondentHash.ts": { branches: 80 },
                 "src/lib/entry/createBskyThread.ts": { branches: 80 },

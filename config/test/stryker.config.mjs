@@ -4,7 +4,10 @@ export default {
   testRunner: "vitest",
   vitest: { configFile: "config/test/vitest.unit.config.ts" },
   mutate: [
-    "src/lib/session/cookies.ts",
+    "src/lib/session/cookies/codec.ts",
+    "src/lib/session/cookies/model.ts",
+    "src/lib/session/cookies/pool.ts",
+    "src/lib/session/cookies/headers.ts",
     "src/lib/schedule/credentialCrypto.ts",
     "src/lib/survey/respondentHash.ts",
     "src/lib/entry/createBskyThread.ts",

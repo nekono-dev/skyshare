@@ -17,7 +17,7 @@ vi.mock("@/lib/session/oauthLogin", () => ({
     completeOAuthLogin: async () => state.result,
 }))
 
-vi.mock("@/lib/session/cookies.js", () => ({
+vi.mock("@/lib/session/cookies", () => ({
     admitSession: () => state.pool,
     makeAccountsSetCookies: () => ["accounts-a=1", "accounts-b=2"],
     makeSessionSetCookie: () => "session=fixture",
