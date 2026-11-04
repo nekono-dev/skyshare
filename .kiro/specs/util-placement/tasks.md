@@ -143,6 +143,14 @@
   - 完了の条件: test:all の終了コードが 0、件数が基準以上、apigen の差分が 0
   - _Depends: 7.2_
   - _Requirements: 1.8, 5.1, 5.3, 5.4, 5.5_
+- [ ] 7.4 e2e で確かめられない操作の確認（未完了。(d) が手動のため開いたまま）
+  - 対象: util-placement で移動した振る舞いのうち、既存の e2e（`tests/e2e/flows/*.spec.ts`）が覆わないもの
+  - (a) Dropdown のキーボード操作（`components/common/select/Dropdown/rules/navigation.ts`）: 自動確認済み。矢印キー・Home・End・端での停止・Escape で確定せずに閉じる・Enter で確定。検索付き Dropdown の絞り込み（`rules/filter.ts`）は未確認
+  - (b) Overlay のスクロールロック（`components/common/dialog/Overlay/rules/scrollLock.ts`）: 自動確認済み。表示中は body が固定され、Escape で元に戻る。入れ子の参照カウントは未確認
+  - (c) 自動ポップアップの intent URL（`components/share/IntentShareDialog/openIntentPopup.ts`・`lib/share/intent.ts`）: 自動確認済み。投稿の後、開いたポップアップが x.com の intent の URL（本文を含む）へ遷移する。タイッツー・Mastodon・Misskey は未確認
+  - (d) WebShare API（`components/share/IntentShareDialog/webShare.ts` の `navigator.share`）: 自動化しない（headless Chromium に WebShare が無い）。手動確認が必要（手順は Implementation Notes の 7.4 を参照）
+  - 完了の条件: (a)〜(c) の自動確認が通過し、その証跡が残っている。(d) を利用者が手動で確認して記録する
+  - _Requirements: 1.2, 1.5, 2.1, 2.6_
 
 ## Implementation Notes
 
@@ -189,4 +197,29 @@
 - `npm run apigen` の後、`src/client/openapi/` と OpenAPI 文書に差分は無い。`git diff 1c65503..HEAD -- src/client docs` も空。
 
 - 利用者の決定（2026-11-04）: validate-impl の「e2e は手動確認が必要」の判定は、test:all の中の e2e 7 件が通過しているため GO として扱う。
+- 注記（7.4 で置き換え）: 上の GO の判定は 7.4 で置き換えた。判定の文は残すが、7.4 が完了するまで有効としない（(d) の手動確認が残るため）。
 - 利用者の決定（2026-11-04）: 5.1 はレビュー前に、7.1 の検証記録は承認前に commit した。履歴は書き換えず、この記録を残す。以後は承認後に commit する。
+
+### 7.4 e2e で確かめられない操作（記録）
+
+- 自動確認の spec: `tests/e2e/flows/util-placement.spec.ts`（新規。(a)・(b)・(c) の 3 件）。`npm run test:e2e -- tests/e2e/flows/util-placement.spec.ts` で実行した。
+- 結果: 3 passed（最終実行）。1 回目の実行（spec の旧版）は 1 failed・2 passed。(a) が初回と retry #1・#2 の 3 回とも失敗した。英語へ切り替えるとラベルが「Language」になり、名前での検索が外れたため、両言語のラベルで探すように直した。
+  - (a) 表示言語の Dropdown: 通過。aria-activedescendant が End・Home・ArrowDown で対応する選択肢を指し、端で止まり、Escape で閉じても値は変わらず、End・Enter で English が確定する。
+  - (b) `/post/` の「下書き・予約」（Overlay）: 通過。開いている間は body の position が fixed・width が 100%、Escape で閉じた後は空に戻る。
+  - (c) 投稿後の自動ポップアップ: 通過。偽の PDS へ applyWrites が届いた後、開いたポップアップの URL が `https://x.com/intent/tweet?text=...` になり、text に本文を含む（x.com への通信は route で応答を固定した）。
+- 証跡:
+  - Playwright の出力（最終実行。ログは発生時に出す方式に直した後の実行）: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/e2e-util-placement-run3.txt`
+  - 直前の実行（ログの出し方を直す前）: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/e2e-util-placement-run2.txt`（3 passed）
+  - 1 回目（(a) の失敗を含む）: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/e2e-util-placement-run1.txt`
+  - ブラウザのログ（最終実行の `[e2e-log]` 行）: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/e2e-util-placement-console.log`
+  - ログの集計: `/tmp/claude-1000/-home-ubuntu-git-nekono-dev-skyshare/e7038a86-ccb3-40cb-8404-a56f88235534/scratchpad/e2e-util-placement-console-summary.txt`
+- ログの内容: pageerror（未捕捉の例外）は 0 件。console.error は、検証環境の自己署名証明書による Partytown の Service Worker 登録の失敗（`~partytown/debug/partytown-sw.js`）のみで、本変更とは無関係。
+- 未確認（自動化の範囲外として残す）: 検索付き Dropdown の絞り込み（`rules/filter.ts`）、Overlay の入れ子の参照カウント、タイッツー・Mastodon・Misskey の intent。
+- (d) WebShare API（手動）の手順（利用者が行う）:
+  1. プロジェクトのルートで `npm run dev` を実行する（`.dev.vars` が必要。起動後は `https://localhost:4321` を開く。証明書の警告は承認する）。
+  2. `/login/` で「従来形式でのログイン」からログインする。
+  3. `/settings/` で「{share}の代わりにポップアップを開く」（{share} は共有メニューのアイコンの表示）の項目をオフにする。WebShare を使う経路にするため。
+  4. WebShare に対応する実機（iOS Safari か Android Chrome）を使う。`localhost` は実機からは開けないため、同じ LAN の PC の IP で開く（例: `https://<PCのIP>:4321/post/`。dev サーバーの公開設定が必要な場合は利用者が調整する）。PC の Chrome では `navigator.share` が無いことが多い。
+  5. 投稿欄に文字を入れて投稿する。期待: OS の共有シートが開く。共有シートでキャンセルすると、ステータスに「WebShareAPIでの共有操作はキャンセルされました」が出る。
+  6. 開発者ツール（iOS は Safari の Web インスペクタ、Android は chrome://inspect）の Console を見る。期待: 未捕捉の例外（pageerror）が無い。証明書由来の Service Worker の警告だけは無視してよい。
+  7. 結果（共有シートの表示・キャンセル時の文言・Console の内容）を利用者が記録し、7.4 の (d) を完了とする。
