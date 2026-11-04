@@ -130,7 +130,7 @@
   - 完了の条件: 旧パスの検索が 0 件で、util 直下の一覧が 5 件と一致する
   - _Depends: 6.1, 6.2_
   - _Requirements: 1.1, 1.8, 3.1, 3.2, 3.3_
-- [ ] 7.2 型・import・循環・副作用の検査を通す
+- [x] 7.2 型・import・循環・副作用の検査を通す
   - `npm run test:type`・`npm run test:imports`・`npm run test:unit` を実行し、いずれも終了コード 0 であることを確かめる
   - lib/share と lib/settings の循環が検出されないことを確かめる
   - `src/lib/share/`・`src/lib/feedback/`・`src/lib/atproto/` に `window.`・`document.`・`navigator.`・`new Image` が無いことと、`src/types/` が型だけで外（外部パッケージを含む）を import しないことを grep で確かめる

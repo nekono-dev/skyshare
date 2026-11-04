@@ -3,7 +3,7 @@
  *
  * 責務と処理概要:
  * - intent 本文の組み立てと intent URL の組み立てを対象SNS共通で担う（純粋な関数のみ）。
- * - ポップアップの起動（window.open）は持たない。呼び出し側が
+ * - ポップアップの起動は持たない（ブラウザ側の処理は components の部品の内側）。呼び出し側が
  *   `components/share/IntentShareDialog/openIntentPopup` と組み合わせて使う。
  */
 import type { IntentMeasure } from "@/lib/share/intentLength"
