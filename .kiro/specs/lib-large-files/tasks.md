@@ -129,7 +129,7 @@
   - 完了の状態: `state.ts` が `@/lib/survey/launchCheck`・`@/lib/survey/deviceRecord` を import しない。各ファイルが 400 行以下
   - _Boundary: survey/gate_
   - _Requirements: 1.1, 2.1, 2.3, 2.4_
-
+  - _Blocked: 仕様の矛盾。`planGateEntry` を `state.ts` に置くと、元の実装が呼ぶ `isSurveyPageExcluded`（`lib/survey/launchCheck`）を import することになり、完了の条件（`state.ts` が launchCheck・deviceRecord を import しない）と矛盾する。選択肢: (a) 入力に除外の真偽値を足し、判定を `enterPage` 側に置く（シグネチャが変わる）、(b) `planGateEntry` を別ファイルへ移す（design の配置と異なる）、(c) 完了の条件を緩める。利用者の判断が必要。_
 - [ ] 7.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
   - 元の export（`GateCheckResult`・`GateDeps`・`SubmitAnswers`・`SubmitOutcome`・`runGateCheck`・`resolveSubmitOutcome`・`GateEntryPlan`・`planGateEntry`・`GateState`・`initialGateState`・`GateAction`・`gateReducer`・`GateRuntime`・`DeclineRuntime`・`enterPage`・`applySubmitResult`・`applyDecline`・`handleDecline`・`handleSubmit`・`createLiveRuntime`・`createDialogHandlers`）をすべて出す
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0。`SurveyGate` の import（`@/lib/survey/gate`）が変わらない
