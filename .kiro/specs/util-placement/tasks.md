@@ -76,7 +76,7 @@
   - 完了の条件: util/textarea が存在せず、編集欄の入力・候補・ハイライトのテストが移動の前と同じ結果を返す
   - _Depends: 1.1_
   - _Requirements: 1.3, 5.2_
-- [ ] 5.2 util/links を ThreadComposer の rules へ移す
+- [x] 5.2 util/links を ThreadComposer の rules へ移す
   - util/links を ThreadComposer の rules の 1 ファイルへ移し、useDraftFlow の import を付け替える
   - useDraftFlow は lib-layers 3.2（`draftList` の import）の後に行う。`rules/` の内側の import は相対のパスにする
   - 完了の条件: 現在のタブで別のページへ移るクリックの判定が、移動の前と同じ結果を返す

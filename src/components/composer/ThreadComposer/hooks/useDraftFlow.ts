@@ -6,7 +6,7 @@ import {
     useState,
 } from "react"
 import { navigate } from "astro:transitions/client"
-import { navigatingLinkTarget } from "@/util/links"
+import { navigatingLinkTarget } from "../rules/links"
 import {
     createDraft,
     deleteDraft,
