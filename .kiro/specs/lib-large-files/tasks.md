@@ -172,7 +172,7 @@
   - 完了の状態: 生成物に差分が無く、全ファイルが 400 行以下
   - _Requirements: 1.1, 1.3, 4.2_
 
-- [ ] 9.2 `npm run test:all` で最終確認する
+- [x] 9.2 `npm run test:all` で最終確認する
   - `npm run test:all` が終了コード 0 で終わり、通過件数が 1.1 で記録した基準を下回らないことを確かめる
   - 完了の状態: 終了コード 0、件数が基準以上
   - _Requirements: 4.4, 4.5_
@@ -232,3 +232,4 @@
 - 8.2: 入口 `contentEditableModel.ts` の 11 件（TextPart の型を含む）は元と一致。呼び出し側の import は変更なし。`test:type`・`test:imports` 0。コード変更なし（8.1 で済んでいたため確認のみ）。レビュー APPROVED。
 - 8.3: 検証のみ。component 13 件・ThreadComposer 3 件が分割前と同じ。unit の `composerSplit.test.ts` は rules/ のファイルごとに検査を生成するため、新規 3 ファイル分で件数が 73 → 76 に増えた（条件は緩めていない）。レビュー APPROVED。
 - 9.1: `npm run apigen` を 2 回実行して exit 0、生成物と `docs/` に差分なし（`src/client/openapi/` は gitignore のため sha256 で比較）。分割後 32 ファイル（index を含む）はすべて 400 行以下（最大 329 行）。元ファイルは削除済み。レビュー APPROVED。
+- 9.2: `npm run test:all` 終了コード 0。件数は unit 437（基準 434 以上。増加は composerSplit の生成分 3）・component 13・route 212・render 2・e2e 7。
