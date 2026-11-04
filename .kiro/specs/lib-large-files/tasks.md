@@ -123,13 +123,13 @@
   - _Requirements: 4.1, 4.3, 5.1, 5.2_
 
 - [ ] 7. `lib/survey/gate` を `gate/` に分割する（コミット 6）
-- [ ] 7.1 純粋な状態遷移・判定・画面の効果と送信・辞退を、責務ごとのファイルに移す
+- [x] 7.1 純粋な状態遷移・判定・画面の効果と送信・辞退を、責務ごとのファイルに移す
   - 状態遷移（`state.ts`: 判定の結果の型・`planGateEntry`・`gateReducer`・`resolveSubmitOutcome`）は、入出力に依存しない
   - 判定（`check.ts`: `runGateCheck`）と画面の効果（`runtime.ts`: `GateRuntime`・`enterPage`・送信と辞退・`createLiveRuntime`・`createDialogHandlers`）を分ける
   - 完了の状態: `state.ts` が `@/lib/survey/launchCheck`・`@/lib/survey/deviceRecord` を import しない。各ファイルが 400 行以下
   - _Boundary: survey/gate_
   - _Requirements: 1.1, 2.1, 2.3, 2.4_
-  - _Blocked: 仕様の矛盾。`planGateEntry` を `state.ts` に置くと、元の実装が呼ぶ `isSurveyPageExcluded`（`lib/survey/launchCheck`）を import することになり、完了の条件（`state.ts` が launchCheck・deviceRecord を import しない）と矛盾する。選択肢: (a) 入力に除外の真偽値を足し、判定を `enterPage` 側に置く（シグネチャが変わる）、(b) `planGateEntry` を別ファイルへ移す（design の配置と異なる）、(c) 完了の条件を緩める。利用者の判断が必要。_
+  - 決定（2026-11-04、利用者の判断 (a)）: `planGateEntry` の入力に `excluded: boolean` を足し、除外の判定（`isSurveyPageExcluded`）は呼び出し側の `enterPage`（`runtime.ts`）で行って結果を渡す。`state.ts` は `launchCheck`・`deviceRecord` を import しない。入力が同じなら結果は HEAD と同じで、export 名（`planGateEntry`）は残す。シグネチャ変更はこの 1 点のみ。design.md の `survey/gate` の節にも同じ決定を書いた。
 - [ ] 7.2 `index.ts` で元の export を再エクスポートし、元のファイルを削除する
   - 元の export（`GateCheckResult`・`GateDeps`・`SubmitAnswers`・`SubmitOutcome`・`runGateCheck`・`resolveSubmitOutcome`・`GateEntryPlan`・`planGateEntry`・`GateState`・`initialGateState`・`GateAction`・`gateReducer`・`GateRuntime`・`DeclineRuntime`・`enterPage`・`applySubmitResult`・`applyDecline`・`handleDecline`・`handleSubmit`・`createLiveRuntime`・`createDialogHandlers`）をすべて出す
   - 完了の状態: `npm run test:type`・`npm run test:imports` が終了コード 0。`SurveyGate` の import（`@/lib/survey/gate`）が変わらない
@@ -215,3 +215,8 @@
 
 - `timeline/guest/posts.ts` のデータを `postsBasic.ts`・`postsThread.ts`・`postFacets.ts` へ分け、`posts.ts` は連結と検索だけにした（コミット 576e203・7a36cb8）。外向きの名前 3 件と出力は HEAD と一致した（一時テストで比較）。
 - ゲストの経路を含む unit・route のテストが通過した。
+
+### 7.1 survey/gate の分割（記録）
+
+- `planGateEntry` に `excluded` 入力を足し（利用者の決定 (a)）、`state.ts`・`check.ts`・`runtime.ts` に分けた。`gate.ts` は 7.2 まで再エクスポートの入口として残す。
+- 検証: `test:all` 終了コード 0（unit 434・component 13・route 212・render 2・e2e 7）。レビュー APPROVED（指摘は任意の Suggestion のみ）。

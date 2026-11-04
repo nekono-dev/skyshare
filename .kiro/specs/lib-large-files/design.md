@@ -258,9 +258,10 @@ src/components/composer/ThreadComposer/rules/
 
 #### survey/gate
 
-- `state.ts`（純粋）: `SubmitOutcome`・`resolveSubmitOutcome`・`GateEntryPlan`・`planGateEntry`・`GateState`・`initialGateState`・`GateAction`・`gateReducer`。`@/lib/survey/launchCheck` 等への依存は持たない（型の import は `@/lib/survey/definition`・`@/lib/survey/client` を使う）。
+- `state.ts`（純粋）: `SubmitOutcome`・`resolveSubmitOutcome`・`GateEntryPlan`・`planGateEntry`・`GateState`・`initialGateState`・`GateAction`・`gateReducer`。`@/lib/survey/launchCheck`・`@/lib/survey/deviceRecord` 等への依存は持たない（型の import は `@/lib/survey/definition`・`@/lib/survey/client` を使う）。
+  - 決定（2026-11-04、利用者）: `planGateEntry` は除外の判定を行わず、入力 `excluded: boolean` を受け取る。除外の真偽値（`isSurveyPageExcluded(pathname, search)`）は呼び出し側の `enterPage`（`runtime.ts`）が計算して渡す。`excluded` が真なら従来どおり `reset`、偽なら従来どおり判定する（入力が同じなら結果は同じ）。`planGateEntry` の export と戻り値の型は変えない。
 - `check.ts`: `GateCheckResult`・`GateDeps`・`runGateCheck`。`state.ts` の型を使う。
-- `runtime.ts`: `SubmitAnswers`・`GateRuntime`・`DeclineRuntime`・`enterPage`・`applySubmitResult`・`applyDecline`・`handleDecline`・`handleSubmit`・`createLiveRuntime`・`createDialogHandlers`。`state.ts`・`check.ts` を使う。
+- `runtime.ts`: `SubmitAnswers`・`GateRuntime`・`DeclineRuntime`・`enterPage`（`isSurveyPageExcluded` を呼び、その結果を `planGateEntry` の `excluded` に渡す）・`applySubmitResult`・`applyDecline`・`handleDecline`・`handleSubmit`・`createLiveRuntime`・`createDialogHandlers`。`state.ts`・`check.ts` を使う。
 - `index.ts`: 元の export をすべて再エクスポート（`@/lib/survey/gate` の参照は変わらない）。
 - 注意: 元のヘッダコメント（「React に依存しない純粋な部分」）は、`state.ts` のヘッダに移し、`index.ts` のヘッダには分割の一覧を書く。
 
