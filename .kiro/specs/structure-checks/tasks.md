@@ -89,7 +89,7 @@
   - _Boundary: structure.md_
   - _Depends: lib-layers 5.2, layout-home 3.2, util-placement 6.1_
   - _Requirements: 5.2, 5.4_
-- [ ] 5.2 structure.md と規則の一覧が一致することを検査するテストを加える
+- [x] 5.2 structure.md と規則の一覧が一致することを検査するテストを加える
   - `structure.md` の「## 依存規則の検査」の表の一列目と `RULE_IDS` が双方向に一致することを確かめる
   - `RULE_BASIS` の「」内の名前が `structure.md` の見出しと一致することを確かめる
   - `structure.md` に「共通（`src/util/`・`src/styles/`）」の節と、部品の節の骨格（`layout`）の一文（`` `src/layout/` `` を置かない旨）が含まれることを確かめる
