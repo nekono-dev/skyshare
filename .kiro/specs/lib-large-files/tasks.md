@@ -136,7 +136,7 @@
   - _Boundary: survey/gate_
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 7.3 アンケートのテストで検証し、コミットする
+- [x] 7.3 アンケートのテストで検証し、コミットする
   - `tests/unit/lib/survey/respondentHash.test.ts`・`tests/route/survey/*` を実行し、件数と結果が分割前と同じであることを確かめる
   - 状態遷移（`gateReducer`・`planGateEntry`）が、分割前と同じ入力で同じ結果になることを、export の一覧の比較と `npm run test:type` で確かめる
   - 完了の状態: 対象のテストが通り、この分割だけのコミットが作られている
@@ -221,3 +221,5 @@
 - `planGateEntry` に `excluded` 入力を足し（利用者の決定 (a)）、`state.ts`・`check.ts`・`runtime.ts` に分けた。`gate.ts` は 7.2 まで再エクスポートの入口として残す。
 - 検証: `test:all` 終了コード 0（unit 434・component 13・route 212・render 2・e2e 7）。レビュー APPROVED（指摘は任意の Suggestion のみ）。
 - 7.2: `gate/index.ts` で元の 21 件を再エクスポートし、`gate.ts` を削除した。export 名は削除前と一致（レビュー APPROVED。ヘッダ説明の誤り 1 件を直した）。`test:all` 終了コード 0（unit 434・component 13・route 212・render 2・e2e 7）。
+- 7.3: 検証のみ（コード変更なし）。`respondentHash` 5 件・route `survey` 16 件が通過。`planGateEntry` 880 ケース・`gateReducer` 320 ケース・`resolveSubmitOutcome` 7 ケースで分割前と差分 0。export 名 21 件一致。比較は HEAD の tests・config が分割前（b64b4a2^）と同一であることを前提にした。レビュー APPROVED。
+- 7.1 の `planGateEntry` 入力変更（`excluded`）は、呼び出し側（`enterPage`）が `isSurveyPageExcluded` を計算して渡す形で、結果は分割前と同じ。
