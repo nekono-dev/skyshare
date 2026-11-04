@@ -226,6 +226,7 @@ describe("許容リスト（allowlist）", () => {
         from,
         specifier,
         owner,
+        reason: "テスト用の理由",
     })
     const tmpFile = (content: string) => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "import-rules-"))
@@ -286,6 +287,26 @@ describe("許容リスト（allowlist）", () => {
         ).toBeGreaterThan(0)
     })
 
+    it("reason が欠落・空・空白だけの項目は読み込みエラーになり、entries に入らない（要件 4.1・4.2）", () => {
+        const missing = {
+            ruleId: "cycle",
+            from: "src/a.ts",
+            specifier: "./b",
+            owner: "src-cycles",
+        }
+        const empty = { ...missing, reason: "" }
+        const blank = { ...missing, reason: "   " }
+        for (const bad of [missing, empty, blank]) {
+            const loaded = loadAllowlist(
+                tmpFile(JSON.stringify({ version: 1, entries: [bad] })),
+                ownerExists,
+            )
+            expect(loaded.errors).toHaveLength(1)
+            expect(loaded.errors[0]).toMatch(/reason/)
+            expect(loaded.entries).toEqual([])
+        }
+    })
+
     it("正しい項目は errors が空になり、entries を返す", () => {
         const ok = JSON.stringify({
             version: 1,
@@ -306,6 +327,7 @@ describe("許容リスト（allowlist）", () => {
             ),
         ]
         const draft = emitAllowlist(violations)
+        expect(draft.entries.every(e => e.reason === "")).toBe(true)
         expect(draft.entries.map(e => e.owner).sort()).toEqual([
             "src-cycles",
             "src-import-style",
@@ -351,7 +373,11 @@ describe("CLI（check-imports）", () => {
         ).toBe(true)
     })
 
-    it("--emit-allowlist の出力を許容リストにすると、違反も stale も 0 件で終了コード 0 になる（要件 6.1・7.1）", () => {
+    // 下書きの reason は空で出るため、読み込む前に理由を埋める（要件 4.3）
+    const fillReasons = (entries: { reason: string }[]) =>
+        entries.map(e => ({ ...e, reason: "テスト用の理由" }))
+
+    it("--emit-allowlist の下書きは reason が空で、理由を埋めれば違反も stale も 0 件で終了コード 0 になる（要件 4.3・6.1・7.1）", () => {
         const draft = runImportCheck({
             root: violationsRoot,
             allowlistPath: "",
@@ -360,16 +386,58 @@ describe("CLI（check-imports）", () => {
         })
         expect(draft.exitCode).toBe(0)
         const parsed = JSON.parse(draft.lines.join("\n")) as {
-            entries: unknown[]
+            entries: { reason: string }[]
         }
-        const result = runImportCheck({
+        expect(parsed.entries.every(e => e.reason === "")).toBe(true)
+        const unfilled = runImportCheck({
             root: violationsRoot,
             allowlistPath: writeAllowlist(parsed.entries),
             emit: false,
             ownerExists,
         })
+        expect(unfilled.exitCode).toBe(1)
+        const result = runImportCheck({
+            root: violationsRoot,
+            allowlistPath: writeAllowlist(fillReasons(parsed.entries)),
+            emit: false,
+            ownerExists,
+        })
         expect(result.exitCode).toBe(0)
         expect(result.lines.some(line => line.startsWith("警告"))).toBe(false)
+    })
+
+    it("理由が欠落・空の許容リストは読み込みエラーとなり、終了コード 1 になる（要件 4.2）", () => {
+        const draft = runImportCheck({
+            root: violationsRoot,
+            allowlistPath: "",
+            emit: true,
+            ownerExists,
+        })
+        const parsed = JSON.parse(draft.lines.join("\n")) as {
+            entries: { reason: string }[]
+        }
+        const result = runImportCheck({
+            root: violationsRoot,
+            allowlistPath: writeAllowlist(fillReasons(parsed.entries)),
+            emit: false,
+            ownerExists,
+        })
+        expect(result.exitCode).toBe(0)
+        const missing = parsed.entries.map(
+            ({ reason: _reason, ...rest }) => rest,
+        )
+        const negative = runImportCheck({
+            root: violationsRoot,
+            allowlistPath: writeAllowlist(missing),
+            emit: false,
+            ownerExists,
+        })
+        expect(negative.exitCode).toBe(1)
+        expect(
+            negative.lines.some(
+                line => line.startsWith("エラー") && line.includes("reason"),
+            ),
+        ).toBe(true)
     })
 
     it("消えた許容の項目は警告として示し、終了コードは 0 のままになる（要件 6.4）", () => {
@@ -378,6 +446,7 @@ describe("CLI（check-imports）", () => {
             from: "src/lib/gone.ts",
             specifier: "./x",
             owner: "src-cycles",
+            reason: "テスト用の理由",
         }
         const draft = runImportCheck({
             root: violationsRoot,
@@ -386,11 +455,14 @@ describe("CLI（check-imports）", () => {
             ownerExists,
         })
         const parsed = JSON.parse(draft.lines.join("\n")) as {
-            entries: unknown[]
+            entries: { reason: string }[]
         }
         const result = runImportCheck({
             root: violationsRoot,
-            allowlistPath: writeAllowlist([...parsed.entries, extra]),
+            allowlistPath: writeAllowlist([
+                ...fillReasons(parsed.entries),
+                extra,
+            ]),
             emit: false,
             ownerExists,
         })

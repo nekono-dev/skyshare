@@ -2,7 +2,7 @@
  * 依存規則の検査の許容リスト部品。
  *
  * 責務と処理概要:
- * - 許容リスト（JSON）を読み込み、形式・重複・未知の規則・所有 spec の存在を検証する。
+ * - 許容リスト（JSON）を読み込み、形式・重複・未知の規則・所有 spec の存在・理由（reason）の記入を検証する。
  * - 違反と許容リストを照合し、許容されていない違反（unlisted）と消えた許容の項目（stale）を分ける。
  * - 現在の違反から下書きを作る（規則ごとの既定の所有 spec を付ける）。
  *
@@ -18,6 +18,8 @@ export type AllowlistEntry = {
     from: string
     specifier: string
     owner: string
+    /** 例外を認める理由。読み込み時に空・欠落を許さない。下書きでは空で出す。 */
+    reason: string
 }
 
 export type AllowlistLoadResult = {
@@ -91,6 +93,12 @@ export const loadAllowlist = (
             errors.push(`${where}: from・specifier・owner は文字列で指定する`)
             return
         }
+        if (typeof item.reason !== "string" || item.reason.trim() === "") {
+            errors.push(
+                `${where}: reason は空でない文字列で指定する（理由を埋めるまで読み込めない）`,
+            )
+            return
+        }
         if (!ownerExists(item.owner)) {
             errors.push(
                 `${where}: 所有 spec ${item.owner} が .kiro/specs/ に存在しない`,
@@ -125,7 +133,10 @@ export const checkAllowlist = (
     return { unlisted, stale, listedCount }
 }
 
-/** 現在の違反から許容リストの下書きを作る。同じキーの違反は 1 件にする。 */
+/**
+ * 現在の違反から許容リストの下書きを作る。同じキーの違反は 1 件にする。
+ * reason は空で出す。空のままでは読み込めないため、理由を埋めるまで有効な許容リストにならない。
+ */
 export const emitAllowlist = (
     violations: Violation[],
 ): { version: 1; entries: AllowlistEntry[] } => {
@@ -140,6 +151,7 @@ export const emitAllowlist = (
             from: v.from,
             specifier: v.specifier,
             owner: DEFAULT_OWNERS[v.ruleId],
+            reason: "",
         })
     }
     entries.sort((a, b) => keyOf(a).localeCompare(keyOf(b)))

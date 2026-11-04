@@ -18,7 +18,7 @@
   - 既存の規則（`layer`・`uiInLib`・`cycle`・`crossRegionRelative`・`relativeDepth`・`jsExtension`）の判定と `RULES` の並びは変えない
   - 完了時の状態: 既存の `importRules.test.ts` の根拠の検査（すべての規則に節が紐づく）が、`utilShared` を含めて通る
   - _Requirements: 5.1, 6.1_
-- [ ] 2.2 許容リストの項目に理由を必須で持たせる
+- [x] 2.2 許容リストの項目に理由を必須で持たせる
   - `AllowlistEntry` に `reason` を加え、空または欠落の項目は読み込みのエラーにして終了コード 1 にする
   - `--emit-allowlist` の下書きは各項目の `reason` を空で出し、理由を埋めるまで読み込めないようにする
   - `DEFAULT_OWNERS` に `utilShared`・`typesLeaf`・`typesOnly`（いずれも `"structure-checks"`）を加える
@@ -152,3 +152,4 @@
 
 - `DEFAULT_OWNERS` に `utilShared`・`typesLeaf`・`typesOnly`（所有 spec は `structure-checks`）を 2.1 で加えた。`RuleId` を広げると型の `Record<RuleId, string>` が欠けて `test:type` が失敗するため、型の整合のために前倒しした。2.2 では重複して加えない。2.2 は `reason` の追加と読み込みの検証だけを行う。
 - 「すべての規則に根拠の節が紐づく」検査は `RULE_IDS` の全件で回す（手書きの配列は廃止）。根拠の節名（`structure.md` の見出し）との一致は、現状ではファイル名（`structure.md`）の包含だけを見ている。節名の一致の検査は後続で加える余地がある。
+- 2.2 の記録: CLI の「存在しない owner」テストの項目に `reason` が無いため、owner の検査ではなく reason の欠落で終了コード 1 になっている。2.3 で `reason` を加えて owner の経路を単独で検証し直す。
