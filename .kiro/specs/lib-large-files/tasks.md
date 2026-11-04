@@ -3,13 +3,13 @@
 各分割（大タスク 2〜8）は、一件ずつ別のコミットにする（要件 5.1）。分割の間で `test:type`・`test:imports` を通してから次へ進むため、大タスクは順番に実行する（`(P)` は付けない）。
 
 - [ ] 1. 基準の記録と着手前の確認
-- [ ] 1.1 `test:all` の基準を記録する
+- [x] 1.1 `test:all` の基準を記録する
   - 着手前に `npm run test:all` を実行し、終了コードと通過件数を作業の記録に残す（2026-11-03 の基準として以後の比較に使う）
   - 分割の対象 7 件の行数（`wc -l`）を同じ記録に残す
   - 完了の状態: 終了コードと件数が記録され、分割前の行数が設計の表と一致する
   - _Requirements: 4.4, 4.5_
 
-- [ ] 1.2 上流の完了を確認する
+- [x] 1.2 上流の完了を確認する
   - `lib-layers` と `util-placement` が完了し、`contentEditableModel` が `components/composer/ThreadComposer/rules/contentEditableModel.ts` にあり、`shareSettings` が `@/lib/share/intent`（`isValidInstanceDomain`）と `@/lib/share/autoPopupTarget`（`AutoPopupTarget`・`AUTO_POPUP_TARGETS`）から import していることを確かめる（どちらも `util-placement` の出力）
   - 完了の状態: 上の 2 点が確認でき、未完了の場合は大タスク 5 と 8 を着手せずに報告する
   - _Requirements: 1.2, 3.4_
@@ -176,3 +176,9 @@
   - `npm run test:all` が終了コード 0 で終わり、通過件数が 1.1 で記録した基準を下回らないことを確かめる
   - 完了の状態: 終了コード 0、件数が基準以上
   - _Requirements: 4.4, 4.5_
+
+### 1.1・1.2 基準と上流の確認（記録）
+
+- `npm run test:all`（着手前）: 終了コード 0。unit 49/49（327 件）、component 5/5（13 件）、route 23/23（212 件）、render 1/1（2 件）、e2e 7 件。`npm run apigen` の差分は無い。
+- 分割対象 7 件の行数は、design の表と一致する。`lib/settings/shareSettings.ts` は util-placement の import 変更（70de585）により 718 行から 716 行になっていたため、design の表を 716 に直した（記録の日付は 2026-11-04）。
+- 上流（lib-layers・util-placement）は完了している。`contentEditableModel` の所在と、`shareSettings` の import 元（`@/lib/share/intent`・`@/lib/share/autoPopupTarget`）を確認した。
