@@ -17,7 +17,7 @@ structure.md の編集順: 本仕様の 2.1〜2.3 は、lib-layers 5.3・util-pl
   - 完了の条件: `structure.md` の判断の表が `design.md` の判断の結果の表と一致し、`common/` へ移さない理由が書かれている
   - _Depends: lib-layers 5.3, util-placement 6.1, structure-checks 5.1_
   - _Requirements: 1.1, 1.2, 1.4, 2.1, 2.2, 2.3, 2.4, 3.1, 6.3_
-- [ ] 2.2 `components/i18n` の残す理由を件数に依存しない形で維持する
+- [x] 2.2 `components/i18n` の残す理由を件数に依存しない形で維持する
   - 翻訳の入口であり、多数の部品から import されることを理由として書く
   - 固定の件数を根拠に書かない
   - 完了の条件: `structure.md` の `components/i18n` の記述が移動しない理由を含み、件数を根拠にしていない
