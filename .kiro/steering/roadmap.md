@@ -142,10 +142,10 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 ### Specs (dependency order)
 
-- [ ] ops-agent-setup -- cc-sdd の導入を 1 つの入口にそろえ、版を固定する。BRW の取得元（`.branch-release-workflow-source.json`）の欠落を戻し、Claude と Codex の BRW の配布を 1 つずつに決める。Dependencies: none
-- [ ] ops-config-secrets -- wrangler の生成を 1 つの関数に集約し、子プロセスでの呼び出しをやめる。dotenv・JSONC・wrangler の名前の読み取りを `scripts/lib/` に一本化する。Dependencies: none
-- [ ] ops-tooling-layout -- `scripts/` を領域ごとのフォルダに分け、命名を kebab-case にそろえる。運用系の npm スクリプトの重複と誤記（`build:prepare`）を直す。CI と参照のパスを更新する。Dependencies: ops-agent-setup, ops-config-secrets
-- [ ] develop-docs -- DEVELOP.md を手順だけの文書に作り直す。steering と spec の責務を分け、確定した構成（配置・スクリプト名・CI の参照）に合わせ、古い記述（E2E の Secret など）を直す。Dependencies: ops-agent-setup, ops-config-secrets, ops-tooling-layout
+- [x] ops-agent-setup -- cc-sdd の導入を 1 つの入口にそろえ、版を固定する。BRW の取得元（`.branch-release-workflow-source.json`）の欠落を戻し、Claude と Codex の BRW の配布を 1 つずつに決める。Dependencies: none
+- [x] ops-config-secrets -- wrangler の生成を 1 つの関数に集約し、子プロセスでの呼び出しをやめる。dotenv・JSONC・wrangler の名前の読み取りを `scripts/lib/` に一本化する。Dependencies: none
+- [x] ops-tooling-layout -- `scripts/` を領域ごとのフォルダに分け、命名を kebab-case にそろえる。運用系の npm スクリプトの重複と誤記（`build:prepare`）を直す。CI と参照のパスを更新する。Dependencies: ops-agent-setup, ops-config-secrets
+- [x] develop-docs -- DEVELOP.md を手順だけの文書に作り直す。steering と spec の責務を分け、確定した構成（配置・スクリプト名・CI の参照）に合わせ、古い記述（E2E の Secret など）を直す。Dependencies: ops-agent-setup, ops-config-secrets, ops-tooling-layout
 
 ### 既知の論点（調査で見つかったもの）
 
@@ -324,8 +324,8 @@ Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の�
 
 ### Existing Spec Updates
 
-- [ ] src-duplicates -- share の責務（5 フォルダ）の統合の結論を、`lib/share` への統合（`util-placement`、完了済み）に合わせて追記する（既存の内容は残す）。Dependencies: util-placement
-- [ ] src-import-rules -- 紐づけは lib-layers の 5.4 が行う（lib-layers が追加した libLayer を、src-import-rules の brief・requirements に紐づける。検査の変更は行わない）。Dependencies: lib-layers
+- [x] src-duplicates -- share の責務（5 フォルダ）の統合の結論を、`lib/share` への統合（`util-placement`、完了済み）に合わせて追記する（既存の内容は残す）。Dependencies: util-placement
+- [x] src-import-rules -- 紐づけは lib-layers の 5.4 が行う（lib-layers が追加した libLayer を、src-import-rules の brief・requirements に紐づける。検査の変更は行わない）。Dependencies: lib-layers
 
 ### 探査の根拠（2026-11-03）
 

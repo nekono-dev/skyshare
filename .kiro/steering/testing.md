@@ -19,7 +19,7 @@
 | route     | `src/pages/**/*.ts` の API、D1・R2 を使う処理 | workerd（`@cloudflare/vitest-plugin`）。`config/test/vitest.route.config.ts`      | 認証、状態コード、Cookie、応答の形、D1・R2 への副作用                   |
 | component | 対話のある React 部品                         | Node ＋ happy-dom（ファイル先頭で指定）。`config/test/vitest.component.config.ts` | 操作に対する表示状態、キー操作                                          |
 | render    | `.astro` のサーバー描画                       | Astro の container。`config/test/vitest.astro.config.ts`                          | サーバー描画の出力（属性、条件による出力の有無）                        |
-| e2e       | 利用者の六つの流れ                            | Playwright（`tests/e2e/flows`）。`npm run test:e2e` が起動する                    | 画面 → API → 保存の結線。Bluesky は偽のサーバーに置き換える             |
+| e2e       | 利用者の六つの流れ・移動した部品の操作        | Playwright（`tests/e2e/flows`）。`npm run test:e2e` が起動する                    | 画面 → API → 保存の結線。Bluesky は偽のサーバーに置き換える             |
 | live      | 実際の Bluesky（PDS）                         | 開発者がローカルで任意に実行（`npm run test:live`）。spec: live-tests             | 外部との契約の実証（読み取り専用）。CI・pre-push・test:all には含めない |
 
 - **route 層は workerd で実行する**。Node の代用ではなく、実行環境の差を検出するため。
@@ -44,7 +44,7 @@
 
 ### P0 のモジュール（23 ファイル。閾値とテストの対応）
 
-- unit（11）: `src/lib/session/cookies.ts`、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/entry/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`
+- unit（11）: `src/lib/session/cookies/`（フォルダ。分岐のカバレッジはファイルごとに 80%）、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/entry/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`
 - route（12）: `src/lib/session/oauthSession.ts`、`src/lib/session/bskySessionRefresh.ts`、`src/lib/session/oauthLogin.ts`、`src/lib/schedule/executor.ts`、`src/lib/schedule/runner.ts`、`src/lib/schedule/stageSchedule.ts`、`src/lib/schedule/imageStaging.ts`、`src/lib/survey/store.ts`、`src/lib/survey/retention.ts`、`src/lib/survey/request.ts`、`src/pages/v1/page.ts`、`src/pages/v2/feedback.ts`
 
 ## Coverage（P0 だけ、ファイル単位の分岐 80%）
@@ -76,7 +76,7 @@ tests/
   route/       src/pages/ と src/lib/ の対応するパス。support/ は D1 のマイグレーションと外部通信
   render/      .astro の描画テスト
   e2e/
-    flows/     利用者の六つの流れ（login・thread-posting・entry・schedule・survey・feedback）
+    flows/     利用者の六つの流れ（login・thread-posting・entry・schedule・survey・feedback）と、移動した部品の操作（util-placement: 表示言語のドロップダウン・下書きのスクロール制御・投稿後の共有画面）
   support/
     fakeBluesky/   偽の Bluesky（認可サーバー・PLC・PDS・AppView の固定応答。HTTP 版と route 用の定義）
     fakeOutbound.ts route 層の外部通信（outboundService）
@@ -106,4 +106,4 @@ tests/
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
-_updated_at: 2026-11-03（スクリプトの実際の配置に合わせた: render-wrangler の場所、test:all に test:imports を追補）_
+_updated_at: 2026-11-05（Cookie のフォルダ化、e2e に移動した部品の操作の流れを追補）_

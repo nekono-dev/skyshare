@@ -68,11 +68,11 @@ npm run build
 ## Key Technical Decisions
 
 - **Cloudflare Workers への載せ方**: 画面と API は Astro のアダプタに任せ、`scheduled` だけ自前のエントリで受ける（`src/worker.ts`）。
-- **セッションの保持**: セッションのトークンは HttpOnly の Cookie にだけ置き、JSON やクライアントのストレージに出さない（`src/lib/session/cookies.ts`）。複数アカウントは `atp_account_0`〜`_3` のプールで持つ。
+- **セッションの保持**: セッションのトークンは HttpOnly の Cookie にだけ置き、JSON やクライアントのストレージに出さない（`src/lib/session/cookies/`。Cookie の処理をフォルダに分けた）。複数アカウントは `atp_account_0`〜`_3` のプールで持つ。
 - **予約の認可**: 予約用の更新トークンと DPoP の鍵は AES-GCM で暗号化して D1 に置き、DID を追加認証データにする（`src/lib/schedule/credentialCrypto.ts`）。
 - **アンケートの匿名性**: 回答者は `HMAC-SHA256(鍵, surveyId + did)` の値だけで表し、回答の行には識別子を持たせない（`src/lib/survey/respondentHash.ts`）。
 
 ---
 
 _Document standards and patterns, not every dependency._
-_updated_at: 2026-11-03（OpenAPI 生成スクリプトの実際の配置に合わせた）_
+_updated_at: 2026-11-05（Cookie の処理をフォルダに分けた場所に合わせた）_

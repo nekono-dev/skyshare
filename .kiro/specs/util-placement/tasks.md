@@ -6,7 +6,7 @@
 - 共有ファイルの編集順: `tests/unit/scripts/importRules.test.ts` は lib-layers 4.2 の後に本仕様 6.2 で例のパスを直す（lib-layers → util-placement → structure-checks の順）。`components/feedback/FeedbackForm/index.tsx`・`lib/feedback/*` は lib-layers 2.1 の後に本仕様 4.2・4.3 で import を付け替える。`components/composer/ThreadComposer/hooks/useDraftFlow.ts` は lib-layers 3.2（`draftList`）の後に本仕様 5.2（`util/links`）で付け替える。
 - 利用者の決定はすべて design の「決定の記録」の節に記録済み（U-1 は案 C、U-2 は `util/` に残す、U-3 は部品の内側、型の規則）。未決定の項目は無い。
 
-- [ ] 1. 着手前の基準と決定の記録
+- [x] 1. 着手前の基準と決定の記録
 - [x] 1.1 test:all の基準と生成物の差分を記録する
   - 着手前の `npm run test:all` の終了コードと通過件数を、実装の記録に残す（以降の完了の条件の基準にする）
   - 着手前の `npm run apigen` の後に `src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる（差分がある場合は本仕様の着手前に別途直す）
@@ -17,7 +17,7 @@
   - 完了の条件: design の「決定の記録」と「決定から生じる例外と差分」の節があり、タスクの対象がそれと一致している
   - _Requirements: 1.9, 2.6, 3.1, 7.2_
 
-- [ ] 2. lib/share と lib/settings の循環の解消
+- [x] 2. lib/share と lib/settings の循環の解消
 - [x] 2.1 AutoPopupTarget の値と型を lib/share へ移す
   - 投稿後に自動でポップアップする SNS の一覧と型を、lib/share の 1 ファイルへ移す（中身と名前は変えない）
   - 設定の読み書き（shareSettings）と、共有の文字数の予約（counterReserve）が、移した先を参照する
@@ -25,7 +25,7 @@
   - _Depends: 1.1_
   - _Requirements: 2.4, 2.5, 5.2_
 
-- [ ] 3. util/share と textCount を一括で移す（一つの変更として行う）
+- [x] 3. util/share と textCount を一括で移す（一つの変更として行う）
   - 理由: `intent.ts`・`webShare.ts`・`openIntentPopup.ts` は純粋な部分とブラウザ部分が分かれており、一部だけ移すと `util` から `lib` への参照が中間状態に残る。よって、3.1 の一つの変更として行う
 - [x] 3.1 util/share と util/textCount を lib/share と components/share/IntentShareDialog へ一括で移す
   - 純粋な部分を `lib/share` へ移す: `util/share/intentLength.ts`・`util/share/truncateText.ts`・`util/textCount.ts` → `lib/share/`（中身と名前は変えない）。`util/share/intent.ts` の `IntentTarget`・`isValidInstanceDomain`・`BuildIntentTextOptions`・`resolveTruncateLimit`・`buildIntentSuffix`・`buildIntentText`・`IntentUrlOptions`・`buildIntentUrl` → `lib/share/intent.ts`。`util/share/webShare.ts` の `buildWebShareText`・`toShareFile` → `lib/share/webShareData.ts`
@@ -42,7 +42,7 @@
   - _Depends: 3.1_
   - _Requirements: 1.7, 5.2_
 
-- [ ] 4. 業務の判断を lib/atproto と lib/feedback へ、型を src/types へ移す
+- [x] 4. 業務の判断を lib/atproto と lib/feedback へ、型を src/types へ移す
 - [x] 4.1 (P) 国旗・リンク化・オブジェクト判定を lib/atproto へ移す
   - util/emoji/countryFlag・util/autoLink・util/object を lib/atproto の内側へ移し、利用元（languageFlag・richTextSegments・draft）の import を付け替える
   - 移動した兄弟どうしの import（例: `draft` → `object`）は、相対 import（`./`）にする
@@ -69,7 +69,7 @@
   - _Depends: 1.1, lib-layers 2.1_
   - _Requirements: 7.1, 7.2, 3.1, 3.2, 5.2, 5.3_
 
-- [ ] 5. 利用元の部品の内側へ移す
+- [x] 5. 利用元の部品の内側へ移す
 - [x] 5.1 util/textarea の 5 件を ThreadComposer の rules へ移す
   - util/textarea の contentEditableModel・contentEditableReconcile・highlightNodeParts・facetHighlightSegments・suggestTrigger を ThreadComposer の rules の内側へ移し、利用元（useSuggest と PostBodyEditor）の import を相対のパスに付け替える
   - 移動先の内側どうしの import（例: `contentEditableReconcile` → `contentEditableModel`）は、`@/util/…` ではなく相対のパス（`./`）にする（同じ部品フォルダの内部は相対 import、`structure.md` の規則）
@@ -103,7 +103,7 @@
   - _Depends: 5.3, 5.4_
   - _Requirements: 1.2, 1.5, 5.2_
 
-- [ ] 6. 規約と文書の改訂
+- [x] 6. 規約と文書の改訂
 - [x] 6.1 structure.md の util・src/types の規約と lib の依存の表を改訂する
   - 依存の表: 既存の依存の表（`lib/api`・`lib/site` の行を含む）を土台にし、`lib/share`・`lib/settings`・`lib/atproto`・`lib/feedback` の行を実際の import に合わせて書き換える。`lib/api` の行には `src/types`（`FormDataFieldKind` の型。`schema/v2/entry/post.ts`・`schedules/post.ts` が import する）を加える（`src/types` は型だけの葉のため、依存の向きは変わらない）。`lib/site` の行は変えない
   - util の節に「利用元が複数領域のときだけ util に置く」と四つの分類規則を書き、利用元が一つになった関数は利用元へ移し、util へ戻さないと書く。`util/waitForImageLoad.ts` の例外（DOM を使うが二つの部品領域が使うため残す）を書く。「util/share/ のように下位フォルダで分ける」の文を削除する（既に無ければ確認のみ）
@@ -122,7 +122,7 @@
   - _Depends: 3.1, 1.2, lib-layers 4.2_
   - _Requirements: 6.1, 6.2, 5.2_
 
-- [ ] 7. 最終確認
+- [x] 7. 最終確認
 - [x] 7.1 util の残りと旧パスの参照を確認する
   - util 直下が 5 件（`http.ts`・`formData.ts`・`utf8Bytes.ts`・`padTwoDigits.ts`・`waitForImageLoad.ts`）だけであり、残した各モジュールの内容が変わっていない（`formData.ts` は型を除く）ことを確かめる
   - 各残したモジュールの利用元が二つ以上の領域にあることを grep で確認する

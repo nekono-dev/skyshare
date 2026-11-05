@@ -7,14 +7,14 @@
 - `src/components/composer/ThreadComposer/hooks/useDraftFlow.ts`: 本仕様 3.2（`draftList` の import を `@/lib/timeline/draftList` へ）が先。util-placement 5.2（`util/links` の import）は、その後の状態に対して行う。
 - `src/pages/posts/[dbIndex]/[slug].astro`: 本仕様 3.4（`legacy/pagedb` の import を `@/lib/entry/legacyPagedb` へ）が先。layout-home 2.2（骨格の import を変える）は、本仕様の 3.4 の後に行う（layout-home 2.2 の `_Depends` に本仕様の 3.4 を記す）。
 
-- [ ] 1. 基準の記録
+- [x] 1. 基準の記録
 - [x] 1.1 着手前の基準を記録する
   - 着手前の `npm run test:all` の終了コードと通過件数を、実装の記録に残す（要件 5.4 の基準）
   - 着手前の `npm run apigen` を実行し、`src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる（差分がある場合は本仕様の着手前に別途直す）
   - 完了の条件: 基準の件数と、apigen に差分が無いことが記録されている
   - _Requirements: 5.2, 5.4_
 
-- [ ] 2. API 契約の基盤への移動（feedback・survey の逆流の解消）
+- [x] 2. API 契約の基盤への移動（feedback・survey の逆流の解消）
 - [x] 2.1 不具合の報告の制約値と送信内容の型を API 契約へ移す
   - 不具合の報告の文字数上限・再現頻度の値・文字数の数え方を、API 契約（基盤）の 1 ファイル（`contract/feedbackLimits`）に移す（旧 `feedback/limits` の内容を変えない）
   - 送信内容の型を API 契約の 1 ファイル（`contract/feedbackSubmission`）に移し、API の型検査（`typeCompat`）が移した先を参照する
@@ -35,7 +35,7 @@
   - _Depends: 2.1, 2.2_
   - _Requirements: 2.4, 5.3_
 
-- [ ] 3. 1〜2 ファイル領域の統合
+- [x] 3. 1〜2 ファイル領域の統合
 - [x] 3.1 (P) `account` を `session` へ統合する
   - 利用者のセッション情報の共有キャッシュを `session` の領域へ移し、同じ公開の関数名で参照できる状態にする
   - 参照元の部品（ログイン・アカウント切り替え・投稿・Entry 一覧・予約の資格情報など）の import を移した先に変える
@@ -64,7 +64,7 @@
   - _Boundary: Entry（legacyPagedb）_
   - _Requirements: 4.2, 5.1, 5.3_
 
-- [ ] 4. 層の分類と層の逆流の検査
+- [x] 4. 層の分類と層の逆流の検査
 - [x] 4.1 領域の層の対応表と、層の逆流の規則を追加する
   - `src/lib/` の各領域と `guestMode.ts` を基盤か業務に分類する対応表を、検査の部品に持つ
   - 基盤の領域から業務の領域への import を違反として数える規則（`libLayer`）を、既存の規則の一覧に加える。業務 → 基盤・基盤どうし・業務どうしは違反にしない
@@ -91,7 +91,7 @@
   - _Depends: 4.2_
   - _Requirements: 2.3, 2.5, 3.2_
 
-- [ ] 5. steering の改訂
+- [x] 5. steering の改訂
 - [x] 5.1 `structure.md` の領域の一覧と層の表を改訂する
   - 層の表（基盤・業務）を追加し、`guestMode.ts` の層を明記する
   - 領域の一覧から統合で消えた領域（`account`・`draft`・`privacy`・`legacy`）を外し、`session`・`timeline`・`site`・`entry` の説明に統合した内容を足す
@@ -128,7 +128,7 @@
   - _Depends: 4.1_
   - _Requirements: 2.1, 3.1_
 
-- [ ] 6. 最終検証
+- [x] 6. 最終検証
 - [x] 6.1 生成物と古い参照が無いことを確かめる
   - `npm run apigen` を実行し、`src/client/openapi/` と OpenAPI 文書に差分が無いことを確かめる
   - 移動前のパス（`lib/account`・`lib/draft`・`lib/privacy`・`lib/legacy`・`lib/feedback/limits`・`lib/feedback/submission`・`lib/survey/pathParams`）が、ソース・テスト・設定のどこにも残っていないことを検索で確かめる
