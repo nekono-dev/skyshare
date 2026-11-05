@@ -6,7 +6,7 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページ
 
 - 永続化: D1（`migrations/` の SQL。予約・予約用の認可・アンケートの 2 表）と R2（予約の添付画像）
 - 外部: Bluesky の PDS・AppView・認可サーバー、OGP 抽出サービス、旧バックエンド（pageDB）、GitHub API（Issue 作成）
-- 生成物: `scripts/build-openapi-document.ts` が OpenAPI を作り、`orval` が `src/client/openapi/` のクライアントを作る（手で編集しない）
+- 生成物: `scripts/build/build-openapi-document.ts` が OpenAPI を作り、`orval` が `src/client/openapi/` のクライアントを作る（手で編集しない）
 
 ## Core Technologies
 
@@ -75,4 +75,4 @@ npm run build
 ---
 
 _Document standards and patterns, not every dependency._
-_updated_at: 2026-11-01（テスト節の旧い記述を現行の配置に合わせた）_
+_updated_at: 2026-11-03（OpenAPI 生成スクリプトの実際の配置に合わせた）_

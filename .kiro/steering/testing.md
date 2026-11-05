@@ -29,7 +29,7 @@
 ## Bluesky の接続先（偽の Bluesky）と設定の源
 
 - 接続先の解決の規則は `src/lib/platform/blueskyEndpoints.ts`（`resolveBlueskyEndpoints`）。既定値は本番と同じ。`src/lib/platform/publicEndpoints.ts` が、ビルド時の `import.meta.env` からそれを作る。
-- 非秘密の設定（接続先・運営者の情報など）の源は `wrangler.jsonc` の `vars` だけ。開発・ビルド・実行時（Worker の env）が同じ値を使う。`wrangler.jsonc` は `config/<名前>.json` から `scripts/render-wrangler.mjs` が毎回生成する（Git 管理外）。`.env` は使わない。
+- 非秘密の設定（接続先・運営者の情報など）の源は `wrangler.jsonc` の `vars` だけ。開発・ビルド・実行時（Worker の env）が同じ値を使う。`wrangler.jsonc` は `config/<名前>.json` から `scripts/config/render-wrangler.mjs` が毎回生成する（Git 管理外）。`.env` は使わない。
 - 秘密情報（`SCHEDULE_ENC_KEY`・`OAUTH_CLIENT_KEY`・`SURVEY_HASH_KEY`）は `.dev.vars`（ローカル）と Worker のシークレット（本番）に置く。
 - E2E は `config/e2e.json`（`config/e2e.example.json` から、接続先だけ偽の Bluesky の URL にして作る）で `wrangler.jsonc` を生成して `astro dev` を起動する。終了後は開発の設定から生成し直す。
 - 上書きは開発とテストの環境だけで使う。本番の設定（`config/production.json`）には偽の値を入れない。
@@ -89,7 +89,7 @@ tests/
 - **CI（PR）**: E2E（`e2e.yaml`）だけを必須にする。`npm run test:e2e` を実行する。unit・component・route・render は必須にしない。live は実行しない。
 - **push の前（ローカル）**: `npm run test:all` を実行する。E2E を含むすべての層が対象。`.githooks/pre-push` が失敗時に push を止める。
 - **強制**: `prepare`（npm install・npm ci の後）と `session-start.sh` で `core.hooksPath` を `.githooks` に設定する。人間とエージェントは同じ hook を使う。
-- **`test:all` の順序**: codegen → 型検査 → lexicon → unit → component → route → render → e2e。いずれかが失敗すれば全体を失敗にする。
+- **`test:all` の順序**: codegen → 型検査 → lexicon → imports（依存規則） → unit → component → route → render → e2e。いずれかが失敗すれば全体を失敗にする。
 
 ## route 層の互換日付の差（要件 11.2）
 
@@ -106,4 +106,4 @@ tests/
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
-_updated_at: 2026-10-31（設定の源を wrangler.jsonc に一本化）_
+_updated_at: 2026-11-03（スクリプトの実際の配置に合わせた: render-wrangler の場所、test:all に test:imports を追補）_
