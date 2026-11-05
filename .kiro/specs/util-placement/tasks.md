@@ -143,7 +143,7 @@
   - 完了の条件: test:all の終了コードが 0、件数が基準以上、apigen の差分が 0
   - _Depends: 7.2_
   - _Requirements: 1.8, 5.1, 5.3, 5.4, 5.5_
-- [ ] 7.4 e2e で確かめられない操作の確認（未完了。(d) が手動のため開いたまま）
+- [x] 7.4 e2e で確かめられない操作の確認（(d) は 2026-11-05 に利用者が実機で確認）
   - 対象: util-placement で移動した振る舞いのうち、既存の e2e（`tests/e2e/flows/*.spec.ts`）が覆わないもの
   - (a) Dropdown のキーボード操作（`components/common/select/Dropdown/rules/navigation.ts`）: 自動確認済み。矢印キー・Home・End・端での停止・Escape で確定せずに閉じる・Enter で確定。検索付き Dropdown の絞り込み（`rules/filter.ts`）は未確認
   - (b) Overlay のスクロールロック（`components/common/dialog/Overlay/rules/scrollLock.ts`）: 自動確認済み。表示中は body が固定され、Escape で元に戻る。入れ子の参照カウントは未確認
@@ -223,3 +223,5 @@
   5. 投稿欄に文字を入れて投稿する。期待: OS の共有シートが開く。共有シートでキャンセルすると、ステータスに「WebShareAPIでの共有操作はキャンセルされました」が出る。
   6. 開発者ツール（iOS は Safari の Web インスペクタ、Android は chrome://inspect）の Console を見る。期待: 未捕捉の例外（pageerror）が無い。証明書由来の Service Worker の警告だけは無視してよい。
   7. 結果（共有シートの表示・キャンセル時の文言・Console の内容）を利用者が記録し、7.4 の (d) を完了とする。
+
+- 利用者の確認（2026-11-05）: WebShare（7.4 (d)）を実機で確認し、動作することを利用者が確認した。7.4 は完了。詳細な観察記録は残していない。
