@@ -6,7 +6,7 @@
  *   フォールバック（`specs/timeline`）。
  * - 2件以上のスレッドグループは、既定で折りたたみ表示（ルート投稿＋「スレッドを展開」ボタン）
  *   とし、操作により全投稿を時系列順（古い→新しい）に展開表示する。
- * - 事後entry作成ボタン（`resolveEntryVisualSourcePost`）の判定は`entryCandidate.ts`に委譲する。
+ * - 事後entry作成ボタン（`resolveEntryVisualSourcePost`）の判定は`@/lib/timeline/entryCandidate`に委譲する。
  *   操作はスレッドの起点の投稿に対して行うため、ツールバーごとルート投稿のカードにのみ表示し、
  *   返信のカードには表示しない。
  * - どの投稿も画像・動画・entryを持たないスレッドは、返信のカードもグレーアウトする（`specs/timeline`）。
@@ -21,7 +21,7 @@ import type { ThreadGroup } from "@/lib/timeline/posts"
 import {
   findEntryCarrier,
   resolveEntryVisualSourcePost,
-} from "./entryCandidate"
+} from "@/lib/timeline/entryCandidate"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
