@@ -52,7 +52,7 @@ Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だ
    ```
 
 4. エージェントの導入（Claude Code のクラウドセッションでは開始時に自動で行われる）
-   - cc-sdd: SessionStart の `scripts/agent/install-cc-sdd.sh --claude`（Codex は `--codex`）が、固定版（3.1.0）を導入する。導入の結果はコミット済みのため、再実行しても差分は出ない。
+   - cc-sdd: SessionStart の `scripts/agent/install-cc-sdd.sh --claude`（Codex は `--codex`）が、固定版（3.1.0）のスキルと設定の雛形を導入する。これらは MIT のため `.gitignore` の対象で、コミットしない。`CLAUDE.md`・`AGENTS.md` は導入で書き換えない（プロジェクトの文書として直接編集する）。
    - BRW（branch-release-workflow）: `npm run setup:brw` が、同じ clone（`.branch-release-workflow-source.json` の固定ブランチ）から Claude と Codex の両方へ導入する。SessionStart でも同じ入口を呼ぶ。
 
 ### 1.1 作業ブランチの worktree と新しい clone

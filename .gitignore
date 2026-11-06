@@ -51,7 +51,9 @@ _legacy/**/.env.test.*
 # 外部 Git clone への Codex skill のリンク（本体は同梱しない）
 .agents/skills/branch-release-workflow
 
+# cc-sdd の導入物（MIT のため本リポジトリには含めない）。SessionStart で固定版を導入し直す（scripts/agent/install-cc-sdd.sh）
 .claude/skills/kiro-*/
 .agents/skills/kiro-*/
+.kiro/settings/
 # テストの実行で生成される計測の出力と変異テストの一時領域
 /.cache/
