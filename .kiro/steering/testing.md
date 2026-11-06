@@ -84,6 +84,13 @@ tests/
   live/        実際の Bluesky への契約テスト（`npm run test:live`。ゲートには入れない）
 ```
 
+## リファクタと単体テスト（移動・分割の規則）
+
+- 移動・分割・改名で、`src/lib/` の純粋な規則（unit 層の対象）の所在を変えるときは、その変更と同じコミットで、規則の単体テストを置く。既に同じ規則を覆うテストがあれば、それを使う。
+- 振る舞いを変えない移動でも、テストで規則の分岐と境界値を固定する。移動の前後で同じ入力に同じ結果が出ることを、テストの期待値で確かめる。
+- 施行（2026-11-05）より前に移動した規則の既存のテスト不足は、この規則では追加しない。必要になった変更の中で、その規則に限って足す。
+- 対象は `src/lib/` の純粋な規則。部品（`components/`）の判断は、component 層で操作の結果を確かめる（従来どおり）。
+
 ## Gates（いつ何を実行するか）
 
 - **CI（PR）**: E2E（`e2e.yaml`）だけを必須にする。`npm run test:e2e` を実行する。unit・component・route・render は必須にしない。live は実行しない。
@@ -106,4 +113,4 @@ tests/
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
-_updated_at: 2026-11-05（Cookie のフォルダ化、e2e に移動した部品の操作の流れを追補）_
+_updated_at: 2026-11-05（Cookie のフォルダ化、e2e に移動した部品の操作の流れを追補。リファクタと単体テストの規則を追加）_
