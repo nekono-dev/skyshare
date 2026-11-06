@@ -77,7 +77,7 @@ npx --yes "cc-sdd@${CC_SDD_VERSION}" --yes --overwrite force --manifest "$manife
 case "${1}" in
   --claude)
     echo "cc-sdd の導入物を更新しました（.claude/skills/kiro-*・.kiro/settings/）。CLAUDE.md は変更していません。"
-    echo "このセッションのスキル一覧に kiro-* が無い場合は、依頼に対応する .claude/skills/<名前>/SKILL.md を Read して、その手順に従ってください。"
+    echo "スキル一覧に載らないスキル（disable-model-invocation: true の kiro-discovery・kiro-impl など）や、一覧に無いスキルは、依頼に対応する .claude/skills/<名前>/SKILL.md を Read して、その手順を最後まで実行してください。"
     ;;
   --codex)
     echo "cc-sdd の導入物を更新しました（.agents/skills/kiro-*・.codex/agents/・.kiro/settings/）。AGENTS.md は変更していません。"

@@ -6,7 +6,7 @@ Kiro-style Spec-Driven Development on an agentic SDLC
 
 - このファイル（CLAUDE.md）は、cc-sdd の導入（`scripts/agent/install-cc-sdd.sh`）では書き換えない。プロジェクトのルールは、このファイルを直接編集して管理する。
 - cc-sdd の導入物（`.claude/skills/kiro-*/`・`.kiro/settings/`）は `.gitignore` の対象で、コミットしない。セッション開始時に固定版を導入し直す。
-- 導入直後のセッションでは、新しいスキルがスキル一覧に現れないことがある（一覧は起動時に読まれるため）。その場合は、依頼に対応する `.claude/skills/<名前>/SKILL.md` を Read し、その手順に従う。ユーザーが `/kiro-*` を指定したときも同じ。
+- `disable-model-invocation: true` のスキル（`kiro-discovery`・`kiro-impl`）は、モデルのスキル一覧に載らない（ユーザーだけが `/kiro-*` で呼べる）。スキル一覧はセッション起動時に作られるため、導入直後は他のスキルも載らないことがある。どちらの場合も、依頼に対応する `.claude/skills/<名前>/SKILL.md` を Read し、その手順を最後まで実行する（途中で別の作業に移らない）。手順が「推奨を示して停止」と定めるなら、そこで止めてユーザーに返す。
 - SKILL.md が見つからないときは、導入が済んでいないことを伝え、`scripts/agent/install-cc-sdd.sh --claude` の実行を提案する。
 
 ## Project Context
