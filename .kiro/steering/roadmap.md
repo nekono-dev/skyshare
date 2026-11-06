@@ -333,3 +333,55 @@ Phase 4 までは `components/` の規則を整えた。Phase 5 は `src/` の�
 - `util/` の利用元（探査時点。現況は移動先に置いた）: `util/share`（components/composer・share・timeline・settings、lib/share・lib/settings）→ 現況 `lib/share`、`util/textarea`（composer のみ）→ 現況 `components/composer/ThreadComposer/rules/`、`util/listbox`（common/select のみ）→ 現況 `components/common/select/Dropdown/rules/`、`util/clientEnvironment.ts`（feedback のみ）→ 現況 `src/types/` ・`lib/feedback/`・`components/feedback/FeedbackForm/`、`util/emoji/countryFlag.ts`（`lib/atproto/languageFlag` のみ）→ 現況 `lib/atproto/`、`util/autoLink.ts`（`lib/atproto` のみ）→ 現況 `lib/atproto/`、`util/scrollLock.ts`（components/common のみ）→ 現況 `components/common/dialog/Overlay/rules/`。
 - `lib/` の 1〜2 ファイル領域: `account`・`draft`・`privacy`・`legacy`・`codegen`・`share`。
 - 骨格: `src/components/layout/Baselayout/index.astro`（探査の時点の `src/layout/Baselayout.astro` から layout-home で移動）。
+
+## Phase 6: 接頭辞の規則と改名（2026-11-05 discovery: 残ったリファクタ項目）
+
+### Overview
+
+Phase 5 の後に残った 2 件のうち、`structure.md` の「既知の不一致」にある接頭辞のばらつきを扱う。`create`・`build`・`resolve` は、非同期（I/O）と純粋の両方で使われている。規則を決めて、領域ごとに改名する。振る舞いは変えない。
+
+`components/timeline/Timeline/ThreadCard/entryCandidate.ts` の移動は小さいため、spec にせず直接実装とする（下の Direct Implementation Candidates）。
+
+### Approach Decision
+
+- **Chosen**: 接頭辞の規則を先に steering に書き（`naming-rule`）、そのあと領域ごとに改名する。領域の spec は、依存関係を連鎖させて一つずつ進める（import の書き換えが領域をまたぐため）。
+- **規則案（利用者の決定 2026-11-05）**:
+  - `build`: 同期・純粋な値の組み立て（I/O なし）
+  - `resolve`: 同期・純粋な決定（判定・選択）
+  - `create`: 副作用を伴う作成（D1・R2・外部 API への新規作成）。副作用がなければ `build`
+  - `load`（新設）: 非同期の読み取りを伴う処理
+- **Why**: 接頭辞は読み手が副作用の有無を推測する手がかりである。今は同じ接頭辞が両方の意味で使われているため、名前から判断できない。
+- **Rejected alternatives**:
+  - 規則だけを書き、名前は変えない: 既存の名前と規則が食い違ったまま残る。
+  - 一度に全部改名する（1 spec）: 変更が 70 件を超え、失敗の切り分けができない。
+
+### Scope
+
+- **In**: `src/lib/` の `create`・`build`・`resolve` で始まる export（領域別の合計 70 件）、それを使う import とテスト、`structure.md` の命名の節。
+- **Out**: 振る舞い、API の入出力、`create`・`build`・`resolve` 以外の接頭辞（`parse`・`read`・`write` など）、`src/components/` の関数名、`src/util/`。
+
+### Constraints
+
+- 改名は振る舞いを変えない。各 spec の完了時に `npm run test:all` が終了コード 0。
+- 改名の前後で export の件数が変わらないこと。
+- 規則に合わないものは、名前を変えるか、規則の例外として理由を書く（黙って残さない）。
+
+### Boundary Strategy
+
+- **Why this split**: 領域（`lib` の領域）ごとに、改名と import の書き換えが閉じる。
+- **Shared seams to watch**:
+  1. `naming-rule` の規則が、各領域の spec の基準になる。規則を変えるときは、この spec を改訂する。
+  2. `entryCandidate` の移動（直接実装）は、`naming-timeline-entry` の前に行う（同じ領域の関数を触るため）。
+
+### Specs (dependency order)
+
+- [ ] naming-rule -- 接頭辞の規則（`build`・`resolve`・`create`・`load`）を steering の命名の節に書き、規則に合わない既存の名前の一覧を作る。名前は変えない。Dependencies: none
+- [ ] naming-atproto -- `lib/atproto` の接頭辞（14 件）を規則に合わせて改名する。Dependencies: naming-rule
+- [ ] naming-timeline-entry -- `lib/timeline`（10 件）と `lib/entry`（7 件）を改名する。直接実装の entryCandidate の移動の後に行う。Dependencies: naming-atproto, entryCandidate（直接実装）
+- [ ] naming-share-image -- `lib/share`（9 件）と `lib/image`（5 件）を改名する。Dependencies: naming-timeline-entry
+- [ ] naming-oauth-site-survey -- `lib/oauth`（4 件）・`lib/site`（4 件）・`lib/survey`（4 件）を改名する。Dependencies: naming-share-image
+- [ ] naming-settings-misc -- `lib/settings`（3 件）・`lib/feedback`・`lib/i18n`・`lib/schedule`（各 2 件）と、`api`・`platform`・`session`・`video`（各 1 件）を改名する。Dependencies: naming-oauth-site-survey
+
+### Direct Implementation Candidates
+
+- [x] entryCandidate -- `components/timeline/Timeline/ThreadCard/entryCandidate.ts`（`resolveEntryVisualSourcePost`・`findEntryCarrier`）を `lib/timeline/` へ移し、利用元の import を付け替える。純粋な判断で、業務の判断として lib に置く（Phase 5 の規則）。`naming-timeline-entry` の前に行う。
