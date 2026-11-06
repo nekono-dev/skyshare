@@ -289,6 +289,15 @@ const main = async () => {
     serverStarted = true
     // 接続先は wrangler.jsonc の vars（config/e2e.json から生成）で偽の Bluesky へ向ける
     writeE2eWrangler()
+    // ローカルの D1 にスキーマを適用する。CI は毎回空の D1 から始まり、未適用だと予約・アンケートの API が 500 になる
+    await runStep("npx", [
+      "wrangler",
+      "d1",
+      "migrations",
+      "apply",
+      "DB",
+      "--local",
+    ])
     await runStep("npx", ["astro", "dev", "--background"], { env: endpointEnv })
   }
   if (interruptedBy) await finish(null)
