@@ -30,7 +30,7 @@ manifest="$(mktemp)"
 trap 'rm -f "$manifest"' EXIT
 case "${1}" in
   --claude)
-    cat > "$manifest" <<'JSON'
+    cat > "$manifest" << 'JSON'
 {
   "version": 1,
   "artifacts": [
@@ -47,7 +47,7 @@ case "${1}" in
 JSON
     ;;
   --codex)
-    cat > "$manifest" <<'JSON'
+    cat > "$manifest" << 'JSON'
 {
   "version": 1,
   "artifacts": [
