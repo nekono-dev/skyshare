@@ -4,14 +4,15 @@ import {
   createSession,
   startSessionAuthorization,
 } from "@/client/openapi/client"
-import Collapsible from "@/components/common/Collapsible"
+import Collapsible from "@/components/common/section/Collapsible"
 import type { CreateSessionBody } from "@/client/openapi/model/createSessionBody"
-import { clearKnownUnauthenticated } from "@/lib/account/activeAccountSession"
+import { clearKnownUnauthenticated } from "@/lib/session/activeAccountSession"
 import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
-import { useT } from "@/lib/i18n/react"
-import { renderSlots } from "@/lib/i18n/rich"
+import { useT } from "@/components/i18n/useTranslation"
+import { renderSlots } from "@/components/i18n/renderSlots"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
+import { publicAuthServer } from "@/env"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
@@ -224,7 +225,7 @@ export const Component = ({ initialHandle }: Props = {}) => {
       const body: CreateSessionBody = {
         identifier: handle.trim(),
         password,
-        service: "https://bsky.social",
+        service: publicAuthServer,
       }
       const res = await createSession(body)
 

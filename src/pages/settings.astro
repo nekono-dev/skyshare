@@ -6,13 +6,10 @@
  * - `Settings` コンポーネントを表示し、投稿フォーム関連のトグル設定を一覧・変更する。
  * - 設定値はすべて localStorage に保存されアカウント非依存のため、静的配信可能。
  *   prerender を有効化する。
- * - 同じ `Settings` コンポーネントは `SettingsDialog` からダイアログとしても
- *   再利用できる（設定値の state・永続化ロジックは `Settings` 側に閉じているため、
- *   ページ・ダイアログどちらから開いても表示・挙動は一致する）。
  */
 export const prerender = true
 import Settings from "@/components/settings/Settings"
-import Baselayout from "@/layout/Baselayout.astro"
+import Baselayout from "@/components/layout/Baselayout/index.astro"
 import FooterNav from "@/components/layout/FooterNav/index.astro"
 import Sidebar from "@/components/layout/Sidebar/index.astro"
 import { createTranslator } from "@/lib/i18n/translate"

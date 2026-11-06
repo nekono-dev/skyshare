@@ -5,7 +5,7 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
-import * as Common from "../../../common"
+import * as Common from "@/lib/api/schema/common"
 
 export const RequestHeaderSchema = z.object({
     cookie: Common.CommonCookieSchema,

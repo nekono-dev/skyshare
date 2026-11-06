@@ -6,9 +6,9 @@
  *   宛先SNSで何文字ぶんに換算されるかを求め、カウンタ単位で返す。
  * - 自動ポップアップ先の設定から、表示すべきカウンタ（X / タイッツー）を決める。
  */
-import type { AutoPopupTarget } from "@/lib/settings/shareSettings"
-import { buildIntentSuffix } from "@/util/share/intent"
-import { resolveIntentMeasure } from "@/util/share/intentLength"
+import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
+import { buildIntentSuffix } from "./intent"
+import { halfUnitLength, resolveIntentMeasure } from "./intentLength"
 
 /** 字数カウンタを持つ共有先 */
 export type CounterTarget = "x" | "taittsuu"
@@ -79,5 +79,5 @@ export const resolveCounterReserve = (params: {
     const { target, body, entryUrl, linkCardUrl } = params
     const suffix = buildIntentSuffix(body.trim(), entryUrl ?? "", linkCardUrl)
     if (suffix.length === 0) return 0
-    return Math.ceil(resolveIntentMeasure(target)(`\n${suffix}`) / 2)
+    return halfUnitLength(resolveIntentMeasure(target), `\n${suffix}`)
 }

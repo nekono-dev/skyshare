@@ -1,13 +1,12 @@
 # settings
 
-設定項目一覧・設定ダイアログまわりの部品。`src/pages/settings.astro` から `Settings` が直接使われるほか、`SettingsDialog` としてどの画面からも開閉できる。
+設定項目一覧の部品。`src/pages/settings.astro` から `Settings` が使われる。
 
 ```mermaid
 graph TD
-  SettingsDialog --> Settings
   Settings --> SettingList
-  SettingsDialog --> commonExt
   SettingList --> commonExt
+  Settings --> commonExt
 
   commonExt["common (外部)"]
 
@@ -15,4 +14,5 @@ graph TD
   class commonExt external;
 ```
 
-外部カテゴリへの依存の内訳: `common`: SettingsDialog(Overlay)、SettingList(ComponentList・ToggleSwitch)
+- `Settings` は設定の 3 グループを組み立てる。投稿のグループの中の予約投稿のスイッチは `schedule/ScheduleSetting` を使う。
+- `SettingList` は設定の一覧を描く。`common` の `ComponentList`・`CountedTextInput`・`ToggleSwitch` を使う。

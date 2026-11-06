@@ -16,7 +16,7 @@
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import { sidebarNavItems, normalizePathname, isActiveHref } from "@/components/layout/nav/navItems"
-import NavIcon from "@/components/layout/nav/NavIcon.astro"
+import NavIcon from "@/components/layout/NavIcon/index.astro"
 import { createTranslator } from "@/lib/i18n/translate"
 
 const current = normalizePathname(Astro.url.pathname)

@@ -1,0 +1,24 @@
+# 秘匿情報の雛形（.dev.vars）。リポジトリ直下に .dev.vars としてコピーして使う（.gitignore 対象）。
+#   cp config/.dev.vars.template .dev.vars   （npm run setup:local が無いときにコピーする）
+# 非秘密の設定は置かない。開発の設定は config/develop.json、配備の設定は config/production.json に書く。
+# 値は KEY='値' の形式にする。コメントアウトされた行は読まれない。
+
+# --- ローカルの実行（wrangler dev・astro dev）で使う鍵 ---
+# npm run setup:local が未設定なら生成して書き込む（設定済みの値は上書きしない）。
+# SCHEDULE_ENC_KEY: 予約投稿の認証情報の暗号鍵。替えると保管済みの認証情報が復号できなくなる。
+# OAUTH_CLIENT_KEY: OAuth の署名鍵。ローカル（localhost）では開発用の公開クライアントになり使わない。
+# SURVEY_HASH_KEY: アンケートの回答者の一方向の値を求める鍵。予約投稿の暗号鍵とは別の値にする。
+#SCHEDULE_ENC_KEY=
+#OAUTH_CLIENT_KEY=
+#SURVEY_HASH_KEY=
+
+# --- 登録の元になる値（npm run sync:github が GitHub・Worker へ登録する） ---
+# FEEDBACK_GITHUB_TOKEN: 不具合の報告・新機能の提案の Issue を作る Fine-grained PAT（Issues: Read and write だけ）。
+#   npm run sync:github -- --worker で本番・develop・プレビューの Worker に登録する。
+#   ローカルで試すと実際に Issue が作られるため、試験用のリポジトリで試す。
+#FEEDBACK_GITHUB_TOKEN=
+# CLOUDFLARE_API_TOKEN・CLOUDFLARE_ACCOUNT_ID: CI が配備に使う認証（GitHub の Secrets へ登録する）。
+#CLOUDFLARE_API_TOKEN=
+#CLOUDFLARE_ACCOUNT_ID=
+# SKYSHARE_E2E_APP_PASSWORD: 実 Bluesky のテスト（npm run test:live）の検証用アカウントのアプリパスワード（任意。ローカルだけで使う。ハンドルは config/live.json に書く）
+#SKYSHARE_E2E_APP_PASSWORD=

@@ -11,7 +11,7 @@
  * - 時刻は引数で受ける。ログにエラーの内容や回答者の情報を含めない。
  */
 
-import type { D1Database } from "@/lib/schedule/cfTypes"
+import type { D1Database } from "@/lib/platform/cfTypes"
 import { readSurveyConfig } from "@/lib/survey/loadConfig"
 import { retentionExpired } from "@/lib/survey/period"
 import { purgeAnswers, purgeRespondents } from "@/lib/survey/store"

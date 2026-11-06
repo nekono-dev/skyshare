@@ -2,7 +2,7 @@
  * Privacy policy text (English). A courtesy translation: the Japanese text is authoritative.
  * `{enactedAt}`/`{revisedAt}` are filled from `lib/site/siteConfig.ts`.
  */
-import type { MessageEntries } from "../../translate"
+import type { MessageEntries } from "../../messageEntries"
 
 export const privacy = {
     "privacy.heading": "Privacy Policy",

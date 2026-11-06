@@ -14,15 +14,16 @@
 export const prerender = false
 
 import ui from "@/styles/ui.module.css"
-import LocaleSelect from "@/components/common/LocaleSelect"
+import LocaleSelect from "@/components/common/select/LocaleSelect"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { AtpAgent, AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
-import Baselayout from "@/layout/Baselayout.astro"
+import Baselayout from "@/components/layout/Baselayout/index.astro"
 import EntryDetailView from "@/components/entry/EntryDetailView/index.astro"
 import type { EntryPostView } from "@/components/entry/EntryDetailView/index.astro"
 import { serviceName } from "@/vars"
 import { atpService } from "@/env"
-import { bskyPostUrlgen, parseAtUri } from "@/lib/entry/url"
+import { bskyPostUrlgen } from "@/lib/entry/url"
+import { parseAtUri } from "@/lib/atproto/atUri"
 import { resolvePdsServiceForDid } from "@/lib/atproto/did"
 import {
     parseEntryLocator,

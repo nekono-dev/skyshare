@@ -10,6 +10,10 @@
  *   href へ付与するヘルパーも提供する。
  */
 
+import type { Translator } from "@/lib/i18n/translate"
+import type { EntryDeleteScope } from "@/lib/timeline/resolveEntryDeleteScope"
+import { getGuestDummyData } from "@/lib/timeline/guest"
+
 export const GUEST_MODE_QUERY_KEY = "guest"
 
 /**
@@ -46,3 +50,21 @@ export const withGuestModeQuery = (
     const separator = href.includes("?") ? "&" : "?"
     return `${href}${separator}${GUEST_MODE_QUERY_KEY}=1`
 }
+
+/**
+ * ゲスト表示用に`sourceUri`から削除範囲を引く。テーブルにないentryは`unknown`。
+ *
+ * Input:
+ * - `sourceUri`: ダミーentryの`source`投稿のAT URI
+ * - `translator`: 表示言語の翻訳関数（削除予定投稿の本文を言語に合わせるため）
+ *
+ * Output:
+ * - `EntryDeleteScope`
+ */
+export const resolveGuestDeleteScope = (
+    sourceUri: string,
+    translator: Translator,
+): EntryDeleteScope =>
+    getGuestDummyData(translator).deleteScopes[sourceUri] ?? {
+        kind: "unknown",
+    }

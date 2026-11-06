@@ -14,9 +14,9 @@
  * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
  * - 設計: specs/entry-detail
  */
-import EntryPostedAt from "@/components/entry/EntryPostedAt"
-import PostBody from "@/components/post/PostBody"
-import PostRichText from "@/components/post/PostRichText"
+import EntryPostedAt from "@/components/entry/EntryDetailView/EntryPostedAt"
+import PostBody from "@/components/timeline/PostBody"
+import PostRichText from "@/components/timeline/PostRichText"
 import type { SourceImage, SourceVideo } from "@/lib/entry/entry"
 import type { PostFacet } from "@/lib/atproto/richTextSegments"
 import type { PostLinkCard, PostQuote } from "@/lib/entry/postEmbedView"

@@ -1,5 +1,0 @@
-{
-  "exitCode": 1,
-  "stdout": "{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/actions/variables#get-a-repository-variable\",\"status\":\"404\"}",
-  "stderr": "gh: Not Found (HTTP 404)"
-}

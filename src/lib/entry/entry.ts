@@ -39,13 +39,10 @@ export type EntryLike = {
     createdAt?: string
 }
 
-export type SourceImage = {
-    url: string
-    alt: string
-    cid: string
-    /** 画像レコードの `aspectRatio`。未設定・不正値の場合は `undefined` */
-    aspectRatio?: { width: number; height: number }
-}
+// 画像の素材の型は image 側に置く（image は entry を import しないため）。ここから再エクスポートする。
+import type { SourceImage } from "@/lib/image/sourceImage"
+
+export type { SourceImage }
 
 /**
  * 動画投稿の再生・表示に必要な情報。AppView の `embed.view` には依存せず、

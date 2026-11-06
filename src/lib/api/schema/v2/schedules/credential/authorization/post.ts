@@ -7,8 +7,8 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
-import * as Common from "../../../../common"
-import { isSafeReturnPath } from "../../../../../../oauth/returnPath"
+import * as Common from "@/lib/api/schema/common"
+import { isSafeReturnPath } from "@/lib/oauth/returnPath"
 
 export const RequestBodySchema = z
     .object({

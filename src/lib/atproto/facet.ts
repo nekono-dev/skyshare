@@ -7,7 +7,7 @@
  * - ここで行うのはPDSへ壊れたレコードが書き込まれるのを防ぐための最小限の
  *   形状チェック(indexが本文のUTF-8バイト長に収まっているか)のみ。
  */
-import type * as Components from "@/lib/api/schema/common"
+import type { BskyFacets } from "@/lib/atproto/recordTypes"
 
 /**
  * facetsのindex(byteStart/byteEnd)が本文のUTF-8バイト長に収まっているかを検証する。
@@ -37,7 +37,7 @@ import type * as Components from "@/lib/api/schema/common"
  */
 export const validateFacets = (
     text: string,
-    facets: Components.CommonFacetsType | undefined,
+    facets: BskyFacets | undefined,
 ): void => {
     if (!facets || facets.length === 0) return
 

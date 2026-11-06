@@ -1,7 +1,6 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
-import { jsonResponse } from "@/lib/schedule/scheduleResponse"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import { getScheduleLimits } from "@/lib/schedule/validateSchedule"
 
 /**
@@ -10,5 +9,7 @@ import { getScheduleLimits } from "@/lib/schedule/validateSchedule"
  */
 export const GET: APIRoute = async ({ locals }) => {
     if (!locals.session) return errorResponseFromStatus(401)
-    return jsonResponse(getScheduleLimits())
+    return jsonResponse(getScheduleLimits(), {
+        headers: { "cache-control": "no-store" },
+    })
 }

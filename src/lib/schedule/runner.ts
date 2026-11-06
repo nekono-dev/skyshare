@@ -16,7 +16,7 @@
  * 実装上の制約:
  * - atproto のライブラリを読み込まない。1件の失敗で実行全体を止めない。
  */
-import type { ScheduleEnv } from "./cfTypes"
+import type { ScheduleEnv } from "@/lib/platform/cfTypes"
 import { executeSchedule } from "./executor"
 import { removeImages } from "./imageStaging"
 import {

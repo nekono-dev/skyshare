@@ -2,23 +2,21 @@
  * Skyshare v2 feedback API（不具合の報告と機能の提案の受付）。
  *
  * 責務と処理概要:
- * - POST: ログイン中の利用者の報告か提案を検証し、報告者と環境の情報を添えて、
- *   ソースコードのリポジトリに GitHub の Issue として登録する。
+ * - POST: ログイン中の利用者の報告か提案を検証し、送信の判定（`submitFeedback`）に渡して、
+ *   その結果を HTTP の応答に変換する。
  * - 報告者の DID とハンドルはログインのセッション（`locals.session`）からだけ取る。
  * - 入力不正は 400、未認証は 401、同じアカウントからの60秒以内の再送信は 429、
  *   認証情報かリポジトリが未設定なら 503、GitHub の登録の失敗は 500 を返す。
  *
  * 実装上の制約:
  * - `@atproto/*` を読み込まない（無料枠の CPU 時間を守るため）。
+ * - 環境の値（認証情報・回数の制限の機能）と Issue の組み立てには触れない（`lib/feedback` が担う）。
  */
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import * as PostSchema from "@/lib/api/schema/v2/feedback/post"
-import { getFeedbackEnv } from "@/lib/feedback/env"
-import { createGithubIssue } from "@/lib/feedback/githubIssue"
-import { buildIssue } from "@/lib/feedback/issueContent"
-import { buildInfo } from "@/lib/site/buildInfo"
+import { submitFeedback } from "@/lib/feedback/submitFeedback"
 import { convertHeaderToObj } from "@/util/http"
 
 /**
@@ -38,8 +36,9 @@ const readJson = async (request: Request): Promise<unknown> => {
 /**
  * POST /v2/feedback — 報告か提案を Issue として登録する。
  *
- * 検証の順序: 見出し → セッション → 入力 → 認証情報とリポジトリ → 回数の制限 → 登録
- * （回数の制限は入力の検証の後に照会し、誤った入力で回数を消費させない）。
+ * 検証の順序: 見出し → セッション → 入力（この3つはページが行う）
+ * → 送信の判定（`submitFeedback`: 認証情報とリポジトリ → 回数の制限 → 登録）。
+ * 回数の制限は入力の検証の後に照会し、誤った入力で回数を消費させない。
  *
  * Input:
  * - `request`: cookie と JSON の本文（`PostSchema.RequestBodySchema`）を含む HTTP リクエスト
@@ -47,7 +46,7 @@ const readJson = async (request: Request): Promise<unknown> => {
  *
  * Output:
  * - 200: `{ number, url }`（作成した Issue）
- * - 4xx/5xx: 共通エラー JSON
+ * - 4xx/5xx: 共通エラー JSON（判定の失敗は `Outcome` の status をそのまま応答にする）
  *
  * 例:
  * - 入力: `{ "kind": "bug", "title": "画像が送れない", "steps": "...", "reproducibility": "always", "environment": {...} }`
@@ -68,36 +67,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         )
         if (!body.success) return errorResponseFromStatus(400)
 
-        const env = await getFeedbackEnv()
-        const token = env.FEEDBACK_GITHUB_TOKEN
-        const { repository } = buildInfo
-        if (!token || !repository) {
-            console.error("feedback POST: not configured", {
-                token: Boolean(token),
-                repository: Boolean(repository),
-            })
-            return errorResponseFromStatus(503)
-        }
-
-        const { success } = await env.FEEDBACK_RATE_LIMITER.limit({
-            key: session.did,
+        const result = await submitFeedback({
+            session,
+            submission: body.data,
         })
-        if (!success) return errorResponseFromStatus(429)
+        if (!result.ok) return errorResponseFromStatus(result.status)
 
-        const issue = buildIssue(
-            body.data,
-            { did: session.did, handle: session.handle },
-            {
-                version: buildInfo.version,
-                commit: buildInfo.commit,
-                repository,
-            },
-        )
-        const created = await createGithubIssue({ token, repository, issue })
-        if (!created) return errorResponseFromStatus(500)
-
-        const res: PostSchema.ResponseBody200Type = created
-        return new Response(JSON.stringify(res), {
+        const res: PostSchema.ResponseBody200Type = result.value
+        return jsonResponse(res, {
             status: 200,
             headers: {
                 "Content-Type": "application/json",

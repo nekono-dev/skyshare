@@ -9,35 +9,23 @@
  * - `PostLauncher` に相当する作成 UI は持たない（既存投稿からの発行のみのため）。
  */
 
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import { useCallback, useRef, useState } from "react"
 import { getSkyshareEntries } from "@/client/openapi/client"
-import ComponentList from "@/components/common/ComponentList"
+import ComponentList from "@/components/common/list/ComponentList"
 import type {
   CursorPageFetchInput,
   CursorPageFetchResult,
-} from "@/components/common/ComponentList"
-import {
-  useCursorPaginationController,
-  useInfiniteScrollController,
-} from "@/components/common/ComponentList"
-import InfiniteScrollSentinel from "@/components/common/InfiniteScrollSentinel"
-import NavigationBar from "@/components/common/NavigationBar"
-import PageSizeSelect from "@/components/common/PageSizeSelect"
-import EntryCard from "@/components/entry/EntryCard"
-import { isSessionKnownUnauthenticated } from "@/lib/account/activeAccountSession"
-import { getGuestDummyData } from "@/lib/entry/guestDummyPosts"
-import type { TimelineSkyshareEntry } from "@/lib/entry/posts"
+} from "@/components/common/list/ComponentList"
+import { useInfiniteScrollController } from "@/components/common/list/ComponentList"
+import InfiniteScrollSentinel from "@/components/common/list/InfiniteScrollSentinel"
+import EntryCard from "@/components/entry/EntryList/EntryCard"
+import { isSessionKnownUnauthenticated } from "@/lib/session/activeAccountSession"
+import { getGuestDummyData } from "@/lib/timeline/guest"
+import type { TimelineSkyshareEntry } from "@/lib/timeline/posts"
 import { isGuestModeRequested } from "@/lib/guestMode"
-import type { PaginationMode } from "@/lib/settings/timelineSettings"
-import {
-  readPageSizeSetting,
-  writePageSizeSetting,
-} from "@/lib/settings/timelineSettings"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
-
-const PAGE_SIZE = 20
 
 /**
  * Entry一覧を読み込み、ページングを管理する。
@@ -53,14 +41,9 @@ const Component = () => {
   // 最新の翻訳関数（翻訳器）を保持する。
   const translatorRef = useRef(translator)
   translatorRef.current = translator
-  const [pageSize, setPageSize] = useState(() => readPageSizeSetting(PAGE_SIZE))
   // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミーEntryを表示する
   // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
   const [guestMode, setGuestMode] = useState(false)
-  // ページネーション方式の選択肢は廃止し、無限スクロールに固定した。
-  // 下記の paged 用分岐（pagedController/PageSizeSelect/NavigationBar）は
-  // 到達不能なデッドコードとして残置している。
-  const paginationMode = "infinite" as PaginationMode
 
   /**
    * 指定 cursor のページを取得して ComponentList に返す。
@@ -131,41 +114,24 @@ const Component = () => {
   // ゲスト表示のダミーデータは表示言語で文言が変わるため、言語が変わったら再取得して差し替える。
   const guestReloadKey = guestMode ? translator.locale : undefined
 
-  const pagedController = useCursorPaginationController<TimelineSkyshareEntry>({
-    cursorPagination: {
-      pageSize,
-      fetchPage,
-      reloadKey: guestReloadKey,
-      enabled: paginationMode === "paged",
-      loadingText: t("common.loading"),
-      emptyText: t("entry.list.empty"),
-    },
-  })
-
   const infiniteController = useInfiniteScrollController<TimelineSkyshareEntry>(
     {
       infiniteScrollPagination: {
         fetchPage,
         reloadKey: guestReloadKey,
-        enabled: paginationMode === "infinite",
         loadingText: t("common.loading"),
         emptyText: t("entry.list.empty"),
       },
     },
   )
 
-  const isPaged = paginationMode === "paged"
-  const items = isPaged ? pagedController.items : infiniteController.items
-  const loading = isPaged ? pagedController.loading : infiniteController.loading
-  const error = isPaged ? pagedController.error : infiniteController.error
-  const empty = isPaged ? pagedController.empty : infiniteController.empty
-  const message = isPaged ? pagedController.message : infiniteController.message
-  const removeItem = isPaged
-    ? pagedController.removeItem
-    : infiniteController.removeItem
-  const updateItem = isPaged
-    ? pagedController.updateItem
-    : infiniteController.updateItem
+  const items = infiniteController.items
+  const loading = infiniteController.loading
+  const error = infiniteController.error
+  const empty = infiniteController.empty
+  const message = infiniteController.message
+  const removeItem = infiniteController.removeItem
+  const updateItem = infiniteController.updateItem
 
   return (
     <section>
@@ -176,29 +142,6 @@ const Component = () => {
           {t("entry.list.guestNotice")}
         </p>
       )}
-      <div
-        className={`${ui["base-component"]} ${ui["toolbar"]} ${ui["toolbar-align"]} ${ui["toolbar-align-between"]}`}
-      >
-        {isPaged ? (
-          <PageSizeSelect
-            value={pageSize}
-            onChange={next => {
-              setPageSize(next)
-              writePageSizeSetting(next)
-            }}
-            ariaLabel={t("common.pageSize")}
-          />
-        ) : (
-          <span aria-hidden="true" />
-        )}
-        {isPaged ? (
-          <NavigationBar
-            pagination={pagedController.pagination}
-            ariaLabel={t("entry.list.paginationAria")}
-          />
-        ) : null}
-      </div>
-
       {loading || error || empty ? (
         <p className={error ? styles["error-state"] : styles["empty-state"]}>
           {message}
@@ -222,21 +165,14 @@ const Component = () => {
         />
       )}
 
-      {isPaged ? (
-        <NavigationBar
-          pagination={pagedController.pagination}
-          ariaLabel={t("entry.list.paginationAria")}
-        />
-      ) : (
-        <InfiniteScrollSentinel
-          hasMore={infiniteController.hasMore}
-          loadingMore={infiniteController.loadingMore}
-          onLoadMore={infiniteController.loadMore}
-          showEndMessage={!error && !empty}
-          endText={t("entry.list.end")}
-          ariaLabel={t("entry.list.infiniteAria")}
-        />
-      )}
+      <InfiniteScrollSentinel
+        hasMore={infiniteController.hasMore}
+        loadingMore={infiniteController.loadingMore}
+        onLoadMore={infiniteController.loadMore}
+        showEndMessage={!error && !empty}
+        endText={t("entry.list.end")}
+        ariaLabel={t("entry.list.infiniteAria")}
+      />
     </section>
   )
 }

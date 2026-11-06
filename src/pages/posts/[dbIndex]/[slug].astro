@@ -13,11 +13,11 @@
 
 export const prerender = false
 
-import Baselayout from "@/layout/Baselayout.astro"
+import Baselayout from "@/components/layout/Baselayout/index.astro"
 import { createTranslator, type PlainMessageKey } from "@/lib/i18n/translate"
 import { serviceName } from "@/vars"
 import styles from "./[slug].module.css"
-import { fetchPageDbEntry, type PageDbImage } from "@/lib/legacy/pagedb"
+import { fetchPageDbEntry, type PageDbImage } from "@/lib/entry/legacyPagedb"
 import { bskyPostUrlgen } from "@/lib/entry/url"
 import { parseSessionFromRequest, sessionIdentity } from "@/lib/session/cookies"
 import LegacyPageDeleteButton from "@/components/entry/LegacyPageDeleteButton"

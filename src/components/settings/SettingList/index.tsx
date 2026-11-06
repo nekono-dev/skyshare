@@ -11,9 +11,9 @@
  *   このコンポーネントは表示と `onCheckedChange` の橋渡しのみを担う。
  */
 import type React from "react"
-import ComponentList from "@/components/common/ComponentList"
-import CountedTextInput from "@/components/common/CountedTextInput"
-import ToggleSwitch from "@/components/common/ToggleSwitch"
+import ComponentList from "@/components/common/list/ComponentList"
+import CountedTextInput from "@/components/common/input/CountedTextInput"
+import ToggleSwitch from "@/components/common/input/ToggleSwitch"
 import styles from "./index.module.css"
 
 export type SettingListItem = {

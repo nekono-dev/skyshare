@@ -1,7 +1,7 @@
 import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import * as PostSchema from "@/lib/api/schema/v2/bsky/session/authorization/completion/post"
 import {
     admitSession,
@@ -9,7 +9,7 @@ import {
     makeSessionSetCookie,
     parseAccountsFromRequest,
     parseSessionFromRequest,
-} from "@/lib/session/cookies.js"
+} from "@/lib/session/cookies"
 import {
     clearPendingCookie,
     completeOAuthLogin,
@@ -50,10 +50,7 @@ export const POST: APIRoute = async ({ request }) => {
     })
     headers.append("set-cookie", clearPendingCookie())
     const respond = (status: number, body?: PostSchema.ResponseBody200Type) =>
-        new Response(body ? JSON.stringify(body) : undefined, {
-            status,
-            headers,
-        })
+        jsonResponse(body, { status, headers })
     try {
         let raw: unknown
         try {

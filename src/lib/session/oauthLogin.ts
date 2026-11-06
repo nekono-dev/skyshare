@@ -39,6 +39,7 @@ import {
     randomString,
 } from "@/lib/oauth/jose"
 import { isLoopbackClientId } from "@/lib/oauth/loopback"
+import { publicAuthServer } from "@/env"
 import { createDpopFetch } from "@/lib/oauth/resourceFetch"
 import { pushAuthorizationRequest, requestTokens } from "@/lib/oauth/token"
 import {
@@ -47,9 +48,6 @@ import {
     getCookieFromHeader,
     type OAuthSession,
 } from "./cookies"
-
-/** ログインの認可を受ける認可サーバー（Bluesky がホスティングするアカウントの共通の認可サーバー） */
-export const SESSION_AUTHORIZATION_SERVER = "https://bsky.social"
 
 /** 途中の状態の cookie */
 const PENDING_COOKIE = "oauth_login_pending"
@@ -163,10 +161,9 @@ export const startOAuthLogin = async (
         console.error("oauth login: client key not configured")
         return { ok: false, status: 500 }
     }
-    const as = await readAuthorizationServer(
-        SESSION_AUTHORIZATION_SERVER,
-        fetchImpl,
-    )
+    // ログインの認可を受ける認可サーバー（既定は Bluesky の共通の認可サーバー）
+    const authServer = publicAuthServer
+    const as = await readAuthorizationServer(authServer, fetchImpl)
     if (!as) return { ok: false, status: 502 }
 
     const dpopJwk = await generateEcJwk()

@@ -1,38 +1,18 @@
-# フロントエンドのE2E（Playwright）を実行する。deploy.yaml から呼び出され（workflow_call）、成功した場合のみデプロイされる。
-# 単体でも手動実行（workflow_dispatch）できる。
-#
-# - Secret `E2E_ENV` に、リポジトリ直下の `.env.e2e` の中身（KEY=value 形式、複数行）をそのまま登録する。
-#   登録があれば実アカウントのライブテストも実行し、無ければゲスト表示のE2Eだけを実行する。
-# - Variables は deploy.yaml と共通（DEVELOP.md の「CI/CD（GitHub Actions）」を参照）。
-# - 実行対象ブラウザ: chromium（ライブテスト含む）/ firefox / webkit / webkit-iphone
+# E2E（Playwright）を実行する。PR の必須ゲート（要件 9.1）であり、deploy.yaml からも呼び出される（workflow_call）。
+# 実行は npm run test:e2e に揃える。偽の Bluesky を起動し、接続先の環境変数を dev サーバーと Playwright に渡す（要件 10.3）。
+# 実アカウントの live 層は実行しない（要件 9.3）。unit・component・route・render の層は必須にしない（要件 9.2）。
+# 実行対象ブラウザ: chromium / firefox / webkit / webkit-iphone
 name: e2e
 
 on:
+  pull_request:
   workflow_call:
   workflow_dispatch:
-
-# 同じ検証用アカウントへ同時に投稿・削除しないよう直列化する。実行中のテストは中断せず後続を待たせる
-concurrency:
-  group: e2e-live-account
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
-env:
-  PUBLIC_LEGACY_BACKEND_ENDPOINT: ${{ vars.PUBLIC_LEGACY_BACKEND_ENDPOINT }}
-  PUBLIC_DEFAULT_ATP_SERVICE: ${{ vars.PUBLIC_DEFAULT_ATP_SERVICE }}
-  PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
-  PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
-  PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
-  # 運用者ごとの設定（DEVELOP.md の「運用者ごとの設定」）
-  SITE_HOST: ${{ vars.SITE_HOST }}
-  PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
-  PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
-  PUBLIC_OPERATOR_BLUESKY_HANDLE: ${{ vars.PUBLIC_OPERATOR_BLUESKY_HANDLE }}
-  PUBLIC_PRIVACY_ENACTED_AT: ${{ vars.PUBLIC_PRIVACY_ENACTED_AT }}
-  PUBLIC_PRIVACY_REVISED_AT: ${{ vars.PUBLIC_PRIVACY_REVISED_AT }}
-  PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
+# 接続先と運営者の設定は、E2E の起動（npm run test:e2e）が config/e2e.json から wrangler.jsonc を生成して使う。GitHub の Variables は使わない
 
 jobs:
   e2e:
@@ -110,61 +90,14 @@ jobs:
         timeout-minutes: 10
         run: npx playwright install chromium firefox webkit
 
-      # hack/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する（単体テストも使う）。
-      # 秘密情報を扱うジョブで実行するため、指定ブランチの最新コミットを取得する（取得元は .branch-release-workflow-source.json）
-      - name: Fetch branch-release-workflow
-        run: |
-          brw_dir="$(node hack/setup-brw.mjs)"
-          echo "BRW_PLUGIN_DIR=$brw_dir" >> "$GITHUB_ENV"
-      # 単体テスト（vitest）。E2E の前に失敗を検出する
       - run: npm run codegen
-      - run: npm run test:unit
-      - run: npm run test:astro
 
-      # wrangler.jsonc は .gitignore 対象のため、Variables から生成する（astro dev が参照する）
-      - name: Configure build setting
-        run: node hack/render-deploy-config.mjs
-
-      # astro dev が読む Worker のランタイム設定（.dev.vars は .gitignore 対象のため雛形から作る）
-      - name: Configure runtime vars
-        run: cp .dev.vars.template .dev.vars
-
-      # 認証情報（.env.e2e）を Secret から復元する。値はログに出さず、env 経由で受け渡す。
-      # 未登録なら作らず、ライブテストの project ごと無効になる（tests/e2e/live/env.ts）
-      - name: Restore .env.e2e
-        env:
-          E2E_ENV: ${{ secrets.E2E_ENV }}
-        run: |
-          if [ -n "$E2E_ENV" ]; then
-            printf '%s\n' "$E2E_ENV" > .env.e2e
-            chmod 600 .env.e2e
-            echo "ライブテストを有効にします"
-          else
-            echo "::warning::Secret E2E_ENV が未登録のため、ライブテストをスキップします"
-          fi
-
-      # astro dev は起動後にデーモン化するため、バックグラウンド起動して HTTPS の応答を待つ
-      - name: Start dev server
-        run: |
-          npx astro dev > dev-server.log 2>&1 &
-          for _ in $(seq 1 60); do
-            if curl -ksf -o /dev/null https://localhost:4321/; then
-              echo "dev サーバーが起動しました"
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "::error::dev サーバーが起動しませんでした"
-          cat dev-server.log
-          exit 1
-        env:
-          PUBLIC_VERSION: ci
-
-      # 全 project（chromium / firefox / webkit / webkit-iphone / ライブテスト）を実行する
+      # 偽の Bluesky の起動、dev サーバーの起動、Playwright の実行は npm run test:e2e が行う（ローカルと同じ経路）
       - name: Run E2E
-        run: npx playwright test
+        run: npm run test:e2e
         env:
           CI: "true"
+          PUBLIC_VERSION: ci
 
       - name: Upload report
         if: ${{ !cancelled() }}
@@ -172,7 +105,7 @@ jobs:
         with:
           name: playwright-artifacts
           path: |
-            test-results/
+            .cache/test-results/
             dev-server.log
           retention-days: 7
           if-no-files-found: ignore

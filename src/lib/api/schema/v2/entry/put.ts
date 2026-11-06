@@ -5,7 +5,7 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
-import { countUtf8Bytes } from "../../../../../util/utf8Bytes"
+import { countUtf8Bytes } from "@/util/utf8Bytes"
 import * as Common from "../../common"
 
 export const RequestBodySchema = z

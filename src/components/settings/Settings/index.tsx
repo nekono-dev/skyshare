@@ -7,10 +7,9 @@
  *   予約投稿の有効化のスイッチ（`ScheduleSetting`）を置く。
  * - 各設定値の state・永続化・連動ルールは `lib/settings/useShareToggles` および
  *   `lib/settings/shareSettings` に委譲し、本体は表示用データの組み立てに専念する。
- * - Astroページ（`src/pages/settings.astro`）からも `SettingsDialog` からも同じ内容を
- *   表示できるよう、ページ固有のレイアウト（Baselayout・Sidebar等）には依存しない。
+ * - Astroページ（`src/pages/settings.astro`）から表示するため、ページ固有のレイアウト（Baselayout・Sidebar等）には依存しない。
  * - マウント時に加え、Astroのクライアント側ページ遷移イベント `astro:page-load`
- *   （`src/components/nav/syncActiveState.ts` と同じ仕組み）のたびにも localStorage
+ *   （`src/components/layout/nav/syncActiveState.ts` と同じ仕組み）のたびにも localStorage
  *   から再読み込みする。View Transitions遷移でこのコンポーネントのDOM/Reactインスタンスが
  *   再マウントされずに使い回された場合でも、PostForm等の他画面で行った変更や
  *   localStorageの最新状態を、開かれるたびに確実に反映するため。
@@ -18,16 +17,16 @@
 import { useEffect, useRef, useState } from "react"
 import { getSession } from "@/client/openapi/client"
 import InlineIcon from "@/components/common/InlineIcon"
-import LocaleSelect from "@/components/common/LocaleSelect"
-import ThemeModeSelect from "@/components/common/ThemeModeSelect"
-import PostGateDialog from "@/components/post/PostGateDialog"
+import LocaleSelect from "@/components/common/select/LocaleSelect"
+import ThemeModeSelect from "@/components/common/select/ThemeModeSelect"
+import PostGateDialog from "@/components/composer/PostGateDialog"
 import ScheduleSetting from "@/components/schedule/ScheduleSetting"
 import SettingList, {
   type SettingListItem,
 } from "@/components/settings/SettingList"
 import { DEFAULT_POST_GATE_VALUE, type PostGateValue } from "@/lib/atproto/gate"
-import { useT } from "@/lib/i18n/react"
-import { renderSlots } from "@/lib/i18n/rich"
+import { useT } from "@/components/i18n/useTranslation"
+import { renderSlots } from "@/components/i18n/renderSlots"
 import {
   readPostGateDefaultSetting,
   readSyncGateDefaultAfterPostSetting,
@@ -55,9 +54,9 @@ import {
   writeThemeModeSetting,
 } from "@/lib/settings/themeSettings"
 import type { MessageKey } from "@/lib/i18n/translate"
-import { useShareToggles } from "@/lib/settings/useShareToggles"
-import AutoPopupTargetSelect from "@/components/common/AutoPopupTargetSelect"
-import { isValidInstanceDomain } from "@/util/share/intent"
+import { useShareToggles } from "./useShareToggles"
+import AutoPopupTargetSelect from "@/components/common/select/AutoPopupTargetSelect"
+import { isValidInstanceDomain } from "@/lib/share/intent"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -90,7 +89,7 @@ export const Settings = () => {
   const [gateDialogOpen, setGateDialogOpen] = useState(false)
   // 「返信・引用のデフォルト設定」ダイアログの「リストから選択」がBlueskyリストを
   // 取得する際に必要なdid。Settingsページ自体はアカウント非依存のため保持しておらず、
-  // Timeline（src/components/post/Timeline/index.tsx）と同じgetSessionパターンで
+  // Timeline（src/components/timeline/Timeline/index.tsx）と同じgetSessionパターンで
   // マウント時に解決する。未解決の間はnullのままとし、ダイアログ側でリスト取得を待たせる。
   const [accountDid, setAccountDid] = useState<string | null>(null)
 

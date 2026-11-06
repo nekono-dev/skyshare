@@ -8,7 +8,12 @@
  *   atproto クライアントへの通信自体は行わない（純粋関数）。
  */
 
-import type * as Components from "@/lib/api/schema/common"
+import type {
+    BskyImagesMeta,
+    BskyOgMeta,
+    BskyVideoBlob,
+    BskyVideoMeta,
+} from "@/lib/atproto/recordTypes"
 import { MAX_IMAGES_EMBED, MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
 
 /**
@@ -37,7 +42,7 @@ import { MAX_IMAGES_EMBED, MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
  */
 export const validateImageMetadata = (
     images: Blob[] | undefined,
-    imagesMeta: Components.CommonImagesMetaType | undefined,
+    imagesMeta: BskyImagesMeta | undefined,
 ) => {
     if (!images || images.length === 0) {
         return
@@ -83,7 +88,7 @@ export const validateImageMetadata = (
  */
 export const createImageEmbed = (
     uploadedBlobs: any[],
-    metadata: Components.CommonImagesMetaType | undefined,
+    metadata: BskyImagesMeta | undefined,
 ) => {
     const entries = uploadedBlobs.map((blob, idx) => {
         const width = metadata?.[idx]?.width
@@ -131,10 +136,7 @@ export const createImageEmbed = (
  * - 入力：ogMeta={title:"Example",description:"...",url:"https://..."},thumbBlob=blobRef
  * - 出力：{ $type:"app.bsky.embed.external",external:{uri:"https://...",title:"Example",description:"..."，thumb:blobRef} }
  */
-export const createExternalEmbed = (
-    ogMeta: Components.CommonOgMetaType,
-    thumbBlob: any,
-) => {
+export const createExternalEmbed = (ogMeta: BskyOgMeta, thumbBlob: any) => {
     if (!ogMeta.url) {
         throw new Error("ogp post requires a link in the text")
     }
@@ -162,8 +164,8 @@ export const createExternalEmbed = (
  * - 出力：{ $type:"app.bsky.embed.video", video:blobRef, alt:"", aspectRatio:{width:640,height:360} }
  */
 export const createVideoEmbed = (
-    video: Components.CommonVideoBlobType,
-    meta: Components.CommonVideoMetaType,
+    video: BskyVideoBlob,
+    meta: BskyVideoMeta,
 ) => ({
     $type: "app.bsky.embed.video" as const,
     video,

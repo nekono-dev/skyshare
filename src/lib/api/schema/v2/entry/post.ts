@@ -26,10 +26,10 @@
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
-import type { FormDataFieldKind } from "@/util/formData"
-import { MAX_THREAD_POST_COUNT } from "../../../../atproto/threadLimit"
-import { MAX_POST_IMAGES } from "../../../../image/postImageLimits"
-import { countUtf8Bytes } from "../../../../../util/utf8Bytes"
+import type { FormDataFieldKind } from "@/types/formData"
+import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
+import { MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
+import { countUtf8Bytes } from "@/util/utf8Bytes"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)

@@ -12,17 +12,25 @@ import type { Locale } from "./locale"
 import { en } from "./messages/en"
 import { ja } from "./messages/ja"
 
+import type {
+    EnglishMessages,
+    MessageKey,
+    ParamNames,
+    PlainMessageKey,
+    PluralBase,
+} from "./messageKeys"
+import type { MessageEntries } from "./messageEntries"
+
+// 辞書の型は依存を持たない位置（messageKeys・messageEntries）に置く。翻訳の利用側はここから参照できる。
+export type {
+    EnglishMessages,
+    MessageEntries,
+    MessageKey,
+    PlainMessageKey,
+    PluralBase,
+}
+
 type JaMessages = typeof ja
-
-export type MessageKey = keyof JaMessages
-
-/** 辞書1件の形（辞書ファイルの `satisfies` 用）。 */
-export type MessageEntries = Record<string, string>
-
-/** 文字列テンプレートから `{name}` のプレースホルダ名を取り出す。 */
-type ParamNames<S extends string> = S extends `${string}{${infer P}}${infer R}`
-    ? P | ParamNames<R>
-    : never
 
 type ParamValues = string | number
 
@@ -39,19 +47,6 @@ type ParamsArg<K extends MessageKey> = [ParamNames<JaMessages[K]>] extends [
     ? []
     : [params: MessageParams<K>]
 
-/**
- * プレースホルダを持たないキーの型。キーを変数・定数配列で持ち回して `t(key)` へ渡す場合は、
- * `MessageKey` ではなくこの型で持つ（`MessageKey` の合併型のままだとパラメータ必須と判定される）。
- */
-export type PlainMessageKey = {
-    [K in MessageKey]: [ParamNames<JaMessages[K]>] extends [never] ? K : never
-}[MessageKey]
-
-/** `_other` で終わるキーから `_other` を除いた、複数形文言の基底名。 */
-export type PluralBase = {
-    [K in MessageKey]: K extends `${infer B}_other` ? B : never
-}[MessageKey]
-
 /** 複数形文言 `B` が `count` 以外に要求するパラメータ。 */
 type PluralExtraParams<B extends PluralBase> = [
     Exclude<ParamNames<JaMessages[`${B}_other`]>, "count">,
@@ -64,10 +59,6 @@ type PluralExtraParams<B extends PluralBase> = [
               ]: ParamValues
           },
       ]
-
-/** 英語辞書の型。日本語と同一キー集合に加え、複数形の `_one` を必須とする。 */
-export type EnglishMessages = Record<MessageKey, string> &
-    Record<`${PluralBase}_one`, string>
 
 const dictionaries: Record<Locale, Record<string, string>> = { ja, en }
 

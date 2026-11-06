@@ -1,0 +1,19 @@
+{
+  // route 層（workerd）のテスト用の設定。本番の wrangler.jsonc（生成物）とは別に持つ
+  "name": "skyshare-test",
+  "compatibility_date": "2026-08-22",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "skyshare-test",
+      "database_id": "test",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SCHEDULE_IMAGES",
+      "bucket_name": "skyshare-schedule-images-test",
+    },
+  ],
+}

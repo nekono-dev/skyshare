@@ -1,0 +1,358 @@
+/**
+ * 自分の投稿一覧と投稿ランチャーをまとめて扱うクライアントコンポーネント。
+ *
+ * 責務と処理概要:
+ * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
+ * - ThreadComposer の投稿成功時に再取得トリガーを更新する。
+ * - 「タイムラインを表示しない」設定がONの場合は、一覧の取得・表示と投稿ランチャー
+ *   （フローティング/サイドバーの新規投稿ボタン）を省き、投稿フォームを常に固定表示する。
+ *   一覧の取得で行っていた未ログイン判定（ログインページへの移動・ゲスト表示）は、
+ *   セッションの取得結果で代わりに行う。
+ * - ページング状態の管理は ComponentList 側へ委譲する。
+ */
+
+import { useT } from "@/components/i18n/useTranslation"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { getEntries } from "@/client/openapi/client"
+import ComponentList from "@/components/common/list/ComponentList"
+import type {
+  CursorPageFetchInput,
+  CursorPageFetchResult,
+} from "@/components/common/list/ComponentList"
+import { useInfiniteScrollController } from "@/components/common/list/ComponentList"
+import InfiniteScrollSentinel from "@/components/common/list/InfiniteScrollSentinel"
+import ThreadCard from "@/components/timeline/Timeline/ThreadCard"
+import ThreadComposer from "@/components/composer/ThreadComposer"
+import PostLauncher from "@/components/timeline/Timeline/PostLauncher"
+import SurveyGate from "@/components/timeline/Timeline/SurveyGate"
+import {
+  getActiveAccountInfo,
+  getSessionOnce,
+  isSessionKnownUnauthenticated,
+} from "@/lib/session/activeAccountSession"
+import { countHashtagUsage } from "@/lib/atproto/richtext"
+import { getGuestDummyData } from "@/lib/timeline/guest"
+import type { ThreadGroup } from "@/lib/timeline/posts"
+import { isGuestModeRequested } from "@/lib/guestMode"
+import {
+  readHashtagHistory,
+  seedHashtagHistoryFromRankedTags,
+} from "@/lib/settings/hashtagHistorySettings"
+import { readPinnedFormDisabledSetting } from "@/lib/settings/shareSettings"
+import { readTimelineHiddenSetting } from "@/lib/settings/timelineSettings"
+import ui from "@/styles/ui.module.css"
+import styles from "./index.module.css"
+
+type Props = {
+  avatarUrl?: string | null
+}
+
+/**
+ * 投稿一覧を読み込み、再取得を管理する。
+ *
+ * Input:
+ * - `avatarUrl`: 投稿フォーム内の表示用アバター
+ *
+ * Output:
+ * - 投稿ランチャーと一覧表示を含む UI
+ */
+const Component = ({ avatarUrl }: Props) => {
+  const translator = useT()
+  const { t } = translator
+  // fetchPage は依存配列を空にした useCallback のため、最新の翻訳関数を ref で参照する。
+  // （依存に `t` を入れると言語切り替えで fetchPage が作り直され、再取得が走って
+  // 一覧・スクロール位置が失われるため。）
+  // 最新の翻訳関数（翻訳器）を保持する。
+  const translatorRef = useRef(translator)
+  translatorRef.current = translator
+  const [reloadKey, setReloadKey] = useState(0)
+  // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミー投稿を表示する
+  // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
+  const [guestMode, setGuestMode] = useState(false)
+  // SSRは常にfalse（固定表示あり）でレンダリングするため、初期stateもfalse固定にし、
+  // 実際の設定値はマウント後のuseEffectで反映する。ここをuseState(() =>
+  // readPinnedFormDisabledSetting(false))のように初期化関数内でlocalStorageを
+  // 読むと、クライアント初回レンダー（ハイドレーション）時点でSSR結果と異なる
+  // 値になり得て、ThreadComposer(固定表示)とPostLauncherのどちらを描画するかが
+  // サーバー/クライアント間で食い違いhydration mismatchを起こす。
+  const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
+  useEffect(() => {
+    setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
+  }, [])
+  // 「タイムラインを表示しない」設定。pinnedFormDisabled と同じ理由（hydration mismatch
+  // 対策）でマウント後に読み込む。読み込み前（null）の間は一覧の取得を始めないことで、
+  // 非表示設定のときに一覧を1回も取得しないようにする。
+  const [timelineHidden, setTimelineHidden] = useState<boolean | null>(null)
+  useEffect(() => {
+    setTimelineHidden(readTimelineHiddenSetting(false))
+  }, [])
+  // タイムライン非表示中は「投稿フォームを固定表示しない」を無効とし、常に固定表示する。
+  const showPinnedForm = !pinnedFormDisabled || timelineHidden === true
+  const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
+    avatarUrl ?? null,
+  )
+  // ハッシュタグ履歴（hashtagHistorySettings.ts）をアカウント別に分けるための識別子。
+  // getSession解決前はnullのままとし、その間は履歴の読み書きをスキップさせる。
+  const [resolvedDid, setResolvedDid] = useState<string | null>(null)
+
+  useEffect(() => {
+    setResolvedAvatarUrl(avatarUrl ?? null)
+  }, [avatarUrl])
+
+  // 投稿一覧（getEntries）の取得完了を待たずにアバターを表示するため、
+  // AccountSwitcher/syncAccountAvatar と同じ取得処理(getActiveAccountInfo)を使い、
+  // タイミングを揃えつつ getSession の二重取得を避ける。
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAvatarFromSession = async () => {
+      try {
+        const { avatarUrl: activeAvatarUrl, did } = await getActiveAccountInfo()
+        if (cancelled) return
+        if (activeAvatarUrl) {
+          setResolvedAvatarUrl(activeAvatarUrl)
+        }
+        if (did) {
+          setResolvedDid(did)
+        }
+      } catch (err) {
+        console.error("Timeline: failed to load session for avatar", err)
+      }
+    }
+
+    void loadAvatarFromSession()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // タイムライン非表示中は一覧の取得（getEntries）の401で行っていた未ログイン判定が
+  // 走らないため、セッションの取得結果で同じ扱い（ゲスト表示/ログインページへ移動）をする。
+  useEffect(() => {
+    if (timelineHidden !== true) return
+    let cancelled = false
+
+    const checkSession = async () => {
+      try {
+        const res = await getSessionOnce()
+        if (cancelled || res.status !== 401) return
+        if (isGuestModeRequested()) {
+          setGuestMode(true)
+          return
+        }
+        window.location.href = "/login/"
+      } catch (err) {
+        console.error("Timeline: failed to check session", err)
+      }
+    }
+
+    void checkSession()
+    return () => {
+      cancelled = true
+    }
+  }, [timelineHidden])
+
+  /**
+   * 指定 cursor のページを取得して ComponentList に返す。
+   *
+   * Input:
+   * - `input.cursor`: 取得対象ページの cursor（先頭ページは未指定）
+   * - `input.limit`: 取得件数
+   *
+   * Output:
+   * - `items`: 表示対象の投稿一覧
+   * - `nextCursor`: 次ページ取得用 cursor
+   * - `error`: 失敗時メッセージ
+   *
+   * 例:
+   * - 入力: `{ limit: 20 }`
+   * - 出力: `{ items: [...], nextCursor: "..." }`
+   */
+  const fetchPage = useCallback(
+    async ({
+      cursor,
+      limit,
+    }: CursorPageFetchInput): Promise<CursorPageFetchResult<ThreadGroup>> => {
+      try {
+        // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
+        // 401確定済みの`getEntries`をわざわざ叩き直さずゲスト表示へ直行する。
+        if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
+          setGuestMode(true)
+          return { items: getGuestDummyData(translatorRef.current).threads }
+        }
+
+        const params = cursor ? { limit, cursor } : { limit }
+        const res = await getEntries(params)
+
+        if (res.status === 200) {
+          const threads = res.data.threads ?? []
+
+          // APIレスポンスに含まれる自分の投稿からアバターURLを補完する。
+          const nextAvatarUrl = threads
+            .flatMap(thread => [thread.rootPost, ...thread.replies])
+            .find(
+              post =>
+                typeof post.author?.avatar === "string" &&
+                post.author.avatar !== "",
+            )?.author.avatar
+          if (nextAvatarUrl) {
+            setResolvedAvatarUrl(nextAvatarUrl)
+          }
+
+          return {
+            items: threads,
+            nextCursor: res.data.cursor,
+          }
+        }
+
+        if (res.status === 401) {
+          if (isGuestModeRequested()) {
+            setGuestMode(true)
+            return { items: getGuestDummyData(translatorRef.current).threads }
+          }
+          if (typeof window !== "undefined") {
+            window.location.href = "/login/"
+          }
+          return {
+            items: [],
+            error: translatorRef.current.t("error.unauthorized"),
+          }
+        }
+
+        return {
+          items: [],
+          error: translatorRef.current.t("post.timeline.loadFailed"),
+        }
+      } catch (err) {
+        console.error("Timeline: failed to load posts", err)
+        return {
+          items: [],
+          error: translatorRef.current.t("post.timeline.loadFailed"),
+        }
+      }
+    },
+    [],
+  )
+
+  /**
+   * 投稿成功後に先頭ページ再取得をトリガーする。
+   *
+   * Output:
+   * - `reloadKey` 更新により ComponentList が先頭ページを再読込する。
+   */
+  const handlePosted = () => {
+    setReloadKey(prev => prev + 1)
+  }
+
+  // ゲスト表示のダミーデータは表示言語で文言が変わるため、言語が変わったら再取得して差し替える。
+  const guestReloadKey = guestMode
+    ? `${reloadKey}:${translator.locale}`
+    : reloadKey
+
+  const infiniteController = useInfiniteScrollController<ThreadGroup>({
+    infiniteScrollPagination: {
+      fetchPage,
+      reloadKey: guestReloadKey,
+      enabled: timelineHidden === false,
+      loadingText: t("common.loading"),
+      emptyText: t("post.timeline.initializing"),
+    },
+  })
+
+  const items = infiniteController.items
+  const loading = infiniteController.loading
+  const error = infiniteController.error
+  const empty = infiniteController.empty
+  const message = infiniteController.message
+  const removeItem = infiniteController.removeItem
+
+  // Timeline初回読み込み完了後に一度だけ、ハッシュタグ候補の初回履歴seedを試みる。
+  // 既にハッシュタグ履歴がある場合は seedHashtagHistoryFromRankedTags 側で書き込みが
+  // スキップされるが、その判定を待たず readHashtagHistory で先に確認することで、
+  // 履歴がある場合は countHashtagUsage の集計処理自体も行わないようにする。
+  // resolvedDid が未解決のうちは履歴キーを特定できないため待機する。
+  const hashtagSeedRef = useRef(false)
+  useEffect(() => {
+    if (hashtagSeedRef.current) return
+    if (loading || items.length === 0 || !resolvedDid) return
+    hashtagSeedRef.current = true
+
+    if (readHashtagHistory(resolvedDid).length > 0) return
+
+    const ranked = countHashtagUsage(
+      items
+        .flatMap(thread => [thread.rootPost, ...thread.replies])
+        .map(post => post.text),
+    )
+    seedHashtagHistoryFromRankedTags(
+      ranked.map(r => r.tag),
+      resolvedDid,
+    )
+  }, [items, loading, resolvedDid])
+
+  return (
+    <section>
+      {guestMode && (
+        <p
+          className={`${ui["base-card"]} ${ui["base-padding"]} ${styles["guest-notice"]}`}
+        >
+          {t("post.timeline.guestNotice")}
+        </p>
+      )}
+      {showPinnedForm && (
+        <div>
+          <ThreadComposer
+            variant="page"
+            avatarUrl={resolvedAvatarUrl}
+            accountDid={resolvedDid}
+            onPosted={handlePosted}
+            onPinnedFormDisabledChange={setPinnedFormDisabled}
+            guestMode={guestMode}
+          />
+        </div>
+      )}
+      {!guestMode && <SurveyGate />}
+      {timelineHidden !== true && (
+        <PostLauncher
+          avatarUrl={resolvedAvatarUrl}
+          accountDid={resolvedDid}
+          onPosted={handlePosted}
+          onPinnedFormDisabledChange={setPinnedFormDisabled}
+          guestMode={guestMode}
+        />
+      )}
+
+      {timelineHidden === true ? null : loading || error || empty ? (
+        <p className={error ? styles["error-state"] : styles["empty-state"]}>
+          {message}
+        </p>
+      ) : (
+        <ComponentList
+          itemComponent={ThreadCard}
+          getItemKey={group => group.rootPost.uri}
+          getItemProps={group => ({
+            group,
+            onPostDeleted: removeItem,
+            guestMode,
+          })}
+          className={styles["timeline-list"]}
+          items={items}
+        />
+      )}
+
+      {timelineHidden === true ? null : (
+        <InfiniteScrollSentinel
+          hasMore={infiniteController.hasMore}
+          loadingMore={infiniteController.loadingMore}
+          onLoadMore={infiniteController.loadMore}
+          showEndMessage={!error && !empty}
+          endText={t("common.listEnd")}
+          ariaLabel={t("post.timeline.infiniteAria")}
+        />
+      )}
+    </section>
+  )
+}
+
+export default Component

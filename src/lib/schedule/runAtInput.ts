@@ -10,7 +10,7 @@
 
 export type RunAtLimits = { minLeadSeconds: number; maxLeadSeconds: number }
 
-const pad = (n: number): string => String(n).padStart(2, "0")
+import { padTwoDigits } from "@/util/padTwoDigits"
 
 /**
  * 実行日時の既定値を作る。
@@ -31,8 +31,8 @@ export const defaultRunAt = (now: Date): Date => {
  * Example: 東京の端末で `toLocalInputValue(new Date("2027-03-01T10:30:00Z"))` → `"2027-03-01T19:30"`
  */
 export const toLocalInputValue = (d: Date): string =>
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    `${d.getFullYear()}-${padTwoDigits(d.getMonth() + 1)}-${padTwoDigits(d.getDate())}` +
+    `T${padTwoDigits(d.getHours())}:${padTwoDigits(d.getMinutes())}`
 
 /**
  * `datetime-local` 入力の値を日時にする。
@@ -57,8 +57,8 @@ export const toRunAtIso = (d: Date): string => {
     const sign = offset >= 0 ? "+" : "-"
     const abs = Math.abs(offset)
     return (
-        `${toLocalInputValue(d)}:${pad(d.getSeconds())}` +
-        `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`
+        `${toLocalInputValue(d)}:${padTwoDigits(d.getSeconds())}` +
+        `${sign}${padTwoDigits(Math.floor(abs / 60))}:${padTwoDigits(abs % 60)}`
     )
 }
 

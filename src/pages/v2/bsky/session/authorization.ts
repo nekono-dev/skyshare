@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
+import { errorResponseFromStatus, jsonResponse } from "@/util/http"
 import * as PostSchema from "@/lib/api/schema/v2/bsky/session/authorization/post"
 import { returnCookie } from "@/lib/oauth/returnPath"
 import { pendingCookie, startOAuthLogin } from "@/lib/session/oauthLogin"
@@ -63,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
         })
         headers.append("set-cookie", pendingCookie(result.pending))
         headers.append("set-cookie", returnCookie("session", body.returnTo))
-        return new Response(JSON.stringify(res), { status: 200, headers })
+        return jsonResponse(res, { status: 200, headers })
     } catch {
         console.error("session authorization POST: unexpected error")
         return errorResponseFromStatus(500)

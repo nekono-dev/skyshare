@@ -2,16 +2,16 @@
 import { defineConfig, sessionDrivers } from "astro/config"
 import cloudflare from "@astrojs/cloudflare"
 import basicSsl from "@vitejs/plugin-basic-ssl"
-import { oauthLoopbackForwarder } from "./hack/oauthLoopbackForwarder.ts"
+import { oauthLoopbackForwarder } from "./scripts/dev/oauth-loopback-forwarder.ts"
 
 import react from "@astrojs/react"
 import partytown from "@astrojs/partytown"
-import { loadEnv } from "vite"
 import { checkSiteEnv, siteUrl } from "./src/lib/site/siteEnv.ts"
 import { resolveBuildInfo } from "./src/lib/site/buildEnv.ts"
 import { surveyConfigPresentFlag } from "./src/lib/site/surveyPresence.ts"
 import { execFileSync } from "node:child_process"
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
+import { parseJsonc } from "./scripts/lib/jsonc.mjs"
 
 // astro dev サーバーは HTTPS 化のため vite-plugin-basic-ssl 経由で
 // Node の http2 secure server を使う（Vite が https 設定時に自動選択するため）。
@@ -23,9 +23,22 @@ import { existsSync } from "node:fs"
 // ランタイム上で動作しこの問題の対象外のため、dev サーバーのみ無効化する。
 const isDevServer = process.argv.includes("dev")
 
-// 運用者ごとに変わる値は環境変数で受け取る（DEVELOP.md の「運用者ごとの設定」）。
-// `.env` も読むため vite の loadEnv を使う。シェルの環境変数が優先される
-const env = { ...loadEnv("production", process.cwd(), ""), ...process.env }
+// 非秘密の設定（運用者の値・公開するドメイン・接続先）は wrangler.jsonc の vars に一本化している。
+// wrangler.jsonc は scripts/config/render-wrangler.mjs が config/ から生成し、開発・ビルド・実行時が同じ値を使う（docs/DEVELOP.md の「設定」）。
+const wranglerPath = new URL("./wrangler.jsonc", import.meta.url)
+if (!existsSync(wranglerPath)) {
+  throw new Error(
+    "wrangler.jsonc がありません。npm run setup:local（開発）か、CI の設定の生成を先に実行してください",
+  )
+}
+const wrangler = parseJsonc(readFileSync(wranglerPath, "utf8"))
+// 公開するドメインは配備の経路（routes）から得る。開発では経路が無いため未設定になる
+const siteRoute = wrangler.routes?.[0]?.pattern
+const env = {
+  ...process.env,
+  ...(wrangler.vars ?? {}),
+  ...(siteRoute ? { SITE_HOST: siteRoute } : {}),
+}
 // 本番ビルドでは、運営者情報などの必須値が欠けたまま公開しないよう、ビルドを止める
 if (process.argv.includes("build")) {
   const problems = checkSiteEnv(env)

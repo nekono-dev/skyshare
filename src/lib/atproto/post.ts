@@ -7,8 +7,8 @@
  *   での原子的な複数レコード作成）は `src/lib/entry/createBskyThread.ts` が担う。
  */
 
-import type * as Components from "@/lib/api/schema/common"
-import { parseOwnedAtUri } from "@/lib/entry/url"
+import type { BskyFacets, BskyReplyRef } from "@/lib/atproto/recordTypes"
+import { parseOwnedAtUri } from "@/lib/atproto/atUri"
 import { MAX_THREAD_POST_COUNT } from "./threadLimit"
 import { serviceName } from "@/vars"
 
@@ -57,11 +57,11 @@ export { MAX_THREAD_POST_COUNT }
  */
 export const buildBskyPostRecord = (params: {
     text: string
-    facets: Components.CommonFacetsType | undefined
+    facets: BskyFacets | undefined
     langs: string[] | undefined
     embed: any
     selfLabel: string | undefined
-    reply: Components.CommonReplyRefType | undefined
+    reply: BskyReplyRef | undefined
     createdAt: string
 }): Record<string, unknown> => {
     const { text, facets, langs, embed, selfLabel, reply, createdAt } = params
@@ -112,7 +112,7 @@ export const buildBskyPostRecord = (params: {
  * - 出力: `false`
  */
 export const isReplyRefOwnedBySelf = (
-    reply: Components.CommonReplyRefType | undefined,
+    reply: BskyReplyRef | undefined,
     did: string,
 ): boolean => {
     if (!reply) return true

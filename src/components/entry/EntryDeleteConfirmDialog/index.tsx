@@ -12,11 +12,11 @@
  * - `deleteScope`が`deletable`以外（旧実装で作成されたentry・判定不能）の場合、
  *   同じ文言のままボタンをグレーにして無効化し、理由を選択肢ダイアログ内に表示する。
  */
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import React, { useEffect, useState } from "react"
-import ChoiceDialog from "@/components/common/ChoiceDialog"
-import DeletePostListDialog from "@/components/entry/DeletePostListDialog"
-import type { EntryDeleteScope } from "@/lib/entry/resolveEntryDeleteScope"
+import ChoiceDialog from "@/components/common/dialog/ChoiceDialog"
+import DeletePostListDialog from "@/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog"
+import type { EntryDeleteScope } from "@/lib/timeline/resolveEntryDeleteScope"
 
 type Props = {
   open: boolean

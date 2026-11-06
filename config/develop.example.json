@@ -1,0 +1,13 @@
+{
+  "vars": {
+    "PUBLIC_NODE_ENV": "develop",
+    "PUBLIC_LEGACY_BACKEND_ENDPOINT": "https://backend.example.com/api/v1",
+    "PUBLIC_OGP_EXTRACTOR_API": "https://ogpextractor.example.com",
+    "PUBLIC_DEFAULT_ATP_SERVICE": "https://api.bsky.app",
+    "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
+    "PUBLIC_OPERATOR_NAME": "example-operator",
+    "PUBLIC_OPERATOR_EMAIL": "operator@example.com",
+    "PUBLIC_PRIVACY_ENACTED_AT": "2000-01-01",
+    "PUBLIC_PRIVACY_REVISED_AT": "2000-01-01"
+  }
+}

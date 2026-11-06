@@ -5,7 +5,7 @@
  * - 言語コードごとに代表国（ISO 3166-1 alpha-2）を1つ定義し、国旗絵文字へ変換する。
  * - 国を持たない言語（人工言語・古典言語など）や判断に迷う言語はキーを持たず、旗なしとする。
  */
-import { countryCodeToFlagEmoji } from "@/util/emoji/countryFlag"
+import { countryCodeToFlagEmoji } from "./countryFlag"
 
 /** 言語コード → 代表国。国旗を出さない言語はキー自体を持たない */
 export const LANGUAGE_REPRESENTATIVE_COUNTRY: Record<string, string> = {

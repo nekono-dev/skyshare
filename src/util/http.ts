@@ -92,3 +92,94 @@ export const hasCookieHeader = (request: Request): boolean => {
 export const isMultipartFormData = (contentType: string | null): boolean => {
     return (contentType ?? "").includes("multipart/form-data")
 }
+
+/**
+ * JSON の応答を組み立てる（本文・状態・ヘッダーを呼び出し側が指定する）。
+ *
+ * 処理の趣旨:
+ * - 応答の形（ヘッダー）は呼び出しごとに異なるため、ヘッダーは呼び出し側が `headers` で渡す。
+ *   既定で `content-type: application/json` を付け、呼び出し側の指定で上書きできる。
+ * - 本文が `undefined` のときは本文を付けない（`content-type` も付けない）。
+ * - 同じ名前のヘッダーを複数渡す場合（`set-cookie` など）は、配列の形で渡す。
+ *
+ * Input:
+ * - `body`: JSON にする本文（`undefined` なら本文なし）
+ * - `init.status`: 状態（既定 200）
+ * - `init.headers`: 追加するヘッダー（既定の `content-type` より優先）
+ *
+ * Output:
+ * - JSON の `Response`
+ *
+ * 例:
+ * - 入力: `{ a: 1 }`, `{ headers: { "cache-control": "no-store" } }`
+ * - 出力: 状態 200、本文 `{"a":1}`、`content-type` と `cache-control: no-store`
+ */
+export const jsonResponse = (
+    body: unknown,
+    init: { status?: number; headers?: HeadersInit } = {},
+): Response => {
+    const headers = new Headers(init.headers)
+    if (body !== undefined && !headers.has("content-type")) {
+        headers.set("content-type", "application/json")
+    }
+    return new Response(body === undefined ? null : JSON.stringify(body), {
+        status: init.status ?? 200,
+        headers,
+    })
+}
+
+/**
+ * HTTP ステータスに対応する JSON エラーレスポンスを生成する。
+ *
+ * 処理の趣旨:
+ * - API 層で共通のエラー形式 `{ error: string }` を維持する。
+ * - `switch` で主要なクライアント/認証/レート制限エラーを明示し、未定義は 500 相当へ寄せる。
+ * - `cache-control: no-store` を付与し、cookie 依存のレスポンスをブラウザ/CDNにキャッシュさせない
+ *   （キャッシュされると、ログイン直後でも古い 401 応答が返り続ける不具合につながるため）。
+ *
+ * Input:
+ * - `status`: 返却する HTTP ステータス
+ *
+ * Output:
+ * - `content-type: application/json` と `cache-control: no-store` を持つ `Response`
+ *
+ * 例:
+ * - 入力: `401`
+ * - 出力: `{"error":"Unauthorized"}` を含む `Response`
+ */
+export const errorResponseFromStatus = (status: number): Response => {
+    const message = { error: "Unknown Error" }
+    switch (status) {
+        case 400:
+            message.error = "Bad Request"
+            break
+        case 401:
+            message.error = "Unauthorized"
+            break
+        case 403:
+            message.error = "Forbidden"
+            break
+        case 404:
+            message.error = "Not Found"
+            break
+        case 409:
+            message.error = "Conflict"
+            break
+        case 422:
+            message.error = "Unprocessable Content"
+            break
+        case 429:
+            message.error = "Too Many Requests"
+            break
+        case 503:
+            message.error = "Service Unavailable"
+            break
+        default:
+            message.error = "Internal Server Error"
+            break
+    }
+    return jsonResponse(message, {
+        status,
+        headers: { "cache-control": "no-store" },
+    })
+}

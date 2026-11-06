@@ -12,11 +12,11 @@
  *   別 did なら現在のアクティブをプールへ退避するため、追加ログインと再ログインの
  *   両方でそのまま正しい結果になる。
  */
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import { useState } from "react"
 import AccountSwitcher, {
   type AccountItem,
-} from "@/components/account/AccountSwitcher"
+} from "@/components/account/AccountSwitchPanel/AccountSwitcher"
 import LoginForm from "@/components/account/LoginForm"
 import ui from "@/styles/ui.module.css"
 

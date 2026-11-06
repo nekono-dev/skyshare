@@ -1,5 +1,5 @@
 /** 動画投稿（添付・アップロード・再生）関連の文言（英語）。キー集合は日本語辞書と一致させる。 */
-import type { MessageEntries } from "../../translate"
+import type { MessageEntries } from "../../messageEntries"
 
 export const video = {
     "video.picker.add": "Add video",

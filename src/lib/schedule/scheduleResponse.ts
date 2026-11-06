@@ -6,32 +6,19 @@
  * - すべての応答に `cache-control: no-store` を付ける。
  */
 
+import { jsonResponse } from "@/util/http"
+
 export type ScheduleErrorCode =
     "ScheduleCredentialRequired" | "ScheduleReauthRequired" | "ScheduleRunning"
-
-/**
- * JSON の応答を返す。
- *
- * Input:
- * - `setCookies`: 応答に付ける Set-Cookie の値（登録状態のヒントの保存・失効に使う）
- */
-export const jsonResponse = (
-    body: unknown,
-    status = 200,
-    setCookies: string[] = [],
-): Response => {
-    const headers = new Headers({
-        "content-type": "application/json",
-        "cache-control": "no-store",
-    })
-    for (const cookie of setCookies) headers.append("set-cookie", cookie)
-    return new Response(JSON.stringify(body), { status, headers })
-}
 
 export const codeErrorResponse = (
     status: number,
     code: ScheduleErrorCode,
-): Response => jsonResponse({ error: code }, status)
+): Response =>
+    jsonResponse(
+        { error: code },
+        { status, headers: { "cache-control": "no-store" } },
+    )
 
 export const toIso = (epochSeconds: number): string =>
     new Date(epochSeconds * 1000).toISOString()

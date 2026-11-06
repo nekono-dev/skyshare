@@ -5,8 +5,8 @@
  * - リンクや強調を文中に含む文言を、辞書のスロット（`renderSlots`）で組み立てて表示する。
  * - 表示言語の切り替えに React の再描画で追従する（Astro の静的DOMではなく island にしている理由）。
  */
-import { useT } from "@/lib/i18n/react"
-import { renderSlots } from "@/lib/i18n/rich"
+import { useT } from "@/components/i18n/useTranslation"
+import { renderSlots } from "@/components/i18n/renderSlots"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 

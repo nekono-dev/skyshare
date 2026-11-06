@@ -1,11 +1,9 @@
 import type { APIRoute } from "astro"
 
-import { errorResponseFromStatus } from "@/lib/api/response.js"
-import * as GetSchema from "@/lib/api/schema/v2/schedules/_id/images/_index/get"
-import { getScheduleEnv } from "@/lib/schedule/env"
-import { getImage } from "@/lib/schedule/imageStaging"
+import { errorResponseFromStatus } from "@/util/http"
+import * as GetSchema from "@/lib/api/schema/v2/schedules/[id]/images/[index]/get"
 import { codeErrorResponse } from "@/lib/schedule/scheduleResponse"
-import { getSchedule, parseKeys } from "@/lib/schedule/store"
+import { getScheduleImage } from "@/lib/schedule/scheduleImage"
 
 /**
  * GET /v2/schedules/{id}/images/{index} — 自分の待機中または失敗の予約に添付した画像を番号で返す。
@@ -26,27 +24,20 @@ export const GET: APIRoute = async ({ params, locals }) => {
         const path = GetSchema.PathParamsSchema.safeParse(params)
         if (!path.success) return errorResponseFromStatus(400)
 
-        const env = await getScheduleEnv()
-        const row = await getSchedule(env.DB, session.did, path.data.id)
-        if (!row) return errorResponseFromStatus(404)
-        if (row.status === "running") {
-            return codeErrorResponse(409, "ScheduleRunning")
+        const result = await getScheduleImage({
+            did: session.did,
+            id: path.data.id,
+            index: path.data.index,
+        })
+        if (!result.ok) {
+            return result.code
+                ? codeErrorResponse(result.status, result.code)
+                : errorResponseFromStatus(result.status)
         }
-        if (row.status !== "pending" && row.status !== "failed") {
-            return errorResponseFromStatus(404)
-        }
-
-        const image = await getImage(
-            env.SCHEDULE_IMAGES,
-            session.did,
-            parseKeys(row.imageKeys),
-            path.data.index,
-        )
-        if (!image) return errorResponseFromStatus(404)
-        return new Response(image.bytes, {
+        return new Response(result.value.bytes, {
             status: 200,
             headers: {
-                "content-type": image.mime,
+                "content-type": result.value.mime,
                 "cache-control": "no-store",
             },
         })

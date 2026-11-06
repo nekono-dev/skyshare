@@ -7,7 +7,7 @@
 export type FeedbackEnv = {
     /** Issues の読み書きだけを許す GitHub の Fine-grained PAT（Worker のシークレット）。未設定なら受付を停止する */
     FEEDBACK_GITHUB_TOKEN?: string
-    /** Cloudflare の Rate Limiting のバインディング（期間60秒・上限1件。`wrangler.template.jsonc` で宣言） */
+    /** Cloudflare の Rate Limiting のバインディング（期間60秒・上限1件。`config/wrangler.template.jsonc` で宣言） */
     FEEDBACK_RATE_LIMITER: {
         limit(opts: { key: string }): Promise<{ success: boolean }>
     }

@@ -14,10 +14,10 @@ import { useEffect, useState } from "react"
 import { createFeedback } from "@/client/openapi/client"
 import CountedTextInput, {
   type CounterSpec,
-} from "@/components/common/CountedTextInput"
+} from "@/components/common/input/CountedTextInput"
 import Loading from "@/components/common/Loading"
-import RadioButton from "@/components/common/RadioButton"
-import { getSessionOnce } from "@/lib/account/activeAccountSession"
+import RadioButton from "@/components/common/input/RadioButton"
+import { getSessionOnce } from "@/lib/session/activeAccountSession"
 import {
   emptyDraft,
   isDraftSubmittable,
@@ -29,15 +29,13 @@ import {
   FEEDBACK_LIMITS,
   REPRODUCIBILITY_VALUES,
   countFeedbackLength,
-} from "@/lib/feedback/limits"
+} from "@/lib/api/contract/feedbackLimits"
 import { errorMessageKeyFromStatus } from "@/lib/i18n/errorMessage"
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { buildInfo } from "@/lib/site/buildInfo"
-import {
-  collectClientEnvironment,
-  type ClientEnvironment,
-} from "@/util/clientEnvironment"
+import type { ClientEnvironment } from "@/types/clientEnvironment"
+import { collectClientEnvironment } from "./clientEnvironment"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 

@@ -6,7 +6,7 @@
  * - PostForm は投稿API呼び出し（await）の前に、ユーザー操作と同期的なコールスタック内で
  *   このページをポップアップとして開いておき（`preOpenPopupWindow`）、投稿完了後に
  *   `location.href` で実際のintent URL（x.com/taittsuu/Mastodon/Misskey）へ遷移させる
- *   （詳細は `src/util/share/openIntentPopup.ts` を参照）。
+ *   （詳細は `src/components/share/IntentShareDialog/openIntentPopup.ts` を参照）。
  * - 空白（about:blank）のまま数秒待たせるとユーザーが不安になるため、遷移中である
  *   ことを示す待機画面のみを提供する。このページ自身は次の遷移先を知らず、
  *   呼び出し元ウィンドウからの`location.href`書き換えを待つだけの受け皿。
@@ -17,7 +17,7 @@
  */
 export const prerender = true
 import Loading from "@/components/common/Loading"
-import Baselayout from "@/layout/Baselayout.astro"
+import Baselayout from "@/components/layout/Baselayout/index.astro"
 import { createTranslator } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 

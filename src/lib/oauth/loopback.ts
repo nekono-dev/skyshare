@@ -6,7 +6,7 @@
  *   取得できないため、atproto の開発用の公開クライアント（識別子が `http://localhost?...`）として振る舞う。
  * - 開発用の公開クライアントの戻り先は、ループバックの IP の http の住所に限られる（https とホスト名
  *   `localhost` は認可サーバーが拒否する）。開発サーバーは https で待ち受けるため、この住所への遷移は
- *   開発サーバーの中継（`hack/oauthLoopbackForwarder.ts`）が開発サーバーへ転送する。
+ *   開発サーバーの中継（`scripts/dev/oauth-loopback-forwarder.ts`）が開発サーバーへ転送する。
  *
  * 実装上の制約:
  * - 開発サーバーの設定（Node）とブラウザからも読み込むため、他のモジュールに依存しない。

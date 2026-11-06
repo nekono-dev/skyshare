@@ -12,6 +12,7 @@
 
 import { z } from "zod"
 
+import { idSchema } from "@/lib/api/contract/surveyPath"
 import type { Locale } from "@/lib/i18n/locale"
 
 /** 全対応言語の文言。言語を足すと、スキーマ側が型エラーで追随を求める */
@@ -53,15 +54,6 @@ export type SurveyConfig = { surveys: Survey[] }
 
 export type ParseResult =
     { ok: true; config: SurveyConfig } | { ok: false; issues: string[] } // 各要素は「位置: 理由」。入力の値を含めない
-
-/** 識別子の最大文字数 */
-const ID_MAX_LENGTH = 40
-
-/** 識別子: 英小文字・数字・ハイフン（先頭・末尾・連続のハイフンは不可） */
-const ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
-
-/** 識別子（アンケート・質問・選択肢）の検証。API の契約も同じ形式で検証するため公開する */
-export const idSchema = z.string().max(ID_MAX_LENGTH).regex(ID_PATTERN)
 
 /**
  * 配列の要素の `id` が重複する位置に、固定の理由で不正を追加する。

@@ -1,6 +1,6 @@
-import { useT } from "@/lib/i18n/react"
+import { useT } from "@/components/i18n/useTranslation"
 import React, { useRef, useState } from "react"
-import ImageLightbox from "@/components/image/ImageLightbox"
+import ImageLightbox from "@/components/image/ImageGallery/ImageLightbox"
 import type { SourceImage } from "@/lib/entry/entry"
 import { resolveGalleryLayout } from "@/lib/image/galleryLayout"
 import { MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
