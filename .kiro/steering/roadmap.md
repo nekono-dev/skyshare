@@ -128,7 +128,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 - CI（`.github/workflows/`）が呼ぶスクリプトの名前と引数は、CI と同じ変更で更新する。
 - 秘密情報の値は、ログ・リポジトリ・文書に出さない（既存の規則を保つ）。
-- cc-sdd の導入物（`.kiro/settings/`・`CLAUDE.md`・`.claude/skills/kiro-*`）は cc-sdd 3.1.0 で固定し、導入で差分が出ない状態をコミットに含める。
+- cc-sdd の導入物（`.claude/skills/kiro-*`・`.agents/skills/kiro-*`・`.kiro/settings/`）は cc-sdd 3.1.0 で固定し、MIT のため `.gitignore` の対象とする（コミットしない）。`CLAUDE.md`・`AGENTS.md` は導入の対象から外し、プロジェクトの文書として直接編集する。
 - 既存のテスト（`tests/unit/scripts/`）を守る。移動に伴う import の変更は、テストの意味を変えない。
 
 ### Boundary Strategy
