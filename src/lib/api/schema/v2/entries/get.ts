@@ -18,6 +18,20 @@ export const QueryParamsSchema = z
     .strict()
 export type QueryParamsType = z.infer<typeof QueryParamsSchema>
 
+/** 動画の再生と表示に使う情報。`SourceVideo`（`@/lib/entry/entry`）と同じ形。 */
+const TimelineVideoSchema = z
+    .object({
+        cid: z.string(),
+        playlistUrl: z.string(),
+        thumbnailUrl: z.string(),
+        alt: z.string(),
+        aspectRatio: z
+            .object({ width: z.number(), height: z.number() })
+            .strict()
+            .optional(),
+    })
+    .strict()
+
 const TimelinePostSchema = z
     .object({
         uri: z.string(),
@@ -43,6 +57,8 @@ const TimelinePostSchema = z
                 })
                 .strict(),
         ),
+        video: TimelineVideoSchema.optional(),
+        unsupportedVideo: TimelineVideoSchema.optional(),
         skyshareEntry: z
             .object({
                 uri: z.string(),

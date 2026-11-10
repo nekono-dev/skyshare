@@ -16,12 +16,18 @@ export type MentionSuggestion = {
 const MENTION_SUGGEST_LIMIT = 5
 const SUGGEST_TIMEOUT_MS = 5000
 
+/** 呼び出し元の中断信号（あれば）とタイムアウトのどちらか早い方で中断する信号を作る。 */
+const withTimeout = (signal?: AbortSignal): AbortSignal => {
+    const timeout = AbortSignal.timeout(SUGGEST_TIMEOUT_MS)
+    return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 /**
  * `app.bsky.actor.searchActorsTypeahead` で、プレフィックスに一致するアカウントを取得する。
  *
  * Input:
  * - `query`: 検索プレフィックス（"@"は含まない）。空文字なら通信せず空配列を返す
- * - `opts.signal`: 中断用の AbortSignal。省略時は 5 秒（`SUGGEST_TIMEOUT_MS`）でタイムアウトする
+ * - `opts.signal`: 呼び出し元の中断信号。5 秒（`SUGGEST_TIMEOUT_MS`）のタイムアウトも常に適用する
  *
  * Output:
  * - 一致したアカウントの配列（最大 `MENTION_SUGGEST_LIMIT` 件）。失敗時は空配列
@@ -39,7 +45,7 @@ export const searchMentionSuggestions = async (
     try {
         const res = await publicAtpAgent.app.bsky.actor.searchActorsTypeahead(
             { q: query, limit: MENTION_SUGGEST_LIMIT },
-            { signal: opts?.signal ?? AbortSignal.timeout(SUGGEST_TIMEOUT_MS) },
+            { signal: withTimeout(opts?.signal) },
         )
         return res.data.actors.map(actor => ({
             did: actor.did,
@@ -83,7 +89,7 @@ const isHashtagLikeToken = (raw: string): boolean => {
  * - 取得に失敗したときは、期限切れでも直前のキャッシュを返す。キャッシュも無ければ空配列を返す。
  *
  * Input:
- * - `opts.signal`: 中断用の AbortSignal。省略時は 5 秒（`SUGGEST_TIMEOUT_MS`）でタイムアウトする
+ * - `opts.signal`: 呼び出し元の中断信号。5 秒（`SUGGEST_TIMEOUT_MS`）のタイムアウトも常に適用する
  *
  * Output:
  * - ハッシュタグ候補（"#"を含まず、重複を除いた）の配列。`topics` と `suggested` の両方から集める
@@ -101,7 +107,7 @@ export const getTrendingTagSuggestions = async (opts?: {
     try {
         const res = await publicAtpAgent.app.bsky.unspecced.getTrendingTopics(
             { limit: 25 },
-            { signal: opts?.signal ?? AbortSignal.timeout(SUGGEST_TIMEOUT_MS) },
+            { signal: withTimeout(opts?.signal) },
         )
         const tags = [...res.data.topics, ...res.data.suggested]
             .map(t => t.topic.replace(/^[#＃]/, "").trim())
