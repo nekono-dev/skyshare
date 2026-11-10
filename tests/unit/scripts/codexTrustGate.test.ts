@@ -418,7 +418,13 @@ describe("hook entry (process)", () => {
 
     const makeGitRepo = (): string => {
         const repo = makeDir()
-        execFileSync("git", ["init", "-q", repo])
+        // フックからの実行では GIT_DIR が設定されている。除かないと、外側のリポジトリを再初期化する
+        const env = Object.fromEntries(
+            Object.entries(process.env).filter(
+                ([name]) => !name.startsWith("GIT_"),
+            ),
+        )
+        execFileSync("git", ["init", "-q", repo], { env })
         return repo
     }
 

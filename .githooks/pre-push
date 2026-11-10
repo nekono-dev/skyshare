@@ -4,4 +4,6 @@
 # GitHub の Variables・Secrets への登録は push では行わない。デプロイの前に運用者が `npm run sync:github` を手動で実行する（docs/DEVELOP.md）。
 set -eu
 cd "$(git rev-parse --show-toplevel)"
+# git がフックに渡すリポジトリの場所を外す。残すと、テストが一時フォルダで実行する git が、このリポジトリを操作する。
+unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_PREFIX
 npm run test:all
