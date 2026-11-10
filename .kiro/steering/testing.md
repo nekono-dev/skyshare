@@ -110,7 +110,7 @@ tests/
 3. **変異テストの採否の再評価**: unit 層の PoC（2 モジュール）と、P0 の 11 ファイルでの報告は実施済み。route 層への適用は未検証。
 4. **`test:type`・`test:lexicon` の扱い**: `test:all` に含める（設計どおり）。
 
-2026-11-10 追補: 1 と 4 は実装で決着している（E2E の流れは `tests/e2e/flows/` にあり、`test:all` は `test:type`・`test:lexicon` を含む）。残る未決定は 2 と 3。PR の必須の検査は、GitHub の main のルールセットで `e2e` だけを必須にしている。
+2026-11-10 追補: 1 と 4 は実装で決着している（E2E の流れは `tests/e2e/flows/` にあり、`test:all` は `test:type`・`test:lexicon` を含む）。2 も決着した（利用者の決定 2026-11-10: リポジトリ全体の整形は意図どおり。ただしテストやビルドの時ではなく、コミットの前に行う。`build:prepare` から `format` を外し、`.githooks/pre-commit` が整形する）。残る未決定は 3（積み残し）。PR の必須の検査は、GitHub の main のルールセットで `e2e` だけを必須にしている。
 
 ---
 

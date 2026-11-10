@@ -108,6 +108,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 - GitHub の main のルールセットに、必須の検査 `e2e` を加えた（test-foundation の要件 9.1。利用者の承認を得て実施）。develop のルールセットは変えていない。
 - 実アカウントのテスト（`npm run test:live`）は、利用者の承認を得て実行し、3 件が通過した（live-tests の要件 4.1〜4.3）。
 - 手元の未取り込みのブランチ（cc-sdd の運用が安定する前の残骸）は、利用者の指示で削除した: `dev/cc-sdd-coexist-trial`・`dev/cc-sdd-trial`・`dev/creatormode`・`dev/spec-template-linter`・`dev/structure-docs-cleanup`。リモートのブランチは削除していない。
+- 整形の時機を変えた（利用者の決定 2026-11-10）: `build:prepare` から `format`（`prettier --write .`）を外し、`.githooks/pre-commit` がコミットの前にリポジトリ全体を整形する。`npm run dev`・`npm run build`・`npm run test:e2e` は作業ツリーを整形しなくなった。comments-* の spec にある「e2e は `prettier --write` を含む」という前提は、これで当てはまらなくなる。
 - 残る作業: フェーズ 1 の 18 spec（brief のみ）、Phase 7（コメントの整理）、フェーズ 6 の `naming-*`。いずれも未着手（利用者の指示で、まだ着手しない）。
 
 ## 検証（kiro-validate-impl, 2026-11-08）: 当時の記録

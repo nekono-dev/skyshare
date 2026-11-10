@@ -75,9 +75,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 | `npm run prev`      | ビルドしてから `wrangler preview` で作業ブランチ用の Preview を出す                  |
 | `npm run deploy`    | 手元から配備する。通常の配備は CI が行うため、運用者の明示的な依頼があるときだけ使う |
 
-`npm run dev` と `npm run build` は、先頭で `build:prepare`（`codegen`・`survey:render`・`format`）を実行する。`format` は `prettier --write .` のため、作業ツリー全体を整形する。
-
-> 注意: `npm run dev` と `npm run build` は、`build:prepare` の `format` で repo 全体に prettier を掛ける。無関係なファイルが整形されることがあるため、コミット前に `git status` で差分を確認し、戻すものは `git checkout -- <パス>` で戻す。
+`npm run dev` と `npm run build` は、先頭で `build:prepare`（`codegen`・`survey:render`）を実行する。整形（`npm run format`。`prettier --write .`）は、ここでは行わず、コミットの前に行う（2.3）。
 
 ### 2.2 テストと型検査
 
@@ -96,7 +94,9 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 
 完了の確かめ方: `npm run test:all` が終了コード 0 で終わること。
 
-### 2.3 push 前の検査
+### 2.3 コミット前の整形と push 前の検査
+
+`.githooks/pre-commit` は、コミットの前にリポジトリ全体を prettier で整形し、ステージ済みのファイルを整形後の内容でステージし直す。ステージしていないファイルの整形結果は作業ツリーに残る。一部だけをステージしたファイル（`git add -p`）は、全体がステージされる。
 
 `.githooks/pre-push` は `npm run test:all`（全層のテスト。E2E を含む）だけを実行する。GitHub の Variables・Secrets への登録は push では行わない（登録は手動。「5.0 デプロイ前の準備」）。
 
