@@ -30,6 +30,15 @@ const findExecutable = (name, searchPath) => {
   return null
 }
 
+/** git がリポジトリの場所を cwd より優先して読む環境変数。 */
+const GIT_LOCATION_ENV = new Set([
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_COMMON_DIR",
+  "GIT_INDEX_FILE",
+  "GIT_PREFIX",
+])
+
 /**
  * git で作業ツリーの根を求める。得られなければ null。
  * @param {string} gitPath
@@ -37,10 +46,14 @@ const findExecutable = (name, searchPath) => {
  * @returns {string | null}
  */
 const findRepoRoot = (gitPath, startDir) => {
+  // git のフックから起動されると GIT_DIR などが設定され、startDir と無関係なリポジトリを指すため、外して startDir だけで判定する
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(([name]) => !GIT_LOCATION_ENV.has(name)),
+  )
   const result = spawnSync(
     gitPath,
     ["-C", startDir, "rev-parse", "--show-toplevel"],
-    { encoding: "utf8" },
+    { encoding: "utf8", env },
   )
   if (result.error || result.status !== 0) return null
   const root = result.stdout.trim()

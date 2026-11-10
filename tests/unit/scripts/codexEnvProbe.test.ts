@@ -18,6 +18,14 @@ const findRealGit = (): string => {
     return fs.realpathSync(found)
 }
 
+/** git がリポジトリの場所として読む環境変数（フックからの実行で設定される）を除いた環境。 */
+const envWithoutGit = (): NodeJS.ProcessEnv =>
+    Object.fromEntries(
+        Object.entries(process.env).filter(
+            ([name]) => !name.startsWith("GIT_"),
+        ),
+    )
+
 let tmpRoot: string
 let binDir: string
 let gitDir: string
@@ -45,7 +53,7 @@ beforeEach(() => {
     // git init 済みの一時リポジトリ（外側のリポジトリに依存しない）
     repoDir = path.join(tmpRoot, "repo")
     fs.mkdirSync(repoDir)
-    execFileSync("git", ["init", "-q"], { cwd: repoDir })
+    execFileSync("git", ["init", "-q"], { cwd: repoDir, env: envWithoutGit() })
 
     // どの git リポジトリにも属さない一時ディレクトリ
     outsideDir = path.join(tmpRoot, "outside")
@@ -90,6 +98,23 @@ describe("probeEnvironment", () => {
 
         expect(result.available).toBe(false)
         expect((result as { missing: string[] }).missing).toContain("git")
+    })
+
+    it("ignores a repository location inherited from the environment", async () => {
+        const searchPath = [binDir, gitDir].join(path.delimiter)
+        const saved = process.env.GIT_DIR
+        process.env.GIT_DIR = path.join(repoDir, ".git")
+        try {
+            const result = await probeEnvironment({
+                searchPath,
+                startDir: outsideDir,
+            })
+
+            expect(result.available).toBe(false)
+        } finally {
+            if (saved === undefined) delete process.env.GIT_DIR
+            else process.env.GIT_DIR = saved
+        }
     })
 
     it("reports git as missing when startDir is outside any git repository", async () => {
