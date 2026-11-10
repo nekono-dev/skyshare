@@ -87,3 +87,7 @@ if (event.nativeEvent.isComposing) return
 - 規約の全体（構造・命名・import）: `tech.md`・`structure.md`
 - テストの方針: `testing.md`
 - 作業の取り決め（判断の置き場所）: `CLAUDE.md`
+
+---
+
+_updated_at: 2026-11-10_

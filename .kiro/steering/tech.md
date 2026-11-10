@@ -6,6 +6,8 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページ
 
 - 永続化: D1（`migrations/` の SQL。予約の 3 表・アンケートの 2 表）と R2（予約の添付画像）
 - 外部: Bluesky の PDS・AppView・認可サーバー、OGP 抽出サービス、旧バックエンド（pageDB）、GitHub API（Issue 作成）
+- 送信の間隔制限: Workers の Rate Limiter（フィードバックの送信。ログイン中のアカウントの DID をキーにする。`src/lib/feedback/submitFeedback.ts`）
+- アクセス解析（任意）: 測定 ID（`PUBLIC_GA_MEASUREMENT_ID`）を設定したときだけ Google Analytics のタグを出す。タグは Partytown で Web Worker 上で動かし、画面の処理を妨げない（`src/components/layout/AnalyticsTag/`）
 - 生成物: `scripts/build/build-openapi-document.ts` が OpenAPI を作り、`orval` が `src/client/openapi/` のクライアントを作る（手で編集しない）
 
 ## Core Technologies
@@ -75,4 +77,4 @@ npm run build
 ---
 
 _Document standards and patterns, not every dependency._
-_updated_at: 2026-11-09_
+_updated_at: 2026-11-10_

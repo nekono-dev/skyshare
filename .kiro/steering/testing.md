@@ -31,7 +31,7 @@
 - 接続先の解決の規則は `src/lib/platform/blueskyEndpoints.ts`（`resolveBlueskyEndpoints`）。既定値は本番と同じ。`src/lib/platform/publicEndpoints.ts` が、ビルド時の `import.meta.env` からそれを作る。
 - 非秘密の設定（接続先・運営者の情報など）の源は `wrangler.jsonc` の `vars` だけ。開発・ビルド・実行時（Worker の env）が同じ値を使う。`wrangler.jsonc` は `config/<名前>.json` から `scripts/config/render-wrangler.mjs` が毎回生成する（Git 管理外）。`.env` は使わない。
 - 秘密情報（`SCHEDULE_ENC_KEY`・`OAUTH_CLIENT_KEY`・`SURVEY_HASH_KEY`）は `.dev.vars`（ローカル）と Worker のシークレット（本番）に置く。
-- E2E は `config/e2e.json`（`config/e2e.example.json` から、接続先だけ偽の Bluesky の URL にして作る）で `wrangler.jsonc` を生成して `astro dev` を起動する。終了後は開発の設定から生成し直す。
+- E2E は `config/e2e.json`（`config/develop.example.json` から、接続先だけ偽の Bluesky の URL にして、実行のたびに作り直す）で `wrangler.jsonc` を生成して `astro dev` を起動する。終了後は開発の設定から生成し直す。
 - 上書きは開発とテストの環境だけで使う。本番の設定（`config/production.json`）には偽の値を入れない。
 
 ## Priority（P0 は必ず契約テストを置く）
@@ -113,4 +113,4 @@ tests/
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
-_updated_at: 2026-11-05_
+_updated_at: 2026-11-10_

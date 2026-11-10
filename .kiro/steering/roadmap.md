@@ -6,6 +6,8 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 現在の状態（2026-11-08）: 残りは、フェーズ 1 の 18 spec の要件作成（brief のみ）、フェーズ 6 の接頭辞の改名（`naming-*`）、および cc-sdd の検証（`/kiro-validate-impl`）が未実施の完了済み作業（下の「確認済み・phase 未更新」）。
 
+現在の状態（2026-11-10 追補）: Phase 8 の `ops-agent-setup`（Codex 側の導入の取り消し）と `codex-mcp-subagent` は、`spec.json` の phase が `implementation-complete` になった。`docs/DEVELOP.md` も改訂後の導入に合わせてある。Phase 7 は 6 件とも実装が未完了（phase は `tasks-generated`）。ただし基準の文書（`comments.md`）と検査（`scripts/architecture/commentRules.ts`）は既にある。
+
 ## Completion の定義
 
 - `[x]` は、`spec.json` の phase が `implementation-complete` のものに限る（cc-sdd の検証を通過した状態）。
@@ -88,7 +90,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 ## Existing Spec Updates
 
-- [ ] ops-agent-setup（Codex と Claude の導入は確認済み。Claude の実機確認は未了。**Phase 8 で Codex 側の導入を取り消す改訂が必要**） -- BRW の導入を `npm run setup:brw` の 1 つの入口にし、Claude と Codex を同じ clone の同じ commit から導入する。Dependencies: none
+- [x] ops-agent-setup（2026-11-10 追補: Phase 8 の改訂を含めて `implementation-complete`。以下は当時の記述。Codex と Claude の導入は確認済み。Claude の実機確認は未了。**Phase 8 で Codex 側の導入を取り消す改訂が必要**） -- BRW の導入を `npm run setup:brw` の 1 つの入口にし、Claude と Codex を同じ clone の同じ commit から導入する。Dependencies: none
 
 ## 検証（kiro-validate-impl, 2026-11-08）: phase は未更新
 
@@ -116,6 +118,9 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 - [x] src-pages-thin -- `pages/v2` の DB・R2・トークン操作を `lib` へ移し、`pages` を入口だけにした
 - [x] repo-root-layout -- ルートの設定・文書・生成物を役割ごとに整理（根に残るのはツールの規約で必要なもの）
 - [x] entryCandidate（直接実装） -- `lib/timeline/entryCandidate.ts` へ移動（旧位置は無い）
+- [x] ops-agent-setup -- cc-sdd と BRW の導入を Claude 向けの一つの入口にまとめ、Codex 側の導入を取り消した（Phase 8）
+- [x] codex-mcp-subagent -- Codex を MCP の子エージェント（`codex_exec`）として Claude から呼ぶ（Phase 8）
+- [x] develop-docs-agents（直接実装） -- `docs/DEVELOP.md` の導入の説明を改訂後の導入に合わせた（Phase 8）
 
 ## Phase 7: ソースコードのコメントの整理（2026-11-08 discovery）
 
@@ -164,6 +169,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 ## 未着手（フェーズ外）
 
 - 作業ブランチと本番向けブランチの運用の強制（`branch-release-workflow`）: 判定スクリプトと、commit・push の前に動くフックが残っている。skill 本体は別リポジトリで作成中。現在の運用は DEVELOP.md 5.3 に従う。
+  - 2026-11-10 追補（観察）: 宣言ファイル（`.branch-release-workflow.json`）と取得元（`.branch-release-workflow-source.json`）はリポジトリにあり、skill はプラグインとして導入される（DEVELOP.md 5.3）。下の (3) は済んでいる。リポジトリ内のフックは `.githooks/pre-push`（テストの実行）だけで、commit・push を止める判定はプラグインの側が持つ。
   - 残りの作業: (1) `remote-preview` の現状を棚卸しする。(2) 直接作業禁止（`main`・`develop`）と `dev/XXXX` 運用を skill に明記する。(3) 宣言ファイルの形式と置き場所を決める。(4) 判定スクリプト（宣言と workflows の走査）を作り、selftest を付ける。(5) フックを承認を得て導入する。(6) 他のリポジトリでも使えるように一般化する。
 
 ## Phase 8: 開発システムの Codex 連携（2026-11-08 discovery）
@@ -209,14 +215,14 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Existing Spec Updates
 
-- [ ] ops-agent-setup -- Codex の cc-sdd 導入（`--codex`・`.agents/skills/kiro-*`・`.codex/agents/`・AGENTS.md・`.codex/hooks.json` の SessionStart）と BRW の Codex 側（`.agents/skills/branch-release-workflow` の symlink・`--codex` の導入・`.gitignore` の 2 行）を取り消す。Claude 側は残す。requirements・design・tasks を改訂し、再承認を得る。（2026-11-08: 改訂の草案を作成済み。承認待ち。コードの取り消しは未実施。）Dependencies: none
+- [x] ops-agent-setup -- Codex の cc-sdd 導入（`--codex`・`.agents/skills/kiro-*`・`.codex/agents/`・AGENTS.md・`.codex/hooks.json` の SessionStart）と BRW の Codex 側（`.agents/skills/branch-release-workflow` の symlink・`--codex` の導入・`.gitignore` の 2 行）を取り消す。Claude 側は残す。requirements・design・tasks を改訂し、再承認を得る。（2026-11-08: 改訂の草案を作成済み。承認待ち。コードの取り消しは未実施。→ 2026-11-10 追補: 再承認と取り消しを終え、`implementation-complete`。`install-cc-sdd.sh` は `--claude` だけを受け付け、AGENTS.md は無い。）Dependencies: none
 
 ### Direct Implementation Candidates
 
-- [ ] develop-docs-agents -- `docs/DEVELOP.md` の 4 項（cc-sdd・BRW の導入）と 5.3 項（BRW の入口）を、改訂後の導入に合わせて直す。Dependencies: ops-agent-setup, codex-mcp-subagent
+- [x] develop-docs-agents -- `docs/DEVELOP.md` の 4 項（cc-sdd・BRW の導入）と 5.3 項（BRW の入口）を、改訂後の導入に合わせて直す。Dependencies: ops-agent-setup, codex-mcp-subagent
 
 ### Specs (dependency order)
 
-- [ ] codex-mcp-subagent -- Codex の MCP サーバー（`scripts/agent/codex-mcp-server.mjs`）、`.mcp.json`・`.codex/config.toml` の取り込み、CLAUDE.md の方針節、MCP が使えない環境での扱い。Dependencies: ops-agent-setup（改訂後）
+- [x] codex-mcp-subagent -- Codex の MCP サーバー（`scripts/agent/codex-mcp-server.mjs`）、`.mcp.json`・`.codex/config.toml` の取り込み、CLAUDE.md の方針節、MCP が使えない環境での扱い。Dependencies: ops-agent-setup（改訂後）
 
 （新しい spec は 1 件だけのため、`/kiro-spec-batch` ではなく `/kiro-spec-init codex-mcp-subagent` で作る。）
