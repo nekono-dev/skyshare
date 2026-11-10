@@ -18,7 +18,7 @@
 
 ### Non-Goals
 
-- 検査の規則（`scripts/architecture/commentRules.ts`）、基準（`.kiro/steering/comments.md`）、検査のテストの変更。
+- 検査の規則（`scripts/architecture/comment-rules.ts`）、基準（`.kiro/steering/comments.md`）、検査のテストの変更。
 - `src/`・`tests/`・`config/test/` のコメント（他の comments-* spec）。
 - 許容リストの作り直し（`--emit-allowlist` の出力で置き換えない）。
 - ファイルの移動・改名・分割、責務の変更、コードや YAML の値の変更。
@@ -27,7 +27,7 @@
 
 ### This Spec Owns
 
-- 運用の資材のコメント: `scripts/`（`scripts/architecture/commentRules.ts` を除く。`.ts`・`.mjs` は自動検査、`.sh` はレビュー）、`hack/survey-cli/`（`.ts` は自動検査）、`config/` 直下（`config/test/` を除く）の `.ts`・`.mjs`（自動検査）と `.jsonc`（レビュー）、`.githooks/pre-push`（レビュー）、`.github/workflows/*.yaml`（レビュー）。
+- 運用の資材のコメント: `scripts/`（`scripts/architecture/comment-rules.ts` を除く。`.ts`・`.mjs` は自動検査、`.sh` はレビュー）、`hack/survey-cli/`（`.ts` は自動検査）、`config/` 直下（`config/test/` を除く）の `.ts`・`.mjs`（自動検査）と `.jsonc`（レビュー）、`.githooks/pre-push`（レビュー）、`.github/workflows/*.yaml`（レビュー）。
 - 許容リストのうち、所有 spec が `comments-scripts-config` の項目の削除（残す判断をした項目は除く）。
 - 残す判断をしたコメントの一覧（報告）。
 
@@ -36,13 +36,13 @@
 - `src/`・`tests/`・`config/test/`（他の comments-* spec が所有）。
 - 生成物（`src/client/`）、`*.d.ts`、テストの fixture、文字列リテラル（UI 文言・エラー文言・検査の規則の `reason` の文字列）。
 - 基準（comment-policy）と検査の規則・検査のテスト。
-- `scripts/architecture/commentRules.ts` のコメント。comment-policy が所有し、違反を 0 件に保つ。`ownerOf` が `scripts/architecture/` を comments-scripts-config に割り当てるのは既知の例外で、`ownerOf` は変えない。
+- `scripts/architecture/comment-rules.ts` のコメント。comment-policy が所有し、違反を 0 件に保つ。`ownerOf` が `scripts/architecture/` を comments-scripts-config に割り当てるのは既知の例外で、`ownerOf` は変えない。
 - スクリプトの振る舞い、CI の設定、ワークフローのトリガー・ジョブ・ステップ、環境変数の値。
 - 配置と責務（ops-tooling-layout・ops-config-secrets が所有）。
 
 ### Allowed Dependencies
 
-- 検査の規則（`scripts/architecture/commentRules.ts`）を、判定の正本として読むだけ（変更しない）。
+- 検査の規則（`scripts/architecture/comment-rules.ts`）を、判定の正本として読むだけ（変更しない）。
 - 基準（`.kiro/steering/comments.md`）の判断を参照する。判別の語の一覧の正本も同じ文書（「書くもの・書かないもの」の節）。この spec は一覧を参照するだけで、語を追加しない。
 - comment-policy（前提の依存先）: 基準と検査の規則が完成していること。未完了の間は、この spec の作業を始めない。
 - 許容リスト（`config/comments/allowlist.json`）を、項目の削除だけで更新する。許容リストは全 comments-* spec が共有するため、編集は領域の順に直列で行う。全 comments-* spec は直列に実行し、並列にしない。
@@ -57,7 +57,7 @@
 
 ### Existing Architecture Analysis
 
-- 検査の規則は、ファイルのパスで所有 spec を決める（`ownerOf`）。「`src/`・`tests/`・`config/test/`」以外のすべてが `comments-scripts-config` に入る。このため、`scripts/architecture/`（brief の境界候補には無い）も割り当ての上ではこの spec に入る。ただし `scripts/architecture/commentRules.ts` は comment-policy が所有する（既知の例外。`ownerOf` は変えず、comment-policy が違反を 0 件に保つ）。
+- 検査の規則は、ファイルのパスで所有 spec を決める（`ownerOf`）。「`src/`・`tests/`・`config/test/`」以外のすべてが `comments-scripts-config` に入る。このため、`scripts/architecture/`（brief の境界候補には無い）も割り当ての上ではこの spec に入る。ただし `scripts/architecture/comment-rules.ts` は comment-policy が所有する（既知の例外。`ownerOf` は変えず、comment-policy が違反を 0 件に保つ）。
 - 検査は `.ts`・`.tsx`・`.astro`・`.mjs` だけを読む。`.sh`・`.jsonc`・`.yaml`・拡張子の無い `.githooks/pre-push` は読まない（自動検査の対象外で、レビューで見る）。
 - 検査の CLI は、`--emit-allowlist` を付けたときだけ違反を出力する。違反の残りは、その出力を所有パスで絞って確かめる。
 
@@ -102,14 +102,14 @@
 
 新しい依存は増やさない。確認に使う既存の道具だけを使う。
 
-| Layer       | Choice / Version                                                | Role in Feature                          | Notes                                                  |
-| ----------- | --------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
-| 検査        | `npx tsx scripts/architecture/commentRules.ts --emit-allowlist` | 残っている違反の一覧（所有パスで絞る）   | 出力は標準出力の JSON                                  |
-| 単体テスト  | vitest（`config/test/vitest.unit.config.ts`）                   | commentRules のテストと unit 層          | 1 ファイルの実行は `--coverage.enabled=false` を付ける |
-| 型・imports | `npm run test:type`・`npm run test:imports`                     | `.ts` と `.mjs` の変更で壊していないこと | 既存の npm スクリプト                                  |
-| 構文        | `node --check`・`bash -n`                                       | `.mjs` と `.sh` の構文                   | 既存の道具                                             |
-| YAML        | Node の `yaml` パッケージ（`node_modules` にある）              | 書き換え前後の解析結果の比較             | Python の yaml は入っていない                          |
-| 差分        | `git diff -U0`                                                  | 変更行がコメントだけであること           | 既存の道具                                             |
+| Layer       | Choice / Version                                                 | Role in Feature                          | Notes                                                  |
+| ----------- | ---------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
+| 検査        | `npx tsx scripts/architecture/comment-rules.ts --emit-allowlist` | 残っている違反の一覧（所有パスで絞る）   | 出力は標準出力の JSON                                  |
+| 単体テスト  | vitest（`config/test/vitest.unit.config.ts`）                    | commentRules のテストと unit 層          | 1 ファイルの実行は `--coverage.enabled=false` を付ける |
+| 型・imports | `npm run test:type`・`npm run test:imports`                      | `.ts` と `.mjs` の変更で壊していないこと | 既存の npm スクリプト                                  |
+| 構文        | `node --check`・`bash -n`                                        | `.mjs` と `.sh` の構文                   | 既存の道具                                             |
+| YAML        | Node の `yaml` パッケージ（`node_modules` にある）               | 書き換え前後の解析結果の比較             | Python の yaml は入っていない                          |
+| 差分        | `git diff -U0`                                                   | 変更行がコメントだけであること           | 既存の道具                                             |
 
 ## File Structure Plan
 
@@ -142,12 +142,12 @@ config/             # 設定（config/test/ を除く）（領域 3）
 - `scripts/architecture/allowlist.ts` — 先頭ヘッダを 6 行・箇条書き 3 件以内に直す（許容 2 件）。
 - `scripts/architecture/check-imports.ts` — 先頭ヘッダを直す。「従来どおり」の経緯の記述を、現在の表示の仕様として書き直す（許容 2 件）。
 - `scripts/architecture/cycles.ts` — 要件番号を除き、循環の判定の理由を述べる（許容 1 件）。
-- `scripts/architecture/importGraph.ts` — 先頭ヘッダを直す（許容 2 件）。
-- `scripts/architecture/libLayers.ts` — 先頭ヘッダを直す（許容 2 件）。
+- `scripts/architecture/import-graph.ts` — 先頭ヘッダを直す（許容 2 件）。
+- `scripts/architecture/lib-layers.ts` — 先頭ヘッダを直す（許容 2 件）。
 - `scripts/architecture/regions.ts` — 先頭ヘッダを 6 行以内に直す（許容 1 件）。
 - `scripts/architecture/rules.ts` — 要件番号を除き、規則の根拠（steering の節）を述べる（許容 1 件）。
-- `scripts/architecture/typesOnly.ts` — 先頭ヘッダを直す（許容 2 件）。
-- `scripts/architecture/utilSharing.ts` — 要件番号を除き、先頭ヘッダを直す（許容 3 件）。
+- `scripts/architecture/types-only.ts` — 先頭ヘッダを直す（許容 2 件）。
+- `scripts/architecture/util-sharing.ts` — 要件番号を除き、先頭ヘッダを直す（許容 3 件）。
 - `scripts/architecture/allowlist.ts` の「設計の表と一致させる」は、設計書への参照なので、規則ごとの既定の所有 spec を決めている理由として書き直す（同じ領域 1 の作業で行う）。
 
 **領域 2: scripts/agent**（許容リスト 3 件）
@@ -190,14 +190,14 @@ config/             # 設定（config/test/ を除く）（領域 3）
 **領域 8: scripts/git・scripts/lib・.githooks**（許容リスト 8 件）
 
 - `scripts/git/setup-git-hooks.mjs` — 先頭ヘッダを追加し、要件番号（8.1・8.2）を除く（許容 2 件）。
-- `scripts/lib/claudeMarketplace.mjs`・`scripts/lib/dotenv.mjs`・`scripts/lib/github.mjs`・`scripts/lib/jsonc.mjs`・`scripts/lib/liveConfig.mjs`・`scripts/lib/wrangler.mjs` — 先頭ヘッダを追加する（各 1 件、計 6 件）。
+- `scripts/lib/claudeMarketplace.mjs`・`scripts/lib/dotenv.mjs`・`scripts/lib/github.mjs`・`scripts/lib/jsonc.mjs`・`scripts/lib/live-config.mjs`・`scripts/lib/wrangler.mjs` — 先頭ヘッダを追加する（各 1 件、計 6 件）。
 - `.githooks/pre-push` — 検査の対象外。レビューのみ。要件番号（8.3・8.4）を除く。実行内容（`npm run test:all`）と、GitHub の登録は行わないという説明は残す。
 
 **領域 9: .github/workflows**（検査の対象外、許容リストに無い）
 
 - `.github/workflows/deploy.yaml`・`.github/workflows/e2e.yaml`・`.github/workflows/preview.yaml` — レビューのみ。要件番号（`e2e.yaml` の 1〜3 行目など）を除き、呼び出しの関係と理由を述べる。`dev/XXXX` の XXXX は命名の形の例として残す。
 
-**変更しないファイル**: `config/comments/allowlist.json` は、項目の削除だけで更新する（上の各領域の作業で行う）。`scripts/architecture/commentRules.ts` の検査の規則、`.kiro/steering/comments.md`。
+**変更しないファイル**: `config/comments/allowlist.json` は、項目の削除だけで更新する（上の各領域の作業で行う）。`scripts/architecture/comment-rules.ts` の検査の規則、`.kiro/steering/comments.md`。
 
 ### 生成の入口（comments-api-schema との順序）
 
@@ -258,7 +258,7 @@ config/             # 設定（config/test/ を除く）（領域 3）
 
 作業の確認は、テストを新しく書かず、既存の道具で行う（テストを別の作業にしない）。
 
-- **所有パスの違反**: `npx tsx scripts/architecture/commentRules.ts --emit-allowlist` の出力（JSON の `entries`）から、`owner` が `comments-scripts-config` の項目を取り、対象のパスで絞る。その絞り込みから `scripts/architecture/commentRules.ts` を除く（comment-policy の所有。そのパスの項目が出たら、この spec では扱わず報告する）。作業の前後で、残りの件数と項目を比べる。
+- **所有パスの違反**: `npx tsx scripts/architecture/comment-rules.ts --emit-allowlist` の出力（JSON の `entries`）から、`owner` が `comments-scripts-config` の項目を取り、対象のパスで絞る。その絞り込みから `scripts/architecture/comment-rules.ts` を除く（comment-policy の所有。そのパスの項目が出たら、この spec では扱わず報告する）。作業の前後で、残りの件数と項目を比べる。
 - **許容リストの整合**: 削除した項目が、出力の中に無いことを確かめる。出力にあって許容リストに無い項目は、新しい違反なので直す。
 - **単体テスト**: `npx vitest run -c config/test/vitest.unit.config.ts tests/unit/scripts/commentRules.test.ts --coverage.enabled=false`。他の comments-* の作業中は、リポジトリ全体の項目の一致で失敗することがある（別の所有の項目が残るため）。その場合、この spec の判定は所有パスの絞り込みで行い、全体の確認は全 comments-* の完了後に行う。
 - **振る舞い**: `.ts`・`.mjs` を変えた領域では、`npm run test:type` と `npm run test:imports`。`.mjs`・`.sh` は `node --check`・`bash -n`。`npm run test:unit` は全体の確認で行う。`npm run test:e2e` は、この spec では実行しない（最後の e2e は comments-api-schema が行う）。`npm run test:lexicon` は、他の comments-* spec と同じく、この spec の検証に含めない（この環境では実行でき、追加の導入は要らない）。
@@ -280,5 +280,5 @@ config/             # 設定（config/test/ を除く）（領域 3）
 - **対象の範囲**: `scripts/architecture` は、brief の境界候補（運用スクリプトの領域）に無いが、許容リストの所有の割り当てで、この spec に入る。この設計では含める。brief の更新が必要かは、要件の承認の時点で確かめる。
 - **シェル・YAML の判断**: 検査の対象外のため、判断はレビューによる。書き換えの前後で、振る舞いの変化が無いことを機械的に確かめるのは、YAML の解析結果とシェルの構文だけ。コメントの内容の判断は人の確認に頼る。
 - **並列の作業**: 許容リストを他の comments-* spec と共有する。この spec の作業は直列で行う。リポジトリ全体の検査が通るのは、全 comments-* の完了後。
-- **brief との差**: brief の Scope（`scripts/**` を含む）は `commentRules.ts` を除く点で、Constraints の e2e は完了条件から外す点で、この設計と食い違う。brief は今回の修正の対象外のため未変更。承認の時点で brief を直すかを決める。
-- **検査の CLI の出力**: 直接実行は `--emit-allowlist` の時だけ出力する。`comments.md` の「`npx tsx scripts/architecture/commentRules.ts`」は、出力を伴わない。確認の手順は、この設計の「Verification Approach」に従う。
+- **brief との差**: brief の Scope（`scripts/**` を含む）は `comment-rules.ts` を除く点で、Constraints の e2e は完了条件から外す点で、この設計と食い違う。brief は今回の修正の対象外のため未変更。承認の時点で brief を直すかを決める。
+- **検査の CLI の出力**: 直接実行は `--emit-allowlist` の時だけ出力する。`comments.md` の「`npx tsx scripts/architecture/comment-rules.ts`」は、出力を伴わない。確認の手順は、この設計の「Verification Approach」に従う。

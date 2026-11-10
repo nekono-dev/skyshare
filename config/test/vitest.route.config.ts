@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs"
 import { cloudflareTest, readD1Migrations } from "@cloudflare/vitest-plugin"
 import { defineConfig } from "vitest/config"
 import { fakeOutbound } from "../../tests/support/fakeOutbound"
+import { parseJsonc } from "../../scripts/lib/jsonc.mjs"
 
 // この設定は config/test/ にあるため、プロジェクトの根は 2 階層上になる
 const rootDir = path.resolve(
@@ -24,11 +25,16 @@ const rootDir = path.resolve(
 )
 const migrations = await readD1Migrations(path.join(rootDir, "migrations"))
 
-/** 指定の JSONC ファイルの compatibility_date を返す（コメントを含むため正規表現で読む） */
-const readCompatibilityDate = (file: string): string | undefined =>
-    readFileSync(path.join(rootDir, file), "utf8").match(
-        /"compatibility_date"\s*:\s*"([^"]+)"/,
-    )?.[1]
+/** 指定の JSONC ファイルから文字列の compatibility_date を返す */
+const readCompatibilityDate = (file: string): string | undefined => {
+    const config: unknown = parseJsonc(
+        readFileSync(path.join(rootDir, file), "utf8"),
+    )
+    if (typeof config !== "object" || config === null) return undefined
+    const compatibilityDate = (config as { compatibility_date?: unknown })
+        .compatibility_date
+    return typeof compatibilityDate === "string" ? compatibilityDate : undefined
+}
 
 const routeDate = readCompatibilityDate("tests/route/wrangler.jsonc")
 const productionDate = readCompatibilityDate("config/wrangler.template.jsonc")

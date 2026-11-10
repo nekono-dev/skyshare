@@ -35,7 +35,7 @@
 ### Out of Boundary
 
 - 分割したモジュールの振る舞い、export の名前、引数と戻り値の型、投げる例外
-- `lib-layers` の層の対応表（`scripts/architecture/libLayers.ts`）と `util-placement` の移動の対応表。本仕様は、それぞれの完了後の配置を読むだけで、その内容を変えない
+- `lib-layers` の層の対応表（`scripts/architecture/lib-layers.ts`）と `util-placement` の移動の対応表。本仕様は、それぞれの完了後の配置を読むだけで、その内容を変えない
 - `structure.md` の規約の改訂（本仕様の分割は既存の規約（`./`・`@/`・`index.ts`）に従うため、規約の変更を伴わない）
 - 検査の規則（`scripts/architecture/`・`config/architecture/import-allowlist.json`）。許容リストに新しい項目を追加しない
 

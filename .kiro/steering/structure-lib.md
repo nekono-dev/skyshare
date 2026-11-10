@@ -16,7 +16,7 @@
 
 ## 領域の一覧
 
-`src/lib/` の領域（業務の判断。`lib/<領域>` の形で書く）は、基盤と業務の二つの層に分ける。依存は業務 → 基盤の一方向だけにする（規則 `libLayer`。対応表は `scripts/architecture/libLayers.ts` にあり、下の表と一致させる）。
+`src/lib/` の領域（業務の判断。`lib/<領域>` の形で書く）は、基盤と業務の二つの層に分ける。依存は業務 → 基盤の一方向だけにする（規則 `libLayer`。対応表は `scripts/architecture/lib-layers.ts` にあり、下の表と一致させる）。
 
 ### 層の表
 

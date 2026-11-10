@@ -8,7 +8,7 @@
  * - 実リポジトリの `src/types/` は読まない（8.5 の範囲は `typesRules.test.ts` が受け持つ）。
  */
 import { describe, expect, it } from "vitest"
-import { findTypesOnlyViolations } from "../../../scripts/architecture/typesOnly"
+import { findTypesOnlyViolations } from "../../../scripts/architecture/types-only"
 
 const PATH = "src/types/fixture.ts"
 

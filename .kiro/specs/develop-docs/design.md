@@ -20,7 +20,7 @@
 
 ### Existing Architecture Analysis
 
-`DEVELOP.md` は約 37KB。章は「デプロイ環境・準備・テスト・ビルド・設定・ローカル起動・wrangler・コード生成・リリース・CI/CD（運用者ごとの設定・アンケート・フォーク・予約の初期設定・不具合報告の初期設定・E2E）・プレビュー・i18n・E2E・アンケート除去」。設計の理由（なぜ D1 を共用するか等）が手順に混ざっている。
+`docs/DEVELOP.md` は約 37KB。章は「デプロイ環境・準備・テスト・ビルド・設定・ローカル起動・wrangler・コード生成・リリース・CI/CD（運用者ごとの設定・アンケート・フォーク・予約の初期設定・不具合報告の初期設定・E2E）・プレビュー・i18n・E2E・アンケート除去」。設計の理由（なぜ D1 を共用するか等）が手順に混ざっている。
 
 ### 文書の構成（目次）
 
@@ -56,10 +56,16 @@
 
 ## Testing Strategy
 
-- **参照の検査**: `DEVELOP.md` に出るパス（`scripts/`・`.kiro/`・`.github/`）と `npm run <name>` の名前が、実在することを `test -e` と `node -e` で確かめる。
+- **参照の検査**: `docs/DEVELOP.md` に出るパス（`scripts/`・`.kiro/`・`.github/`）と `npm run <name>` の名前が、実在することを `test -e` と `node -e` で確かめる。
 - **食い違いの検査**: `E2E_ENV` の残存が 0 件、`build:pripare` の残存が 0 件、`.claude/branch-release-workflow.json` の記述が正本の配置と一致する。
 - **書式**: `npm run format:check` 相当（prettier）を通す（`.prettierrc`）。
 
 ## Risks and Open Questions
 
 - pre-push で GitHub の Variables を登録する挙動は、既知の論点。文書には現在の動作を書き、見直しは未決定である旨を書く（利用者の判断を待つ）。
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時の記述                  | 現在              | 変えた spec      |
+| ----------------------------- | ----------------- | ---------------- |
+| リポジトリ直下の `DEVELOP.md` | `docs/DEVELOP.md` | repo-root-layout |

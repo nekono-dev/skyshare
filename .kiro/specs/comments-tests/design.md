@@ -36,13 +36,13 @@
 - `tests/fixtures/`（検査の対象外。要件番号・spec 参照が無いことを確かめるだけ）。
 - テストの期待値と検証の内容。
 - `src/`（`comments-lib`・`comments-components-pages`・`comments-api-schema` が担当）と `scripts/`・`hack/`・`config/`（`config/test/` 以外、`comments-scripts-config` が担当）。
-- 基準（`.kiro/steering/comments.md`）、検査（`scripts/architecture/commentRules.ts`）、検査のテストの規則。
+- 基準（`.kiro/steering/comments.md`）、検査（`scripts/architecture/comment-rules.ts`）、検査のテストの規則。
 - `tests/unit/scripts/commentRules.test.ts` のコメント（`comment-policy` が担当。コメントは変えない。この spec の対象のコメントの違反は 0 件）。同ファイルの題名（20 件）は本 spec の対象で、英語にする（U2）。
 
 ### Allowed Dependencies
 
 - 前提の spec: `comment-policy`（コメントの基準・検査・許容リストの項目の規則）。その完了の後に着手する。
-- 作業の入力: `.kiro/steering/comments.md`・`.kiro/steering/testing.md`・`scripts/architecture/commentRules.ts`（読むだけ）。
+- 作業の入力: `.kiro/steering/comments.md`・`.kiro/steering/testing.md`・`scripts/architecture/comment-rules.ts`（読むだけ）。
 - 検証の実行: `npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render`（`npx vitest run -c config/test/...` を含む。e2e の実行は含まない）。
 
 ### Revalidation Triggers
@@ -53,7 +53,7 @@
 
 ### 実装の前提（ready_for_implementation）
 
-`spec.json` の `ready_for_implementation` は false にする。理由: 前提の spec `comment-policy` が未実装のため。検査（`scripts/architecture/commentRules.ts`）の規則と、許容リストの項目の形・所有者の規則が、この spec の完了条件（違反 0 件・項目の削除）の前提になる。`comment-policy` が完了したら true に戻す。
+`spec.json` の `ready_for_implementation` は false にする。理由: 前提の spec `comment-policy` が未実装のため。検査（`scripts/architecture/comment-rules.ts`）の規則と、許容リストの項目の形・所有者の規則が、この spec の完了条件（違反 0 件・項目の削除）の前提になる。`comment-policy` が完了したら true に戻す。
 
 ## Architecture
 
@@ -73,11 +73,11 @@
 
 ### Technology Stack
 
-| Layer  | Choice / Version                               | Role in Feature                            | Notes                  |
-| ------ | ---------------------------------------------- | ------------------------------------------ | ---------------------- |
-| 検査   | `scripts/architecture/commentRules.ts`（既存） | 違反の一覧（`--emit-allowlist`、読むだけ） | 規則は変えない         |
-| テスト | vitest・Playwright（既存）                     | 件数と結果の確認                           | 設定は変えない         |
-| 検索   | `grep`・`git diff`（既存）                     | 題名の確認、差分の確認                     | 新しいツールは入れない |
+| Layer  | Choice / Version                                | Role in Feature                            | Notes                  |
+| ------ | ----------------------------------------------- | ------------------------------------------ | ---------------------- |
+| 検査   | `scripts/architecture/comment-rules.ts`（既存） | 違反の一覧（`--emit-allowlist`、読むだけ） | 規則は変えない         |
+| テスト | vitest・Playwright（既存）                      | 件数と結果の確認                           | 設定は変えない         |
+| 検索   | `grep`・`git diff`（既存）                      | 題名の確認、差分の確認                     | 新しいツールは入れない |
 
 ## File Structure Plan
 
@@ -244,7 +244,7 @@ flowchart TD
 
 ### 単位ごとの確認（U1〜U7）
 
-1. 違反: `npx tsx scripts/architecture/commentRules.ts --emit-allowlist` の出力から、対象のパスの行を取り出し、0 件であることを確かめる。
+1. 違反: `npx tsx scripts/architecture/comment-rules.ts --emit-allowlist` の出力から、対象のパスの行を取り出し、0 件であることを確かめる。
 2. 許容リスト: 対象のパスで所有者 `comments-tests` の項目が 0 件であることを確かめる。
 3. 題名: 対象のパスで、要件番号（「要件」と数字）・`specs/`・AC/FR/NFR のタグ・「移行」などの語を検索し、題名・コメントに残りが無いことを確かめる（語の一覧は `.kiro/steering/comments.md` の「書かない」の節に従う。検索の結果を報告に含める）。併せて、対象のパスの日本語を含む題名の検査（下記の「題名の検査」）が 0 件であることを確かめる。
 4. 層のテスト: 対象のファイルを引数に指定して、その層を実行し、成功することを確かめる（例: `npx vitest run -c config/test/vitest.unit.config.ts tests/unit/lib`）。件数は U0 の対象の層の件数と比べる（対象ファイルだけの件数は、U0 で同じ絞り方をして保存する）。成否は JSON 報告の失敗件数（0 件）で判定する。unit 層の分岐カバレッジの閾値（`config/test/vitest.unit.config.ts`）は、絞り込んだ実行では満たせないことがあるため、その失敗は本 spec の失敗としない（全体の実行の U8 で確かめる）。

@@ -68,7 +68,7 @@ Claude Code のセッション（全体調整役）が、思考を要する作�
 
 ### Existing Architecture Analysis
 
-- `scripts/agent/` には、Claude Code の hook と導入の補助が、Node の標準モジュールだけの平たい `.mjs` として置かれている（`kiro-gate.mjs`・`install-gate.mjs`・`brwSource.mjs`）。新しい部品も同じ形に合わせる。
+- `scripts/agent/` には、Claude Code の hook と導入の補助が、Node の標準モジュールだけの平たい `.mjs` として置かれている（`kiro-gate.mjs`・`install-gate.mjs`・`brw-source.mjs`）。新しい部品も同じ形に合わせる。
 - 単体試験は `tests/unit/scripts/` に置き、`spawnSync` で `scripts/agent/*.mjs` を起動して検査する形がある（`kiroGate.test.ts`）。`config/test/vitest.unit.config.ts` は `tests/unit/**/*.test.ts` を含む。
 - CLAUDE.md は cc-sdd の導入の対象外で、導入で書き換えられない。
 - HEAD の `.gitignore` には `.claude/settings.local.json` の行が無い。個人の承認を追跡しないため、本 spec で 1 行（と説明のコメント）を追加する。

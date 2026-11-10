@@ -1,5 +1,5 @@
 /**
- * `src/lib/` の層の対応表（scripts/architecture/libLayers.ts）の一致を確かめるテスト。
+ * `src/lib/` の層の対応表（scripts/architecture/lib-layers.ts）の一致を確かめるテスト。
  *
  * 責務と処理概要:
  * - 対応表が `src/lib/` の直下の全領域（フォルダと `guestMode.ts`）を覆うことを確かめる（要件 1.1）。
@@ -14,7 +14,7 @@ import {
     LIB_LAYER,
     libLayerOf,
     type LibRegionName,
-} from "../../../scripts/architecture/libLayers"
+} from "../../../scripts/architecture/lib-layers"
 import { readSteeringStructure } from "../support/steeringStructure"
 
 const repoRoot = path.resolve(__dirname, "../../..")

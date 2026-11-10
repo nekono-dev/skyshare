@@ -146,25 +146,25 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/importGraph.ts",
+      "path": "scripts/architecture/import-graph.ts",
       "rule": "header-too-long",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/importGraph.ts",
+      "path": "scripts/architecture/import-graph.ts",
       "rule": "header-too-many-bullets",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/libLayers.ts",
+      "path": "scripts/architecture/lib-layers.ts",
       "rule": "header-too-long",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/libLayers.ts",
+      "path": "scripts/architecture/lib-layers.ts",
       "rule": "header-too-many-bullets",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
@@ -182,31 +182,31 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/typesOnly.ts",
+      "path": "scripts/architecture/types-only.ts",
       "rule": "header-too-long",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/typesOnly.ts",
+      "path": "scripts/architecture/types-only.ts",
       "rule": "header-too-many-bullets",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/utilSharing.ts",
+      "path": "scripts/architecture/util-sharing.ts",
       "rule": "header-too-long",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/utilSharing.ts",
+      "path": "scripts/architecture/util-sharing.ts",
       "rule": "header-too-many-bullets",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/architecture/utilSharing.ts",
+      "path": "scripts/architecture/util-sharing.ts",
       "rule": "forbidden:要件番号",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
@@ -290,7 +290,7 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "scripts/lib/liveConfig.mjs",
+      "path": "scripts/lib/live-config.mjs",
       "rule": "header-missing",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"

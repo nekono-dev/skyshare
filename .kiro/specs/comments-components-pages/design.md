@@ -26,7 +26,7 @@
 
 ## 実装の前提と状態
 
-- **先行 spec（comment-policy）**: この spec は、comment-policy が作る基準（`.kiro/steering/comments.md`）・検査（`scripts/architecture/commentRules.ts`）・許容リスト（`config/comments/allowlist.json`）の仕組みを前提にする。comment-policy は未実装であるため、この spec は実行しない。
+- **先行 spec（comment-policy）**: この spec は、comment-policy が作る基準（`.kiro/steering/comments.md`）・検査（`scripts/architecture/comment-rules.ts`）・許容リスト（`config/comments/allowlist.json`）の仕組みを前提にする。comment-policy は未実装であるため、この spec は実行しない。
 - **`ready_for_implementation` は false**: 理由は、先行の comment-policy が未実装であること。comment-policy が実装された後に、true に戻す。
 - **実行の順序**: この spec は comment-policy と comments-lib の後に実行する（roadmap の Phase 7 の順序）。comments-* の spec は共有の許容リスト（`config/comments/allowlist.json`）を使うため、並列にせず、直列に実行する。この spec の中のグループ（G1〜G9）も直列である。
 
@@ -41,14 +41,14 @@
 ### Out of Boundary
 
 - `src/lib/**`・`src/lib/api/schema/**`・`src/client/**`（生成物）・`tests/**`・`config/**`・`scripts/**`・`hack/**`・`.githooks/**`。これらの許容リストの項目（所有が他の comments-* のもの）には触れない。
-- 検査の規則（`scripts/architecture/commentRules.ts`）、検査のテスト、基準の文書。
+- 検査の規則（`scripts/architecture/comment-rules.ts`）、検査のテスト、基準の文書。
 - 文字列リテラル（UI 文言・エラー文言）、コードの行、ファイルの配置・名前。
 - 各 `README.md`。
 
 ### Allowed Dependencies
 
 - **comment-policy（先行 spec）**: 基準・検査・許容リストの仕組みを提供する。この spec は、その実装の後に実行する。
-- 検査の本体（`scripts/architecture/commentRules.ts`）の判定を、読み取りだけに使う（検査の出力を、対象のパスで絞って見る）。
+- 検査の本体（`scripts/architecture/comment-rules.ts`）の判定を、読み取りだけに使う（検査の出力を、対象のパスで絞って見る）。
 - 基準（`.kiro/steering/comments.md`）を判断の正本とする。
 - コードの現在の振る舞いを確かめるための読み取り（同じ範囲と、その範囲が import する `src/lib` の読み取り）。
 
@@ -62,9 +62,9 @@
 
 ### Existing Architecture Analysis
 
-- 検査は `scripts/architecture/commentRules.ts`（文字列だけで判定）。テストは `tests/unit/scripts/commentRules.test.ts`。許容リストは `config/comments/allowlist.json` の 1 ファイル。
+- 検査は `scripts/architecture/comment-rules.ts`（文字列だけで判定）。テストは `tests/unit/scripts/commentRules.test.ts`。許容リストは `config/comments/allowlist.json` の 1 ファイル。
 - 許容リストの照合は「パスと規則の組」で行う。ファイルを直すと、そのファイルの項目は解消済みになり、テストが失敗する（stale）。したがって、ファイルの修正と項目の削除は同じ段階で行う。
-- 検査の対象外（CSS・`*.d.ts`）は、禁止パターンと経緯の語を grep で確かめる。CSS には先頭ヘッダを要求しない。この grep はレビューの確認であり、検査（`commentRules.ts`）の判定ではない。
+- 検査の対象外（CSS・`*.d.ts`）は、禁止パターンと経緯の語を grep で確かめる。CSS には先頭ヘッダを要求しない。この grep はレビューの確認であり、検査（`comment-rules.ts`）の判定ではない。
 
 ### Architecture Pattern & Boundary Map
 

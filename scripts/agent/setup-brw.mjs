@@ -11,7 +11,7 @@ import { existsSync, mkdirSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { readBrwSource } from "./brwSource.mjs"
+import { readBrwSource } from "./brw-source.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 if (process.argv.length > 2) {
@@ -19,7 +19,7 @@ if (process.argv.length > 2) {
     "使い方: node scripts/agent/setup-brw.mjs（引数は取りません）",
   )
 }
-// 取得元は追跡されたファイル。無い・不正なら、原因が分かる文言で止める（検査は brwSource.mjs）
+// 取得元は追跡されたファイル。無い・不正なら、原因が分かる文言で止める（検査は brw-source.mjs）
 const { repository, branch } = readBrwSource(
   join(root, ".branch-release-workflow-source.json"),
 )

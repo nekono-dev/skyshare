@@ -38,13 +38,13 @@
 - API の形（経路・リクエストとレスポンスの形・状態コード・認証）と、zod のバリデーション制約。
 - `scripts/build/build-openapi-document.ts`、`config/orval.config.ts`、`src/lib/codegen/**`（生成の仕組み）。
 - `src/lib/api/schema` 以外のコメント（`src/lib` の他の部分は comments-lib、画面は comments-components-pages）。comments-lib の G1（`api/` 領域）は `src/lib/api/schema` を明示して除外しており、そのディレクトリは本 spec の所有である。
-- 検査の規則（`scripts/architecture/commentRules.ts` の `FORBIDDEN_PATTERNS` と `headerOf`）。規則を変えるのは comment-policy。
+- 検査の規則（`scripts/architecture/comment-rules.ts` の `FORBIDDEN_PATTERNS` と `headerOf`）。規則を変えるのは comment-policy。
 - 生成物 `src/client/**`（gitignore 対象。再生成の結果だけを扱う）。
 
 ### Allowed Dependencies
 
 - **実行の順序（逐次）**: comment-policy → comments-lib → 本 spec のタスク 1（基準の保存：変更前の生成物と OpenAPI の JSON を保存する）→ comments-components-pages / comments-tests / comments-scripts-config → 本 spec の残りのタスク（説明文とコメントの書き換え、再生成と比較、許容リスト、検証）→ 全 comments-* の完了後の e2e（タスク 5.1）。並行しない。`config/orval.config.ts` と `scripts/build/build-openapi-document.ts` は、タスク 1 の基準の保存の後に comments-scripts-config が変える。本 spec の再生成（タスク 3.1）は comments-lib の後に行い、比較はタスク 1 で保存した基準と行う。
-- **comment-policy**（前提・完了していること）: 基準の正本（`.kiro/steering/comments.md`）と検査の規則（`scripts/architecture/commentRules.ts`）。本 spec は読むだけ。共通の語の一覧の正本も `comments.md` で、本 spec は spec 固有の語を追加しない。
+- **comment-policy**（前提・完了していること）: 基準の正本（`.kiro/steering/comments.md`）と検査の規則（`scripts/architecture/comment-rules.ts`）。本 spec は読むだけ。共通の語の一覧の正本も `comments.md` で、本 spec は spec 固有の語を追加しない。
 - **comments-lib**（前提・完了していること）: 順序の依存。`src/lib` の整理の後に行う。`src/lib/api/schema` は comments-lib の対象外（G1 の除外）なので、コードの依存はない。
 - **既存の生成パイプライン**: `npm run codegen`（`apigen:doc` と `apigen:client`）。オフラインで動く。
 - **zod v4 と zod-openapi**: 説明文の出どころ（`.meta({ description })` と route の `summary`）。

@@ -50,14 +50,21 @@
 ### 参照の更新の一覧（移動の後に検索して 0 件にする）
 
 - `package.json`: `prepare`・`apigen:doc`・`setup:local`・`survey`・`survey:render`・`test:lexicon`・`test:e2e`・`sync:github`・`setup:brw`
-- `astro.config.mjs`: `./scripts/oauthLoopbackForwarder.ts`・`./scripts/lib/jsonc.mjs`（lib は変わらない）
-- `orval.config.ts`: `./scripts/build-openapi-document`
+- `astro.config.mjs`: `./scripts/dev/oauth-loopback-forwarder.ts`・`./scripts/lib/jsonc.mjs`（lib は変わらない）
+- `orval.config.ts`: `./scripts/build/build-openapi-document`
 - `tests/unit/scripts/*.test.ts`: import のパス
-- `.github/workflows/deploy.yaml`・`preview.yaml`・`e2e.yaml`: `scripts/setup-brw.mjs`・`scripts/render-deploy-config.mjs`・`scripts/ensure-worker-secrets.mjs`
-- `.githooks/pre-push`: `scripts/sync-github-variables.mjs`・`scripts/setup-git-hooks.mjs`（コメント）
-- `.claude/hooks/session-start.sh`: `scripts/setup-git-hooks.mjs`
+- `.github/workflows/deploy.yaml`・`preview.yaml`・`e2e.yaml`: `scripts/agent/setup-brw.mjs`・`scripts/config/render-deploy-config.mjs`・`scripts/secrets/ensure-worker-secrets.mjs`
+- `.githooks/pre-push`: `scripts/secrets/sync-github-variables.mjs`・`scripts/git/setup-git-hooks.mjs`（コメント）
+- `.claude/hooks/session-start.sh`: `scripts/git/setup-git-hooks.mjs`
 - `scripts/**` の内部: 相対 import、`node scripts/...` の spawn、使い方のコメント
 - `src/lib/oauth/*.ts`・`src/lib/api/schema/*.ts`・`openapi/README.md`・`lexicons/README.md`・`wrangler.template.jsonc`・`astro.config.mjs` のコメント
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時の記述                                             | 現在                                               | 変えた spec                                        |
+| -------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------- |
+| `scripts/survey/{cli,config,lifecycle,remote}.ts` の配置 | `hack/survey-cli/{cli,config,lifecycle,remote}.ts` | ops-tooling-layout 要件 1.1（2026-10-31 改訂）     |
+| 設計に記載のない `scripts/architecture/`                 | 現在は依存規則とコメントの検査として存在           | src-import-rules・structure-checks・comment-policy |
 
 ### npm スクリプトの整理
 

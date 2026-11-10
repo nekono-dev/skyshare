@@ -141,7 +141,7 @@ graph TD
 
 ## Testing Strategy
 
-- **Unit**: `setup-brw.mjs` の取得元の検査（HTTPS・ブランチ名）は `scripts/agent/brwSource.mjs` に切り出し、`tests/unit/scripts/brwSource.test.ts` で既存の規則を確かめる（2026-11-08 に通過）。
+- **Unit**: `setup-brw.mjs` の取得元の検査（HTTPS・ブランチ名）は `scripts/agent/brw-source.mjs` に切り出し、`tests/unit/scripts/brwSource.test.ts` で既存の規則を確かめる（2026-11-08 に通過）。
 - **Unit（設定）**: `.claude/settings.json` に、`extraKnownMarketplaces.nekono-dev` が GitHub の `nekono-dev/claude-plugins` を指すこと、`enabledPlugins` に `branch-release-workflow@nekono-dev` があることを確かめる。`SessionStart` に `setup-brw` の呼び出しが無いことも確かめる。
 - **Unit（冪等な導入の判断）**: `ensure-brw-plugin.mjs` の判断（marketplace の有無・プラグインの有無から、行う操作を決める関数）を、CLI の出力の文字列を与えて確かめる。両方が有るときは何もしない、無いものだけを行う、`claude` が無いときは飛ばす、の 3 つ（`tests/unit/scripts/ensureBrwPlugin.test.ts`、2026-11-08 に実装し通過）。
 - **Integration（偽の claude）**: PATH の先頭に偽の `claude` を置き、スクリプトを実行する。導入の失敗で記録が残り終了コードが 0、導入の成功で記録が消えることを確かめる（同じテストファイル、2026-11-08 に通過）。`marketplace remove`・`uninstall` が呼ばれないことは、単体テストで確かめる。

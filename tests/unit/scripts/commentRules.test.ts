@@ -17,7 +17,7 @@ import {
     headerOf,
     keyOf,
     ownerOf,
-} from "../../../scripts/architecture/commentRules"
+} from "../../../scripts/architecture/comment-rules"
 
 const repoRoot = path.resolve(__dirname, "../../..")
 const allowlistPath = path.join(repoRoot, "config/comments/allowlist.json")

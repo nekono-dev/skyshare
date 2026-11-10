@@ -1,5 +1,5 @@
 /**
- * BRW の取得元の検査（brwSource.mjs）の単体テスト。
+ * BRW の取得元の検査（brw-source.mjs）の単体テスト。
  * HTTPS の GitHub の URL と、ブランチ名の規則を確かめる。欠落は原因が分かる文言で止まる。
  */
 import fs from "node:fs"
@@ -9,7 +9,7 @@ import { afterAll, describe, expect, it } from "vitest"
 import {
     readBrwSource,
     sourceProblem,
-} from "../../../scripts/agent/brwSource.mjs"
+} from "../../../scripts/agent/brw-source.mjs"
 
 const roots: string[] = []
 afterAll(() => {

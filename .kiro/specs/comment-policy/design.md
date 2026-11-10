@@ -27,16 +27,16 @@
 ### This Spec Owns
 
 - 基準の文書 `.kiro/steering/comments.md` の内容（本文が正本）
-- 検査の規則 `scripts/architecture/commentRules.ts`（規則の定数・判定関数・対象の列挙・所有 spec の割り当て）
+- 検査の規則 `scripts/architecture/comment-rules.ts`（規則の定数・判定関数・対象の列挙・所有 spec の割り当て）
 - 検査のテスト `tests/unit/scripts/commentRules.test.ts`（規則の正例と負例、リポジトリ全体の照合）
 - 許容リスト `config/comments/allowlist.json` の形式（`version`・`entries`・各項目の `path`・`rule`・`owner`・`reason`）
 - `tech.md` の「Code Quality」の節のうち、コメントに関する 1 行（基準への参照）
-- `scripts/architecture/commentRules.ts` と `tests/unit/scripts/commentRules.test.ts` は、この spec（comment-policy）が所有する。この 2 ファイル自身のコメントは、検査の違反を 0 件に保つ（検査が自分自身のファイルで通ること。許容リストには登録しない）。
+- `scripts/architecture/comment-rules.ts` と `tests/unit/scripts/commentRules.test.ts` は、この spec（comment-policy）が所有する。この 2 ファイル自身のコメントは、検査の違反を 0 件に保つ（検査が自分自身のファイルで通ること。許容リストには登録しない）。
 
 ### 既知の例外（所有 spec の割り当て）
 
 - `ownerOf` は `tests/unit/scripts/commentRules.test.ts` を `comments-tests` に割り当てる。このファイルは comment-policy の所有で、`comments-tests` の対象ではない。このファイルの違反は 0 件であり、許容リストに項目を置かない。`ownerOf` の特例化（コードの変更）は comment-policy の作業で行うかを、実装の段階で決める。
-- 同じく、`ownerOf` は `scripts/architecture/commentRules.ts` を `comments-scripts-config` に割り当てる。このファイルは comment-policy の所有で、`comments-scripts-config` の対象ではない。このファイルの違反は 0 件であり、許容リストに項目を置かない。この例外も、`ownerOf` の特例化と同じく実装の段階で扱いを決める。
+- 同じく、`ownerOf` は `scripts/architecture/comment-rules.ts` を `comments-scripts-config` に割り当てる。このファイルは comment-policy の所有で、`comments-scripts-config` の対象ではない。このファイルの違反は 0 件であり、許容リストに項目を置かない。この例外も、`ownerOf` の特例化と同じく実装の段階で扱いを決める。
 
 ### Out of Boundary
 
@@ -60,7 +60,7 @@
 
 - 規則の定数（`HEADER_MAX_LINES`・`HEADER_MAX_BULLETS`）または禁止パターン（`FORBIDDEN_PATTERNS`）の変更
 - 検査の対象（`ROOTS`・`EXTENSIONS`・`EXCLUDED_PREFIXES`）の変更
-- 所有 spec の名前の変更（`commentRules.ts` の `ownerOf`、テストの `OWNERS`）
+- 所有 spec の名前の変更（`comment-rules.ts` の `ownerOf`、テストの `OWNERS`）
 - 許容リストの形式の変更（`version` または項目の必須フィールド）
 - 検査の規則の追加（許容リストの作り直しが必要になる）
 
@@ -86,7 +86,7 @@ graph LR
 - 選択したパターン: 文字列判定の検査（純粋な関数）と、データとしての許容リストを、テストで結ぶ。
 - 境界: 検査は判定だけを行い、ファイルの列挙と照合はテストと `findCommentViolations` が行う。許容リストは判定の結果を変えない（違反を許容するだけ）。
 - 既存のパターンの維持: 依存規則の検査と同じ「規則・許容リスト・テスト」の三つ組。
-- 新しい構成要素の理由: 基準を、人が読む文書（comments.md）と、機械で確かめる規則（commentRules.ts）に分けるため。
+- 新しい構成要素の理由: 基準を、人が読む文書（comments.md）と、機械で確かめる規則（comment-rules.ts）に分けるため。
 
 ### Technology Stack
 
@@ -104,7 +104,7 @@ graph LR
 .kiro/steering/
 └── comments.md                 # 基準（人が読む文書。正本）
 scripts/architecture/
-└── commentRules.ts             # 検査の規則（判定・対象・所有 spec・CLI の作り直し）
+└── comment-rules.ts             # 検査の規則（判定・対象・所有 spec・CLI の作り直し）
 tests/unit/scripts/
 └── commentRules.test.ts        # 規則の正例・負例、リポジトリ全体の照合
 config/comments/
@@ -170,7 +170,7 @@ config/comments/
 
 ## Components and Interfaces
 
-### 検査の規則（`scripts/architecture/commentRules.ts`）
+### 検査の規則（`scripts/architecture/comment-rules.ts`）
 
 | Component    | Domain/Layer          | Intent                                       | Req Coverage                                            | Key Dependencies (P0/P1)         | Contracts |
 | ------------ | --------------------- | -------------------------------------------- | ------------------------------------------------------- | -------------------------------- | --------- |
@@ -246,7 +246,7 @@ ownerOf(rel: string): string
 
 - 固定の本文で、先頭ヘッダ・禁止パターン・日付・所有 spec の割り当てを確かめる（正例と負例）。
 - リポジトリ全体の違反を `findCommentViolations` で求め、許容リストと照合する（未登録の違反・解消済みの項目・所有 spec と理由）。
-- 既知の所有 spec の一覧（`OWNERS`）は、このテストの中に置く。`commentRules.ts` には置かず、`ownerOf` の接頭辞の規則だけを置く。
+- 既知の所有 spec の一覧（`OWNERS`）は、このテストの中に置く。`comment-rules.ts` には置かず、`ownerOf` の接頭辞の規則だけを置く。
 
 **Dependencies**
 

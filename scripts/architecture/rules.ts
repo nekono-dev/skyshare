@@ -6,8 +6,8 @@
  * - 規則の根拠は steering（`structure.md`）の規約だけに限る（要件 10.1）。
  * - 型だけの辺にも、値の辺と同じ規則を適用する（要件 5.1）。
  */
-import type { ModuleGraph, ImportEdge } from "./importGraph"
-import { libLayerOf } from "./libLayers"
+import type { ModuleGraph, ImportEdge } from "./import-graph"
+import { libLayerOf } from "./lib-layers"
 import { regionOf } from "./regions"
 
 /**

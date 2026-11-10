@@ -2,7 +2,7 @@
 
 ## Overview
 
-`src/lib`（`api/schema` を除く）の 223 ファイルのコメントを、`.kiro/steering/comments.md` の基準に従って書き直す。書き直しの後、許容リストの所有者 `comments-lib` の項目 193 件（116 ファイル）を消し、検査（`commentRules.ts` とそのテスト）を通す。
+`src/lib`（`api/schema` を除く）の 223 ファイルのコメントを、`.kiro/steering/comments.md` の基準に従って書き直す。書き直しの後、許容リストの所有者 `comments-lib` の項目 193 件（116 ファイル）を消し、検査（`comment-rules.ts` とそのテスト）を通す。
 
 **Purpose**: 読む人（開発者・AI エージェント）が、コメントから現在の振る舞いと理由を読み取れるようにする。
 **Users**: `src/lib` を読んで変更する開発者と、そのコードを扱う AI エージェント。
@@ -41,13 +41,13 @@
 - `src/components`・`src/pages`・`src/` 直下・`src/types`・`src/util`・`src/styles`（comments-components-pages）。
 - `tests/`・`config/test/`（comments-tests）。`scripts`・`hack`・`config`・`.githooks`（comments-scripts-config）。
 - `.kiro/steering/comments.md`、`tech.md`、`structure-lib.md`。
-- `scripts/architecture/commentRules.ts` と `tests/unit/scripts/commentRules.test.ts`。
+- `scripts/architecture/comment-rules.ts` と `tests/unit/scripts/commentRules.test.ts`。
 - 他の所有者の許容リストの項目。
 
 ### Allowed Dependencies
 
 - Upstream: comment-policy（未完了。作業 4.1 が残るため、実装は保留）。`.kiro/steering/comments.md` を基準の正本として読むだけにする。
-- 検査（`scripts/architecture/commentRules.ts`）は読むだけにする。実行は読み取りの確認に限る。
+- 検査（`scripts/architecture/comment-rules.ts`）は読むだけにする。実行は読み取りの確認に限る。
 
 ### Revalidation Triggers
 
@@ -100,7 +100,7 @@ flowchart TB
 
 | Layer      | Choice / Version     | Role in Feature                              | Notes                                                                  |
 | ---------- | -------------------- | -------------------------------------------- | ---------------------------------------------------------------------- |
-| 検査       | `tsx`（既存）        | `commentRules.ts` を読み取りの確認に使う     | 引数 `--emit-allowlist` の出力だけを見る                               |
+| 検査       | `tsx`（既存）        | `comment-rules.ts` を読み取りの確認に使う    | 引数 `--emit-allowlist` の出力だけを見る                               |
 | テスト     | Vitest（既存）       | `commentRules.test.ts` と各層の検証          | 単一ファイルの実行はカバレッジの閾値で失敗するため、層の全体で実行する |
 | 字句の比較 | `typescript`（既存） | `createScanner` で、旧版と新版の字句を比べる | 作業用の一時ファイルで実行                                             |
 
@@ -165,7 +165,7 @@ config/comments/allowlist.json                      # comments-lib の項目 193
 ### 検査（既存、読み取りのみ）
 
 - **Intent**: 先頭ヘッダと禁止パターンの違反を、`(path, rule)` の組で報告する。
-- **Contracts**: `npx tsx scripts/architecture/commentRules.ts --emit-allowlist` の標準出力を、読み取りの確認に使う。ファイルには書き込まない。
+- **Contracts**: `npx tsx scripts/architecture/comment-rules.ts --emit-allowlist` の標準出力を、読み取りの確認に使う。ファイルには書き込まない。
 - **Preconditions**: 作業ツリーに、他の所有者の変更が混ざっていても、対象ファイルの違反の有無だけを見る。
 
 ### 許容リストの削除（手作業）

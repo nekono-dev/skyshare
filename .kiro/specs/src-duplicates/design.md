@@ -102,9 +102,9 @@ src/
 ├── util/
 │   ├── http.ts                          # 変更: jsonResponse を追加し、errorResponseFromStatus が使う
 │   ├── padTwoDigits.ts                  # 新規: 2 桁のゼロ埋め
-│   ├── textCount.ts                     # 変更: countWeightedTweetLength・countTaittsuuLength が半分の規則を使う
+│   ├── share/textCount.ts               # 変更: countWeightedTweetLength・countTaittsuuLength が半分の規則を使う
 │   └── share/
-│       └── intentLength.ts              # 変更: halfUnitLength を追加
+│       └── intentLength.ts              # 移動後の配置は lib/share/intentLength.ts
 ├── lib/
 │   ├── share/counterReserve.ts          # 変更: halfUnitLength を使う
 │   ├── schedule/
@@ -113,8 +113,8 @@ src/
 │   ├── video/formatVideoDuration.ts     # 変更: padStart を padTwoDigits に置き換える
 │   ├── site/buildInfo.ts                # 変更: 環境の直接の読み取りを vars から得る
 │   ├── settings/
-│   │   ├── shareSettings.ts             # 変更: 移行の呼び出しと注釈を削除する
-│   │   ├── autoPopupTarget.ts           # 変更: 注釈から移行の言及を削除する
+│   │   ├── shareSettings/               # 分割後の設定モジュール
+│   │   ├── autoPopupTarget.ts           # 移動後の配置は lib/share/autoPopupTarget.ts
 │   │   └── legacyShareSettings.ts       # 削除
 │   ├── entry/url.ts                     # 変更: SITE を siteOrigin から得る
 │   └── timeline/guestDummyPosts.ts      # 変更: SITE を siteOrigin から得る
@@ -128,8 +128,8 @@ tests/unit/
 
 ### Modified Files
 
-- `util/share/intentLength.ts` — `halfUnitLength(measure, text)` を追加（`Math.ceil(measure(text) / 2)`）。
-- `util/textCount.ts` — `countWeightedTweetLength` と `countTaittsuuLength` を `halfUnitLength` で書き直す（名前と引数は変えない）。
+- `lib/share/intentLength.ts` — `halfUnitLength(measure, text)` を追加（`Math.ceil(measure(text) / 2)`）。
+- `lib/share/textCount.ts` — `countWeightedTweetLength` と `countTaittsuuLength` を `halfUnitLength` で書き直す（名前と引数は変えない）。
 - `lib/share/counterReserve.ts` — `resolveCounterReserve` の `Math.ceil(…/2)` を `halfUnitLength` に置き換える。
 - `util/http.ts` — `jsonResponse(body, init?)` を追加し、`errorResponseFromStatus` の `new Response(…)` を `jsonResponse` に置き換える（ヘッダーは `no-store` と `content-type` を保つ）。
 - `lib/schedule/scheduleResponse.ts` — `jsonResponse` を削除する（11 箇所の呼び出しを `util/http` の `jsonResponse` に移す。一覧は下の「jsonResponse の呼び出しの移行」を参照。`setCookies` は `headers` に展開する）。
@@ -140,7 +140,7 @@ tests/unit/
 - `lib/site/buildInfo.ts` — `version` を `buildVersion || "unknown"` にする（`import.meta.env` の直接の読み取りを除く）。
 - `lib/entry/url.ts`・`lib/timeline/guestDummyPosts.ts` — `${import.meta.env.SITE}` を `${siteOrigin}` にする。
 - `lib/settings/shareSettings.ts` — `migrateLegacyShareSettings` の import と呼び出し（`readAutoPopupTargetSetting` の先頭）を削除し、注釈（2 箇所）を直す。
-- `lib/settings/autoPopupTarget.ts` — 注釈の移行の言及を削除する。
+- `lib/share/autoPopupTarget.ts` — 注釈の移行の言及を削除する。
 - `lib/settings/legacyShareSettings.ts`・`tests/unit/lib/settings/legacyShareSettings.test.ts` — 削除する。
 
 ### jsonResponse の呼び出しの移行（件数の根拠）
@@ -185,6 +185,15 @@ tests/unit/
 | 6.2         | `test:all` の件数が基準以上                 | 全体                                              | —                          | `npm run test:all`                 |
 | 6.3         | 利用者に見える画面と操作が変わらない        | 全体                                              | —                          | e2e 7 件                           |
 
+### 現況との対応（2026-11-10 追補）
+
+| 設計時のパス                          | 現在のパス                         | 変えた spec       |
+| ------------------------------------- | ---------------------------------- | ----------------- |
+| `src/util/textCount.ts`               | `src/lib/share/textCount.ts`       | `util-placement`  |
+| `src/util/share/intentLength.ts`      | `src/lib/share/intentLength.ts`    | `util-placement`  |
+| `src/lib/settings/shareSettings.ts`   | `src/lib/settings/shareSettings/`  | `lib-large-files` |
+| `src/lib/settings/autoPopupTarget.ts` | `src/lib/share/autoPopupTarget.ts` | `util-placement`  |
+
 ## Components and Interfaces
 
 | Component          | Layer | Intent                                  | Req Coverage | Key Dependencies                            | Contracts |
@@ -194,7 +203,7 @@ tests/unit/
 | padTwoDigits       | util  | 2 桁のゼロ埋めの数値を文字列にする      | 3.1・3.2     | —                                           | Service   |
 | src/vars（追加分） | 設定  | 環境の値を読む唯一の場所                | 5.1・5.2     | import.meta.env（P0）                       | State     |
 
-### halfUnitLength（`util/share/intentLength.ts`）
+### halfUnitLength（`lib/share/intentLength.ts`）
 
 ```typescript
 export const halfUnitLength = (measure: IntentMeasure, text: string): number =>
