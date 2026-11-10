@@ -96,3 +96,8 @@
 - 5.1〜5.3 完了（利用者の承認 (a) に従い、`apigen:client` を `tsx ./node_modules/.bin/orval --config config/orval.config.ts` に変更）: `test:type` 0・`apigen` 差分なし・OpenAPI の JSON は改名の前と同一。`test:all` は終了コード 0（unit 302・component 13・route 212・render 2・e2e 7）、許容 0・stale 0。`tests/` の変更なし。
 - 設計の未決の論点は解決済み（2026-11-03 の利用者の確認）: 同じ領域の 1〜2 段の相対 import は残す（要件 1.2）。
 - 審査（sanity review）の方式: inline（独立のサブエージェントは起動せず、同じ観点を本文脈で確かめた）。
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: 重大な指摘は無い。`npm run test:imports` は違反 0。

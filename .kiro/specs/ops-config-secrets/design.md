@@ -20,11 +20,11 @@
 
 ### Existing Architecture Analysis
 
-- wrangler.jsonc の生成は `scripts/render-wrangler.mjs` が持つ（`readConfig`・`buildWranglerConfig` は export 済み、CLI は main ガード付き）。呼び出しは子プロセス 5 箇所（`prepare-local-env`・`run-e2e` の 2 回・`render-deploy-config`）。
+- wrangler.jsonc の生成は `scripts/config/render-wrangler.mjs` が持つ（`readConfig`・`buildWranglerConfig` は export 済み、CLI は main ガード付き）。呼び出しは子プロセス 5 箇所（`scripts/secrets/prepare-local-env.mjs`・`scripts/e2e/run-e2e.mjs` の 2 回・`scripts/config/render-deploy-config.mjs`）。
 - dotenv: `scripts/lib/dotenv.mjs` と `prepare-local-env` の `RegExp`。
 - JSONC: `scripts/lib/jsonc.mjs` と `hack/survey-cli/remote.ts` の `jsonc-parser`（宣言なし）。
 - `name` の読み取り: `ensure-worker-secrets.mjs` と `sync-github-variables.mjs` の正規表現。
-- GENERATORS: `prepare-local-env.mjs` に定義し、`ensure-worker-secrets.mjs` が import している（スクリプトの間の依存）。
+- GENERATORS: `scripts/secrets/generators.mjs` に定義し、`prepare-local-env.mjs` と `ensure-worker-secrets.mjs` が import している。
 
 ### Architecture Pattern & Boundary Map
 
@@ -45,11 +45,11 @@ graph TD
   Lib[scripts/lib: dotenv, jsonc, wrangler-name] --> Prepare
   Lib --> Sync
   Lib --> Ensure
-  Lib --> Survey[survey/remote]
+  Lib --> Survey[hack/survey-cli/remote.ts]
 ```
 
 - 設定の生成と秘密の準備・登録は、依存の向きを一方向にする（生成 → 準備 → 登録）。
-- 共通の解析は `scripts/lib/` だけに置き、スクリプトから別のスクリプトを import しない（GENERATORS を除く）。
+- 共通の解析は `scripts/lib/` だけに置く。`scripts/secrets/prepare-local-env.mjs` と `scripts/secrets/sync-github-variables.mjs` は、生成の関数を呼ぶため `scripts/config/render-wrangler.mjs` から関数を import する。`GENERATORS` は `scripts/secrets/generators.mjs` から import する。
 
 ### Technology Stack
 
@@ -81,8 +81,8 @@ graph TD
 
 ### scripts/secrets/generators.mjs（新規）
 
-**Contract**: `GENERATORS`（名前 → 非同期の生成関数）を export する。`generateOauthKey` は `scripts/secrets/generate-oauth-key.mjs` から import する。
-**Notes**: CLI（`generate-oauth-key.mjs`）は `| npx wrangler secret put` の用途のため残す。
+**Contract**: `GENERATORS`（名前 → 非同期の生成関数）を export する。`generateOauthKey` と CLI の入口をこのファイルに統合する。
+**Notes**: CLI は `| npx wrangler secret put` の用途のため残す。
 
 ### prepare-local-env
 
@@ -108,5 +108,12 @@ graph TD
 
 ## Risks and Open Questions
 
-- `survey/remote.ts` の `jsonc-parser` は、エラー時に `errors` を集める動作。`parseJsonc` は例外で失敗するため、「パース失敗」の扱い（`RemoteError("parse")`）を例外の捕捉で保つ。
+- `hack/survey-cli/remote.ts` の `jsonc-parser` は、エラー時に `errors` を集める動作。`parseJsonc` は例外で失敗するため、「パース失敗」の扱い（`RemoteError("parse")`）を例外の捕捉で保つ。
 - `run-e2e.mjs` は子プロセスの終了コードで後始末を分けている。関数呼び出しに変えるときは、後始末の経路（`finally` 相当）を崩さない。
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時の記述                                                                  | 現在                                                                                                                                          | 変えた spec                      |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `scripts/` 直下の設定・秘密のスクリプトと、スクリプト間の import をしない境界 | `scripts/config/`・`scripts/secrets/` に配置。`prepare-local-env.mjs` と `sync-github-variables.mjs` が `render-wrangler.mjs` の関数を import | ops-tooling-layout 要件 1.2      |
+| `scripts/secrets/generate-oauth-key.mjs`                                      | 生成関数と CLI の入口を `scripts/secrets/generators.mjs` に統合                                                                               | ops-tooling-layout 要件 6.3・6.4 |

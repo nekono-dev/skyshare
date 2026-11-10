@@ -54,3 +54,11 @@
   - `npm run setup:brw` を唯一の導入の入口として書く。`.claude/branch-release-workflow.json` の旧パスの扱いは変えない
   - 同名 marketplace（`nekono-dev`）の確認手順を書く
   - _Requirements: 5.1_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: (1) 要件 1.1・2.1・2.2・2.4・3.3・4.2 は後の決定で古くなっていたため、利用者の決定（要件を現状に合わせる）に従い requirements.md に追補を書いた。実装は変えていない。(2) 要件 1.4（同じ内容を 2 箇所に書かない）: `docs/DEVELOP.md` の 6.2 に 5.0 と同じ登録の手順が重複していたため、6.2 を 5.0 への参照に直した。(3) 要件 2.3: 文書中の `npm run <名前>` は全て `package.json` にあり、パスは実在する（Git 管理外の `config/production.json` などは雛形から作る手順として書かれている）。
+- タスク 4.3 は `_Requirements: 5.1` を参照するが、内容（BRW の章）は要件 2.2 に対応する。また「`npm run setup:brw` を唯一の入口として書く」は Phase 8 の改訂（`ops-agent-setup`・`develop-docs-agents`）が置き換えた。requirements.md の追補に記録した。

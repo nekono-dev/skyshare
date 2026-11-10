@@ -12,9 +12,9 @@ import { describe, expect, it } from "vitest"
 import type {
     ImportEdge,
     ModuleGraph,
-} from "../../../scripts/architecture/importGraph"
-import { scanModules } from "../../../scripts/architecture/importGraph"
-import { findUtilSharingViolations } from "../../../scripts/architecture/utilSharing"
+} from "../../../scripts/architecture/import-graph"
+import { scanModules } from "../../../scripts/architecture/import-graph"
+import { findUtilSharingViolations } from "../../../scripts/architecture/util-sharing"
 
 const UTIL = "src/util/format.ts"
 

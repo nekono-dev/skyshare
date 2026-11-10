@@ -120,7 +120,8 @@
   - `npm run test:all` が終了コード 0 で終わることを確かめる
   - 完了時の状態: 両方のコマンドの終了コードが 0 である
   - _Depends: 2.3, 3.2, 3.3, 3.5, 4.1, 5.1, 5.2, 6.1, 6.2, lib-layers 4.2, util-placement 7.3, components-small-areas, lib-large-files_
-  - _Requirements: 7.1, 7.2_
+  - 要件 1.1〜1.3（`libLayer` の規則の適用）の実体は `lib-layers` の 4.2 が実装した規則とテスト（`tests/unit/scripts/libLayers.test.ts`）である。本項は、その規則が有効なまま `npm run test:imports` が通ることで確かめる（2026-11-10 追記）
+  - _Requirements: 1.1, 1.2, 1.3, 7.1, 7.2_
 - [x] 7.2 通過件数と非変更を確かめる
   - `npm run test:all` の通過件数が 1.1 で記録した基準を下回らないことを確かめる
   - 変更が `scripts/`・`tests/`・`config/architecture/`・`.kiro/steering/structure.md` だけに限られ、`src/` の製品コードと生成物（`src/client/openapi/`）に差分が無いことを `git status` で確かめる
@@ -161,3 +162,9 @@
 - 非変更: structure-checks の範囲（2842cca^〜ce836e7）で `src/` の差分は無い。生成物 `src/client/openapi/` は apigen 前後で sha256 一致。
 - 注記: 検証時の HEAD には、structure-checks の範囲の後に入った lib-large-files 由来の `src/` 変更（14926bf・4b1281a・b64b4a2）が含まれる。これは別 spec の作業で、structure-checks の完了条件の対象外。
 - レビュー APPROVED（検証のみ）。
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: 要件 1.1〜1.3（`libLayer` の規則の適用）がタスクの `_Requirements` から参照されていなかった。実体は `lib-layers` の 4.2 が実装した規則とテスト（`tests/unit/scripts/libLayers.test.ts`）であるため、7.1 に参照と説明を加えた。実装の不足は無い。
+- `scripts/architecture/` のファイル名は同日に kebab-case へ改名した（`ops-tooling-layout` の要件 1.3）。規則の内容と検査の結果（違反 0・許容 0・stale 0）は変わらない。

@@ -58,7 +58,7 @@
 
 - 部品フォルダの規則: 1 部品 1 フォルダ。利用元の内側に置く（利用元がすべて親の部品フォルダの内側にあるときだけ、子フォルダへ置く）。
 - 現状の配置:
-  - `components/share/IntentShareDialog/`: 利用元が `composer/ThreadComposer`（3 件）と `timeline/Timeline`（2 件）の二つの親にまたがる
+  - `components/share/IntentShareDialog/`: 利用元が `composer/ThreadComposer`（3 件）と `timeline/Timeline`（3 件）の二つの親にまたがる
   - `components/feedback/FeedbackForm/`・`components/privacy/PolicyCards/`: 利用元が `src/pages/` のみ
   - `components/help/Help/`: 利用元が `src/pages/help.astro` と、内側の `Help/HelpItem/`
 - 既存の検査は、部品フォルダの外のファイルと領域の一覧だけを見る。現状の配置はすべて検査を通る。
@@ -119,7 +119,7 @@ src/components/
 - 入力: 部品と、その部品を import しているファイルの一覧（`src/`・`tests/`・`scripts/`・`e2e/` の実測）
 - 出力: 「統合（親の子フォルダ）」または「残す（現在の領域の直下）」の判断と理由
 - 統合の条件: 利用元のすべてが、同じ親の部品フォルダの内側にあること
-- 判断の時点: 実測の日付を記録する（2026-11-03）
+- 判断の時点: 実測の日付を記録する（2026-11-04）
 
 **Dependencies**
 
@@ -133,11 +133,11 @@ src/components/
 - Validation: 既存の検査（`componentLayout`・`steeringRegions`）が通ること
 - Risks: 判断の表が古くなる → Revalidation Triggers の再検討で更新する
 
-### 判断の結果（2026-11-03 の実測）
+### 判断の結果（2026-11-04 の実測）
 
 | 領域       | 部品                                   | 利用元                                                         | 判断       | 理由                                                            |
 | ---------- | -------------------------------------- | -------------------------------------------------------------- | ---------- | --------------------------------------------------------------- |
-| `share`    | `IntentShareDialog`                    | `composer/ThreadComposer`（3 件）・`timeline/Timeline`（2 件） | 残す       | 利用元が二つの親にまたがる                                      |
+| `share`    | `IntentShareDialog`                    | `composer/ThreadComposer`（3 件）・`timeline/Timeline`（3 件） | 残す       | 利用元が二つの親にまたがる                                      |
 | `feedback` | `FeedbackForm`                         | `pages/feedback.astro`                                         | 残す       | 利用元が部品フォルダの外（`pages/`）のみ。統合先の親がない      |
 | `privacy`  | `PolicyCards`                          | `pages/privacy.astro`                                          | 残す       | 同上                                                            |
 | `help`     | `Help`（`HelpItem` は内側）            | `pages/help.astro`・`Help/HelpItem`                            | 残す       | 利用元に `pages/` を含む。`HelpItem` は既に `Help` の内側にある |
@@ -172,10 +172,11 @@ src/components/
 
 ## Testing Strategy
 
-既存の検査で、配置の変更がないことを確かめる。新しいテストは追加しない。
+既存の検査で、配置の変更がないことを確かめる。`structureDecisions.test.ts` を追加し、領域の一覧と判断の表の整合を確かめる。これを除き、新しいテストは追加しない。
 
 - **Unit（静的検査）**: `tests/unit/scripts/componentLayout.test.ts` が、部品フォルダの外のファイルを例外の一覧と照合する（Requirements 2.4・5.5）
 - **Unit（静的検査）**: `tests/unit/scripts/steeringRegions.test.ts` が、`structure.md` の領域の一覧と実装の領域の一致を確かめる（Requirement 3.2）
+- **Unit（静的検査）**: `tests/unit/scripts/structureDecisions.test.ts` が、領域の一覧と判断の表の整合を確かめる（tasks 2.3）
 - **Import 検査**: `npm run test:imports` が、依存規則（循環・領域をまたぐ相対 import など）を通す（Requirement 5.1）
 - **全体**: `npm run test:all` が終了コード 0 で完了し、件数が着手時の件数を下回らない（Requirement 5.4）
 - **手動の確認**: `structure.md` の判断の表が、本仕様の判断の表と一致すること、および `components/i18n` の残す理由が件数に依存しないこと（Requirements 1.1・3.1・4.3）

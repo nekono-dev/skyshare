@@ -44,7 +44,7 @@
 - 移動したモジュールの振る舞い、export 名、引数と戻り値の型
 - `util/http.ts`・`util/utf8Bytes.ts`・`util/padTwoDigits.ts`・`util/formData.ts` の関数の内容
 - `util/waitForImageLoad.ts` の中身
-- `lib` の層の分類（`lib-layers` の対応表 `scripts/architecture/libLayers.ts`）。ただし `lib` の依存の表は本仕様で改訂する
+- `lib` の層の分類（`lib-layers` の対応表 `scripts/architecture/lib-layers.ts`）。ただし `lib` の依存の表は本仕様で改訂する
 - 部品の配置の分類と `componentLayout` の規則（`components-small-areas`）
 - 検査の規則の追加（`structure-checks`）
 
@@ -279,6 +279,13 @@ graph TD
 | 7.2         | `lib` が使う `util`・`components` の型を `src/types/` へ                   | `feedbackDraft.ts`・`FeedbackForm/index.tsx`・`lib/entry`・`lib/schedule`・`lib/feedback/submitFeedback.ts`・`lib/api`（型） | `@/types/*`                                                                      | import 更新               |
 | 7.3         | `src/types/` は型だけで、外（外部パッケージを含む）を import しない        | `src/types/*.ts`（3 件）                                                                                                     | —                                                                                | `structure-checks` が検査 |
 | 7.4         | `lib` で定義し `components` だけが使う型は `lib` に残す                    | `lib/share/intent.ts` の `IntentTarget` 他                                                                                   | —                                                                                | 規則 1 の確認             |
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時のパス                                                           | 現在のパス                                                                                                            | 変えた spec       |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| `src/lib/settings/shareSettings.ts`                                    | `src/lib/settings/shareSettings/`（`autoPopup.ts`・`instanceDomain.ts`・`toggles.ts`・`textareaRows.ts`・`index.ts`） | `lib-large-files` |
+| `src/components/composer/ThreadComposer/rules/contentEditableModel.ts` | `contentEditableModelDom.ts`・`contentEditableModelEdit.ts`・`contentEditableModelParts.ts` を分割                    | `lib-large-files` |
 
 ## Components and Interfaces
 

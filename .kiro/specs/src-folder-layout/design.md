@@ -76,20 +76,20 @@
 
 ### 移動（`git mv` で履歴を残す）
 
-| 移動前                                                | 移動後                                                               |
-| ----------------------------------------------------- | -------------------------------------------------------------------- |
-| `src/components/help/helpEntries.tsx`                 | `src/components/help/Help/helpEntries.tsx`                           |
-| `src/components/privacy/PolicyCards.tsx`              | `src/components/privacy/PolicyCards/index.tsx`                       |
-| `src/components/privacy/PolicyCards.module.css`       | `src/components/privacy/PolicyCards/index.module.css`                |
-| `src/components/share/useWebShareCrosspost.ts`        | `src/components/timeline/PostCard/useWebShareCrosspost.ts`           |
-| `src/components/image/croppedImageStyle.ts`           | `src/components/image/ImagePicker/croppedImageStyle.ts`              |
-| `src/components/schedule/useScheduleAvailability.ts`  | `src/components/schedule/ScheduleSetting/useScheduleAvailability.ts` |
-| `src/components/settings/useShareToggles.ts`          | `src/components/settings/Settings/useShareToggles.ts`                |
-| `src/components/layout/AnalyticsTag.astro`            | `src/components/layout/AnalyticsTag/index.astro`                     |
-| `src/components/layout/Metadatas.astro`               | `src/components/layout/Metadatas/index.astro`                        |
-| `src/components/layout/nav/NavIcon.astro`             | `src/components/layout/NavIcon/index.astro`                          |
-| `src/components/layout/nav/NavIcon.module.css`        | `src/components/layout/NavIcon/index.module.css`                     |
-| `src/lib/timeline/guestDummyPosts.ts`（データの部分） | `src/lib/timeline/guest/assets.ts`・`posts.ts`・`entries.ts`         |
+| 移動前                                                | 移動後                                                                         |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `src/components/help/helpEntries.tsx`                 | `src/components/help/Help/helpEntries.tsx`                                     |
+| `src/components/privacy/PolicyCards.tsx`              | `src/components/privacy/PolicyCards/index.tsx`                                 |
+| `src/components/privacy/PolicyCards.module.css`       | `src/components/privacy/PolicyCards/index.module.css`                          |
+| `src/components/share/useWebShareCrosspost.ts`        | `src/components/timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts` |
+| `src/components/image/croppedImageStyle.ts`           | `src/components/composer/ThreadComposer/ImagePicker/croppedImageStyle.ts`      |
+| `src/components/schedule/useScheduleAvailability.ts`  | `src/components/schedule/ScheduleSetting/useScheduleAvailability.ts`           |
+| `src/components/settings/useShareToggles.ts`          | `src/components/settings/Settings/useShareToggles.ts`                          |
+| `src/components/layout/AnalyticsTag.astro`            | `src/components/layout/AnalyticsTag/index.astro`                               |
+| `src/components/layout/Metadatas.astro`               | `src/components/layout/Metadatas/index.astro`                                  |
+| `src/components/layout/nav/NavIcon.astro`             | `src/components/layout/NavIcon/index.astro`                                    |
+| `src/components/layout/nav/NavIcon.module.css`        | `src/components/layout/NavIcon/index.module.css`                               |
+| `src/lib/timeline/guestDummyPosts.ts`（データの部分） | `src/lib/timeline/guest/assets.ts`・`posts.ts`・`entries.ts`                   |
 
 ### 新規
 
@@ -97,7 +97,7 @@
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `src/lib/timeline/guest/index.ts`            | 公開の入口。`GuestDummyData` 型、`GUEST_SAMPLE_ENTRY_PATH`、言語ごとのキャッシュ、`getGuestDummyData`。                            |
 | `src/lib/timeline/guest/assets.ts`           | 画像の data URI（`placeholderImage`）と、`public/materials/` の画像・動画パス、Entry の遷移先（`GUEST_SAMPLE_ENTRY_PATH`）の定数。 |
-| `src/lib/timeline/guest/posts.ts`            | ダミーの投稿とスレッド（`buildGuestFacets` を含む）。                                                                              |
+| `src/lib/timeline/guest/posts.ts`            | 投稿データの組み立ての入口。本文・スレッド・facets の内訳は `postsBasic.ts`・`postsThread.ts`・`postFacets.ts`。                   |
 | `src/lib/timeline/guest/entries.ts`          | ダミーの Entry（動画を含む）と、削除範囲の表（`deleteScopes`）。                                                                   |
 | `tests/unit/scripts/componentLayout.test.ts` | 部品フォルダ外のソースファイルの検査（要件 1.4）。                                                                                 |
 | `tests/unit/scripts/steeringRegions.test.ts` | `structure.md` の領域一覧と実装の差の検査（要件 5.3）。                                                                            |
@@ -123,8 +123,8 @@
 | `src/components/layout/FooterNav/index.astro`・`Sidebar/index.astro`                               | `NavIcon` の import を `@/components/layout/NavIcon/index.astro` へ                                                                                                                                     |
 | `src/components/help/Help/index.tsx`                                                               | `./helpEntries` へ                                                                                                                                                                                      |
 | `src/components/help/HelpItem/index.tsx`                                                           | 型の import を `@/components/help/Help/helpEntries` へ                                                                                                                                                  |
-| `src/components/image/ImagePicker/index.tsx`                                                       | `./croppedImageStyle` へ                                                                                                                                                                                |
-| `src/components/timeline/PostCard/index.tsx`                                                       | `./useWebShareCrosspost` へ。コメント（158 行）の参照先を `@/lib/timeline/guest`・`@/lib/guestMode` に直す                                                                                              |
+| `src/components/composer/ThreadComposer/ImagePicker/index.tsx`                                     | `./croppedImageStyle` へ                                                                                                                                                                                |
+| `src/components/timeline/Timeline/ThreadCard/PostCard/index.tsx`                                   | `./useWebShareCrosspost` へ。コメント（158 行）の参照先を `@/lib/timeline/guest`・`@/lib/guestMode` に直す                                                                                              |
 | `src/components/schedule/ScheduleSetting/index.tsx`・`AuthorizationReturn/index.tsx`               | `./useScheduleAvailability`（ScheduleSetting）・移動後のパス（AuthorizationReturn）                                                                                                                     |
 | `src/components/settings/Settings/index.tsx`                                                       | `./useShareToggles` へ                                                                                                                                                                                  |
 | `src/components/composer/ThreadComposer/index.tsx`                                                 | `useScheduleAvailability`・`useShareToggles` の import を移動後のパスへ                                                                                                                                 |
@@ -140,6 +140,20 @@
 | `.kiro/steering/structure.md`                                                                      | `lib` の領域一覧（`account`・`codegen`・`image`・`privacy`・`site`・`video`・`guestMode.ts`）と `components` の領域一覧を補完。「既知の不一致」の記述を現状に合わせる                                   |
 | `tests/render/components/AnalyticsTag.test.ts`                                                     | import を `@/components/layout/AnalyticsTag/index.astro` へ（要件 6.1）                                                                                                                                 |
 | `tests/unit/lib/site/envValues.test.ts`                                                            | import を `@/lib/timeline/guest` へ（要件 6.1）                                                                                                                                                         |
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時のパス                                                       | 現在のパス                                                                                               | 変えた spec             |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `src/components/help/helpEntries.tsx`                              | `src/components/help/Help/helpEntries.tsx`                                                               | `src-folder-layout`     |
+| `src/components/privacy/PolicyCards.tsx`・`PolicyCards.module.css` | `src/components/privacy/PolicyCards/index.tsx`・`index.module.css`                                       | `src-folder-layout`     |
+| `src/components/share/useWebShareCrosspost.ts`                     | `src/components/timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts`                           | `src-component-nesting` |
+| `src/components/image/croppedImageStyle.ts`                        | `src/components/composer/ThreadComposer/ImagePicker/croppedImageStyle.ts`                                | `src-component-nesting` |
+| `src/components/schedule/useScheduleAvailability.ts`               | `src/components/schedule/ScheduleSetting/useScheduleAvailability.ts`                                     | `src-folder-layout`     |
+| `src/components/settings/useShareToggles.ts`                       | `src/components/settings/Settings/useShareToggles.ts`                                                    | `src-folder-layout`     |
+| `layout/AnalyticsTag.astro`・`layout/Metadatas.astro`              | `src/components/layout/AnalyticsTag/index.astro`・`src/components/layout/Metadatas/index.astro`          | `src-folder-layout`     |
+| `layout/nav/NavIcon.astro`・`NavIcon.module.css`                   | `src/components/layout/NavIcon/index.astro`・`index.module.css`                                          | `src-folder-layout`     |
+| `src/lib/timeline/guest/posts.ts`                                  | `src/lib/timeline/guest/postsBasic.ts`・`postsThread.ts`・`postFacets.ts`（組み立ての入口は `posts.ts`） | `lib-large-files`       |
 
 ## アーキテクチャ
 

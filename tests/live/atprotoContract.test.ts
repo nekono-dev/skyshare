@@ -7,7 +7,7 @@ import {
     PUBLIC_APPVIEW,
     readLiveConfig,
     sessionMismatches,
-} from "../../scripts/lib/liveConfig.mjs"
+} from "../../scripts/lib/live-config.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const live = readLiveConfig({

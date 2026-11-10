@@ -31,7 +31,7 @@
 - 接続先の解決の規則は `src/lib/platform/blueskyEndpoints.ts`（`resolveBlueskyEndpoints`）。既定値は本番と同じ。`src/lib/platform/publicEndpoints.ts` が、ビルド時の `import.meta.env` からそれを作る。
 - 非秘密の設定（接続先・運営者の情報など）の源は `wrangler.jsonc` の `vars` だけ。開発・ビルド・実行時（Worker の env）が同じ値を使う。`wrangler.jsonc` は `config/<名前>.json` から `scripts/config/render-wrangler.mjs` が毎回生成する（Git 管理外）。`.env` は使わない。
 - 秘密情報（`SCHEDULE_ENC_KEY`・`OAUTH_CLIENT_KEY`・`SURVEY_HASH_KEY`）は `.dev.vars`（ローカル）と Worker のシークレット（本番）に置く。
-- E2E は `config/e2e.json`（`config/e2e.example.json` から、接続先だけ偽の Bluesky の URL にして作る）で `wrangler.jsonc` を生成して `astro dev` を起動する。終了後は開発の設定から生成し直す。
+- E2E は `config/e2e.json`（`config/develop.example.json` から、接続先だけ偽の Bluesky の URL にして、実行のたびに作り直す）で `wrangler.jsonc` を生成して `astro dev` を起動する。終了後は開発の設定から生成し直す。
 - 上書きは開発とテストの環境だけで使う。本番の設定（`config/production.json`）には偽の値を入れない。
 
 ## Priority（P0 は必ず契約テストを置く）
@@ -44,7 +44,7 @@
 
 ### P0 のモジュール（23 ファイル。閾値とテストの対応）
 
-- unit（11）: `src/lib/session/cookies/`（フォルダ。分岐のカバレッジはファイルごとに 80%）、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/entry/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`
+- unit（11）: `src/lib/session/cookies/`（フォルダ。分岐のカバレッジはファイルごとに 80%）、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/timeline/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`
 - route（12）: `src/lib/session/oauthSession.ts`、`src/lib/session/bskySessionRefresh.ts`、`src/lib/session/oauthLogin.ts`、`src/lib/schedule/executor.ts`、`src/lib/schedule/runner.ts`、`src/lib/schedule/stageSchedule.ts`、`src/lib/schedule/imageStaging.ts`、`src/lib/survey/store.ts`、`src/lib/survey/retention.ts`、`src/lib/survey/request.ts`、`src/pages/v1/page.ts`、`src/pages/v2/feedback.ts`
 
 ## Coverage（P0 だけ、ファイル単位の分岐 80%）
@@ -65,7 +65,7 @@
 - 外部の接続、実時間、乱数に依存させない。時刻は fake timers で固定する（`vi.useFakeTimers({ toFake: ["Date"] })`）。乱数に依存する検査は、固定の値を注入する。
 - 秘密情報をテストに置かない。鍵・DID・ハンドルは `tests/fixtures/` の架空の値を使う。
 - テストは互いに独立させる。D1 は各テストファイルの前にマイグレーションを適用し、空の状態から始める（isolated storage）。
-- テストの題名は英語。
+- テストの題名は英語。題名に受入基準の識別子（要件番号・AC/FR/NFR のタグ）は含めない。対応は設計の追跡表で示す。
 
 ## Layout（`tests/`）
 
@@ -110,7 +110,9 @@ tests/
 3. **変異テストの採否の再評価**: unit 層の PoC（2 モジュール）と、P0 の 11 ファイルでの報告は実施済み。route 層への適用は未検証。
 4. **`test:type`・`test:lexicon` の扱い**: `test:all` に含める（設計どおり）。
 
+2026-11-10 追補: 1 と 4 は実装で決着している（E2E の流れは `tests/e2e/flows/` にあり、`test:all` は `test:type`・`test:lexicon` を含む）。2 も決着した（利用者の決定 2026-11-10: リポジトリ全体の整形は意図どおり。ただしテストやビルドの時ではなく、コミットの前に行う。`build:prepare` から `format` を外し、`.githooks/pre-commit` が整形する）。残る未決定は 3（積み残し）。PR の必須の検査は、GitHub の main のルールセットで `e2e` だけを必須にしている。
+
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
-_updated_at: 2026-11-05（Cookie のフォルダ化、e2e に移動した部品の操作の流れを追補。リファクタと単体テストの規則を追加）_
+_updated_at: 2026-11-10_

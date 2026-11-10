@@ -326,12 +326,17 @@ describe("フックの入口（子プロセス）", () => {
             fs.rmSync(root, { recursive: true, force: true })
     })
 
-    it("未知のスラッシュコマンドは、導入されていない旨を文脈で返す", () => {
+    it("SKILL.md が無いスラッシュコマンドは、プロンプトをブロックし、cc-sdd の導入を促す", () => {
         const out = run("user-prompt-submit", {
             prompt: "/kiro-no-such-command",
         })
         expect(out.status).toBe(0)
-        expect(out.stdout).toContain("cc-sdd が導入されていません")
+        const parsed = JSON.parse(out.stdout)
+        expect(parsed.decision).toBe("block")
+        expect(parsed.reason).toContain("cc-sdd が導入されていません")
+        expect(parsed.reason).toContain(
+            "scripts/agent/install-cc-sdd.sh --claude",
+        )
     })
 
     it.skipIf(!fs.existsSync(skill))(

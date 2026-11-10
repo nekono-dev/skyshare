@@ -1,42 +1,28 @@
 #!/usr/bin/env node
 /**
- * 共有skill（branch-release-workflow）を外部Gitリポジトリの指定ブランチの最新コミットで取得する。
- * 引数なし: clone の絶対パスを標準出力へ出す（CI が BRW_PLUGIN_DIR に使う）。
- * --install: 同じ clone から Claude と Codex の両方へ導入する（ローカルとクラウドの SessionStart、npm run setup:brw）。
- * Input: .branch-release-workflow-source.json。Gitの診断と導入ログは標準エラーへ出す。
- * 例: npm run setup:brw / BRW_PLUGIN_DIR=$(node scripts/agent/setup-brw.mjs)
+ * CI 用に、BRW（branch-release-workflow）の取得元の clone を作り、その絶対パスを標準出力へ出す。
+ * 取得元は .branch-release-workflow-source.json。CI（deploy・preview）が BRW_PLUGIN_DIR に使う。
+ * 開発機への導入は行わない（BRW は .claude/settings.json の marketplace 宣言で有効にする）。
+ * Input: なし。Gitの診断は標準エラーへ出す。
+ * 例: BRW_PLUGIN_DIR=$(node scripts/agent/setup-brw.mjs)
  */
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync } from "node:fs"
+import { existsSync, mkdirSync } from "node:fs"
 import { homedir } from "node:os"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import { isMarketplaceListed } from "../lib/claudeMarketplace.mjs"
+import { readBrwSource } from "./brw-source.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
-const args = process.argv.slice(2)
-if (args.length > 1 || (args.length === 1 && args[0] !== "--install")) {
-  throw new Error("使い方: node scripts/agent/setup-brw.mjs [--install]")
-}
-const install = args[0] === "--install"
-// 取得元は追跡されたファイル。無いと CI が BRW を取れないため、欠落は原因が分かる文言で止める
-const sourcePath = join(root, ".branch-release-workflow-source.json")
-if (!existsSync(sourcePath)) {
+if (process.argv.length > 2) {
   throw new Error(
-    `取得元のファイルがありません: ${sourcePath}（リポジトリに追跡されているか確認してください）`,
+    "使い方: node scripts/agent/setup-brw.mjs（引数は取りません）",
   )
 }
-const { repository, branch } = JSON.parse(readFileSync(sourcePath, "utf8"))
-if (
-  typeof repository !== "string" ||
-  !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\.git$/.test(repository) ||
-  typeof branch !== "string" ||
-  !/^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(branch)
-) {
-  throw new Error(
-    "skillの取得元にはGitHubのHTTPS URLとブランチ名を指定してください",
-  )
-}
+// 取得元は追跡されたファイル。無い・不正なら、原因が分かる文言で止める（検査は brw-source.mjs）
+const { repository, branch } = readBrwSource(
+  join(root, ".branch-release-workflow-source.json"),
+)
 const clone = join(
   process.env.RUNNER_TEMP ?? join(homedir(), ".cache/skyshare"),
   "brw",
@@ -59,63 +45,4 @@ git(["fetch", "-q", "--depth", "1", repository, `refs/heads/${branch}`])
 git(["checkout", "-q", "--detach", "--force", "FETCH_HEAD"])
 if (git(["rev-parse", "HEAD"]) !== git(["rev-parse", "FETCH_HEAD"]))
   throw new Error("取得したskillのブランチ先頭と一致しません")
-if (install) {
-  installCodex(clone)
-  installClaude(clone)
-}
 console.log(clone)
-
-/**
- * Codex へ導入する。clone の scripts/install-codex.mjs が、.agents/skills/ へ symlink を作る（BRW 本体の方式）。
- */
-function installCodex(clone) {
-  process.stderr.write(
-    execFileSync(
-      process.execPath,
-      [
-        join(clone, "scripts/install-codex.mjs"),
-        "--skills-dir",
-        join(root, ".agents/skills"),
-      ],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
-    ),
-  )
-}
-
-/**
- * Claude へ導入する。clone をユーザースコープのマーケットプレイスとして登録し、
- * プロジェクトのスコープでプラグインを有効にする（.claude/settings.json の enabledPlugins と同じ内容のため差分は出ない）。
- * claude コマンドが無い環境（Codex だけの運用者）では飛ばす。
- * 注意: 同名（nekono-dev）の既存の登録があれば外してから、clone を登録し直す。
- */
-function installClaude(clone) {
-  const claude = (cliArgs, options = {}) =>
-    execFileSync("claude", ["plugin", ...cliArgs], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "inherit"],
-      ...options,
-    })
-  try {
-    claude(["--help"], { stdio: "ignore" })
-  } catch {
-    process.stderr.write(
-      "claude コマンドが無いため、Claude への導入を飛ばします\n",
-    )
-    return
-  }
-  // 登録があるときだけ外す。外すときは全てのスコープから外す（user に宣言が無い登録もあるため --scope を付けない）
-  if (isMarketplaceListed(claude(["marketplace", "list"]), "nekono-dev")) {
-    claude(["marketplace", "remove", "nekono-dev"])
-  }
-  claude(["marketplace", "add", clone, "--scope", "user"])
-  claude(
-    [
-      "install",
-      "branch-release-workflow@nekono-dev",
-      "--scope",
-      "project",
-      "--yes",
-    ],
-    { cwd: root },
-  )
-}

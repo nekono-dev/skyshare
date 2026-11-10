@@ -51,3 +51,10 @@
 - accessJwt をクライアントに渡さない。
 - 本人確認は旧バックエンドに任せる（本アプリでは判定しない。`LegacyPageDeleteButton/index.tsx` の header に記載）。
 - 既知の不一致: `v1/extract/get.ts` のスキーマに対応する route が無い。
+
+## 確定した判断（2026-08-14）
+
+- 旧バックエンド（Cloud Run 上の v1.6）は v2 と登録ドメインが別のため、v2 の Cookie を送れない。Cookie の属性では回避できない。URL は `_legacy/frontend/.env.development` の `PUBLIC_BACKEND_ENDPOINT` を参照する。
+- Bluesky のセッション（did と accessJwt）を使う旧バックエンドの呼び出し（投稿の削除など）は、ブラウザから直接呼ばない。v2 のサーバーのエンドポイント（`src/pages/v1/legacy-page.ts`）が自分の Cookie から v2 のセッションを読み、旧バックエンドをサーバー同士で呼ぶ（`src/lib/pagedb.ts` の `deletePageDbEntry`）。
+- 旧バックエンド側で Cookie を発行する案は、追加のインフラとセキュリティ設定が要るため退けた。
+- 認証の要らない読み取り（`GET /page/{dbIndex}/{dbKey}`）は、v2 の SSR からサーバー同士で呼ぶため影響を受けない。

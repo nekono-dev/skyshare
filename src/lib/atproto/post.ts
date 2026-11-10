@@ -1,10 +1,7 @@
 /**
- * atproto 投稿レコード（`app.bsky.feed.post`）のビルダー・検証ユーティリティ。
+ * `app.bsky.feed.post` レコードの値を組み立てる純粋関数と、返信の参照の検証。
  *
- * 責務と処理概要:
- * - `app.bsky.feed.post` レコードの値そのもの（$type/text/facets/embed/labels/reply等）を
- *   組み立てる純粋関数を提供する。実際に atproto へ書き込む処理（`com.atproto.repo.applyWrites`
- *   での原子的な複数レコード作成）は `src/lib/entry/createBskyThread.ts` が担う。
+ * - 書き込みは行わず、レコードの値を返すだけである。
  */
 
 import type { BskyFacets, BskyReplyRef } from "@/lib/atproto/recordTypes"
@@ -15,29 +12,17 @@ import { serviceName } from "@/vars"
 export const BSKY_POST_COLLECTION = "app.bsky.feed.post"
 
 /**
- * 1スレッド（reply chainで連結された投稿群）に含められる投稿の最大数。
+ * 1 スレッド（reply chain で連結された投稿群）に含められる投稿の最大数（件数）。
  *
- * 趣旨:
- * - `POST /v2/entry`の`posts`配列、`v2/bsky/drafts`の下書き`posts`配列の両方が
- *   「スレッドの1セグメント」という同じ概念を表しているため、上限値をここに一本化する。
- *   将来フロントエンドにスレッド作成UIを実装する際も、この定数を参照して
- *   バックエンドと同じ上限をUI側で表示・制御できるようにする（`specs/thread-composer`参照）。
- * - 実体は依存を持たない`./threadLimit.ts`で定義し、ここでは再エクスポートするだけに
- *   留める。`src/lib/api/schema/**`配下のスキーマファイル（コード生成ツール`orval`が
- *   `jiti`経由で読み込む。`jiti`は`@/*`エイリアスを解決しないため相対importのみで
- *   読み込まれる）が、この定数を得るためだけに本ファイル（atproto SDK呼び出し等、
- *   `@/`エイリアス依存の重い依存グラフを持つ）を丸ごとimportして`jiti`をクラッシュ
- *   させないようにするため。
+ * - 実体は `./threadLimit` にあり、ここでは再エクスポートする。
  */
 export { MAX_THREAD_POST_COUNT }
 
 /**
- * `app.bsky.feed.post` レコードの値を組み立てる（純粋関数、副作用なし）。
+ * `app.bsky.feed.post` レコードの値を組み立てる（副作用なし）。
  *
- * 処理の趣旨:
- * - selfLabel が指定された場合は com.atproto.label.defs#selfLabels 形式で labels を付与。
- * - `createdAt` は呼び出し元が確定させた値をそのまま使う（`applyWrites`でのcid事前計算
- *   のため、レコード値全体が呼び出しごとに決定的である必要がある）。
+ * - `selfLabel` が指定されたときだけ、`labels` を `com.atproto.label.defs#selfLabels` の形で付ける。
+ * - `createdAt` は引数の値をそのまま使い、現在時刻を読まない。同じ引数からは同じ値が得られる。
  *
  * Input:
  * - `text`: 投稿本文テキスト
@@ -52,8 +37,8 @@ export { MAX_THREAD_POST_COUNT }
  * - `app.bsky.feed.post` レコードの値（`$type`込み）
  *
  * 例:
- * - 入力：text="Hello world",facets=[],langs=["ja"],embed={$type:"..."},selfLabel="sexual",createdAt="2026-01-01T00:00:00.000Z"
- * - 出力：{ $type:"app.bsky.feed.post", text:"Hello world", ..., createdAt:"2026-01-01T00:00:00.000Z", via:"Skyshare" }
+ * - 入力: `text="Hello world"`, `facets=[]`, `langs=["ja"]`, `embed={ $type: "..." }`, `selfLabel="sexual"`, `createdAt="2026-01-01T00:00:00.000Z"`
+ * - 出力: `{ $type: "app.bsky.feed.post", text: "Hello world", ..., createdAt: "2026-01-01T00:00:00.000Z", via: "Skyshare" }`
  */
 export const buildBskyPostRecord = (params: {
     text: string
@@ -88,18 +73,14 @@ export const buildBskyPostRecord = (params: {
 }
 
 /**
- * `reply.root`/`reply.parent` の uri が、呼び出しユーザー自身の `app.bsky.feed.post`
- * レコードを指しているか検証する。
+ * `reply.root`・`reply.parent` の uri が、`did` の `app.bsky.feed.post` レコードを指しているかを検証する。
  *
- * 処理の趣旨:
- * - スレッド投稿機能はクライアントが申告した root/parent の StrongRef をそのまま
- *   投稿レコードへ渡すため、他人の投稿への不正な reply chain 構築
- *   （なりすまし的なスレッド接続）を防ぐ最終防御として、uri の repo（DID）が
- *   自分自身であることをサーバ側で確認する。
+ * - `reply` が未指定なら検証せず `true` を返す。
+ * - 他人の投稿を返信先にしないため、uri の repo（DID）が `did` と一致するかを確かめる。
  *
  * Input:
  * - `reply`: リクエストで指定された reply（未指定なら検証不要）
- * - `did`: 呼び出しユーザーの DID（`session.did`）
+ * - `did`: 投稿者本人の DID（`session.did`）
  *
  * Output:
  * - reply が未指定、または root/parent とも自分の投稿を指していれば `true`

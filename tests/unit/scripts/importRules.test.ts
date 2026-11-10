@@ -9,7 +9,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { scanModules } from "../../../scripts/architecture/importGraph"
+import { scanModules } from "../../../scripts/architecture/import-graph"
 import { regionOf } from "../../../scripts/architecture/regions"
 import {
     evaluateImportRules,
@@ -709,13 +709,13 @@ describe("想定の構成からの独立（要件 10）", () => {
 
     it("すべての規則に、根拠となる steering の節が紐づいている（要件 10.1）", () => {
         for (const id of RULE_IDS) {
-            expect(RULE_BASIS[id]).toMatch(/structure\.md/)
+            expect(RULE_BASIS[id]).toMatch(/structure\*\.md/)
         }
     })
 })
 
 describe("層の逆流の規則（libLayer）", () => {
-    // 基盤 → 業務の辺だけを違反にする。fixture の各辺の層は対応表（libLayers.ts）に従う
+    // 基盤 → 業務の辺だけを違反にする。fixture の各辺の層は対応表（lib-layers.ts）に従う
     const libLayerRoot = path.resolve(
         __dirname,
         "../../fixtures/import-rules/lib-layers",

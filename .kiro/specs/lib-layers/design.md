@@ -27,7 +27,7 @@
 
 ### This Spec Owns
 
-- `src/lib/` の各領域の層の分類（対応表を `scripts/architecture/libLayers.ts` に持ち、`structure.md` と一致させる）
+- `src/lib/` の各領域の層の分類（対応表を `scripts/architecture/lib-layers.ts` に持ち、`structure.md` と一致させる）
 - 基盤から業務への依存を解消するための移動（`lib/api/contract/` の新設を含む）
 - 1〜2 ファイル領域の統合（`account`・`draft`・`privacy`・`legacy`）と、残す領域（`codegen`・`share`）の理由の記録
 - `structure.md` の「領域の一覧」「`lib` の領域の依存の向き」「依存規則の検査」の節の改訂
@@ -79,7 +79,7 @@
 ### Revalidation Triggers
 
 - `lib/api/contract/` の型・識別子・定数の形（画面と API と業務が共有する。変わると三者の検査が変わる）
-- 層の対応表（`libLayers.ts`）の変更。`util-placement`・`lib-large-files` は移動先の決定に従う
+- 層の対応表（`lib-layers.ts`）の変更。`util-placement`・`lib-large-files` は移動先の決定に従う
 - `lib/codegen` の移動（生成物の import 経路が変わる）
 - `lib/share` の内容が `util-placement` で増えること（残す理由の記録を更新する）
 - `src/types/` の追加（`util-placement`）。`lib` の層の表の対象外であり、`libLayerOf` の結果は変わらない
@@ -153,7 +153,7 @@ graph TD
 - Selected pattern: 二層（基盤・業務）の一方向の依存。層の対応表を検査の定数として持つ
 - Domain/feature boundaries: 業務は機能の単位、基盤は他の領域が土台にする単位。`lib/api/contract/` は、業務と画面と API が同じ制約を見るための基盤の置き場
 - Existing patterns preserved: 領域の単位（`lib/<領域>`）、`@/` の import、相対 import の規則、`lib` の UI 非依存
-- New components rationale: `lib/api/contract/`（三つのファイル）は、業務から基盤へ下ろした契約。`scripts/architecture/libLayers.ts` は層の対応表
+- New components rationale: `lib/api/contract/`（三つのファイル）は、業務から基盤へ下ろした契約。`scripts/architecture/lib-layers.ts` は層の対応表
 - Steering compliance: `structure.md` の依存の向き・領域の一覧・依存規則を同じ変更で改訂する
 
 ### Technology Stack
@@ -182,7 +182,7 @@ src/lib/
 │   └── legacyPagedb.ts            # 旧 legacy/pagedb.ts
 └── codegen/                       # 変更なし（生成物の import 経路を保つ）
 scripts/architecture/
-└── libLayers.ts                   # 新設: 領域の層の対応表と、層の逆流の判定
+└── lib-layers.ts                   # 新設: 領域の層の対応表と、層の逆流の判定
 ```
 
 ### Modified Files
@@ -202,7 +202,7 @@ scripts/architecture/
 - `src/lib/draft/draftList.ts` → `src/lib/timeline/draftList.ts`（移動）。import 元 2 件（`components/composer/ThreadComposer/DraftListPanel/index.tsx`・`hooks/useDraftFlow.ts`）を変える
 - `src/lib/privacy/policySections.ts` → `src/lib/site/policySections.ts`（移動）。import 元 1 件（`components/privacy/PolicyCards/index.tsx`）を変える
 - `src/lib/legacy/pagedb.ts` → `src/lib/entry/legacyPagedb.ts`（移動）。import 元: `src/pages/posts/[dbIndex]/[slug].astro`・`src/pages/v1/page.ts`・`tests/route/pages/v1PageDelete.test.ts`（`vi.mock` のパス）を変える。`lib/entry` の注記（`legacy` の扱い）を `structure.md` に記す
-- `scripts/architecture/libLayers.ts` — 新設。領域 → 層の対応表（`LIB_LAYER`）と、`libLayerOf(path)`（`src/lib/guestMode.ts` は業務）
+- `scripts/architecture/lib-layers.ts` — 新設。領域 → 層の対応表（`LIB_LAYER`）と、`libLayerOf(path)`（`src/lib/guestMode.ts` は業務）
 - `scripts/architecture/rules.ts` — 規則 `libLayer` を追加（基盤 → 業務の辺）。`RuleId` の union に `libLayer` を加える。`RULE_BASIS` に根拠（`structure.md`「lib の領域の依存の向き」）を書く
 - `scripts/architecture/allowlist.ts` — `RULE_IDS` 配列に `libLayer` を加え、`DEFAULT_OWNERS` に `libLayer: "lib-layers"` を加える（どちらも `RuleId` と同じ要素。structure-checks 2.1 が `RULE_IDS` を `rules.ts` へ一本化する）
 - `scripts/architecture/check-imports.ts` — 変更なし（`evaluateImportRules` に規則が入る）
@@ -220,7 +220,7 @@ scripts/architecture/
 
 | Requirement | Summary                                                               | Components                                                                              | Interfaces                                           | Flows |
 | ----------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----- |
-| 1.1         | 各領域を基盤か業務に分類する                                          | `libLayers.ts`（`LIB_LAYER`）                                                           | `LibLayer`・`libLayerOf`                             | —     |
+| 1.1         | 各領域を基盤か業務に分類する                                          | `lib-layers.ts`（`LIB_LAYER`）                                                          | `LibLayer`・`libLayerOf`                             | —     |
 | 1.2         | 層の分類を `structure.md` に記録する                                  | `structure.md` の層の表                                                                 | —                                                    | —     |
 | 1.3         | 領域を追加したとき、一覧と層を同じ変更で更新する                      | `libLayers.test.ts`・`steeringRegions.test.ts`                                          | —                                                    | —     |
 | 2.1         | 基盤は業務を import しない                                            | `rules.ts`（`libLayer`）                                                                | `evaluateImportRules`                                | —     |
@@ -243,7 +243,7 @@ scripts/architecture/
 
 | Component                                                       | Domain/Layer | Intent                                                        | Req Coverage  | Key Dependencies (P0/P1)                | Contracts |
 | --------------------------------------------------------------- | ------------ | ------------------------------------------------------------- | ------------- | --------------------------------------- | --------- |
-| LibLayerTable (`scripts/architecture/libLayers.ts`)             | 検査（基盤） | 領域 → 層の対応表と、ファイル → 層の判定                      | 1.1, 1.3, 3.3 | `regions.ts` (P1)                       | State     |
+| LibLayerTable (`scripts/architecture/lib-layers.ts`)            | 検査（基盤） | 領域 → 層の対応表と、ファイル → 層の判定                      | 1.1, 1.3, 3.3 | `regions.ts` (P1)                       | State     |
 | libLayer rule (`scripts/architecture/rules.ts`)                 | 検査         | 基盤 → 業務の辺を違反にする                                   | 2.1, 2.2, 3.1 | `LibLayerTable` (P0), `ImportEdge` (P0) | Service   |
 | API contract (`src/lib/api/contract/`)                          | 基盤         | 業務と画面と API が共有する制約（上限・識別子・送信内容の型） | 2.4           | `zod` (P1)                              | Service   |
 | Layer consistency test (`tests/unit/scripts/libLayers.test.ts`) | 検査         | 対応表・`src/lib/` の領域・`structure.md` の一致を確かめる    | 1.2, 1.3, 4.3 | `structure.md` (P0)                     | —         |
@@ -375,7 +375,7 @@ export type PathParamsType = z.infer<typeof PathParamsSchema>
 1. 基準の記録（`npm run test:all` の件数）
 2. `api/contract/` の新設: `feedback/limits.ts`・`feedback/submission.ts`・`survey/pathParams.ts`・`survey/definition.ts` の識別子を移し、import を変える（`test:type`・`test:imports`）
 3. 統合: `account` → `session`、`draft` → `timeline`、`privacy` → `site`、`legacy` → `entry`（ファイル移動と import の変更）
-4. 検査: `libLayers.ts`・`rules.ts`（`libLayer`）・テスト（正例と対応表の一致）を追加し、許容リストが空のまま `test:imports` が 0 で終わることを確かめる
+4. 検査: `lib-layers.ts`・`rules.ts`（`libLayer`）・テスト（正例と対応表の一致）を追加し、許容リストが空のまま `test:imports` が 0 で終わることを確かめる
 5. `structure.md` の改訂（層の表・領域の一覧・依存の向き・依存規則の表・残す理由）を、検査と同じ変更で行う
 6. `npm run apigen` の差分確認、最後に `npm run test:all`
 

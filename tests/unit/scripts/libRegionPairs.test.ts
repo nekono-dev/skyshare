@@ -8,7 +8,7 @@
  */
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { scanModules } from "../../../scripts/architecture/importGraph"
+import { scanModules } from "../../../scripts/architecture/import-graph"
 import { regionOf } from "../../../scripts/architecture/regions"
 
 const repoRoot = path.resolve(__dirname, "../../..")

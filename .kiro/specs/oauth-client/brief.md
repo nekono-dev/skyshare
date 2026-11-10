@@ -53,3 +53,12 @@ Bluesky の OAuth は、ログインと予約投稿の両方で同じクライ�
 - トークン・鍵・認可コードをログに出さない（`oauthLogin.ts` と `flow.ts` に明記）。
 - Cron の経路から使うため `@atproto/*` を読み込まず、WebCrypto と fetch だけを使う（`lib/oauth` の既存の実装）。
 - 注: `lib/session/oauthSession.ts` の header によると、エージェントの生成（`oauthAgent.ts`）は再開の時点で動的に読み込む。`@atproto/*` を全リクエストの経路で静的に読まないための実装上の工夫。
+
+## 確定した判断（2026-10-24）
+
+- トークンの保管は cookie（D1 は使わない）。更新用トークンの再利用で認可サーバーがセッションを失効させるため、期限 60 秒前のときだけ更新し、更新したときだけ書き戻す。
+- cookie の上限のため、アカウントのプールは `atp_account_0..3` に 1 件ずつ。
+- スコープは `atproto transition:generic`。開始時は bsky.social へ PAR（Bluesky ホスティングのアカウントのみ）。完了時に sub → PDS → 認可サーバーの issuer 一致を検証する。
+- ローカルの開発は、公開クライアント（`client_id` は `http://localhost?...`）と `127.0.0.1:4322` の中継で行う。https のループバックは atproto が拒否する。
+- シークレットは `OAUTH_CLIENT_KEY`（旧 `SCHEDULE_OAUTH_KEY`）。
+- OAuth のセッションでは、旧バックエンドの投稿削除は 403 になる（アプリパスワードでの再ログインを案内する）。

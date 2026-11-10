@@ -308,3 +308,11 @@
   - 完了の確認: `test:all` が通り、要件の対応に漏れがない
   - _Depends: 5.5, 6.1, 6.2, 9.6, 10.1_
   - _Requirements: 7.2, 4.6_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: (1) 要件 9.1（PR のマージの前に E2E の成功を必須にする）: GitHub の main のルールセットに必須の検査（`e2e`）が無かったため、利用者の承認を得て Claude が追加した（2026-11-10）。develop のルールセットは削除の禁止だけで、PR の必須の検査は無い（PR は main へ向けて作る運用のため）。要件 9.2・9.3 のとおり、他の層と live は必須にしていない。(2) design.md に「現況との対応（2026-11-10 追補）」を加えた（設定ファイルとスクリプトの移動後のパス）。
+- `.kiro/steering/testing.md` の「未決定・未検証」の 1（E2E の流れ）と 4（`test:type`・`test:lexicon` の扱い）は実装で決着している。同日に testing.md に追記した。2（`prettier --write .` の副作用）と 3（route 層の変異テスト）は残る。

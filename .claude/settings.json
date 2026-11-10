@@ -2,7 +2,6 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup",
         "hooks": [
           {
             "type": "command",
@@ -11,12 +10,17 @@
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
-          },
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent/ensure-brw-plugin.mjs\"",
+            "timeout": 180
+          }
+        ]
+      },
+      {
+        "matcher": "startup",
+        "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent/setup-brw.mjs\" --install",
-            "timeout": 600
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
           },
           {
             "type": "command",
@@ -31,7 +35,17 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent/install-gate.mjs\" user-prompt-submit",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent/kiro-gate.mjs\" user-prompt-submit",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/agent/codex-trust-gate.mjs\" user-prompt-submit",
             "timeout": 10
           }
         ]
@@ -74,5 +88,14 @@
   },
   "enabledPlugins": {
     "branch-release-workflow@nekono-dev": true
-  }
+  },
+  "extraKnownMarketplaces": {
+    "nekono-dev": {
+      "source": {
+        "source": "github",
+        "repo": "nekono-dev/claude-plugins"
+      }
+    }
+  },
+  "autoMemoryEnabled": false
 }

@@ -52,3 +52,15 @@ ops-agent-setup と ops-config-secrets の内容が確定した後に、ファ�
 - CI の workflow の名前・ジョブ名は変えない（参照するパスと引数だけ直す）。
 - `wrangler.jsonc`・`.dev.vars` などの生成物と秘密ファイルは対象外。
 - `.claude/hooks/` は Claude の harness が参照するため、移動の対象外（中身だけ `scripts/` の入口を呼ぶ）。
+
+## 確定した判断（2026-10-31）
+
+- `scripts/` は領域別のフォルダ（agent・config・secrets・survey・e2e・dev・build・git・lib）に分け、命名は kebab-case にする。
+- 運用系の共通処理は 1 箇所にする。wrangler の生成は `renderWranglerFile`、dotenv・JSONC・wrangler の `name` の読み取りは `scripts/lib/`、Worker の生成処理は `scripts/secrets/generators.mjs`。
+- 手作業の便利ツールは `hack/survey-cli/`（`npm run survey`）だけ。
+- 削除: `e2e:live:sweep`（対象のファイルが無い）。`build:pripare` は `build:prepare` に直す。
+- SPEC_LINT_TOKEN は登録対象から外した（spec-lint は廃止）。GitHub 上の既存の Secret は手で消す（スクリプトは消さない）。
+
+## 未決定
+
+- `build:prepare` の `format`（`prettier --write .`）は、dev・build・E2E のたびに作業ツリー全体を整形する。残すか外すかは未決定。

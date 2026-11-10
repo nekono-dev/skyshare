@@ -1,4 +1,4 @@
-// live テストの設定の読み取り（scripts/lib/liveConfig.mjs）: 無い・空はスキップ、不正は例外（秘密を含めない）、応答の一致の判定
+// live テストの設定の読み取り（scripts/lib/live-config.mjs）: 無い・空はスキップ、不正は例外（秘密を含めない）、応答の一致の判定
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import {
     readLiveConfig,
     sessionMismatches,
-} from "../../../scripts/lib/liveConfig.mjs"
+} from "../../../scripts/lib/live-config.mjs"
 
 let dir: string
 const configPath = () => path.join(dir, "live.json")

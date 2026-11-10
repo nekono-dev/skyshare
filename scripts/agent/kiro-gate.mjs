@@ -253,11 +253,10 @@ const handlers = {
         startedAt: Date.now(),
         inputKeys: Object.keys(input),
       })
+      // 導入の物（スキル）が無いと、kiro のスラッシュコマンドは使えない。プロンプトを止めて、導入を促す
       emit({
-        hookSpecificOutput: {
-          hookEventName: "UserPromptSubmit",
-          additionalContext: `/${command} の SKILL.md（${skillPath}）が見つかりません。cc-sdd が導入されていません。scripts/agent/install-cc-sdd.sh --claude の実行をユーザーに提案してください。`,
-        },
+        decision: "block",
+        reason: `/${command} は使えません。cc-sdd が導入されていません（${skillPath} が無い）。scripts/agent/install-cc-sdd.sh --claude を実行して cc-sdd を導入してから、もう一度入力してください。`,
       })
       return
     }

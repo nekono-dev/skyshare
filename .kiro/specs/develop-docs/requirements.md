@@ -72,3 +72,15 @@
 1. The `DEVELOP.md` shall 実アカウントのテスト（`npm run test:live`）を開発者がローカルで任意に実行するものとして書き、CI では実行しないと明記する
 2. The `DEVELOP.md` shall 設定の場所（非秘密は `config/live.json`、パスワードは `.dev.vars`）を書き、`.env` 系のファイルを使わないことを書く
 3. The `DEVELOP.md` shall 旧 `.env.e2e`・`E2E_ENV` の記述を含まない
+
+## 追補（2026-11-10: 要件を現状に合わせる。利用者の決定）
+
+実装（`docs/DEVELOP.md`）は変えず、後の決定で古くなった受入基準を次のとおり読み替える。
+
+- 要件 1.1（章の順）: 「運用」の後に、独立した章「6. 初回の設定（運用者）」を置く。順は 準備 → 日常の開発 → 設定と生成物 → 品質 → 運用 → 初回の設定。要件 3.1（初回の設定を 1 つの章にまとめる）を満たすための章であり、1.1 の並びはこれを含む。
+- 要件 2.1（E2E の Secret）: `.env.e2e.template` は `live-tests` の要件 2.4 で廃止した。照合の対象は `e2e.yaml` と `.dev.vars.template`・`config/live.example.json` とする。`E2E_ENV` を前提にしない点は変わらない。
+- 要件 2.2・2.4（BRW の宣言）: 正本はリポジトリのルートの `.branch-release-workflow.json`。`.claude/branch-release-workflow.json` は正本へのシンボリックリンクである。
+- 要件 3.3（pre-push での登録）: 要件 5.2 と `ops-config-secrets` の要件 4.4（2026-10-31 の決定）が置き換えた。`DEVELOP.md` は「push では登録しない。登録は手動」と書く（5.0 と 6.9）。「見直しは未決定」の記述は載せない。
+- 要件 4.2（正本をリンクで示す）: 正本の場所は、リポジトリ内のパスの表記（バッククォート）で示す。Markdown のリンク記法は求めない。
+- 文書の場所: `DEVELOP.md` は `repo-root-layout` により `docs/DEVELOP.md` にある。
+- タスク 4.3 の「`npm run setup:brw` を唯一の導入の入口として書く」は、Phase 8 の `ops-agent-setup` の改訂と `develop-docs-agents`（直接実装）が置き換えた。現在の `docs/DEVELOP.md` は、セッションの開始時の自動導入を書く。

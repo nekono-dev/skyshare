@@ -10,7 +10,7 @@ Skyshare は、Bluesky の利用者が投稿を作り、他の SNS にも同時�
 - **予約投稿**: 未来の日時に投稿を予約する。実行は Cron が 1 分ごとに行う。
 - **アカウント管理**: Bluesky の OAuth とアプリパスワードでログインし、複数アカウントを切り替える。
 
-補助として、ログイン時アンケート、不具合の報告と機能の提案（GitHub Issue へ登録）、旧サービスの投稿の閲覧と削除、ヘルプとプライバシーポリシーを持つ。
+補助として、ログイン時アンケート、不具合の報告と機能の提案（GitHub Issue へ登録）、旧サービスの投稿の閲覧と削除、ヘルプとプライバシーポリシーを持つ。ログインしていなくても、URL に `?guest` を付けるとダミーのデータで画面を試せる（ゲストモード。`src/lib/guestMode.ts`）。
 
 ## Target Use Cases
 
@@ -21,7 +21,7 @@ Skyshare は、Bluesky の利用者が投稿を作り、他の SNS にも同時�
 ## Value Proposition
 
 - 一度の入力で、Bluesky と他 SNS へ投稿できる。
-- 公開データは利用者の Bluesky に置かれ、サーバーが持つ状態は予約・予約用の暗号化された認可・匿名化されたアンケートの回答に限られる。
+- 公開データは利用者の Bluesky に置かれ、サーバーが持つ状態は予約・予約用の暗号化された認可・匿名化されたアンケートの回答に限られる。ほかに、フィードバックの送信間隔を制限するための一時的な回数（Cloudflare の Rate Limiter。アカウントごと）を持つ。
 - UI は日本語（既定）と英語。運営者名・連絡先・分析タグなどは環境変数で変えられる。
 
 ## Constraints Visible in Code
@@ -33,4 +33,4 @@ Skyshare は、Bluesky の利用者が投稿を作り、他の SNS にも同時�
 ---
 
 _Focus on purpose and patterns. Current behavior is recorded from the implementation (`src/`, configuration files)._
-_updated_at: 2026-10-31_
+_updated_at: 2026-11-10_

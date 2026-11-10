@@ -1,9 +1,9 @@
 {
   "feature_name": "src-duplicates",
   "created_at": "2026-11-01T11:22:57.059Z",
-  "updated_at": "2026-11-01T11:45:32.107Z",
+  "updated_at": "2026-11-10T13:00:00Z",
   "language": "ja",
-  "phase": "tasks-generated",
+  "phase": "implementation-complete",
   "approvals": {
     "requirements": {
       "generated": true,

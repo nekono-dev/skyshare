@@ -1,11 +1,5 @@
 /**
- * `com.atproto.repo.listRecords` のレコード取得ユーティリティ。
- *
- * 責務と処理概要:
- * - cursor ページングを内部で辿り、指定 repo/collection のレコードを新しい順に、
- *   指定日時より古いページに達するまで収集する（`specs/timeline-api`）。
- * - 実際に呼び出すメソッドは `listRecords` のみのため、`Agent` 全体ではなく
- *   最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
+ * `com.atproto.repo.listRecords` を cursor でたどり、全件が指定日時より古いページが現れた時点で打ち切る。
  */
 
 import type { Agent } from "@atproto/api"
@@ -19,16 +13,11 @@ type ListRecordsAgent = {
 }
 
 /**
- * 指定日時より新しいレコードを、新しい順に cursor ページングしながら取得する。
+ * 指定日時より新しいレコードを、cursor ページングしながら取得する。
  *
- * 処理の趣旨:
- * - `listRecords` を `reverse: true`（rkey の降順＝TID の新しい順）で呼び、全件を読まずに
- *   必要な範囲で打ち切る。保存済みレコードの総数に比例した取得と解析を避けるため。
- * - ページ内のすべてのレコードの `value.createdAt` が `sinceMs` より古くなった時点で、
- *   次のページを取得しない。`createdAt` が文字列でない、または日時として読めないレコードは
- *   古いとみなさず、取得を続ける。
- * - 返すのは取得したページのレコードすべてで、`sinceMs` より古いレコードも含みうる
- *   （呼び出し元は始点にマージンを持たせ、レコード単位の絞り込みを必要としない）。
+ * - `listRecords` を既定の並びで呼ぶ。ページ内のすべてのレコードの `value.createdAt` が `sinceMs` より古いとき、次のページを取得しない。この打ち切りは、既定の並びが新しい順であることを前提とする（lexicon は並びを定めていないため、前提として書く）。
+ * - `Date.parse` が NaN を返すレコード（`createdAt` が無い、または日時として読めない値）は古いとみなさず、取得を続ける。
+ * - 返すのは取得したページのレコードすべてで、`sinceMs` より古いレコードも含みうる。レコード単位の絞り込みは行わない。
  *
  * Input:
  * - `agent`: `com.atproto.repo.listRecords` を持つ認証済み Agent（または同等の最小インターフェース）
@@ -37,7 +26,7 @@ type ListRecordsAgent = {
  * - `sinceMs`: 取得範囲の始点（エポックミリ秒）
  *
  * Output:
- * - 新しい順に並んだレコード配列
+ * - 取得したレコードの配列（ページの順に連結したもの）
  *
  * 例:
  * - 1ページ目が全件 `sinceMs` より古い場合、そのページだけを返して打ち切る。
@@ -57,7 +46,6 @@ export const listRecordsSince = async (
                 collection: params.collection,
                 cursor,
                 limit: 100,
-                reverse: true,
             })
             .then(res => res.data)
 

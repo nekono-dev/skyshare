@@ -1,23 +1,16 @@
 /**
- * atproto 返信可能ユーザー設定（`app.bsky.feed.threadgate`）・
- * 引用許可設定（`app.bsky.feed.postgate`）のユーティリティ。
+ * 返信可否（threadgate）と引用可否（postgate）の設定から、レコードの値を組み立てる。
  *
- * 責務と処理概要:
- * - フロント state・localStorage・OpenAPI リクエストボディで共通して使う、
- *   Bluesky公式lexiconのunion型を平坦化した簡略表現 `PostGateValue` を定義する。
- * - `PostGateValue` から実際の threadgate/postgate レコードの値を組み立てる純粋関数を提供する。
- *   実際に atproto へ書き込む処理（`com.atproto.repo.applyWrites`での原子的な作成）は
- *   `src/lib/entry/createBskyThread.ts` が、投稿本体・skyshare entryと合わせて担う。
+ * - フロントの state・localStorage・OpenAPI のリクエストで共通に使う簡略表現 `PostGateValue` を定義する（Bluesky の lexicon の union 型を平坦化したもの）。
+ * - 実際の書き込み（`com.atproto.repo.applyWrites` による一括の作成）は、投稿本体と skyshare の entry と合わせて `src/lib/entry/createBskyThread.ts` が行う。
  */
 
 export type ReplyAudience = "everyone" | "nobody" | "custom"
 
 /**
- * threadgate/postgateの簡略化された表現。
+ * threadgate・postgate の簡略化された表現。
  *
- * 想定する入力形状:
- * - `replyAudience` が "custom" の場合のみ `allowMentioned`/`allowFollower`/
- *   `allowFollowing`/`listUris` が意味を持つ。
+ * - `replyAudience` が "custom" の場合だけ `allowMentioned`・`allowFollower`・`allowFollowing`・`listUris` が意味を持つ。
  */
 export type PostGateValue = {
     replyAudience: ReplyAudience
@@ -28,7 +21,11 @@ export type PostGateValue = {
     allowQuote: boolean
 }
 
-/** threadgate `allow` 配列の要素数上限（lexicon仕様） */
+/**
+ * threadgate の `allow` 配列の要素数上限（lexicon の仕様）。
+ *
+ * - 上限は、`allowMentioned`・`allowFollower`・`allowFollowing` と `listUris` を合わせた件数。超えた分は `buildThreadgateRecord` が切り捨てる。
+ */
 export const MAX_REPLY_GATE_RULES = 5
 
 export const DEFAULT_POST_GATE_VALUE: PostGateValue = {
@@ -43,12 +40,8 @@ export const DEFAULT_POST_GATE_VALUE: PostGateValue = {
 /**
  * threadgateレコードを組み立てる。
  *
- * 処理の趣旨:
- * - "everyone" の場合、Bluesky側の既定動作（allow未指定=誰でも返信可能）に委ねるため
- *   レコード自体を作らず null を返す。
- * - "nobody" の場合、allow を空配列にして誰も返信できないようにする。
- * - "custom" の場合、mention→follower→following→listの順にunion要素を積み、
- *   lexicon仕様の上限（`MAX_REPLY_GATE_RULES`）を超えないよう防御的にclampする。
+ * - "everyone" は Bluesky 側の既定（`allow` 未指定で誰でも返信可）に任せ、レコードを作らない。
+ * - "custom" は mention・follower・following・list の順に積み、上限（`MAX_REPLY_GATE_RULES`）を超えた分は切り捨てる。
  *
  * Input:
  * - `postUri`: 対象投稿のAT-URI
@@ -105,10 +98,7 @@ export const buildThreadgateRecord = (
 /**
  * postgateレコードを組み立てる。
  *
- * 処理の趣旨:
- * - 引用/embedを許可する場合（`allowQuote: true`）は、Bluesky側の既定動作
- *   （embeddingRules未指定=誰でも引用可能）に委ねるためレコード自体を作らず null を返す。
- * - 許可しない場合、`#disableRule` を含む embeddingRules を設定する。
+ * - `allowQuote: true` は Bluesky 側の既定（`embeddingRules` 未指定で誰でも引用可）に任せ、レコードを作らない。
  *
  * Input:
  * - `postUri`: 対象投稿のAT-URI

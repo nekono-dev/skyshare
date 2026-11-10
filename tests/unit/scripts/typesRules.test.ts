@@ -13,10 +13,10 @@ import { describe, expect, it } from "vitest"
 import type {
     ImportEdge,
     ModuleGraph,
-} from "../../../scripts/architecture/importGraph"
-import { scanModules } from "../../../scripts/architecture/importGraph"
+} from "../../../scripts/architecture/import-graph"
+import { scanModules } from "../../../scripts/architecture/import-graph"
 import { evaluateImportRules } from "../../../scripts/architecture/rules"
-import { findTypesOnlyViolations } from "../../../scripts/architecture/typesOnly"
+import { findTypesOnlyViolations } from "../../../scripts/architecture/types-only"
 
 /** `from` から `specifier` の import 辺を作る。target はモジュールまたはパッケージ。 */
 const edgeTo = (

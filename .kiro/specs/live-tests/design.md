@@ -28,28 +28,27 @@
 
 ```mermaid
 graph TD
-  Config[config/live.json] --> Loader[scripts/lib/liveConfig.mjs: readLiveConfig]
+  Config[config/live.json] --> Loader[scripts/lib/live-config.mjs: readLiveConfig]
   Dev[.dev.vars] --> Loader
   Loader --> Test[tests/live/atprotoContract.test.ts]
   Test --> PDS[実 PDS: createSession / resolveHandle / getProfile]
-  VitestLive[vitest.live.config.ts] --> Test
+  VitestLive[config/test/vitest.live.config.ts] --> Test
 ```
 
 ## Components and Interfaces
 
-| Component                                 | Intent                                                                             | Req  |
-| ----------------------------------------- | ---------------------------------------------------------------------------------- | ---- |
-| `readLiveConfig({ configPath, devVars })` | 設定と秘密を読み、`null`（未設定）か `{ identifier, service, appPassword }` を返す | 2, 3 |
-| `liveSkipReason(config)`                  | スキップの理由（1 行）を返す。未設定なら理由、設定済みなら `null`                  | 3.1  |
-| `expectSessionContract(response, config)` | 応答の DID・ハンドルを確かめる純粋な判定                                           | 4.1  |
-| `atprotoContract.test.ts`                 | 実 PDS への読み取り専用の呼び出しと判定                                            | 4    |
-| `vitest.live.config.ts`                   | `tests/live/**/*.test.ts` だけを対象にする                                         | 1, 5 |
+| Component                                     | Intent                                                                | Req  |
+| --------------------------------------------- | --------------------------------------------------------------------- | ---- |
+| `readLiveConfig({ configPath, devVarsPath })` | 設定と秘密を読み、設定不足なら `{ skip: 理由 }`、そろえば設定値を返す | 2, 3 |
+| `sessionMismatches(session, identifier)`      | セッション応答の食い違いを返す                                        | 4.1  |
+| `atprotoContract.test.ts`                     | 実 PDS への読み取り専用の呼び出しと判定                               | 4    |
+| `config/test/vitest.live.config.ts`           | `tests/live/**/*.test.ts` だけを対象にする                            | 1, 5 |
 
-### scripts/lib/liveConfig.mjs
+### scripts/lib/live-config.mjs
 
 **Contract**:
 
-- `readLiveConfig({ configPath, devVars })`: `configPath` が無ければ `null`。あれば JSON を読み、`identifier`（必須）・`service`（任意。既定 `https://bsky.social`）を取る。`devVars` の `SKYSHARE_E2E_APP_PASSWORD` が空なら `null`（スキップ）。
+- `readLiveConfig({ configPath, devVarsPath })`: 設定がそろわないとき `{ skip: 理由 }` を返す。設定がそろえば `identifier`（必須）・`service`（任意。既定 `https://bsky.social`）と `appPassword` を返す。`devVarsPath` の `SKYSHARE_E2E_APP_PASSWORD` が空ならスキップ理由を返す。
 - 形式が不正（JSON でない、`identifier` が無い）なら `Error`。メッセージに項目名だけを含め、値は含めない。
 - 戻り値に `appPassword` を含むが、テストは値を表示しない。
 
@@ -63,7 +62,7 @@ graph TD
 ## Data Models
 
 - `config/live.json`: `{ "identifier": "<ハンドル>", "service": "<PDS の URL。省略可>" }`
-- `.dev.vars`: `SKYSHARE_E2E_APP_PASSWORD=<アプリパスワード>`
+- `config/.dev.vars.template`: `SKYSHARE_E2E_APP_PASSWORD=<アプリパスワード>` の雛形
 
 ## Error Handling
 
@@ -72,7 +71,7 @@ graph TD
 
 ## Testing Strategy
 
-- **Unit**（`tests/unit/scripts/liveConfig.test.ts`）: `readLiveConfig` の無い・空・不正・正常。`liveSkipReason` の理由の有無。`expectSessionContract` の一致と不一致（応答は固定の値）。
+- **Unit**（`tests/unit/scripts/liveConfig.test.ts`）: `readLiveConfig` の無い・空・不正・正常。`sessionMismatches` の一致と不一致（応答は固定の値）。
 - **Live**（`tests/live/atprotoContract.test.ts`）: 設定が揃っているときだけ実 PDS に問い合わせる。設定が無ければ全て skip。
 - 実通信は、利用者の認証情報が無いこの環境では行えない。skip の経路と単体テストで確かめる。
 
@@ -80,3 +79,9 @@ graph TD
 
 - 実 PDS の既定（`https://bsky.social`）は利用者の環境に依存する。`service` を設定で変えられるようにした。
 - 認証情報を持つ開発者の数だけ、実アカウントへの呼び出しが増える。読み取り専用に限定して影響を抑える。
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時の記述                                                                                        | 現在                                                                                                                                                              | 変えた spec                         |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `vitest.live.config.ts`、`.dev.vars.template`、`liveSkipReason`・`expectSessionContract`・`devVars` | `config/test/vitest.live.config.ts`、`config/.dev.vars.template`、`readLiveConfig` は `{ skip: 理由 }` を返し、`sessionMismatches` を使う。引数名は `devVarsPath` | repo-root-layout、live-tests の実装 |

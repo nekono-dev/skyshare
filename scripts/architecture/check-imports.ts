@@ -15,10 +15,10 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { checkAllowlist, emitAllowlist, loadAllowlist } from "./allowlist"
 import { findCycleViolations } from "./cycles"
-import { scanModules } from "./importGraph"
+import { scanModules } from "./import-graph"
 import { evaluateImportRules, type Violation } from "./rules"
-import { findTypesOnlyViolations } from "./typesOnly"
-import { findUtilSharingViolations } from "./utilSharing"
+import { findTypesOnlyViolations } from "./types-only"
+import { findUtilSharingViolations } from "./util-sharing"
 
 export type ImportCheckOptions = {
     root: string

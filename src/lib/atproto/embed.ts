@@ -1,11 +1,7 @@
 /**
- * Bluesky 投稿の embed（画像 / 動画 / 外部リンク）組み立てユーティリティ群。
+ * Bluesky 投稿の embed（画像・動画・外部リンク）を組み立てる。
  *
- * 責務と処理概要:
- * - 画像投稿・OGPリンク投稿それぞれの embed 構造（`app.bsky.embed.*`）を組み立てる。
- * - 画像投稿については、アップロード前のメタデータ整合性検証も担う。
- * - アップロード済み blob 参照や facets 抽出結果を入力として受け取るのみで、
- *   atproto クライアントへの通信自体は行わない（純粋関数）。
+ * - 純粋関数: アップロード済みの blob 参照を受け取るだけで、atproto への通信はしない。
  */
 
 import type {
@@ -19,10 +15,8 @@ import { MAX_IMAGES_EMBED, MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
 /**
  * 画像投稿時のメタデータ整合性を検証する。
  *
- * 処理の趣旨:
- * - bsky 投稿作成前に、画像投稿として成立する最小条件を確認する。
- * - images が未指定または空配列の場合は画像投稿ではないため、検証をスキップする。
- * - images が存在する場合は imagesMeta が必須であり、件数一致を確認する。
+ * - `images` が未指定または空配列なら画像投稿ではないため、検証しない。
+ * - `images` があるときは `imagesMeta` が必須で、件数が一致しなければならない。
  * - 枚数が `MAX_POST_IMAGES` を超える場合は拒否する（スキーマを通らない内部呼び出しへの防御）。
  *
  * Input:
@@ -67,12 +61,9 @@ export const validateImageMetadata = (
 /**
  * 画像投稿の embed オブジェクトを、枚数に応じた型で組み立てる。
  *
- * 処理の趣旨:
- * - 1〜4枚は従来どおり `app.bsky.embed.images`（互換性維持）、
- *   5枚以上は `app.bsky.embed.gallery` を使う。
+ * - 1〜4 枚は `app.bsky.embed.images`（この型の lexicon 上限が 4 枚のため）、5 枚以上は `app.bsky.embed.gallery` を使う。
  * - alt・縦横比・順序はどちらの型でも保持する。
- * - aspectRatio は メタデータが存在する場合のみセット。gallery は aspectRatio 必須だが、
- *   imagesMeta は width/height が必須（min 1）のため常に存在する。
+ * - `aspectRatio` は metadata に width・height がある場合だけ付ける。gallery では `aspectRatio` が必須だが、`imagesMeta` の width・height は必須（最小 1）のため常に付く。
  *
  * Input:
  * - `uploadedBlobs`: atproto サーバーで生成された blob 参照配列
@@ -116,11 +107,7 @@ export const createImageEmbed = (
 /**
  * OGP 投稿の app.bsky.embed.external embed オブジェクトを組み立てる。
  *
- * 処理の趣旨:
- * - OGP メタデータ（title, description, url）から、
- * - atproto の external embed 形式に変換する。
- * - Bluesky はリンクカードを embed として添付するため、本文（facets）に
- *   URL が含まれているかどうかとは無関係に組み立てられる。
+ * - Bluesky はリンクカードを embed として付けるため、本文（facets）に URL が含まれるかどうかとは無関係に組み立てる。
  *
  * Input:
  * - `ogMeta`: { title: string, description: string, url: string, ... }
@@ -155,8 +142,7 @@ export const createExternalEmbed = (ogMeta: BskyOgMeta, thumbBlob: any) => {
 /**
  * 動画投稿の app.bsky.embed.video embed オブジェクトを組み立てる。
  *
- * 処理の趣旨:
- * - 動画の実体はブラウザから動画サービスへアップロード済みのため、blob 参照を載せるだけ。
+ * - 動画の実体はブラウザから動画サービスへアップロード済みのため、blob 参照を載せるだけにする。
  * - 縦横比と alt（未指定は空文字）を保持する。
  *
  * 例:

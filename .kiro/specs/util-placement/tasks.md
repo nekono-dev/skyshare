@@ -129,7 +129,8 @@
   - 移動した旧パス（util/share・util/textarea・util/listbox・util/emoji・util/autoLink・util/scrollLock・util/clientEnvironment・util/textCount・util/object・util/links・util/outcome・`util/formData` の型）を参照する箇所が 0 件
   - 完了の条件: 旧パスの検索が 0 件で、util 直下の一覧が 5 件と一致する
   - _Depends: 6.1, 6.2_
-  - _Requirements: 1.1, 1.8, 3.1, 3.2, 3.3_
+  - 要件 7.4（`lib/` で定義し `components/` だけが使う型は `lib/` に残す）は、移動しないことで満たす（例: `lib-layers` の 3.2 が扱った `DraftListItem`）。`src/types/` に置くのは要件 7.1 の 3 ファイルの型だけであることを確かめる（2026-11-10 追記）
+  - _Requirements: 1.1, 1.8, 3.1, 3.2, 3.3, 7.4_
 - [x] 7.2 型・import・循環・副作用の検査を通す
   - `npm run test:type`・`npm run test:imports`・`npm run test:unit` を実行し、いずれも終了コード 0 であることを確かめる
   - lib/share と lib/settings の循環が検出されないことを確かめる
@@ -225,3 +226,9 @@
   7. 結果（共有シートの表示・キャンセル時の文言・Console の内容）を利用者が記録し、7.4 の (d) を完了とする。
 
 - 利用者の確認（2026-11-05）: WebShare（7.4 (d)）を実機で確認し、動作することを利用者が確認した。7.4 は完了。詳細な観察記録は残していない。
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: 要件 7.4（`lib/` で定義し `components/` だけが使う型は移動しない）がタスクから参照されていなかった。移動しないことで満たす基準であるため、7.1 に参照と説明を加えた。`src/types/` は要件 7.1 の 3 ファイルだけである。
+- 上の「利用者の判断（未決）」2 件（関連文書の旧パスの扱い、roadmap.md の `util/` の利用元の一覧）は解消した。前者は利用者の決定（2026-11-10: パスの不一致は現状に合わせて直す）により、design.md に「現況との対応」を追補した。後者は roadmap.md の改稿で現況の記述になっている。

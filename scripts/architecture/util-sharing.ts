@@ -11,7 +11,7 @@
  * 実装上の制約:
  * - `scanModules` が返すグラフを入力にする。`tests/`・`scripts/` は走査の対象外のため、利用元に入らない。
  */
-import type { ModuleGraph } from "./importGraph"
+import type { ModuleGraph } from "./import-graph"
 import { regionOf } from "./regions"
 import type { Violation } from "./rules"
 

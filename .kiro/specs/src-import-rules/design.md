@@ -111,7 +111,7 @@ graph TB
 scripts/
 └── architecture/                  # 依存規則の検査（本 spec の所有）
     ├── check-imports.ts           # CLI の入口。結果の表示と終了コード。--emit-allowlist を持つ
-    ├── importGraph.ts             # 走査。ファイルの列挙、import の抽出、解決
+    ├── import-graph.ts             # 走査。ファイルの列挙、import の抽出、解決
     ├── regions.ts                 # 領域の判定（regionOf）
     ├── rules.ts                   # 規則 R1・R2・R4a・R4b・R4c（純粋な関数）
     ├── cycles.ts                  # 循環（強連結成分）。規則 R3
@@ -240,7 +240,7 @@ src/
 
 ### scripts/architecture
 
-#### ImportScanner（`importGraph.ts`）
+#### ImportScanner（`import-graph.ts`）
 
 | Field        | Detail                                                                                  |
 | ------------ | --------------------------------------------------------------------------------------- |

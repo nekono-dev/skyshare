@@ -29,8 +29,8 @@
 
 ### This Spec Owns
 
-- 規則 `utilShared` の定義と判定（`scripts/architecture/utilSharing.ts`）
-- 規則 `typesLeaf`（辺の規則。`rules.ts`）と `typesOnly`（`src/types/` の文の形。`scripts/architecture/typesOnly.ts`）の定義と判定
+- 規則 `utilShared` の定義と判定（`scripts/architecture/util-sharing.ts`）
+- 規則 `typesLeaf`（辺の規則。`rules.ts`）と `typesOnly`（`src/types/` の文の形。`scripts/architecture/types-only.ts`）の定義と判定
 - 規則の一覧の単一の定義（`RULE_IDS`・`RuleId`・`RULE_BASIS`）と、`utilShared` の既定の所有 spec
 - 許容リストの項目の形式（`reason` の必須化）と、その読み込みの検証
 - 骨格の置き場の静的検査（`src/layout/` の不在、`@/layout/` の import の不在、`Baselayout` の所在）
@@ -40,7 +40,7 @@
 
 ### Out of Boundary
 
-- `libLayer` 規則の判定と層の対応表（`lib-layers` の `scripts/architecture/libLayers.ts`・`rules.ts` の `libLayer`）。本仕様はこれを変更しない
+- `libLayer` 規則の判定と層の対応表（`lib-layers` の `scripts/architecture/lib-layers.ts`・`rules.ts` の `libLayer`）。本仕様はこれを変更しない
 - `src/util/` 内のファイルの移動と import の付け替え（`util-placement`）
 - `src/components/` の配置の検査（既存の `componentLayout`・`steeringRegions`）の変更
 - 400 行の検査、既存の規則の判定と既存の許容の扱い
@@ -48,10 +48,10 @@
 
 ### Allowed Dependencies
 
-- `scripts/architecture/utilSharing.ts` → `importGraph.ts`（`ModuleGraph`・`ImportEdge`）・`regions.ts`（`regionOf`）・`rules.ts`（`Violation`・`RuleId`）
+- `scripts/architecture/util-sharing.ts` → `import-graph.ts`（`ModuleGraph`・`ImportEdge`）・`regions.ts`（`regionOf`）・`rules.ts`（`Violation`・`RuleId`）
 - `scripts/architecture/allowlist.ts` → `rules.ts`（`RULE_IDS`・`RuleId`・`Violation`）。`rules.ts` は `allowlist.ts` を import しない
-- `scripts/architecture/check-imports.ts` → `utilSharing.ts`・`typesOnly.ts`（違反の合流のみ）
-- `scripts/architecture/typesOnly.ts` → `typescript`（構文木の解析のみ。`importGraph.ts` と同じ依存）・`rules.ts`（`Violation`）
+- `scripts/architecture/check-imports.ts` → `util-sharing.ts`・`types-only.ts`（違反の合流のみ）
+- `scripts/architecture/types-only.ts` → `typescript`（構文木の解析のみ。`import-graph.ts` と同じ依存）・`rules.ts`（`Violation`）
 - `tests/unit/scripts/*` → `scripts/architecture/*`・`node:fs`・`node:path`（ファイルの読み取りのみ、本仕様の検査のテストはモジュールを実行しない）
 - `scripts/architecture/*` は `src/` の中のコードを import しない（既存の方式を保つ）
 
@@ -80,7 +80,7 @@
 graph TD
     graph[importGraph: ModuleGraph]
     rules[rules.ts: RULE_IDS・RuleId・RULE_BASIS・evaluateImportRules]
-    util[utilSharing.ts: findUtilSharingViolations]
+    util[util-sharing.ts: findUtilSharingViolations]
     cycles[cycles.ts: findCycleViolations]
     allow[allowlist.ts: reason の検証・DEFAULT_OWNERS]
     cli[check-imports.ts: runImportCheck]
@@ -105,7 +105,7 @@ graph TD
 - Selected pattern: 既存の検査の方式（グラフ全体の規則を別モジュールに置き、CLI で合流する）に従う
 - Domain/feature boundaries: 規則の判定（純粋関数）と、許容リストの照合（`allowlist.ts`）と、文書・ファイルの静的検査（テスト）を分ける
 - Existing patterns preserved: `Violation` の形、`RULE_BASIS` による根拠の紐づけ、許容リストの所有 spec、負例のテスト
-- New components rationale: `utilSharing.ts` はモジュールごとの利用元の集合を数えるため、辺の規則に収まらない
+- New components rationale: `util-sharing.ts` はモジュールごとの利用元の集合を数えるため、辺の規則に収まらない
 - Steering compliance: 規則の根拠は `structure.md` の節だけを指す。規則を変えるときは `structure.md` の表を同じ変更で改訂する
 
 ### Technology Stack
@@ -122,8 +122,8 @@ graph TD
 
 ```
 scripts/architecture/
-├── utilSharing.ts          # 新設: 規則 utilShared。src/util/ の各モジュールの利用元の領域を数える
-├── typesOnly.ts            # 新設: 規則 typesOnly。src/types/ の各 .ts が型だけの文を持つことを構文木で確かめる
+├── util-sharing.ts          # 新設: 規則 utilShared。src/util/ の各モジュールの利用元の領域を数える
+├── types-only.ts            # 新設: 規則 typesOnly。src/types/ の各 .ts が型だけの文を持つことを構文木で確かめる
 ├── rules.ts                # 変更: RULE_IDS（単一の定義）・RuleId の導出・RULE_BASIS（utilShared・typesLeaf・typesOnly）
 ├── allowlist.ts            # 変更: RULE_IDS を import・reason の検証・DEFAULT_OWNERS.utilShared
 └── check-imports.ts        # 変更: findUtilSharingViolations の結果を違反に合流
@@ -172,10 +172,10 @@ flowchart LR
 | 1.2         | 基盤 → 業務の辺を違反にする                                         | lib-layers の `libLayer`（負例は `importRules.test.ts`）             | `LibLayerRule`              | 検査の流れ B |
 | 1.3         | 業務 → 基盤は違反にしない                                           | lib-layers の `libLayer`（正例は `importRules.test.ts`）             | —                           | —            |
 | 1.4         | 完了時に `libLayer` の許容が無い                                    | `allowlistCompletion.test.ts`                                        | `loadAllowlist`             | —            |
-| 2.1         | 各 `src/util/` モジュールの利用元の領域を数える                     | `utilSharing.ts`                                                     | `findUtilSharingViolations` | 検査の流れ D |
-| 2.2         | 領域が二つ未満なら違反                                              | `utilSharing.ts`                                                     | `Violation`（`utilShared`） | 検査の流れ D |
-| 2.3         | `src/util/` 内の import は数えない                                  | `utilSharing.ts`                                                     | —                           | —            |
-| 2.4         | 二つ以上の領域から使われれば違反にしない                            | `utilSharing.ts`・`utilSharing.test.ts`                              | —                           | —            |
+| 2.1         | 各 `src/util/` モジュールの利用元の領域を数える                     | `util-sharing.ts`                                                    | `findUtilSharingViolations` | 検査の流れ D |
+| 2.2         | 領域が二つ未満なら違反                                              | `util-sharing.ts`                                                    | `Violation`（`utilShared`） | 検査の流れ D |
+| 2.3         | `src/util/` 内の import は数えない                                  | `util-sharing.ts`                                                    | —                           | —            |
+| 2.4         | 二つ以上の領域から使われれば違反にしない                            | `util-sharing.ts`・`utilSharing.test.ts`                             | —                           | —            |
 | 2.5         | 許容リストの仕組みに乗せる                                          | `allowlist.ts`（`DEFAULT_OWNERS.utilShared`）・`check-imports.ts`    | `checkAllowlist`            | 検査の流れ E |
 | 2.6         | 完了時に `utilShared` の許容が無く、残る `util` が通る              | `allowlistCompletion.test.ts`・`utilSharing.test.ts`（実リポジトリ） | —                           | —            |
 | 3.1         | `src/layout/` が無い                                                | `layoutSingle.test.ts`                                               | `findLayoutViolations`      | —            |
@@ -199,8 +199,8 @@ flowchart LR
 | 7.4         | 利用者に見える振る舞い・API・生成物を変えない                       | 変更はすべて `scripts/`・`tests/`・`structure.md`                    | —                           | —            |
 | 8.1         | `src/types/` から出る辺を検査する                                   | `rules.ts`（`typesLeaf`）                                            | `evaluateImportRules`       | —            |
 | 8.2         | `src/types/` が他の層・パッケージを import しない                   | `rules.ts`（`typesLeaf`）・`typesRules.test.ts`                      | `RuleId` の `typesLeaf`     | —            |
-| 8.3         | `src/types/` の文は型だけ                                           | `typesOnly.ts`                                                       | `findTypesOnlyViolations`   | —            |
-| 8.4         | 許容は理由付きの項目だけ。型だけの文の形                            | `typesOnly.ts`・`check-imports.ts`・`allowlist.ts`                   | `checkAllowlist`            | 検査の流れ E |
+| 8.3         | `src/types/` の文は型だけ                                           | `types-only.ts`                                                      | `findTypesOnlyViolations`   | —            |
+| 8.4         | 許容は理由付きの項目だけ。型だけの文の形                            | `types-only.ts`・`check-imports.ts`・`allowlist.ts`                  | `checkAllowlist`            | 検査の流れ E |
 | 8.5         | 完了時に `typesLeaf`・`typesOnly` の許容が無く、実リポジトリで 0 件 | `allowlistCompletion.test.ts`・`typesRules.test.ts`（実リポジトリ）  | —                           | —            |
 | 8.6         | 負例で検査が違反を見つけることを確かめる                            | `typesRules.test.ts`                                                 | —                           | —            |
 
@@ -209,7 +209,7 @@ flowchart LR
 | Component                                                | Domain/Layer | Intent                                                                 | Req Coverage  | Key Dependencies (P0/P1)                 | Contracts |
 | -------------------------------------------------------- | ------------ | ---------------------------------------------------------------------- | ------------- | ---------------------------------------- | --------- |
 | RuleRegistry (`rules.ts`)                                | 検査（基盤） | 規則の一覧と根拠の単一の定義                                           | 5.1, 5.2, 6.1 | `importGraph` (P0)                       | State     |
-| UtilSharingRule (`utilSharing.ts`)                       | 検査         | `src/util/` の各モジュールの利用元の領域が二つ以上であることを確かめる | 2.1〜2.4      | `regions` (P0), `ModuleGraph` (P0)       | Service   |
+| UtilSharingRule (`util-sharing.ts`)                      | 検査         | `src/util/` の各モジュールの利用元の領域が二つ以上であることを確かめる | 2.1〜2.4      | `regions` (P0), `ModuleGraph` (P0)       | Service   |
 | AllowlistReason (`allowlist.ts`)                         | 検査         | 許容の項目の理由の検証と、既定の所有 spec                              | 4.1〜4.3, 2.5 | `RuleRegistry` (P0)                      | State     |
 | LayoutSingle test (`layoutSingle.test.ts`)               | 検査（静的） | 骨格の置き場が一つであることを確かめる                                 | 3.1〜3.4      | `node:fs` (P1)                           | —         |
 | SteeringRules test (`steeringRules.test.ts`)             | 検査（静的） | 規則の一覧と `structure.md` の表・根拠の節の一致                       | 5.1〜5.4      | `RuleRegistry` (P0), `structure.md` (P0) | —         |
@@ -241,7 +241,7 @@ flowchart LR
 - `utilShared` の根拠は `structure.md` の「共通（`src/util/`・`src/styles/`）」の見出し（利用元が二つ以上の領域のときだけ `util` に置く、の規約を含む節）
 - `typesLeaf`・`typesOnly` の根拠は `structure.md` の「型（`src/types/`）」の見出し（葉の規則と型だけの規約を含む節）
 
-#### UtilSharingRule（utilSharing.ts）
+#### UtilSharingRule（util-sharing.ts）
 
 | Field        | Detail                                                                                               |
 | ------------ | ---------------------------------------------------------------------------------------------------- |
@@ -273,7 +273,7 @@ export const findUtilSharingViolations: (graph: ModuleGraph) => Violation[]
 - 特定の領域の名前（`lib/feedback` など）を規則に書かない（想定の構成に依存させない。既存の `importRules.test.ts` の「想定の構成からの独立」の方針）
 - 規則の例の負例は、fixture のグラフで「領域が一つ」「領域が 0」「`util` 内からの利用のみ」「領域が二つ」「`pages` の直下のファイル」を与える（Testing Strategy）
 
-#### TypesRules（rules.ts・typesOnly.ts）
+#### TypesRules（rules.ts・types-only.ts）
 
 | Field        | Detail                                              |
 | ------------ | --------------------------------------------------- |
@@ -283,7 +283,7 @@ export const findUtilSharingViolations: (graph: ModuleGraph) => Violation[]
 **Responsibilities & Constraints**
 
 - `typesLeaf`（辺の規則。`rules.ts` の `evaluateImportRules` に加える）: 辺の `from` が `src/types/` で始まり、`target` が `src/types/` の外のモジュール（相対パスで外へ出るものを含む）またはパッケージ（外部の型を含む）なら違反（ruleId `typesLeaf`）。`import type` の辺も数える（型だけの辺も違反）
-- `typesOnly`（`typesOnly.ts`）: `src/types/` の `.ts` の本文を構文木で読み、`type` 宣言・`interface` 宣言・`export type`・`export interface`・`import type` 以外の文を違反にする（ruleId `typesOnly`）。値の宣言（`const`・`let`・`var`・`function`・`class`・`enum`・`namespace`）、`export default`、値の `import`、`export *`、値の `export { ... } from` は違反
+- `typesOnly`（`types-only.ts`）: `src/types/` の `.ts` の本文を構文木で読み、`type` 宣言・`interface` 宣言・`export type`・`export interface`・`import type` 以外の文を違反にする（ruleId `typesOnly`）。値の宣言（`const`・`let`・`var`・`function`・`class`・`enum`・`namespace`）、`export default`、値の `import`、`export *`、値の `export { ... } from` は違反
 - 対象のファイル（util-placement の決定）: `src/types/clientEnvironment.ts`・`src/types/outcome.ts`・`src/types/formData.ts` の 3 件。いずれも import を持たない
 - 判定は純粋な関数で、ファイルを読まない。読み取りは `check-imports.ts` が行う
 - 所有 spec は `structure-checks`。根拠は `RULE_BASIS` で「型（`src/types/`）」の節を指す
@@ -306,7 +306,7 @@ export const findTypesOnlyViolations: (
 
 **Implementation Notes**
 
-- 構文木の解析は `importGraph.ts` と同じ `typescript` を使う（新しい依存は増やさない）
+- 構文木の解析は `import-graph.ts` と同じ `typescript` を使う（新しい依存は増やさない）
 - `typesLeaf` は `src/types/` 以外への参照をすべて違反にするため、`lib`・`components`・`util`・`pages` を個別に書かない（想定の構成に依存させない）
 - 負例は fixture（グラフと文字列）で固定し、実リポジトリでは `src/types/` の違反が 0 件であることを確かめる
 
@@ -453,7 +453,7 @@ type AllowlistEntry = {
 
 1. 基準の記録（`npm run test:all` の件数）と、上流の完了の確認（Testing Strategy の 2）
 2. `rules.ts` で `RULE_IDS` を一本化し、`utilShared`・`typesLeaf`・`typesOnly` と `RULE_BASIS` を加える（`allowlist.ts` は import に切り替える）
-3. `utilSharing.ts` を加え、`check-imports.ts` に合流させる。`test:imports` が 0 で終わることを確かめる（上流の完了後なので違反は 0 件）
+3. `util-sharing.ts` を加え、`check-imports.ts` に合流させる。`test:imports` が 0 で終わることを確かめる（上流の完了後なので違反は 0 件）
 4. `allowlist.ts` に `reason` の検証と `DEFAULT_OWNERS.utilShared` を加え、`importRules.test.ts` の fixture を更新する
 5. 静的な検査（`layoutSingle`・`steeringRules`・`allowlistCompletion`）と、`typesRules`（`typesLeaf`・`typesOnly`）を加える
 6. `structure.md` の表に `utilShared`・`typesLeaf`・`typesOnly` の行を加える（`steeringRules` が通ることを確かめる）。骨格の一文は layout-home 3.2 の記述を参照し、本仕様では加えない

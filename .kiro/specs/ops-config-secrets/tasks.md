@@ -67,3 +67,11 @@
   - `scripts/secrets/sync-github-variables.mjs --if-configured` の行と説明コメントを削除する
   - 完了の確かめ方: hook の内容が `npm run test:all` だけであること。`sync:github` は引き続き `npm run sync:github` で動く
   - _Requirements: 4.4_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: (1) 要件 2.3（JSONC の解析は `parseJsonc` だけ）: `config/test/vitest.route.config.ts` が `compatibility_date` を正規表現で読んでいたため、`parseJsonc` に替えた（route の試験は通過）。(2) 要件 3.5: `scripts/secrets/generators.mjs` を直接実行したときだけ値を標準出力へ出す（`ops-tooling-layout` の要件 6.4）。利用者の決定に従い、requirements.md に例外として追補した。(3) 要件 4.2: `npm run sync:github -- --dry-run` を実行し、終了コード 0、Variables は「変更なし 12 件・登録 0 件」で、登録する名前の導出は `tests/unit/scripts/syncGithubVariables.test.ts`（期待値は不変）が固定している。値は表示していない。
+- design.md に「現況との対応（2026-11-10 追補）」を加えた（`scripts/` の移動後のパス）。

@@ -116,11 +116,11 @@ graph TB
 ### Directory Structure
 
 ```
-vitest.unit.config.ts            # unit 層の設定（Node、tests/unit）。旧 vitest.config.ts を置き換える
-vitest.component.config.ts       # component 層の設定（Node、happy-dom をファイル単位で指定）
-vitest.route.config.ts           # route 層の設定（workerd。cloudflareTest を使う）
-# coverage の閾値は vitest.unit.config.ts と vitest.component.config.ts に置く（P0 の glob 単位）
-vitest.astro.config.ts           # render 層の設定（既存を流用。include を tests/render に変える）
+config/test/vitest.unit.config.ts            # unit 層の設定（Node、tests/unit）。旧 vitest.config.ts を置き換える
+config/test/vitest.component.config.ts       # component 層の設定（Node、happy-dom をファイル単位で指定）
+config/test/vitest.route.config.ts           # route 層の設定（workerd。cloudflareTest を使う）
+# coverage の閾値は config/test/vitest.unit.config.ts と config/test/vitest.route.config.ts に置く（P0 の glob 単位）
+config/test/vitest.astro.config.ts           # render 層の設定（既存を流用。include を tests/render に変える）
 tests/
 ├── unit/                        # src/lib/ の対応パスを映す
 ├── component/                   # src/components/ の対応パスを映す
@@ -129,7 +129,7 @@ tests/
 │   └── support/applyMigrations.ts  # 各テストの前に D1 のマイグレーションを適用する
 ├── render/                      # src/pages/ の .astro ページ
 ├── e2e/
-│   └── flows/                   # 6 本の流れ（login・thread-posting・entry・schedule・survey・feedback）。偽の Bluesky と dev サーバーは scripts/run-e2e.mjs が起動する
+│   └── flows/                   # 6 本の流れ（login・thread-posting・entry・schedule・survey・feedback）。偽の Bluesky と dev サーバーは scripts/e2e/run-e2e.mjs が起動する
 ├── support/
 │   ├── fakeBluesky/             # 認可サーバー、PDS、AppView、PLC の固定応答（HTTP サーバー）。serve.ts が単独のプロセスとして起動する（DID は起動のたびに作る）
 │   └── fakeOutbound.ts          # route 層の外部通信（miniflare の outboundService）
@@ -138,29 +138,41 @@ src/lib/platform/
 ├── blueskyEndpoints.ts          # Bluesky の接続先を環境変数から解決する単一の関数
 └── publicEndpoints.ts           # ビルド時の import.meta.env から接続先を解決した定数（ブラウザへ配る値）
 scripts/
-├── run-e2e.mjs                  # 偽の Bluesky・dev サーバーの起動と後始末（E2E の入口）
-├── render-wrangler.mjs          # config/<名前>.json から wrangler.jsonc を生成する（設定の源は wrangler の vars）
-├── sync-github-variables.mjs    # config/production.json と .dev.vars を GitHub・Worker へ登録する
+├── e2e/run-e2e.mjs                  # 偽の Bluesky・dev サーバーの起動と後始末（E2E の入口）
+├── config/render-wrangler.mjs          # config/<名前>.json から wrangler.jsonc を生成する（設定の源は wrangler の vars）
+├── secrets/sync-github-variables.mjs    # config/production.json と .dev.vars を GitHub・Worker へ登録する
 ├── lib/                         # jsonc・dotenv・GitHub のリモート解析（純粋な関数）
-└── setup-git-hooks.mjs          # core.hooksPath を .githooks に設定する（git 管理外では何もしない）
+└── git/setup-git-hooks.mjs          # core.hooksPath を .githooks に設定する（git 管理外では何もしない）
 .githooks/
 └── pre-push                     # npm run test:all を実行し、失敗なら push を止める
 ```
 
 ### Modified Files
 
-- `package.json` — `test` 系スクリプトを層ごとに再定義（`test:unit`・`test:component`・`test:route`・`test:render`・`test:e2e`・`test:all`）。`prepare` に `node scripts/setup-git-hooks.mjs` を追加。`test:astro` は `test:render` に改名。
-- `playwright.config.ts` — `testDir` を `tests/e2e/flows` にし、live の project を削除。偽の Bluesky は `scripts/run-e2e.mjs` が起動するため、`globalSetup` は使わない。
-- `scripts/run-e2e.mjs` — dev サーバーの起動時に、接続先の環境変数（偽の Bluesky の URL）を渡す。
+- `package.json` — `test` 系スクリプトを層ごとに再定義（`test:unit`・`test:component`・`test:route`・`test:render`・`test:e2e`・`test:all`）。`prepare` に `node scripts/git/setup-git-hooks.mjs` を追加。`test:astro` は `test:render` に改名。
+- `config/test/playwright.config.ts` — `testDir` を `tests/e2e/flows` にし、live の project を削除。偽の Bluesky は `scripts/e2e/run-e2e.mjs` が起動するため、`globalSetup` は使わない。
+- `scripts/e2e/run-e2e.mjs` — dev サーバーの起動時に、接続先の環境変数（偽の Bluesky の URL）を渡す。
 - `.github/workflows/e2e.yaml` — `pull_request` のトリガーを追加。unit・astro の段と live の項目を削除。
-- `.claude/hooks/session-start.sh` — `CLAUDE_CODE_REMOTE` のガードより前に、`node scripts/setup-git-hooks.mjs` を実行する行を追加（既存の行は変えない）。
-- `src/lib/session/oauthLogin.ts`・`src/pages/v2/bsky/session.ts`・`src/components/account/LoginForm/index.tsx`・`src/env.ts` — 認可サーバーの直書きを解決関数に置き換える（一覧は「接続先の直書きの箇所」を参照）。`src/lib/platform/blueskyEnv.ts` を新設する。
+- `.claude/hooks/session-start.sh` — `CLAUDE_CODE_REMOTE` のガードより前に、`node scripts/git/setup-git-hooks.mjs` を実行する行を追加（既存の行は変えない）。
+- `src/lib/session/oauthLogin.ts`・`src/pages/v2/bsky/session.ts`・`src/components/account/LoginForm/index.tsx`・`src/env.ts` — 認可サーバーの直書きを解決関数に置き換える（一覧は「接続先の直書きの箇所」を参照）。`src/lib/platform/blueskyEndpoints.ts` を使う。
 - `src/env.ts` — 既存の `PUBLIC_DEFAULT_ATP_SERVICE` と `PUBLIC_PLC_DIRECTORY_BASE_URL` の読み取りを `blueskyEndpoints` に移す。
 
 ### Removed Files
 
 - `vitest.config.ts`（`vitest.unit.config.ts` に置き換える）
 - `vitest.route.config.ts` の spike 用の `tests/route/spike/` と、spike の確認用の値
+
+### 現況との対応（2026-11-10 追補）
+
+| 設計時のパス                                            | 現在のパス                                  | 変えた spec          |
+| ------------------------------------------------------- | ------------------------------------------- | -------------------- |
+| ルートの各 `vitest.*.config.ts`・`playwright.config.ts` | `config/test/` の下の同名ファイル           | `repo-root-layout`   |
+| `scripts/run-e2e.mjs`                                   | `scripts/e2e/run-e2e.mjs`                   | `ops-tooling-layout` |
+| `scripts/render-wrangler.mjs`                           | `scripts/config/render-wrangler.mjs`        | `ops-tooling-layout` |
+| `scripts/sync-github-variables.mjs`                     | `scripts/secrets/sync-github-variables.mjs` | `ops-tooling-layout` |
+| `scripts/setup-git-hooks.mjs`                           | `scripts/git/setup-git-hooks.mjs`           | `ops-tooling-layout` |
+| `src/lib/platform/blueskyEnv.ts`（未作成）              | `src/lib/platform/blueskyEndpoints.ts`      | `test-foundation`    |
+| `src/lib/session/cookies.ts`                            | `src/lib/session/cookies/`                  | `lib-large-files`    |
 
 ## Requirements Traceability
 
@@ -181,7 +193,7 @@ scripts/
 | 3.1         | P0 の受入基準に 1 件以上のテスト                       | Priority（steering）                                   | 文書（検証は tasks で行う）                                 | —          |
 | 3.2         | 逆方向は強制しない                                     | Priority（steering）                                   | 文書                                                        | —          |
 | 3.3         | テストの題名は英語                                     | Priority（steering）                                   | 文書                                                        | —          |
-| 3.4         | 題名に識別子を含めてよい                               | Priority（steering）                                   | 文書                                                        | —          |
+| 3.4         | 題名に識別子（要件番号・AC タグ）を含めない            | Priority（steering）                                   | 文書                                                        | —          |
 | 4.1         | P0 モジュールの分岐 80%                                | CoverageGate                                           | `coverage.thresholds`（ファイルまたは glob 単位、istanbul） | —          |
 | 4.2         | src 全体の目標を置かない                               | CoverageGate                                           | 設定に全体の閾値を置かない                                  | —          |
 | 4.3         | P1・P2 に要件を置かない                                | CoverageGate                                           | 閾値の対象外                                                | —          |
@@ -251,8 +263,8 @@ scripts/
 
 - unit は Node で `tests/unit` を対象にする。
 - component は Node で `tests/component` を対象にする。DOM の環境は各ファイルの指定（`// @vitest-environment happy-dom`）で有効にする。
-- route は `vitest.route.config.ts` にだけ存在する（workerd の環境はカスタム環境と併用できないため）。
-- render は既存の `vitest.astro.config.ts` を使い、対象を `tests/render` にする。
+- route は `config/test/vitest.route.config.ts` にだけ存在する（workerd の環境はカスタム環境と併用できないため）。
+- render は既存の `config/test/vitest.astro.config.ts` を使い、対象を `tests/render` にする。
 - 対象外（`scripts/`・`_legacy/`・外部）は include に含めない。
 
 **Contracts**: Config [x]
@@ -316,7 +328,7 @@ scripts/
 - 失敗の発生点（4.4）は、P0 モジュールごとに `throw`、エラー応答、失敗コードを列挙し、各発生点に失敗の種類を検証するテストを置く。テストの題名に失敗の種類を含める。
 - 発生点の一覧（4.5）は、各機能の spec の Testing Strategy に記録する。一覧と検証の対応は、tasks のレビューで確認する（自動の計測はしない）。
 - P0 モジュールの一覧（23 ファイル、実装の調査で確定。根拠は research.md の「P0 モジュールの調査」）。閾値のキーはファイルパスで書く（glob は使わない）。担当層は暫定で、各モジュールのタスクで確定する。
-  - unit（Node）: `src/lib/session/cookies.ts`、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/entry/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`（11 ファイル。変異テストの対象）
+  - unit（Node）: `src/lib/session/cookies/`、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/entry/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`（11 ファイル。変異テストの対象）
   - route（workerd、D1・R2・API）: `src/lib/session/oauthSession.ts`、`src/lib/session/bskySessionRefresh.ts`、`src/lib/session/oauthLogin.ts`、`src/lib/schedule/executor.ts`、`src/lib/schedule/runner.ts`、`src/lib/schedule/stageSchedule.ts`、`src/lib/schedule/imageStaging.ts`、`src/lib/survey/store.ts`、`src/lib/survey/retention.ts`、`src/lib/survey/request.ts`、`src/pages/v1/page.ts`、`src/pages/v2/feedback.ts`（12 ファイル）
 - 新しい P0 ファイルを足すときは、この一覧と閾値の両方を更新する（Revalidation Trigger）。
 - 計測は istanbul で行う。route 層（workerd）での計測と glob 単位の閾値は PoC で確認済み（research.md）。
@@ -450,7 +462,7 @@ declare function startFakeBluesky(
 
 **Responsibilities & Constraints**
 
-- `scripts/run-e2e.mjs` が `tests/support/fakeBluesky/serve.ts` を別プロセスで起動し、その origin を接続先の環境変数として dev サーバーと Playwright へ渡す。`globalSetup` は使わない（起動と後始末をランチャーに集約し、シグナルの扱いを既存のまま保つため）。
+- `scripts/e2e/run-e2e.mjs` が `tests/support/fakeBluesky/serve.ts` を別プロセスで起動し、その origin を接続先の環境変数として dev サーバーと Playwright へ渡す。`globalSetup` は使わない（起動と後始末をランチャーに集約し、シグナルの扱いを既存のまま保つため）。
 - 偽の Bluesky の DID は起動のたびに作る（実行ごとに別の利用者になり、前の実行の記録に影響されない）。
 - E2E の六つの流れは `tests/e2e/flows/` に置く。予約は作成と一覧まで検証し、実行は route 層で検証する（要件 10.2）。
 - 実アカウントは使わない（要件 10.4）。

@@ -1,25 +1,14 @@
 /**
- * AT URI の解析（atproto の共通部品）。
+ * AT URI（`at://<repo>/<collection>/<rkey>`）を分解・検証する。
  *
- * 責務と処理概要:
- * - `at://<repo>/<collection>/<rkey>` を分解する。所有者と収集の一致を判定する関数を含む。
- * - 投稿・Entry・タイムラインのいずれからも使うため、atproto に置く（entry は atproto を参照する）。
- *
- * 実装上の制約:
  * - 依存を持たない（正規表現だけで分解する）。
  */
 
 /**
  * at:// URI を repo / collection / rkey へ分解する。
  *
- * 想定する入力形状(最小要件):
- * - `uri` は `at://{repo}/{collection}/{rkey}` 形式の文字列
- *
- * 処理の趣旨:
- * - 正規表現で 3 セグメントを厳密に抽出し、形式不一致は `undefined` を返す。
- *
  * Input:
- * - `uri`: at:// URI
+ * - `uri`: at:// URI（`at://{repo}/{collection}/{rkey}` 形式）
  *
  * Output:
  * - 成功時: `{ repo, collection, rkey }`
@@ -40,10 +29,7 @@ export const parseAtUri = (
 /**
  * at:// URI を分解した上で、期待する collection・repo（所有者）と一致するか検証する。
  *
- * 処理の趣旨:
- * - クライアントから渡された URI をそのまま信用せず、コレクション種別と
- *   repo（DID）が期待通りであることを確認してから他人のレコードを誤って
- *   参照・操作しないようにする。
+ * - クライアントから渡された URI を信用せず、他人のレコードを誤って参照・操作しないよう、collection と repo（DID）を確認する。
  *
  * Input:
  * - `uri`: at:// URI

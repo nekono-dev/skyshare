@@ -4,8 +4,10 @@
 
 Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページと React の島（`client:load`）で作り、利用者向けの API は `src/pages/v2/` の Astro エンドポイント（`APIRoute`）として実装する。Workers の定期実行（`scheduled`）は `src/worker.ts` で受け、予約投稿とアンケートの保持期限の後片付けを行う。
 
-- 永続化: D1（`migrations/` の SQL。予約・予約用の認可・アンケートの 2 表）と R2（予約の添付画像）
+- 永続化: D1（`migrations/` の SQL。予約の 3 表・アンケートの 2 表）と R2（予約の添付画像）
 - 外部: Bluesky の PDS・AppView・認可サーバー、OGP 抽出サービス、旧バックエンド（pageDB）、GitHub API（Issue 作成）
+- 送信の間隔制限: Workers の Rate Limiter（フィードバックの送信。ログイン中のアカウントの DID をキーにする。`src/lib/feedback/submitFeedback.ts`）
+- アクセス解析（任意）: 測定 ID（`PUBLIC_GA_MEASUREMENT_ID`）を設定したときだけ Google Analytics のタグを出す。タグは Partytown で Web Worker 上で動かし、画面の処理を妨げない（`src/components/layout/AnalyticsTag/`）
 - 生成物: `scripts/build/build-openapi-document.ts` が OpenAPI を作り、`orval` が `src/client/openapi/` のクライアントを作る（手で編集しない）
 
 ## Core Technologies
@@ -32,7 +34,7 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページ
 ### Code Quality
 
 - Prettier。`.prettierrc` は `.ts` と `.astro` の tabWidth を 4、ほかは 2 と定める。セミコロンなし、`arrowParens: avoid`。
-- 各モジュールの先頭に日本語の JSDoc を置き、「責務と処理概要」「実装上の制約」を書く（既存コードの共通の書き方）。
+- コメントの書き方（先頭ヘッダ・禁止パターン・許容リストによる検査）は `comments.md` に従う。
 
 ### Workers 固有の制約（コードに現れている規則）
 
@@ -60,7 +62,7 @@ npm run build
 
 ## Testing
 
-テストの方針の正本は [testing.md](testing.md)（草案）。ここには現在の設定の観察だけを置く。
+テストの方針の正本は [testing.md](testing.md)（承認済み）。ここには現在の設定の観察だけを置く。
 
 - 現在の設定: 層ごとの Vitest 設定（`config/test/vitest.unit.config.ts`・`config/test/vitest.component.config.ts`・`config/test/vitest.route.config.ts`・`config/test/vitest.astro.config.ts`・`config/test/vitest.live.config.ts`）、Playwright（`config/test/playwright.config.ts`、E2E の起動は `scripts/e2e/run-e2e.mjs`）、変異テスト（`config/test/stryker.config.mjs`）、`tsc --noEmit`、Lexicon の lint（`scripts/build/lint-lexicon.sh`）。
 - テストは `tests/` に置く。層ごとの配置と方針は [testing.md](testing.md) が正本。各層の coverage の対象パスは現在の `src/` に存在する。
@@ -75,4 +77,4 @@ npm run build
 ---
 
 _Document standards and patterns, not every dependency._
-_updated_at: 2026-11-05（Cookie の処理をフォルダに分けた場所に合わせた）_
+_updated_at: 2026-11-10_

@@ -10,7 +10,7 @@
  * - 純粋な関数で、ファイルを読まない。読み取りは `check-imports.ts` が行う。
  *
  * 実装上の制約:
- * - 構文木の解析は `importGraph.ts` と同じ `typescript` を使う（新しい依存を増やさない）。
+ * - 構文木の解析は `import-graph.ts` と同じ `typescript` を使う（新しい依存を増やさない）。
  * - `export type` 付きの再エクスポート（`*`・`* as`・名前付き）は型だけの文として許容する（requirements 8.4）。
  */
 import ts from "typescript"

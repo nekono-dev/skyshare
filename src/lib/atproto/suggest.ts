@@ -1,19 +1,8 @@
 /**
- * PostForm のメンション/ハッシュタグ候補用に、Bluesky 公開 AppView から候補一覧を取得するユーティリティ。
+ * 公開 AppView から、メンションとハッシュタグの候補を取得する。
  *
- * 責務と処理概要:
- * - `searchMentionSuggestions` は `app.bsky.actor.searchActorsTypeahead`（認証不要のプレフィックス検索）を叩く。
- * - `getTrendingTagSuggestions` は `app.bsky.unspecced.getTrendingTopics` を叩く。このAPIにはクエリパラメータが
- *   存在せず、グローバルなトレンド上位のみを返す（プレフィックス検索は不可）。取得結果をTTLキャッシュし、
- *   複数語のトピック等ハッシュタグとして使えない文字列は除外する。プレフィックス絞込は呼び出し側
- *   （`src/components/composer/ThreadComposer/rules/suggestHashtags.ts`）が行う。
- * - 注記: `app.bsky.feed.searchPosts`（全文検索＋facet抽出）でハッシュタグのプレフィックス検索を
- *   代替する案を検証したが、`searchActorsTypeahead`/`getTrendingTopics` と異なりブラウザからの
- *   CORS が許可されておらず（`curl`では200になるが実ブラウザの `fetch` では
- *   "No 'Access-Control-Allow-Origin' header is present" で失敗する）、クライアント実行では
- *   利用不可と判明したため採用していない。
- * - どちらも失敗時は例外を投げず空配列（`getTrendingTagSuggestions` は直前キャッシュがあればそれ）を返し、
- *   本文入力・投稿フローをブロックしない。`AbortError` のみ、呼び出し元のシーケンス制御のため再送出する。
+ * - 失敗時は例外を投げず空配列を返す。`AbortError` だけは例外のまま投げ直す。
+ * - ハッシュタグの候補は `getTrendingTopics` の結果で、クエリを持たずトレンドの上位だけを返す。プレフィックスでは絞り込めない。
  */
 import { publicAtpAgent } from "./publicAgent"
 
@@ -28,11 +17,11 @@ const MENTION_SUGGEST_LIMIT = 5
 const SUGGEST_TIMEOUT_MS = 5000
 
 /**
- * `app.bsky.actor.searchActorsTypeahead` を叩き、メンション候補に必要な形へ整形する。
+ * `app.bsky.actor.searchActorsTypeahead` で、プレフィックスに一致するアカウントを取得する。
  *
  * Input:
- * - `query`: 検索プレフィックス（"@"は含まない）
- * - `signal`: 呼び出し元のデバウンス/競合制御用 AbortSignal
+ * - `query`: 検索プレフィックス（"@"は含まない）。空文字なら通信せず空配列を返す
+ * - `opts.signal`: 中断用の AbortSignal。省略時は 5 秒（`SUGGEST_TIMEOUT_MS`）でタイムアウトする
  *
  * Output:
  * - 一致したアカウントの配列（最大 `MENTION_SUGGEST_LIMIT` 件）。失敗時は空配列
@@ -74,9 +63,7 @@ let trendingCache: { tags: TrendingTagSuggestion[]; fetchedAt: number } | null =
 /**
  * `topic` 文字列が単一のハッシュタグとして妥当かを判定する。
  *
- * 処理の趣旨:
- * - `getTrendingTopics` のトピックには複数語の話題（空白を含む文字列）も混在するため、
- *   `#tag` として本文へ挿入できる形のものだけに絞り込む。
+ * - 先頭の `#`・`＃` を除いたあとが、空でなく、空白を含まず、長さが 64 以下のとき妥当とする。ここは UTF-16 長で判定する。`@atproto/api` の検出は、UTF-16 長が 64 を超えたときだけ grapheme（書記素）数で判定する。
  *
  * Input:
  * - `raw`: `topic` 文字列（先頭に "#"/"＃" を含む場合がある）
@@ -90,19 +77,16 @@ const isHashtagLikeToken = (raw: string): boolean => {
 }
 
 /**
- * `app.bsky.unspecced.getTrendingTopics` をTTLキャッシュ付きで取得し、ハッシュタグとして
- * 使える文字列だけに絞って返す。
+ * `app.bsky.unspecced.getTrendingTopics` の結果を、ハッシュタグとして使える文字列だけに絞って返す。
  *
- * 処理の趣旨:
- * - このAPIはクエリパラメータを持たず、秒単位で結果が変わるものでもないため、モジュールスコープの
- *   TTLキャッシュ（5分）で実ネットワークコールを抑える。
- * - 失敗時は直前のキャッシュがあればそれを使い回し、無ければ空配列を返す（画面をブロックしない）。
+ * - 結果は 5 分（`TRENDING_CACHE_TTL_MS`）の間モジュールのキャッシュで再利用し、期限内は通信しない。
+ * - 取得に失敗したときは、期限切れでも直前のキャッシュを返す。キャッシュも無ければ空配列を返す。
  *
  * Input:
- * - `signal`: 呼び出し元の AbortSignal
+ * - `opts.signal`: 中断用の AbortSignal。省略時は 5 秒（`SUGGEST_TIMEOUT_MS`）でタイムアウトする
  *
  * Output:
- * - ハッシュタグ候補（"#"を含まない）の配列
+ * - ハッシュタグ候補（"#"を含まず、重複を除いた）の配列。`topics` と `suggested` の両方から集める
  */
 export const getTrendingTagSuggestions = async (opts?: {
     signal?: AbortSignal

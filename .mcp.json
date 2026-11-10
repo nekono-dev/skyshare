@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "codex": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "cd \"$(git rev-parse --show-toplevel)\" && exec node scripts/agent/codex-mcp-server.mjs"
+      ],
+      "env": {}
+    }
+  }
+}

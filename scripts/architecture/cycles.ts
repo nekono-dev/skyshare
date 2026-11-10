@@ -6,7 +6,7 @@
  * - 辺の両端が同じ成分で、成分の大きさが 2 以上のものだけを対象にする。自己参照は循環と数えない。
  * - 型だけの辺も含める（要件 5.1）。
  */
-import type { ModuleGraph } from "./importGraph"
+import type { ModuleGraph } from "./import-graph"
 import type { Violation } from "./rules"
 
 export const findCycleViolations = (graph: ModuleGraph): Violation[] => {

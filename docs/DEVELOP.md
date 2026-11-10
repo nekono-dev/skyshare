@@ -4,7 +4,7 @@
 
 - 技術・構成・テストの方針: `.kiro/steering/`（`product.md`・`tech.md`・`structure.md`・`testing.md`）
 - 機能の段階と仕様: `.kiro/steering/roadmap.md` と `.kiro/specs/<機能>/`
-- エージェント（Claude Code・Codex）の規約: `CLAUDE.md`・`AGENTS.md`
+- エージェント（Claude Code）の規約: `CLAUDE.md`（Codex は Claude Code の子エージェントとして使う。規約は同じ `CLAUDE.md` の「Codex as a Child Agent (MCP)」）
 
 Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だけ、v1 のバックエンドと設定値が要る。
 
@@ -52,8 +52,10 @@ Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だ
    ```
 
 4. エージェントの導入（Claude Code のクラウドセッションでは開始時に自動で行われる）
-   - cc-sdd: SessionStart の `scripts/agent/install-cc-sdd.sh --claude`（Codex は `--codex`）が、固定版（3.1.0）のスキルと設定の雛形を導入する。これらは MIT のため `.gitignore` の対象で、コミットしない。`CLAUDE.md`・`AGENTS.md` は導入で書き換えない（プロジェクトの文書として直接編集する）。
-   - BRW（branch-release-workflow）: `npm run setup:brw` が、同じ clone（`.branch-release-workflow-source.json` の固定ブランチ）から Claude と Codex の両方へ導入する。SessionStart でも同じ入口を呼ぶ。
+   - cc-sdd: SessionStart の `scripts/agent/install-cc-sdd.sh --claude` が、固定版（3.1.0）のスキルと設定の雛形を導入する（受け付ける引数は `--claude` だけ）。これらは MIT のため `.gitignore` の対象で、コミットしない。`CLAUDE.md` は導入で書き換えない（プロジェクトの文書として直接編集する）。
+   - BRW（branch-release-workflow）: `.claude/settings.json` が、取得元（GitHub の `nekono-dev/claude-plugins`）とプラグインの有効化を宣言する。SessionStart の `node scripts/agent/ensure-brw-plugin.mjs` が、無いものだけを導入する。導入した直後のセッションではスキルが使えないため、セッションを開き直す。
+   - 導入に失敗すると、次の入力が止まり、理由に再試行の方法が出る。新しいセッションを開くか、Claude の外（通常のターミナル）で理由に出たコマンドを実行する。
+   - Codex（任意。ローカルだけ）: `codex` を入れてあると、Claude Code が Codex を子エージェントとして呼ぶ（`.mcp.json` の MCP サーバー `codex`。設定は `.codex/config.toml`）。使うには、Codex の対話画面でこのリポジトリを一度信頼し、Claude Code で MCP サーバー `codex` を承認する（承認は追跡しない `.claude/settings.local.json` に入る）。`codex` を入れていて未信頼のあいだは、入力が止まり、理由に手順が出る。`codex` が無い環境（クラウドセッションなど）では、Claude Code だけで作業する。
 
 ### 1.1 作業ブランチの worktree と新しい clone
 
@@ -73,7 +75,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 | `npm run prev`      | ビルドしてから `wrangler preview` で作業ブランチ用の Preview を出す                  |
 | `npm run deploy`    | 手元から配備する。通常の配備は CI が行うため、運用者の明示的な依頼があるときだけ使う |
 
-`npm run dev` と `npm run build` は、先頭で `build:prepare`（`codegen`・`survey:render`・`format`）を実行する。`format` は `prettier --write .` のため、作業ツリー全体を整形する。
+`npm run dev` と `npm run build` は、先頭で `build:prepare`（`codegen`・`survey:render`）を実行する。整形（`npm run format`。`prettier --write .`）は、ここでは行わず、コミットの前に行う（2.3）。
 
 ### 2.2 テストと型検査
 
@@ -92,7 +94,9 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 
 完了の確かめ方: `npm run test:all` が終了コード 0 で終わること。
 
-### 2.3 push 前の検査
+### 2.3 コミット前の整形と push 前の検査
+
+`.githooks/pre-commit` は、コミットの前にリポジトリ全体を prettier で整形し、ステージ済みのファイルを整形後の内容でステージし直す。ステージしていないファイルの整形結果は作業ツリーに残る。一部だけをステージしたファイル（`git add -p`）は、全体がステージされる。
 
 `.githooks/pre-push` は `npm run test:all`（全層のテスト。E2E を含む）だけを実行する。GitHub の Variables・Secrets への登録は push では行わない（登録は手動。「5.0 デプロイ前の準備」）。
 
@@ -198,6 +202,8 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 - `config/production.json` と `.dev.vars` の値を登録する。値の無い Secret は登録しない（既存の値は消えない）。
 - 書き込み権限が無いときは、登録はスキップされる（エラーにはならない）。
 
+- プライバシーポリシーの制定日・改定日（`PUBLIC_PRIVACY_ENACTED_AT`・`PUBLIC_PRIVACY_REVISED_AT`）は、main へのリリース時に同じ日付で登録する。公開前の本文の変更は改定として扱わない。公開後に本文を変えたら、改定日だけを更新する。
+
 ### 5.1 ブランチと配備
 
 | ブランチ     | 配備先の Worker                         | ドメイン                   | 用途                                   |
@@ -224,18 +230,27 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 
 ### 5.3 ブランチ宣言と BRW（branch-release-workflow）
 
-- 導入の入口は `npm run setup:brw`（Claude と Codex の両方）。取得元の clone は 1 つで、両方が同じ commit を使う。内部では、Codex は clone の `scripts/install-codex.mjs` で `.agents/skills/` に symlink を作り、Claude は clone をユーザースコープのマーケットプレイスとして登録してから `branch-release-workflow@nekono-dev` をプロジェクトのスコープで有効にする。
-- Claude の導入は、ユーザー（`~/.claude`）の設定を変える。同名（`nekono-dev`）の既存の登録は一度外して登録し直すため、事前に `claude plugin marketplace list` で、他の作業で使っていないか確かめる。
+- 導入は Claude Code だけが対象で、セッションの開始時に自動で行う（1 の 4）。`.claude/settings.json` の宣言（`extraKnownMarketplaces` の `nekono-dev`、`enabledPlugins` の `branch-release-workflow@nekono-dev`）に従い、無いものだけをプロジェクトのスコープで導入する。端末に BRW の clone は置かない。既存の登録やプラグインを外す操作はしない。
 - 宣言の正本は `.branch-release-workflow.json`（リポジトリのルート）。`.claude/branch-release-workflow.json` は正本へのシンボリックリンク（旧パスを読む利用者向け）。内容を二重に持たない。
 - 取得元は `.branch-release-workflow-source.json`（`repository`・`branch`）。CI は `node scripts/agent/setup-brw.mjs`（引数なし）で同じブランチの最新コミットを取得し、clone のパスを得る。
-- 共有 skill を更新したら、取り込み先のブランチへ反映してから `npm run setup:brw` を再実行する。
+- 共有 skill を更新したら、取得元（`nekono-dev/claude-plugins`）へ反映する。次のセッションの開始時に、プラグインの更新が試される。
 - 作業ブランチの作成・続き・片付けは skill `branch-release-workflow` に従う（作業ブランチへの push は許可を求めない。worktree はマージか PR の後に片付ける）。
+
+- worktree は push では片付けず、`develop` へのマージ後（または `main` への PR 作成後）に `brw finish` で片付ける。
 
 ### 5.4 main への取り込み前のアンケート除去
 
 main へのマージまたは取り込み（PR の作成を含む）を依頼されたら、マージ前にローカルで `npm run survey -- prune` を実行し、結果の 1 行を報告する（手順は `.claude/skills/survey-run/SKILL.md`）。
 
 本番のビルドは `SURVEY_CONFIG` を読むため、除去で変数が更新された場合は、その更新が本番の配備より先に反映されるようにする。除去と回答データの確認には運営者のローカル認証済みの CLI を使う。CI に変数の書き込み権限は与えない。除去に失敗したとき、または対象を確認できず保持したときは、その結果を利用者に伝える。
+
+### 5.5 本番の CPU 時間・エラーの確認
+
+Cloudflare API で、Worker の CPU 超過とエラーを取得できる。トークンは読み取り専用のものを、ローカルの環境変数ファイルに置く（値はコミットしない）。
+
+- GraphQL `workersInvocationsAdaptive`（`scriptName` は `skyshare`）で、日別・時間別の status と `quantiles.cpuTime*`（µs）が取れる。CPU 超過は status が `exceededResources`。
+- Observability の `POST /accounts/{account_id}/workers/observability/telemetry/query` で、`$workers.outcome`（exceededCpu・ok・canceled）と `$workers.cpuTimeMs` をルート別に集計できる。
+- 本番やプレビューへの連続リクエストは負荷になる。実行は利用者に依頼する。
 
 ## 6. 初回の設定（運用者）
 
@@ -257,10 +272,9 @@ main へのマージまたは取り込み（PR の作成を含む）を依頼さ
 ```sh
 cp config/production.example.json config/production.json
 $EDITOR config/production.json
-npm run sync:github -- --dry-run   # 登録する名前だけを表示する（値は表示しない）
-npm run sync:github                # GitHub の Variables に登録する（値が変わったものだけ）
-gh variable list -R <owner>/<repo> # 登録できたか確認する
 ```
+
+編集の後、「5.0 デプロイ前の準備」の手順（`--dry-run` で名前を確かめる → 登録 → `gh variable list` で確認）で GitHub の Variables に登録する。
 
 - `siteHost` は変数 `SITE_HOST` に、`vars` の各項目は同名の変数になる。空の値は登録しない。
 - GitHub のリポジトリは git の remote の origin から判定する（SSH の別名でもよい）。判定できないときは `-- --repo <owner>/<repo>` を付ける。

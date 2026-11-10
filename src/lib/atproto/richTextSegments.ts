@@ -1,12 +1,8 @@
 /**
- * 投稿本文の注釈（`app.bsky.richtext.facet`）を、表示・共有のために扱うユーティリティ。
+ * 投稿本文の注釈（`app.bsky.richtext.facet`）を、表示・共有用の区間と文字列に変換する。
  *
- * 責務と処理概要:
- * - 外部入力（PDS・AppViewのレコード）の facets を、表示に使う3種（mention/link/tag）だけの形へ正規化する。
- * - facets の UTF-8 バイト範囲で本文を区間に切り出し、リンクの区間にはリンク先を付ける（`specs/post-rich-text`）。
- * - facets の無い部分に書かれた URL（スキーム省略・日本語に続くものを含む）とハッシュタグもリンクの区間にする。
- * - 指定した facets の範囲の文字を本文から取り除く（`specs/link-card-priority`）。
- * - `@atproto/*` を import しない純粋関数のみで構成する（クライアントの bundle と cold start の負担を増やさないため）。
+ * - facets の範囲は UTF-8 のバイト位置で、本文の外にはみ出すものや文字の途中で切れるものは無視する。
+ * - `@atproto/*` を import しない。純粋関数だけを持つ。
  */
 import { findHashtagRanges, findUrlRanges } from "./autoLink"
 
@@ -65,9 +61,8 @@ const normalizeFeature = (feature: unknown): PostFacetFeature | undefined => {
  * 想定する入力形状(最小要件):
  * - `[{ index: { byteStart: number, byteEnd: number }, features: [...] }, ...]`
  *
- * 処理の趣旨:
- * - 未知の feature を落とし、feature が1件も残らない facet・index が整数でない facet を除く。
- * - 範囲が本文に収まるかは本文が必要なため、ここでは見ない（`segmentRichText` が判定する）。
+ * - 未知の feature を除き、feature が 1 件も残らない facet と、index が整数でない facet を除く。
+ * - 範囲が本文に収まるかは、ここでは見ない（本文が要るため `segmentRichText` が判定する）。
  *
  * Input:
  * - `input`: レコードの `facets`（未指定・不正な形も受け付ける）
@@ -116,7 +111,7 @@ export const normalizePostFacets = (input: unknown): PostFacet[] => {
  * - `feature`: 正規化済みの feature
  *
  * Output:
- * - リンク先のURL。リンクにしない（http/https 以外のリンク）場合は `undefined`
+ * - リンク先のURL。http・https の uri はそのまま返し、スキームを省略したドメイン形式の uri には https を補う。それ以外（`javascript:` など）は `undefined`
  *
  * 例:
  * - 入力: `{ $type: "app.bsky.richtext.facet#tag", tag: "猫" }`
@@ -130,8 +125,8 @@ const featureHref = (feature: PostFacetFeature): string | undefined => {
             return `https://bsky.app/hashtag/${encodeURIComponent(feature.tag)}`
         case "app.bsky.richtext.facet#link": {
             if (/^https?:\/\//i.test(feature.uri)) return feature.uri
-            // スキームを省略した uri を書く投稿クライアントもあるため、ドメインで始まる
-            // ものは https を補う。javascript: などの危険なスキームはリンクにしない
+            // スキームを省略した uri（ドメインで始まるもの）には https を補う。
+            // javascript: などのスキームは href にしない
             return /^[a-z0-9-]+(\.[a-z0-9-]+)+([/?#]|$)/i.test(feature.uri)
                 ? `https://${feature.uri}`
                 : undefined
@@ -149,9 +144,8 @@ const isCharBoundary = (bytes: Uint8Array, position: number) =>
 /**
  * 本文の範囲として使える facet だけを、開始位置の順に並べて返す。
  *
- * 処理の趣旨:
  * - 範囲が空・本文の外にはみ出す・文字の途中で切れる facet を除く。
- * - 開始位置の順に見て、直前に採用した facet と重なる facet を除く（先に始まる方を残す）。
+ * - 残りを開始位置の順に並べ、直前に採用した facet と重なるものを除く（先に始まる方を残す）。
  *
  * Input:
  * - `bytes`: 本文の UTF-8 バイト列
@@ -187,9 +181,7 @@ const validRanges = (bytes: Uint8Array, facets: PostFacet[]): PostFacet[] => {
 /**
  * リンクでない文字の区間を、その中に書かれた URL の位置で更に区間に分ける。
  *
- * 処理の趣旨:
- * - facets を持たない投稿（他のクライアントの投稿や、日本語に続けて書いた URL など、
- *   投稿時に facets として検出されなかったもの）でも、URL をリンクにする。
+ * - `findUrlRanges` が見つけた URL をリンクにし、URL と重ならない `findHashtagRanges` のハッシュタグもリンクにする。
  *
  * Input:
  * - `text`: リンクでない文字の区間の文字列
@@ -236,11 +228,10 @@ const autoLinkSegments = (text: string): RichTextSegment[] => {
 /**
  * 本文を facets の範囲で区間に切り出し、リンクの区間にリンク先を付ける。
  *
- * 処理の趣旨:
- * - facets の index は UTF-8 のバイト位置のため、文字列（UTF-16）ではなくバイト列で切り出す。
- * - 不正な範囲の facet は無視し、その範囲は文字のまま残す（失敗時も本文は欠けない）。
- * - 1つの facet が複数の feature を持つ場合は、最初にリンク先を作れた feature を使う。
- * - facets の範囲外の文字の区間は、その中の URL を更にリンクの区間にする（`autoLinkSegments`）。
+ * - facets の index は UTF-8 のバイト位置のため、本文をバイト列で切り出す（UTF-16 の位置とは一致しない）。
+ * - 不正な範囲の facet は無視し、その範囲は文字のまま残す。
+ * - 1 つの facet が複数の feature を持つときは、リンク先を作れた最初の feature を使う。リンク先を作れない facet（例: `javascript:` の link）は無視し、その範囲は範囲外の区間として扱う。
+ * - 範囲外の区間は `autoLinkSegments` で URL とハッシュタグをリンクにする。
  *
  * Input:
  * - `text`: 投稿本文
@@ -293,9 +284,8 @@ export const segmentRichText = (
 /**
  * 指定した facets の範囲の文字を本文から取り除く。
  *
- * 処理の趣旨:
- * - 取り除く範囲の判定は `segmentRichText` と同じ（不正な範囲の facet は無視して文字を残す）。
- * - 取り除いた後の空白の整形は呼び出し側の責務とする。
+ * - 範囲の判定は `segmentRichText` と同じ（不正な範囲の facet は無視して文字を残す）。
+ * - 取り除いた後の空白は整えない。
  *
  * Input:
  * - `text`: 投稿本文

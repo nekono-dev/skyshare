@@ -1,12 +1,6 @@
 /**
- * Bluesky レコードの形の型（atproto 側が持つ）。
+ * Bluesky のレコードの形（facet・画像のメタ・OGP・返信参照・動画の blob とメタ）の型。
  *
- * 責務と処理概要:
- * - 投稿レコードの組み立てと、その入力に使う形（facet・画像のメタ・OG・返信参照・動画の blob とメタ）を定める。
- * - API のスキーマ（`api/schema/common.ts`）の推論結果は、ここの型に代入可能であることを、api 側の型検査で確かめる。
- *   atproto は api を import しない（依存の向きは lib/api → lib/atproto の一方向）。
- *
- * 実装上の制約:
  * - 型だけを持つ。実行時の処理と import を持たない。
  */
 
@@ -39,7 +33,7 @@ export type BskyImagesMeta = Array<{
     alt: string
 }>
 
-/** OGP の情報（外部リンクのカードに使う）。 */
+/** OGP の情報（タイトル・説明・画像・URL）。 */
 export type BskyOgMeta = {
     title: string
     description: string
@@ -59,7 +53,7 @@ export type BskyReplyRef = {
     parent: BskyStrongRef
 }
 
-/** 動画の blob 参照（動画サービスが返す JSON 形式）。 */
+/** 動画の blob 参照（`$type` が `blob` の JSON 形式）。 */
 export type BskyVideoBlob = {
     $type: "blob"
     ref: { $link: string }

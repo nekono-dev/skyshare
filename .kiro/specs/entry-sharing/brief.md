@@ -57,3 +57,8 @@ Entry のレコードと、その作成・更新・削除の規則を所有す�
 - Entry の作成と削除は Bluesky 側の投稿と一緒に扱う。片方だけを残す失敗の扱いを記録する。
 - 詳細ページは公開データだけで構成する。
 - 既知の不一致: `src/lib/atproto/threadChain.ts` などの説明に旧 spec 名がある（根拠にしない）。
+
+## 確定した判断（2026-11-03）
+
+- `/entries/sample`（`src/pages/entries/sample.astro`）は v2 のリリース後に削除する。現時点では残す（ゲストモードの「Entry を開く」の遷移先のため）。
+- `/samples/choice-question` は削除済みで、これとは別の判断。

@@ -1,0 +1,24 @@
+{
+  "feature_name": "codex-mcp-subagent",
+  "created_at": "2026-11-08T14:07:49Z",
+  "updated_at": "2026-11-10T04:00:00Z",
+  "language": "ja",
+  "phase": "implementation-complete",
+  "depends_on": ["ops-agent-setup"],
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": false,
+  "implementation": "要件に第 10 節（リポジトリの信頼の確認）を追加し、設計を改めた（2026-11-09）。利用者が /kiro-spec-tasks -y を指定したため、要件・設計・タスクを自動承認した（タスクの生成の規則に従い、タスク計画の確認と task-graph の確認は inline で行った）。tasks.md は新しい設計から作り直した。実装の前提: 3.5（.claude/settings.json の変更）は ops-agent-setup の改訂が済んでから行う（tasks.md の 1.1 で確かめる）。ready_for_implementation は false のまま（実装の開始は利用者の指示による）。実機の確認は research.md 第 26・27 節。2026-11-10 に再検査と feature 検証を行った: 1 回目の判定は MANUAL_VERIFY_REQUIRED（research.md 第 31 節）。同日に、利用者の承認を得てタスク 4.3 のキーの形と要件 7.4 を実機で確かめ（第 32 節）、2 回目の判定は GO（tasks.md の Implementation Notes）"
+}

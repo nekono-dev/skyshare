@@ -1,0 +1,3689 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "path": "config/orval.config.ts",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/playwright.config.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/playwright.config.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/playwright.config.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/stryker.config.mjs",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/stryker.config.mjs",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.astro.config.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.component.config.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.live.config.ts",
+      "rule": "forbidden:kiro",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.route.config.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.route.config.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.route.config.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.unit.config.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.unit.config.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "config/test/vitest.unit.config.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "hack/survey-cli/config.ts",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/agent/kiro-gate.mjs",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/agent/kiro-gate.mjs",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/agent/kiro-gate.mjs",
+      "rule": "forbidden:kiro",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/allowlist.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/allowlist.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/check-imports.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/check-imports.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/cycles.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/import-graph.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/import-graph.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/lib-layers.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/lib-layers.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/regions.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/rules.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/types-only.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/types-only.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/util-sharing.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/util-sharing.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/architecture/util-sharing.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/build/build-openapi-document.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/config/render-deploy-config.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/config/render-wrangler.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/dev/oauth-loopback-forwarder.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/dev/oauth-loopback-forwarder.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/e2e/run-e2e.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/e2e/run-e2e.mjs",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/e2e/survey-e2e-harness.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/git/setup-git-hooks.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/git/setup-git-hooks.mjs",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/lib/dotenv.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/lib/github.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/lib/jsonc.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/lib/live-config.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/lib/wrangler.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/secrets/ensure-worker-secrets.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/secrets/generators.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/secrets/prepare-local-env.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/secrets/sync-github-variables.mjs",
+      "rule": "header-missing",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/survey/render-survey-config.ts",
+      "rule": "header-too-long",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "scripts/survey/render-survey-config.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-scripts-config",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/account/AccountSwitchPanel/AccountSwitcher/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/account/AccountSwitchPanel/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/account/LoginForm/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/Loading/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/dialog/ConfirmDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/dialog/FloatingBox/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/dialog/Overlay/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/dialog/Overlay/rules/scrollLock.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/Checkbox/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/Checkbox/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/CountedTextInput/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/RadioButton/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/RadioButton/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/ToggleSwitch/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/input/ToggleSwitch/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/list/InfiniteScrollSentinel/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/media/Avatar/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/media/MediaThumb/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/section/TabButtons/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/AutoPopupTargetSelect/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/ChoiceQuestion/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/ChoiceQuestion/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/Dropdown/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/ListboxOption/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/LocaleSelect/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/common/select/ThemeModeSelect/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/PostGateDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/PostGateDialog/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ComposerDialogs/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ComposerOptions/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ImageAltDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ImageCropDialog/CropSlot/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ImageCropDialog/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ImagePicker/croppedImageStyle.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ImagePicker/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/OgpFetchButton/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/RunAtPicker/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ScheduleList/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/LanguageSelect/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/OgpPreview/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/PostBodyEditor/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/SuggestPopover/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/ThumbnailAdjustButton/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/VideoPicker/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/ThreadSegmentForm/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useDraftFlow.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useKeyboardRows.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useKeyboardRows.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useScheduleEdit.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useScheduleFlow.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useSuggest.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/hooks/useThreadSubmit.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/contentEditableModelDom.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/contentEditableModelDom.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/contentEditableReconcile.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/facetHighlightSegments.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/highlightNodeParts.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/links.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/segments.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/shareDispatch.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/shareDispatch.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/submitThread.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/submitThread.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/composer/ThreadComposer/rules/submitThread.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/DeletePostListItem/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/DeletePostListItem/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDeleteConfirmDialog/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDetailView/index.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDetailView/index.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryDetailView/index.astro",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryList/EntryCard/EntryEditForm/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryList/EntryCard/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryList/EntryCard/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryList/EntryCard/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/EntryList/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/entry/LegacyPageDeleteButton/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/feedback/FeedbackForm/clientEnvironment.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/feedback/FeedbackForm/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/feedback/FeedbackForm/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/i18n/useTranslation.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/image/ImageGallery/ImageLightbox/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/image/ImageGallery/ImageLightbox/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/image/ImageGallery/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/image/ImageGallery/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/Baselayout/index.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/Baselayout/index.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/FooterNav/index.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/FooterNav/index.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/NavIcon/index.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/Sidebar/index.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/Sidebar/index.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/nav/navItems.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/nav/syncAccountAvatar.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/nav/syncActiveState.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/layout/nav/syncGuestModeQuery.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/schedule/AuthorizationReturn/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/schedule/CredentialDialog/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/schedule/ScheduleSetting/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/schedule/ScheduleSetting/useScheduleAvailability.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/schedule/ScheduleSetting/useScheduleAvailability.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/settings/SettingList/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/settings/Settings/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/settings/Settings/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/settings/Settings/useShareToggles.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/settings/Settings/useShareToggles.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/share/IntentShareDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/share/IntentShareDialog/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/share/IntentShareDialog/openIntentPopup.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/PostEngagementStats/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/PostLinkCard/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/PostQuote/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/VideoPlayButton/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/VideoPlayer/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/VideoPlayer/index.tsx",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/VideoThumbnail/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/VideoUnavailable/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostBody/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/PostRichText/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/PostLauncher/index.tsx",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/SurveyGate/SurveyDialog/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/SurveyGate/SurveyDialog/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/SurveyGate/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/SurveyGate/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/PostCardEntryActions/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/PostCardEntryActions/useSkyshareEntryStatus.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/PostCardEntryActions/useSkyshareEntryStatus.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/PostCard/useWebShareCrosspost.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/ThreadCard/index.tsx",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/index.tsx",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/components/timeline/Timeline/index.tsx",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/env.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/contract/feedbackSubmission.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/contract/feedbackSubmission.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/contract/surveyPath.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/contract/surveyPath.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/response.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/response.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/schema/v2/bsky/video/upload-token/post.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-api-schema",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/schema/v2/entries/get.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-api-schema",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/schema/v2/entry/delete.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-api-schema",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/schema/v2/entry/post.ts",
+      "rule": "header-too-long",
+      "owner": "comments-api-schema",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/api/schema/v2/entry/post.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-api-schema",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/codegen/fetcher.ts",
+      "rule": "header-missing",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/codegen/openapiFormData.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/codegen/openapiFormData.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/createBskyThread.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/createBskyThread.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/createBskyThread.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/createPostVisual.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/deleteEntry.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/deleteEntry.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/deleteEntry.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/editEntry.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/editEntry.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/editEntry.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/entryPageCache.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/entryPageCache.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/estimateEntryUrl.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/fromPost.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/legacyPagedb.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEmbedView.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEmbedView.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEmbedView.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEntry.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEntry.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEntry.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEntryMedia.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/postEntryMedia.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/resolveDeleteTargets.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/resolveDeleteTargets.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/skyshareRecord.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/warmOgpCache.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/entry/warmOgpCache.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/feedback/feedbackDraft.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/feedback/issueContent.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/feedback/issueContent.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/feedback/submitFeedback.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/feedback/submitFeedback.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/guestMode.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/i18n/applyDom.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/i18n/messageKeys.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/i18n/middleware.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/i18n/store.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/i18n/store.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/i18n/translate.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/image/galleryLayout.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/image/postImageLimits.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/image/sourceImage.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/callbackFragment.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/client.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/client.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/discovery.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/discovery.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/dpop.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/dpop.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/jose.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/jose.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/loopback.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/resourceFetch.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/resourceFetch.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/returnPath.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/returnPath.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/token.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/token.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/tokenRequest.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/oauth/tokenRequest.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/platform/blueskyEndpoints.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/platform/blueskyEndpoints.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/availabilityHint.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/availabilityHint.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/credentialCrypto.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/credentialCrypto.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/credentialExpiry.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/credentialExpiry.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/executor.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/executor.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/imageStaging.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/imageStaging.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/oauth/flow.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/oauth/flow.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/oauth/storedCredential.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/runAtInput.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/runner.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleCollection.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleCollection.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleCredential.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleCredential.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleImage.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleImage.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleItem.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleItem.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleMode.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/scheduleMode.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/stageSchedule.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/submitSchedule.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/submitSchedule.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/xrpcClient.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/schedule/xrpcClient.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/activeAccountSession.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/bskySessionRefresh.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/bskySessionRefresh.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/cookies/index.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/cookies/index.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/oauthAgent.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/oauthLogin.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/oauthLogin.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/oauthSession.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/session/oauthSession.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/settings/hashtagHistorySettings.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/settings/hashtagHistorySettings.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/settings/postGateSettings.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/settings/shareSettings/toggles.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/share/shareBody.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/share/textCount.ts",
+      "rule": "header-missing",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/site/buildEnv.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/site/policySections.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/site/policySections.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/site/siteEnv.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/site/surveyPresence.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/answers.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/answers.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/definition.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/definition.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/gate/check.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/gate/index.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/gate/runtime.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/gate/runtime.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/launchCheck.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/launchCheck.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/loadConfig.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/loadConfig.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/request.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/request.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/respondentHash.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/respondentHash.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/retention.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/retention.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/store.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/survey/store.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/entryCandidate.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/entryCandidate.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/assets.ts",
+      "rule": "header-missing",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/entries.ts",
+      "rule": "header-missing",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/entries.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/index.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/postFacets.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/posts.ts",
+      "rule": "header-missing",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/posts.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/postsBasic.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/postsThread.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/guest/postsThread.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/posts.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/resolveEntryDeleteScope.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/resolveEntryDeleteScope.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/resolveEntryDeleteScope.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/timelineThreads.ts",
+      "rule": "header-too-long",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/timelineThreads.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/timelineThreads.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/timeline/timelineThreads.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/video/fetchVideoDuration.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/video/formatVideoDuration.ts",
+      "rule": "header-missing",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/video/videoOverlay.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/lib/video/videoUploader.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-lib",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/middleware.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/accounts.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/accounts.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/entries/[slug].astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/entries/[slug].astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/entries/[slug].astro",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/entries/index.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/entries/sample.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/entries/sample.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/feedback.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/help.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/jump.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/jump.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/oauth/callback.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/oauth/client-metadata.json.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/oauth/jwks.json.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/posts/[dbIndex]/[slug].astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/posts/[dbIndex]/[slug].astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/privacy.astro",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/privacy.astro",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v1/page.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v1/page.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/drafts.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/drafts.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/images.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/images.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/session.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/session/[did].ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/session/authorization.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/session/authorization/completion.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/bsky/video/upload-token.ts",
+      "rule": "forbidden:AC/FR/NFRタグ",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/entries.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/entries.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/entries/skyshare.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/entry.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/feedback.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/feedback.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules/[id].ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules/[id]/images/[index].ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules/credential.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules/credential/authorization.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules/credential/authorization/completion.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/schedules/limits.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/surveys/[surveyId]/answers.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/surveys/[surveyId]/answers.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/surveys/[surveyId]/respondent.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/pages/v2/surveys/[surveyId]/respondent.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/util/formData.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/util/http.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/util/padTwoDigits.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/util/padTwoDigits.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/util/waitForImageLoad.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/util/waitForImageLoad.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/vars.ts",
+      "rule": "header-missing",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/vars.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "src/worker.ts",
+      "rule": "header-too-long",
+      "owner": "comments-components-pages",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/common/CountedTextInput.test.tsx",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/common/CountedTextInput.test.tsx",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/composer/ThreadComposer.test.tsx",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/composer/ThreadComposer.test.tsx",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/i18n/renderSlots.test.tsx",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/i18n/renderSlots.test.tsx",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/support/astroTransitions.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/support/harness-dom.test.tsx",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/support/harness-node.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/component/support/setup.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/entry.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/entry.spec.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/feedback.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/feedback.spec.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/login.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/login.spec.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/schedule.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/schedule.spec.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/support.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/survey.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/survey.spec.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/thread-posting.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/thread-posting.spec.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/e2e/flows/util-placement.spec.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/live/atprotoContract.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/render/components/AnalyticsTag.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/render/components/AnalyticsTag.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/outbound/fakeOutbound.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/outbound/fakeOutbound.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/bskySessionCompletion.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/bskySessionCompletion.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/entryApi.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/entryApi.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/feedback.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/feedback.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleCleanup.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleCleanup.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleCompletion.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleCompletion.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleImage.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleImage.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleItem.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/scheduleItem.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/schedules.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/schedules.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/v1PageDelete.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/pages/v1PageDelete.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/executor.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/executor.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/imageStaging.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/imageStaging.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/runner.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/runner.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/runner.test.ts",
+      "rule": "date",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/stageSchedule.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/stageSchedule.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/schedule/support.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/session/bskySessionRefresh.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/session/bskySessionRefresh.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/session/oauthLogin.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/session/oauthLogin.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/session/oauthSession.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/session/oauthSession.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/applyMigrations.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/d1-isolation-a.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/d1-isolation-a.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/d1-isolation-b.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/d1-isolation-b.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/time-injection.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/support/time-injection.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/survey/request.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/survey/request.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/survey/retention.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/survey/retention.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/survey/store.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/route/survey/store.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeBluesky/index.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeBluesky/index.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeBluesky/routes.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeBluesky/serve.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeBluesky/serve.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeOutbound.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/support/fakeOutbound.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/ImagePicker/croppedImageStyle.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/ImagePicker/croppedImageStyle.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/segments.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/segments.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/shareDispatch.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/shareDispatch.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/submitThread.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/submitThread.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/suggestHashtags.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/components/composer/ThreadComposer/suggestHashtags.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/fixtures/e2eSurveyFixture.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/fixtures/surveyConfigFixture.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/atproto/atUri.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/atproto/post.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/entry/createBskyThread.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/entry/createBskyThread.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/entry/resolveDeleteTargets.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/entry/resolveDeleteTargets.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/feedback/githubIssue.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/feedback/githubIssue.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/feedback/issueContent.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/feedback/issueContent.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/feedback/submitFeedback.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/i18n/locale.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/i18n/locale.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/i18n/translate.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/image/postImageProcessing.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/image/postImageProcessing.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/platform/blueskyEndpoints.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/platform/blueskyEndpoints.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/schedule/credentialCrypto.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/schedule/credentialCrypto.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/schedule/runAtInput.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/schedule/scheduleResponse.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/session/codecEdgeCases.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/session/codecEdgeCases.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/session/cookies.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/session/cookies.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/settings/shareSettingsLegacyRead.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/share/counterReserve.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/share/counterReserve.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/share/shareBody.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/share/shareBody.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/share/textCount.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/share/textCountFallback.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/site/envValues.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/survey/respondentHash.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/survey/respondentHash.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/timeline/entryCandidate.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/timeline/resolveEntryDeleteScope.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/timeline/resolveEntryDeleteScope.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/lib/video/formatVideoDuration.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/allowlistCompletion.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/allowlistCompletion.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/allowlistCompletion.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/allowlistCompletion.test.ts",
+      "rule": "forbidden:spec参照",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/allowlistCompletion.test.ts",
+      "rule": "forbidden:kiro",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/componentLayout.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/componentLayout.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/componentLayout.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/composerSplit.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/composerSplit.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/composerSplit.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/importRules.test.ts",
+      "rule": "forbidden:kiro",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/importRules.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/kiroGate.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/kiroGate.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/kiroGate.test.ts",
+      "rule": "forbidden:kiro",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/kiroGate.test.ts",
+      "rule": "forbidden:cc-sdd",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/layoutSingle.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/layoutSingle.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/layoutSingle.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/libLayers.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/libRegionPairs.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/liveConfig.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/pagesThin.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/pagesThin.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/pagesThin.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/prepareLocalEnv.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/renderWrangler.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/steeringRegions.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/steeringRegions.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/steeringRegions.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/steeringRules.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/steeringRules.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/steeringRules.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/structureDecisions.test.ts",
+      "rule": "header-too-long",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/structureDecisions.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/structureDecisions.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/syncGithubVariables.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/typesRules.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/utilSharing.test.ts",
+      "rule": "header-too-many-bullets",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/scripts/workerName.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/support/fakeBluesky.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/support/fakeBluesky.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/support/fakeBlueskyRequests.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/support/steeringStructure.ts",
+      "rule": "forbidden:kiro",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/support/time-injection.test.ts",
+      "rule": "header-missing",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/support/time-injection.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    },
+    {
+      "path": "tests/unit/util/httpErrorResponse.test.ts",
+      "rule": "forbidden:要件番号",
+      "owner": "comments-tests",
+      "reason": "コメントの整理（comments-* の spec）で解消する"
+    }
+  ]
+}

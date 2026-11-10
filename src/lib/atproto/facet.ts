@@ -1,23 +1,17 @@
 /**
- * facets(app.bsky.richtext.facet配列)の境界防御バリデーション。
+ * facets（`app.bsky.richtext.facet` の配列）の形状を検証し、PDS に壊れたレコードを書き込まないようにする。
  *
- * 責務と処理概要:
- * - facetsの組み立て(URL/メンション/ハッシュタグの検出、mentionのdid解決等)は
- *   クライアント側の責務であり、サーバはその意味的な正しさを検証・解決しない。
- * - ここで行うのはPDSへ壊れたレコードが書き込まれるのを防ぐための最小限の
- *   形状チェック(indexが本文のUTF-8バイト長に収まっているか)のみ。
+ * - facets の意味（URL・メンション・ハッシュタグの検出、mention の DID 解決）はクライアントの責務で、サーバーは検証・解決しない。
+ * - 検証するのは `index`（byteStart・byteEnd）が本文の UTF-8 バイト長に収まるかだけ。
  */
 import type { BskyFacets } from "@/lib/atproto/recordTypes"
 
 /**
  * facetsのindex(byteStart/byteEnd)が本文のUTF-8バイト長に収まっているかを検証する。
  *
- * 想定する入力形状(最小要件):
- * - `facets`: `index: {byteStart, byteEnd}` を持つオブジェクトの配列(未指定可)
- *
- * 処理の趣旨:
- * - `byteStart < byteEnd`(半開区間として不正でない)かつ `byteEnd <= 本文バイト長` を
- *   満たさないfacetが1件でもあれば、レコード全体を不正として扱う。
+ * 不正とみなす条件（1 件でもあればレコード全体を不正とする）:
+ * - `byteStart >= byteEnd`（半開区間として空または逆転している）
+ * - `byteEnd > 本文のバイト長`
  *
  * Input:
  * - `text`: 投稿本文(facetsのindexが参照する対象)
