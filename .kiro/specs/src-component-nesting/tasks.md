@@ -86,3 +86,8 @@
 - 検証の順序は、型 → import → 単体 → コンポーネント → ルート → 描画 → e2e → 生成物。
 - 2026-11-03 検証（レビューは inline。親のコンテキストで各 Done を確認）: 移動 58 件（入れ子 37・分類 21）は、HEAD の直下のファイルと一致。`test:all` が exit 0（単体 302・コンポーネント 13・ルート 212・描画 2・e2e 7）。import 違反 0 件・循環 0 件。OpenAPI は `.cache/openapi-before.json` と一致し、`src/client` に差分なし。変更したファイルは Prettier を通過。
 - 未実施: コミット（ユーザーの指示があるまで行わない）。`.kiro/specs/src-lib-ui-boundary/research.md` の変更は、本 spec の範囲外（作業前からの変更）。
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: 重大な指摘は無い。

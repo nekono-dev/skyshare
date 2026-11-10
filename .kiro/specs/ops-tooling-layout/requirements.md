@@ -75,3 +75,8 @@
 2. When E2E の設定が作られたとき, the E2E の実行 shall 接続先の 3 項目だけを偽の Bluesky に向け、それ以外の値は `config/develop.example.json` と同じにする
 3. The `scripts/secrets/` shall シークレットの生成関数を `scripts/secrets/generators.mjs` の 1 箇所だけで定義し、`generate-oauth-key.mjs` を持たない
 4. When 運用者が手作業でシークレットの値を出すとき, the `scripts/secrets/generators.mjs` shall シークレット名を引数に取り、その値を標準出力へ出す
+
+## 追補（2026-11-10: 要件を現状に合わせる。利用者の決定）
+
+- 要件 1.1 の領域のフォルダの一覧に、`architecture/`（依存規則とコメントの検査。`src-import-rules`・`structure-checks`・`comment-policy` の領域）を加える。本 spec の後に別の spec が作ったフォルダで、本 spec は中身を扱わない。要件 1.2（直下に領域のフォルダ以外を置かない）は、この一覧で判定する。
+- 要件 1.3（kebab-case）は、同日に `scripts/` の残りの camelCase のファイル 7 件（`agent/brw-source.mjs`、`architecture/` の 5 件、`lib/live-config.mjs`）を改名して満たした。テストのファイル名（`tests/unit/scripts/*.test.ts`）は対象外。

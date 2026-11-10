@@ -42,3 +42,11 @@
 - [x] 4.2 steering の live 層の行を更新する
   - `.kiro/steering/testing.md` の live の行を「任意・ローカルのみ・CI 対象外」に改める
   - _Requirements: 1.2_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: (1) 要件 4.1〜4.3: 実アカウントの認証情報が要るため未確認だった。利用者の承認を得て `npm run test:live` を実行し、3 件が通過した（2026-11-10、終了コード 0。値は表示していない）。(2) 要件 2.4（`.env.e2e` とそれを参照する記述を持たない）: `.gitignore` に `.env.e2e` の行と説明が残っていたため削除した（手元に `.env.e2e` が無いことを確かめた）。(3) design.md に「現況との対応（2026-11-10 追補）」を加えた（`scripts/lib/live-config.mjs` への改名を含む）。
+- 要件 1.2: `test:all`・`.githooks/pre-push`・`.github/workflows/` は live を実行しない（`package.json` と workflow の定義で確かめた）。

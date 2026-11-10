@@ -8,6 +8,8 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 現在の状態（2026-11-10 追補）: Phase 8 の `ops-agent-setup`（Codex 側の導入の取り消し）と `codex-mcp-subagent` は、`spec.json` の phase が `implementation-complete` になった。`docs/DEVELOP.md` も改訂後の導入に合わせてある。Phase 7 は 6 件とも実装が未完了（phase は `tasks-generated`）。ただし基準の文書（`comments.md`）と検査（`scripts/architecture/commentRules.ts`）は既にある。
 
+現在の状態（2026-11-10 追補 2）: 「確認済み・phase 未更新」だった 16 件は、feature 検証を終えて `implementation-complete` になった（下の「検証（kiro-validate-impl, 2026-11-10 追補）」）。残りは、フェーズ 1 の 18 spec、Phase 7（コメントの整理）、フェーズ 6 の `naming-*`。
+
 ## Completion の定義
 
 - `[x]` は、`spec.json` の phase が `implementation-complete` のものに限る（cc-sdd の検証を通過した状態）。
@@ -90,9 +92,25 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 ## Existing Spec Updates
 
-- [x] ops-agent-setup（2026-11-10 追補: Phase 8 の改訂を含めて `implementation-complete`。以下は当時の記述。Codex と Claude の導入は確認済み。Claude の実機確認は未了。**Phase 8 で Codex 側の導入を取り消す改訂が必要**） -- BRW の導入を `npm run setup:brw` の 1 つの入口にし、Claude と Codex を同じ clone の同じ commit から導入する。Dependencies: none
+- [x] ops-agent-setup（2026-11-10 追補: Phase 8 の改訂を含めて `implementation-complete`。以下は当時の記述で、現在は当てはまらない: 「Codex と Claude の導入は確認済み。Claude の実機確認は未了。Phase 8 で Codex 側の導入を取り消す改訂が必要」。Claude の実機確認と Codex 側の取り消しは、Phase 8 の改訂の実装と検証で済んでいる） -- BRW の導入を `npm run setup:brw` の 1 つの入口にし、Claude と Codex を同じ clone の同じ commit から導入する。Dependencies: none
 
-## 検証（kiro-validate-impl, 2026-11-08）: phase は未更新
+## 検証（kiro-validate-impl, 2026-11-10 追補）: 16 件を `implementation-complete` にした
+
+下の「2026-11-08」の節は当時の記録で、現在は次のとおり。
+
+- 対象の 16 spec（components-small-areas・develop-docs・layout-home・lib-large-files・lib-layers・live-tests・ops-config-secrets・ops-tooling-layout・src-component-nesting・src-composer-layout・src-duplicates・src-folder-layout・src-import-style・structure-checks・test-foundation・util-placement）は、feature 検証の判定が `GO` で、`spec.json` の phase を `implementation-complete` にした。判定の根拠は各 spec の tasks.md の「feature 検証（kiro-validate-impl, 2026-11-10）」にある。
+- 全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。
+- 受入基準の未参照: 2026-11-08 の「113 件」は、その後のタスクの改訂で減っており、2026-11-10 の突き合わせでは 4 件（structure-checks の 1.1〜1.3、util-placement の 7.4）だった。いずれも他のタスクが実体を持つため、参照を加えて 0 件にした。
+- `ops-agent-setup` の「Claude の実機確認が未了」は、Phase 8 の改訂と検証で解消済み（phase は `implementation-complete`）。
+- 要件と現状の食い違い（layout-home 2.1、develop-docs 1.1・2.1・3.3・4.2、ops-config-secrets 3.5、ops-tooling-layout 1.1）は、利用者の決定（2026-11-10: 要件を現状に合わせる）に従い、各 requirements.md に追補を書いた。実装は変えていない。
+- 設計の File Structure Plan と実装の不一致は、利用者の決定（現状に合わせて直す）に従い、各 design.md に「現況との対応（2026-11-10 追補）」を加えた。
+- `scripts/` のファイル名を kebab-case にそろえた（`agent/brw-source.mjs`、`architecture/{comment-rules,import-graph,lib-layers,types-only,util-sharing}.ts`、`lib/live-config.mjs`）。この文書の古い記述にある `commentRules.ts` などは、改名前の名前である。
+- GitHub の main のルールセットに、必須の検査 `e2e` を加えた（test-foundation の要件 9.1。利用者の承認を得て実施）。develop のルールセットは変えていない。
+- 実アカウントのテスト（`npm run test:live`）は、利用者の承認を得て実行し、3 件が通過した（live-tests の要件 4.1〜4.3）。
+- 手元の未取り込みのブランチ（cc-sdd の運用が安定する前の残骸）は、利用者の指示で削除した: `dev/cc-sdd-coexist-trial`・`dev/cc-sdd-trial`・`dev/creatormode`・`dev/spec-template-linter`・`dev/structure-docs-cleanup`。リモートのブランチは削除していない。
+- 残る作業: フェーズ 1 の 18 spec（brief のみ）、Phase 7（コメントの整理）、フェーズ 6 の `naming-*`。いずれも未着手（利用者の指示で、まだ着手しない）。
+
+## 検証（kiro-validate-impl, 2026-11-08）: 当時の記録
 
 全テスト（`npm run test:all`）は終了コード 0 で通過した（unit 494・component 13・route 212・render 2・e2e 10）。TODO と秘密情報の検出は、識別子（`MASTODON` の一部）とテストの fixture だけで、実際のものは無い。
 
@@ -121,6 +139,10 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 - [x] ops-agent-setup -- cc-sdd と BRW の導入を Claude 向けの一つの入口にまとめ、Codex 側の導入を取り消した（Phase 8）
 - [x] codex-mcp-subagent -- Codex を MCP の子エージェント（`codex_exec`）として Claude から呼ぶ（Phase 8）
 - [x] develop-docs-agents（直接実装） -- `docs/DEVELOP.md` の導入の説明を改訂後の導入に合わせた（Phase 8）
+- [x] src-folder-layout・src-import-style・src-duplicates・src-composer-layout・src-component-nesting -- `src/` の配置・import の書き方・重複・部品の入れ子を整理（2026-11-10 に検証し `implementation-complete`）
+- [x] util-placement・lib-layers・lib-large-files・components-small-areas・layout-home・structure-checks -- `util`・`lib`・`components` の配置と層を整理し、機械の検査で固定（同上）
+- [x] ops-config-secrets・ops-tooling-layout・develop-docs -- 運用のスクリプト・設定・手順書を整理（同上）
+- [x] test-foundation・live-tests -- テストの基盤（層・E2E・必須の検査）と、任意の実アカウントのテスト（同上）
 
 ## Phase 7: ソースコードのコメントの整理（2026-11-08 discovery）
 

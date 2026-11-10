@@ -41,3 +41,10 @@ structure.md の編集順: 本仕様の 2.1〜2.3 は、lib-layers 5.3・util-pl
   - `npm run test:imports`・`componentLayout`・`steeringRegions` の各検査が通ることを確かめる
   - 完了の条件: `npm run test:all` が終了コード 0 で完了し、件数が着手時以上である
   - _Requirements: 3.2, 5.4_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: design.md の File Structure Plan に、後の spec（`util-placement`・`src-component-nesting`）で場所が変わったパスが残っていた。現況に合わせて直した。実装への指摘は無い。

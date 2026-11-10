@@ -9,8 +9,6 @@ pnpm-debug.log*
 
 
 # environment variables（雛形 `*.template` のみ管理対象）
-# 移行済みの旧ファイル（.env.e2e は廃止。削除されるまで誤コミットしないよう除外する）
-.env.e2e
 .env
 .dev.vars
 .env.staging

@@ -110,6 +110,8 @@ tests/
 3. **変異テストの採否の再評価**: unit 層の PoC（2 モジュール）と、P0 の 11 ファイルでの報告は実施済み。route 層への適用は未検証。
 4. **`test:type`・`test:lexicon` の扱い**: `test:all` に含める（設計どおり）。
 
+2026-11-10 追補: 1 と 4 は実装で決着している（E2E の流れは `tests/e2e/flows/` にあり、`test:all` は `test:type`・`test:lexicon` を含む）。残る未決定は 2 と 3。PR の必須の検査は、GitHub の main のルールセットで `e2e` だけを必須にしている。
+
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._

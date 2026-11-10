@@ -90,3 +90,8 @@
 - 判定: HTML の内容（ヘッダー・サイドバー・フッター・`<head>` のメタ情報を含む全体）は、資産名を正規化すると移動の前後で一致する。残る差分は (a) の資産名（移動によるファイル名の変化、内容は同一）と (b) のビルド時の SHA 埋め込み・ミニファイの変数名による無関係なハッシュ差
 - 既存の検証: `npm run test:all` 終了コード 0（unit 49 ファイル / 321 件、component 5 / 13、route 23 / 212、render 1 / 2、e2e 7 件。基準と一致）。`npm run test:imports` 終了コード 0。`npm run apigen` 終了コード 0（`src/client/openapi`・`docs` に差分なし）
 - 退避のファイル: 移動の後の出力は scratchpad の `html-after.sha256` に記録。比較の作業用の出力は scratchpad のみで、リポジトリには追加していない
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: 要件 2.1（HTML が全ページで一致）は、資産のハッシュ付きファイル名を除いた一致として確かめられていた。利用者の決定に従い、requirements.md に追補を書いた。実装は変えていない。

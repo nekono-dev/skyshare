@@ -115,3 +115,8 @@
 - 1.2 の route: `respond` に当たる関数は `pages/v2/bsky/session/authorization/completion.ts`。route テストは `tests/route/pages/bskySessionCompletion.test.ts`（新規）。予約の認可の完了（`schedules/.../completion.ts`）は `tests/route/pages/scheduleCompletion.test.ts`（新規）。`json200` は `entryApi.test.ts` の成功経路 1 件で固定した。
 - 2.1・3.1・4.1・4.2・5.1 は、同じ呼び出し元（応答と設定の読み取り）に触れるため、直列に行う（`(P)` を付けない）。
 - 7.1 は、移行の後の検査であり、他の検査と対象が異なるため並行にできる（`(P)`）。
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: design.md に、後の spec で場所が変わったパスが残っていた。「現況との対応（2026-11-10 追補）」の表を加えた。実装への指摘は無い。

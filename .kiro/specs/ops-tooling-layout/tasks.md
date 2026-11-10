@@ -52,3 +52,11 @@
   - `generate-oauth-key.mjs` を削除し、`generators.mjs` にシークレット名を引数に取る出力の入口を置く。`src/lib/oauth/client.ts` の参照を直す
   - 完了の確かめ方: `node scripts/secrets/generators.mjs OAUTH_CLIENT_KEY` が JWK を出し、未知の名前は終了コード 1 で終わる。`npm run test:unit` が通る
   - _Requirements: 6.3, 6.4_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: (1) 要件 1.1・1.2: `scripts/architecture/` は本 spec の後に別の spec が作った領域。利用者の決定に従い、requirements.md の追補で領域の一覧に加えた。(2) 要件 1.3（kebab-case）: `scripts/` に camelCase のファイルが 7 件残っていたため、利用者の決定に従い改名し、参照（テスト・設定・steering・設計書）を更新した（`test:type`・`test:imports`・unit は通過）。(3) design.md の File Structure Plan が移動前のパスを残していたため、「現況との対応（2026-11-10 追補）」を加えた。
+- 残る未決（要件の外）: brief.md に書いた `build:prepare` の `prettier --write .`（E2E の実行でリポジトリ全体を整形する副作用）の見直しは、本 spec の受入基準に無く、未着手のまま残る（`testing.md` の「未決定・未検証」2）。

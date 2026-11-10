@@ -187,3 +187,8 @@
 - 5.x: 移動後の `test:unit`・`test:component`・`test:render` は通過。steering の検査（1.3）だけが、6.1 の更新まで失敗する（RED のまま）。
 - 6.4（最終）: `npm run test:all` 終了コード 0。unit 302（基準 297 + 新しい検査 5）・component 13・route 212・render 2・e2e 7（全件通過）。許容リスト 70 件・違反 0・stale 0。途中で `layout/Metadatas` の領域をまたぐ相対 import を検出し、`@/` の形に直した。
 - 審査（sanity review）の方式: inline（独立のサブエージェントは起動せず、同じ観点を本文脈で確かめた）。
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。全試験（`npm run test:all`）は終了コード 0（unit 700 件通過・2 件スキップ、component 13、route 212、render 2、e2e 10）。タスクは全て `[x]`、`_Blocked:_` は無い。受入基準は全てタスクの `_Requirements` から参照されている（突き合わせで未参照 0 件）。TODO・秘密情報の検出に該当は無い。判断の項目（タスク間の結線・設計との一致・境界）は Codex（`codex_exec`、読み取り専用）の独立した検証を入力にし、指摘は Claude が実物で確かめて採否を決めた。
+- 指摘と処置: design.md に、後の spec（`util-placement`・`lib-large-files` ほか）で移動・分割・削除されたパスが残っていた。「現況との対応（2026-11-10 追補）」の表を加えた。`/samples/choice-question` は `src/pages/samples/` が無く、ルートとして存在しないことを確かめた。

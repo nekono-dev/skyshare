@@ -272,10 +272,9 @@ Cloudflare API で、Worker の CPU 超過とエラーを取得できる。ト�
 ```sh
 cp config/production.example.json config/production.json
 $EDITOR config/production.json
-npm run sync:github -- --dry-run   # 登録する名前だけを表示する（値は表示しない）
-npm run sync:github                # GitHub の Variables に登録する（値が変わったものだけ）
-gh variable list -R <owner>/<repo> # 登録できたか確認する
 ```
+
+編集の後、「5.0 デプロイ前の準備」の手順（`--dry-run` で名前を確かめる → 登録 → `gh variable list` で確認）で GitHub の Variables に登録する。
 
 - `siteHost` は変数 `SITE_HOST` に、`vars` の各項目は同名の変数になる。空の値は登録しない。
 - GitHub のリポジトリは git の remote の origin から判定する（SSH の別名でもよい）。判定できないときは `-- --repo <owner>/<repo>` を付ける。

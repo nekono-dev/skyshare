@@ -1,9 +1,9 @@
 {
   "feature_name": "develop-docs",
   "created_at": "2026-10-31T00:00:00Z",
-  "updated_at": "2026-10-31T00:00:00Z",
+  "updated_at": "2026-11-10T13:00:00Z",
   "language": "ja",
-  "phase": "tasks-approved",
+  "phase": "implementation-complete",
   "depends_on": ["ops-agent-setup", "ops-config-secrets", "ops-tooling-layout"],
   "approvals": {
     "requirements": { "generated": true, "approved": true },

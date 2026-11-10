@@ -67,3 +67,7 @@
 1. If `config/<名前>.json` が無い、または必須の vars が無いとき, then the 生成モジュール shall 非ゼロで終了し、不足の項目名を標準エラーに出す
 2. If 本番（`production`）の生成で siteHost が無いとき, then the 生成モジュール shall 生成を行わずに失敗する
 3. If D1 の名前から ID が引けないとき, then the 生成モジュール shall 失敗し、先に作成する必要がある旨を出す
+
+## 追補（2026-11-10: 要件を現状に合わせる。利用者の決定）
+
+- 要件 3.5（生成した値を標準出力・ログ・`.dev.vars` 以外のファイルに出さない）には例外が 1 つある。`scripts/secrets/generators.mjs` を運用者が直接実行したとき（シークレット名を引数に取る CLI）は、その値を標準出力へ出す。これは `ops-tooling-layout` の要件 6.4 が定めた手作業の入口である。他のスクリプト（`prepare-local-env`・`sync-github-variables`・`ensure-worker-secrets`）は、値を出さない規則を保つ。実装は変えない。
