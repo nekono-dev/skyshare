@@ -1,10 +1,5 @@
 /**
- * atproto プロフィール参照のユーティリティ。
- *
- * 責務と処理概要:
- * - skyshare entry の作成時に投稿者の表示名を取得する。
- * - 実際に呼び出すメソッドは `getProfile` のみのため、`Agent` 全体ではなく
- *   最小インターフェース型を引数に取る（テストでは軽量なフェイクを渡せる）。
+ * atproto のプロフィールから、投稿者の表示名を解決する。
  */
 
 import type { Agent } from "@atproto/api"
@@ -14,9 +9,7 @@ type ProfileAgent = Pick<Agent, "getProfile">
 /**
  * 投稿者の表示名を解決する。
  *
- * 処理の趣旨:
- * - `getProfile` の `displayName` を優先し、未設定（空文字/undefined）なら
- *   handle をフォールバックとして採用する。
+ * - `getProfile` の `displayName` を返す。値が偽（空文字・`undefined`）のときは `fallbackHandle` を返す。
  *
  * Input:
  * - `agent`: `getProfile` を持つ認証済み Agent（または同等の最小インターフェース）

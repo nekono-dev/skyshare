@@ -2,13 +2,21 @@
 
 Kiro-style Spec-Driven Development on an agentic SDLC
 
-## セッション初期化時のルール
+## Session Initialization Rules
 
-- このファイル（CLAUDE.md）は、cc-sdd の導入（`scripts/agent/install-cc-sdd.sh`）では書き換えない。プロジェクトのルールは、このファイルを直接編集して管理する。
-- cc-sdd の導入物（`.claude/skills/kiro-*/`・`.kiro/settings/`）は `.gitignore` の対象で、コミットしない。セッション開始時に固定版を導入し直す。
-- `disable-model-invocation: true` のスキル（`kiro-discovery`・`kiro-impl`）は、モデルのスキル一覧に載らない（ユーザーだけが `/kiro-*` で呼べる）。スキル一覧はセッション起動時に作られるため、導入直後は他のスキルも載らないことがある。依頼に対応する `.claude/skills/<名前>/SKILL.md` を Read し、その手順を最後まで実行する（途中で別の作業に移らない）。手順が「推奨を示して停止」と定めるなら、そこで止めてユーザーに返す。
-- SKILL.md が見つからないときは、導入が済んでいないことを伝え、`scripts/agent/install-cc-sdd.sh --claude` の実行を提案する。
-- `/kiro-*` のスラッシュコマンドで始めたセッションは、フック（`scripts/agent/kiro-gate.mjs`）が手順書の Read を強制する。未読の間は他のツールを使えず、roadmap の新規 spec に brief.md が無いときは終了を止める。自然文の依頼は強制の対象外で、このファイルの手順に従って判断する。
+- This file (CLAUDE.md) is not overwritten by the cc-sdd installation (`scripts/agent/install-cc-sdd.sh`). Project rules are managed by editing this file directly.
+- The cc-sdd installed files (`.claude/skills/kiro-*/`, `.kiro/settings/`) are in `.gitignore` and are not committed. The SessionStart installation runs at every start (including `resume`, `clear`, and `compact`) and reinstalls the pinned version.
+- Skills with `disable-model-invocation: true` (`kiro-discovery`, `kiro-impl`) are not listed in the model's skill list; only the user can call them with `/kiro-*`. The skill list is built when the session starts, so other skills may also be missing right after installation. Read `.claude/skills/<name>/SKILL.md` for the request and carry out its steps to the end (do not switch to other work in the middle). If the steps say "present a recommendation and stop", stop there and return to the user.
+- If a SKILL.md cannot be found, tell the user that the installation is not complete and suggest running `scripts/agent/install-cc-sdd.sh --claude`.
+- A session started with a `/kiro-*` slash command is forced by the hook (`scripts/agent/kiro-gate.mjs`) to Read the procedure file first. Until it is read, no other tool can be used, and the end of the turn is blocked when a new roadmap spec has no brief.md. Natural-language requests are not subject to this enforcement; judge them by following the steps in this file.
+
+## Working Agreements (Basis for Judgment)
+
+- Spec-Driven Development is a mechanism for consistency and clarity; it does not prohibit work outside a spec. As a spec rule, enforce only "what the spec describes exists" (spec → implementation). Do not enforce "all code appears in a spec" (implementation → spec).
+- Because v2 is not yet released, prefer consistent naming and design over minimal diffs or backward-compatible wrappers. However, do not break the signatures of functions and types used by others in externally published APIs (confirm changes that affect callers).
+- Commit and push to a work branch without asking for permission. Do not clean up worktrees at push time; clean them up with `brw finish` after merging into develop (or after creating a PR to main).
+- For work spanning multiple specs, write the discovery outputs first (`.kiro/steering/roadmap.md` and a `brief.md` for each new spec). Do not leave the split only in conversation or in records. Do not imitate the old format of existing specs (such as tasks that name old IDs or function names); create them under the cc-sdd rules.
+- Record decisions in `.kiro/` (feature briefs, steering, roadmap). Use `docs/` only for human-readable prose (such as DEVELOP.md); do not put decisions or rules for AI there. Do not use AI work records (auto-memory); keep everything in the repository.
 
 ## Project Context
 
@@ -71,3 +79,59 @@ Skills are located in `.claude/skills/kiro-*/SKILL.md`
 - Load additional steering only when required by project rules or relevant to the task.
 - Default files: `product.md`, `tech.md`, `structure.md`
 - Custom files are supported (managed via `/kiro-steering-custom`)
+
+## Codex as a Child Agent (MCP)
+
+Codex is available to Claude as the MCP tool `codex_exec`. Before starting any thinking-heavy work, check the tool list for `codex_exec`. If `codex_exec` is not in the tool list, find the cause as described in item 6 and fall back to the CLI as item 6 allows. Only when Codex cannot be used at all, follow item 9.
+
+1. **Delegate thinking-heavy work.** Delegate to `codex_exec` any work that needs deep thinking, except the work in the do-not-delegate list below. This is not limited to review. It includes design, analysis, requirements review, new implementation and fixes, root-cause debugging, independent review, and broad exploration.
+   Do not delegate the following work to Codex, even when it is thinking-heavy:
+   - decisions or approvals that the user must make;
+   - destructive operations (reset, forced deletion, deleting a login or a volume);
+   - operations that act on external systems;
+   - work that handles secrets or credentials.
+   Destructive operations and operations that act on external systems are not delegated and are not done without explicit approval from the user; ask the user first, and do them yourself only after the user approves them.
+2. **Delegate proactively.** Delegate before doing the work directly. After delegating, focus on writing instructions, verifying results, reporting, changing approval state, and asking the user questions. Wait for the response instead of redoing the delegated work yourself. While waiting, a client-side call time limit is not a reason to stop work; the server limits are 10 minutes for execution and 2 minutes for waiting in the queue.
+3. **Do not self-review.** Never present your own review of a spec or an implementation as an independent review. Independent review is done by `codex_exec`, and its findings are the input for the next step.
+4. **Order the calls.**
+   - Read-only calls (`sandbox` set to `read-only`) that do not depend on each other must be sent in the same turn, so that they run in parallel.
+   - Write calls (`sandbox` set to `workspace-write`) are sent one at a time. They never overlap with reads or with other write calls.
+   - A call is complete when its result (success or error) comes back. Wait for it before starting the next call.
+   - Do not instruct a read call while a write call is running. If a read call covers a directory that other work is changing, the prompt must include a warning about it.
+   - The CLI fallback in item 6 follows the same order and runs in the foreground.
+5. **Report delegation and direct work.** Describe each delegation and its purpose in the final report. If you skip delegation for thinking-heavy work, state the reason in the final report. Work directly without delegation in these cases:
+   - mechanical fixes of one to a few lines (typos, configuration value changes);
+   - decisions that wait for the user;
+   - changes to the `spec.json` approval flag;
+   - destructive operations and operations that act on external systems, only after the user has explicitly approved them (see item 1);
+   - git operations;
+   - handling of secrets;
+   - when Codex cannot be used (items 6 and 9).
+   State the reason for each piece of direct work in the final report.
+6. **Fall back when MCP fails.**
+   - If a `codex_exec` call returns an error and the `codex` executable works, run the same request through the CLI with the same `sandbox` value:
+     `codex -a never exec --sandbox <same value> --cd <repo root> - < <prompt file>`
+     Put `-a never` before `exec`.
+   - Write the prompt file in the session scratchpad, never in `/tmp`.
+   - If the call failed because the wait limit was reached, first wait for the preceding write call to finish, then run the CLI fallback.
+   - If `codex_exec` is unavailable and the cause is a plan limit (a usage or billing limit in the response), do not delegate. Do the work directly and state the reason in the final report. Codex is then treated as not usable for this work (item 9).
+   - If a `codex_exec` call returns a plan-limit error while the `codex` executable exists, follow the CLI rule above. If the CLI result is also a plan limit, do the work directly and state the reason in the final report.
+   - If `codex_exec` is unavailable and the cause is not a plan limit, or the cause is unclear, try the CLI and follow its result.
+   - If neither the MCP tool nor the CLI works, do the work directly and state the reason in the final report.
+   - Always state in the final report that the CLI fallback was used.
+7. **Write prompts that Codex can use alone.**
+   - Make each prompt self-contained. Include the goal, the absolute repository paths of the target files, the requirement, design, and task numbers, the constraints (boundary and language rules), and the output format.
+   - Do not paste the whole conversation. Include only the parts that Codex needs.
+   - Name the directories Codex may read; for a request that may write, also name the directories it may write.
+   - For implementation, include the test command and the completion criteria.
+   - Set `sandbox` per call according to the request: `read-only` when no files should change, `workspace-write` when files should change. Do not fix the sandbox to read-only.
+   - Codex does not read `AGENTS.md`. Copy only the needed project rules from this file into the prompt.
+   - Never include tokens, passwords, or account identifiers.
+   - State in the prompt that Codex must not run git commit, push, or branch operations, and must not change the approval state in `spec.json`.
+8. **Verify the results.**
+   - Treat Codex output as unverified until you check it.
+   - Before claiming completion, run `git diff` to check the changes, and run the tests named in the prompt.
+   - If you find a defect, state the specific defect, then either call `codex_exec` again with the defect or fix it yourself.
+   - The final report lists what Codex did, what Claude verified, and what is still unverified.
+   - Follow `kiro-verify-completion` before any success or completion claim.
+9. **Work without Codex.** Codex is not usable when the `codex` executable is absent (for example, in cloud sessions), or when item 6 decides not to delegate because of a plan limit, or when both `codex_exec` and the CLI fallback are unusable. Where Codex is not usable, do not stop: complete the work alone. Otherwise the delegation duty in items 1 and 2 applies. If the `codex` MCP server fails to start (for example, when `sh` or `git` is missing), continue the work without `codex_exec`.

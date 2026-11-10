@@ -47,13 +47,11 @@ _legacy/**/.env.test.*
 
 # brw create が作る作業ブランチの worktree
 .claude/worktrees/
-
-# 外部 Git clone への Codex skill のリンク（本体は同梱しない）
-.agents/skills/branch-release-workflow
+# 個人の承認（MCP サーバーの有効化など）。共有の設定には書かない
+.claude/settings.local.json
 
 # cc-sdd の導入物（MIT のため本リポジトリには含めない）。SessionStart で固定版を導入し直す（scripts/agent/install-cc-sdd.sh）
 .claude/skills/kiro-*/
-.agents/skills/kiro-*/
 .kiro/settings/
 # テストの実行で生成される計測の出力と変異テストの一時領域
 /.cache/

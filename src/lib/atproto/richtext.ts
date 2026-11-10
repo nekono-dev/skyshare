@@ -1,3 +1,8 @@
+/**
+ * 投稿本文の facets（リンク・メンション・ハッシュタグ）の抽出と検出。
+ *
+ * - メンションの DID を解決するのは `detectFacetsForSubmission` だけで、公開 AppView に通信する。ほかの関数は通信しない。
+ */
 import { RichText } from "@atproto/api"
 import type { BskyFacets } from "@/lib/atproto/recordTypes"
 import { publicAtpAgent } from "./publicAgent"
@@ -8,11 +13,7 @@ import {
 } from "./richTextSegments"
 
 /**
- * RichText の facets / features からリンク URI を抽出するユーティリティ。
- *
- * 責務と処理概要:
- * - facets 配列・features 配列・それらを内包するオブジェクト入力を横断的に処理する。
- * - `app.bsky.richtext.facet#link` 型 feature の `uri` を重複排除して返す。
+ * facets / features から `app.bsky.richtext.facet#link` 型 feature の `uri` を集め、重複を除いて返す。
  *
  * 想定する入力形状(最小要件):
  * - Array<Facet>  -> [{ index: {...}, features: [{ $type, uri, ... }, ...] }, ...]
@@ -65,7 +66,7 @@ function extractLinkUrisFromFacets(input?: unknown): string[] {
                 continue
             }
 
-            // 直接 feature オブジェクトの場合
+            // 配列の要素が feature そのもの（`features` を持たない）の場合
             if (
                 item &&
                 typeof item === "object" &&
@@ -76,7 +77,7 @@ function extractLinkUrisFromFacets(input?: unknown): string[] {
                 continue
             }
 
-            // ネスト配列を再帰展開し、取りこぼしを防ぐ。
+            // ネストした配列は再帰的に展開する。
             if (Array.isArray(item)) {
                 processArray(item)
             }
@@ -98,12 +99,7 @@ function extractLinkUrisFromFacets(input?: unknown): string[] {
 }
 
 /**
- * facets/features からハッシュタグ(app.bsky.richtext.facet#tag)を抽出する。
- *
- * 責務と処理概要:
- * - `extractLinkUrisFromFacets` と同型の走査ロジックで facet/feature 配列を横断的に処理する。
- * - PostForm の投稿確定時、`RichText.detectFacetsWithoutResolution()` の結果からハッシュタグ履歴
- *   （`src/lib/settings/hashtagHistorySettings.ts`）へ記録するタグを取り出す用途で使う。
+ * facets / features から `app.bsky.richtext.facet#tag` 型 feature の `tag` を集め、重複を除いて返す。
  *
  * 想定する入力形状(最小要件):
  * - `extractLinkUrisFromFacets` と同じ（Array<Facet> / Array<Feature> / それらを内包するオブジェクト）
@@ -112,7 +108,7 @@ function extractLinkUrisFromFacets(input?: unknown): string[] {
  * - `input`: facets/features を含む任意値（unknown）
  *
  * Output:
- * - 重複を除いたタグ文字列配列（"#"を含まない）
+ * - 重複を除いたタグ文字列配列（"#"を含まない。空文字のタグは除く）
  *
  * 例:
  * - 入力: `{ facets: [{ features: [{ $type: "app.bsky.richtext.facet#tag", tag: "猫" }] }] }`
@@ -173,13 +169,12 @@ function extractTagsFromFacets(input?: unknown): string[] {
 }
 
 /**
- * 複数の投稿本文から、使われているハッシュタグの使用数（何件の投稿で使われたか）を集計する。
+ * 複数の投稿本文から、ハッシュタグが何件の投稿で使われたかを数える。
  *
- * 責務と処理概要:
- * - Timeline読み込み時、ハッシュタグ履歴（`src/lib/settings/hashtagHistorySettings.ts`）が空の場合の
- *   初回候補seed用に使う。1投稿内で同じタグが複数回使われても、その投稿については1件としてのみ数える
- *   （`extractTagsFromFacets` が既に1投稿分のfacetsを重複排除して返すため）。
- * - タグの照合は大文字小文字を無視し、表記は最初に出現したものを採用する。
+ * - 1 投稿内で同じタグが複数回あっても、その投稿の 1 件として数える。
+ * - タグの照合は大文字小文字を区別せず、表記は最初に出現したものを採用する。
+ * - 検出が例外を投げた投稿は数えない。
+ * - 通信は行わない（`RichText.detectFacetsWithoutResolution` で検出する）。
  *
  * Input:
  * - `texts`: 集計対象の投稿本文配列
@@ -219,23 +214,15 @@ function countHashtagUsage(texts: string[]): { tag: string; count: number }[] {
 }
 
 /**
- * 投稿本文からfacets(URL/メンション/ハッシュタグ)をブラウザ側で検出する。
+ * 投稿本文の facets（URL・メンション・ハッシュタグ）を `RichText.detectFacets` で検出する。
  *
- * 責務と処理概要:
- * - バックエンドAPIはfacetsの自動検出を行わなくなった(クライアントが組み立てた
- *   facetsをそのままBluesky APIへ中継する薄いプロキシへ設計変更済み)。
- *   PostFormなど、まだ手動でのfacet編集UIを持たないクライアントの互換動作として、
- *   旧サーバ実装(`RichText.detectFacets(agent)`)と同じ検出ロジックを、
- *   認証不要の公開AppView(`publicAtpAgent`)経由でブラウザから行う。
- * - メンション(`@handle`)の did 解決に失敗した場合でも `RichText.detectFacets` 自体は
- *   例外を投げず対象featureの `did` を空文字にフォールバックする
- *   (`@atproto/api` の既定挙動)ため、ここでも同様に投稿フロー全体はブロックしない。
+ * - メンション（`@handle`）の DID は公開 AppView（`publicAtpAgent`）で解決する。解決に失敗した feature の `did` は空文字になり、例外は投げない（`@atproto/api` の既定の動作）。
  *
  * Input:
  * - `text`: 投稿本文
  *
  * Output:
- * - 検出されたfacets配列(該当なしの場合は空配列またはundefined)
+ * - 検出された facets 配列。該当がなければ空配列（`undefined` の場合もある）
  *
  * 例:
  * - 入力: `"https://example.com を見て @alice.bsky.social #猫"`
@@ -246,20 +233,14 @@ const detectFacetsForSubmission = async (
 ): Promise<BskyFacets | undefined> => {
     const rt = new RichText({ text })
     await rt.detectFacets(publicAtpAgent)
-    // `RichText.detectFacets`が実際に生成するfeatureはmention/link/tagの3種のみ
-    // (`@atproto/api`の型定義上は将来拡張用の`{$type: string}`も許容されているが、
-    // 検出ロジック(`detection.js`)がそれ以外を生成することはない)。
-    // バックエンドのfacetsスキーマ(`src/lib/api/schema/common.ts`)もこの3種のみを
-    // 受理するため、ここで契約を確定させる。
+    // 検出が生成する feature は mention・link・tag の 3 種だけなので、`BskyFacets` として返す
     return rt.facets as BskyFacets | undefined
 }
 
 /**
- * 投稿本文からURL（link）のfacetsだけを、通信せずに検出する。
+ * 投稿本文から URL（link）の facets だけを、通信せずに検出する。
  *
- * 処理の趣旨:
- * - 共有文から本文のURLを取り除く範囲を求めるために使う（`specs/link-card-priority`）。
- *   URLの検出にはメンションの did 解決が不要なため、`detectFacetsWithoutResolution` を使う。
+ * - `detectFacetsWithoutResolution` で検出し、link の feature を持つ facets だけを返す（メンションの DID は解決しない）。
  *
  * Input:
  * - `text`: 投稿本文
@@ -268,7 +249,7 @@ const detectFacetsForSubmission = async (
  * - link の feature を持つ facets。該当なしなら空配列
  *
  * 失敗時の方針:
- * - 検出が例外を投げた場合は空配列を返す（URLを取り除かず、元の本文で共有させるため）。
+ * - 検出が例外を投げた場合は、警告を出して空配列を返す。
  *
  * 例:
  * - 入力: `"見て https://example.com"`

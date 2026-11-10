@@ -15,10 +15,10 @@ import {
     libLayerOf,
     type LibRegionName,
 } from "../../../scripts/architecture/libLayers"
+import { readSteeringStructure } from "../support/steeringStructure"
 
 const repoRoot = path.resolve(__dirname, "../../..")
 const libRoot = path.join(repoRoot, "src/lib")
-const structurePath = path.join(repoRoot, ".kiro/steering/structure.md")
 
 /** 対応表のキーに対応する、`src/lib/` 直下の代表ファイルのパス。 */
 const modulePathOf = (region: LibRegionName): string =>
@@ -64,7 +64,7 @@ describe("領域の対応表（LIB_LAYER）", () => {
 })
 
 describe("structure.md との一致", () => {
-    const structure = fs.readFileSync(structurePath, "utf8")
+    const structure = readSteeringStructure()
     // 「## 領域の一覧」の節（次の見出しまで）
     const section = structure.match(/## 領域の一覧\n([\s\S]*?)\n## /)?.[1] ?? ""
 

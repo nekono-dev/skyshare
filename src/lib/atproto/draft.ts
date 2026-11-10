@@ -1,12 +1,7 @@
 /**
- * Bluesky `app.bsky.draft.*` レコードの入出力検証・変換ユーティリティ群。
+ * 下書き（`app.bsky.draft.*`）のリクエスト・レスポンスの検証と、ラベル値の変換。
  *
- * 責務と処理概要:
- * - `/v2/bsky/drafts` エンドポイントが受け取るリクエストボディ・クエリの検証。
- * - `app.bsky.draft.*` から返るレスポンスの最小要件検証。
- * - `com.atproto.label.defs#selfLabels` 形式のラベル値の抽出・組み立て。
- * - `posts` は1件ならテキストのみの下書き、複数件ならスレッド(reply chain予定)の
- *   下書きを表す（`app.bsky.draft#draft.posts` にそのまま対応）。
+ * - `posts` は 1 件ならテキストのみの下書き、複数件ならスレッドの下書きを表す（`app.bsky.draft#draft.posts` に対応）。
  */
 
 import { isObjectRecord } from "./object"
@@ -56,10 +51,7 @@ export const extractLabelValues = (value: unknown): string[] | undefined => {
 /**
  * 下書き本体（`posts` 配列全体）を一覧表示・フォーム復元に必要な形へ検証する。
  *
- * 処理の趣旨:
- * - 画像等の埋め込みはデバイスローカル参照のためこのアプリでは扱えず、
- *   langs/postgateEmbeddingRules/threadgateAllow も一覧表示や再利用では使わない。
- * - `posts` が複数件ならスレッド（reply chain予定）の下書きとして扱う。
+ * - 画像などの埋め込みは、デバイス内でしか有効でない参照のため扱わない。`langs`・`postgateEmbeddingRules`・`threadgateAllow` も一覧表示と再利用では使わない。
  *
  * Input:
  * - `value`: draft 候補
@@ -234,6 +226,8 @@ export const buildSelfLabels = (labels: string[] | undefined) => {
 /**
  * 下書き一覧クエリを検証する。
  *
+ * - `limit` は 1〜100 の整数、`cursor` は空文字を許さない。
+ *
  * Input:
  * - `request`: HTTP リクエスト
  *
@@ -272,7 +266,7 @@ export const parseDraftQuery = (
 }
 
 /**
- * 下書き一覧レスポンスを最小要件で検証する。
+ * 下書き一覧レスポンスを検証する（必要なフィールドだけを確認する）。
  *
  * Input:
  * - `value`: getDrafts のレスポンス候補

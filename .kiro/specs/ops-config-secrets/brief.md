@@ -55,3 +55,9 @@
 - `wrangler.jsonc` は生成物で、手で編集しない。生成の結果（内容）は変えない。
 - 生成した値は標準出力・ログに出さない（既存の規則）。
 - `tests/unit/scripts/` の既存テスト（`renderWrangler.test.ts`・`syncGithubVariables.test.ts`）を通す。
+
+## 確定した判断（2026-10-31）
+
+- `.githooks/pre-push` はテストだけを実行する。GitHub の Variables・Secrets への登録は、デプロイ前に `npm run sync:github` を手動で行う（push で本番の値が書き換わるのを防ぐため）。見直すときは、利用者に確認してから変える。
+- Worker のシークレットは手で登録しない。CI（deploy は配備の後、preview は配備の前）の `hack/ensure-worker-secrets.mjs` が、未登録のものだけ生成して登録する。
+- 既存のプレビューは作られた時点の基本設定のシークレットを持ち続けるため、`preview.yaml` は必要なシークレットが欠けたプレビューを配備の前に作り直す。

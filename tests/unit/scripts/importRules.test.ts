@@ -709,7 +709,7 @@ describe("想定の構成からの独立（要件 10）", () => {
 
     it("すべての規則に、根拠となる steering の節が紐づいている（要件 10.1）", () => {
         for (const id of RULE_IDS) {
-            expect(RULE_BASIS[id]).toMatch(/structure\.md/)
+            expect(RULE_BASIS[id]).toMatch(/structure\*\.md/)
         }
     })
 })

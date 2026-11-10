@@ -1,22 +1,14 @@
 /**
- * Skyshare 独自 lexicon の NSID を一元管理するモジュール。
+ * Skyshare 独自 lexicon の NSID を一元管理する。
  *
- * 責務と処理概要:
- * - `lexicons/` 配下の `entry.json` の `id` を唯一の定義元として、ビルド時に NSID を導出する。
- * - entry の NSID は `<prefix>.entry` の形を規約とし、defs の NSID は `<prefix>.defs` と決める。
- * - `at://` URI の組み立て・解析（entry を指す URI のみ受理）を提供する。
- * - アプリケーションコードは Skyshare 独自 NSID の文字列リテラルを持たず、本モジュールを経由する。
- *
- * 異常系:
- * - `entry.json` が 0 件または複数件、あるいは `id` が `.entry` で終わらない場合は、
- *   モジュール評価時（起動時・ビルド時）に原因を示す Error を投げる。
- *
- * 補足:
- * - `import.meta.glob` はビルド時に解決されるため、Workers 上でもファイル読み込みは発生しない。
+ * - `lexicons/` 配下の `entry.json` の `id`（`<prefix>.entry`）を唯一の定義元とし、defs の NSID は `<prefix>.defs` とする。
+ * - `entry.json` が 0 件か複数件、または `id` が `.entry` で終わらないときは、モジュール評価時に Error を投げる。
+ * - アプリのコードは独自 NSID の文字列リテラルを持たず、このモジュールを経由する。
  */
 
 const ENTRY_SUFFIX = ".entry"
 
+// import.meta.glob はビルド時に解決するため、Workers でもファイル読み込みは発生しない
 const entryLexicons = import.meta.glob<{ id: string }>(
     "/lexicons/**/entry.json",
     { eager: true, import: "default" },
@@ -70,8 +62,7 @@ const escapeRegExp = (value: string): string =>
 /**
  * entry の NSID から、defs・manifest の NSID と URI の組み立て・解析を導出する。
  *
- * 処理の趣旨:
- * - 運用者がドメインを変えた場合にも、同じ導出規則で値が決まることを、アプリ本体と同じ関数で確認できるようにする。
+ * - ドメインが変わっても、この導出規則で defs と URI の値が決まる。
  *
  * - 入力: `"dev.nekono.skyshare.entry"`
  * - 出力: `{ entryCollection: "dev.nekono.skyshare.entry", defsNsid: "dev.nekono.skyshare.defs", ... }`

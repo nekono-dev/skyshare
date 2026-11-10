@@ -38,20 +38,21 @@ export type Violation = {
 
 /** 規則ごとの根拠（steering の節）。規則は steering の規約だけから導く（要件 10.1）。 */
 export const RULE_BASIS: Record<RuleId, string> = {
-    layer: "structure.md「Code Organization Principles」（依存の向き）",
+    layer: "structure*.md「Code Organization Principles」（依存の向き）",
     uiInLib:
-        "structure.md「Code Organization Principles」（lib は UI に依存しない）",
-    cycle: "structure.md「Code Organization Principles」（循環 import は作らない）",
+        "structure*.md「Code Organization Principles」（lib は UI に依存しない）",
+    cycle: "structure*.md「Code Organization Principles」（循環 import は作らない）",
     crossRegionRelative:
-        "structure.md「Import Organization」（領域をまたぐ import は @/）",
-    relativeDepth: "structure.md「Import Organization」（../ は 3 段未満）",
-    jsExtension: "structure.md「Import Organization」（拡張子は付けない）",
+        "structure*.md「Import Organization」（領域をまたぐ import は @/）",
+    relativeDepth: "structure*.md「Import Organization」（../ は 3 段未満）",
+    jsExtension: "structure*.md「Import Organization」（拡張子は付けない）",
     libLayer:
-        "structure.md「lib の領域の依存の向き」（基盤は業務を import しない）",
+        "structure*.md「lib の領域の依存の向き」（基盤は業務を import しない）",
     utilShared:
-        "structure.md「共通（`src/util/`・`src/styles/`）」（util は二つ以上の領域から使われる）",
-    typesLeaf: "structure.md「型（`src/types/`）」（型は葉で、外へ依存しない）",
-    typesOnly: "structure.md「型（`src/types/`）」（型の文だけを置く）",
+        "structure*.md「共通（`src/util/`・`src/styles/`）」（util は二つ以上の領域から使われる）",
+    typesLeaf:
+        "structure*.md「型（`src/types/`）」（型は葉で、外へ依存しない）",
+    typesOnly: "structure*.md「型（`src/types/`）」（型の文だけを置く）",
 }
 
 const REACT_PACKAGE = /^react(-|\/|$)/

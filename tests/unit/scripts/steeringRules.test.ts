@@ -9,13 +9,12 @@
  * - 負例（検査が機能することの確認）: 規則が一つ欠けた表・余分な行を持つ表・古い注を含む文書を与え、差が報告されることを確かめる。
  * - 検査は `structure.md` の文字列に対して行う。規則の一覧（`RULE_IDS`・`RULE_BASIS`）だけを値として読む（規則の単一の正は `rules.ts`）。
  */
-import { readFileSync } from "node:fs"
-import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { RULE_BASIS, RULE_IDS } from "../../../scripts/architecture/rules"
-
-const repoRoot = path.resolve(__dirname, "../../..")
-const structurePath = path.join(repoRoot, ".kiro/steering/structure.md")
+import {
+    readStructureChecks,
+    readSteeringStructure,
+} from "../support/steeringStructure"
 
 /** 依存規則の表の見出し（節の名前）。 */
 const RULES_SECTION = "## 依存規則の検査"
@@ -93,11 +92,11 @@ const findStaleNotes = (markdown: string): string[] =>
                 STALE_WORDS.some(word => line.includes(word)),
         )
 
-describe("structure.md の依存規則の表と規則の一覧（RULE_IDS・RULE_BASIS）", () => {
-    const markdown = readFileSync(structurePath, "utf8")
+describe("structure の依存規則の表と規則の一覧（RULE_IDS・RULE_BASIS）", () => {
+    const markdown = readSteeringStructure()
 
     it("表の一列目と RULE_IDS が双方向に一致する", () => {
-        const table = parseRuleTable(markdown)
+        const table = parseRuleTable(readStructureChecks())
         expect(table.length).toBeGreaterThan(0)
         expect(diffRuleNames(table, RULE_IDS)).toEqual({
             missing: [],

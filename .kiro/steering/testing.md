@@ -65,7 +65,7 @@
 - 外部の接続、実時間、乱数に依存させない。時刻は fake timers で固定する（`vi.useFakeTimers({ toFake: ["Date"] })`）。乱数に依存する検査は、固定の値を注入する。
 - 秘密情報をテストに置かない。鍵・DID・ハンドルは `tests/fixtures/` の架空の値を使う。
 - テストは互いに独立させる。D1 は各テストファイルの前にマイグレーションを適用し、空の状態から始める（isolated storage）。
-- テストの題名は英語。
+- テストの題名は英語。題名に受入基準の識別子（要件番号・AC/FR/NFR のタグ）は含めない。対応は設計の追跡表で示す。
 
 ## Layout（`tests/`）
 
@@ -113,4 +113,4 @@ tests/
 ---
 
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
-_updated_at: 2026-11-05（Cookie のフォルダ化、e2e に移動した部品の操作の流れを追補。リファクタと単体テストの規則を追加）_
+_updated_at: 2026-11-05_

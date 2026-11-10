@@ -1,14 +1,8 @@
 /**
- * atproto リスト参照（`app.bsky.graph.getLists`）のユーティリティ。
+ * 自分が所有する Bluesky のリスト一覧を取得する（threadgate の `#listRule` の「リストから選択」で使う）。
  *
- * 責務と処理概要:
- * - 返信可能ユーザー設定（threadgateの`#listRule`）の「リストから選択」UIに使う、
- *   自分自身が所有するBlueskyリスト一覧を取得する。
- * - リストの読み取りは認証不要な公開情報のため、自前バックエンドを経由せず
- *   `publicAtpAgent`（`src/lib/atproto/publicAgent.ts`）でブラウザから直接
- *   Bluesky公開AppViewを叩く（アクセス頻度が高くなる想定のため、自前バックエンドの
- *   負荷を避ける方針。`src/lib/atproto/suggest.ts` のメンション/ハッシュタグ候補と
- *   同じ設計方針）。
+ * - リストの読み取りは認証不要の公開情報のため、自前のバックエンドを経由せず `publicAtpAgent` でブラウザから Bluesky の公開 AppView を直接呼ぶ（アクセスが多くなるため、バックエンドの負荷を避ける）。
+ * - 同じ方針の `src/lib/atproto/suggest.ts`（メンション・ハッシュタグの候補）と揃えている。
  */
 
 import { publicAtpAgent } from "./publicAgent"
@@ -18,18 +12,15 @@ export type OwnedList = { uri: string; name: string }
 /**
  * 自分自身のBlueskyリスト一覧を取得する。
  *
- * 処理の趣旨:
- * - 返信許可リストとして選べるのは、Bluesky公式アプリと同様にユーザーリスト
- *   （`app.bsky.graph.defs#curatelist`）のみとする。モデレーション用途の
- *   modlist（`#modlist`）は返信許可の対象として不適切なため除外する。
- * - 失敗時の方針: 例外を握りつぶさず呼び出し元へ投げる（呼び出し元の
- *   `PostGateDialog` がローディング/エラー表示を担う）。
+ * - 返信許可に選べるのは、Bluesky 公式アプリと同じくユーザーリスト（`app.bsky.graph.defs#curatelist`）だけ。モデレーション用の modlist（`#modlist`）は返信許可の対象として不適切なため除外する。
+ * - 取得するのは先頭 100 件（`limit: 100`）だけで、ページングはしない。その中から curatelist だけを返す。
+ * - 失敗時の方針: 例外を握りつぶさず呼び出し元へ投げる（呼び出し元の `PostGateDialog` がローディング・エラー表示を担う）。
  *
  * Input:
- * - `did`: 一覧を取得する対象アカウントのDID
+ * - `did`: 一覧を取得する対象アカウントの DID
  *
  * Output:
- * - `{ uri, name }[]`（curatelistのみ、最大100件）
+ * - `{ uri, name }[]`（curatelist のみ）
  *
  * 例:
  * - 入力: did="did:plc:abc"（curatelist 1件、modlist 1件を所有）

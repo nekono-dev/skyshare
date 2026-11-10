@@ -52,3 +52,9 @@ live 層を vitest の専用の設定（`vitest.live.config.ts`・`tests/live/`�
 - 秘密（パスワード）は標準出力・ログ・テストの失敗メッセージに出さない。
 - 実アカウントの認証情報は利用者が用意する（この環境には無いため、実通信の確認は行えない）。
 - CI の必須ゲートに入れない（`.kiro/steering/testing.md` の CI の方針）。
+
+## 確定した判断（2026-10-31）
+
+- live テストは任意で、ローカルだけで実行する（`npm run test:live`、`tests/live/`）。CI・pre-push・test:all には含めない。
+- 非秘密の設定は `config/live.json`、パスワードは `.dev.vars`。`.env.e2e` は廃止（ファイル自体の削除は利用者）。
+- 公開の AppView でしか `app.bsky.actor.getProfile` は未認証で読めない（PDS は 401）。

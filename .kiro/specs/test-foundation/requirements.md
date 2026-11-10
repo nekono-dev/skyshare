@@ -51,7 +51,7 @@ src/ の現行実装から、テストを作り直すための基盤を整備す
 1. When 機能の spec が P0 の受入基準を定めるとき, the test foundation shall その基準を検証する少なくとも 1 件のテストを求める。
 2. The test foundation shall すべてのテストが機能の受入基準に対応することを求めない。
 3. The test foundation shall テストの題名を英語で書くことを求める。
-4. Where テストが特定の受入基準を検証するとき, the test foundation shall その基準の識別子をテストの題名に含めることを許可する。
+4. The test foundation shall テストの題名に、受入基準の識別子（要件番号・AC/FR/NFR のタグ）を含めないことを求める。受入基準とテストの対応は、design の追跡表で示す。
 
 ### Requirement 4: カバレッジの基準
 

@@ -181,7 +181,7 @@ scripts/
 | 3.1         | P0 の受入基準に 1 件以上のテスト                       | Priority（steering）                                   | 文書（検証は tasks で行う）                                 | —          |
 | 3.2         | 逆方向は強制しない                                     | Priority（steering）                                   | 文書                                                        | —          |
 | 3.3         | テストの題名は英語                                     | Priority（steering）                                   | 文書                                                        | —          |
-| 3.4         | 題名に識別子を含めてよい                               | Priority（steering）                                   | 文書                                                        | —          |
+| 3.4         | 題名に識別子（要件番号・AC タグ）を含めない            | Priority（steering）                                   | 文書                                                        | —          |
 | 4.1         | P0 モジュールの分岐 80%                                | CoverageGate                                           | `coverage.thresholds`（ファイルまたは glob 単位、istanbul） | —          |
 | 4.2         | src 全体の目標を置かない                               | CoverageGate                                           | 設定に全体の閾値を置かない                                  | —          |
 | 4.3         | P1・P2 に要件を置かない                                | CoverageGate                                           | 閾値の対象外                                                | —          |

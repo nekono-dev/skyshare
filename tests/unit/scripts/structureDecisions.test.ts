@@ -12,9 +12,12 @@
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
+import {
+    readStructureDecisions,
+    readSteeringStructure,
+} from "../support/steeringStructure"
 
 const repoRoot = path.resolve(__dirname, "../../..")
-const structurePath = path.join(repoRoot, ".kiro/steering/structure.md")
 const componentsDir = path.join(repoRoot, "src/components")
 
 /** 判断の対象の小さい部品領域。 */
@@ -158,13 +161,13 @@ const listedComponentRegions = (markdown: string): string[] => {
         .sort()
 }
 
-const markdown = readFileSync(structurePath, "utf8")
-const rows = parseDecisionRows(markdown)
+const steering = readSteeringStructure()
+const rows = parseDecisionRows(readStructureDecisions())
 
-describe("structure.md の領域の一覧と実装（components-small-areas 2.3・要件 3.2）", () => {
+describe("structure の領域の一覧と実装（components-small-areas 2.3・要件 3.2）", () => {
     it("領域の一覧が src/components/ の直下のフォルダと一致する（不足も余分もない）", () => {
         const actual = listDirectories(componentsDir)
-        const listed = listedComponentRegions(markdown)
+        const listed = listedComponentRegions(steering)
         expect(diffRegionNames(listed, actual)).toEqual({
             missing: [],
             stale: [],

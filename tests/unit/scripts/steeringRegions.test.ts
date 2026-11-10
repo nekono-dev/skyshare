@@ -8,12 +8,12 @@
  * - 検査は文字列に対して行い、モジュールは import しない。
  * - 負例（検査が機能することの確認）: 固定の文書と領域の一覧を与え、一覧にない領域だけが報告されることを確かめる。
  */
-import { readdirSync, readFileSync, statSync } from "node:fs"
+import { readdirSync, statSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
+import { readSteeringStructure } from "../support/steeringStructure"
 
 const repoRoot = path.resolve(__dirname, "../../..")
-const structurePath = path.join(repoRoot, ".kiro/steering/structure.md")
 
 /** 実装の領域の一覧（`lib/<名前>` と `components/<名前>` の形）。 */
 const regionTokens = (
@@ -51,7 +51,7 @@ const listComponentRegions = (): string[] => {
 }
 
 describe("structure.md の領域の一覧（src/lib・src/components）", () => {
-    const markdown = readFileSync(structurePath, "utf8")
+    const markdown = readSteeringStructure()
     const regions = regionTokens(listLibRegions(), listComponentRegions())
 
     it("実装の領域（lib の領域と components の領域）がすべて一覧に含まれる", () => {

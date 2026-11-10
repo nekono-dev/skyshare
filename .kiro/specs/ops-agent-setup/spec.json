@@ -1,14 +1,28 @@
 {
   "feature_name": "ops-agent-setup",
   "created_at": "2026-10-31T00:00:00Z",
-  "updated_at": "2026-10-31T00:00:00Z",
+  "updated_at": "2026-11-10T04:00:00Z",
   "language": "ja",
-  "phase": "tasks-approved",
+  "phase": "implementation-complete",
   "depends_on": [],
-  "approvals": {
-    "requirements": { "generated": true, "approved": true },
-    "design": { "generated": true, "approved": true },
-    "tasks": { "generated": true, "approved": true }
+  "revision": {
+    "date": "2026-11-08",
+    "reason": "Codex 向けの cc-sdd 導入と BRW の Codex 側の導入を取り消す（利用者の決定）。BRW は起動のたびに利用者の marketplace を入れ替えず、プロジェクトの設定で nekono-dev/claude-plugins を宣言して有効にする（設計レビューの重大な問題 1・3 への対応、利用者の決定）",
+    "implementation": "2026-11-08 に、設計の改訂に合わせてタスクを組み直した（tasks.md の状態の記録を参照）。実装は全タスク完了。残りは利用者の確認と後片付け（tasks.md 末尾）。2026-11-10 にタスクを承認し、全項目を再検査した。不足の 4 項目（1.2・4.5・4.6・7.2）を直し、1 回目の feature 検証の判定は MANUAL_VERIFY_REQUIRED だった。同日に、利用者の承認を得て残りの確認（対話のセッション・クラウド・旧い clone の削除）を行い、クラウドで見つかった不具合（marketplace の判定）を直した。2 回目の feature 検証の判定は GO（tasks.md の Implementation Notes）"
   },
-  "ready_for_implementation": true
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": false
 }

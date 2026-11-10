@@ -6,9 +6,8 @@ astro/**
 _legacy/**
 atproto/**
 .claude/worktrees/**
-# CLAUDE.md・AGENTS.md は cc-sdd の雛形由来の文面を保つため整形しない（導入では書き換えない）
+# CLAUDE.md は cc-sdd の導入では書き換えない（プロジェクトの文書として直接編集する）
 CLAUDE.md
-AGENTS.md
 # cc-sdd の導入物（.gitignore の対象）
 .kiro/settings/**
 .claude/skills/**
