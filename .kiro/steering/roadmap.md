@@ -140,6 +140,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 - [x] ops-agent-setup -- cc-sdd と BRW の導入を Claude 向けの一つの入口にまとめ、Codex 側の導入を取り消した（Phase 8）
 - [x] codex-mcp-subagent -- Codex を MCP の子エージェント（`codex_exec`）として Claude から呼ぶ（Phase 8）
 - [x] develop-docs-agents（直接実装） -- `docs/DEVELOP.md` の導入の説明を改訂後の導入に合わせた（Phase 8）
+- [x] port-trial-fixes（直接実装、2026-11-10） -- 取り込まれていなかった旧ブランチ（コミット 1e9879af）の修正 3 件を移植した: 詳細ページの検証の失敗を例外で扱う（`src/pages/entries/[slug].astro`）、`GET /v2/entries` の応答の定義に動画の項目を加える、候補の取得で呼び出し元の中断信号とタイムアウトを合成する（`src/lib/atproto/suggest.ts`）。旧ブランチの他の内容（アンケート・D1 の改名・運用スクリプト）は、機能の単位で develop に入っていることを確かめた
 - [x] src-folder-layout・src-import-style・src-duplicates・src-composer-layout・src-component-nesting -- `src/` の配置・import の書き方・重複・部品の入れ子を整理（2026-11-10 に検証し `implementation-complete`）
 - [x] util-placement・lib-layers・lib-large-files・components-small-areas・layout-home・structure-checks -- `util`・`lib`・`components` の配置と層を整理し、機械の検査で固定（同上）
 - [x] ops-config-secrets・ops-tooling-layout・develop-docs -- 運用のスクリプト・設定・手順書を整理（同上）
