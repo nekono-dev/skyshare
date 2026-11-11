@@ -1,17 +1,8 @@
 /**
- * PostCard 1件分の WebShareAPI クロスポスト実行を担うフック。
- *
- * 責務と処理概要:
- * - WebShareAPI の対応可否を、SSR/hydrationの不整合を避けつつクライアント側で判定する。
- * - skyshare entry の有無に応じて共有データを組み立て、WebShareAPI を実行する。
- *   - entry あり: 本文 + entry URL を text として共有（画像は添付しない）。「Skyshareのリンクカードを
- *     優先表示」が有効なら本文のURLを取り除く（`specs/link-card-priority`）。
- *   - entry なし・画像あり: 元投稿の画像を取り込み files として共有（URLは含めない）。
- *   - entry なし・画像なし: Bluesky投稿本文と同じ内容を text として共有する。
- * - entry の作成・削除状態そのものは `useSkyshareEntryStatus` の責務であり、ここでは扱わない。
- * - `guestMode` 指定時は、認証が必要な `GET /v2/bsky/images` の代わりに `item.images[].url`
- *   （ゲスト表示ではdata URI）を直接 `fetch` してBlob化する。ゲスト表示中は
- *   `AtpAgent`によるBluesky認証セッションを必要としないため。
+ * 投稿を Web Share API で共有するデータと実行状態を管理する。
+ * Entry URL がある場合は本文と URL、ない場合は投稿本文と（あれば）画像ファイルを共有する。
+ * リンクカード優先設定が有効なら Entry URL と重なる本文の URL を除く。
+ * ゲスト表示では画像 URL を直接 fetch し、認証付き画像 API を使わない。
  */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useEffect, useRef, useState } from "react"
@@ -53,12 +44,10 @@ export const useWebShareCrosspost = (
     const [isSupported, setIsSupported] = useState(false)
     const [isSharing, setIsSharing] = useState(false)
     const [shareError, setShareError] = useState<PlainMessageKey | null>(null)
-    // 連打時、state 更新の再レンダーが反映される前に多重リクエストが走るのを防ぐため、
-    // 同期的に確定する ref で即座にガードする（useSkyshareEntryStatus と同じ方針）。
+    // state の再レンダーより先に連続クリックが届いても、多重共有を始めないよう同期 ref でガードする。
     const isSharingRef = useRef(false)
 
-    // navigator.share の対応可否はサーバー環境では判定できないため、
-    // SSR時点では非表示（false）のまま描画し、マウント後にクライアントで判定し直す。
+    // navigator.share はサーバーにないため、SSR は非対応として描画し、マウント後に判定する。
     useEffect(() => {
         setIsSupported(canShareWithWebApi())
     }, [])
@@ -66,10 +55,8 @@ export const useWebShareCrosspost = (
     /**
      * skyshare entry の有無に応じた WebShareAPI 共有を実行する。
      *
-     * 処理の趣旨:
-     * - entry URLがある場合は本文とURLのみのテキスト共有とし、無い場合のみ
-     *   `GET /v2/bsky/images`（cdn.bsky.appのCORS制約を回避する同一オリジンAPI）
-     *   経由で元投稿の画像を取得し、ファイル添付として共有する。
+     * Entry URL があれば本文と URL を共有する。URL がなく画像がある場合は、
+     * 同一オリジンの画像 API で取得して添付する（cdn.bsky.app は CORS で直接取得できない）。
      *
      * Output:
      * - なし（成功時は共有シートが開く。失敗時は `shareError` にメッセージを設定する）
@@ -105,6 +92,7 @@ export const useWebShareCrosspost = (
                             files: await Promise.all(
                                 item.images.map(async (image, index) => {
                                     if (guestMode) {
+                                        // デモ画像は data URI で認証不要のため、URL から直接 Blob にする。
                                         const blob = await fetch(
                                             image.url,
                                         ).then(r => r.blob())

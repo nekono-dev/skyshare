@@ -1,3 +1,7 @@
+/**
+ * 投稿フォームと投稿先選択ダイアログを開くランチャー。
+ * 小画面ではフォームの拡張が下方向に進むよう Overlay の上端を固定する。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import React, { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
@@ -11,21 +15,6 @@ import ThreadComposer, {
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 import pic from "@/images/pen.svg"
-
-/**
- * 投稿フォーム起動ボタンとモーダル表示を管理するコンポーネント。
- *
- * 責務と処理概要:
- * - フローティングボタンで投稿フォームを開く。
- * - Overlay 内で ThreadComposer を表示し、閉じ操作を集中管理する。
- * - 開くたびに ThreadComposer が新しくマウントされるため、`autoFocus` で本文の入力欄へ
- *   自動フォーカスし、ボタンを押してすぐ入力できるようにする。
- * - Overlay 背景クリックでの閉じ操作は ThreadComposer の `requestClose` に委譲し、
- *   キャンセルボタンと同様に未保存の変更があれば下書き保存確認ダイアログを挟む。
- * - スマホレイアウトでは ThreadComposer を画面上部に固定配置する（`backdropClassName`）。
- *   ThreadComposer は画像添付や詳細オプション展開・スレッドセグメント追加で領域が
- *   拡大しうるため、上端を固定し拡大が下方向にのみ起こるようにしている。
- */
 
 /**
  * 投稿ランチャーを描画する。
@@ -55,16 +44,12 @@ const PostLauncher: React.FC<{
 }) => {
   const { t } = useT()
   const [open, setOpen] = useState(false)
-  // 投稿成功でOverlay（とThreadComposer）が閉じてアンマウントされても残るよう、
-  // 投稿先選択ダイアログはOverlayの外で描画する。
+  // 投稿成功でフォームが閉じても投稿先を選べるよう、ダイアログを Overlay の外に置く。
   const [shareRequest, setShareRequest] = useState<IntentShareRequest | null>(
     null,
   )
   const postFormRef = useRef<ThreadComposerHandle>(null)
-  // サイドバーレイアウト(PC・アイコンのみ/フルラベルの両段階)専用トリガーの描画先。
-  // Sidebar が用意する #sidebar-action へ Portal で描画することで、フレックス
-  // レイアウト任せでナビ項目の直後に自然に並び、フローティングボタンと同じ open
-  // state を共有する。アイコン/ラベルどちらを見せるかはCSS側の段階別表示で切り替える。
+  // Sidebar が用意する領域へ Portal で置き、フローティングボタンと同じ open 状態を共有する。
   const [sidebarActionEl, setSidebarActionEl] = useState<HTMLElement | null>(
     null,
   )
@@ -72,6 +57,7 @@ const PostLauncher: React.FC<{
     setSidebarActionEl(document.getElementById("sidebar-action"))
   }, [])
 
+  // 再マウント後すぐ入力できるよう本文へフォーカスし、背景クリックは未保存確認を通す。
   return (
     <>
       <button

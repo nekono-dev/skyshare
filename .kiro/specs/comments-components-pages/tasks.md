@@ -68,7 +68,7 @@
   - _Boundary: G4 timeline_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.1, 5.3_
 
-- [ ] 4.2 Timeline の残り（PostLauncher・SurveyGate・ThreadCard・PostCard）のコメントを書き直す
+- [x] 4.2 Timeline の残り（PostLauncher・SurveyGate・ThreadCard・PostCard）のコメントを書き直す
   - 対象: `timeline/Timeline/` の配下（`PostLauncher`・`SurveyGate/` と `SurveyDialog/`・`ThreadCard/` と `PostCard/`・`PostCardEntryActions/`・`useSkyshareEntryStatus.ts`・`useWebShareCrosspost.ts`・`index.tsx`）（許容リストの 9 件）
   - 投稿カードの Entry 操作と共有の判断は、現在の挙動を書く（経緯・旧の扱いは残さない）
   - 完了の条件: これらのファイルに違反が無く、コードの行と機械指示の行が変わっていない

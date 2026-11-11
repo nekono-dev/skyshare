@@ -1,12 +1,6 @@
 /**
- * PostCard の Entry 関連アクション（作成・クロスポスト・削除）を表示する専用コンポーネント。
- * 「Entryを開く」リンクは author 情報カラム側（PostCard 側）で表示するため、ここでは扱わない。
- *
- * 責務と処理概要:
- * - `useSkyshareEntryStatus` が返す `display` の種別だけを見てボタン種を切り替える。
- * - クロスポストのボタンは、entry の有無によらず常に表示する（entry が無ければ URL を付けずに共有する）。
- * - ボタン種の切り替え条件（entry の有無・進行中操作・作成対象外判定）は
- *   呼び出し元のフック側に一元化し、ここでは分岐しない。
+ * PostCard の Entry 作成・削除とクロスポストの操作を表示する。
+ * クロスポストは Entry の有無にかかわらず表示し、Entry がなければ URL なしで共有する。
  */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useT } from "@/components/i18n/useTranslation"
@@ -23,8 +17,8 @@ type Props = {
   onRequestDelete: () => void
   onCrosspost: () => void
   /**
-   * trueの場合、Bluesky投稿への実際の書き込みを伴う操作（Entry作成）を無効化する。
-   * クロスポスト（Xへの共有intentポップアップ）はatprotoの認証を必要としないため対象外。
+   * true の場合、Bluesky への書き込みを伴う Entry 作成を無効化する。
+   * X 共有ダイアログは atproto 認証を使わないため無効化しない。
    */
   disabled?: boolean
   /** trueの場合、削除ボタンのみ無効化する（削除範囲の判定中など。ゲスト表示では削除を有効にするため`disabled`と分ける） */

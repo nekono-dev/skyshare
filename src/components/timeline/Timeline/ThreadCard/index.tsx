@@ -1,18 +1,6 @@
 /**
- * Timeline一覧の1スレッドグループを表示するカード。
- *
- * 責務と処理概要:
- * - `group.replies.length === 0`（単独投稿）の場合は、既存`PostCard`をそのまま描画する
- *   フォールバック（`specs/timeline`）。
- * - 2件以上のスレッドグループは、既定で折りたたみ表示（ルート投稿＋「スレッドを展開」ボタン）
- *   とし、操作により全投稿を時系列順（古い→新しい）に展開表示する。
- * - 事後entry作成ボタン（`resolveEntryVisualSourcePost`）の判定は`@/lib/timeline/entryCandidate`に委譲する。
- *   操作はスレッドの起点の投稿に対して行うため、ツールバーごとルート投稿のカードにのみ表示し、
- *   返信のカードには表示しない。
- * - どの投稿も画像・動画・entryを持たないスレッドは、返信のカードもグレーアウトする（`specs/timeline`）。
- * - Timelineのページング対象アイテムはバックエンドが権威的に確定した`ThreadGroup`
- *   そのものであるため（`specs/timeline`）、削除成功時の一覧除去は常に
- *   スレッドグループ単位で行う（同§4）。
+ * Timeline のスレッドグループを折りたたみ・展開して表示する。
+ * Entry 操作はルート投稿に集約し、削除後はページング単位であるスレッド全体を一覧から除く。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import { useState } from "react"
@@ -47,8 +35,7 @@ const Component = ({ group, onPostDeleted, guestMode }: Props) => {
   const { tn, t } = useT()
   const [expanded, setExpanded] = useState(false)
   const entryVisualSourcePost = resolveEntryVisualSourcePost(group)
-  // どの投稿も画像・動画・entryを持たないスレッドは、起点と返信のすべてのカードを
-  // グレーアウトする（起点はPostCard自身のdisplayでも同じ結論になる）。
+  // グループ内に Entry の画像取得元も Entry もなければ、全カードをグレーアウトする。
   const threadMuted =
     entryVisualSourcePost === null && findEntryCarrier(group) === null
 

@@ -1,12 +1,6 @@
 /**
- * PostCard 1件分の skyshare entry 作成・削除状態を一元管理するフック。
- *
- * 責務と処理概要:
- * - 「entry の有無」と「進行中の操作（作成中/削除中）」を単一の state にまとめ、
- *   複数の独立した boolean を組み合わせて導出する方式では起こり得た
- *   矛盾した組み合わせ（例: entry は削除済みなのに作成済みフラグが残る）を構造的に排除する。
- * - 呼び出し側（PostCardEntryActions）はこのフックが返す `display` の種別だけを見れば
- *   ボタン表示を切り替えられる。
+ * 投稿に紐づく Entry の作成・削除状態と削除確認範囲を管理する。
+ * 単一の状態判別子で保持し、Entry の有無と進行中操作が矛盾する状態を作らない。
  */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
@@ -48,7 +42,7 @@ export type UseSkyshareEntryStatusResult = {
     createError: PlainMessageKey | null
     deleteError: PlainMessageKey | null
     isDeleteDialogOpen: boolean
-    /** `resolveEntryDeleteScope`による削除範囲判定の実行中フラグ（`specs/timeline`） */
+    /** 削除範囲を判定中か */
     isResolvingDeleteScope: boolean
     /** 削除確認ダイアログに渡す削除範囲の判定結果 */
     deleteScope: EntryDeleteScope
@@ -65,28 +59,22 @@ type Options = {
      * Bluesky投稿ごと削除された直後に呼び出す副作用。
      * リンクのみ削除（deleteBskyPost=false）の場合は呼ばれない
      * （元投稿はTimelineに残り続けるため）。
-     * Timelineのページング対象アイテムはスレッドグループ単位のため
-     * （`specs/timeline`）、呼び出し元（`ThreadCard`）は常に
-     * そのスレッドグループ全体を一覧から除去する。
+     * Timeline のページング単位に合わせ、呼び出し元はスレッドグループ全体を一覧から除く。
      */
     onPostDeleted?: () => void
     /**
      * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿。
-     * `ThreadCard`がスレッドのルート投稿向けに、ルートに最も近い画像付き投稿
-     * （`resolveEntryVisualSourcePost`）を渡す用途（`specs/timeline`）。
-     * 未指定時は`item`自身が対象になる（単独投稿・従来通りの挙動）。
+     * スレッドではルートに最も近い画像付き投稿を指定する。未指定時は item 自身を使う。
      */
     visualSourcePost?: TimelinePost
     /**
      * 作成するentryの`source`にする投稿。APIへ送信する`uri`に使う
-     * （Visual取得元とは独立。サーバは`source`の自動解決を行わないため、
-     * `ThreadCard`がスレッドのルート投稿を明示的に渡す。`specs/timeline`）。
-     * 未指定時は`item`自身（単独投稿・従来通りの挙動）。
+     * Visual 取得元とは独立して指定する。サーバーは source を自動解決しないため、
+     * スレッドでは呼び出し元がルート投稿を渡す。未指定時は item 自身を使う。
      */
     sourcePost?: TimelinePost
     /**
-     * ゲスト表示。削除範囲の判定・削除の実行をアプリ内で模擬し、通信は行わない
-     * （`specs/entry-delete-dialog`）。
+     * ゲスト表示では削除範囲の判定と削除をアプリ内で模擬し、通信しない。
      */
     guestMode?: boolean
 }
@@ -176,7 +164,7 @@ export const useSkyshareEntryStatus = (
                     setState({ phase: "idle", entry: null })
                     return
                 }
-                // heading/captionはサーバが生成しないため、sourceにする投稿から決めて送る
+                // サーバーは heading/caption を生成しないため、source 投稿から組み立てて送る。
                 const entryText = buildEntryText({
                     userName,
                     postText: sourcePost.text,
@@ -213,7 +201,7 @@ export const useSkyshareEntryStatus = (
                 }
 
                 await warmOgpCache(skyshare.uri)
-                // 詳細ページのView画像がCDNで配信可能になるまで作成中表示を延長する
+                // 詳細ページで visual を読み込める状態になるまで作成中表示を続ける。
                 await waitForImageLoad(skyshare.visualUrl ?? "")
 
                 setState({ phase: "idle", entry })
@@ -232,10 +220,8 @@ export const useSkyshareEntryStatus = (
      * Entry削除確認ダイアログを開く。
      *
      * 処理の趣旨:
-     * - `resolveEntryDeleteScope`（`specs/entry-delete-dialog`と共通のロジック）で
-     *   「リンク・Bluesky投稿を削除」の可否・削除件数を判定し、`deleteScope`を確定させて
-     *   からダイアログを開く（`specs/timeline`、`EntryCard`の
-     *   `openDeleteDialog`と同じ方針）。ゲスト表示では通信せず`resolveGuestDeleteScope`で判定する。
+     * - 削除範囲と件数を確定してからダイアログを開く。ゲスト表示では通信せず
+     *   `resolveGuestDeleteScope` で判定する。
      * - 判定中は`isResolvingDeleteScope`をtrueにし、連打による多重判定を防ぐ。
      *
      * Output:
@@ -319,9 +305,7 @@ export const useSkyshareEntryStatus = (
 
                 setState({ phase: "idle", entry: null })
                 if (deleteBskyPost) {
-                    // サーバーはBluesky投稿削除の成否に関わらず200を返す仕様
-                    // （src/pages/v2/entry.ts DELETEハンドラ）のため、200が返った時点で
-                    // 削除確定とみなしてTimeline側にカード除去を通知する。
+                    // API は Bluesky 投稿削除の成否にかかわらず 200 を返すため、応答を受けたら一覧から除く。
                     options.onPostDeleted?.()
                 }
             } catch (err) {
