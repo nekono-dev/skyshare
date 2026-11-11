@@ -23,7 +23,7 @@
   - スクリプトはリポジトリに追加しない
   - _Requirements: 5.1, 5.2_
 
-- [ ] 2. G1（`atproto`・`api`・`codegen`・`platform`・`guestMode.ts`）を書き直す
+- [x] 2. G1（`atproto`・`api`・`codegen`・`platform`・`guestMode.ts`）を書き直す
 - [x] 2.1 `atproto` のうち `agentFactory.ts` から `nsid.ts` までの先頭ヘッダとコメントを書き直す（14 ファイル、約 700 行）
   - 先頭ヘッダが 6 行以内・箇条書き 3 件以内・目的 1〜2 行になり、`header-missing` が無くなる
   - コメントの行から、`specs/`・要件番号・AC/FR/NFR のタグ・cc-sdd・kiro・バッククォートの外の日付を取り除く（行末のコメントも含む）
@@ -45,7 +45,7 @@
   - _Boundary: G1 の api・codegen・platform・guestMode.ts_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.3, 7.1, 7.2, 7.3_
 
-- [ ] 2.4 G1 の検査を通し、許容リストの G1 の項目を消す
+- [x] 2.4 G1 の検査を通し、許容リストの G1 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G1 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G1 のパスの項目だけを手で消す（他の項目と形式は変えない）
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する

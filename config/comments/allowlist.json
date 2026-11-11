@@ -1214,42 +1214,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "src/lib/api/contract/feedbackSubmission.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/contract/feedbackSubmission.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/contract/surveyPath.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/contract/surveyPath.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/response.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/response.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/lib/api/schema/v2/bsky/video/upload-token/post.ts",
       "rule": "forbidden:AC/FR/NFRタグ",
       "owner": "comments-api-schema",
@@ -1277,24 +1241,6 @@
       "path": "src/lib/api/schema/v2/entry/post.ts",
       "rule": "forbidden:spec参照",
       "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/codegen/fetcher.ts",
-      "rule": "header-missing",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/codegen/openapiFormData.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/codegen/openapiFormData.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-lib",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
@@ -1496,12 +1442,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "src/lib/guestMode.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/lib/i18n/applyDom.ts",
       "rule": "header-too-long",
       "owner": "comments-lib",
@@ -1659,18 +1599,6 @@
     },
     {
       "path": "src/lib/oauth/tokenRequest.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/platform/blueskyEndpoints.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/platform/blueskyEndpoints.ts",
       "rule": "header-too-many-bullets",
       "owner": "comments-lib",
       "reason": "コメントの整理（comments-* の spec）で解消する"
