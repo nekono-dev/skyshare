@@ -1,4 +1,6 @@
-// D1 の分離（要件 5.4）: テストファイルは空の D1 から始まり、他のファイルのレコードを見ない
+/**
+ * Verifies each route test starts with an isolated D1 database.
+ */
 import { env } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 

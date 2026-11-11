@@ -1,4 +1,6 @@
-// 予約の画像の後片付け（P0・要件 2.1 の「予約投稿の実行（後片付け）」）: 途中の失敗で残さない、他のアカウントの画像を読めない
+/**
+ * Verifies ownership and cleanup of staged schedule images.
+ */
 import { env } from "cloudflare:test"
 import { describe, expect, it } from "vitest"
 import type { R2Bucket } from "@/lib/platform/cfTypes"

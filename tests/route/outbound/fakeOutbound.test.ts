@@ -1,4 +1,6 @@
-// route 層の外部通信（要件 5.1・10.5）: workerd からの fetch は偽の Bluesky の応答を受け、未定義の経路は 404
+/**
+ * Verifies outbound requests use the fake Bluesky service.
+ */
 import { describe, expect, it } from "vitest"
 
 describe("route outbound (fake Bluesky)", () => {

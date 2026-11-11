@@ -1,4 +1,6 @@
-// Bluesky の OAuth のログインの完了 API（POST /v2/bsky/session/authorization/completion）の特性化テスト（src-duplicates 1.2・要件 2.1・2.3）。
+/**
+ * Verifies the Bluesky OAuth completion response.
+ */
 // 状態・本文・cache-control: no-store・set-cookie（件数）を、現行の値で固定する。振る舞いを変えるためのテストではない。
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -44,13 +46,13 @@ const validBody = JSON.stringify({
     state: "state-fixture",
 })
 
-describe("Bluesky のログインの完了の応答", () => {
+describe("Bluesky login completion responses", () => {
     beforeEach(() => {
         state.result = { ok: true, session: { did: "did:plc:fixture" } }
         state.pool = [{ did: "did:plc:fixture" }]
     })
 
-    it("JSON として読めない本文は 400 と no-store、解除の set-cookie を返す", async () => {
+    it("returns 400 with no-store and clears the pending cookie for invalid JSON", async () => {
         const res = await call("{not json")
         expect(res.status).toBe(400)
         expect(await res.json()).toEqual({ error: "Bad Request" })
@@ -58,7 +60,7 @@ describe("Bluesky のログインの完了の応答", () => {
         expect(res.headers.getSetCookie()).toEqual(["pending=; Max-Age=0"])
     })
 
-    it("失敗の分類は 200 のまま、分類の値を本文に返し、no-store を付ける", async () => {
+    it("returns 200 with the failure classification and no-store", async () => {
         state.result = { ok: false, code: "Denied" }
         const res = await call(validBody)
         expect(res.status).toBe(200)
@@ -68,7 +70,7 @@ describe("Bluesky のログインの完了の応答", () => {
         expect(res.headers.getSetCookie()).toEqual(["pending=; Max-Age=0"])
     })
 
-    it("成功は 200 と { result: ok } の本文を返し、セッションと解除の set-cookie を並べる", async () => {
+    it("returns 200 with an ok result and session cookies after clearing the pending cookie", async () => {
         const res = await call(validBody)
         expect(res.status).toBe(200)
         expect(await res.json()).toEqual({ result: "ok" })
@@ -82,7 +84,7 @@ describe("Bluesky のログインの完了の応答", () => {
         ])
     })
 
-    it("アカウント数の上限に達したときは 409 を返す", async () => {
+    it("returns 409 when the account limit is reached", async () => {
         state.pool = null
         const res = await call(validBody)
         expect(res.status).toBe(409)

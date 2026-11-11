@@ -1,4 +1,6 @@
-// フィードバックの送信 API（P0・要件 2.1 の「フィードバック送信」）: 各失敗の応答（400・401・429・500・503）と成功
+/**
+ * Verifies feedback submission responses and rate limiting.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const state = vi.hoisted(() => ({

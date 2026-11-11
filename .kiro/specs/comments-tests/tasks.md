@@ -120,7 +120,7 @@
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
 - [ ] 6. tests/route の書き換え
-- [ ] 6.1 pages・outbound の書き換え
+- [x] 6.1 pages・outbound の書き換え
   - 対象は `tests/route/pages/`（9 ファイル）と `tests/route/outbound/`（1 ファイル）
   - 先頭ヘッダ（不足を含む）と禁止パターン（要件番号など）をコメントから取り除く（4.1〜5.5）
   - 日本語を含む題名 26 件（`tests/route/pages/` の 7 ファイル。`scheduleCleanup.test.ts` の「（要件 2.4）」を含む）を英語の振る舞いの題名にする。英語の題名のうち、要件番号・経緯を含むものも、同じ規則で書き換える
@@ -129,7 +129,7 @@
   - _Boundary: tests/route（pages・outbound）_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 6.2 schedule・session・survey・support の書き換え
+- [x] 6.2 schedule・session・survey・support の書き換え
   - 対象は `tests/route/schedule/`（5 ファイル）・`tests/route/session/`（3 ファイル）・`tests/route/survey/`（3 ファイル）・`tests/route/support/`（4 ファイル）
   - コメントを、6.1 と同じ規則で書き換える。`d1-isolation-a/b.test.ts` と `time-injection.test.ts` の要件番号を含むコメントを取り除く
   - `runner.test.ts` の日付を含むコメントは、バッククォートの外なら取り除くか、入力例として囲む（5.1）

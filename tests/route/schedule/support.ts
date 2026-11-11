@@ -1,4 +1,6 @@
-// 予約投稿のテスト用の支援コード（テストの間で共有する。.test.ts ではない）
+/**
+ * Provides shared fixtures for scheduled posting tests.
+ */
 // 認証情報・予約の行を、製品の保管の関数で作り、PDS とトークンの応答は偽の fetch で与える。
 import { env } from "cloudflare:test"
 import { expect } from "vitest"

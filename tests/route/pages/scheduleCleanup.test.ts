@@ -1,4 +1,6 @@
-// 予約の画像の後始末の失敗（要件 2.4）の特性化テスト。
+/**
+ * Verifies schedule cleanup failures do not change operation results.
+ */
 // 画像の削除（removeImages）と予約の保存（insertSchedule）を失敗させ、現行の応答と行の状態を固定する。
 // 画像の後始末の失敗は予約の操作の結果を変えず、記録だけする。振る舞いを変えるためのテストではない。
 import { env } from "cloudflare:test"
@@ -123,7 +125,7 @@ const post = () => {
     } as never)
 }
 
-describe("画像の後始末の失敗は予約の操作の結果を変えない（要件 2.4）", () => {
+describe("schedule cleanup failures do not change operation results", () => {
     // 記録だけの確認に使う console.error の spy（ログの本文は読まず、呼ばれたことだけを見る）
     let errorSpy: ReturnType<typeof vi.spyOn>
 

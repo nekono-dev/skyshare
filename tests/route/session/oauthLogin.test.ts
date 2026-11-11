@@ -1,4 +1,6 @@
-// OAuth ログイン（P0・要件 2.1 の「セッション処理」）: 状態（state）と発行元（iss）の検査、トークン交換の失敗、
+/**
+ * Verifies OAuth login validation and session creation.
+ */
 // アカウントの確認の失敗は、いずれもセッションを作らずに失敗の種類で返す
 import { describe, expect, it, vi } from "vitest"
 import {

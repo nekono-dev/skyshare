@@ -1,4 +1,6 @@
-// 予約の作成と一覧の API（/v2/schedules の POST・GET）の特性化テスト（要件 2.2・4.2）。
+/**
+ * Verifies schedule collection API behavior.
+ */
 // 現行の応答（状態コード・本文の形・cache-control）を固定する。振る舞いを変えるためのテストではない。
 import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -74,7 +76,7 @@ const seedRow = (
         now: NOW,
     })
 
-describe("POST /v2/schedules（特性化）", () => {
+describe("POST /v2/schedules", () => {
     beforeEach(async () => {
         await resetScheduleTables()
         vi.spyOn(console, "error").mockImplementation(() => {})
@@ -176,7 +178,7 @@ describe("POST /v2/schedules（特性化）", () => {
     })
 })
 
-describe("GET /v2/schedules（特性化）", () => {
+describe("GET /v2/schedules", () => {
     beforeEach(async () => {
         await resetScheduleTables()
         vi.spyOn(console, "error").mockImplementation(() => {})

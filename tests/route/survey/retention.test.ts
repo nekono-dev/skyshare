@@ -1,4 +1,6 @@
-// 保持期限（P0・要件 2.1 の「アンケートの匿名性（保持期限）」）: 回答者の一覧は締め切りで、回答は締め切りの 1 か月後に削除される
+/**
+ * Verifies survey retention boundaries.
+ */
 import { env } from "cloudflare:test"
 import { beforeAll, describe, expect, it } from "vitest"
 import { runSurveyRetention } from "@/lib/survey/retention"
