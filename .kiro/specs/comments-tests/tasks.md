@@ -273,3 +273,7 @@
 ### feature 検証（kiro-validate-impl, 2026-11-11）
 
 - 判定は `GO`。タスクは全て `[x]`、`_Blocked:_` は無い。全テスト（type・imports・unit・component・route・render）が終了コード 0 で、層ごとの件数が基準と一致する（10.1・10.2）。変更は `tests/`・`config/test/` のコメント・題名と許容リストの項目の削除だけで、`src/`・`scripts/` への差分は無い。Revalidation Triggers は発火していない。e2e は、この spec の検証に含めず、push 前フックの `npm run test:all` が行う。
+
+### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
+
+- 判定は `NO-GO` だったが、原因は、検証が `ff045b65` からの全体の差分を見たため、本 spec と無関係な後のコミット（Codex のモデルの使い分け）で変わった `tests/unit/scripts/codexExecRequest.test.ts`・`codexSetup.test.ts` を、本 spec の差分に含めたこと。この 2 ファイルは、本 spec の最後のコミット（`830f00f4`）までは変更が無い（`git diff --name-only ff045b65 f15d77f1~1 -- tests` で確認）。それ以外の指摘（サンプル 20 ファイルでの題名の意味・コメントの理由・`.each` のラベル）に不備は無く、日本語題名の検査 (a)・(b) は 0 件だった。受入基準の「部分的」は、全件を独立に照合していないサンプル検証による。

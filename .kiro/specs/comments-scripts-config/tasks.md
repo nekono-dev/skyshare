@@ -140,7 +140,7 @@
 ### 完了の報告（タスク 10。2026-11-11）
 
 - 許容リストの所有 `comments-scripts-config` の項目は、作業前 42 件から 1 件になった。残した 1 件は `scripts/agent/kiro-gate.mjs` の `forbidden:kiro`（理由は「許容する例外: 起動例の実行コマンドのパス（kiro-gate.mjs）に含まれる語で、言い換えると使い方が伝わらない」に書き換えた。タスク 2.1 の指示どおり）。他の所有者は comments-api-schema 5 件で変わらない。
-- 書き換えたファイルは `scripts/`・`hack/`・`config/`・`.githooks/`・`.github/workflows/` の 39 ファイル。検査の規則（`comment-rules.ts`）・基準（`comments.md`）への変更は無い。ファイルの追加・削除・改名・実行権限の変更は無い。変更行は、コメントと空行だけ（`.ts` は字句比較で差分 0、`.mjs`・シェル・JSONC・YAML は、コメント以外の変更行が無いことと、YAML・JSONC の解析結果が変更前後で一致することで確かめた）。
+- 書き換えたファイルは `scripts/`・`hack/`・`config/`（`config/test` と許容リストを除く）・`.githooks/`・`.github/workflows/` の 35 ファイル（独立した検証で数え直した。初めの記録の 39 は誤り）。検査の規則（`comment-rules.ts`）・基準（`comments.md`）への変更は無い。ファイルの追加・削除・改名・実行権限の変更は無い。変更行は、コメントと空行だけ（`.ts` は字句比較で差分 0、`.mjs`・シェル・JSONC・YAML は、コメント以外の変更行が無いことと、YAML・JSONC の解析結果が変更前後で一致することで確かめた）。
 - `npm run test:type`・`test:imports`・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。`test:e2e` と `test:lexicon` は、この spec の検証に含めない。
 - 作業の記録: Codex の実装が、`kiro-gate.mjs` と `install-cc-sdd.sh` の出力の文言（文字列リテラル）を言い換えていたため、元に戻した（コメントだけを変える方針）。`install-cc-sdd.sh` のコメントに残る `.claude/skills/kiro-*`・`.kiro/settings/` は、導入する成果物の場所の名前のため残した。`kiro-gate.mjs` の JSDoc の `spec` は概念の名前として残した。`scripts/lib/{github,jsonc}.mjs` の利用箇所に `hack/survey-cli/remote.ts` を加えた。
 - `tests/unit/scripts/commentRules.test.ts` の題名は、comments-tests の作業で英語にした。コメントは変えていない。
@@ -149,3 +149,7 @@
 ### feature 検証（kiro-validate-impl, 2026-11-11）
 
 - 判定は `GO`。タスクは全て `[x]`、`_Blocked:_` は無い。全テストが終了コード 0。変更は領域 1〜9 のコメントと許容リストの項目の削除だけで、Revalidation Triggers は発火していない。
+
+### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
+
+- 判定は `MANUAL_VERIFY_REQUIRED`。要件 27 件のうち 26 件が「満たす」で、1 件（6.2）は、記録のファイル数（39）と実際の差分（35）が違うため「部分的」だった。記録を 35 に訂正した。許容リストの例外（`kiro-gate.mjs` の 1 件）は tasks.md 2.1 と整合する。起動の確認は `test:e2e`（終了コード 0）の記録による。`test:lexicon` はこの spec の検証に含めない（設計書の Verification Approach）。

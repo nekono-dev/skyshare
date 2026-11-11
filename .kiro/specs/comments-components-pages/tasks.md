@@ -208,3 +208,7 @@
 ### feature 検証（kiro-validate-impl, 2026-11-11）
 
 - 判定は `GO`。タスクは全て `[x]`、`_Blocked:_` は無い。`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が終了コード 0（10.1 を参照）。許容リストの所有 `comments-components-pages` は 0 件、他の所有者は変わらない。変更は範囲内のコメント・空行と許容リストの項目の削除だけで、境界の外への差分とファイルの追加・削除・改名は無い。Revalidation Triggers は発火していない。起動の確認（e2e）は、この spec の検証に含めず、push 前フックの `npm run test:all` が行う。
+
+### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
+
+- 判定は `MANUAL_VERIFY_REQUIRED`（実装の不備の指摘は無し）。要件 34 件のうち 28 件が「満たす」、6 件（3.4・4.2・4.3・5.2・6.x・7.1）は「部分的」だった。理由は、(a) 全変更コメントを 1 件ずつ独立に照合していないこと（サンプル 15 ファイルは、理由の欠落・コードとの食い違い・禁止パターンのいずれも無し）、(b) 作業前の基準 `ff045b65` からの差分に、他の comments-* spec の変更が混ざり、許容リストの他所有者の件数の変化をこの spec に帰属できないこと。(b) は検証の基準の取り方の問題で、この spec の実装の問題ではない。DiffCheck・字句比較（130 ファイル）・境界（追加・削除・改名なし）は再確認済み。

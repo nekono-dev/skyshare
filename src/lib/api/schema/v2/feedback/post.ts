@@ -32,7 +32,7 @@ const requiredText = (max: number) =>
         .refine(value => countFeedbackLength(value) <= max, {
             message: "too long",
         })
-        .meta({ description: `Non-blank, up to ${max} graphemes` })
+        .meta({ description: "Non-blank text" })
 
 /** 画面が自動で集めた環境の情報 */
 const EnvironmentSchema = z
