@@ -1,19 +1,9 @@
 /**
- * 予約投稿の OAuth の認可の開始・完了と、Cron の実行でのトークンの更新・取消。
+ * 予約投稿の OAuth 認可を開始・完了し、Cron でトークンを更新または取り消す。
  *
- * 責務と処理概要:
- * - 開始: ログイン中のアカウントの DID から実際の PDS を解決し、PDS から認可サーバーを探し、PKCE と DPoP の鍵を作って
- *   認可の要求を事前に送り（PAR）、利用者を送る認可の画面の URL を返す。
- *   ユーザー名は入力させず、ログイン中のアカウントの DID を `login_hint` に入れる。
- * - 完了: 戻ってきた `state` を照合し、認可コードをトークンに替える。トークンの持ち主（`sub`）が
- *   ログイン中のアカウントと同じことを確かめてから、更新用トークンと DPoP の鍵を暗号化して保管する。
- * - 更新: Cron の実行の始めに、更新用トークンで新しいアクセストークンと更新用トークンを得る。
- * - 取消: 予約投稿を無効にしたとき、更新用トークンを認可サーバーで取り消す（失敗しても続ける）。
- * - PAR・トークンの要求・取消の送り方は、共通の OAuth のクライアント（`@/lib/oauth/token`）に委ねる。
- *
- * 実装上の制約:
- * - Cron の実行からも使うため、atproto のライブラリを読み込まず WebCrypto と fetch だけを使う。
- * - トークン・鍵・応答の本文をログに出さない。
+ * - Cron 経路は WebCrypto と fetch で動き、`@atproto/*` のランタイム依存を読み込まない（Workers Free の CPU 上限 10 ms）。
+ * - 認可完了時は state と `sub` をログイン中のアカウントに照合してから、更新トークンと DPoP 鍵を暗号化して保管する。
+ * - トークン・鍵・応答本文はログに出さない。
  */
 import type { ScheduleEnv } from "@/lib/platform/cfTypes"
 import { saveCredential, saveOAuthState, takeOAuthState } from "../store"
@@ -62,6 +52,9 @@ export type StartResult =
 
 /**
  * 認可を開始する。
+ *
+ * ログイン中の DID から PDS と認可サーバーを解決し、PKCE・DPoP と PAR を使う。ユーザー名は入力させず、DID を `login_hint` に渡す。
+ * OAuth の要求の送信は共通クライアントに委ねる。
  *
  * Input:
  * - `origin`: 配信しているオリジン（クライアントの識別子と戻り先を決める）

@@ -1,16 +1,4 @@
-/**
- * 予約の作成（POST /v2/schedules）と一覧（GET /v2/schedules）の判断。
- *
- * 責務と処理概要:
- * - 作成: 入力 → 実行時刻 → 認証情報の登録 → 待機中の件数 → 画像の保管 → 予約の保存の順に行い、
- *   保存が失敗したら保管した画像を消す。結果は `Outcome` の戻り値として返す。
- * - 一覧: 自分の予約を実行時刻の昇順で取得し、応答の形（件数・プレビュー・最後のエラー）に整える。
- * - バインディングは関数の中で取得する。想定外の例外は捕まえず、呼び出し側へ投げる。
- *
- * 実装上の制約:
- * - `lib/api` を import しない（HTTP の形は持たない）。応答の本体は、このファイルのローカルの型で表す。
- * - 入力の認証（セッション）と形式の確認（ヘッダー・クエリ）はページが行う。
- */
+/** 予約の作成と一覧取得のドメイン判断を行う。 */
 import type { Outcome } from "@/types/outcome"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { removeImages } from "@/lib/schedule/imageStaging"

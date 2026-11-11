@@ -1,10 +1,4 @@
-/**
- * 予約投稿の制限値。
- *
- * 責務と処理概要:
- * - 実行時刻の範囲・待機中の件数・投稿数の上限を1か所に定義する。
- * - 作成時の検証と、画面へ返す制限値の応答が、同じ定数を参照する。
- */
+/** 予約投稿の入力検証と画面表示で共有する制限値。 */
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/threadLimit"
 import { MAX_IMAGE_BYTES_PER_SCHEDULE } from "./types"
 

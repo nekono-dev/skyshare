@@ -1,12 +1,8 @@
 /**
- * 保管する予約用の認可の情報の形と、文字列との相互変換。
+ * 予約用 OAuth 認証情報を保管用 JSON と文字列の間で変換する。
  *
- * 責務と処理概要:
- * - 更新用トークン・DPoP の鍵・認可サーバーの端点・クライアントの識別子を1つの JSON にまとめ、保管の層（store）が
- *   暗号化して保存する。PDS の URL は保管の層の `service` に置く。
- * - クライアントの識別子は登録したときのオリジンで決まり、Cron の実行（オリジンを持たない）で
- *   トークンを更新するときに同じものを使う必要があるため、一緒に保管する。
- * - 読み出した文字列が形を満たさない（旧形式のアプリパスワードのトークンを含む）ときは null にする。
+ * - Cron は登録時のオリジンを持たないため、トークン更新に必要なクライアント識別子を認証情報と一緒に保管する。
+ * - 認証情報の構造に合わない文字列（アプリパスワード形式を含む）は読み出し時に null とする。
  */
 import { type EcPrivateJwk, isEcPrivateJwk } from "@/lib/oauth/jose"
 
@@ -27,7 +23,7 @@ export const serializeCredential = (c: OAuthCredential): string =>
 /**
  * 保管した文字列を読む。
  *
- * Example: `parseCredential("REFRESH-ONLY")` → null（旧形式）
+ * Example: `parseCredential("REFRESH-ONLY")` → null（アプリパスワード形式）
  */
 export const parseCredential = (text: string): OAuthCredential | null => {
     let v: unknown

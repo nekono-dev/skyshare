@@ -1,10 +1,4 @@
-/**
- * 予約の D1 の行の変換と変更件数（共通）。
- *
- * 責務と処理概要:
- * - D1 の行（snake_case）を ScheduleRow（camelCase）へ変換する（すべての節が使う）。
- * - 文の結果から変更件数を数える。
- */
+/** 予約ストアが共有する D1 行の変換と変更件数の取得を行う。 */
 import type { ScheduleRow, ScheduleStatus } from "@/lib/schedule/types"
 
 export type DbRow = Record<string, unknown>

@@ -1,14 +1,4 @@
-/**
- * 予約の画像の取得（GET /v2/schedules/{id}/images/{index}）の判断。
- *
- * 責務と処理概要:
- * - 予約の行の所有・状態・画像の番号を判定し、画像か失敗の結果を `Outcome` で返す。
- * - 他のアカウントの予約・存在しない予約・待機中でも失敗でもない予約・範囲外の番号は 404、実行中の予約は 409。
- * - バインディングは関数の中で取得する。想定外の例外は捕まえず、呼び出し側へ投げる。
- *
- * 実装上の制約:
- * - `lib/api` を import しない（HTTP の形は持たない）。
- */
+/** 予約画像の取得可否を判定し、画像または失敗結果を返す。 */
 import type { Outcome } from "@/types/outcome"
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { getImage } from "@/lib/schedule/imageStaging"

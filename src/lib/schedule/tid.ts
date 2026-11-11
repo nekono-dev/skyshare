@@ -1,11 +1,8 @@
 /**
- * レコードキーに使う TID（Timestamp Identifier）の採番。
+ * レコードキー用の atproto TID 形式の値を採番する。
  *
- * 責務と処理概要:
- * - 53 ビットのマイクロ秒の時刻と 10 ビットのクロック識別子から、13 文字の
- *   Base32 ソート可能な文字列を作る。atproto の TID と同じ形式。
- * - 直前の TID 以下の値を返さない（同じマイクロ秒でも単調に増える）。
- * - atproto のライブラリを読み込まない（無料枠の CPU 時間を守るため）。
+ * - 53-bit のマイクロ秒時刻と 10-bit のクロック識別子を使い、前回値より大きい 13 文字の Base32 値を返す。
+ * - Cron から使うため `@atproto/*` を読み込まず、Workers Free の CPU 上限 10 ms を守る。
  */
 
 const ALPHABET = "234567abcdefghijklmnopqrstuvwxyz"

@@ -1,10 +1,4 @@
-/**
- * 予約投稿の型と上限値。
- *
- * 責務と処理概要:
- * - 予約の状態・行の形・実行の進捗の形を定義する。
- * - 保管と実行が共有する上限値を定義する。
- */
+/** 予約投稿の保管・実行で共有する型と上限値。 */
 
 export const SCHEDULE_STATUSES = ["pending", "running", "failed"] as const
 export type ScheduleStatus = (typeof SCHEDULE_STATUSES)[number]
