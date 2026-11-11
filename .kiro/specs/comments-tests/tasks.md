@@ -158,7 +158,7 @@
   - _Boundary: tests/component, tests/render_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 7.2 この単位を確認し、許容リストの項目を消す
+- [x] 7.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/component/` と `tests/render/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す
   - `npx vitest run -c config/test/vitest.component.config.ts` と `npx vitest run -c config/test/vitest.astro.config.ts` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
