@@ -338,120 +338,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "src/components/account/AccountSwitchPanel/AccountSwitcher/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/account/AccountSwitchPanel/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/account/LoginForm/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/DeletePostListItem/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/DeletePostListItem/index.tsx",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/DeletePostListDialog/index.tsx",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/index.tsx",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDeleteConfirmDialog/index.tsx",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDetailView/index.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDetailView/index.astro",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryDetailView/index.astro",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryList/EntryCard/EntryEditForm/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryList/EntryCard/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryList/EntryCard/index.tsx",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryList/EntryCard/index.tsx",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/EntryList/index.tsx",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/entry/LegacyPageDeleteButton/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/components/feedback/FeedbackForm/clientEnvironment.ts",
       "rule": "header-too-long",
       "owner": "comments-components-pages",
@@ -472,30 +358,6 @@
     {
       "path": "src/components/i18n/useTranslation.ts",
       "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/image/ImageGallery/ImageLightbox/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/image/ImageGallery/ImageLightbox/index.tsx",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/image/ImageGallery/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/image/ImageGallery/index.tsx",
-      "rule": "forbidden:spec参照",
       "owner": "comments-components-pages",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
@@ -562,36 +424,6 @@
     {
       "path": "src/components/layout/nav/syncGuestModeQuery.ts",
       "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/schedule/AuthorizationReturn/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/schedule/CredentialDialog/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/schedule/ScheduleSetting/index.tsx",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/schedule/ScheduleSetting/useScheduleAvailability.ts",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/components/schedule/ScheduleSetting/useScheduleAvailability.ts",
-      "rule": "header-too-many-bullets",
       "owner": "comments-components-pages",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
