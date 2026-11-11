@@ -162,7 +162,7 @@
   - _Boundary: G9 root-types-util-styles_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.1, 5.3_
 
-- [ ] 9.2 検査の対象外のファイル（`global.d.ts`・`types/`・`util/utf8Bytes.ts`・`styles/` の CSS）の禁止パターンと経緯の語を取り除く
+- [x] 9.2 検査の対象外のファイル（`global.d.ts`・`types/`・`util/utf8Bytes.ts`・`styles/` の CSS）の禁止パターンと経緯の語を取り除く
   - `src/global.d.ts` と `src/types/` の `.ts`・`src/util/utf8Bytes.ts` に、禁止パターン（spec 参照・要件番号・AC/FR/NFR・cc-sdd・kiro・バッククォートの外の日付）と経緯の語が無いことを、検索で確かめる。あれば直す
   - `src/styles/` の CSS 6 件のうち、`ui.module.css`・`avatar.ui.module.css`・`button.ui.module.css`・`tokens.css` の旧 spec 参照（`specs/design-tokens`）を、現在の仕組みと理由の記述に直す。「旧画面」（画面の切り替えを指す語）は残し、判断を報告に挙げる
   - 完了の条件: `src/global.d.ts`・`src/types/`・`src/util/utf8Bytes.ts`・`src/styles/` に、禁止パターンが 0 件であり、CSS のコードの行（セレクタ・宣言）が変わっていない

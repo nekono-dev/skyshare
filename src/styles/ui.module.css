@@ -86,9 +86,9 @@
   /* nav / footer スロット(Sidebar / FooterNav)を表示するページのみ対象。
    640px未満はFooterNav(画面下固定バー)の高さ分だけ本文の下に余白を確保する。
    640px以上はFooterNavがdisplay:noneになりSidebarへ切り替わる。Sidebarは
-   .shell のGridカラムに配置されるため、ここでのpadding計算は不要(以前あった
-   vwベースのpadding-left逆算は、二重の中央寄せメカニズムによる不具合の原因に
-   なっていたため廃止した。詳細は tokens.css のコメント参照)。 */
+   .shell のGridカラムに配置されるため、ここでのpadding計算は不要(vwベースの
+   padding-left逆算は、二重の中央寄せメカニズムによる不具合の原因になるため使わない。
+   詳細は tokens.css のコメント参照)。 */
   @media (max-width: 639px) {
     :local(.root.with-nav) {
       padding-bottom: var(--nav-bar-height);
@@ -107,8 +107,8 @@
   }
 
   /* デスクトップ用サイドバー(Sidebar)とページ本文をひとつのGridコンテナとして中央寄せする。
-   vwベースのcalc()やflexによる独立した中央寄せを廃止し、Gridの
-   justify-content: center 一本に統一するための仕組み。
+   vwベースのcalc()やflexによる独立した中央寄せを使わず、Gridの
+   justify-content: center 一本で中央寄せするための仕組み。
 
    minmax(0, var(--width-lg-max)) という非1frのトラックは、コンテナ(.shell、
    width:100%でビューポート基準の確定幅を持つ)がトラック合計の最大幅より広い場合、
