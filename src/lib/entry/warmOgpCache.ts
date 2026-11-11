@@ -1,21 +1,22 @@
 /**
- * Skyshare Entry作成直後に発行済みURLをOGP抽出サービスへ通し、
- * Cloudflareエッジ側のDNS/レスポンスキャッシュを事前に温める。
+ * Skyshare Entry の OGP キャッシュを共有直後に best-effort で温める。
  *
- * 処理の趣旨:
- * - Intent/WebShareでの共有直後に相手側がOGPカードを生成する際、
- *   本サービスのドメインへの初回アクセスがコールドスタートになるのを避ける。
- * - あくまでキャッシュ温めが目的のbest-effort処理のため、失敗しても
- *   呼び出し元のEntry作成・共有フローを妨げないよう例外を外へ投げない。
+ * - 失敗しても Entry 作成・共有フローを妨げないよう、例外を呼び出し元へ投げない。
+ * - URL が空文字なら何もしない。
+ */
+import { extractUrl } from "@/client/openapi/client"
+
+/**
+ * 発行済みの URL を OGP 抽出サービスへ通し、Cloudflare のエッジ側の DNS とレスポンスのキャッシュを温める。
+ *
+ * - Intent や WebShare での共有の直後に、相手側が OGP カードを作る際の初回アクセスがコールドスタートになるのを避ける。
  *
  * Input:
- * - `url`: 温め対象のSkyshare Entry URL(空文字なら何もしない)
+ * - `url`: 温め対象の Skyshare Entry URL（空文字なら何もしない）
  *
  * Output:
  * - なし
  */
-import { extractUrl } from "@/client/openapi/client"
-
 export const warmOgpCache = async (url: string): Promise<void> => {
     if (!url) return
     try {

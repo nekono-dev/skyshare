@@ -1,12 +1,8 @@
 /**
- * Skyshare entry URL の長さ予測ユーティリティ。
+ * 投稿前に Skyshare Entry URL を組み立て、文字数を見積もる。
  *
- * 責務と処理概要:
- * - entry の rkey は投稿処理の中で採番されるため、投稿前には URL が確定しない。
- *   文字数カウンタが末尾に付く URL 分を見積もれるよう、URL の構造から予測 URL を作る。
- * - サイトのドメインや `entries` といったパスは、URL 生成関数 `skyshareEntryUrlgen` を
- *   再利用して得る（このファイルに固定値を持たない）。
- * - rkey は TID（長さ固定）と同じ長さの疑似値、DID は投稿者の実 DID を使う。
+ * - rkey は TID と同じ長さの疑似値を使い、DID は投稿者の実 DID を使う。
+ * - URL のパスとドメインは `skyshareEntryUrlgen` から得る。
  */
 import { TID } from "@atproto/common-web"
 import { skyshareEntryUrlgen } from "@/lib/entry/url"

@@ -1,12 +1,7 @@
 /**
- * Entry の応答の形（DTO）への整形
+ * 作成した Skyshare Entry を API 応答の `skyshareEntry` フィールド用に整形する。
  *
- * 責務:
- * - `CreatedSkyshareEntry` を、レスポンス JSON の `skyshareEntry` フィールド用の形へ変換する。
- *
- * 注意:
- * - `lib/api` は参照しない（`lib/api` が `lib/entry` を参照する循環を避けるため）。
- *   応答の形が api の推論型に代入できることは、ページの型注釈付きの代入で確かめる。
+ * - `lib/api` を参照しないのは、`lib/api` からの循環依存を避けるため。
  */
 import type { CreatedSkyshareEntry } from "@/lib/entry/skyshareRecord"
 

@@ -1,14 +1,8 @@
 /**
- * 既存の Bluesky 投稿（Timeline の事後 entry 作成）から、entry の visual を作る。
+ * 既存の Bluesky 投稿から Skyshare Entry 用の visual を合成する。
  *
- * 責務と処理概要:
- * - 動画投稿: poster（`thumbnail.jpg`）と再生時間（HLS プレイリストの EXTINF 合計）を
- *   並行して取得し、poster に再生ボタンを重ねた 1200x630 の画像にする。再生時間は
- *   画像へ埋め込まず、呼び出し側が entry の heading に記載できるよう併せて返す。
- *   どちらかの取得に失敗したら例外を投げる（呼び出し側が entry 作成を失敗させる）。
- * - 画像投稿: 先頭 `VISUAL_IMAGE_COUNT` 枚を `GET /v2/bsky/images`（同一オリジン。
- *   cdn.bsky.app の CORS 制約を回避するプロキシ）経由で取得し、投稿フォームでクロップ編集
- *   しなかった場合と同じデフォルト配置で合成する。
+ * - 画像は同一オリジンの `GET /v2/bsky/images` 経由で取得し、CDN の CORS 制約を避ける。
+ * - 動画の poster は `image/jpeg` の Blob にして `<img>` で読めるようにする。
  */
 import { getBskyImage } from "@/client/openapi/client"
 import type { SourceVideo } from "@/lib/entry/entry"

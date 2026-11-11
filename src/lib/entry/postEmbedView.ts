@@ -1,14 +1,9 @@
 /**
- * 投稿の埋め込み（AppView が hydrate した `PostView.embed`）から、entry詳細ページに表示する
- * リンクカードと引用を取り出すモジュール（`specs/entry-detail`）。
+ * Bluesky 投稿の埋め込みから Entry 詳細ページ用のリンクカードと引用を抽出する。
  *
- * 責務と処理概要:
- * - `app.bsky.embed.external#view` からリンクカードを取り出す（http/https のリンク先に限る）。
- * - `app.bsky.embed.record#view`・`app.bsky.embed.recordWithMedia#view` から引用を取り出す。
- *   引用元が削除・ブロック・切り離しの場合は「表示できない」として返し、フィード・リスト等の
- *   投稿以外の引用は表示しない。
- * - 画像・動画（recordWithMedia の media を含む）は既存の抽出（`@/lib/entry/entry`）の責務とし、ここでは扱わない。
- * - 外部入力を扱うため、`@atproto/*` の型に頼らず `$type` と値の型を確かめる純粋関数で構成する。
+ * - 引用元が削除・ブロック・切り離しの場合は表示不可として扱い、投稿以外の引用は表示しない。
+ * - 外部入力を扱うため、`$type` と値の型を実行時に確かめ、`@atproto/*` の型に依存しない。
+ * - 画像・動画の抽出は `@/lib/entry/entry` が担当する。
  */
 import type { SourceImage } from "@/lib/entry/entry"
 import { bskyPostUrlgen } from "@/lib/entry/url"

@@ -1,16 +1,9 @@
 /**
- * skyshare entry の削除の判断（`specs/src-pages-thin` の EntryDelete）。
+ * Skyshare Entry と、指定時は関連する Bluesky 投稿を削除する判断を行う。
  *
- * 責務と処理概要:
- * - `deleteBskyPost` 指定時は削除対象（元投稿とその後続投稿）を entry 削除より前に導出する。
- *   導出できない場合は何も削除しない。
- * - entry の URI の所有検証はページが行い、検証済みの rkey を入力として受け取る。
- * - entry レコードを削除し、その後に Bluesky 投稿を削除する。投稿の削除の失敗は応答を失敗にしない。
- * - 判断の結果を `Outcome` で返す。HTTP の応答への変換は呼び出し側（ページ）が行う。
- *
- * 注意:
- * - `lib/api` は参照しない（`lib/api` が `lib/entry` を参照する循環を避けるため）。
- * - 想定外の例外（entry 自体の削除の失敗など）は握りつぶさず、呼び出し側へ投げる。
+ * - 投稿削除対象を Entry より先に導出し、導出に失敗した場合は何も削除しない。
+ * - URI の所有確認は呼び出し側が済ませ、検証済み rkey を受け取る。
+ * - 投稿削除の失敗は応答を失敗にしない。予期しない例外は循環依存回避のため `lib/api` を参照せず、呼び出し側へ投げる。
  */
 import type { Agent } from "@atproto/api"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"

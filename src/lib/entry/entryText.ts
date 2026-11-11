@@ -1,10 +1,8 @@
 /**
- * skyshare entry の見出し(heading)・キャプション(caption)をクライアント側で組み立てる。
+ * Skyshare Entry 作成時に heading と caption の既定値を組み立てる。
  *
- * 責務と処理概要:
- * - サーバは heading/caption を生成せず、`POST /v2/entry` で受け取った値をそのまま保存する。
- *   そのため作成時の既定値の決定はクライアントの責務であり、本モジュールに集約する。
- * - 上限は API スキーマ（`src/lib/api/schema/v2/entry/post.ts`）に合わせる。
+ * - API は受け取った heading と caption をそのまま保存するため、既定値はクライアントで決める。
+ * - 文字数上限は Entry lexicon の UTF-8 バイト数に合わせる。
  */
 
 import { countUtf8Bytes, truncateToUtf8Bytes } from "@/util/utf8Bytes"

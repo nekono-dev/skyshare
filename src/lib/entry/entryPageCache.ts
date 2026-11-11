@@ -1,22 +1,10 @@
 /**
- * entry詳細ページ（`/entries/{slug}/`）のSSR結果を Cloudflare の Cache API に保存する
- * ミドルウェア。
+ * Skyshare Entry 詳細ページの SSR 応答を Cloudflare Cache API で再利用する。
+ * 表示のたびの DID 解決・PDS・AppView の呼び出しと HTML の描画が Workers 無料枠の CPU 上限（10ms）を圧迫するため、描画済みの HTML を返す。
  *
- * 責務と処理概要:
- * - 詳細ページは公開データのみで構成されるが、表示のたびにDID解決・PDS・AppViewへの
- *   複数回のAPI呼び出しとHTML描画を行い、Workers 無料枠の CPU 上限（10ms）を圧迫する。
- *   同一内容を短時間に繰り返し返す用途（OGPクローラーや共有直後の閲覧）では、
- *   描画済みのHTMLを再利用してWorkerのCPU消費を避ける。
- * - ページは `Accept-Language` で決まる表示言語（`locals.locale`）ごとに内容が変わるため、
- *   キャッシュキーに言語を含める。
- * - 保存対象は 200 の HTML のみ（404/500 や Cookie を設定する応答は保存しない）。
- *
- * 制約:
- * - Cache API は Cloudflare のデータセンター単位で保存される。このため entry の更新・削除は
- *   最大で `ENTRY_PAGE_CACHE_TTL_SECONDS` 秒、他拠点の保存済みページに反映されない。
- * - `workers.dev` ドメインでは Cache API が動作しない（保存も取得も行われない）。
- *   その場合は通常どおり毎回描画する。
- * - Cache API の失敗はページの表示を妨げないよう握りつぶし、通常の描画へフォールバックする。
+ * - 言語ごとに内容が異なるため、キャッシュキーに locale を含める。保存するのは 200 の HTML だけで、404/500 や Cookie を設定する応答は保存しない。
+ * - Cache API はデータセンター単位で保存されるため、entry の更新・削除は最大 `ENTRY_PAGE_CACHE_TTL_SECONDS` 秒、他拠点の保存済みページに反映されない。
+ * - `workers.dev` ドメインでは Cache API が動作しない（保存も取得も行われない）ため、毎回描画する。Cache API の失敗も握りつぶし、通常の描画へ戻す。
  */
 import type { MiddlewareHandler } from "astro"
 

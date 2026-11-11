@@ -1,12 +1,7 @@
 /**
- * Entry 関連ユーティリティ
+ * Skyshare Entry と Bluesky 投稿の URL・添付データを扱う共通機能を提供する。
  *
- * 責務:
- * - エントリ識別子の解析
- * - Blob/CID の抽出
- * - レコード内画像埋め込みの展開
- *
- * Cloudflare Workers 環境制約を遵守すること。
+ * - Cloudflare Workers 環境で動作する。
  */
 import { AppBskyFeedPost } from "@atproto/api"
 import { bskyCdnUrlgen, blobToCdnUrl, toCidString } from "@/lib/entry/url"

@@ -1,12 +1,7 @@
 /**
- * dev.nekono.skyshare.entry レコードのビルダー・更新ユーティリティ。
+ * `dev.nekono.skyshare.entry` レコードの作成データと更新処理を扱う。
  *
- * 責務と処理概要:
- * - bsky 投稿情報と visual blob から skyshare entry レコードの値を組み立てる純粋関数
- *   （`buildSkyshareEntryRecord`）を提供する。実際に atproto へ書き込む処理
- *   （`com.atproto.repo.applyWrites`での原子的な作成）は `src/lib/entry/createBskyThread.ts` が担う。
- * - 更新（`updateSkyshareEntry`、PUT /v2/entry用）は単一レコードの読み書きのみのため、
- *   従来通りこのファイルが直接 atproto を呼び出す。
+ * - 新規作成の書き込みは `createBskyThread.ts` が `com.atproto.repo.applyWrites` で一括処理する。
  */
 import type { Agent } from "@atproto/api"
 import { ENTRY_COLLECTION, MANIFEST_TYPE } from "@/lib/atproto/nsid"
