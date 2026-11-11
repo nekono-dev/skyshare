@@ -129,7 +129,7 @@
   - _Boundary: G5 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 7. G6（`session`・`oauth`・`feedback`）を書き直す
+- [x] 7. G6（`session`・`oauth`・`feedback`）を書き直す
 - [x] 7.1 `session` の先頭ヘッダとコメントを書き直す（10 ファイル）
   - 2.1 と同じ判断で書き直す
   - トークンを HttpOnly の Cookie だけに置く理由、`cache-control: no-store`、Cookie の枠の理由は残す
@@ -144,7 +144,7 @@
   - _Boundary: G6 の oauth・feedback_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 7.3 G6 の検査を通し、許容リストの G6 の項目を消す
+- [x] 7.3 G6 の検査を通し、許容リストの G6 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G6 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G6 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
