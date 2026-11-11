@@ -1,12 +1,8 @@
 /**
- * render 層（`.astro` ページのサーバー描画）の vitest 設定。
+ * Vitest configuration for server-rendering `.astro` pages.
  *
- * 責務と処理概要:
- * - `tests/render` 配下の `*.test.ts` を、Astro の Container API で `.astro` をサーバー描画して検証する。
- * - `.astro` の変換には Astro の Vite 設定が要るため `getViteConfig` を使う。
- *   Cloudflare アダプタは vitest 上で起動できないため `astro.config.mjs` は読まず、
- *   React のインテグレーションだけを指定する。
- * - 他の層（unit・component・route）とは別の設定で実行する。
+ * The Cloudflare adapter cannot run in Vitest, so use Astro's Vite config without loading
+ * `astro.config.mjs`; React is the only integration required for these renders.
  */
 import react from "@astrojs/react"
 import { getViteConfig } from "astro/config"

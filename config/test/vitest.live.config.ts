@@ -1,10 +1,8 @@
 /**
- * live 層（実 Bluesky との契約）の vitest 設定。
+ * Vitest configuration for read-only contract checks against a real Bluesky account.
  *
- * 責務と処理概要:
- * - `tests/live` 配下の `*.test.ts` だけを Node 環境で実行する。`npm run test:live` が使う。
- * - 開発者がローカルで任意に実行する。`test:all`・pre-push・CI には含めない（`.kiro/steering/testing.md`）。
- * - 設定（config/live.json・.dev.vars）が無いときは、テストが自分でスキップする。
+ * - Run only the live contract tests in Node; credentials are optional and missing credentials skip them.
+ * - Invoke manually with `npm run test:live`; live account access is excluded from automated checks.
  */
 import path from "node:path"
 import { defineConfig } from "vitest/config"

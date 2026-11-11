@@ -1,14 +1,9 @@
 /**
- * route 層（API ルートと D1・R2 の binding）の vitest 設定。workerd で実行する。
+ * Vitest configuration for API routes and D1/R2 bindings in workerd.
  *
- * 責務と処理概要:
- * - `tests/route` 配下の `*.test.ts` を、`@cloudflare/vitest-plugin` で workerd 上に実行する。
- * - 設定は `tests/route/wrangler.jsonc`（テスト用）から読む。本番の生成物（`wrangler.jsonc`）は読まない。
- * - マイグレーションは `migrations/` から読み、各テストの前に D1 へ適用する。
- * - 互換日付は、同梱の workerd が対応する最新の値を使う。本番（`config/wrangler.template.jsonc`）と
- *   値が違えば、設定の読み込み時に警告を出す（要件 11.3）。差の内容は steering に記録する（要件 11.2）。
- * - workerd からの外部通信は `fakeOutbound`（偽の Bluesky の応答）へ向ける。実ネットワークへは出ない。
- * - 分岐カバレッジは istanbul で計測する（workerd では v8 を使わない）。
+ * - Use the test Wrangler config and migrations; outbound requests target a fake Bluesky service.
+ * - Keep the compatibility date aligned with bundled workerd; warn when it differs from production.
+ * - Istanbul measures branch coverage because workerd does not support V8 coverage.
  */
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -64,7 +59,7 @@ export default defineConfig({
         setupFiles: ["./tests/route/support/applyMigrations.ts"],
         // workerd の初回の動的 import（大きなライブラリの変換）は、並列実行時に 5 秒を超えることがある
         testTimeout: 30_000,
-        // P0 の route 層モジュール（要件 4.1）。閾値はファイル単位の分岐 80%
+        // Each listed route module must meet 80% branch coverage independently.
         coverage: {
             enabled: true,
             provider: "istanbul",

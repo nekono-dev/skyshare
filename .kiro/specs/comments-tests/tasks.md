@@ -197,7 +197,7 @@
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
 - [ ] 9. tests/live と config/test の書き換え
-- [ ] 9.1 コメントと題名を書き換える
+- [x] 9.1 コメントと題名を書き換える
   - 対象は `tests/live/atprotoContract.test.ts` と `config/test/` の 7 ファイル（`playwright.config.ts`・`stryker.config.mjs`・`vitest.astro.config.ts`・`vitest.component.config.ts`・`vitest.live.config.ts`・`vitest.route.config.ts`・`vitest.unit.config.ts`）
   - 先頭ヘッダ（不足・6 行超・箇条書き 3 件超）と禁止パターン（要件番号・spec 参照・`kiro`）を、4.1〜5.5 の規則に従って書き換える
   - 日本語を含む題名 4 件（`tests/live/atprotoContract.test.ts`）を英語にする。`config/test/` は題名が無い（コメントのみ）

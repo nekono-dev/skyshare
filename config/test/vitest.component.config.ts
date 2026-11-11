@@ -1,12 +1,8 @@
 /**
- * component 層（対話する React 部品）の vitest 設定。
+ * Vitest configuration for interactive React components.
  *
- * 責務と処理概要:
- * - `tests/component` 配下の `*.test.ts(x)` を実行する。既定は Node 環境で、
- *   DOM を使うファイルだけ先頭の `// @vitest-environment happy-dom` で指定する。
- * - 各テストの後に React Testing Library の `cleanup` を呼び、テスト間で DOM を残さない
- *   （`globals` を使わないため、自動のクリーンアップは効かない）。
- * - `@` のエイリアスを `src` に解決する。分岐カバレッジは istanbul で計測する。
+ * - Tests use Node by default; DOM tests opt into happy-dom with a file-level environment directive.
+ * - Explicit cleanup is required because Vitest globals are disabled; Istanbul measures branch coverage.
  */
 import path from "node:path"
 import { fileURLToPath } from "node:url"
