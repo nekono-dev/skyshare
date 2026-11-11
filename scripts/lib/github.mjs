@@ -1,6 +1,6 @@
-// GitHub のリポジトリの判定（scripts/secrets/sync-github-variables.mjs と hack/survey-cli/remote.ts が使う）。
-//
-// 責務: Git のリモートの URL から owner/repo を取り出す。SSH の別名（git@github.com.<別名>:…）も判定する。
+/**
+ * `scripts/secrets/sync-github-variables.mjs` と `hack/survey-cli/remote.ts` が使う、Git リモート URL から GitHub の `owner/repo` を取り出す。
+ */
 
 /**
  * Git のリモートの URL から、GitHub のリポジトリの `owner/repo` を取り出す。

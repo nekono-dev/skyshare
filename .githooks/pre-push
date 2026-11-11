@@ -1,7 +1,7 @@
 #!/bin/sh
-# push の前に全層のテストを実行する（要件 8.3・8.4）。
+# push 前に全層のテスト（`npm run test:all`）を実行する。
 # 失敗すると非ゼロで終わり、git が push を中止する。人間とエージェントは同じ hooksPath（scripts/git/setup-git-hooks.mjs）でこれを使う。
-# GitHub の Variables・Secrets への登録は push では行わない。デプロイの前に運用者が `npm run sync:github` を手動で実行する（docs/DEVELOP.md）。
+# GitHub の Variables・Secrets は push 時に登録しない。デプロイ前に運用者が `npm run sync:github` を手動で実行する（docs/DEVELOP.md）。
 set -eu
 cd "$(git rev-parse --show-toplevel)"
 # git がフックに渡すリポジトリの場所を外す。残すと、テストが一時フォルダで実行する git が、このリポジトリを操作する。

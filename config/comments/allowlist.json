@@ -8,48 +8,6 @@
       "reason": "許容する例外: 起動例の実行コマンドのパス（kiro-gate.mjs）に含まれる語で、言い換えると使い方が伝わらない"
     },
     {
-      "path": "scripts/git/setup-git-hooks.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/git/setup-git-hooks.mjs",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/lib/dotenv.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/lib/github.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/lib/jsonc.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/lib/live-config.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/lib/wrangler.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/lib/api/schema/v2/bsky/video/upload-token/post.ts",
       "rule": "forbidden:AC/FR/NFRタグ",
       "owner": "comments-api-schema",
