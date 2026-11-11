@@ -46,7 +46,7 @@
   - _Boundary: G3 composer children_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.1, 5.3_
 
-- [ ] 3.2 ThreadSegmentForm の子部品のコメントを書き直す
+- [x] 3.2 ThreadSegmentForm の子部品のコメントを書き直す
   - 対象: `ThreadSegmentForm/` の直下の `index.tsx` と、子の `LanguageSelect`・`OgpPreview`・`PostBodyEditor`・`SuggestPopover`・`ThumbnailAdjustButton`・`VideoPicker`（許容リストの 7 件）
   - `PostBodyEditor` の `eslint-disable-next-line` の行は変えない
   - 完了の条件: これらのファイルに違反が無く、コードの行と機械指示の行が変わっていない

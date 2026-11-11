@@ -1,21 +1,9 @@
 /**
- * PostForm専用の投稿本文欄。contenteditableなdivとしてハッシュタグ/メンションを
- * インラインでハイライト表示する。
+ * 投稿本文を contenteditable で編集し、ハッシュタグとメンションを強調表示する。
  *
- * 責務と処理概要:
- * - `value`/`onChange`は`CountedTextInput`と同型の契約（制御コンポーネント）にし、
- *   PostForm側の呼び出しコードの構造を変えずに済むようにする。
- * - `CountedTextInput`は本コンポーネント以外にも汎用的に使われるため一切変更しない。
- *   カウンタ表示ロジックはここに複製し、影響範囲を完全にこのディレクトリ配下へ閉じ込める。
- * - 表示テキストは`computeHighlightSegments`でハッシュタグ/メンションとそれ以外に分割し、
- *   Reactのjsxで宣言的に子要素を描画するのではなく、`useLayoutEffect`内で明示的にDOM操作を
- *   行う。ただしキー入力の度にDOM全体を作り直すことはしない: ブラウザは`input`イベントが
- *   発火する時点で既にネイティブに実DOMを編集済みのため、`reconcileContent`
- *   （`contentEditableReconcile.ts`）で現在の実DOMと`value`から計算すべき理想構造を比較し、
- *   一致する区間には一切触れず、差分のある区間だけを差分パッチする。こうすることで
- *   ブラウザ自身の編集操作（ひいてはネイティブUndo/Redo）をできるだけ素通しする。
- *   IME変換中(`compositionstart`〜`compositionend`)はこの同期処理自体を止め、ブラウザの
- *   ネイティブ編集に完全に委ねる（変換中のカーソル飛び・変換中断を防ぐため）。
+ * - 差分だけを DOM に反映し、ブラウザのネイティブ編集と Undo/Redo を保つ。
+ * - IME 変換中は DOM 同期を止め、カーソル移動や変換中断を防ぐ。
+ * - 汎用の `CountedTextInput` に影響させず、同じ制御契約とカウンター処理を保つ。
  */
 import React, { useLayoutEffect, useRef } from "react"
 import {

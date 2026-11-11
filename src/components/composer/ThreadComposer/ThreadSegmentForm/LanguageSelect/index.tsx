@@ -1,3 +1,9 @@
+/**
+ * 投稿言語の選択肢を定義し、絞り込み可能な選択 UI を提供する。
+ *
+ * - 重複する言語コードは最初の項目だけを表示する。
+ */
+
 import { useT } from "@/components/i18n/useTranslation"
 import React from "react"
 import Dropdown, {

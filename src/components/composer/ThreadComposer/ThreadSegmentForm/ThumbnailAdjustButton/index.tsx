@@ -1,3 +1,9 @@
+/**
+ * 画像または動画のサムネイル調整ダイアログを開くボタン。
+ *
+ * - ダイアログの選択と状態は親の `ThreadSegmentForm` が管理する。
+ */
+
 import { useT } from "@/components/i18n/useTranslation"
 import ui from "@/styles/ui.module.css"
 

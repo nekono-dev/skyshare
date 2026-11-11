@@ -1,3 +1,11 @@
+/**
+ * 動画を検査し、プレビューを作って動画サービスへ直接アップロードする。
+ *
+ * - 取り外し・親からの解除・アンマウントで進行中のアップロードを中断する。
+ * - 失敗は動画の状態に閉じ、他のセグメント入力に影響させない。
+ * - 進捗は最新の動画 state に反映し、同時に変更された alt や crop を保つ。
+ */
+
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import {
