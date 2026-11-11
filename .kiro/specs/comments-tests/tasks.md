@@ -39,7 +39,7 @@
   - _Boundary: tests/unit/lib_
   - _Requirements: 2.1, 3.2, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 2.3 この単位を確認し、許容リストの項目を消す
+- [x] 2.3 この単位を確認し、許容リストの項目を消す
   - `commentRules.ts --emit-allowlist` の出力で、対象のパスの違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を Edit で消す（JSON 全体を作り直さない）
   - `npx vitest run -c config/test/vitest.unit.config.ts tests/unit/lib` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
