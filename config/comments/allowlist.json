@@ -8,90 +8,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "config/test/playwright.config.ts",
-      "rule": "header-too-long",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/playwright.config.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/playwright.config.ts",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/stryker.config.mjs",
-      "rule": "header-missing",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/stryker.config.mjs",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.astro.config.ts",
-      "rule": "header-too-long",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.component.config.ts",
-      "rule": "header-too-long",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.live.config.ts",
-      "rule": "forbidden:kiro",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.route.config.ts",
-      "rule": "header-too-long",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.route.config.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.route.config.ts",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.unit.config.ts",
-      "rule": "header-too-long",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.unit.config.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "config/test/vitest.unit.config.ts",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "hack/survey-cli/config.ts",
       "rule": "header-missing",
       "owner": "comments-scripts-config",
@@ -365,12 +281,6 @@
       "path": "src/lib/api/schema/v2/entry/post.ts",
       "rule": "forbidden:spec参照",
       "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "tests/live/atprotoContract.test.ts",
-      "rule": "header-missing",
-      "owner": "comments-tests",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     }
   ]

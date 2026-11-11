@@ -207,7 +207,7 @@
   - _Boundary: tests/live, config/test_
   - _Requirements: 2.2, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.6, 6.7_
 
-- [ ] 9.2 この単位を確認し、許容リストの項目を消す
+- [x] 9.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/live/` と `config/test/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す（`config/test/` の 14 件を含む）
   - `git diff -- config/test` で、変更が行コメントとブロックコメントに限られ、閾値・対象・環境の値が変わっていない
