@@ -1442,42 +1442,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "src/lib/i18n/applyDom.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/i18n/messageKeys.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/i18n/middleware.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/i18n/store.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/i18n/store.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/i18n/translate.ts",
-      "rule": "header-too-long",
-      "owner": "comments-lib",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/lib/image/galleryLayout.ts",
       "rule": "forbidden:spec参照",
       "owner": "comments-lib",
