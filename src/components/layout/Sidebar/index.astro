@@ -1,17 +1,10 @@
 ---
 /**
- * デスクトップ専用の常設サイドバーナビゲーション(Post一覧・Entry一覧・アカウント切り替え)。
+ * 画面幅640px以上で常設するサイドバーのナビゲーション（640px未満は FooterNav が担う）。
  *
- * 責務と処理概要:
- * - 画面幅640px以上でのみ表示する(640px未満はFooterNavが担当、このコンポーネントは
- *   display:noneで非表示のままDOMには常に存在する)。
- * - 640px〜847px(ミニサイドバー): アイコンの丸ボタンのみを縦に並べる。
- * - 848px以上(フルサイドバー): アイコン+ラベル付きのフル表示。
- * - 実際の幅・位置は src/styles/ui.module.css の .shell (CSS Grid) が1列目として
- *   決定するため、このコンポーネント自身は width/left を一切指定しない。
- * - `Astro.url.pathname` から現在地を判定し、該当リンクへ `aria-current` を付与する。
- * - `transition:persist` によりView Transitions中もDOMを再生成せず保持する。
- *   保持されたDOMのaria-currentは src/components/nav/syncActiveState.ts が同期し直す。
+ * - 640〜847px はアイコンの丸ボタンのみ、848px以上はラベル付き。640px未満では display:none にして DOM には残す。
+ * - 幅と位置は src/styles/ui.module.css の .shell (CSS Grid) の1列目が決めるため、width・left を指定しない。
+ * - `transition:persist` で DOM を保持するため、`aria-current` は `nav/syncActiveState.ts` が同期し直す。
  */
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"

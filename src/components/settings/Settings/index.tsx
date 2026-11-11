@@ -1,18 +1,10 @@
 /**
- * 設定ページ本体コンポーネント。
+ * 設定ページ本体。設定を「表示」「投稿」「クロスポスト」の3グループに分けて `SettingList` で並べる。
  *
- * 責務と処理概要:
- * - 設定を「表示」「投稿」「クロスポスト」の3グループに分け、`SettingList` で一覧表示する。
- * - 投稿のグループに返信・引用のデフォルト設定の編集ボタンの行を含め、末尾に
- *   予約投稿の有効化のスイッチ（`ScheduleSetting`）を置く。
- * - 各設定値の state・永続化・連動ルールは `lib/settings/useShareToggles` および
- *   `lib/settings/shareSettings` に委譲し、本体は表示用データの組み立てに専念する。
- * - Astroページ（`src/pages/settings.astro`）から表示するため、ページ固有のレイアウト（Baselayout・Sidebar等）には依存しない。
- * - マウント時に加え、Astroのクライアント側ページ遷移イベント `astro:page-load`
- *   （`src/components/layout/nav/syncActiveState.ts` と同じ仕組み）のたびにも localStorage
- *   から再読み込みする。View Transitions遷移でこのコンポーネントのDOM/Reactインスタンスが
- *   再マウントされずに使い回された場合でも、PostForm等の他画面で行った変更や
- *   localStorageの最新状態を、開かれるたびに確実に反映するため。
+ * - 共有系の値の state・永続化・連動は `./useShareToggles` と `lib/settings/shareSettings` が持つ。
+ *   ページ固有のレイアウト（Baselayout・Sidebar 等）には依存しない。
+ * - マウント時と `astro:page-load` のたびに localStorage から読み直す。View Transitions の遷移で
+ *   React のインスタンスが再マウントされず使い回されても、PostForm 等で変えた最新の値を反映するため。
  */
 import { useEffect, useRef, useState } from "react"
 import { getSession } from "@/client/openapi/client"

@@ -100,7 +100,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 6. G6 settings・share・feedback・help・privacy・i18n・layout のコメントを書き直し、検査を通す
-- [ ] 6.1 layout・i18n・settings・share・feedback のコメントを書き直す
+- [x] 6.1 layout・i18n・settings・share・feedback のコメントを書き直す
   - 対象: `layout/`（`Baselayout`・`FooterNav`・`NavIcon`・`Sidebar` の `.astro` と、`nav/` の 4 件の `.ts`）・`i18n/useTranslation.ts`・`settings/`（`SettingList`・`Settings` と `useShareToggles.ts`）・`share/IntentShareDialog/`（2 件）・`feedback/FeedbackForm/`（2 件）（許容リストの 16 件）
   - `nav/` の共有の処理（`navItems.ts`・`sync*.ts`）は、Sidebar と FooterNav が共有する理由を書く
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない

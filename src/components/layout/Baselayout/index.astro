@@ -1,13 +1,10 @@
 ---
 /**
- * 全ページ共通の基本レイアウト。
+ * 全ページ共通の HTML の骨格。header・nav・footer は名前付きスロット、本文は既定スロットで受ける。
  *
- * 責務と処理概要:
- * - HTML スケルトン（head/body/main）を提供する。
- * - OGP/SEO メタ情報は `Metadatas` へ委譲する。
- * - header/nav(Sidebar)/footer(FooterNav) は named slot、本文は default slot で受け取る。
- * - nav/footer のいずれかが埋まっているページでは、nav と本文を .shell (CSS Grid) で
- *   包み、サイドバーとタイムラインをひとつの塊として中央寄せする。
+ * - nav・footer のどちらかが埋まるページだけ、nav と本文を .shell (CSS Grid) で包み、
+ *   サイドバーとタイムラインを一つの塊として中央寄せする。
+ * - 描画前のインラインスクリプトで OAuth の戻りの印を付け、遷移時はテーマと表示言語を遷移先の文書へ引き継ぐ。
  */
 
 interface Props {

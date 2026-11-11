@@ -1,18 +1,10 @@
 /**
- * 投稿先選択ダイアログ（X / タイッツー / Mastodon / Misskey への intent 共有）。
+ * 投稿先（X・タイッツー・Mastodon・Misskey）を選び、intent ポップアップで共有するダイアログ。
  *
- * 責務と処理概要:
- * - 投稿本文・skyshare entry URL・リンクカードURLから、選択された投稿先ごとに
- *   intent テキストを組み立てる。
- * - X・タイッツー向けは、「長文を省略して共有」設定がONなら本文を省略する
- *   （Mastodon・Misskey向けは省略しない）。設定はクリック時に localStorage から読む。
- * - skyshare entry を持たない投稿（画像を自分で添付・画像以外の投稿）でも開ける。
- *   その場合は URL を付けない。省略は設定に従う（「画像を自分で添付」ON時は設定自体がOFF）。
- * - 投稿先を選択すると intent ポップアップを開く。`keepOpenOnSelect` が偽の場合のみ、
- *   続けてダイアログを閉じる（投稿ボタンから開いた場合は、続けて別の投稿先を選べるよう
- *   閉じない）。「閉じる」・背景クリック・Escキーでは常に閉じる。
- * - Mastodon・Misskeyの投稿先インスタンスドメインは localStorage の保存値（未設定時は既定値）を使う。
- *   保存値が不正な形式の場合は、そのSNSの項目を選択できなくする。
+ * - 長文の省略は X・タイッツー向けだけで、設定はダイアログ表示後に変わり得るためクリックの都度読む。
+ * - skyshare entry を持たない投稿（画像を自分で添付・画像以外）でも開け、その場合は URL を付けない。
+ * - `keepOpenOnSelect` が真なら、投稿ボタンから開いた場合に続けて別の投稿先を選べるよう、選択後も閉じない。
+ *   Mastodon・Misskey は保存済みドメイン（未設定なら既定値）を使い、不正な形式なら選択できなくする。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import ChoiceDialog from "@/components/common/dialog/ChoiceDialog"

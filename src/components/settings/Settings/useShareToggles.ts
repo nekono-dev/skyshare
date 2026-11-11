@@ -1,18 +1,11 @@
 /**
- * 共有系設定（PopupIntentInsteadOfWebshare / AutoPopupTarget / ManualImageAttach /
- * TruncateIntentText / Skyshareのリンクカードを優先表示 / Mastodon・Misskeyインスタンスドメイン）の
- * state・永続化を管理するフック。
+ * 共有系の設定（共有方法・自動ポップアップ先・画像の手動添付・長文省略・リンクカード優先・
+ * Mastodon/Misskey のインスタンスドメイン）の state と localStorage への保存を持つフック。
  *
- * 責務と処理概要:
- * - 各設定の初期値を localStorage から読み込み、変更のたびに書き込む。
- * - 設定間の連動は ManualImageAttach → TruncateIntentText のみ。ManualImageAttach が
- *   ONの間は TruncateIntentText を常にOFFとして扱い、UI表示と保存値を一致させる。
- * - 「Skyshareのリンクカードを優先表示」は ManualImageAttach がONの間は適用しないが、
- *   保存値は書き換えない（操作不能の表示は呼び出し側が ManualImageAttach を見て行う）。
- * - `PostForm`（投稿フォーム内）と `Settings`（設定ページ）の双方から利用され、
- *   どちらの画面から変更しても同じ永続化が適用される。
- * - 初期値はSSRと同じ固定値とし、マウント後の `reload()` で実値を反映する
- *   （ハイドレーション不一致を避けるため）。
+ * - `PostForm` と `Settings` の両方が使い、どちらで変えても同じ保存先に書く。
+ * - 画像の手動添付が ON の間、長文省略は OFF として扱い保存値も OFF にして、表示と保存を一致させる。
+ *   リンクカード優先は適用しないだけで保存値は書き換えない（操作不能の表示は呼び出し側が行う）。
+ * - 初期値は SSR と同じ固定値にし、マウント後の `reload()` で実値を反映する（ハイドレーション不一致を避けるため）。
  */
 import { useCallback, useEffect, useState } from "react"
 import {

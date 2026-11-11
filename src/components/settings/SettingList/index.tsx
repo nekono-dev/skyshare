@@ -1,14 +1,10 @@
 /**
- * 設定一覧コンポーネント。
+ * 設定値ごとの「ラベル・説明文・コントロール」を1行にして縦に並べる一覧。
  *
- * 責務と処理概要:
- * - 設定値ごとの「ラベル・説明文・トグルスイッチ」を1行にまとめ、`ComponentList` を用いて
- *   縦に並べる。
  * - ラベル・説明文は `<label>` にせず、押してもコントロールの値を変えない
- *   （値を変えるのはスイッチ・プルダウンなどのコントロールの操作だけにする）。
- *   アクセシブルネームは `aria-label`、文字列でないラベルでは `aria-labelledby` で与える。
- * - 各設定値の state・永続化・連動ルールは呼び出し元（`Settings` など）に委ね、
- *   このコンポーネントは表示と `onCheckedChange` の橋渡しのみを担う。
+ *   （値を変えるのはスイッチ・プルダウンなどの操作だけ）。アクセシブルネームは `aria-label`、
+ *   文字列でないラベルでは `aria-labelledby` で与える。
+ * - 値の state・永続化・連動は呼び出し元（`Settings` など）が持ち、ここは表示と `onCheckedChange` の橋渡しだけ行う。
  */
 import type React from "react"
 import ComponentList from "@/components/common/list/ComponentList"
