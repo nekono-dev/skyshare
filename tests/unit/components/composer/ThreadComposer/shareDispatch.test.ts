@@ -1,4 +1,7 @@
-// 共有先への送信の分岐（投稿先の選択ダイアログを開くか、ポップアップを開くか）を、分割の前の値で固定する（要件 1.5）。
+/**
+ * Locks down share destination dispatch before the composer split.
+ * Browser APIs are injected so tests can cover the dispatch decision without opening popups.
+ */
 // WebShare API と実際のポップアップは対象外。ポップアップの参照は、閉じる呼び出しを確かめるだけにする。
 import { describe, expect, it, vi } from "vitest"
 import {
@@ -38,8 +41,8 @@ const baseParams = (
     ...overrides,
 })
 
-describe("runShareDispatch（共有先への送信の分岐）", () => {
-    it("自動ポップアップ先が「選択」のとき、ポップアップを開かず投稿先の選択ダイアログを開く", async () => {
+describe("runShareDispatch destination dispatch", () => {
+    it("opens the destination picker when the automatic popup target is ask", async () => {
         const result = await runShareDispatch(baseParams())
 
         expect(result.openShareDialog).toBe(true)
@@ -47,7 +50,7 @@ describe("runShareDispatch（共有先への送信の分岐）", () => {
         expect(result.forcedAutoPopupTarget).toBeNull()
     })
 
-    it("選択のときは、受け取った投稿ウィンドウを閉じる", async () => {
+    it("closes the received post window when asking for a destination", async () => {
         const close = vi.fn()
         await runShareDispatch(
             baseParams({ popupWindow: { close } as unknown as Window }),
@@ -56,7 +59,7 @@ describe("runShareDispatch（共有先への送信の分岐）", () => {
         expect(close).toHaveBeenCalledTimes(1)
     })
 
-    it("インスタンスの共有先で、ドメインが不正なとき、投稿先の選択ダイアログに委ねる", async () => {
+    it("delegates to the destination picker when the instance domain is invalid", async () => {
         const result = await runShareDispatch(
             baseParams({
                 autoPopupTarget: "mastodon",

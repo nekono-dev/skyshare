@@ -1,4 +1,6 @@
-// 区切りの追加・削除と先頭の区切りの扱い、投稿可否の判定を、分割の前の値で固定する（要件 1.2・1.3）。
+/**
+ * Locks down segment editing and postability before the composer split.
+ */
 import { describe, expect, it } from "vitest"
 import { MAX_THREAD_POST_COUNT } from "@/lib/atproto/post"
 import {
@@ -15,33 +17,33 @@ const withText = (text: string): SegmentState => ({
     text,
 })
 
-describe("先頭の区切りの扱い", () => {
-    it("先頭の区切りは削除できず、2 件目以降は削除できる", () => {
+describe("leading segment behavior", () => {
+    it("cannot remove the leading segment but can remove later segments", () => {
         expect(canRemoveSegment(0)).toBe(false)
         expect(canRemoveSegment(1)).toBe(true)
         expect(canRemoveSegment(2)).toBe(true)
     })
 
-    it("先頭を削除しようとしたとき、区切りは変わらない", () => {
+    it("leaves segments unchanged when removing the leading segment", () => {
         const segments = [withText("a"), withText("b")]
         expect(removeSegment(segments, 0)).toBe(segments)
     })
 
-    it("2 件目を削除すると、残りの区切りが順序どおりに残る", () => {
+    it("preserves the order of remaining segments after removal", () => {
         const segments = [withText("a"), withText("b"), withText("c")]
         expect(removeSegment(segments, 1).map(s => s.text)).toEqual(["a", "c"])
     })
 })
 
-describe("区切りの追加", () => {
-    it("末尾に空の区切りを足し、言語を引き継ぐ", () => {
+describe("adding a segment", () => {
+    it("appends an empty segment and inherits the language", () => {
         const added = addSegment([withText("a")], "en")
         expect(added).toHaveLength(2)
         expect(added[1]?.text).toBe("")
         expect(added[1]?.languageCode).toBe("en")
     })
 
-    it("上限に達しているときは、区切りを足さない", () => {
+    it("does not append a segment at the limit", () => {
         const full = Array.from({ length: MAX_THREAD_POST_COUNT }, (_, i) =>
             withText(String(i)),
         )
@@ -49,20 +51,20 @@ describe("区切りの追加", () => {
     })
 })
 
-describe("投稿可否の判定（全区切り）", () => {
-    it("区切りが無いときは投稿できない", () => {
+describe("postability across all segments", () => {
+    it("cannot post with no segments", () => {
         expect(areAllSegmentsPostable([])).toBe(false)
     })
 
-    it("本文のある区切りが 1 件あれば投稿できる", () => {
+    it("can post when at least one segment has text", () => {
         expect(areAllSegmentsPostable([withText("x")])).toBe(true)
     })
 
-    it("空白だけの区切りは投稿できない", () => {
+    it("cannot post a segment containing only whitespace", () => {
         expect(areAllSegmentsPostable([withText("   ")])).toBe(false)
     })
 
-    it("1 件でも空の区切りがあれば、全体として投稿できない", () => {
+    it("cannot post when any segment is empty", () => {
         expect(areAllSegmentsPostable([withText("a"), withText("")])).toBe(
             false,
         )

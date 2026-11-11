@@ -1,4 +1,6 @@
-// 偽の Bluesky の記録（E2E の別プロセスが読む経路）: 受けた経路を JSON で返す
+/**
+ * Checks the request log endpoint consumed by the separate E2E process.
+ */
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import {
     type FakeBluesky,

@@ -101,7 +101,7 @@
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
 - [ ] 5. tests/unit のその他（components・support・util・fixtures）の書き換え
-- [ ] 5.1 コメントと題名を書き換える
+- [x] 5.1 コメントと題名を書き換える
   - 対象は `tests/unit/components/`・`tests/unit/support/`・`tests/unit/util/`・`tests/unit/fixtures/`（`tests/fixtures/` の外）
   - 先頭ヘッダと禁止パターン（`steeringStructure.ts` の「kiro」を含む）を、4.1〜5.5 の規則に従って書き換える
   - 日本語を含む題名 30 件（`tests/unit/components/` 28 件・`tests/unit/util/` 2 件）を英語にする。英語の題名のうち、要件番号・spec 名・経緯を含むものも、同じ規則で書き換える

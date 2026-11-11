@@ -1,10 +1,10 @@
 /**
- * 構造の規約を読むテスト用の補助。規約は `.kiro/steering/structure*.md` に分けて置く。
+ * Test helpers for reading structure guidance from structure guidance files.
  *
- * 責務と処理概要:
- * - `structure*.md` を名前順に連結した本文を返す（見出しや一文の存在を見る検査に使う）。
- * - 依存規則の表（`structure-checks.md`）だけを返す（表の行を読む検査に使う。連結すると他の表が混ざるため）。
- * - 小さい部品領域の判断の表は `structure-components.md` にあるため、その本文を返す。
+ *
+ * - Joins `structure*.md` contents in name order for checks that look for headings and sentences.
+ * - Reads only `structure-checks.md` for dependency table checks, avoiding unrelated tables.
+ * - Reads `structure-components.md` for small component area decisions.
  */
 import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
@@ -12,7 +12,7 @@ import path from "node:path"
 const repoRoot = path.resolve(__dirname, "../../..")
 const steeringDir = path.join(repoRoot, ".kiro/steering")
 
-/** `.kiro/steering/structure*.md` を名前順に連結した本文。 */
+/** Concatenated structure guidance in name order. */
 export const readSteeringStructure = (): string =>
     readdirSync(steeringDir)
         .filter(name => /^structure.*\.md$/.test(name))
@@ -20,10 +20,10 @@ export const readSteeringStructure = (): string =>
         .map(name => readFileSync(path.join(steeringDir, name), "utf8"))
         .join("\n\n")
 
-/** 依存規則の表を含む `structure-checks.md` の本文。 */
+/** Contents of `structure-checks.md`, which contains the dependency table. */
 export const readStructureChecks = (): string =>
     readFileSync(path.join(steeringDir, "structure-checks.md"), "utf8")
 
-/** 小さい部品領域の判断の表（`structure-components.md`）を含む本文。 */
+/** Contents of `structure-components.md`, which contains small component area decisions. */
 export const readStructureDecisions = (): string =>
     readFileSync(path.join(steeringDir, "structure-components.md"), "utf8")
