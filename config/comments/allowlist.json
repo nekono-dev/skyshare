@@ -1004,18 +1004,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "tests/unit/scripts/importRules.test.ts",
-      "rule": "forbidden:kiro",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "tests/unit/scripts/importRules.test.ts",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-tests",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "tests/unit/scripts/kiroGate.test.ts",
       "rule": "header-too-long",
       "owner": "comments-tests",
