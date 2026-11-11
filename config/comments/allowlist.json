@@ -380,78 +380,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "src/pages/accounts.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/accounts.astro",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/entries/[slug].astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/entries/[slug].astro",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/entries/[slug].astro",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/entries/index.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/entries/sample.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/entries/sample.astro",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/feedback.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/help.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/jump.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/jump.astro",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/pages/oauth/callback.ts",
       "rule": "header-missing",
       "owner": "comments-components-pages",
@@ -466,30 +394,6 @@
     {
       "path": "src/pages/oauth/jwks.json.ts",
       "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/posts/[dbIndex]/[slug].astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/posts/[dbIndex]/[slug].astro",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/privacy.astro",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/pages/privacy.astro",
-      "rule": "header-too-many-bullets",
       "owner": "comments-components-pages",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
