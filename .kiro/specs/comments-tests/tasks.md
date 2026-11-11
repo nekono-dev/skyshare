@@ -138,7 +138,7 @@
   - _Boundary: tests/route（schedule・session・survey・support）_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6_
 
-- [ ] 6.3 この単位を確認し、許容リストの項目を消す
+- [x] 6.3 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/route/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で `tests/route/` の項目を消す
   - `npx vitest run -c config/test/vitest.route.config.ts tests/route` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
