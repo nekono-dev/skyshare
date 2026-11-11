@@ -1,18 +1,12 @@
 /**
  * DELETE /v2/entry/ — skyshare entryを削除する。
  * オプションで、紐づくBluesky投稿も削除する。
- *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import * as Common from "../../common"
 
-/**
- * `deleteBskyPost:true`は、`source`を起点とする自己後続投稿すべて（単発投稿なら1件）の
- * 削除を意味する（`specs/entry-api`）。未知のキー（廃止された
- * `deleteBskyThread`を含む）は400になる。
- */
+/** `deleteBskyPost` は `source` と、そこから続く自分の返信投稿を削除する。 */
 export const RequestBodySchema = z
     .object({
         uri: z.string(),
@@ -29,7 +23,7 @@ export type RequestHeaderType = z.infer<typeof RequestHeaderSchema>
 export const operation: ZodOpenApiOperationObject = {
     operationId: "deleteEntry",
     summary:
-        "Delete a Skyshare entry. Optionally also deletes the underlying Bluesky post.",
+        "Delete a Skyshare entry and optionally its source Bluesky post thread",
     requestParams: { header: RequestHeaderSchema },
     requestBody: {
         required: true,

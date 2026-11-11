@@ -1,10 +1,7 @@
 /**
- * 予約の D1 ストアの入口（再エクスポート）。
+ * 予約の D1 ストア操作を公開する入口。
  *
- * 責務と処理概要:
- * - 元の `schedule/store.ts` の export を、名前を変えずにすべて再エクスポートする。
- * - 呼び出し側は `@/lib/schedule/store` だけを参照する（`vi.mock` の解決先もこのファイル）。
- * - 内部の兄弟ファイル（rows・schedules・execution・credentials・oauthState）は直接参照しない。
+ * - 呼び出し側はこの入口を参照し、内部ファイルを直接参照しない（`vi.mock` の解決先を保つ）。
  */
 export {
     insertSchedule,

@@ -1,4 +1,6 @@
-// 予約の実行（P0・要件 2.1 の「予約投稿の実行: 冪等性・失敗の分類・後片付け・暗号化」）
+/**
+ * Verifies scheduled posting, retries, and cleanup behavior.
+ */
 import { env } from "cloudflare:test"
 import type { D1Database } from "@/lib/platform/cfTypes"
 import { beforeEach, describe, expect, it } from "vitest"

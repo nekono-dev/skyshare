@@ -1,4 +1,6 @@
-// component 層の基盤の確認: DOM の指定がないファイルは Node 環境で動く
+/**
+ * Verifies that component tests without a DOM annotation use the Node environment.
+ */
 import { describe, expect, it } from "vitest"
 
 describe("component harness (node)", () => {

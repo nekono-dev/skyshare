@@ -1,11 +1,8 @@
 /**
- * 実行中のブラウザの環境の情報を、`window` と `navigator` から集める。
+ * ブラウザの表示モードと識別情報から、報告フォーム用の実行環境を集める。
  *
- * 責務と処理概要:
- * - `display-mode` のメディアクエリと iOS の `navigator.standalone` から、ホーム画面に追加した
- *   アプリ（PWA）として起動しているかを判定する。
- * - Chromium 系の `navigator.userAgentData` があれば、凍結された識別文字列では分からない値
- *   （Windows 11 か、ブラウザの詳しい版）で、`parseUserAgent` の判定を補う。
+ * - Chromium 系の `navigator.userAgentData` で、凍結された識別文字列では分からない値
+ *   （Windows 11 か、ブラウザの詳しい版）を補う。取得に失敗したら識別文字列の判定を使う。
  * - ブラウザの読み取りを行うため、この部品の内側に置く。純粋な判定は `./userAgent` にある。
  */
 import type { ClientEnvironment } from "@/types/clientEnvironment"

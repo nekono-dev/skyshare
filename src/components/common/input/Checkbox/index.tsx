@@ -1,18 +1,8 @@
 /**
- * Checkbox コンポーネント。
+ * 独立した複数項目を選ぶ、制御式チェックボックス。
  *
- * 責務と処理概要:
- * - boolean 値を持つ設定項目を、複数選択可能なチェックボックスUIとして提供する。
- * - `ToggleSwitch`（ON/OFFスイッチ）とは異なり、フォロワー/フォロー中/メンション等の
- *   組み合わせ選択（複数項目を独立にチェックする用途）向けに、通常のチェックボックス
- *   見た目で実装する。
- * - Controlledコンポーネントとして設計しており、状態管理は常に呼び出し元が担う。
- * - `variant="card"` の場合、`RadioButton`と共有するカードの外枠
- *   （`ui["base-card"]`+`ui["selectable-card"]`/`ui["selectable-card-checked"]`、
- *   `src/styles/button.ui.module.css`）でラップし、カード状の見た目にする。
- * - チェック印は`RadioButton`の丸印（`.dot`）と同様、ネイティブ`<input>`を視覚的に隠し
- *   `.box`（本コンポーネント側）で描画する。ブラウザ間でネイティブチェックボックスの
- *   見た目（`accent-color`の効き方等）が揃わない問題を避けるため。
+ * - ネイティブ入力の表示差を避けるため、入力を視覚的に隠してチェック印を描画する。
+ * - `card` の外枠は `RadioButton` と共有し、選択状態は呼び出し側が管理する。
  */
 import React, { useId } from "react"
 import styles from "./index.module.css"

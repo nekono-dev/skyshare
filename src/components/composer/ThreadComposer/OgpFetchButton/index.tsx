@@ -1,3 +1,8 @@
+/**
+ * 投稿文から URL を検出し、OGP 情報と取得状態を提供する。
+ *
+ * - URL 検出は AT Protocol の facet を優先し、検出に失敗した場合は URL 正規表現へフォールバックする。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import { deferMessage, type DeferredMessage } from "@/lib/i18n/translate"
 import React, { useEffect, useMemo, useState } from "react"
@@ -8,16 +13,6 @@ import { extractLinkUrisFromFacets } from "@/lib/atproto/richtext"
 import { createOgpThumbnailFromBlob } from "@/lib/image/postImageProcessing"
 import type { OgpResult } from "@/components/composer/ThreadComposer/rules/entries"
 import ui from "@/styles/ui.module.css"
-
-/**
- * 投稿文から URL を検出して OGP 情報を取得するコンポーネント群。
- *
- * 責務と処理概要:
- * - `useOgpFetch` がテキストからの URL 検出・OGP 取得・状態管理を担う。
- * - `OgpFetchButton` は取得操作ボタンのみを描画する。
- * - プレビュー表示は `@/components/composer/ThreadComposer/ThreadSegmentForm/OgpPreview` に分離しており、`useOgpFetch` の戻り値を渡して利用する。
- * - レイアウトの自由度を確保するため、呼び出し側が任意の位置にボタンとプレビューを配置できるよう分離している。
- */
 
 type UseOgpFetchProps = {
   text: string

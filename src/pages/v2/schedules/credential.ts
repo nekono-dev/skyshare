@@ -1,3 +1,9 @@
+/**
+ * 予約投稿の認証情報の状態取得と無効化 API。
+ *
+ * - 状態応答にトークンを含めず、キャッシュを禁止する。
+ * - 無効化は実行中の予約があれば何も削除せず 409 を返す。
+ */
 import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus, jsonResponse } from "@/util/http"
@@ -11,19 +17,6 @@ import {
     disableScheduling,
     getCredentialState,
 } from "@/lib/schedule/scheduleCredential"
-
-/**
- * Skyshare v2 schedules/credential API（予約用の認証情報）。
- *
- * - GET: 登録の有無・再度の許可の要否・更新時刻・許可の有効期限の目安を返す（トークンは返さない）。
- *   同じ内容を登録状態のヒント cookie に保存し、クライアントが次の表示から D1 へ問い合わせずに済むようにする。
- * - 登録は OAuth の認可（`credential/authorization`）で行う。
- * - DELETE: 待機中の予約と失敗の履歴をすべて削除してから、認可サーバーで更新用トークンを取り消し、
- *   認証情報を削除して予約投稿を無効にする。
- *   実行中の予約があるときは何もせず 409（ScheduleRunning）を返す。
- *
- * 判断は `lib/schedule/scheduleCredential` の関数が行う。このファイルは認証の確認と、結果の HTTP への変換だけを行う。
- */
 
 export const GET: APIRoute = async ({ locals }) => {
     try {

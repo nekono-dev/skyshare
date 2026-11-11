@@ -1,12 +1,7 @@
 /**
- * ゲストモード（URLクエリパラメータ `?guest`、`@/lib/guestMode` 参照）向けのダミーデータ。
- *
- * 責務と処理概要:
- * - ログイン不要の見た目確認用に、`TimelinePost`/`TimelineSkyshareEntry` と同じ形の
- *   固定データを、表示言語ごとに組み立てて提供する（Timeline/EntryList が未ログイン時の代替表示として使う）。
- * - 実際の Bluesky API を叩かないよう、画像・アバターは data URI の SVG で完結させる。
- * - データは `assets.ts`（資材のパス）・`posts.ts`（投稿の連結・検索・スレッドの組み立て。投稿のデータは `postsBasic.ts`・`postsThread.ts`、組み立て補助は `postFacets.ts`）・`entries.ts`（Entry と削除範囲）に分ける。
- *   削除範囲の判断（`resolveGuestDeleteScope`）は `@/lib/guestMode` に置き、ここには置かない。
+ * ログイン不要のゲスト表示で使う投稿・スレッド・Entry の固定データを、表示言語ごとに提供する。
+ * 実際の Bluesky API に接続せず、表示確認用のデータを返す。
+ * SSR と CSR の描画を一致させるため、日時などの値は固定している。
  */
 import type { Locale } from "@/lib/i18n/locale"
 import type { Translator } from "@/lib/i18n/translate"
@@ -31,9 +26,7 @@ type GuestDummyData = {
 /**
  * ゲスト表示用データを、指定言語の文言で組み立てる。
  *
- * 処理の趣旨:
- * - SSR/CSRで同じHTMLになる必要があるため（Reactのhydration mismatch回避）、
- *   `Date.now()` 等の実行タイミング依存の値ではなく固定値を使う。
+ * SSR と CSR で同じ HTML にするため、実行時刻に依存する値を使わない。
  *
  * Input:
  * - `t`: 表示言語の翻訳関数

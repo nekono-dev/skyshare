@@ -1,4 +1,6 @@
-// 予約 1 件の API（/v2/schedules/{id} の GET・PUT・DELETE）の特性化テスト（要件 2.2・2.4）。
+/**
+ * Verifies scheduled item API behavior.
+ */
 // 現行の応答（状態コード・本文の形・所有と状態による失敗）を固定する。振る舞いを変えるためのテストではない。
 import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -89,7 +91,7 @@ const del = (id: string, opts: { session?: boolean } = {}) => {
     return DELETE({ params: { id }, locals } as never)
 }
 
-describe("GET /v2/schedules/{id}（特性化）", () => {
+describe("GET /v2/schedules/{id}", () => {
     beforeEach(async () => {
         await resetScheduleTables()
         vi.spyOn(console, "error").mockImplementation(() => {})
@@ -183,7 +185,7 @@ describe("GET /v2/schedules/{id}（特性化）", () => {
     })
 })
 
-describe("PUT /v2/schedules/{id}（特性化）", () => {
+describe("PUT /v2/schedules/{id}", () => {
     beforeEach(async () => {
         await resetScheduleTables()
         vi.spyOn(console, "error").mockImplementation(() => {})
@@ -273,7 +275,7 @@ describe("PUT /v2/schedules/{id}（特性化）", () => {
     })
 })
 
-describe("DELETE /v2/schedules/{id}（特性化）", () => {
+describe("DELETE /v2/schedules/{id}", () => {
     beforeEach(async () => {
         await resetScheduleTables()
         vi.spyOn(console, "error").mockImplementation(() => {})

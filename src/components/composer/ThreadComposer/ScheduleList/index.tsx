@@ -1,3 +1,9 @@
+/**
+ * 下書き・予約画面の予約タブに、待機中の予約と実行履歴を表示する。
+ *
+ * - 成功した予約は履歴に含めない。
+ * - 予約機能が無効な場合は一覧の空表示を出さず、設定への案内を表示する。
+ */
 import { useCallback, useEffect, useState } from "react"
 import { deleteSchedule, listSchedules } from "@/client/openapi/client"
 import type { ListSchedules200ItemsItem } from "@/client/openapi/model"
@@ -12,23 +18,6 @@ import {
 } from "@/lib/schedule/scheduleErrorKey"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
-
-/**
- * 下書き・予約の画面の「予約」タブの中身。
- *
- * 責務と処理概要:
- * - タブが選ばれるたびに予約の一覧を取得し、待機中と履歴（実行中・失敗）に分けて、
- *   それぞれ実行時刻の昇順（API の並び順）に、状態・実行時刻・本文の冒頭・投稿の件数を表示する。
- *   成功した予約は履歴に残らないため表示しない。
- * - 待機中の行を押すと `onSelect` を呼び、呼び出し側（投稿フォーム）が内容を書き戻して編集を始める。
- * - 失敗の予約には分類コードに対応する文言を表示し、「フォームに書き戻す」で `onSelect` を呼ぶ。
- *   失敗の履歴は確認の後に削除できる。
- * - 続きがあるときだけ「さらに表示」を置く。
- * - 一覧が空のときの「予約はありません。」は、予約投稿が有効なときだけ表示する
- *   （無効なときは設定の案内だけを見せる）。
- * - 予約投稿が無効のとき（`onOpenSettings` を渡したとき）は、一覧の上に設定で有効にする旨と
- *   設定を開くボタンを置く。
- */
 
 type Item = ListSchedules200ItemsItem
 

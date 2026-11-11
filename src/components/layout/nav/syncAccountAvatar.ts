@@ -1,3 +1,10 @@
+/**
+ * Sidebar と FooterNav のアカウントアイコンへ、アクティブアカウントのアバターを補う。
+ *
+ * - アバターの URL は prerender 時に分からないため、クライアントで取得して `NavIcon` の
+ *   `data-account-avatar-img` に設定する。取得に失敗したらプレースホルダーのままにする。
+ * - アカウントの切り替えが起こり得るため、`astro:page-load` ごとにキャッシュを捨てて取得し直す。
+ */
 import {
     getActiveAccountInfo,
     resetActiveAccountInfoCache,

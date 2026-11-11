@@ -1,6 +1,6 @@
 /**
- * 導入スクリプト（install-*.sh）の失敗の記録の試験。偽の npx で、導入の失敗と成功を再現する。
- * リポジトリの .cache には触れず、一時ディレクトリにスクリプトを複製して実行する。
+ * Checks that installation scripts record failures and clear the record after success.
+ * Runs copied scripts in temporary directories to keep the repository cache untouched.
  */
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -42,8 +42,8 @@ afterAll(() => {
     for (const root of roots) fs.rmSync(root, { recursive: true, force: true })
 })
 
-describe("cc-sdd の導入の失敗の記録", () => {
-    it("導入が失敗すると、記録を残し、終了コードは非ゼロ", () => {
+describe("cc-sdd installation failure records", () => {
+    it("records a failed installation and exits with a nonzero code", () => {
         const { root, bin } = makeCopy("echo 'simulated failure' >&2; exit 7")
         const result = runInstall(root, bin)
         expect(result.status).toBe(7)
@@ -53,7 +53,7 @@ describe("cc-sdd の導入の失敗の記録", () => {
         expect(result.stderr).toContain("導入に失敗しました")
     })
 
-    it("導入が成功すると、記録を消す", () => {
+    it("removes the record after a successful installation", () => {
         const { root, bin } = makeCopy("exit 0")
         const result = runInstall(root, bin)
         expect(result.status).toBe(0)
@@ -62,8 +62,8 @@ describe("cc-sdd の導入の失敗の記録", () => {
         ).toBe(false)
     })
 
-    it("導入の前に記録を書く（途中で中断されても記録が残る）", () => {
-        // 偽の npx は、記録が存在することを確かめてから失敗する
+    it("writes the record before installation begins", () => {
+        // The fake npx fails only after confirming that the record already exists.
         const { root, bin } = makeCopy(
             `test -f "${path.join("__ROOT__", ".cache", "cc-sdd-install.failed")}" && exit 9 || exit 1`,
         )

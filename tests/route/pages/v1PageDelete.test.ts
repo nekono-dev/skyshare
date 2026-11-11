@@ -1,4 +1,6 @@
-// 旧投稿の削除（P0・要件 2.1 の「旧投稿削除の OAuth 拒否」）: OAuth のセッションは旧バックエンドへ送らず 403 で拒否する
+/**
+ * Verifies legacy page deletion rejects unsupported sessions.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const pagedb = vi.hoisted(() => ({

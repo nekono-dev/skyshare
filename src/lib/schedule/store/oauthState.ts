@@ -1,11 +1,4 @@
-/**
- * OAuth の認可の途中の状態の保存・取り出し・期限切れの削除（暗号化して保管し、1回だけ使える）。
- *
- * 責務と処理概要:
- * - 認可の途中の状態（PKCE の verifier などを含む）を暗号化して保存する。
- * - 認可の戻りで状態を1回だけ取り出し、期限と所有アカウントを確かめる。
- * - 期限を過ぎた状態を削除する。
- */
+/** OAuth 認可の途中状態を暗号化して一度だけ使える形で保管する。 */
 import type { D1Database } from "@/lib/platform/cfTypes"
 import { decryptToken, encryptToken } from "@/lib/schedule/credentialCrypto"
 import { changesOf } from "./rows"

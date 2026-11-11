@@ -1,4 +1,6 @@
-// Entry の削除の範囲の判定（P0・要件 2.1 の「Entry の削除の範囲」）: 判定不能・旧実装・削除可能の区別
+/**
+ * Determines whether an entry’s source post can be deleted safely.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const getPostThread = vi.hoisted(() => vi.fn())

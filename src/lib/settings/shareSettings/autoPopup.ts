@@ -1,9 +1,5 @@
 /**
- * 「自動ポップアップするSNS」設定の既定値・判定・読み書きを扱う。
- *
- * 責務と処理概要:
- * - 自動ポップアップ先の既定値、値の判定、localStorage への読み書きを提供する。
- * - `AUTO_POPUP_TARGETS`・`AutoPopupTarget` は `lib/share/autoPopupTarget` の定義を import して使うだけで、このファイルからは再エクスポートしない。
+ * 自動ポップアップ先の設定と既定値を管理する。
  */
 import {
     AUTO_POPUP_TARGETS,

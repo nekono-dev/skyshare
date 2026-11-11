@@ -1,4 +1,6 @@
-// アンケートの操作の共通の入口（P0・要件 2.1 の「アンケートの匿名性」）: 認証、対象の特定、ハッシュの鍵の有無
+/**
+ * Verifies survey request authentication and eligibility.
+ */
 import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 

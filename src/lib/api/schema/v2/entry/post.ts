@@ -1,29 +1,4 @@
-/**
- * POST /v2/entry/ — Bluesky投稿(1件、またはスレッドとして複数件)を作成する統合エンドポイント。
- * `/v2/bsky/record`は廃止され、本エンドポイントに統合された。
- *
- * リクエストボディは2択のanyOf:
- * - 既存投稿からskyshare entryを発行する(from-post、新規投稿は作らない、スレッド概念なし)
- * - 新規投稿(`posts`配列。1件ならテキストのみ/OGPリンク/画像付きの単発投稿、
- *   複数件ならBlueskyのスレッド(reply chain)として原子的に作成する)
- *
- * entry作成(`createEntry`/`visual`)は、`posts`と同階層のトップレベルフィールドとして
- * リクエスト全体で高々1組だけ持つ。作成できるskyshare entryは1リクエストにつき常に
- * 高々1件であり、その`source`は常にスレッド先頭(`posts[0]`)にサーバが自動解決する
- * (投稿ごとの個別指定は行わない。詳細は`specs/entry-api`)。
- *
- * `reply`(スレッド接続用のStrongRef)も同様に`posts`と同階層のトップレベルフィールドとして
- * 1つだけ持つ。同一リクエスト内の2件目以降のreply chainはサーバが自動的に組み立てるため、
- * クライアントが指定する必要があるのは「このリクエスト全体(posts[0])が既存のどの投稿に
- * 接続するか」だけであり、配列の要素ごとに持たせる意味が無いため。
- *
- * multipart/form-dataだが、`RequestBodySchema`は素のzodのみで構成し、バリデーションと
- * OpenAPIドキュメント生成の両方に同一のスキーマを使う(例外を作らない)。FormData→
- * プレーンオブジェクトへのデコードは、`RequestBodyFieldKinds`+`formDataToObject`
- * (`@/util/formData`)をルートハンドラ側で1回呼ぶだけで行う。`posts`は`{kind:"items"}`
- * 種別として宣言されており、`posts[i][...]`というインデックス付きフィールドから
- * 複数件のプレーンオブジェクト配列へ自動的に復元される。
- */
+/** 投稿または投稿スレッドを作成し、任意で Skyshare entry を関連付ける API の入力スキーマ。 */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"
 import type { FormDataFieldKind } from "@/types/formData"
@@ -33,8 +8,7 @@ import { countUtf8Bytes } from "@/util/utf8Bytes"
 import * as Common from "../../common"
 
 const textField = z.string().min(1)
-// skyshare entryの見出し・キャプション（lexiconの`manifest`の上限に合わせる）。
-// クライアントが決めた値をそのまま保存し、サーバは補完しない。
+// AT Protocol の manifest に合わせた見出しとキャプション。
 const headingField = z
     .string()
     .max(100)
@@ -48,12 +22,7 @@ const selfLabelsField = z
     .enum(["sexual", "nudity", "porn", "spoiler", "!warn"])
     .meta({ id: "CreateEntryBodySelfLabels" })
 
-/**
- * `posts`配列の1件分(1セグメント)。現行`/v2/bsky/record`の3分岐
- * (テキストのみ/OGPリンク付き/画像付き)に、動画付きの分岐を加えたもの。
- * entry作成の指定(`createEntry`/`visual`)はリクエスト全体でトップレベルに1組だけ持ち、
- * 投稿ごとの個別指定は行わない(詳細は`specs/entry-api`参照)。
- */
+/** 投稿またはスレッドの各投稿の入力スキーマ。 */
 export const EntryPostItemSchema = z.union([
     // テキストのみの投稿
     z
@@ -124,8 +93,7 @@ export const RequestBodySchema = z.union([
             caption: captionField.optional(),
         })
         .strict(),
-    // 新規投稿(1件、またはスレッドとして複数件)。`createEntry`/`visual`はリクエスト全体で
-    // 高々1組のみ持つトップレベルフィールド(詳細は`specs/entry-api`)。
+    // `createEntry` と `visual` は投稿単位ではなくリクエスト全体に指定する。
     z
         .object({
             posts: z
@@ -226,7 +194,7 @@ export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>
 export const operation: ZodOpenApiOperationObject = {
     operationId: "createEntry",
     summary:
-        "Create one or more Bluesky posts (optionally as a thread), each optionally paired with a Skyshare entry, or attach an entry to an existing Bluesky post when `uri` is given",
+        "Create Bluesky posts, optionally as a thread and with a Skyshare entry, or attach an entry to an existing post",
     requestParams: { header: RequestHeaderSchema },
     requestBody: {
         required: true,

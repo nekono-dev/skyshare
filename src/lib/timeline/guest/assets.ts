@@ -1,3 +1,4 @@
+/** ゲスト表示で使う画像素材とサンプル Entry ページの URL を提供する。 */
 import { siteOrigin } from "@/vars"
 
 /**

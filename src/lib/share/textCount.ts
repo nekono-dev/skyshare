@@ -1,3 +1,8 @@
+/**
+ * 投稿本文や entry の見出し・説明文の文字数を、用途に応じた単位で数える。
+ *
+ * - X は twitter-text の重み付き長、タイッツーは全角 2・半角 1 の単純加算を使う。
+ */
 import {
     halfUnitLength,
     taittsuuIntentMeasure,
@@ -23,7 +28,7 @@ export const countGraphemes = (rawText: string): number => {
 
 /**
  * X.com投稿本文の文字数換算値を返す。
- * twitter-textの重み付きカウントを2で割って切り上げる（旧実装 TextInputBox を踏襲）。
+ * twitter-text の重み付きカウントを 2 で割って切り上げる。
  */
 export const countWeightedTweetLength = (rawText: string): number =>
     halfUnitLength(xIntentMeasure, rawText)

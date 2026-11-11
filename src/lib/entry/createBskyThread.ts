@@ -1,21 +1,9 @@
 /**
- * Bluesky投稿（1件、またはスレッドとして複数件）と、各投稿に付随する
- * threadgate/postgate・skyshare entryを、`com.atproto.repo.applyWrites`で
- * 原子的に（全件成功か全件失敗か）作成するオーケストレーション。
+ * Bluesky の投稿と関連する gate・Skyshare Entry を一括作成する。
  *
- * 責務と処理概要:
- * - 各投稿の`rkey`を`TID`で事前採番し、`app.bsky.feed.post`レコードの値を
- *   `buildBskyPostRecord`（`@/lib/atproto/post`）で組み立て、`cidForLex`
- *   （`@atproto/lex-cbor`）でCIDを事前計算する。これにより、次の投稿の
- *   `reply.parent`（および`reply.root`）や、同一投稿のskyshare entryの`source`を、
- *   PDSへの書き込みを待たずに構築できる（レコードCIDは値のDAG-CBORエンコード＋
- *   SHA-256という純粋関数であり、事前計算した値はPDSが実際に計算する値と一致する）。
- * - gate（threadgate/postgate）は`buildThreadgateRecord`/`buildPostgateRecord`
- *   （`@/lib/atproto/gate`）で、skyshare entryは`buildSkyshareEntryRecord`
- *   （`@/lib/entry/skyshareRecord`）で、それぞれレコード値を組み立てる。
- * - 組み立てた全レコードを1回の`applyWrites`で送信する。PDS側は1トランザクションとして
- *   全件成功/全件失敗を保証する。
- * - 戻り値は、事前計算した値ではなくPDSからの応答（`results`）を信頼して組み立てる。
+ * - `com.atproto.repo.applyWrites` が全レコードの成功または失敗を一括で扱う。
+ * - 後続投稿の返信参照と Entry の source に使う CID は、書き込み前に DAG-CBOR と SHA-256 で算出する。
+ * - 戻り値は事前計算値ではなく PDS の `results` を使う。
  */
 import { TID } from "@atproto/common-web"
 import { cidForLex, type LexValue } from "@atproto/lex-cbor"
@@ -58,8 +46,7 @@ export type ThreadPostInput = {
 
 /**
  * リクエスト全体で高々1件だけ作成されるskyshare entryの入力。
- * `source`は常にスレッド先頭（`posts[0]`）の事前計算済みuri/cidになる
- * （`specs/entry-api`）。
+ * `source` は常にスレッド先頭（`posts[0]`）自身の事前計算済み URI/CID になる。
  */
 export type ThreadEntryInput = {
     visual: any
@@ -126,7 +113,7 @@ export const createBskyThread = async (
     // スレッド先頭(posts[0])自身のuri/cid。`rootRef`は`reply`で指定された既存スレッドへ
     // 継ぎ足す場合、その既存投稿(このリクエストの外)を指すことがあるため、
     // entryの`source`が指す「posts[0]自身」を別途保持する
-    // (specs/entry-api)。
+    // `rootRef` は外部スレッドへの返信時に既存投稿を指すため、Entry の source 用に先頭投稿を別途保持する。
     let firstPostRef: BskyStrongRef | undefined
 
     for (const [i, post] of posts.entries()) {

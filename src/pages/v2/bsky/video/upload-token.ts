@@ -1,10 +1,8 @@
 /**
- * Skyshare v2 bsky/video/upload-token API。
+ * Skyshare v2 bsky/video/upload-token API。Cookie セッションを検証した上で、Bluesky 動画サービスへ動画を直接アップロードするためのサービス認証トークンを発行して返す。
  *
- * 責務と処理概要:
- * - Cookie セッションを検証した上で、Bluesky 動画サービスへ動画を直接アップロードするための
- *   サービス認証トークンを発行して返す。動画の実体は Workers を経由しない（NFR-1）。
- * - トークンはログに出力せず、キャッシュもさせない（NFR-2）。
+ * - 動画の実体は Workers を経由させない。
+ * - トークンはログに出力せず、キャッシュもさせない（`no-store`）。
  */
 import type { APIRoute } from "astro"
 

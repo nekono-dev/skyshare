@@ -1,14 +1,7 @@
 /**
- * OAuth で使う JWT（ES256）の署名と鍵の扱い。
- *
- * 責務と処理概要:
- * - P-256 の鍵（JWK）の生成・読み込みと、公開部分の取り出しを行う。
- * - ヘッダーとペイロードを Base64url にして ES256 で署名し、JWT を作る。
- *   WebCrypto の ECDSA の署名は r‖s の固定長の形式で、JWS の ES256 の形式とそのまま一致する。
- * - SHA-256 の Base64url（PKCE のチャレンジ・DPoP の ath）と、乱数の文字列を作る。
- *
- * 実装上の制約:
- * - Cron の実行から使うため、atproto やその他のライブラリを読み込まず WebCrypto だけを使う。
+ * OAuth の署名に使う ES256 JWT と P-256 鍵を扱う。
+ * - WebCrypto の ECDSA 署名は JWS ES256 と同じ固定長 r‖s 形式。
+ * - Cron からも使うため、外部ライブラリを読み込まず WebCrypto のみを使う。
  */
 
 /** P-256 の秘密鍵の JWK（公開部分の x・y を含む） */

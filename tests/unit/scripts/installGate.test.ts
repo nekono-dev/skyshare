@@ -1,6 +1,6 @@
 /**
- * 導入の失敗の記録で止める判断（install-gate.mjs）の単体テスト。
- * 記録が無ければ何もしない。記録があれば、プロンプトを止め、再試行の方法を示す。
+ * Checks whether installation failure records block prompts and explain how to retry.
+ * No record means the gate leaves the prompt unchanged.
  */
 import fs from "node:fs"
 import os from "node:os"
@@ -22,14 +22,14 @@ afterAll(() => {
     for (const root of roots) fs.rmSync(root, { recursive: true, force: true })
 })
 
-describe("導入の失敗の記録", () => {
-    it("記録が無ければ、判定は null（何もしない）", () => {
+describe("Installation failure records", () => {
+    it("does nothing when no failure record exists", () => {
         const root = makeRoot()
         expect(pendingInstallFailures(root)).toEqual([])
         expect(decideUserPromptSubmit(root)).toBeNull()
     })
 
-    it("cc-sdd の記録があれば、プロンプトを止め、再試行の方法を示す", () => {
+    it("blocks the prompt and explains how to retry after a cc-sdd failure", () => {
         const root = makeRoot()
         fs.mkdirSync(path.join(root, ".cache"))
         fs.writeFileSync(
@@ -42,7 +42,7 @@ describe("導入の失敗の記録", () => {
         expect(output?.hookSpecificOutput.suppressOriginalPrompt).toBe(true)
     })
 
-    it("BRW の記録も、同じく止める", () => {
+    it("also blocks the prompt after a BRW failure", () => {
         const root = makeRoot()
         fs.mkdirSync(path.join(root, ".cache"))
         fs.writeFileSync(
@@ -53,7 +53,7 @@ describe("導入の失敗の記録", () => {
         expect(output?.reason).toContain("ensure-brw-plugin.mjs")
     })
 
-    it("記録を消せば、止めなくなる", () => {
+    it("stops blocking after the failure record is removed", () => {
         const root = makeRoot()
         fs.mkdirSync(path.join(root, ".cache"))
         const file = path.join(root, ".cache", "cc-sdd-install.failed")

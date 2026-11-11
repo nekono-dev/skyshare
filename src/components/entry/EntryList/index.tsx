@@ -1,14 +1,9 @@
 /**
- * 作成した Skyshare Entry の一覧を表示するクライアントコンポーネント。
+ * 作成した Skyshare Entry をページング付きで一覧表示する。
  *
- * 責務と処理概要:
- * - `GET /v2/entries/skyshare` 取得処理を定義し、一覧コンポーネントへ提供する。
- *   絞り込みは行わず全Entryを取得する（紐づく Bluesky 投稿が削除済みかどうかは
- *   各Entryの `orphaned` フラグとして返り、`EntryCard` 側で背景色による識別を行う）。
- * - ページング状態の管理は `Timeline` と同様に `ComponentList` 側へ委譲する。
- * - `PostLauncher` に相当する作成 UI は持たない（既存投稿からの発行のみのため）。
+ * - ゲスト用サンプルは未ログインが確認でき、かつ URL で要求された場合だけ表示する。
+ * - 言語変更で一覧を再取得しないよう、取得コールバックから最新の翻訳関数を参照する。
  */
-
 import { useT } from "@/components/i18n/useTranslation"
 import { useCallback, useRef, useState } from "react"
 import { getSkyshareEntries } from "@/client/openapi/client"

@@ -1,8 +1,5 @@
 /**
- * GET /v2/entries/ — 自分のBluesky投稿一覧を、紐づくskyshare entryとembedし、
- * バックエンド側で権威的にスレッド構造化して返す（`specs/timeline-api`）。
- *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
+ * GET /v2/entries/ — 自分の Bluesky 投稿を、関連する Skyshare entry とともにスレッド単位で返す。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

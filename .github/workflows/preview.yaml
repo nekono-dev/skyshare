@@ -1,12 +1,12 @@
-# dev/** ブランチへの push をトリガーに、Cloudflare Workers へ「プレビュー用バージョン」をアップロードする。
+# dev/** ブランチへの push で、Cloudflare Workers にプレビュー用バージョンをアップロードする。
 #
 # - develop 用の Worker（skyshare-develop）の Preview として作る（本番・develop のデプロイ済みバージョンは変わらない）
 # - ブランチ名から決めた Preview 名を付けるため、同じブランチに再 push しても
 #   プレビューURL（https://<名前>.develop.<SITE_HOST>）は変わらず、中身だけ最新になる
-# - ブランチ名は dev/XXXX（XXXX は小文字英数字とハイフンのみ）のルールに合うものだけが対象。Preview 名は XXXX
+# - ブランチ名は dev/XXXX（XXXX は小文字英数字とハイフンのみ）の形だけを対象とし、Preview 名には XXXX を使う。
 # - URLはカスタムドメイン（wrangler.jsonc の previews_enabled）で配信される。ジョブの Summary に出力する
 #
-# 必要な Secrets / Variables は deploy.yaml と共通（docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。ブランチ規則・案内ルールは branch-release-workflow プラグインと .branch-release-workflow.json）。
+# 必要な Secrets / Variables は deploy.yaml と共通（docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照）。ブランチ規則と案内は branch-release-workflow プラグインと .branch-release-workflow.json が定める。
 # 前提: Worker が一度デプロイ済みで、カスタムドメインの previews_enabled が true であること（wrangler 4.135.0 以上）。
 # D1・R2 がある場合は develop 用を共用する。マイグレーションは develop への配備（deploy.yaml）で適用する。
 # 前提: develop の Worker が一度デプロイ済みであること（Preview は既存の Worker に作られる）。
@@ -16,7 +16,7 @@ on:
   push:
     branches: ["dev/**"]
 
-# 同一ブランチのプレビューは最新の push だけ反映すればよいため、古い実行は中断する
+# 同じブランチでは最新の push だけ反映するため、古い実行を中断する。
 concurrency:
   group: preview-${{ github.ref }}
   cancel-in-progress: true
@@ -46,19 +46,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          # lexicons/com/atproto/repo/strongRef.json は atproto サブモジュールへのシンボリックリンク。
           submodules: true
       - uses: actions/setup-node@v4
         with:
-          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（CLAUDE.md 参照）
+          # Cloudflare Workers が扱える Node.js のバージョンを指定する。
           node-version: 22.16.0
           cache: npm
       - run: npm ci
 
-      # ブランチ名（dev/XXXX）から Preview 名（XXXX）を作る。
-      # ブランチ命名ルール（.branch-release-workflow.json の namePattern 参照）: XXXX は小文字英数字とハイフンのみ・先頭末尾はハイフン不可・
-      # 連続ハイフン不可・46文字以内。ルールに合わないブランチは警告を出してプレビューを行わない
-      # （alias は DNS ラベルになるため。Worker名（skyshare-develop）込みで63文字以内に収めるための上限）。
+      # dev/XXXX 形式のブランチ名から Preview 名 XXXX を作る。
+      # XXXX は小文字英数字と単一のハイフン区切りで、先頭末尾のハイフンを許さず46文字以内。
+      # DNS ラベルと Worker 名（skyshare-develop）を合わせて63文字以内にするため、条件外のブランチは警告してプレビューを省く。
       - name: Resolve preview alias
         id: alias
         env:
@@ -74,8 +73,8 @@ jobs:
             echo "::warning::ブランチ名 '$BRANCH_NAME' は dev/XXXX（XXXX は小文字英数字とハイフンのみ、46文字以内）のルールに合わないため、プレビューをスキップします"
           fi
 
-      # scripts/config/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する。
-      # 秘密情報を扱うジョブで実行するため、指定ブランチの最新コミットを取得する（取得元は .branch-release-workflow-source.json）
+      # scripts/config/render-deploy-config.mjs が使う外部 branch-release-workflow プラグインを取得する。
+      # 秘密情報を扱うため、取得元（.branch-release-workflow-source.json）で指定されたブランチの最新コミットを使う。
       - name: Fetch branch-release-workflow
         if: steps.alias.outputs.valid == 'true'
         run: |
@@ -88,8 +87,8 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/config/render-deploy-config.mjs --develop
-      # サイトの URL（共有リンクなど）をプレビューのドメインにする。
-      # アンケートの設定の元の変数（SURVEY_CONFIG）はビルドにだけ渡す。生成に失敗するとビルドごと止まり、配備には進まない
+      # サイト URL（共有リンクなど）をプレビューのドメインにする。
+      # SURVEY_CONFIG は設定生成に使うビルドだけに渡し、生成失敗時はデプロイを止める。
       - name: Run build
         if: steps.alias.outputs.valid == 'true'
         env:
@@ -98,9 +97,9 @@ jobs:
         run: npm run build
 
 
-      # develop の Worker とプレビューの基本設定に、未登録のシークレット（OAUTH_CLIENT_KEY など）を生成して登録する。
-      # 登録済みの値は上書きしない。Preview は作成時の基本設定のシークレットを使うため、配備の前に行う。
-      # 既にある Preview に必要なシークレットが欠けていれば削除し、次の配備で基本設定から作り直させる（URL は変わらない）
+      # develop の Worker とプレビューの基本設定に未登録のシークレットを生成して登録する。登録済みの値は上書きしない。
+      # Preview は作成時の基本設定のシークレットを使うため、デプロイ前に登録する。
+      # 既存 Preview に必要なシークレットが欠けていれば削除し、次のデプロイで基本設定から再作成する（URL は変わらない）。
       - name: Ensure worker secrets
         if: steps.alias.outputs.valid == 'true'
         env:
@@ -109,8 +108,8 @@ jobs:
           PREVIEW_ALIAS: ${{ steps.alias.outputs.alias }}
         run: node scripts/secrets/ensure-worker-secrets.mjs --develop --preview "$PREVIEW_ALIAS"
 
-      # wrangler preview はブランチ別の Preview を作成・更新する（本番のデプロイ状態は変えない）。
-      # 同じ名前で再実行すると URL は変わらず中身だけ最新になる
+      # wrangler preview はブランチ別の Preview を作成・更新し、本番のデプロイ状態を変えない。
+      # 同じ名前で再実行すると URL は変わらず内容だけが更新される。
       - name: Deploy preview
         if: steps.alias.outputs.valid == 'true'
         env:

@@ -1,16 +1,8 @@
 /**
- * Entry削除確認ダイアログ。
+ * Entry と関連する Bluesky 投稿の削除範囲を確認するダイアログ。
  *
- * 責務と処理概要:
- * - PostCard/EntryCard の「Entryを削除」選択時、削除方法を確認する
- *   （`specs/entry-delete-dialog`）。
- * - 「Skyshareリンクを削除」（entryのみ削除、最終確認なし）「リンク・Bluesky投稿を削除」
- *   「キャンセル」の3択を提示する。
- * - 「リンク・Bluesky投稿を削除」は取り消し不能で影響範囲が大きいため、選択と同時に
- *   `onDeletePost`を実行せず、内部stageを`"confirmPost"`へ切り替えて削除予定投稿の一覧付き
- *   `DeletePostListDialog`による最終確認を必ず挟む（単発投稿でも省略しない）。
- * - `deleteScope`が`deletable`以外（旧実装で作成されたentry・判定不能）の場合、
- *   同じ文言のままボタンをグレーにして無効化し、理由を選択肢ダイアログ内に表示する。
+ * - 投稿削除は取り消せないため、選択後に単発投稿でも一覧付きの最終確認を挟む。
+ * - 判定不能または削除不可の Entry では、投稿削除の選択肢を無効にする。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import React, { useEffect, useState } from "react"

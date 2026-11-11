@@ -1,6 +1,7 @@
 /**
- * Cookie の codec（UTF-8 対応の base64 の変換と、Cookie ヘッダの解析）。
- * 他の責務のファイルより上流にあり、外部の import を持たない。
+ * Cookie ヘッダー解析と UTF-8 対応 Base64 変換を行う。
+ *
+ * - Cloudflare Workers に Node の `Buffer` がない場合は Web 標準 API を使う。
  */
 
 // Cloudflare Workers 環境では Node の `Buffer` が存在しないため

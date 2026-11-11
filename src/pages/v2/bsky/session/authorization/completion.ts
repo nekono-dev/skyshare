@@ -1,3 +1,10 @@
+/**
+ * Skyshare v2 bsky/session/authorization/completion API（Bluesky の OAuth によるログインの完了）。戻りの項目を開始時の途中の状態（cookie）と照合して OAuth のセッションを作り、アクティブにする。
+ *
+ * - 戻りは別サイトからの遷移で `SameSite=Strict` の cookie が届かないため、戻ったページ（同じサイト）から呼ぶ。
+ * - 成否によらず、途中の状態の cookie を消す（同じ戻りを使い回させないため）。
+ * - 全応答に `Cache-Control: no-store` を付け、トークン・認可コード・鍵をログにも応答にも出さない。
+ */
 import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import type { APIRoute } from "astro"
 
@@ -15,20 +22,6 @@ import {
     completeOAuthLogin,
     readPendingCookie,
 } from "@/lib/session/oauthLogin"
-
-/**
- * Skyshare v2 bsky/session/authorization/completion API（Bluesky の OAuth によるログインの完了）。
- *
- * 責務と処理概要:
- * - POST: 認可の画面からの戻りの項目を受け、開始時の途中の状態（cookie）と照合して OAuth のセッションを作り、
- *   アプリパスワードのログインと同じ規則（`admitSession`）でアクティブにする。別のアカウントが
- *   アクティブならプールへ退避し、プールが上限なら 409 にする。
- * - 成否によらず、途中の状態の cookie を消す（同じ戻りを使い回させないため）。
- *
- * 実装上の制約:
- * - 戻りは別のサイトからの遷移で `SameSite=Strict` の cookie が届かないため、戻ったページ（同じサイト）から呼ぶ。
- * - 全応答に `Cache-Control: no-store` を付け、トークン・認可コード・鍵をログにも応答にも出さない。
- */
 
 /**
  * ログインを完了する。
@@ -74,6 +67,8 @@ export const POST: APIRoute = async ({ request }) => {
             return respond(200, { result: result.code })
         }
 
+        // アプリパスワードのログインと同じ規則（`admitSession`）でアクティブにする。
+        // 別のアカウントがアクティブならプールへ退避し、プールが上限なら 409 にする
         const pool = admitSession(
             parseSessionFromRequest(request),
             parseAccountsFromRequest(request),

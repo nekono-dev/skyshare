@@ -1,4 +1,6 @@
-// 固定の設定（テスト専用の資材）が、現在の設定の規則で有効であることを確かめる
+/**
+ * Checks that the shared valid survey fixture passes the current config rules.
+ */
 import { describe, expect, it } from "vitest"
 import { parseSurveyConfig } from "@/lib/survey/definition"
 import { createValidSurveyConfig } from "../../fixtures/survey/config"

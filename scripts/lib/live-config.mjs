@@ -1,10 +1,7 @@
-// 実 Bluesky（live テスト）の設定を読む。tests/live/ と tests/unit/scripts/liveConfig.test.ts が使う。
-//
-// 責務:
-// - 非秘密の値（ハンドル・PDS の URL）を config/live.json から読む（Git 管理外。雛形は config/live.example.json）。
-// - パスワードを .dev.vars の SKYSHARE_E2E_APP_PASSWORD から読む（秘密は .dev.vars に置く。.env は使わない）。
-// - 設定が無い・パスワードが空のときは、テストをスキップする理由を返す（失敗にはしない）。
-// - 形式が不正なときは例外にする。例外メッセージには項目名だけを含め、値（秘密を含みうる）は含めない。
+/**
+ * `tests/live/` と `tests/unit/scripts/liveConfig.test.ts` が使う Bluesky live テスト設定を読む。
+ * 秘密値をエラーに含めず、設定不足はテストをスキップする理由として返す。
+ */
 import { existsSync, readFileSync } from "node:fs"
 import { parseDotenv } from "./dotenv.mjs"
 

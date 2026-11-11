@@ -1,5 +1,7 @@
 /**
- * Cookie ヘッダの組み立て（`Set-Cookie` の値の作成）と、Request からの読み取り（`atp_session`・`atp_account_<n>`）。
+ * セッションとアカウントプールの Cookie を Request から読み、Set-Cookie 値を組み立てる。
+ *
+ * - Cookie は HttpOnly・SameSite=Strict とし、本番以外では Secure を付けず HTTP の開発環境でも使えるようにする。
  */
 
 import {

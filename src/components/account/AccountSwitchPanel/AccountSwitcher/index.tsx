@@ -1,12 +1,8 @@
 /**
- * 複数アカウント切り替え用のカード一覧コンポーネント。
+ * 複数アカウントの一覧、切り替え、ログアウトを提供する。
  *
- * 責務と処理概要:
- * - マウント時に `GET /v2/bsky/session` を叩き、アクティブアカウント＋プール中の非アクティブアカウントを一覧取得する。
- * - `ComponentList` でカード（`AccountCard`）を並べ、カード全体クリックでアカウント切り替え(`PUT /v2/bsky/session`)、
- *   カード内の「ログアウト」ボタン押下でログアウト(`DELETE /v2/bsky/session/{did}`)を行う。
- * - セッショントークンはサーバー側 HttpOnly cookie 内にのみ存在し、このコンポーネントは
- *   `did`/`handle`/`avatarUrl` 等の表示用メタデータしか扱わない。
+ * - セッショントークンは HttpOnly cookie に保持し、この画面は表示用メタデータだけを扱う。
+ * - 切り替え先のセッション失効時は再ログインを呼び出し側へ通知する。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"

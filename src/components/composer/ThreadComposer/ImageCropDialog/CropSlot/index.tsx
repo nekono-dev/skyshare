@@ -1,18 +1,11 @@
+/**
+ * 単一画像のクロップ操作を提供するコンポーネント。
+ *
+ * - ズーム値は外部から同期でき、最小ズームは外部スライダー向けに通知する。
+ */
 import React, { useEffect, useRef, useState } from "react"
 import Cropper, { type Area } from "react-easy-crop"
 import styles from "./index.module.css"
-
-/**
- * 単一画像のクロップ操作を担当するコンポーネント。
- *
- * 責務と処理概要:
- * - `react-easy-crop` を用いて指定アスペクトの切り抜き UI を表示する。
- * - コンテナサイズ変化に追随して `minZoom` と crop フレームを再計算する。
- * - 切り抜き結果を `onChange` で親へ通知する。
- * - ズームスライダーはこのコンポーネントの外（呼び出し元）に配置される想定のため、
- *   `zoom` は外部から上書き可能にし（`externalZoom`）、`minZoom` は
- *   `onMinZoomChange` で外部スライダーの `min` 値算出用に報告する。
- */
 
 export type SlotCropState = {
   crop: { x: number; y: number }

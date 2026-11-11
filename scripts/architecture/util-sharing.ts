@@ -1,15 +1,8 @@
 /**
- * 依存規則の検査の規則 utilShared（structure-checks 3.1）。
+ * `src/util/` の各モジュールが複数領域から共有されるか検査する。
  *
- * 責務と処理概要:
- * - `src/util/` の各モジュールについて、`src/util/` の外からの利用元の領域（`regionOf`）の集合を作る。
- * - 領域が二つ未満（0 件を含む）のモジュールを違反として返す（specifier は空文字）。
- * - 利用元は `src/` のモジュールだけを数える。`src/util/` 内からの import は数えない。
- * - 型だけの import も数える（要件 2.4）。
- * - 純粋な関数で、ファイルを読まない。
- *
- * 実装上の制約:
- * - `scanModules` が返すグラフを入力にする。`tests/`・`scripts/` は走査の対象外のため、利用元に入らない。
+ * - `src/util/` 内部からの利用は数えず、型だけの import も対象にする。
+ * - 入力は `scanModules` のグラフで、ファイルは読まない。
  */
 import type { ModuleGraph } from "./import-graph"
 import { regionOf } from "./regions"
@@ -41,7 +34,7 @@ export const findUtilSharingViolations = (graph: ModuleGraph): Violation[] => {
     const found: Violation[] = []
     for (const [module, regions] of regionsByUtil) {
         if (regions.size >= MIN_REGIONS) continue
-        // 見つかった領域の名前を並べ、要件 2.2 の「領域を示す」を満たす（0 件のときは「なし」）
+        // 利用元が 0 件でも違反の理由が分かるよう「なし」と表示する。
         const names = [...regions].sort()
         const label = names.length === 0 ? "なし" : names.join(", ")
         found.push({

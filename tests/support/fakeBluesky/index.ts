@@ -1,5 +1,7 @@
-// 偽の Bluesky サーバー（要件 5.1・10.3〜10.5）。認可サーバー・PLC・PDS・AppView の固定応答を一つの origin で提供する。
-// 定義されていない経路は 404 を返し、実サービスへは転送しない。テスト用の DID とハンドルだけを使う。
+/**
+ * Serves deterministic authorization, PLC, PDS, and AppView responses from one local origin.
+ * Unknown routes return 404 and never reach the real service.
+ */
 import {
     createServer,
     type IncomingMessage,
@@ -12,7 +14,7 @@ import type { FakeBlueskyFixtures } from "./types"
 
 export type { FakeBlueskyFixtures } from "./types"
 
-/** 記録（これまでに受けた経路）を返すテスト用の経路。E2E の別プロセスのテストが読む */
+/** Test endpoint used by the E2E process to read recorded requests. */
 export const REQUESTS_PATH = "/__test/requests"
 
 export type FakeBlueskyOptions = {
@@ -48,11 +50,7 @@ const send = (
     res.end(body === undefined ? undefined : JSON.stringify(body))
 }
 
-/**
- * 偽の Bluesky サーバーを起動する。
- * Input: port（0 で空きポート）、fixtures（テスト用の DID とハンドル）
- * Output: origin と経路の記録、close を持つハンドル
- */
+/** Starts the fake Bluesky server and returns its origin, request log, and close handle. */
 export const startFakeBluesky = (
     options: FakeBlueskyOptions,
 ): Promise<FakeBluesky> => {
@@ -69,7 +67,7 @@ export const startFakeBluesky = (
         const method = req.method ?? "GET"
         requests.push({ method, path: url.pathname })
 
-        // ブラウザ由来の通信のための CORS の事前確認
+        // Handle CORS preflight requests from the browser.
         if (method === "OPTIONS") {
             send(res, 204, undefined, {
                 "access-control-allow-headers": "*",
@@ -78,7 +76,7 @@ export const startFakeBluesky = (
             return
         }
 
-        // テスト（Playwright）が記録を読むための経路。Bluesky の経路ではない
+        // This test endpoint exposes the request log; it is not a Bluesky route.
         if (method === "GET" && url.pathname === REQUESTS_PATH) {
             send(res, 200, { requests })
             return

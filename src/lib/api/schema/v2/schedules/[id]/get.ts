@@ -1,7 +1,6 @@
 /**
  * GET /v2/schedules/{id}/ — 自分の待機中または失敗の予約の内容を、フォームへの書き戻しのために取得する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  * 画像は番号だけを返し、バイト列は GET /v2/schedules/{id}/images/{index}/ で取得する。
  */
 import { z } from "zod/v4"

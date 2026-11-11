@@ -6,8 +6,8 @@
 
 **並行の扱い**: 作業の単位には `(P)` を付けない。理由は次のとおり。(1) 許容リスト `config/comments/allowlist.json` を、他の `comments-*` の 4 spec（comments-lib・comments-components-pages・comments-scripts-config・comments-api-schema）と共有する。(2) 題名の確認は、同じ件数の基準（作業の前の記録）に依存する。そのため、単位は直列に進め、各単位は直前の単位に依存する（`_Depends:_` は直前の単位の最後の確認に付ける）。
 
-- [ ] 1. 作業の前の記録
-- [ ] 1.1 層ごとの件数と違反の基準を保存する
+- [x] 1. 作業の前の記録
+- [x] 1.1 層ごとの件数と違反の基準を保存する
   - 層ごと（unit・component・route・render）に、vitest の JSON 報告で合計・成功・失敗・スキップの件数を保存する
   - e2e の件数を、`npx playwright test --list -c config/test/playwright.config.ts` で保存する
   - 作業の単位ごとの対象（`tests/unit/lib`・`tests/unit/scripts`・`tests/unit/scripts/importRules.test.ts`・`tests/route` など）の件数も、同じ方法で保存する（単位の確認で比べるため）
@@ -19,8 +19,8 @@
   - _Boundary: 作業の記録_
   - _Requirements: 1.3, 3.1, 6.6, 7.2_
 
-- [ ] 2. tests/unit/lib の書き換え
-- [ ] 2.1 コメントを書き換える
+- [x] 2. tests/unit/lib の書き換え
+- [x] 2.1 コメントを書き換える
   - 対象の `tests/unit/lib/**/*.test.ts` で、先頭ヘッダが無いものに目的のブロックコメント（6 行以内）を加える
   - 要件番号・AC/FR/NFR のタグ・spec 名・経緯・日付入りの決定をコメントから取り除き、非自明な理由だけを現在形で残す
   - コードの言い換えだけのコメントを削る。判別に迷うものは残し、報告に挙げる
@@ -29,7 +29,7 @@
   - _Boundary: tests/unit/lib_
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 2.2 題名を英語にする
+- [x] 2.2 題名を英語にする
   - 日本語を含む題名（64 件・13 ファイル）を、期待値が確かめている振る舞いを述べる英語の題名に書き換える
   - 英語の題名のうち、要件番号・spec 名・AC/FR/NFR・経緯（「前回」など）を含むものも、同じ規則で書き換える
   - `.each` の書式指定（`%s`・`%i` など）は残す。日本語も要件番号なども含まない英語の題名は、文言を変えない
@@ -39,7 +39,7 @@
   - _Boundary: tests/unit/lib_
   - _Requirements: 2.1, 3.2, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 2.3 この単位を確認し、許容リストの項目を消す
+- [x] 2.3 この単位を確認し、許容リストの項目を消す
   - `commentRules.ts --emit-allowlist` の出力で、対象のパスの違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を Edit で消す（JSON 全体を作り直さない）
   - `npx vitest run -c config/test/vitest.unit.config.ts tests/unit/lib` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
@@ -49,8 +49,8 @@
   - _Boundary: tests/unit/lib, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.2, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 3. tests/unit/scripts/importRules.test.ts の書き換え
-- [ ] 3.1 コメントと題名を書き換える
+- [x] 3. tests/unit/scripts/importRules.test.ts の書き換え
+- [x] 3.1 コメントと題名を書き換える
   - 先頭ヘッダとインラインコメントを、4.1〜5.5 の規則に従って書き換える（要件番号・経緯・spec 名を取り除く）
   - 日本語を含む題名 55 件（`it.each` の 91 行目の題名を含む）と、題名の要件番号（「（要件 x.y）」など）・経緯を含む英語の題名を、期待値が確かめている振る舞いを述べる英語の題名に書き換える。題名が多いため、テストの件数（`it` と `describe` の増減なし）を、書き換えの後に確かめる
   - 「R1」「R4a」などの規則の番号は、題名の振る舞いの説明に残さない（規則の名前が必要なら、説明の中の語で書く）
@@ -59,7 +59,7 @@
   - _Boundary: tests/unit/scripts/importRules.test.ts_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 5.1, 5.2, 5.3, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 3.2 この単位を確認し、許容リストの項目を消す
+- [x] 3.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/unit/scripts/importRules.test.ts` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す
   - `vitest run` で `importRules.test.ts` を実行し、失敗件数が 0 件で、件数が 1.1 の記録（対象のファイルの件数）と一致する
@@ -69,8 +69,8 @@
   - _Boundary: tests/unit/scripts/importRules.test.ts, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 4. tests/unit/scripts の残りの書き換え
-- [ ] 4.1 コメントを書き換える
+- [x] 4. tests/unit/scripts の残りの書き換え
+- [x] 4.1 コメントを書き換える
   - 対象は `tests/unit/scripts/` の `importRules.test.ts`・`commentRules.test.ts` 以外の全ファイル（`kiroGate.test.ts` などを含む）
   - 先頭ヘッダが無いもの・6 行を超えるもの・箇条書きが 3 件を超えるものを、規則の範囲に収める
   - 要件番号・AC・spec 名（`comment-policy` など）・経緯・`cc-sdd`・`kiro` の語をコメントから取り除く。`kiroGate.test.ts` の `kiro` は、検証する対象のコマンド名であり、コメントでは言い換える
@@ -79,7 +79,7 @@
   - _Boundary: tests/unit/scripts（importRules.test.ts・commentRules.test.ts を除く）_
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 4.2 題名を英語にする
+- [x] 4.2 題名を英語にする
   - 日本語を含む題名 186 件（`commentRules.test.ts` の 20 件を含む。`importRules.test.ts` の 55 件は 3.1 で扱う）を、期待値が確かめている振る舞いの英語の題名に書き換える
   - 題名の要件番号（「（要件 x.y）」「（要件 x.y・z.w）」）・spec 名（「src-pages-thin 6.1」「components-small-areas 2.3」など）・経緯（「前回の残件」）を含む英語の題名も、同じ規則で書き換える
   - 「所有 spec」「spec の要約」など、概念の名前として使われる `spec` の語は残す（具体的な spec 文書を指さないため）。残した語は報告に挙げる
@@ -90,7 +90,7 @@
   - _Boundary: tests/unit/scripts（importRules.test.ts を除く。commentRules.test.ts は題名のみ）_
   - _Requirements: 2.1, 3.2, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
 
-- [ ] 4.3 この単位を確認し、許容リストの項目を消す
+- [x] 4.3 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/unit/scripts/` の対象の違反（`commentRules.test.ts` を除く）が 0 件である
   - 許容リストから、所有者 `comments-tests` で `tests/unit/scripts/` の項目を消す
   - `tests/unit/scripts`（`commentRules.test.ts` を除く）の vitest 実行の失敗件数が 0 件で、件数が 1.1 の記録と一致する
@@ -100,8 +100,8 @@
   - _Boundary: tests/unit/scripts（commentRules.test.ts を除く）, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 5. tests/unit のその他（components・support・util・fixtures）の書き換え
-- [ ] 5.1 コメントと題名を書き換える
+- [x] 5. tests/unit のその他（components・support・util・fixtures）の書き換え
+- [x] 5.1 コメントと題名を書き換える
   - 対象は `tests/unit/components/`・`tests/unit/support/`・`tests/unit/util/`・`tests/unit/fixtures/`（`tests/fixtures/` の外）
   - 先頭ヘッダと禁止パターン（`steeringStructure.ts` の「kiro」を含む）を、4.1〜5.5 の規則に従って書き換える
   - 日本語を含む題名 30 件（`tests/unit/components/` 28 件・`tests/unit/util/` 2 件）を英語にする。英語の題名のうち、要件番号・spec 名・経緯を含むものも、同じ規則で書き換える
@@ -109,7 +109,7 @@
   - _Boundary: tests/unit（components・support・util・fixtures）_
   - _Requirements: 2.1, 2.3, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 5.2 この単位を確認し、許容リストの項目を消す
+- [x] 5.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、対象のパスの違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す
   - `vitest run tests/unit/components tests/unit/support tests/unit/util tests/unit/fixtures` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
@@ -119,8 +119,8 @@
   - _Boundary: tests/unit（components・support・util・fixtures）, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 6. tests/route の書き換え
-- [ ] 6.1 pages・outbound の書き換え
+- [x] 6. tests/route の書き換え
+- [x] 6.1 pages・outbound の書き換え
   - 対象は `tests/route/pages/`（9 ファイル）と `tests/route/outbound/`（1 ファイル）
   - 先頭ヘッダ（不足を含む）と禁止パターン（要件番号など）をコメントから取り除く（4.1〜5.5）
   - 日本語を含む題名 26 件（`tests/route/pages/` の 7 ファイル。`scheduleCleanup.test.ts` の「（要件 2.4）」を含む）を英語の振る舞いの題名にする。英語の題名のうち、要件番号・経緯を含むものも、同じ規則で書き換える
@@ -129,7 +129,7 @@
   - _Boundary: tests/route（pages・outbound）_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 6.2 schedule・session・survey・support の書き換え
+- [x] 6.2 schedule・session・survey・support の書き換え
   - 対象は `tests/route/schedule/`（5 ファイル）・`tests/route/session/`（3 ファイル）・`tests/route/survey/`（3 ファイル）・`tests/route/support/`（4 ファイル）
   - コメントを、6.1 と同じ規則で書き換える。`d1-isolation-a/b.test.ts` と `time-injection.test.ts` の要件番号を含むコメントを取り除く
   - `runner.test.ts` の日付を含むコメントは、バッククォートの外なら取り除くか、入力例として囲む（5.1）
@@ -138,7 +138,7 @@
   - _Boundary: tests/route（schedule・session・survey・support）_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6_
 
-- [ ] 6.3 この単位を確認し、許容リストの項目を消す
+- [x] 6.3 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/route/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で `tests/route/` の項目を消す
   - `npx vitest run -c config/test/vitest.route.config.ts tests/route` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
@@ -148,8 +148,8 @@
   - _Boundary: tests/route, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 7. tests/component と tests/render の書き換え
-- [ ] 7.1 コメントと題名を書き換える
+- [x] 7. tests/component と tests/render の書き換え
+- [x] 7.1 コメントと題名を書き換える
   - 対象は `tests/component/`（common・composer・i18n・support の 7 ファイル）と `tests/render/components/`（1 ファイル）
   - `tests/render/astro.d.ts` は対象外（`*.d.ts`）
   - 先頭ヘッダ（不足を含む）と禁止パターンを、4.1〜5.5 の規則に従って書き換える
@@ -158,7 +158,7 @@
   - _Boundary: tests/component, tests/render_
   - _Requirements: 2.1, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 7.2 この単位を確認し、許容リストの項目を消す
+- [x] 7.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/component/` と `tests/render/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す
   - `npx vitest run -c config/test/vitest.component.config.ts` と `npx vitest run -c config/test/vitest.astro.config.ts` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
@@ -168,8 +168,8 @@
   - _Boundary: tests/component, tests/render, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 8. tests/support と tests/e2e の書き換え
-- [ ] 8.1 tests/support のコメントを書き換える
+- [x] 8. tests/support と tests/e2e の書き換え
+- [x] 8.1 tests/support のコメントを書き換える
   - 対象は `tests/support/`（`fakeBluesky/` の 4 ファイルと `fakeOutbound.ts`）
   - 先頭ヘッダ（不足を含む）と禁止パターン（要件番号など）を、4.1〜5.5 の規則に従って書き換える
   - 偽の Bluesky の応答の内容（固定の値・経路）は変えない
@@ -178,7 +178,7 @@
   - _Boundary: tests/support_
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 8.2 tests/e2e のコメントを書き換える
+- [x] 8.2 tests/e2e のコメントを書き換える
   - 対象は `tests/e2e/flows/`（8 ファイル。`support.ts` と、利用者の六つの流れ・`util-placement.spec.ts`）
   - 先頭ヘッダ（不足を含む）と禁止パターン（要件番号・`要件` の語）を、4.1〜5.5 の規則に従って書き換える
   - 題名は、日本語を含むものが 0 件であることと、要件番号・spec 名・経緯を含むものがないことを確かめ、あれば 6.1 と同じ規則で書き換える（E2E の題名に要件番号が無いことを確かめる）
@@ -187,7 +187,7 @@
   - _Boundary: tests/e2e_
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.3, 6.6_
 
-- [ ] 8.3 この単位を確認し、許容リストの項目を消す
+- [x] 8.3 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/support/` と `tests/e2e/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す
   - e2e の実行（`npm run test:e2e`）は、この spec では行わない（最後の e2e は comments-api-schema が実行する）。ここでは `npx playwright test --list -c config/test/playwright.config.ts` の件数が 1.1 の記録と一致することを確かめる
@@ -196,8 +196,8 @@
   - _Boundary: tests/support, tests/e2e, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
-- [ ] 9. tests/live と config/test の書き換え
-- [ ] 9.1 コメントと題名を書き換える
+- [x] 9. tests/live と config/test の書き換え
+- [x] 9.1 コメントと題名を書き換える
   - 対象は `tests/live/atprotoContract.test.ts` と `config/test/` の 7 ファイル（`playwright.config.ts`・`stryker.config.mjs`・`vitest.astro.config.ts`・`vitest.component.config.ts`・`vitest.live.config.ts`・`vitest.route.config.ts`・`vitest.unit.config.ts`）
   - 先頭ヘッダ（不足・6 行超・箇条書き 3 件超）と禁止パターン（要件番号・spec 参照・`kiro`）を、4.1〜5.5 の規則に従って書き換える
   - 日本語を含む題名 4 件（`tests/live/atprotoContract.test.ts`）を英語にする。`config/test/` は題名が無い（コメントのみ）
@@ -207,7 +207,7 @@
   - _Boundary: tests/live, config/test_
   - _Requirements: 2.2, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.6, 6.7_
 
-- [ ] 9.2 この単位を確認し、許容リストの項目を消す
+- [x] 9.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/live/` と `config/test/` の違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す（`config/test/` の 14 件を含む）
   - `git diff -- config/test` で、変更が行コメントとブロックコメントに限られ、閾値・対象・環境の値が変わっていない
@@ -217,22 +217,22 @@
   - _Boundary: tests/live, config/test, config/comments/allowlist.json_
   - _Requirements: 1.1, 2.2, 2.3, 2.4, 6.6, 7.1, 7.2, 7.3, 8.1_
 
-- [ ] 10. 最終確認と報告
-- [ ] 10.1 型・imports の確認
+- [x] 10. 最終確認と報告
+- [x] 10.1 型・imports の確認
   - `npm run test:type` が通る（`tests/live` の型を含む）
   - `npm run test:imports` が通る
   - _Depends: 9.2_
   - _Boundary: 検証_
   - _Requirements: 8.3_
 
-- [ ] 10.2 層ごとの件数と結果の確認
+- [x] 10.2 層ごとの件数と結果の確認
   - unit・component・route・render の全体の実行（`npm run test:unit`・`test:component`・`test:route`・`test:render`）の成功件数・失敗件数・スキップ件数が、1.1 の記録と一致する（題名の変更だけで、件数が変わっていない）
   - unit 層の分岐カバレッジの閾値が満たされている（全体の実行の結果による）
   - _Depends: 10.1_
   - _Boundary: 検証_
   - _Requirements: 2.4, 3.1, 3.3, 8.3_
 
-- [ ] 10.3 整形を伴う実行の後の、対象外の変更の確認
+- [x] 10.3 整形を伴う実行の後の、対象外の変更の確認
   - 整形を伴う実行（`prettier --write` を含むもの）を行った場合だけ、実行の前後の `git status` を比べ、新たに変わったファイルのうち本 spec の対象外のものを確かめる
   - 差分が整形（`prettier`）のみのものは、comments-* の単位の外の整形差分だけを戻す（他の spec の変更は戻さない）
   - この spec の完了条件の実行（10.1・10.2）は整形を伴わない。`npm run test:e2e` は実行しない
@@ -240,7 +240,7 @@
   - _Boundary: 検証_
   - _Requirements: 1.2, 1.3, 8.5_
 
-- [ ] 10.4 全体の検査と許容リストの確認
+- [x] 10.4 全体の検査と許容リストの確認
   - 題名の検索（リポジトリ全体の `tests/` と `config/test/`）で、要件番号・`specs/`・AC/FR/NFR のタグ・経緯の語が残っていない（`tests/fixtures/` は検索の対象外だが、同じ語が無いことを確かめる）
   - 題名の検査（`design.md` の「題名の検査」の (a)・(b)）で、`tests/`（`tests/fixtures/` を除く）と `config/test/` の describe・it・test の題名に日本語が 0 件である。両方の件数を報告に含める
   - 許容リストの所有者 `comments-tests` の項目が 0 件である（7.4）
@@ -249,10 +249,33 @@
   - _Boundary: 検証, config/comments/allowlist.json_
   - _Requirements: 1.1, 6.1, 6.6, 7.4, 8.4, 8.6_
 
-- [ ] 10.5 報告
+- [x] 10.5 報告
   - 変更したファイルの一覧、許容リストから消した項目の件数（198 件から減った数）、各層の件数の前後の比較を報告する
   - 書き換えた題名の件数（単位ごと・合計。U1 64・U2 241・U3 30・U4 26・U5 9・U7 4 の内訳と、U0 で確定した件数との差）と、題名の検査（(a)・(b)）の結果が 0 件であることを報告する
   - 英語にできず判断を受けた題名（ファイル・行・理由）、判別に迷って残したコメントと題名（ファイル・行・理由）、残した `spec`・`kiro` の語（6.5 の判断）を報告する
   - _Depends: 10.4_
   - _Boundary: 報告_
   - _Requirements: 5.4, 6.2, 6.5, 6.7, 9.1_
+
+## Implementation Notes
+
+### 完了の報告（タスク 10。2026-11-11）
+
+- 1.1 の基準線: 日本語を含む `describe`・`it`・`test` の題名は、構文木で数えて 439 件・55 ファイル（`config/test` と `tests/live` を含み、`tests/fixtures` を除く）。依頼時の 374 件・51 ファイルと合わない。この一覧（作業用の領域）を正本にした。許容リストの所有者 `comments-tests` の項目は 197 件（記載は 198 件）。層ごとの件数は unit 705（成功 704・スキップ 1）・component 13・route 212・render 2、e2e は 10 件・7 ファイル。
+- 10.1・10.2: `npm run test:type`・`test:imports`・`test:unit`（705 件のうち成功 704・スキップ 1。分岐カバレッジ 89.77%）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。層ごと・ファイルごとの件数（成功・失敗・スキップ）は基準と一致した。`npx playwright test --list` は 10 件・7 ファイルで変わらない。
+- 10.3: 整形を伴う実行は行っていない。コミット時のフックで、題名を英語にした行が折り返される整形（末尾のカンマの追加）が入ったが、対象の単位の中の変更として残した。
+- 10.4: 日本語を含む題名は、`tests/`（`tests/fixtures` を除く）と `config/test/` で 0 件（(a) 構文木での題名）。`.each` の表のラベルの列にも、展開後の題名に日本語が残るものは無い（(b)）。許容リストの所有者 `comments-tests` の項目は 0 件（作業前 197 件）。他の所有者は comments-scripts-config 42・comments-api-schema 5 で変わらない。`commentRules.test.ts` は全体で通過した。
+- 10.5: 書き換えた題名は合計 439 件（`tests/unit/lib` 85、`importRules.test.ts` 56、`tests/unit/scripts` のその他と `commentRules.test.ts` の題名 約 190、`tests/unit` のその他 30、`tests/route` 26、`tests/component` 9、`tests/live` 4 ほか）。英語にできず判断を受けた題名は無い。判別に迷って残したコメントは無い。
+- 残した語（6.5）: 検証する対象の名前として、題名に `kiro`（`kiroGate.test.ts:48・62・249`）、`cc-sdd`（`agentSettings.test.ts:43`、`cc-sddInstallRecord.test.ts:45`、`installGate.test.ts:32`、`kiroGate.test.ts:319`）、概念の名前として `spec`（`steeringRules.test.ts:169`・`structureDecisions.test.ts:80` の識別子・検査の入力）を残した。`commentRules.test.ts` の禁止パターンの入力例（`要件 2.1 の範囲` など）は、検査の入力のため変えていない。
+- 作業の申し送り: `.each` の表の先頭の文字列は、題名だけでなく期待値に使われていることがある（`commentRules.test.ts` の禁止パターンの規則名 `spec参照`・`要件番号`・`AC/FR/NFRタグ`）。英語にするとテストが失敗したため、元の値に戻し、題名のテンプレートを `%#`（行の番号）にした。題名を直した後は、必ず層のテストを実行して確かめる。
+- 委譲: 実装と独立レビューは Codex に委譲した。許容リストの項目の削除・コミット・数行の修正（題名の言い換えのレビュー対応）は直接行った。
+
+### feature 検証（kiro-validate-impl, 2026-11-11）
+
+- 判定は `GO`。タスクは全て `[x]`、`_Blocked:_` は無い。全テスト（type・imports・unit・component・route・render）が終了コード 0 で、層ごとの件数が基準と一致する（10.1・10.2）。変更は `tests/`・`config/test/` のコメント・題名と許容リストの項目の削除だけで、`src/`・`scripts/` への差分は無い。Revalidation Triggers は発火していない。e2e は、この spec の検証に含めず、push 前フックの `npm run test:all` が行う。
+
+### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
+
+- 判定は `NO-GO` だったが、原因は、検証が `ff045b65` からの全体の差分を見たため、本 spec と無関係な後のコミット（Codex のモデルの使い分け）で変わった `tests/unit/scripts/codexExecRequest.test.ts`・`codexSetup.test.ts` を、本 spec の差分に含めたこと。この 2 ファイルは、本 spec の最後のコミット（`830f00f4`）までは変更が無い（`git diff --name-only ff045b65 f15d77f1~1 -- tests` で確認）。それ以外の指摘（サンプル 20 ファイルでの題名の意味・コメントの理由・`.each` のラベル）に不備は無く、日本語題名の検査 (a)・(b) は 0 件だった。受入基準の「部分的」は、全件を独立に照合していないサンプル検証による。
+
+- 起動確認の再実施（2026-11-11, コミット b60199a2）: 検証が読み取り専用で起動を実行できず `MANUAL_REQUIRED` となった点を補った。`npm run test:e2e` は 10 件成功。`SITE_HOST` を仮の値で与えた `npm run build:v2` は成功し、ビルド済み成果物を `astro preview` で起動して 7 ページを Chromium で開き、例外は 0 件（未ログインの認証付き API による 401 の console エラーのみ）。Web Share API は手動で確認済み。

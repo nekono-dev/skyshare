@@ -1,4 +1,8 @@
-// live テストの設定の読み取り（scripts/lib/live-config.mjs）: 無い・空はスキップ、不正は例外（秘密を含めない）、応答の一致の判定
+/**
+ * Tests live-test configuration parsing and session identity comparisons.
+ *
+ * - Error messages must not expose secret values.
+ */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -20,7 +24,7 @@ afterEach(() => {
 })
 
 describe("readLiveConfig", () => {
-    it("設定ファイルが無いときはスキップの理由を返す", () => {
+    it("returns a skip reason when configuration is missing", () => {
         expect(
             readLiveConfig({
                 configPath: configPath(),
@@ -31,7 +35,7 @@ describe("readLiveConfig", () => {
         })
     })
 
-    it("パスワードが空のときはスキップの理由を返す", () => {
+    it("returns a skip reason when the password is empty", () => {
         writeFileSync(
             configPath(),
             JSON.stringify({ identifier: "test.example" }),
@@ -47,7 +51,7 @@ describe("readLiveConfig", () => {
         })
     })
 
-    it("identifier が無いときは項目名を示して例外にする", () => {
+    it("throws an error naming a missing identifier", () => {
         writeFileSync(
             configPath(),
             JSON.stringify({ service: "https://example.test" }),
@@ -61,7 +65,7 @@ describe("readLiveConfig", () => {
         ).toThrow("identifier")
     })
 
-    it("JSON として読めないときは、秘密の値を例外に含めない", () => {
+    it("does not expose secrets when JSON parsing fails", () => {
         writeFileSync(configPath(), '{ "identifier": "SECRET-VALUE",,')
         writeFileSync(devVarsPath(), "SKYSHARE_E2E_APP_PASSWORD=SECRET-VALUE\n")
         let message = ""
@@ -77,7 +81,7 @@ describe("readLiveConfig", () => {
         expect(message).not.toContain("SECRET-VALUE")
     })
 
-    it("揃っているときは service の既定値と末尾の / を整えて返す", () => {
+    it("applies the default service and removes its trailing slash", () => {
         writeFileSync(
             configPath(),
             JSON.stringify({ identifier: " test.example " }),
@@ -115,7 +119,7 @@ describe("readLiveConfig", () => {
 })
 
 describe("sessionMismatches", () => {
-    it("DID とハンドルが設定と一致するなら空", () => {
+    it("returns no mismatches when DID and handle match configuration", () => {
         expect(
             sessionMismatches(
                 { did: "did:plc:abc", handle: "test.example" },
@@ -124,7 +128,7 @@ describe("sessionMismatches", () => {
         ).toEqual([])
     })
 
-    it("ハンドルの食い違い・DID の欠落を項目名で返す", () => {
+    it("returns field names for a handle mismatch and missing DID", () => {
         expect(
             sessionMismatches(
                 { did: "did:plc:abc", handle: "other.example" },

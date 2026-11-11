@@ -1,18 +1,20 @@
-// route 層（workerd）の外部通信の差し替え（要件 5.1・10.5）。
-// miniflare の outboundService として登録し、Bluesky の応答を偽の定義から返す。定義がなければ 404 を返し、実ネットワークへは出ない。
+/**
+ * Serves fake Bluesky responses to outbound requests in the route test runtime.
+ * Unknown routes return 404 without reaching the network.
+ */
 import { createFakeStore, respondTo } from "./fakeBluesky/routes"
 import type { FakeBlueskyFixtures } from "./fakeBluesky/types"
 
-/** route 層のテスト用の固定の識別子（架空の値） */
+/** Fixed fake identity used by route tests. */
 const fixtures: FakeBlueskyFixtures = {
     did: "did:plc:testfixturealice0000000000",
     handle: "alice.test",
 }
 
-/** 認可の往復の状態は、route 層のテストの間で共有する（テストのファイルごとに D1 と同様に分かれる） */
+/** Shares authorization state within a route test file, like its D1 database. */
 const store = createFakeStore()
 
-/** outboundService の本体。workerd からの外部 fetch を受け、偽の応答を返す */
+/** Handles an outbound fetch from workerd and returns the matching fake response. */
 export const fakeOutbound = async (request: Request): Promise<Response> => {
     const body =
         request.method === "GET" || request.method === "HEAD"

@@ -1,3 +1,8 @@
+/**
+ * 投稿詳細の動画プレイヤー。操作されるまで動画データと hls.js を読み込まない。
+ * - `hls.js` に対応する環境では `hls.js`、非対応でネイティブ HLS を再生できる環境（Safari など）ではネイティブで再生する。
+ * - 再生に失敗した場合は、元投稿へのリンクを表示する。
+ */
 import { useEffect, useRef, useState } from "react"
 import { useT } from "@/components/i18n/useTranslation"
 import type { SourceVideo } from "@/lib/entry/entry"
@@ -13,15 +18,6 @@ type Props = {
 
 type Phase = "idle" | "playing" | "error"
 
-/**
- * Entry 詳細ページの動画プレイヤー。
- *
- * 責務と処理概要:
- * - 初期表示は poster と再生ボタンのみ。ページを開いただけでは動画データも `hls.js` も
- *   取得しない（NFR-3）。再生ボタンの操作で初めて `<video>` を作り、HLS を読み込む。
- * - Safari はネイティブ HLS、それ以外は `hls.js`（動的 import）で再生する。
- * - 再生に失敗したら、元の Bluesky 投稿へ誘導する表示にする。
- */
 const VideoPlayer = ({ video, postUrl }: Props) => {
   const { t } = useT()
   const [phase, setPhase] = useState<Phase>("idle")

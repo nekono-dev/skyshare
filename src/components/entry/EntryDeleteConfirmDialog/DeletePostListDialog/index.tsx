@@ -1,14 +1,7 @@
 /**
- * 削除予定のBluesky投稿一覧付き最終確認ダイアログ。
+ * 削除対象の Bluesky 投稿一覧を含む最終確認ダイアログ。
  *
- * 責務と処理概要:
- * - 「リンク・Bluesky投稿を削除」の最終確認として、実際に削除される投稿
- *   （本文・投稿日時・サムネイル）を古い順に一覧表示する
- *   （`specs/entry-delete-dialog`）。
- * - 汎用の`ConfirmDialog`は本文メッセージのみを持つため継承・拡張せず、`Overlay`と
- *   ダイアログ共通スタイルを直接使って独立に実装する。
- * - 一覧は共通の`ComponentList`＋`DeletePostListItem`で描画する。スレッド（2件以上）では一覧の
- *   高さを固定してスクロール領域にし、確定・キャンセルのボタンを常に画面内に残す。
+ * - ConfirmDialog は本文のみのため Overlay で構成する。スレッドでは一覧をスクロールさせ、操作ボタンを画面内に保つ。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import React from "react"

@@ -1,4 +1,6 @@
-// 投稿の原子的な作成（P0・要件 2.1 の「投稿の原子的な作成」）: 1 回の applyWrites にまとめる、返信のつながり、失敗の種類
+/**
+ * Verifies atomic creation of a post thread and its failure handling.
+ */
 import { describe, expect, it, vi } from "vitest"
 import { createBskyThread } from "@/lib/entry/createBskyThread"
 import { ENTRY_COLLECTION } from "@/lib/atproto/nsid"

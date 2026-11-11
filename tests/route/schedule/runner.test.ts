@@ -1,4 +1,6 @@
-// 定期実行（P0・要件 2.1 の「予約投稿の実行」）: 期限の来た予約だけを実行し、暗号鍵が無ければ何もしない、中断された実行を再キューする
+/**
+ * Verifies the scheduled posting runner and its time boundaries.
+ */
 import { env } from "cloudflare:test"
 import { beforeEach, describe, expect, it } from "vitest"
 import { insertSchedule } from "@/lib/schedule/store"
@@ -148,7 +150,7 @@ describe("runHousekeeping", () => {
     })
 
     it("runs housekeeping only at the scheduled minute of the day (UTC)", () => {
-        // 秒で表した時刻（UTC の 2026-10-31 の 0 時からの分）
+        // Minutes from 00:00 UTC on the test reference date.
         const at = (minute: number) =>
             Date.UTC(2026, 9, 31) / 1000 + minute * 60
         expect(isHousekeepingTime(at(HOUSEKEEPING_MINUTE_OF_DAY_UTC))).toBe(

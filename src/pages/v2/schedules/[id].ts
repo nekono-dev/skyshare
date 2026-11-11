@@ -1,3 +1,9 @@
+/**
+ * 予約 1 件の取得・置き換え・取消 API。
+ *
+ * - `@atproto/*` を読み込まず、無料枠の CPU 時間を抑える。
+ * - 他アカウントの予約は存在しない予約と同じ 404 で扱う。
+ */
 import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus, jsonResponse } from "@/util/http"
@@ -11,19 +17,6 @@ import {
     getScheduleDetail,
     replaceSchedule,
 } from "@/lib/schedule/scheduleItem"
-
-/**
- * Skyshare v2 schedules/{id} API（1件の予約）。
- *
- * 責務と処理概要:
- * - GET: 自分の待機中または失敗の予約の内容を、フォームへの書き戻しのために返す（画像は番号だけ）。
- * - PUT: 自分の待機中の予約を、作成と同じ入力で実行時刻・内容・画像ごと置き換える。
- * - DELETE: 待機中の予約を取り消す。失敗の予約は履歴として削除する。
- * - 他のアカウントの予約と存在しない予約は 404、実行中の予約は 409（ScheduleRunning）を返す。
- *
- * 実装上の制約:
- * - `@atproto/*` を静的にも動的にも読み込まない（無料枠の CPU 時間を守るため）。
- */
 
 /**
  * GET /v2/schedules/{id} — 待機中または失敗の予約の内容を返す。実行中は 409。

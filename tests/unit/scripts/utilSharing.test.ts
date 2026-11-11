@@ -1,11 +1,7 @@
 /**
- * 規則 utilShared（structure-checks 3.1）の単体テスト。
+ * Tests that shared utility modules are used across multiple source areas.
  *
- * 責務と処理概要:
- * - `findUtilSharingViolations` の判定を、fixture のグラフ（ModuleGraph の値）で固定する。
- * - 負例（領域が一つ・0 件・util 内からのみ・pages 直下の二つのファイル）と正例（領域が二つ）を確かめる。
- * - tests/・scripts/ からの import は利用元に数えず、型だけの import は数えることを確かめる。
- * - 末尾の describe で、実リポジトリの `scanModules` の結果に対して違反が 0 件であることを確かめる（6.2）。
+ * - Covers fixed graphs and the repository source tree.
  */
 import path from "node:path"
 import { describe, expect, it } from "vitest"
@@ -43,8 +39,8 @@ const graphOf = (edges: ImportEdge[], extra: string[] = []): ModuleGraph => {
 const utilViolations = (graph: ModuleGraph) =>
     findUtilSharingViolations(graph).filter(v => v.from.startsWith("src/util/"))
 
-describe("規則 utilShared（structure-checks 3.1）", () => {
-    it("利用元の領域が一つだけなら違反（負例: 領域が一つ）", () => {
+describe("Utility sharing rule", () => {
+    it("reports a utility used by only one area", () => {
         const graph = graphOf([
             useUtil("src/lib/timeline/a.ts"),
             useUtil("src/lib/timeline/b.ts"),
@@ -59,7 +55,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         ])
     })
 
-    it("利用元が一つもなければ違反（負例: 0 件）", () => {
+    it("reports a utility with no users", () => {
         const graph = graphOf([])
         expect(findUtilSharingViolations(graph)).toEqual([
             {
@@ -71,7 +67,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         ])
     })
 
-    it("util の内からの import だけでは違反（負例: util 内からのみ）", () => {
+    it("reports a utility used only by other utilities", () => {
         // other.ts も util であり、その利用元も util 内だけなので、両方が違反になる
         const graph = graphOf(
             [useUtil("src/util/other.ts")],
@@ -83,7 +79,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         ])
     })
 
-    it("pages 直下の二つのファイルは同じ領域として数えるため違反（負例: pages の直下）", () => {
+    it("counts files directly under pages as one area", () => {
         const graph = graphOf([
             useUtil("src/pages/index.astro"),
             useUtil("src/pages/about.astro"),
@@ -91,7 +87,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         expect(utilViolations(graph).map(v => v.from)).toEqual([UTIL])
     })
 
-    it("利用元の領域が二つあれば違反にしない（正例）", () => {
+    it("allows a utility used by two areas", () => {
         const graph = graphOf([
             useUtil("src/lib/timeline/a.ts"),
             useUtil("src/components/share/Card/index.astro"),
@@ -99,7 +95,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         expect(utilViolations(graph)).toEqual([])
     })
 
-    it("tests/・scripts/ からの import は利用元に数えない", () => {
+    it("does not count imports from tests or scripts as users", () => {
         const graph = graphOf([
             useUtil("src/lib/timeline/a.ts"),
             useUtil("tests/unit/scripts/x.test.ts"),
@@ -108,7 +104,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         expect(utilViolations(graph).map(v => v.from)).toEqual([UTIL])
     })
 
-    it("型だけの import も利用元に数える", () => {
+    it("counts type-only imports as users", () => {
         const graph = graphOf([
             useUtil("src/lib/timeline/a.ts", true),
             useUtil("src/components/share/Card/index.astro", true),
@@ -116,7 +112,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         expect(utilViolations(graph)).toEqual([])
     })
 
-    it("違反の message に、見つかった利用元の領域の名前を含める（要件 2.2）", () => {
+    it("includes the detected user area names in violation messages", () => {
         const one = findUtilSharingViolations(
             graphOf([useUtil("src/lib/timeline/a.ts")]),
         ).find(v => v.from === UTIL)
@@ -130,7 +126,7 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
         expect(none?.message).toContain("0 件")
     })
 
-    it("同じ領域の型だけの import と値の import は一つの領域として数える", () => {
+    it("counts type-only and value imports from one area as one user area", () => {
         const graph = graphOf([
             useUtil("src/lib/timeline/a.ts", true),
             useUtil("src/lib/timeline/b.ts", false),
@@ -142,8 +138,8 @@ describe("規則 utilShared（structure-checks 3.1）", () => {
 // 実リポジトリの走査（6.2）。`src/util/` の各モジュールは二つ以上の領域から使われること
 const repoRoot = path.resolve(__dirname, "../../..")
 
-describe("実リポジトリの util の汎用性（structure-checks 6.2）", () => {
-    it("src/util/ の違反が 0 件である（要件 2.6）", () => {
+describe("Utility sharing in the repository", () => {
+    it("there are no utility sharing violations under src/util", () => {
         const graph = scanModules(repoRoot)
         expect(findUtilSharingViolations(graph)).toEqual([])
     })

@@ -1,17 +1,9 @@
-// E2E（Playwright）を、dev サーバーの起動から後始末まで含めて実行する。
-//
-// 責務: コード生成と .dev.vars の準備をして `astro dev --background` で dev サーバーを常駐させ、
-//       `playwright test` を実行し、自分が起動した場合に限り終了後に停止する。
-//       自分で起動する場合は、起動の前に検証用の開催中のアンケート設定を生成し、終了後に元の環境変数での生成へ戻す
-//       （検証用の設定の供給は scripts/e2e/survey-e2e-harness.mjs）。
-// 中断: SIGINT / SIGTERM / SIGHUP を受けたら、実行中の子のプロセスグループへ転送し、後始末をしてから
-//       128 + シグナル番号で終了する（例: SIGINT は 130、SIGTERM は 143、SIGHUP は 129）。
-//       後始末の途中で受けた中断は記録するだけで、後始末は最後まで行う（停止・復元の子は転送を受けない）。
-//       後始末は終了の経路ごとに明示的に呼ぶ（exit イベントは SIGINT / SIGTERM では走らないため使わない）。
-// 使い方: npm run test:e2e [-- playwright の引数]
-// 背景: astro dev は AI エージェント環境でのみ自動でバックグラウンド化し、通常の端末ではフォアグラウンドで
-//       居座るため、`npm run dev && playwright test` では playwright に進めない。--background を明示して揃える。
-//       既に dev サーバーが起動している場合はそれを使い、停止もしない。設定の生成もしない。
+/** Playwright E2E と開発サーバーの起動・後始末を実行する。
+ * 自分でサーバーを起動する場合だけ検証設定を先に用意し、終了後に開発設定へ戻す。
+ * 既に稼働中の開発サーバーは再利用し、停止や設定変更をしない。
+ * 使い方: npm run test:e2e [-- playwright の引数]
+ * astro dev の常駐動作を揃えるため、起動には `--background` を指定する。
+ */
 import { spawn, spawnSync } from "node:child_process"
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs"
 import {
@@ -106,7 +98,7 @@ const runCleanupChild = (cmd, args) =>
     child.on("exit", status => settle({ status }))
   })
 
-// 偽の Bluesky（要件 10.3・12.5）。dev サーバーより先に起動し、接続先の環境変数で向ける
+// 偽の Bluesky は dev サーバーより先に起動し、接続先の環境変数で向ける
 const FAKE_PORT = Number(process.env.E2E_FAKE_BLUESKY_PORT ?? "9311")
 const FAKE_ORIGIN = `http://127.0.0.1:${FAKE_PORT}`
 const endpointEnv = {
@@ -224,7 +216,8 @@ const writeE2eWrangler = () => {
 }
 
 /**
- * 後で開発の設定（config/develop.json）から wrangler.jsonc を生成し直す。E2E の接続先を残さないため。
+ * E2E 用の接続先を残さないよう、開発設定から wrangler.jsonc を復元する。
+ * E2E 設定を先に適用するため、復元は検証終了後に行う。
  * 開発の設定が無ければ例から作る。
  */
 const restoreDevelopWrangler = () => {

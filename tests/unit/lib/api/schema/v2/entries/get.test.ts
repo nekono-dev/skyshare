@@ -1,5 +1,5 @@
 /**
- * `GET /v2/entries` の応答の定義が、実際に返す動画の項目を受け入れることを確かめる。
+ * Verifies that the entries response schema accepts returned video fields.
  */
 import { describe, expect, it } from "vitest"
 import { ResponseBody200Schema } from "@/lib/api/schema/v2/entries/get"

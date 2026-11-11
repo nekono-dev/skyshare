@@ -1,5 +1,7 @@
-// ハッシュタグ候補の順序・出所・重複の除去・件数の上限を、分割の前の値で固定する（要件 2.1・2.3）。
-// 履歴の読み出しとトレンドの取得は、外部の通信と保存を避けるため置き換える。
+/**
+ * Locks down hashtag candidate ordering, sources, deduplication, and limits.
+ * History and trending lookups are replaced to avoid external reads and writes.
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const history = vi.hoisted(() => ({
@@ -19,8 +21,8 @@ beforeEach(() => {
     trend.getTrendingTagSuggestions.mockReset()
 })
 
-describe("getHashtagCandidates（候補の順序と出所）", () => {
-    it("履歴を先に並べ、トレンドは履歴に無いものだけを後ろに足す", async () => {
+describe("getHashtagCandidates ordering and sources", () => {
+    it("puts history first and appends only new trending tags", async () => {
         history.readHashtagHistory.mockReturnValue([
             { tag: "skyshare" },
             { tag: "bluesky" },
@@ -41,7 +43,7 @@ describe("getHashtagCandidates（候補の順序と出所）", () => {
         ])
     })
 
-    it("履歴との重複は、大文字小文字を無視して除く", async () => {
+    it("drops trending tags that duplicate a history tag regardless of case", async () => {
         history.readHashtagHistory.mockReturnValue([{ tag: "SkyShare" }])
         trend.getTrendingTagSuggestions.mockResolvedValue([{ tag: "skyshare" }])
 
@@ -50,7 +52,7 @@ describe("getHashtagCandidates（候補の順序と出所）", () => {
         expect(result).toEqual([{ tag: "SkyShare", source: "history" }])
     })
 
-    it("プレフィックスに一致しない候補は、履歴とトレンドの両方から除く", async () => {
+    it("removes candidates that do not match the prefix from both sources", async () => {
         history.readHashtagHistory.mockReturnValue([{ tag: "apple" }])
         trend.getTrendingTagSuggestions.mockResolvedValue([{ tag: "banana" }])
 
@@ -59,7 +61,7 @@ describe("getHashtagCandidates（候補の順序と出所）", () => {
         ])
     })
 
-    it("候補は最大 5 件までにする", async () => {
+    it("limits candidates to five", async () => {
         history.readHashtagHistory.mockReturnValue(
             Array.from({ length: 4 }, (_, i) => ({ tag: `h${i}` })),
         )

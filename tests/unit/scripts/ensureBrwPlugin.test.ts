@@ -1,6 +1,6 @@
 /**
- * BRW の冪等な導入（ensure-brw-plugin.mjs）の単体テストと、偽の claude での一続きの確認。
- * 偽の claude は一時ディレクトリに作り、PATH の先頭に置く。実際の Claude の設定には触れない。
+ * Checks idempotent BRW installation and its failure records with a fake CLI.
+ * The fake executable runs from a temporary PATH, leaving Claude settings untouched.
  */
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
@@ -34,8 +34,8 @@ afterAll(() => {
     for (const root of roots) fs.rmSync(root, { recursive: true, force: true })
 })
 
-describe("既存の状態の判定", () => {
-    it("marketplace の一覧に名前があるかを判定する", () => {
+describe("Existing installation state", () => {
+    it("checks whether a marketplace name appears in the list", () => {
         const listing = JSON.stringify([
             { name: "nekono-dev", repo: "nekono-dev/claude-plugins" },
         ])
@@ -47,7 +47,7 @@ describe("既存の状態の判定", () => {
         )
     })
 
-    it("このプロジェクトの scope project の BRW だけを導入済みと判定する", () => {
+    it("recognizes only this project's project-scoped BRW as installed", () => {
         const root = makeRoot()
         const other = makeRoot()
         const entry = (projectPath: string, scope = "project") =>
@@ -59,7 +59,7 @@ describe("既存の状態の判定", () => {
         expect(hasProjectPlugin("not json", root)).toBe(false)
     })
 
-    it("無いものだけを行う", () => {
+    it("runs only the missing installation steps", () => {
         expect(
             decideInstall({ marketplaceListed: true, pluginInstalled: true }),
         ).toEqual({
@@ -81,12 +81,12 @@ describe("既存の状態の判定", () => {
     })
 })
 
-describe("導入の本体（偽の runner）", () => {
+describe("Installation with a fake runner", () => {
     const listing = JSON.stringify([{ name: "nekono-dev" }])
     const installedJson = (root: string) =>
         JSON.stringify([{ id: PLUGIN, scope: "project", projectPath: root }])
 
-    it("claude が無ければ、飛ばす", () => {
+    it("skips installation when claude is unavailable", () => {
         const root = makeRoot()
         const runner = () => ({
             error: { code: "ENOENT" },
@@ -96,7 +96,7 @@ describe("導入の本体（偽の runner）", () => {
         expect(ensureBrw(root, runner as never)).toEqual({ skipped: true })
     })
 
-    it("両方あれば、導入の操作は行わない", () => {
+    it("does not install when both components are present", () => {
         const root = makeRoot()
         const calls: string[][] = []
         const runner = (args: string[]) => {
@@ -117,7 +117,7 @@ describe("導入の本体（偽の runner）", () => {
         ])
     })
 
-    it("両方あれば一覧と更新だけを呼び、導入の案内を出さない", () => {
+    it("lists and updates installed components without showing installation guidance", () => {
         const root = makeRoot()
         const calls: string[][] = []
         const errors: string[] = []
@@ -142,7 +142,7 @@ describe("導入の本体（偽の runner）", () => {
         expect(errors.join("\n")).not.toContain("BRW を導入しました")
     })
 
-    it("無いものだけを導入し、導入を記録する", () => {
+    it("installs and records only missing components", () => {
         const root = makeRoot()
         const calls: string[][] = []
         const runner = (args: string[]) => {
@@ -166,7 +166,7 @@ describe("導入の本体（偽の runner）", () => {
         ).toBe(false)
     })
 
-    it("導入が失敗したら、失敗を返す（記録は呼び出し側が書く）", () => {
+    it("returns installation failures for the caller to record", () => {
         const root = makeRoot()
         const runner = (args: string[]) => {
             if (args[1] === "marketplace" && args[2] === "list")
@@ -180,7 +180,7 @@ describe("導入の本体（偽の runner）", () => {
         })
     })
 
-    it("5 回の CLI に残り時間と上限の小さい方を渡し、合計予算を超えない", () => {
+    it("bounds five CLI calls by the smaller of remaining time and the limit", () => {
         const root = makeRoot()
         let time = 0
         const timeouts: number[] = []
@@ -202,7 +202,7 @@ describe("導入の本体（偽の runner）", () => {
         expect(time).toBeLessThanOrEqual(170)
     })
 
-    it("予算切れ後は runner を呼ばず、導入中の記録を残す", () => {
+    it("skips the runner and keeps the in-progress record after the budget expires", () => {
         const root = makeRoot()
         let time = 0
         const calls: string[][] = []
@@ -225,14 +225,14 @@ describe("導入の本体（偽の runner）", () => {
         )
     })
 
-    it("5 回それぞれに CLI 上限と残り予算の小さい方を渡す", () => {
+    it("limits each of five calls by the CLI limit and remaining budget", () => {
         const root = makeRoot()
         let time = 0
         const timeouts: number[] = []
         const errors: string[] = []
         const runner = (args: string[], _cwd: string, timeout: number) => {
             timeouts.push(timeout)
-            // 偽の CLI は 40 かかる。渡された上限を超えては走らない（打ち切られる）
+            // The fake CLI takes 40 ms; the call must be terminated at its supplied timeout.
             time += Math.min(40, timeout)
             if (args[1] === "list" && args[2] === "--json")
                 return { status: 0, stdout: "[]" }
@@ -249,7 +249,7 @@ describe("導入の本体（偽の runner）", () => {
         expect(time).toBeLessThanOrEqual(170)
     })
 
-    it("毎回 timeout を使い切っても既定予算を超えず、導入失敗を記録する", () => {
+    it("records failure without exceeding the default budget when every call times out", () => {
         const root = makeRoot()
         let time = 0
         const timeouts: number[] = []
@@ -278,7 +278,7 @@ describe("導入の本体（偽の runner）", () => {
         )
     })
 
-    it("導入済みで予算が尽きていれば update を呼ばず、記録せず標準エラーに出す", () => {
+    it("skips update when installed and out of budget, then reports the reason on stderr", () => {
         const root = makeRoot()
         let time = 0
         const calls: string[][] = []
@@ -304,7 +304,7 @@ describe("導入の本体（偽の runner）", () => {
         )
     })
 
-    it("update の失敗は記録せず、内容を標準エラーに出す", () => {
+    it("does not record update failures and writes their details to stderr", () => {
         const root = makeRoot()
         const errors: string[] = []
         const runner = (args: string[]) =>
@@ -325,8 +325,8 @@ describe("導入の本体（偽の runner）", () => {
     })
 })
 
-describe("失敗の記録", () => {
-    it("書いて、消せる", () => {
+describe("Failure records", () => {
+    it("can be written and removed", () => {
         const root = makeRoot()
         writeRecord(root, "テスト")
         expect(fs.existsSync(path.join(root, RECORD))).toBe(true)
@@ -335,13 +335,13 @@ describe("失敗の記録", () => {
     })
 })
 
-describe("偽の claude での一続きの確認", () => {
+describe("End-to-end flow with a fake claude", () => {
     const fakeClaude = (dir: string, body: string): void => {
         fs.writeFileSync(path.join(dir, "claude"), `#!/bin/sh\n${body}\n`)
         fs.chmodSync(path.join(dir, "claude"), 0o755)
     }
 
-    it("導入が失敗すると記録を残し、終了コードは 0（SessionStart は止めない）", () => {
+    it("records installation failure and exits 0 without blocking SessionStart", () => {
         const root = makeRoot()
         const bin = makeRoot()
         fakeClaude(
@@ -369,7 +369,7 @@ describe("偽の claude での一続きの確認", () => {
         expect(result.stderr).toContain("BRW の導入に失敗しました")
     })
 
-    it("CLI が上限時間を超えると打ち切り、失敗の記録を残す（予算の確認）", () => {
+    it("terminates an over-limit CLI call and records the installation failure", () => {
         const root = makeRoot()
         const bin = makeRoot()
         fakeClaude(
@@ -394,12 +394,12 @@ describe("偽の claude での一続きの確認", () => {
             encoding: "utf8",
         })
         expect(result.status).toBe(0)
-        // 偽の CLI は 30 秒眠る。上限 1 秒で打ち切られたことだけを、余裕のある閾値で確かめる
+        // The fake CLI sleeps for 30 seconds; a generous threshold checks that the 1-second timeout terminates it.
         expect(Date.now() - started).toBeLessThan(15000)
         expect(fs.existsSync(path.join(root, RECORD))).toBe(true)
     })
 
-    it("導入が成功すると記録を消す", () => {
+    it("removes the record after successful installation", () => {
         const root = makeRoot()
         const bin = makeRoot()
         writeRecord(root, "古い記録")
@@ -425,7 +425,7 @@ describe("偽の claude での一続きの確認", () => {
         expect(fs.existsSync(path.join(root, RECORD))).toBe(false)
     })
 
-    it("更新だけが失敗した場合は記録を残さず、内容を標準エラーに出す", () => {
+    it("does not record update-only failures and writes their details to stderr", () => {
         const root = makeRoot()
         const bin = makeRoot()
         fakeClaude(
@@ -452,7 +452,7 @@ describe("偽の claude での一続きの確認", () => {
         expect(result.stderr).toContain("update failed")
     })
 
-    it("導入したときだけ、スキル利用とセッションの開き直しを案内する", () => {
+    it("shows skill and session restart guidance only after installation", () => {
         const root = makeRoot()
         const bin = makeRoot()
         fakeClaude(
@@ -497,7 +497,7 @@ describe("偽の claude での一続きの確認", () => {
         expect(present.stderr).not.toContain("セッションを開き直してください")
     })
 
-    it("予算が尽きていれば更新を飛ばし、記録を書かない", () => {
+    it("skips update and writes no record when the budget is exhausted", () => {
         const root = makeRoot()
         const bin = makeRoot()
         fakeClaude(

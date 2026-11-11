@@ -1,7 +1,6 @@
 /**
  * POST /v2/feedback/ — 不具合の報告か新機能の提案を受け付け、GitHub の Issue として登録する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  * 入力は種別（`kind`）で分岐し、strict で他の種別の項目と未知の項目（報告者の DID など）を拒否する。
  * 報告者はログインのセッションから決めるため、入力には含めない。
  */
@@ -33,7 +32,7 @@ const requiredText = (max: number) =>
         .refine(value => countFeedbackLength(value) <= max, {
             message: "too long",
         })
-        .meta({ description: `Non-blank, up to ${max} graphemes` })
+        .meta({ description: "Non-blank text" })
 
 /** 画面が自動で集めた環境の情報 */
 const EnvironmentSchema = z
@@ -87,8 +86,7 @@ export type ResponseBody200Type = z.infer<typeof ResponseBody200Schema>
 
 export const operation: ZodOpenApiOperationObject = {
     operationId: "createFeedback",
-    summary:
-        "Submit a bug report or a feature request as a GitHub issue (one per minute per account)",
+    summary: "Submit a bug report or a feature request as a GitHub issue",
     requestParams: { header: RequestHeaderSchema },
     requestBody: {
         required: true,

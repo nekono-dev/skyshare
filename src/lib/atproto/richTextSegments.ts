@@ -2,7 +2,7 @@
  * 投稿本文の注釈（`app.bsky.richtext.facet`）を、表示・共有用の区間と文字列に変換する。
  *
  * - facets の範囲は UTF-8 のバイト位置で、本文の外にはみ出すものや文字の途中で切れるものは無視する。
- * - `@atproto/*` を import しない。純粋関数だけを持つ。
+ * - `@atproto/*` を import しない。
  */
 import { findHashtagRanges, findUrlRanges } from "./autoLink"
 

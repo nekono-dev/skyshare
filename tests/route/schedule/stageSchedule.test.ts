@@ -1,4 +1,6 @@
-// 予約の受け付け（P0・要件 2.1 の「予約投稿の実行」の入口）: 予約日時、認証情報、件数の上限、再認可、画像の保管
+/**
+ * Verifies schedule validation and staging behavior.
+ */
 import { env } from "cloudflare:test"
 import { beforeEach, describe, expect, it } from "vitest"
 import { insertSchedule, markCredentialReauth } from "@/lib/schedule/store"

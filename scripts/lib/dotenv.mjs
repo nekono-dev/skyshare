@@ -1,7 +1,6 @@
-// .dev.vars（dotenv 形式）を読む。scripts/secrets/sync-github-variables.mjs が秘匿情報の登録元として使う。
-//
-// 責務: `KEY=value` の行だけを取り出す。`#` で始まる行（コメントアウトされた KEY を含む）と空行は無視し、
-// 値の両端の引用符（' か "）は外す。値は画面に出さない前提で、呼び出し側が扱う。
+/**
+ * `scripts/secrets/sync-github-variables.mjs` と `scripts/secrets/prepare-local-env.mjs` が使う dotenv 形式の値を解析する。
+ */
 
 /**
  * dotenv の内容から、有効な `KEY=value` を取り出す。

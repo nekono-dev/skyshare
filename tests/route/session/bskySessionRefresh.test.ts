@@ -1,4 +1,6 @@
-// セッションの再開ミドルウェア（P0・要件 2.1 の「セッション処理」）: 対象の判定、Cookie の無い・壊れた場合の 401、
+/**
+ * Verifies session refresh middleware behavior.
+ */
 // 再開の失敗では次の処理を呼ばない、成功時だけ次の処理を呼ぶ
 import { describe, expect, it, vi } from "vitest"
 import {

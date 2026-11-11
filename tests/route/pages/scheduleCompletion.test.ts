@@ -1,4 +1,6 @@
-// 予約の認可の完了 API（POST /v2/schedules/credential/authorization/completion）の特性化テスト（src-duplicates 1.2・要件 2.1・2.3）。
+/**
+ * Verifies schedule credential authorization completion responses.
+ */
 // 状態・本文（ありとなし）・cache-control: no-store・set-cookie を、現行の値で固定する。振る舞いを変えるためのテストではない。
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -41,31 +43,31 @@ const call = (opts: { session?: boolean; body?: string }) => {
     return POST({ request, locals } as never)
 }
 
-describe("認可の完了（予約）の応答", () => {
+describe("schedule authorization completion responses", () => {
     beforeEach(() => {
         state.result = { ok: true }
         state.throws = false
     })
 
-    it("セッションが無いと 401 と no-store を返す", async () => {
+    it("returns 401 with no-store when the session is missing", async () => {
         const res = await call({ session: false })
         expect(res.status).toBe(401)
         expect(await res.json()).toEqual({ error: "Unauthorized" })
         expect(res.headers.get("cache-control")).toBe("no-store")
     })
 
-    it("JSON として読めない本文は 400", async () => {
+    it("returns 400 for a body that is not valid JSON", async () => {
         const res = await call({ body: "{not json" })
         expect(res.status).toBe(400)
         expect(await res.json()).toEqual({ error: "Bad Request" })
     })
 
-    it("スキーマに無い項目を含む本文は 400", async () => {
+    it("returns 400 when the body contains unknown fields", async () => {
         const res = await call({ body: JSON.stringify({ unknown: 1 }) })
         expect(res.status).toBe(400)
     })
 
-    it("成功は 200 と { result: ok } の本文を返し、no-store とヒントの失効の set-cookie を付ける", async () => {
+    it("returns 200 with an ok result, no-store, and an expired hint cookie", async () => {
         const res = await call({})
         expect(res.status).toBe(200)
         expect(await res.json()).toEqual({ result: "ok" })
@@ -76,7 +78,7 @@ describe("認可の完了（予約）の応答", () => {
         expect(cookies[0]).toMatch(/^[^=]+=/)
     })
 
-    it("失敗の分類は 200 のまま、分類の値を本文に返す", async () => {
+    it("returns 200 with the failure classification in the body", async () => {
         state.result = { ok: false, code: "Denied" }
         const res = await call({})
         expect(res.status).toBe(200)
@@ -84,7 +86,7 @@ describe("認可の完了（予約）の応答", () => {
         expect(res.headers.getSetCookie()).toHaveLength(1)
     })
 
-    it("想定外の例外は 500 を返す", async () => {
+    it("returns 500 for an unexpected exception", async () => {
         state.throws = true
         const res = await call({})
         expect(res.status).toBe(500)

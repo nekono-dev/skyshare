@@ -1,4 +1,4 @@
-/** 各ページ固有の文言（英語）。キー集合・スロット名は日本語辞書と一致させる。 */
+/** ページ固有の文言（英語）。キー集合・スロット名は日本語辞書と一致させる。 */
 import type { MessageEntries } from "../../messageEntries"
 
 export const page = {

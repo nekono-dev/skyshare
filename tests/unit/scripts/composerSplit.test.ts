@@ -1,13 +1,6 @@
 /**
- * 投稿フォームの分割の構造を静的に検査するテスト（src-composer-split 6.1・要件 3.1〜3.2）。
- *
- * 責務と処理概要:
- * - `ThreadComposer/` の配線（index.tsx）の行数の上限（750 行）を確かめる。
- * - 判断の関数（segments・submitThread・shareDispatch・suggestHashtags）が React を import しないことを確かめる。
- * - フック・部品・判断が、投稿フォームの本体（index.tsx）を import しないことを確かめる（循環の防止）。
- * - 検査は `node:fs` で読んだ文字列に対して行う（モジュール自体は import しない）。
- * - 負例（検査が機能することの確認）: `findReactImports` と `findIndexImports` に違反を含む固定の文字列を与え、
- *   違反として報告されることを確かめる。実ファイルは使わない。
+ * Statically checks the ThreadComposer module boundaries and entry point size.
+ * Uses source text and fixed negative cases without importing the modules under inspection.
  */
 import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
@@ -16,10 +9,10 @@ import { describe, expect, it } from "vitest"
 const repoRoot = path.resolve(__dirname, "../../..")
 const folder = "src/components/composer/ThreadComposer"
 
-/** 投稿フォームの本体の行数の上限（要件 3.1）。 */
+/** Maximum number of lines allowed in the composer entry point. */
 const MAX_INDEX_LINES = 750
 
-/** React を import してはならない判断の関数（要件 3.2）。 */
+/** Decision modules that must not import React. */
 const PURE_JUDGMENT_FILES = [
     "rules/segments.ts",
     "rules/submitThread.ts",
@@ -28,7 +21,6 @@ const PURE_JUDGMENT_FILES = [
     "rules/entries.ts",
 ] as const
 
-/** 投稿フォームの本体を import してはならないファイル（循環の防止）。 */
 const NON_INDEX_FILES = [
     "rules/segments.ts",
     "rules/submitThread.ts",
@@ -47,19 +39,16 @@ const NON_INDEX_FILES = [
 const read = (relative: string) =>
     readFileSync(path.join(repoRoot, folder, relative), "utf8")
 
-/** 直下の `.ts`・`.tsx` のうち、配線（index.tsx）以外のファイル（要件 1.1・3.3）。 */
+/** Direct `.ts` and `.tsx` files other than the entry point. */
 const findRootViolations = (entries: readonly string[]) =>
     entries.filter(name => /\.tsx?$/.test(name) && name !== "index.tsx")
 
-/** 行数（末尾の改行は数えない）。 */
 const lineCount = (source: string) =>
     source.replace(/\n$/, "").split("\n").length
 
-/** `react` と `react-` で始まるパッケージの import（値と型の両方）を探す。 */
 const findReactImports = (source: string) =>
     [...source.matchAll(/from\s+["'](react|react-[^"']*)["']/g)].map(m => m[1])
 
-/** 部品（`@/components/` への import、または `components/` 内への相対 import）を探す。 */
 const findComponentImports = (source: string) =>
     [
         ...source.matchAll(
@@ -67,7 +56,6 @@ const findComponentImports = (source: string) =>
         ),
     ].map(m => m[1])
 
-/** 投稿フォームの本体（`./index`・`.`・`../ThreadComposer` など）への import を探す。 */
 const findIndexImports = (source: string) =>
     [
         ...source.matchAll(
@@ -75,35 +63,35 @@ const findIndexImports = (source: string) =>
         ),
     ].map(m => m[1])
 
-describe("投稿フォームの本体の行数（要件 3.1）", () => {
-    it(`index.tsx は ${MAX_INDEX_LINES} 行以下である`, () => {
+describe("Composer entry point size", () => {
+    it(`index.tsx stays within ${MAX_INDEX_LINES} lines`, () => {
         expect(lineCount(read("index.tsx"))).toBeLessThanOrEqual(
             MAX_INDEX_LINES,
         )
     })
 })
 
-describe("直下は配線（index.tsx）と子フォルダだけ（要件 1.1・3.3）", () => {
-    it("直下に、フック・判断の .ts が残っていない", () => {
+describe("Composer root contains only the entry point and child folders", () => {
+    it("keeps hooks and decision modules out of the root", () => {
         const entries = readdirSync(path.join(repoRoot, folder))
         expect(findRootViolations(entries)).toEqual([])
     })
 })
 
-describe("判断の関数は React を import しない（要件 3.2）", () => {
+describe("Decision modules do not import React", () => {
     for (const file of PURE_JUDGMENT_FILES) {
-        it(`${file} は react を import しない`, () => {
+        it(`${file} does not import React`, () => {
             expect(findReactImports(read(file))).toEqual([])
         })
     }
 })
 
-describe("判断の層（rules/）は部品を import しない（部品が rules/ を参照する向きを保つ）", () => {
+describe("Decision modules do not import components", () => {
     const ruleFiles = readdirSync(path.join(repoRoot, folder, "rules")).filter(
         name => name.endsWith(".ts"),
     )
     for (const name of ruleFiles) {
-        it(`rules/${name} は部品を import しない`, () => {
+        it(`rules/${name} does not import components`, () => {
             expect(
                 findComponentImports(
                     readFileSync(
@@ -116,26 +104,26 @@ describe("判断の層（rules/）は部品を import しない（部品が rule
     }
 })
 
-describe("フック・部品・判断は投稿フォームの本体を import しない（循環の防止）", () => {
+describe("Hooks, components, and decision modules do not import the composer entry point", () => {
     for (const file of NON_INDEX_FILES) {
-        it(`${file} は index を import しない`, () => {
+        it(`${file} does not import index`, () => {
             expect(findIndexImports(read(file))).toEqual([])
         })
     }
 })
 
-describe("検査の負例（検査が違反を検出できることの確認）", () => {
-    it("react の import を違反として報告する", () => {
+describe("Negative cases report import violations", () => {
+    it("reports a React import as a violation", () => {
         const sample = 'import { useState } from "react"\nexport const x = 1\n'
         expect(findReactImports(sample)).toEqual(["react"])
     })
 
-    it("react-easy-crop の型の import も違反として報告する", () => {
+    it("reports a react-easy-crop type import as a violation", () => {
         const sample = 'import type { Area } from "react-easy-crop"\n'
         expect(findReactImports(sample)).toEqual(["react-easy-crop"])
     })
 
-    it("判断の層から部品への import を違反として報告する", () => {
+    it("reports an import from a decision module to a component as a violation", () => {
         const sample =
             'import type { ImageEntry } from "@/components/composer/ThreadComposer/ImagePicker"\n'
         expect(findComponentImports(sample)).toEqual([
@@ -143,12 +131,12 @@ describe("検査の負例（検査が違反を検出できることの確認）"
         ])
     })
 
-    it("投稿フォームの本体への相対の import を違反として報告する", () => {
+    it("reports a relative import of the composer entry point as a violation", () => {
         const sample = 'import Component from "./index"\n'
         expect(findIndexImports(sample)).toEqual(["./index"])
     })
 
-    it("直下にフック・判断の .ts を置いた場合を違反として報告する", () => {
+    it("reports root-level hooks or decision modules as violations", () => {
         const sample = [
             "index.tsx",
             "index.module.css",
@@ -162,7 +150,7 @@ describe("検査の負例（検査が違反を検出できることの確認）"
         ])
     })
 
-    it("投稿フォームの本体への @/ の import を違反として報告する", () => {
+    it("reports an @/ import of the composer entry point as a violation", () => {
         const sample =
             'import Component from "@/components/composer/ThreadComposer"\n'
         expect(findIndexImports(sample)).toEqual([

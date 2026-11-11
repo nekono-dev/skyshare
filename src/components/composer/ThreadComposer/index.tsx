@@ -1,27 +1,8 @@
 /**
- * 投稿フォーム（スレッド投稿対応）コンポーネント。
+ * スレッド投稿フォームの状態と画面を統合する。
  *
- * 責務と処理概要:
- * - スレッド投稿のセグメント配列（`segments`）と現在編集中のセグメント（`activeIndex`）を
- *   管理する。単発投稿はセグメント数1件のケースとして同一のコンポーネントが扱う
- *   （`specs/thread-composer`。以前の単発投稿専用`PostForm`はこの
- *   コンポーネントへ一般化され、独立した存在ではなくなった）。
- * - 各セグメントの入力補助UI（本文欄・画像・OGP・返信/引用設定・自己ラベル・言語選択）は
- *   `ThreadSegmentForm`に委譲し、本体はセグメント配列の管理・共有系トグルの永続化・
- *   下書き一覧・投稿成功後のポップアップ/WebShareAPI分岐の呼び出しに専念する。
- * - クロスポスト（自動ポップアップ・WebShareAPI）は先頭（1件目）セグメントのみを
- *   対象とする（2件目以降は対象外）。仕様書に明記が無かったため実装時に決定した方針。
- * - API送信は`submitThread`、投稿成功後のポップアップ/WebShareAPI分岐は`shareDispatch`に
- *   それぞれ委譲する。
- * - 予約投稿: 予約の状態（`scheduleMode`）を保持し、実行日時が設定されていれば送信ボタンを
- *   「予約」「すべて予約」に変え、予約の作成・置き換えを `submitSchedule` に委ねる。
- *   状態の遷移・送信先・キャンセルの動作の判定は `lib/schedule/scheduleMode` が決める。
- * - 下書き・予約: 下書きの一覧と予約の一覧をタブで切り替える画面を開き、選んだ下書きか
- *   予約の内容をセグメントへ戻す。
- * - 予約投稿が無効のときにカレンダーのボタンを押すと、設定で有効にする案内を出し、
- *   「設定を開く」で設定のページへ移る。
- * - 作成中（未保存の本文がある）にリンクで他のページへ移ろうとしたときは、移動を止めて
- *   下書き保存の確認（保存して移る・破棄して移る・編集を続ける）を出す。
+ * - クロスポストの対象は先頭セグメントのみ。
+ * - SSR と hydration の一致のため、設定値はマウント後に反映する。
  */
 import { useLocale, useT } from "@/components/i18n/useTranslation"
 import { renderSlots } from "@/components/i18n/renderSlots"
@@ -223,7 +204,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 同期トグルをlocalStorageから読み直す。「画面を開いた時は常に最後に編集された
     // デフォルト値」を実現するための再読込であり、`Settings`コンポーネントの
     // reloadRefパターンと同じ趣旨。先頭セグメントの返信/引用設定にのみ反映する
-    // （ルートセグメントの設定を「デフォルト」として扱う既存の考え方を踏襲）。
+    // （ルートセグメントの設定を「デフォルト」として扱う）。
     const [syncGateDefaultAfterPost, setSyncGateDefaultAfterPost] = useState(
       () => readSyncGateDefaultAfterPostSetting(false),
     )

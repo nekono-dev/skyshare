@@ -1,5 +1,7 @@
+/**
+ * Verifies DOM access and cleanup in the happy-dom component environment.
+ */
 // @vitest-environment happy-dom
-// component 層の基盤の確認: happy-dom のファイルは DOM を使え、テスト後に片付けられる
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 

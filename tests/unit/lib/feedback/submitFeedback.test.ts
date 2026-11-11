@@ -1,10 +1,5 @@
 /**
- * 送信の判定（設定の確認・回数の制限・Issue の登録）の単体テスト（src-pages-thin 3.1・要件 3.1〜3.3）。
- *
- * 責務と処理概要:
- * - 認証情報・リポジトリの欠落は 503、回数の制限は 429、登録の失敗は 500 を、戻り値の失敗として返すことを固定する。
- * - 成功は作成した Issue の番号と URL を返すことを固定する。
- * - 外部トークンの値は、戻り値にもエラーの内容にも含まれないことを固定する。
+ * Verifies feedback submission limits, failures, and successful results.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 

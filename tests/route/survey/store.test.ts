@@ -1,4 +1,6 @@
-// アンケートの匿名性（P0・要件 2.1 の「アンケートの匿名性」）: 回答者の DID を保存しない、重複は一度だけ、削除は対象のアンケートだけ
+/**
+ * Verifies anonymous survey persistence and cleanup.
+ */
 import { env } from "cloudflare:test"
 import type { D1Database } from "@/lib/platform/cfTypes"
 import { describe, expect, it } from "vitest"

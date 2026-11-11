@@ -1,6 +1,6 @@
-// wrangler 設定（JSONC）から Worker の名前を読む。scripts/secrets/sync-github-variables.mjs と scripts/secrets/ensure-worker-secrets.mjs が使う。
-//
-// 責務: 正規表現ではなく構造で読む。`"name"` は d1_databases などの入れ子にも現れうるため、トップレベルの値だけを取る。
+/**
+ * `scripts/secrets/sync-github-variables.mjs` と `scripts/secrets/ensure-worker-secrets.mjs` が使う Worker 設定の読み取り。
+ */
 
 import { parseJsonc } from "./jsonc.mjs"
 

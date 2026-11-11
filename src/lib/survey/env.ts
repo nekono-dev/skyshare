@@ -1,10 +1,7 @@
 /**
- * ログイン時アンケートの API が使う Worker のバインディング（D1・静的アセット・鍵）を取得する。
+ * ログイン時アンケート API が使う Worker バインディングを取得する。
  *
- * 責務と処理概要:
- * - `cloudflare:workers` を動的に import して env を返す（静的 import にしない）。
- * - テストではこのモジュールを差し替えて、フェイクのバインディングを返す。
- * - `@atproto/*` に依存しない。
+ * - `cloudflare:workers` は動的 import で取得する。
  */
 import type { D1Database } from "@/lib/platform/cfTypes"
 

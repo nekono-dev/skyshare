@@ -1,23 +1,11 @@
-// 配備の前後に、Worker が使うシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY・SURVEY_HASH_KEY）が未登録なら生成して登録するスクリプト。
-//
-// 責務:
-// - 配備先（`wrangler.jsonc` の name の Worker。`--develop` ではそのプレビューの基本設定も）に登録済みのシークレットの名前を調べ、
-//   足りないものだけを生成して `wrangler secret put` で登録する
-// - 登録済みの値は上書きしない（値は読み出せないため、確かめられるのは名前の有無だけ）
-// - develop とプレビューの基本設定は同じ値にそろえる（D1 を共用し、プレビューで許可した予約も develop の Cron が更新するため）
-//
-// 片方にだけ登録済みのとき（値を写せないため、そろえ直すしかない）:
-// - OAUTH_CLIENT_KEY: 作り直して両方へ登録する。古い鍵で得た予約の許可は、利用者が許可し直す
-// - SCHEDULE_ENC_KEY: 作り直すと保管済みの認証情報が復号できなくなるため、登録せずに失敗で終える（手で対処する）
-// - SURVEY_HASH_KEY: 作り直すと保管済みの回答済みの記録と一致しなくなる（再回答できてしまう）ため、登録せずに失敗で終える（手で対処する）
-//   本番は独立した D1 を持つので、develop とは別の値になる。SCHEDULE_ENC_KEY とも別のキー・別の値である
-//
-// 既にある Preview は、作られた時点の基本設定のシークレットを持ち続ける（後から基本設定に足しても届かず、値も読み出せない）。
-// `--preview <名前>` を付けると、その Preview に必要なシークレットが欠けているとき Preview を削除する。
-// 直後の `wrangler preview` が、同じ名前（同じ URL）で基本設定から作り直す。
-//
-// 使い方: node scripts/secrets/ensure-worker-secrets.mjs [--develop [--preview <名前>]]（render-deploy-config.mjs の後に実行する）
-// 生成した値は wrangler の標準入力にだけ渡し、標準出力・ログ・ファイルには出さない。
+/** Worker と Preview に必要なシークレットを確認し、不足分を生成して登録する。
+ * 値は読み出せないため登録済みの値を上書きせず、生成値はログやファイルに出さない。
+ * 使い方: node scripts/secrets/ensure-worker-secrets.mjs [--develop [--preview <名前>]]（render-deploy-config.mjs の後に実行）
+ */
+// develop と Preview は D1 を共有し、Preview で許可した予約も develop の Cron が更新するため同じ値を使う。
+// 既存 Preview は作成時の秘密情報を保持し、後から追加した値は届かない。欠落時は削除後に同じ名前で作り直す。
+// 暗号鍵や回答照合鍵の再生成は保存済みデータを使えなくするため、自動修復せず失敗させる。
+// OAuth 鍵の再生成では、古い鍵で得た利用者の許可を再取得する必要がある。
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"

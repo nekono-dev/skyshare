@@ -1,12 +1,7 @@
 /**
- * `structure.md` の領域の一覧と、実装の領域（`src/lib/`・`src/components/`）の差を検査するテスト（src-folder-layout 1.3・要件 5.1〜5.3）。
+ * Checks that documented library and component areas match the source tree.
  *
- * 責務と処理概要:
- * - `src/lib/` の直下のフォルダと `.ts` ファイル、`src/components/` の直下のフォルダを、領域として数える。
- * - 各領域は、`structure.md` にバッククォートで `lib/<名前>` または `components/<名前>` の形で現れることを求める。
- * - 一覧にない領域を、差として報告する（失敗のメッセージに名前が出る）。
- * - 検査は文字列に対して行い、モジュールは import しない。
- * - 負例（検査が機能することの確認）: 固定の文書と領域の一覧を与え、一覧にない領域だけが報告されることを確かめる。
+ * - Scans text and paths without importing modules.
  */
 import { readdirSync, statSync } from "node:fs"
 import path from "node:path"
@@ -50,15 +45,15 @@ const listComponentRegions = (): string[] => {
         .sort()
 }
 
-describe("structure.md の領域の一覧（src/lib・src/components）", () => {
+describe("Documented library and component areas", () => {
     const markdown = readSteeringStructure()
     const regions = regionTokens(listLibRegions(), listComponentRegions())
 
-    it("実装の領域（lib の領域と components の領域）がすべて一覧に含まれる", () => {
+    it("all library and component areas appear in the list", () => {
         expect(findMissingRegions(markdown, regions)).toEqual([])
     })
 
-    it("負例: 一覧にない領域を差として報告する", () => {
+    it("reports areas missing from the list", () => {
         const fixture = "- `lib/api`\n- `components/common`\n"
         expect(
             findMissingRegions(fixture, [

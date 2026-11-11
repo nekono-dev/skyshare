@@ -1,3 +1,7 @@
+/**
+ * タイムライン用の静的な動画サムネイルを表示する。
+ * 再生時間を取得できないため、再生時間バッジは表示しない。
+ */
 import type { SourceVideo } from "@/lib/entry/entry"
 import VideoPlayButton from "@/components/timeline/PostBody/VideoPlayButton"
 import styles from "./index.module.css"
@@ -10,11 +14,6 @@ export const videoAspectOf = (video: SourceVideo): string =>
     ? `${video.aspectRatio.width} / ${video.aspectRatio.height}`
     : DEFAULT_VIDEO_ASPECT
 
-/**
- * Timeline 用の動画の静的表示。poster の中央に再生ボタンを重ねる。
- * インタラクションを持たず、動画は再生されない。再生時間は取得できないため
- * 再生時間バッジは表示しない。
- */
 const VideoThumbnail = ({ video }: { video: SourceVideo }) => (
   <div
     className={styles.frame}

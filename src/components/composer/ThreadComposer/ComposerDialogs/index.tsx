@@ -1,3 +1,7 @@
+/**
+ * 投稿フォームで使う下書き・予約・認証・共有などのダイアログをまとめて表示する。
+ * 開閉状態と処理は投稿フォーム本体が管理する。
+ */
 import { type Dispatch, type SetStateAction } from "react"
 import { useT } from "@/components/i18n/useTranslation"
 import Loading from "@/components/common/Loading"

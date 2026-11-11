@@ -1,13 +1,8 @@
 /**
- * legacy pageDB 連携ユーティリティ。
+ * 旧サービス pageDB の投稿データを legacy backend 経由で扱う。
  *
- * 責務と処理概要:
- * - openapi(`/legacy/page`)経由で orval 生成された client 関数を呼び出す。
- *   legacy backend へのホスト付け替えは `@/lib/codegen/fetcher` の `customFetcher` が担う。
- * - レスポンスを成功/失敗を判別可能な型へ正規化する。
- *
- * 実装上の制約:
- * - Cloudflare Workers 環境で動作するため Node.js 固有 API は利用しない。
+ * - backend のホスト切り替えは `@/lib/codegen/fetcher` の `customFetcher` が担う。
+ * - Cloudflare Workers で動作するため Node.js 固有 API を使わない。
  */
 import { deleteLegacyPage, getLegacyPage } from "@/client/openapi/client"
 
@@ -33,7 +28,7 @@ export type PageDbError = {
  * legacy pageDB から投稿情報(OGP画像・投稿者handle・添付画像)を削除する。
  *
  * 処理の趣旨:
- * - 旧システムのpageDBはlegacy backend経由でのみ参照可能なため、SSR上でHTTP越しに問い合わせる。
+ * - 旧サービス pageDB は legacy backend 経由でのみ参照できるため、SSR から HTTP で問い合わせる。
  * - legacy backend の `DELETE /page` を呼び出す。投稿者本人であることの検証は
  *   legacy backend 側が `accessJwt` から解決した DID と pageDB 上の DID を突き合わせて行う。
  * - `did` / `accessJwt` は呼び出し元（v2 セッション）由来のものをそのまま転送し、
@@ -91,7 +86,7 @@ export const deletePageDbEntry = async ({
  * legacy pageDB から投稿情報(OGP画像・投稿者handle・添付画像)を取得する。
  *
  * 処理の趣旨:
- * - 旧システムのpageDBはlegacy backend経由でのみ参照可能なため、SSR上でHTTP越しに問い合わせる。
+ * - 旧サービス pageDB は legacy backend 経由でのみ参照できるため、SSR から HTTP で問い合わせる。
  * - fetch失敗はいずれも `UnknownError` として呼び出し側へ返し、例外を投げない。
  *
  * Input:

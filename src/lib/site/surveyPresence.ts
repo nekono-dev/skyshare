@@ -1,12 +1,8 @@
 /**
- * 配信用のアンケート設定がビルドに含まれるかの判定（純粋関数）。
+ * 配信用アンケート設定がビルドに含まれるかを判定し、公開用の値に変換する。
  *
- * 責務と処理概要:
- * - 変数 `SURVEY_CONFIG` が空白でない、または生成物 `public/surveys/index.json` が存在するとき「ある」と判定する。
- * - 判定結果を、ビルド定数 `PUBLIC_SURVEY_CONFIG_PRESENT`（"true" / "false"）に変換する。
- *   画面とサーバーは、この旗が "true" のときだけ設定を取得する（`src/lib/survey/loadConfig.ts`）。
- * - `import.meta.env` と Node 固有の API に依存しない。`astro.config.mjs`（Node）から読み込める
- *   （ファイルの存在の確認自体は `astro.config.mjs` が行い、ここには真偽で渡す）。
+ * - 環境変数に値があるか、生成物 `public/surveys/index.json` が存在すれば設定ありとする。
+ * - `astro.config.mjs`（Node）から使うため、環境値とファイル存在の判定結果を引数で受け取る。
  */
 
 type Env = Record<string, string | boolean | undefined>

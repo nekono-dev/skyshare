@@ -1,6 +1,8 @@
-// JSONC（コメントと末尾のカンマを許す JSON）を読む。config/wrangler.template.jsonc の読み取りに使う。
-//
-// 責務: 文字列の中の `//` や `,` を壊さずに、コメントと末尾のカンマを取り除いてから JSON として読む。
+/**
+ * `scripts/config/render-wrangler.mjs`・`scripts/lib/wrangler.mjs`・`hack/survey-cli/remote.ts` が使う、JSONC 文字列を JSON として解析する。
+ *
+ * - 文字列の中の `//` や `,` を壊さずに、コメントと末尾のカンマを取り除く。
+ */
 
 /** JSONC の文字列を、コメントと末尾のカンマを除いて JSON として読む */
 export const parseJsonc = text => {

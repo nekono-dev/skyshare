@@ -1,3 +1,9 @@
+/**
+ * 投稿画像の選択、クロップ調整、個別プレビューを管理する。
+ *
+ * - クロップ対象は先頭 `VISUAL_IMAGE_COUNT` 枚で、残りは visual 対象外として扱う。
+ * - 投稿画像数は `MAX_POST_IMAGES` を超えない。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import type { DeferredMessage } from "@/lib/i18n/translate"
 import {
@@ -32,18 +38,6 @@ import { computeCroppedImageStyle } from "./croppedImageStyle"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 import pic from "@/images/image.svg"
-
-/**
- * 投稿画像の選択とクロップ調整を担うコンポーネント。
- *
- * 責務と処理概要:
- * - ファイル入力から最大 `MAX_POST_IMAGES` 枚の画像を受け取り、スロット情報を管理する。
- * - visual（合成サムネイル）の対象は先頭 `VISUAL_IMAGE_COUNT` 枚のみ。5枚目以降は
- *   クロップ対象外として扱い、プレビューに「Visual対象外」ラベルを付ける。
- * - 初期クロップを算出して投稿用画像を生成し、親へ `ImageEntry` を通知する。
- * - クロップダイアログで再調整した結果を反映する。
- * - 各画像を個別サムネイルとして表示し、個別削除・alt編集を提供する。
- */
 
 export type SlotCropState = {
   crop: { x: number; y: number }

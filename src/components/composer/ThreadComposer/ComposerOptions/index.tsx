@@ -1,3 +1,7 @@
+/**
+ * 投稿フォームの共有方法、投稿後の設定、固定表示のオプションを表示する。
+ * 値の保存と画面状態は投稿フォーム本体が管理する。
+ */
 import { renderSlots } from "@/components/i18n/renderSlots"
 import { useT } from "@/components/i18n/useTranslation"
 import AutoPopupTargetSelect from "@/components/common/select/AutoPopupTargetSelect"
@@ -36,7 +40,7 @@ const ComposerOptions = ({
   const { t, raw } = useT()
   return (
     <div className={ui["base-component"]}>
-      {/* 情報の密度を下げるため、設定値によらず常に閉じた状態で表示する */}
+      {/* 情報量を抑えるため、初期状態は閉じて表示する。 */}
       <Collapsible label={t("post.composer.moreOptions")}>
         <div className={ui["toggle-box"]}>
           <ToggleSwitch

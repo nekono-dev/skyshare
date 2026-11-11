@@ -1,11 +1,7 @@
 /**
- * 規則 typesLeaf（structure-checks 3.3）の単体テスト。
+ * Tests dependency rules for modules under `src/types/`.
  *
- * 責務と処理概要:
- * - `evaluateImportRules` に加わった辺の規則 typesLeaf を、ModuleGraph の値（fixture）で固定する。
- * - 違反（`src/types/` から、`src/types/` の外のモジュール・パッケージへの辺）と、正例（型どうし・外から型への辺）を確かめる。
- * - 型だけの辺（`import type`）も違反として数えることを確かめる。
- * - 末尾の describe で、実リポジトリの `src/types/` の辺と本文が 0 件であることを確かめる（6.2）。
+ * - Covers both fixed graphs and the repository source tree.
  */
 import { readFileSync } from "node:fs"
 import path from "node:path"
@@ -44,8 +40,8 @@ const graphOf = (edges: ImportEdge[]): ModuleGraph => {
 const typesLeafViolations = (edges: ImportEdge[]) =>
     evaluateImportRules(graphOf(edges)).filter(v => v.ruleId === "typesLeaf")
 
-describe("規則 typesLeaf（structure-checks 3.3）", () => {
-    it("型から lib のモジュールへの辺を違反にする（負例: src/lib）", () => {
+describe("Type dependency rule", () => {
+    it("reports a dependency from a type module to a library module", () => {
         const found = typesLeafViolations([
             edgeTo("src/types/a.ts", { kind: "module", path: "src/lib/x.ts" }),
         ])
@@ -59,7 +55,7 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
         ])
     })
 
-    it("型から util のモジュールへの辺を違反にする（負例: src/util）", () => {
+    it("reports a dependency from a type module to a utility module", () => {
         const found = typesLeafViolations([
             edgeTo("src/types/a.ts", { kind: "module", path: "src/util/y.ts" }),
         ])
@@ -70,7 +66,7 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
         })
     })
 
-    it("型からパッケージへの辺を違反にする（負例: パッケージ）", () => {
+    it("reports a dependency from a type module to a package", () => {
         const found = typesLeafViolations([
             edgeTo("src/types/a.ts", { kind: "package", name: "zod" }),
         ])
@@ -82,7 +78,7 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
         })
     })
 
-    it("型だけの辺（import type）も違反として数える", () => {
+    it("counts type-only import edges as violations", () => {
         const found = typesLeafViolations([
             edgeTo(
                 "src/types/a.ts",
@@ -93,7 +89,7 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
         expect(found).toHaveLength(1)
     })
 
-    it("型どうしの辺は違反にしない（正例: src/types 内）", () => {
+    it("allows dependencies between type modules", () => {
         const found = typesLeafViolations([
             edgeTo("src/types/a.ts", {
                 kind: "module",
@@ -103,7 +99,7 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
         expect(found).toEqual([])
     })
 
-    it("外から型への辺は違反にしない（正例: src/lib → src/types）", () => {
+    it("allows dependencies from other modules to type modules", () => {
         const found = typesLeafViolations([
             edgeTo("src/lib/x.ts", { kind: "module", path: "src/types/a.ts" }),
         ])
@@ -114,7 +110,7 @@ describe("規則 typesLeaf（structure-checks 3.3）", () => {
 // 実リポジトリの走査（6.2）。`src/types/` の型だけの辺と本文が 0 件であること
 const repoRoot = path.resolve(__dirname, "../../..")
 
-describe("実リポジトリの src/types/（structure-checks 6.2）", () => {
+describe("Type dependencies in the repository", () => {
     const graph = scanModules(repoRoot)
     const typesFiles = graph.modules
         .filter(m => m.startsWith("src/types/") && m.endsWith(".ts"))
@@ -123,14 +119,14 @@ describe("実リポジトリの src/types/（structure-checks 6.2）", () => {
             text: readFileSync(path.join(repoRoot, m), "utf8"),
         }))
 
-    it("typesLeaf の辺が 0 件である（要件 8.5）", () => {
+    it("there are no type dependency violations", () => {
         const found = evaluateImportRules(graph).filter(
             v => v.ruleId === "typesLeaf",
         )
         expect(found).toEqual([])
     })
 
-    it("src/types/ の本文に typesOnly の違反が 0 件である（要件 8.5）", () => {
+    it("there are no runtime value violations under src/types", () => {
         expect(typesFiles.length).toBeGreaterThan(0)
         expect(findTypesOnlyViolations(typesFiles)).toEqual([])
     })

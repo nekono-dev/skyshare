@@ -1,11 +1,7 @@
 /**
- * 投稿フォームの @メンション/#ハッシュタグ候補表示のON/OFF設定を localStorage で管理するユーティリティ。
+ * 投稿フォームのメンション・ハッシュタグ候補表示設定を管理する。
  *
- * 責務と処理概要:
- * - `useSuggest`（`src/components/composer/ThreadComposer/hooks/useSuggest.ts`）が候補ポップアップ自体を
- *   出すかどうかの判定に使う。
- * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする
- *   （`src/lib/settings/shareSettings.ts` と同じ方針）。
+ * - SSR や localStorage の利用不可時、または読み書きの失敗時は呼び出し側の既定値を使う。
  */
 
 const HASHTAG_SUGGEST_ENABLED_KEY = "hashtagSuggestEnabled"

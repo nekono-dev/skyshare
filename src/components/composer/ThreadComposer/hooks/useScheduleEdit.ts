@@ -1,3 +1,7 @@
+/**
+ * 予約編集の取り消しと、予約内容のフォームへの適用を管理する。
+ * 下書きフローの閉じる処理と確認遷移に依存するため、その後に呼び出す。
+ */
 import { type Dispatch, type SetStateAction } from "react"
 import {
     cancelSchedule,

@@ -6,14 +6,16 @@
 
 ## Directory Roles
 
-| 場所                                     | 役割                                                                            |
-| ---------------------------------------- | ------------------------------------------------------------------------------- |
-| `src/pages/`                             | 入口。`*.astro` は画面、`*.ts` は API（`APIRoute`）                             |
-| `src/lib/<領域>/`                        | 業務の判断（検証・状態遷移・外部の呼び出し）。画面と API の両方から使う         |
-| `src/components/<領域>/<Name>/`          | 部品。1 部品 1 フォルダ                                                         |
-| `src/util/`・`src/styles/`・`src/types/` | 共通の関数・スタイル・型                                                        |
-| `src/client/openapi/`                    | 生成物（`orval`）。手で編集しない                                               |
-| `public/`                                | 静的ファイル。アンケートの設定は生成物として `public/surveys/` に出ることがある |
+| 場所                                     | 役割                                                                                |
+| ---------------------------------------- | ----------------------------------------------------------------------------------- |
+| `src/pages/`                             | 入口。`*.astro` は画面、`*.ts` は API（`APIRoute`）                                 |
+| `src/lib/<領域>/`                        | 業務の判断（検証・状態遷移・外部の呼び出し）。画面と API の両方から使う             |
+| `src/components/<領域>/<Name>/`          | 部品。1 部品 1 フォルダ                                                             |
+| `src/util/`・`src/styles/`・`src/types/` | 共通の関数・スタイル・型                                                            |
+| `src/client/openapi/`                    | 生成物（`orval`）。手で編集しない                                                   |
+| `tests/`                                 | テスト（層ごとの配置は [testing.md](testing.md)）                                   |
+| `scripts/<目的>/`・`config/`・`hack/`    | 運用の道具（ビルド・設定・秘密・E2E・依存規則の検査）、設定ファイル、運用者向け CLI |
+| `public/`                                | 静的ファイル。アンケートの設定は生成物として `public/surveys/` に出ることがある     |
 
 ## 入口（`src/pages/`）
 
@@ -72,4 +74,4 @@ import styles from "./index.module.css" // 同じフォルダ
 ---
 
 _Document patterns, not file trees. New files following these patterns shouldn't require updates._
-_updated_at: 2026-11-08_
+_updated_at: 2026-11-11_

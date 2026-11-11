@@ -1,12 +1,4 @@
-/**
- * 予約の作成入力の検証と、保管形式への変換。
- *
- * 責務と処理概要:
- * - 実行時刻（ISO 8601）を UNIX 秒へ変換し、現在から MIN_LEAD_SECONDS 以上
- *   MAX_LEAD_SECONDS 以下の範囲にあるかを判定する。
- * - 作成の入力に含まれる画像（投稿の画像・リンクカードの画像・代表画像）を取り出して
- *   番号を振り、本文の JSON からは番号の参照に置き換える。実行時にこの番号で R2 の画像を引く。
- */
+/** 予約の作成入力を検証し、実行時に画像を参照できる保管形式へ変換する。 */
 import type { RequestBodyType } from "@/lib/api/schema/v2/schedules/post"
 import { MAX_LEAD_SECONDS, MIN_LEAD_SECONDS } from "./scheduleLimits"
 

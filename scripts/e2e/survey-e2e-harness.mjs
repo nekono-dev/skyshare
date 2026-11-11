@@ -1,11 +1,4 @@
-// E2E の実行に検証用のアンケート設定を供給する処理のうち、純粋な部分。
-//
-// 責務:
-// - 自分で dev サーバーを起動するときだけ、検証用の設定を生成する（`run-e2e.mjs` が使う）。
-// - 検証用の設定を生成するときの環境変数を組み立てる。元の環境変数は書き換えない（復元に使うため）。
-// - 配信用の設定が無いときに、確認を見送る理由を作る（tests/e2e/fixtures.ts が使う）。
-//
-// 生成そのものは `npm run survey:render`（scripts/survey/render-survey-config.ts）に任せる。
+/** E2E の検証用アンケート設定と、配信設定が無い場合の見送り理由を組み立てる。 */
 import { readFileSync } from "node:fs"
 import { constants as osConstants } from "node:os"
 import path from "node:path"

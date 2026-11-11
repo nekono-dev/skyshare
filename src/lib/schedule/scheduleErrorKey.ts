@@ -1,10 +1,4 @@
-/**
- * 予約投稿の API エラーを、表示言語の文言キーへ変換する。
- *
- * 責務と処理概要:
- * - 409 は `error` の識別子で 3 種に分ける。それ以外はステータスで決める。
- * - サーバーの `error` 文字列は画面に表示しない。
- */
+/** 予約投稿の API エラーを、表示言語の文言キーへ変換する。 */
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 
 export const scheduleErrorKey = (

@@ -1,3 +1,4 @@
+/** アンケート設定の検証・正規化と、追加・更新に使う設定操作を提供する。 */
 import {
     parseSurveyConfig,
     type Survey,
@@ -112,7 +113,7 @@ const candidateSurvey = (draft: unknown, opensAt: string): Survey | null => {
  * - 検証済みの追加・更新結果、入力値を含まない不正、または容量超過
  *
  * 例:
- * - 入力: 2026年11月の下書き / 出力: `2026-11-1` と ISO 開始時刻を持つ設定
+ * - 入力: `2026年11月の下書き` / 出力: `2026-11-1` と ISO 開始時刻を持つ設定
  */
 export const addSurvey = (
     current: SurveyConfig,

@@ -1,3 +1,9 @@
+/**
+ * キャレット位置にメンション・ハッシュタグ候補を表示する。
+ *
+ * - 候補状態は親の hook が管理し、表示と選択 UI を組み立てる。
+ */
+
 import { useT } from "@/components/i18n/useTranslation"
 import React from "react"
 import ComponentList from "@/components/common/list/ComponentList"

@@ -1,11 +1,7 @@
 /**
- * 投稿の引用（`app.bsky.embed.record`・`recordWithMedia` の引用部分）を表示する枠（`specs/entry-detail`）。
- *
- * 責務と処理概要:
- * - 引用元の作者・投稿日時・本文（リンク付き）・画像を枠に並べる。
- * - 枠の全体を覆うリンク（`.overlay`）で Bluesky の引用元を新しいタブで開く。本文のリンクは
- *   その上に重ねて押せるようにし、`<a>` の入れ子を作らない。
- * - 引用元が削除・ブロックされている場合は、表示できない旨だけを枠に出す。
+ * `app.bsky.embed.record` と `recordWithMedia` の引用部分を表示する。
+ * - 外側のリンクと本文リンクを重ね、`<a>` の入れ子を避ける。
+ * - 削除・ブロックされた引用元は案内だけを表示する。
  */
 import { useFormat, useT } from "@/components/i18n/useTranslation"
 import Avatar from "@/components/common/media/Avatar"

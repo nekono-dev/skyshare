@@ -1,12 +1,9 @@
 /**
  * 翻訳関数（`t`/`tn`）と辞書まわりの型。
  *
- * 責務と処理概要:
- * - 日本語辞書を基準に `MessageKey` と、各文言のプレースホルダ名から導出した
- *   パラメータ型 `MessageParams` を提供する。存在しないキー・不足したパラメータは型エラーになる。
- * - `createTranslator(locale)` は呼び出しごとに新しいオブジェクトを返すだけで、
- *   モジュールレベルの可変状態を持たない（Cloudflare Workers でリクエスト間の状態混在を避ける）。
- * - 複数形は `base_one`/`base_other` の規約で、`Intl.PluralRules` が選んだカテゴリのキーを引く。
+ * 辞書から型安全な翻訳関数を作り、複数形とプレースホルダを処理する。
+ *
+ * - 翻訳状態をモジュール間で共有しないため、Workers のリクエスト間で状態が混ざらない。
  */
 import type { Locale } from "./locale"
 import { en } from "./messages/en"

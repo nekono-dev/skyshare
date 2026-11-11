@@ -1,8 +1,4 @@
-/**
- * 予約投稿が使う Worker のバインディング（D1・R2・暗号鍵）を取得する。
- *
- * テストではこのモジュールを差し替えて、フェイクのバインディングを返す。
- */
+/** 予約投稿の Worker バインディング（D1・R2・暗号鍵）を取得する。 */
 import type { ScheduleEnv } from "@/lib/platform/cfTypes"
 
 export const getScheduleEnv = async (): Promise<ScheduleEnv> => {

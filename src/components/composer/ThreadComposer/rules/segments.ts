@@ -1,11 +1,6 @@
 /**
- * ThreadComposer のセグメント配列（スレッド投稿の各投稿単位）を扱う純粋関数群。
- *
- * 責務と処理概要:
- * - Reactの外側で完結する、セグメントの追加・削除・下書き変換・予約の書き戻しのロジックのみを持つ
- *   （DOM・API呼び出し・Reactの state 更新には一切触れない）。
- * - `specs/thread-composer`の決定により、先頭（1件目）segmentは
- *   スレッドの起点のため削除できない。2件目以降は編集中かどうかに関わらずいつでも削除できる。
+ * スレッドのセグメント生成・変換・投稿可否判定を行う純粋関数群。
+ * 先頭セグメントはスレッドの起点のため削除できない。
  */
 import type {
     CreateEntryBodySelfLabels,
@@ -266,8 +261,7 @@ export const areAllSegmentsPostable = (segments: SegmentState[]): boolean =>
  * セグメント配列を下書きAPI（`POST`/`PUT /v2/bsky/drafts`）の`posts`配列へ変換する。
  *
  * 処理の趣旨:
- * - 下書きは画像等の埋め込みを持たない既存方針（デバイスローカル参照のため）を踏襲し、
- *   `text`/`labels`のみを抽出する。
+ * - 画像等の埋め込みはデバイスローカル参照のため保存できず、`text`/`labels`のみを抽出する。
  *
  * Input:
  * - `segments`: 現在のセグメント配列
@@ -288,7 +282,7 @@ export const segmentsToDraftPosts = (
  *
  * 処理の趣旨:
  * - 画像・OGP・返信/引用設定は下書きに含まれないため、復元後は常に初期値になる
- *   （既存方針、design.md §4.4）。
+ *   （下書き API が画像・OGP・返信/引用設定を保持しないため）。
  *
  * Input:
  * - `posts`: 下書きの`posts`配列

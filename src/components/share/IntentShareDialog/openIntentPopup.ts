@@ -1,14 +1,8 @@
 /**
- * 外部SNSの投稿intentページをポップアップで開く共通処理。
+ * 外部SNSの投稿 intent ページをポップアップで開く。URL の組み立ては呼び出し側（`@/lib/share/intent`）が行う。
  *
- * 責務と処理概要:
- * - 各SNS向けintent機構（`@/lib/share/intent`）から共通で呼び出す、
- *   window.open実行と成功判定・opener切り離しのみを担う。
- * - intent URLの組み立て（テキスト整形・ドメイン検証など）は呼び出し側の責務とする。
- * - 投稿API呼び出しなど非同期処理を挟んでからintent URLが確定するケース向けに、
- *   ユーザー操作の直後（同期的なコールスタック内）で繋ぎページ（`/jump/`）の
- *   ポップアップを先に開いておき、URL確定後にそこへ遷移させる`preOpenPopupWindow`
- *   も提供する。
+ * - 投稿 API などの非同期処理の後に URL が確定する場合は、ユーザー操作の直後に繋ぎページ（`/jump/`）を
+ *   `preOpenPopupWindow` で先に開き、URL の確定後にそこへ遷移させる。
  */
 
 /**
@@ -64,7 +58,7 @@ export const preOpenPopupWindow = (): Window | null => {
  * - `url`: 開くintent URL（文字列化済み）
  * - `preOpenedWindow`: `preOpenPopupWindow`で事前に開いておいたウィンドウ。
  *   渡された場合はこのウィンドウへ`url`を遷移させる（新規に`window.open`しない）。
- *   投稿API呼び出し等のawaitを挟むフロー向けで、省略時は従来どおり新規に開く。
+ *   投稿API呼び出し等のawaitを挟むフロー向けで、省略時は新規に開く。
  *
  * Output:
  * - ウィンドウオープン（または遷移）に成功したら `true`

@@ -1,4 +1,6 @@
-// GitHub の Variables への登録（scripts/secrets/sync-github-variables.mjs）と、リポジトリの判定（scripts/lib/github.mjs）の純粋な部分
+/**
+ * Tests planning GitHub variable and secret updates from configuration.
+ */
 import { describe, expect, it } from "vitest"
 import {
     invalidVariables,
@@ -12,7 +14,7 @@ import { repositoryFromRemote } from "../../../scripts/lib/github.mjs"
 import { parseDotenv } from "../../../scripts/lib/dotenv.mjs"
 
 describe("variablesFromConfig", () => {
-    it("公開するドメインを SITE_HOST にし、空の値は登録しない", () => {
+    it("uses the public domain for SITE_HOST and omits empty values", () => {
         const desired = variablesFromConfig({
             siteHost: "skyshare.example.jp",
             vars: {
@@ -29,7 +31,7 @@ describe("variablesFromConfig", () => {
 })
 
 describe("invalidVariables", () => {
-    it("構文を壊す文字と、例示ドメインの SITE_HOST を拒否する", () => {
+    it("rejects syntax-breaking characters and example SITE_HOST domains", () => {
         expect(
             invalidVariables({
                 SITE_HOST: "skyshare.example.com",
@@ -45,7 +47,7 @@ describe("invalidVariables", () => {
         ])
     })
 
-    it("例示ドメインでも SITE_HOST 以外の値は拒否しない（連絡先の例は使える）", () => {
+    it("allows example domains for variables other than SITE_HOST", () => {
         expect(
             invalidVariables({
                 SITE_HOST: "skyshare.jp",
@@ -56,7 +58,7 @@ describe("invalidVariables", () => {
 })
 
 describe("planVariables", () => {
-    it("違う値・新しい変数は登録し、同じ値は触らず、config に無い変数は警告だけにする", () => {
+    it("updates changed and new variables, skips matching values, and warns about unknown variables", () => {
         const plan = planVariables(
             {
                 SITE_HOST: "skyshare.jp",
@@ -87,13 +89,13 @@ describe("repositoryFromRemote", () => {
         ["https://github.com/nekono-dev/skyshare", "nekono-dev/skyshare"],
         ["https://github.com/nekono-dev/skyshare.git\n", "nekono-dev/skyshare"],
         ["https://example.com/nekono-dev/skyshare.git", null],
-    ])("%s を %s と判定する", (url, expected) => {
+    ])("classifies %s as %s", (url, expected) => {
         expect(repositoryFromRemote(url)).toBe(expected)
     })
 })
 
 describe("parseDotenv", () => {
-    it("有効な KEY=value だけを読み、コメントアウトされた行と引用符を扱う", () => {
+    it("reads valid KEY=value entries and handles comments and quotes", () => {
         expect(
             parseDotenv("# 説明\n#OLD=x\nA='one'\nB=\"two\"\nC=\nD=a=b\n"),
         ).toEqual({ A: "one", B: "two", C: "", D: "a=b" })
@@ -101,7 +103,7 @@ describe("parseDotenv", () => {
 })
 
 describe("pickSecrets", () => {
-    it("値のある名前だけを取り出す", () => {
+    it("selects names that have values", () => {
         expect(pickSecrets({ A: "x", B: "", C: "z" }, ["A", "B", "D"])).toEqual(
             { A: "x" },
         )
@@ -109,7 +111,7 @@ describe("pickSecrets", () => {
 })
 
 describe("workerSecretTargets", () => {
-    it("本番・develop・プレビューの3つの登録先を作る", () => {
+    it("creates production, development, and preview targets", () => {
         const targets = workerSecretTargets("FEEDBACK_GITHUB_TOKEN", "skyshare")
         expect(targets.map(t => t.args)).toEqual([
             [
@@ -143,7 +145,7 @@ describe("workerSecretTargets", () => {
 })
 
 describe("isAdminOutput", () => {
-    it("admin の権限だけを書き込み可能と判定する", () => {
+    it("allows writes only for admin permissions", () => {
         expect(isAdminOutput("true\n")).toBe(true)
         expect(isAdminOutput("false\n")).toBe(false)
         expect(isAdminOutput("")).toBe(false)

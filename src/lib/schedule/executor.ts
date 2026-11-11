@@ -1,19 +1,9 @@
 /**
- * 1件の予約を、進捗に従って段階的に実行する。
+ * 予約 1 件を保存済みの進捗から再開して実行する。
  *
- * 責務と処理概要:
- * - 予約用の OAuth の認可（更新用トークンと DPoP の鍵）でアクセストークンを得て、
- *   回転した更新用トークンを投稿より先に保管する。PDS への要求には DPoP の証明を付ける。
- * - 画像のアップロード → 投稿の先頭からの順次作成 → 投稿ごとの制限の作成 → entry の作成の順に進める。
- * - 通信が1回成功するたびに進捗を保存する。通信の予算が尽きる・レート制限を受ける・
- *   一時的に失敗するときは、進捗を保ったまま待機中へ戻して次の実行に持ち越す。
- * - レコードは予約時に採番したキー（TID）で `putRecord` する。書き込み後・進捗の保存前に
- *   中断しても、再実行は同じキーへ書き込むため、同じ位置の投稿が2件になることはない。
- * - 認証の失効・入力の不正・画像の欠落は再試行せず、分類コードを記録して失敗にする。
- *
- * 実装上の制約:
- * - atproto のライブラリを読み込まない。レコードの組み立ては副作用のない純粋関数だけを使う。
- * - ログにはコードと識別子だけを出力し、トークンと応答の本文は出力しない。
+ * - Cron の経路で動くため `@atproto/*` を読み込まず、WebCrypto と fetch だけを使う（Workers Free の CPU 上限 10ms のため）。レコードの組み立ては副作用のない純粋関数だけを使う。
+ * - 回転した更新用トークンを投稿より先に保存する。画像のアップロード、投稿の順次作成、各投稿の制限、entry の順に進め、成功した通信ごとに進捗を保存する。
+ * - 予約時の TID による再実行は重複投稿を防ぎ、認証失効・不正入力・画像欠落は再試行しない。ログには分類コードと識別子だけを出し、トークンと応答の本文は出さない。
  */
 import { buildBskyPostRecord, BSKY_POST_COLLECTION } from "@/lib/atproto/post"
 import { buildPostgateRecord, buildThreadgateRecord } from "@/lib/atproto/gate"
@@ -77,7 +67,12 @@ const parseJson = <T>(text: string, fallback: T): T => {
     }
 }
 
-/** 通信の失敗の種類から、予約をどう扱うかを決める。`authCode` は認証の失敗で失敗にするときの分類 */
+/**
+ * 通信の失敗の種類から、予約をどう扱うかを決める。`authCode` は認証の失敗で失敗にするときの分類。
+ *
+ * - 通信の予算が尽きたとき・レート制限を受けたときは、進捗を保ったまま待機中へ戻し、次の実行に持ち越す（試行回数に数えない）。
+ * - 一時的な失敗も、進捗を保ったまま待機中へ戻して次の実行に持ち越す（試行回数に数える）。
+ */
 const stopFor = (kind: XrpcFailureKind, authCode?: FailureCode): Stop => {
     switch (kind) {
         case "BudgetExceeded":
@@ -112,7 +107,7 @@ export const executeSchedule = async (
         if (!ok) throw new Stop({ type: "abandon" })
     }
 
-    // 投稿の前に得る、PDS への要求の宛先と認証
+    // 投稿の前に得る、PDS への要求の宛先と認証。PDS への要求には、この認証で DPoP の証明を付ける
     let service = ""
     let auth: { session: DpopSession; accessToken: string } | null = null
 
@@ -151,7 +146,7 @@ export const executeSchedule = async (
             )
         }
         const credential = parseCredential(stored.token)
-        // 旧形式（アプリパスワード）の認証情報は使えない
+        // アプリパスワード形式の認証情報は使えない
         if (!credential) throw fail("CredentialInvalid")
         service = stored.service
 

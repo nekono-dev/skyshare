@@ -1,11 +1,4 @@
-/**
- * 予約用の認証情報の保管・状態・未使用の認証情報の印への置き換え（トークンは暗号化して保管）。
- *
- * 責務と処理概要:
- * - 認証情報（リフレッシュトークン）を暗号化してアカウントごとに1件保管し、復号して読む。
- * - 登録の状態・最後の使用と許可の時刻を返し、使用の時刻を更新し、削除する。
- * - 待機中・実行中の予約が無い未使用の認証情報を印に替え、古い印を削除する。
- */
+/** 予約用認証情報を暗号化して保管し、状態確認と未使用情報の整理を行う。 */
 import type { D1Database } from "@/lib/platform/cfTypes"
 import { decryptToken, encryptToken } from "@/lib/schedule/credentialCrypto"
 import { changesOf } from "./rows"

@@ -1,12 +1,6 @@
 /**
- * contenteditableのDOMを走査し、平文インデックスとDOM上の位置・Selection・キャレットを相互変換するファイル。
- *
- * 責務と処理概要:
- * - DOM（Node/Range/Selection）を文書順に走査して中間表現(TextPart[])へ変換し、平文を抽出する（`extractPlainText`）。
- * - 平文インデックスと`{node, offset}`を相互に変換し、Selection の取得とキャレットの設定を行う。
- * - 中間表現の組み立てと解決は `contentEditableModelParts.ts` に任せる。
- * - ここで想定するDOM構造はPostBodyEditorが自ら構築するもの（テキストノード / spanで
- *   ラップされたテキストノード / `<br>`）に限る。
+ * contenteditable の DOM と平文インデックス、Selection を相互変換する。
+ * 想定する要素はテキストノード・装飾 span・br に限る。
  */
 
 import {

@@ -1,5 +1,8 @@
-// 実 Bluesky（PDS）との契約を読み取り専用で確かめる。設定が無いときは全てスキップする（`npm run test:live`）。
-// 投稿などの書き込みは行わない。パスワードは表示しない（失敗メッセージにも含めない）。
+/**
+ * Verify the read-only contract with a real Bluesky PDS.
+ * - Skip all checks when live credentials are unavailable.
+ * - Never write posts or expose the app password, including in failures.
+ */
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
@@ -42,8 +45,8 @@ const xrpc = async (
     }
 }
 
-describe.skipIf(skipped)("atproto の契約（読み取り専用）", () => {
-    it("正しいパスワードでセッションを作り、DID とハンドルが設定と一致する", async () => {
+describe.skipIf(skipped)("AT Protocol read-only contract", () => {
+    it("creates a session whose DID and handle match the configured account", async () => {
         if (skipped) return
         const response = await xrpc(
             "POST",
@@ -58,7 +61,7 @@ describe.skipIf(skipped)("atproto の契約（読み取り専用）", () => {
         expect(sessionMismatches(response.body, live.identifier)).toEqual([])
     })
 
-    it("誤ったパスワードは 401 と AuthenticationRequired で拒否される", async () => {
+    it("rejects an incorrect password with 401 AuthenticationRequired", async () => {
         if (skipped) return
         const response = await xrpc(
             "POST",
@@ -73,7 +76,7 @@ describe.skipIf(skipped)("atproto の契約（読み取り専用）", () => {
         expect(response.body.error).toBe("AuthenticationRequired")
     })
 
-    it("ハンドルの解決とプロフィールの取得が、同じ DID とハンドルを返す", async () => {
+    it("handle resolution and profile lookup return the same DID and handle", async () => {
         if (skipped) return
         const resolved = await xrpc(
             "GET",

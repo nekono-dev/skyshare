@@ -1,11 +1,5 @@
 /**
- * スレッドグループ内の「事後entry作成のVisual取得元投稿」（FR-3）・
- * 「スレッド由来entryを持つ投稿」（FR-4）を判定するロジック。
- *
- * 責務と処理概要:
- * - `resolveEntryVisualSourcePost`: `specs/timeline`。
- * - `findEntryCarrier`: `specs/timeline`。
- * - いずれも`ThreadGroup`のみを入力に取る純粋関数で、UI（`ThreadCard`）から分離する。
+ * スレッドグループ内で、Entry の画像取得元と Entry が紐づく投稿を判定する。
  */
 import {
     hasEntryMedia,
@@ -25,7 +19,7 @@ import {
  * - `group`: グルーピング済みの投稿群
  *
  * Output:
- * - Visual取得元の投稿。以下のいずれかに該当する場合は`null`（要件FR-3、ボタン非表示）:
+ * - Visual取得元の投稿。以下のいずれかに該当する場合は`null`（ボタン非表示）:
  *   - 単独投稿（`replies.length === 0`。単独投稿は既存の独立ロジックで処理する）
  *   - ルート・repliesのいずれも画像・動画（再生可能な動画。`hasEntryMedia`）を持たない
  * - ルートが画像を持てばルート自身、持たなければrepliesのうちルートに最も近い
@@ -34,10 +28,7 @@ import {
  * ルート投稿・replies側にskyshare entryが紐づいているかどうかはこの判定に影響しない。
  * 判定がentryの有無（props由来で削除後も更新されない）に依存すると、ルートのentry削除後に
  * 作成ボタンが復帰しないため、entryの有無は`useSkyshareEntryStatus`の`display`に一任する。
- * 本機能の実装前に、スレッド中間の投稿を対象にentryが作成されていたケースが
- * これに該当しうるが、その場合でもルート投稿自身がentryを持たない限りルート
- * 投稿を起点とする新規entry作成を許可する（1スレッドグループ内に、後続投稿の
- * 既存entryとルート投稿の新規entryが共存しうる。要件FR-3）。
+ * 後続投稿の既存Entryとルート投稿の新規Entryは、同じスレッド内に共存しうる。
  */
 export const resolveEntryVisualSourcePost = (
     group: ThreadGroup,
@@ -57,7 +48,6 @@ export const resolveEntryVisualSourcePost = (
  *
  * Output:
  * - entryが紐づく投稿。単独投稿、またはグループ内のどの投稿にもentryが無い場合は`null`
- *   （要件FR-4）。
  */
 export const findEntryCarrier = (group: ThreadGroup): TimelinePost | null => {
     if (group.replies.length === 0) return null

@@ -1,3 +1,8 @@
+/**
+ * 入力値と複数の文字数カウンターをまとめて扱う入力部品。
+ *
+ * - カウント方法は各カウンターの `count` に委ね、入力の種類と自動伸長は props で選ぶ。
+ */
 import React, { useLayoutEffect, useRef } from "react"
 import {
   clampAutoGrowHeightPx,

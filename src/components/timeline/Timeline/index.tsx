@@ -1,14 +1,6 @@
 /**
- * 自分の投稿一覧と投稿ランチャーをまとめて扱うクライアントコンポーネント。
- *
- * 責務と処理概要:
- * - `/v2/entries` 取得処理を定義し、一覧コンポーネントへ提供する。
- * - ThreadComposer の投稿成功時に再取得トリガーを更新する。
- * - 「タイムラインを表示しない」設定がONの場合は、一覧の取得・表示と投稿ランチャー
- *   （フローティング/サイドバーの新規投稿ボタン）を省き、投稿フォームを常に固定表示する。
- *   一覧の取得で行っていた未ログイン判定（ログインページへの移動・ゲスト表示）は、
- *   セッションの取得結果で代わりに行う。
- * - ページング状態の管理は ComponentList 側へ委譲する。
+ * 投稿一覧、投稿フォーム、投稿ランチャーをまとめる。
+ * localStorage の設定はマウント後に読むため、SSR と初回クライアント描画の差による hydration mismatch を避ける。
  */
 
 import { useT } from "@/components/i18n/useTranslation"
@@ -59,49 +51,35 @@ type Props = {
 const Component = ({ avatarUrl }: Props) => {
   const translator = useT()
   const { t } = translator
-  // fetchPage は依存配列を空にした useCallback のため、最新の翻訳関数を ref で参照する。
-  // （依存に `t` を入れると言語切り替えで fetchPage が作り直され、再取得が走って
-  // 一覧・スクロール位置が失われるため。）
-  // 最新の翻訳関数（翻訳器）を保持する。
+  // fetchPage の依存配列を空に保ち、言語変更による再生成・再取得で一覧とスクロール位置を失わない。
   const translatorRef = useRef(translator)
   translatorRef.current = translator
   const [reloadKey, setReloadKey] = useState(0)
-  // 未ログイン(401)かつURLに`?guest`が付与されている場合のみ、ダミー投稿を表示する
-  // ゲストモードへ切り替える（`@/lib/guestMode`参照）。ログイン済みユーザーには無関係。
+  // 未認証かつ URL に ?guest がある場合だけ、ダミー投稿を表示する。
   const [guestMode, setGuestMode] = useState(false)
-  // SSRは常にfalse（固定表示あり）でレンダリングするため、初期stateもfalse固定にし、
-  // 実際の設定値はマウント後のuseEffectで反映する。ここをuseState(() =>
-  // readPinnedFormDisabledSetting(false))のように初期化関数内でlocalStorageを
-  // 読むと、クライアント初回レンダー（ハイドレーション）時点でSSR結果と異なる
-  // 値になり得て、ThreadComposer(固定表示)とPostLauncherのどちらを描画するかが
-  // サーバー/クライアント間で食い違いhydration mismatchを起こす。
+  // localStorage はサーバーにないため、SSR と同じ初期値で描画してから設定を読む。
   const [pinnedFormDisabled, setPinnedFormDisabled] = useState(false)
   useEffect(() => {
     setPinnedFormDisabled(readPinnedFormDisabledSetting(false))
   }, [])
-  // 「タイムラインを表示しない」設定。pinnedFormDisabled と同じ理由（hydration mismatch
-  // 対策）でマウント後に読み込む。読み込み前（null）の間は一覧の取得を始めないことで、
-  // 非表示設定のときに一覧を1回も取得しないようにする。
+  // 設定の読み込み前は一覧取得を止め、非表示設定で不要な API 呼び出しを起こさない。
   const [timelineHidden, setTimelineHidden] = useState<boolean | null>(null)
   useEffect(() => {
     setTimelineHidden(readTimelineHiddenSetting(false))
   }, [])
-  // タイムライン非表示中は「投稿フォームを固定表示しない」を無効とし、常に固定表示する。
+  // 一覧を隠す場合は投稿フォームを常に固定表示する。
   const showPinnedForm = !pinnedFormDisabled || timelineHidden === true
   const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState<string | null>(
     avatarUrl ?? null,
   )
-  // ハッシュタグ履歴（hashtagHistorySettings.ts）をアカウント別に分けるための識別子。
-  // getSession解決前はnullのままとし、その間は履歴の読み書きをスキップさせる。
+  // アカウント別のハッシュタグ履歴を扱うため、セッション解決までは未設定にする。
   const [resolvedDid, setResolvedDid] = useState<string | null>(null)
 
   useEffect(() => {
     setResolvedAvatarUrl(avatarUrl ?? null)
   }, [avatarUrl])
 
-  // 投稿一覧（getEntries）の取得完了を待たずにアバターを表示するため、
-  // AccountSwitcher/syncAccountAvatar と同じ取得処理(getActiveAccountInfo)を使い、
-  // タイミングを揃えつつ getSession の二重取得を避ける。
+  // 一覧取得を待たずにアバターを得るため、共有セッション取得を使い getSession の重複取得を避ける。
   useEffect(() => {
     let cancelled = false
 
@@ -127,8 +105,7 @@ const Component = ({ avatarUrl }: Props) => {
     }
   }, [])
 
-  // タイムライン非表示中は一覧の取得（getEntries）の401で行っていた未ログイン判定が
-  // 走らないため、セッションの取得結果で同じ扱い（ゲスト表示/ログインページへ移動）をする。
+  // 一覧を取得しない設定でも未認証を判定し、?guest ならデモ表示、それ以外はログインへ移動する。
   useEffect(() => {
     if (timelineHidden !== true) return
     let cancelled = false
@@ -175,8 +152,7 @@ const Component = ({ avatarUrl }: Props) => {
       limit,
     }: CursorPageFetchInput): Promise<CursorPageFetchResult<ThreadGroup>> => {
       try {
-        // 直近で未ログインと判明済み（`activeAccountSession.ts`参照）かつゲスト表示要求時は、
-        // 401確定済みの`getEntries`をわざわざ叩き直さずゲスト表示へ直行する。
+        // 未認証が確定済みなら、ゲスト表示のために 401 になる一覧 API を再度呼ばない。
         if (isGuestModeRequested() && isSessionKnownUnauthenticated()) {
           setGuestMode(true)
           return { items: getGuestDummyData(translatorRef.current).threads }
@@ -188,7 +164,7 @@ const Component = ({ avatarUrl }: Props) => {
         if (res.status === 200) {
           const threads = res.data.threads ?? []
 
-          // APIレスポンスに含まれる自分の投稿からアバターURLを補完する。
+          // セッションにアバターがない場合は投稿データから補う。
           const nextAvatarUrl = threads
             .flatMap(thread => [thread.rootPost, ...thread.replies])
             .find(
@@ -245,7 +221,7 @@ const Component = ({ avatarUrl }: Props) => {
     setReloadKey(prev => prev + 1)
   }
 
-  // ゲスト表示のダミーデータは表示言語で文言が変わるため、言語が変わったら再取得して差し替える。
+  // ダミーデータの文言は表示言語に依存するため、言語変更時に差し替える。
   const guestReloadKey = guestMode
     ? `${reloadKey}:${translator.locale}`
     : reloadKey
@@ -267,11 +243,7 @@ const Component = ({ avatarUrl }: Props) => {
   const message = infiniteController.message
   const removeItem = infiniteController.removeItem
 
-  // Timeline初回読み込み完了後に一度だけ、ハッシュタグ候補の初回履歴seedを試みる。
-  // 既にハッシュタグ履歴がある場合は seedHashtagHistoryFromRankedTags 側で書き込みが
-  // スキップされるが、その判定を待たず readHashtagHistory で先に確認することで、
-  // 履歴がある場合は countHashtagUsage の集計処理自体も行わないようにする。
-  // resolvedDid が未解決のうちは履歴キーを特定できないため待機する。
+  // 履歴がある場合は高コストの投稿集計を省き、アカウント ID が解決するまで seed を待つ。
   const hashtagSeedRef = useRef(false)
   useEffect(() => {
     if (hashtagSeedRef.current) return

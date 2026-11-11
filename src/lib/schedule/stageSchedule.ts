@@ -1,14 +1,4 @@
-/**
- * 予約の作成（POST /v2/schedules）と置き換え（PUT /v2/schedules/{id}）に共通の受け付け処理。
- *
- * 責務と処理概要:
- * - multipart の入力を作成と同じスキーマで解析し、投稿の作成と同じ規則で内容を検証する。
- * - 実行時刻 → 認証情報の登録 → 待機中の件数（作成のときだけ）→ 画像の保管 → 認証情報の使用時刻の更新
- *   の順に処理し、保存に使う本文と画像のキーを返す。保存そのものは呼び出し側が行う。
- *
- * 実装上の制約:
- * - `@atproto/*` を静的にも動的にも読み込まない（無料枠の CPU 時間を守るため）。
- */
+/** 予約の作成と置き換えに共通する入力検証と画像の保管を行う。 */
 import { formDataToObject } from "@/util/formData"
 import { isMultipartFormData } from "@/util/http"
 import { validateFacets } from "@/lib/atproto/facet"
@@ -99,6 +89,8 @@ export type StageResult =
  * - 成功: `{ ok: true, runAt, payload, imageKeys }`。保存に失敗したら呼び出し側が画像を消す
  * - 失敗: 範囲外・容量超過は 400、未登録は 409（ScheduleCredentialRequired）、
  *   再度の許可が必要なら 409（ScheduleReauthRequired）、上限は 429、保管の失敗は 500
+ *
+ * 実行時刻・認証情報・件数・画像の順に確認し、画像の保管後に認証情報の使用時刻を更新する。
  *
  * Example: `await stageSchedule(env, did, id, body, now, { countPending: true })`
  */

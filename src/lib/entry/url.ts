@@ -1,9 +1,5 @@
 /**
- * Skyshare / Bluesky の URL 生成・解析ユーティリティ群。
- *
- * 責務と処理概要:
- * - 投稿表示用 URL や CDN 画像 URL を生成する。
- * - at:// URI 文字列を repo/collection/rkey に分解する。
+ * Skyshare と Bluesky の URL を生成・解析する。
  */
 
 import { siteOrigin } from "@/vars"

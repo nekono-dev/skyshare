@@ -1,3 +1,8 @@
+/**
+ * 添付メディアを収め、削除と代替テキスト編集の操作を重ねるサムネイル枠。
+ *
+ * - `onEditAlt` が無い場合は代替テキスト編集ボタンを表示しない。
+ */
 import type { CSSProperties, ReactNode } from "react"
 import styles from "./index.module.css"
 

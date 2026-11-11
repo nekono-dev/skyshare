@@ -1,4 +1,6 @@
-// セッションの Cookie（P0・要件 2.1 の「セッション処理」）: 読み書き、失敗の種類、プールの上限と枠の扱い
+/**
+ * Verifies session cookie parsing, creation, and account-pool limits.
+ */
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
     admitSession,
@@ -175,7 +177,7 @@ describe("session cookie: account pool", () => {
         } as PooledAccount
         const incomingSame = passwordSession(TEST_DID, "renamed.test")
         const next = admitSession(current, [pooledOld], incomingSame)
-        // 同じ DID の古い枠は残さない（現在のアカウントだけを退避する）
+        // 同じ DID の枠を除き、現在のアカウントだけを退避する
         expect(
             next?.map(a =>
                 a.kind === "password" ? a.session.handle : "oauth",

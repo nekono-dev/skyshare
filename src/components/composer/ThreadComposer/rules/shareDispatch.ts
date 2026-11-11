@@ -1,13 +1,6 @@
 /**
- * PostForm の投稿成功後の共有ディスパッチ（ポップアップ/WebShareAPIの実行判断と
- * 実行、投稿先選択ダイアログの要否・ステータスメッセージの決定）を担うモジュール。
- *
- * 責務と処理概要:
- * - `specs/auto-popup` に定義された、共有系設定（WebShareの代わりにポップアップを開く・
- *   自動ポップアップするSNS・画像を自分で添付・長文を省略して共有）の組み合わせに応じた
- *   自動ポップアップ/WebShareAPI/投稿先選択ダイアログの分岐ロジックを集約する。
- * - Reactのstateには一切触れず、実行結果を `ShareDispatchResult` として返すのみ。
- *   呼び出し側（`index.tsx`）がその内容に応じて state を更新する。
+ * 投稿成功後に共有 API や投稿先選択を実行するか判定する。
+ * ブラウザー処理は呼び出し側から注入し、結果を state 更新に使える形で返す。
  */
 import type { ImageEntry } from "./entries"
 import type { MessageFormatter } from "@/lib/i18n/translate"
@@ -150,7 +143,7 @@ const buildWebShareData = ({
 /**
  * 投稿成功後の共有ディスパッチを実行する。
  *
- * 処理の趣旨（`specs/auto-popup` 準拠）:
+ * 処理の趣旨:
  * - PopupIntentInsteadOfWebshare がONの場合、AutoPopupTarget に従う。
  *   "ask"、または "mastodon"・"misskey" でインスタンスドメインが不正な場合は、ポップアップを開かず
  *   投稿先選択ダイアログを開く。X/タイッツー/Mastodon/Misskey が選ばれていれば、そのSNSの

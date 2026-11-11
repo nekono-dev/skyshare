@@ -1,18 +1,9 @@
 /**
- * entry の作成（POST）の判断（`specs/src-pages-thin` の EntryPost）。
+ * Skyshare Entry 作成要求を処理し、結果をページ向けに返す。
  *
- * 責務と処理概要:
- * - `uri` 指定時は既存投稿からの発行（from-post）に分岐し、その結果を応答の形にする。
- * - 新規投稿では、トップレベル `reply` の所有を検証し、`posts` の各要素・`createEntry` の
- *   検証と埋め込み・アップロード（`postEntryMedia`）を経て、`createBskyThread` で
- *   投稿・gate・skyshare entry を 1 回の `applyWrites` で作成する。
- * - 判断の結果を `Outcome<EntryPostResponse>` で返す。HTTP の応答への変換は呼び出し側（ページ）が行う。
- *
- * 注意:
- * - 入力の検証（ヘッダ・認証・FormData・スキーマ）はページが行い、検証済みの値を受け取る。
- * - `lib/api` は参照しない（`lib/api` が `lib/entry` を参照する循環を避けるため）。
- *   応答の形が api の推論型に代入できることは、ページの型注釈付きの代入で確かめる。
- * - 想定外の例外（from-post の途中の失敗など）は握りつぶさず、呼び出し側へ投げる。
+ * - 認証・FormData・スキーマ検証はページが行い、検証済み入力を受け取る。
+ * - `lib/api` を参照しないのは循環依存を避けるため。予期しない例外は呼び出し側へ投げる。
+ * - 新規投稿と関連レコードは `com.atproto.repo.applyWrites` で一括作成する。
  */
 import type { Agent } from "@atproto/api"
 import type { BskyReplyRef } from "@/lib/atproto/recordTypes"

@@ -8,7 +8,7 @@
 
 前提: comment-policy の作業 4.1（`tech.md` の改訂）が完了していること。未完了のあいだは実装を始めない（spec.json の `ready_for_implementation` は `false`）。comments-* の spec は直列に行い、並列にしない。
 
-- [ ] 1. 作業の前提を確かめる
+- [x] 1. 作業の前提を確かめる
 - [x] 1.1 作業前の基準線を記録する
   - comment-policy の作業 4.1 が完了していることを確かめる。未完了なら、ここで作業を止めて報告する
   - 作業を始める前の HEAD（基準のコミット）を記録する。以後の字句比較は、この版を基準にする
@@ -23,7 +23,7 @@
   - スクリプトはリポジトリに追加しない
   - _Requirements: 5.1, 5.2_
 
-- [ ] 2. G1（`atproto`・`api`・`codegen`・`platform`・`guestMode.ts`）を書き直す
+- [x] 2. G1（`atproto`・`api`・`codegen`・`platform`・`guestMode.ts`）を書き直す
 - [x] 2.1 `atproto` のうち `agentFactory.ts` から `nsid.ts` までの先頭ヘッダとコメントを書き直す（14 ファイル、約 700 行）
   - 先頭ヘッダが 6 行以内・箇条書き 3 件以内・目的 1〜2 行になり、`header-missing` が無くなる
   - コメントの行から、`specs/`・要件番号・AC/FR/NFR のタグ・cc-sdd・kiro・バッククォートの外の日付を取り除く（行末のコメントも含む）
@@ -32,20 +32,20 @@
   - _Boundary: G1 の atproto（前半）_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 2.2 `atproto` のうち `object.ts` から `videoAuth.ts` までの先頭ヘッダとコメントを書き直す（11 ファイル、約 670 行）
+- [x] 2.2 `atproto` のうち `object.ts` から `videoAuth.ts` までの先頭ヘッダとコメントを書き直す（11 ファイル、約 670 行）
   - 2.1 と同じ判断で書き直す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G1 の atproto（後半）_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 2.3 `api`・`codegen`・`platform`・`guestMode.ts` の先頭ヘッダとコメントを書き直す（12 ファイル）
+- [x] 2.3 `api`・`codegen`・`platform`・`guestMode.ts` の先頭ヘッダとコメントを書き直す（12 ファイル）
   - 2.1 と同じ判断で書き直す。`api/schema` には触れない
   - 生成に関わる `codegen` のコメントは、生成の振る舞いを変えない範囲で書き直す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G1 の api・codegen・platform・guestMode.ts_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 5.3, 7.1, 7.2, 7.3_
 
-- [ ] 2.4 G1 の検査を通し、許容リストの G1 の項目を消す
+- [x] 2.4 G1 の検査を通し、許容リストの G1 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G1 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G1 のパスの項目だけを手で消す（他の項目と形式は変えない）
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -53,14 +53,14 @@
   - _Boundary: G1 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 3. G2（`i18n`）を書き直す
-- [ ] 3.1 `i18n` の先頭ヘッダとコメントを書き直す（42 ファイル）
+- [x] 3. G2（`i18n`）を書き直す
+- [x] 3.1 `i18n` の先頭ヘッダとコメントを書き直す（42 ファイル）
   - 2.1 と同じ判断で書き直す。UI の文言（文字列リテラル）は変えない
   - 字句比較で、コードの行（文字列リテラルを含む）に差分が無い
   - _Boundary: G2 の i18n_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 3.2 G2 の検査を通し、許容リストの G2 の項目を消す
+- [x] 3.2 G2 の検査を通し、許容リストの G2 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G2 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G2 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -68,8 +68,8 @@
   - _Boundary: G2 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 4. G3（`schedule`）を書き直す
-- [ ] 4.1 `schedule` の先頭ヘッダとコメントを書き直す（30 ファイル）
+- [x] 4. G3（`schedule`）を書き直す
+- [x] 4.1 `schedule` の先頭ヘッダとコメントを書き直す（30 ファイル）
   - 2.1 と同じ判断で書き直す
   - Cron の経路の制約（`@atproto/*` を読まない、WebCrypto と fetch だけを使う、Free の CPU 制限）の理由は残し、現在形で書く
   - 認可の暗号化・冪等性・順序の制約の理由は、検証できる形で残す
@@ -77,7 +77,7 @@
   - _Boundary: G3 の schedule_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 4.2 G3 の検査を通し、許容リストの G3 の項目を消す
+- [x] 4.2 G3 の検査を通し、許容リストの G3 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G3 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G3 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -85,21 +85,21 @@
   - _Boundary: G3 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 5. G4（`entry`・`timeline`）を書き直す
-- [ ] 5.1 `entry` の先頭ヘッダとコメントを書き直す（18 ファイル）
+- [x] 5. G4（`entry`・`timeline`）を書き直す
+- [x] 5.1 `entry` の先頭ヘッダとコメントを書き直す（18 ファイル）
   - 2.1 と同じ判断で書き直す
   - 削除の対象の判定など、削除の安全性にかかわる理由は残す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G4 の entry_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 5.2 `timeline` の先頭ヘッダとコメントを書き直す（12 ファイル）
+- [x] 5.2 `timeline` の先頭ヘッダとコメントを書き直す（12 ファイル）
   - 2.1 と同じ判断で書き直す。「最小要件」など、正当な用法の語は変えない
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G4 の timeline_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 5.3 G4 の検査を通し、許容リストの G4 の項目を消す
+- [x] 5.3 G4 の検査を通し、許容リストの G4 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G4 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G4 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -107,21 +107,21 @@
   - _Boundary: G4 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 6. G5（`survey`・`settings`）を書き直す
-- [ ] 6.1 `survey` の先頭ヘッダとコメントを書き直す（17 ファイル）
+- [x] 6. G5（`survey`・`settings`）を書き直す
+- [x] 6.1 `survey` の先頭ヘッダとコメントを書き直す（17 ファイル）
   - 2.1 と同じ判断で書き直す
   - 匿名性の理由（回答者の識別子の扱い、ハッシュの入力）は残し、現在形で書く
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G5 の survey_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 6.2 `settings` の先頭ヘッダとコメントを書き直す（10 ファイル）
+- [x] 6.2 `settings` の先頭ヘッダとコメントを書き直す（10 ファイル）
   - 2.1 と同じ判断で書き直す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G5 の settings_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 6.3 G5 の検査を通し、許容リストの G5 の項目を消す
+- [x] 6.3 G5 の検査を通し、許容リストの G5 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G5 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G5 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -129,22 +129,22 @@
   - _Boundary: G5 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 7. G6（`session`・`oauth`・`feedback`）を書き直す
-- [ ] 7.1 `session` の先頭ヘッダとコメントを書き直す（10 ファイル）
+- [x] 7. G6（`session`・`oauth`・`feedback`）を書き直す
+- [x] 7.1 `session` の先頭ヘッダとコメントを書き直す（10 ファイル）
   - 2.1 と同じ判断で書き直す
   - トークンを HttpOnly の Cookie だけに置く理由、`cache-control: no-store`、Cookie の枠の理由は残す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G6 の session_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 7.2 `oauth`・`feedback` の先頭ヘッダとコメントを書き直す（16 ファイル）
+- [x] 7.2 `oauth`・`feedback` の先頭ヘッダとコメントを書き直す（16 ファイル）
   - 2.1 と同じ判断で書き直す
   - OAuth の仕様の参照（RFC・公式の仕様の URL）は残す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G6 の oauth・feedback_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 7.3 G6 の検査を通し、許容リストの G6 の項目を消す
+- [x] 7.3 G6 の検査を通し、許容リストの G6 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G6 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G6 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -152,21 +152,21 @@
   - _Boundary: G6 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 8. G7（`video`・`image`・`share`・`site`）を書き直す
-- [ ] 8.1 `video`・`image` の先頭ヘッダとコメントを書き直す（17 ファイル）
+- [x] 8. G7（`video`・`image`・`share`・`site`）を書き直す
+- [x] 8.1 `video`・`image` の先頭ヘッダとコメントを書き直す（17 ファイル）
   - 2.1 と同じ判断で書き直す
   - 動画の直接送信の理由（Workers を経由しない）と、画像の上限の理由は残す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G7 の video・image_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 8.2 `share`・`site` の先頭ヘッダとコメントを書き直す（14 ファイル）
+- [x] 8.2 `share`・`site` の先頭ヘッダとコメントを書き直す（14 ファイル）
   - 2.1 と同じ判断で書き直す
   - 字句比較で、コードの行に差分が無い
   - _Boundary: G7 の share・site_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 8.3 G7 の検査を通し、許容リストの G7 の項目を消す
+- [x] 8.3 G7 の検査を通し、許容リストの G7 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G7 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G7 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
@@ -174,27 +174,68 @@
   - _Boundary: G7 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 9. 最終統合の検証
-- [ ] 9.1 生成物に差分が出ていないことを確かめる
+- [x] 9. 最終統合の検証
+- [x] 9.1 生成物に差分が出ていないことを確かめる
   - `npm run codegen` を実行し、`src/client` に差分が無い
   - _Boundary: 最終統合_
   - _Requirements: 5.3_
 
-- [ ] 9.2 行末のコメントを含めて残りを確かめる
+- [x] 9.2 行末のコメントを含めて残りを確かめる
   - `src/lib`（`api/schema` を除く）の全行を対象に、`specs/`・`要件 数字.数字`・`AC`/`FR`/`NFR` と数字・`cc-sdd`・`kiro`・バッククォートの外の `20YY-MM-DD` を grep し、残りが無い（残す語は、読んで判断した理由とともに報告に挙げる）
   - 「旧」「移行」「以前は」「かつては」の語（`comments.md` の一覧）を grep し、残った箇所を読んで、経緯の記述でないことを確かめる
   - _Boundary: 最終統合_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.3, 7.1_
 
-- [ ] 9.3 許容リストと検査が整合していることを確かめる
+- [x] 9.3 許容リストと検査が整合していることを確かめる
   - `config/comments/allowlist.json` の所有者 `comments-lib` の項目が 0 件である
   - 他の所有者の項目の数が、1.1 の基準線から変わっていない（`comments-tests`・`comments-components-pages`・`comments-scripts-config`・`comments-api-schema` の項目の数が 449 件から変わらない）
   - `commentRules.test.ts` が 20 件すべて通過する
   - _Boundary: 最終統合_
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ] 9.4 全体の検証を通し、判別に迷ったコメントを報告にまとめる
+- [x] 9.4 全体の検証を通し、判別に迷ったコメントを報告にまとめる
   - `npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
   - 判別に迷って残したコメントを、ファイルと行の一覧にして完了の報告に挙げる。また、`tech.md` の先頭ヘッダの記述が基準と食い違う件（comment-policy の作業 4.1 で改訂する、未実施）を、報告に挙げる
   - _Boundary: 最終統合_
   - _Requirements: 4.5, 5.4, 7.1_
+
+## Implementation Notes
+
+### 判別に迷って残したコメント（要件 4.5。タスク 9.4 の報告に使う）
+
+- `src/lib/atproto/richTextSegments.ts:5`（タスク 2.2）: 先頭ヘッダの「`@atproto/*` を import しない。」。守るべき制約か実装の言い換えかを、リポジトリ内の文書と検査から確かめられなかったため残した。
+- `src/lib/i18n/messages/en/account.ts:1`・`en/page.ts:1`・`en/post.ts:1`・`en/settings.ts:1`（タスク 3.1）: 「スロット名は日本語辞書と一致させる」。キー集合の一致は型（`messageKeys.ts` の `EnglishMessages`、`messages/en/index.ts`）が検査するが、スロット名の過不足は型で検査されない（`translate.ts` の注記）。編集する人が守る条件として残した。
+- `src/lib/entry/legacyPagedb.ts:5`（タスク 5.1）: 「Cloudflare Workers で動作するため Node.js 固有 API を使わない。」。Workers で動くことは `tech.md` にあるが、Node.js 固有 API を使わないという制約の根拠を、文書・検査・import から確かめられなかったため残した。
+
+### 作業の進め方（後続のタスクへの申し送り）
+
+- 関数の JSDoc の「Input:」「Output:」「例:」の節は、既存の書き方として残す（タスク 2.1 の扱いにそろえる）。節の中の個々の行が基準に反するときだけ、その行を直す。
+- 先頭ヘッダの箇条書きのうち、実装形態の言い換え（「import を持たない」「型だけを持つ」「値を返すだけ」など）は削る。制約に見えるが理由を確かめられないものは、残してこの一覧に加える。
+- 字句の比較は、構文木の末端の字句（コメントを除く）で行う。`createScanner` だけの比較は、`${}` を含むテンプレート文字列の後で誤検出する。
+- 2026-11-11 の時点で、`src/lib/atproto` は作業前から検査の違反が 0 件だった（許容リストの `comments-lib` は 167 件）。タスク 1.1 の基準線（193 件、他の所有者 449 件）は現在の値と合わない。現在の他の所有者の合計は 447 件。
+- 先頭ヘッダの「6 行以内」は、検査（`comment-rules.ts` の `contentOf`）の数え方で数える。`/**`・`*/` の行と、内容の無いコメント行は数えない（目的 2 行と箇条書き 3 件なら内容 5 行）。
+- 長い先頭ヘッダを縮めるときは、作業前のヘッダの文ごとに、残した場所（ヘッダ・宣言の JSDoc・行のコメント）を対応させて確かめる。理由（制約の根拠、数値、失敗時の扱い、実行環境の前提、依存の向き）は、責務の列挙と一緒に削らない。
+- タスク 7.1 の注記にある「`cache-control: no-store`」は、`src/lib/session` のコメントにもコードにも存在しない（作業前から無い）。`no-store` を設定するのは `src/pages/` のレスポンスで、`src/pages` は comments-components-pages の担当。7.1 では、この領域に実在する理由（HttpOnly の Cookie にだけ置く理由、Cookie の枠）だけを残す。
+- 検査の違反が無く、責務の列挙などで基準に反する箇所も無いファイルは、書き換えない（作業前の版のまま残す）。タスク 8.1 では、違反の無い `image/postImageProcessing/compose.ts` で「最小要件」の語（要件 4.4）と関数の使われる場面が失われたため、作業前の版に戻した。
+
+### 完了の報告（タスク 9。2026-11-11）
+
+- 9.1: `npm run codegen` を実行し、生成物（`src/client`、git の追跡外）が、元のチェックアウトの生成物と一致した（`diff -r` が 0 件）。`src/lib/api/schema` は作業前から変更が無い（差分 0 行）。
+- 9.2: `src/lib`（`api/schema` と `*.d.ts` を除く 222 ファイル）を、行末のコメントを含めて grep した。`specs/`・要件番号・AC/FR/NFR・cc-sdd・kiro・バッククォート外の日付は 0 件。経緯の語（旧・移行・以前・かつて・経緯・従来・踏襲・これまで・もともと）は、`src/lib/entry/legacyPagedb.ts` の「旧サービス pageDB」「旧形式データ」だけで、製品の用語として残した（要件 3.3）。
+- 9.3: 許容リストの所有者 `comments-lib` の項目は 0 件（作業前 167 件）。他の所有者の項目は、comments-scripts-config 42・comments-tests 197・comments-components-pages 203・comments-api-schema 5（合計 447）で、作業前から変わらない。タスク 1.1 の基準線にある「449 件」は、作業開始時点の実際の値（447 件）と合っていなかった。`commentRules.test.ts` は 33 件が通過する（基準線の 20 件は、comment-policy の後にテストが増えた）。
+- 9.4: `npm run test:type`・`test:imports`（違反 0・許容 0・stale 0）・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。`src/lib`（`api/schema` を除く）222 ファイルの字句比較（基準は作業開始時の 0f4b7e32）は差分 0 件。
+- 判別に迷って残したコメントは、上の「判別に迷って残したコメント」の 2 件（`src/lib/atproto/richTextSegments.ts:5`、`src/lib/i18n/messages/en/{account,page,post,settings}.ts:1`）と `src/lib/entry/legacyPagedb.ts:5`。
+- `tech.md` の先頭ヘッダの記述が基準と食い違う件は、comment-policy の作業 4.1 で解消済み（`tech.md` の「Code Quality」は `comments.md` への参照 1 行）。
+- `cache-control: no-store`（タスク 7.1 の注記）は `src/lib/session` に存在せず、`src/pages` の担当（comments-components-pages）。
+
+### feature 検証（kiro-validate-impl, 2026-11-11）
+
+- 判定は `GO`。コミット済みの状態（d00e23da）で、`npm run test:type`・`test:imports`・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。起動の確認として、push 前フックの `npm run test:all`（e2e 10 件を含む）も通過した。タスクは全て `[x]`、`_Blocked:_` は無い。
+- 受入基準 34 件（要件 1〜7。独立した検証で数え直した。初めの記録の 42 は誤り）は、全てタスクの `_Requirements:_` から参照されている。判断が要る要件（3・4・7）は、独立レビューが 6 領域・19 ファイルを作業前の版と比べて確かめ、欠落や基準違反は見つからなかった。
+- 境界: 変更は `src/lib`（`api/schema` を除く）と許容リストの `comments-lib` の項目の削除だけ。`src/lib/api/schema`・`src/components`・`src/pages`・`tests`・`scripts`・`comments.md` への差分は 0。ファイルの追加・削除・改名は 0。Revalidation Triggers は発火していない。コードの字句は、222 ファイルで作業前と同一。
+- 設計書の追補の決定 2 件（`gate.ts` の許可ルールの合計の上限、`feedback` の送信間隔と rate limit の対応）は反映済み。
+- 設計書の「実装の前提」に残っていた古い記述（実装の保留）は、design.md に「現況（2026-11-11 追補）」を加えて更新した。
+
+### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
+
+- 判定は `GO`。要件 34 件がすべて「満たす」。受入基準の件数の記録（42 件）が実際（34 件）と違ったため訂正した。

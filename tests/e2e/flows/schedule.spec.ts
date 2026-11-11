@@ -1,11 +1,13 @@
-// 予約投稿の流れ（要件 10.1・10.2・10.3）: 設定で予約投稿を有効にし（OAuth の認可を偽の Bluesky で通す）、
-// 投稿フォームで予約日時を指定して予約すると、予約の一覧に表示される。予約の実行は検査しない（route 層で検証する）
+/**
+ * Verifies that a scheduled post can be enabled, created, and listed.
+ * Cron execution is covered by route tests.
+ */
 import { expect, test } from "@playwright/test"
 import { fakeRequestPaths, loginWithAppPassword } from "./support"
 
 const TEXT = "E2E の予約投稿です"
 
-/** 予約の日時（分まで）。入力欄（datetime-local）の書式に合わせる。現在から2時間後 */
+/** Returns a datetime-local value two hours ahead, rounded to the minute. */
 const runAtInput = (): string => {
     const d = new Date(Date.now() + 2 * 60 * 60 * 1000)
     const pad = (n: number) => String(n).padStart(2, "0")
@@ -19,10 +21,10 @@ test.describe("schedule flow", () => {
         await loginWithAppPassword(page)
         const before = (await fakeRequestPaths()).length
 
-        // 予約の認可（OAuth）。認可の画面は偽の Bluesky が省略し、戻りの画面で有効になる
+        // The fake Bluesky skips the OAuth consent screen and redirects back to enable scheduling.
         await page.goto("/settings/")
         await page.waitForLoadState("networkidle")
-        // スイッチの入力は視覚的に隠れているため、ラベルを押して切り替える
+        // The switch input is visually hidden, so click its label.
         await page.locator('label[for="setting-scheduledPost"]').click()
         await page
             .getByTestId("schedule-credential-dialog")
@@ -34,7 +36,7 @@ test.describe("schedule flow", () => {
             timeout: 30_000,
         })
 
-        // 投稿フォームで日時を指定して予約する
+        // Schedule a post for the selected date and time.
         await page.goto("/post/")
         await page.waitForLoadState("networkidle")
         const body = page.locator('[contenteditable="true"]').first()
@@ -53,12 +55,12 @@ test.describe("schedule flow", () => {
         )
         await page.getByRole("button", { name: "予約", exact: true }).click()
         expect((await scheduled).status()).toBe(200)
-        // 予約の作成は、偽の Bluesky へ書き込まない（実行は予約の時刻に Cron が行い、ここでは検査しない）
+        // Creating a schedule does not write to fake Bluesky; Cron performs the post at its scheduled time.
         expect((await fakeRequestPaths()).slice(before)).not.toContain(
             "POST /xrpc/com.atproto.repo.applyWrites",
         )
 
-        // 予約の一覧（下書き・予約の「予約」の表示）に、作成した予約が表示される（実行はされない）
+        // The created item appears in the scheduled list without executing it.
         await page.goto("/post/")
         await page.waitForLoadState("networkidle")
         await page.getByRole("button", { name: "下書き・予約" }).click()

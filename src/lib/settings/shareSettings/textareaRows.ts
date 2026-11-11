@@ -1,9 +1,7 @@
 /**
- * PostForm本文欄のtextarea行数（キーボード表示時に算出したrows）の読み書きを扱う。
+ * 投稿本文欄の行数設定を保持する。
  *
- * 責務と処理概要:
- * - 本文欄の行数を localStorage から読み取り、保存する。
- * - 保存失敗・localStorage 利用不可の場合は既定値へフォールバックする。
+ * - SSR や localStorage の利用不可時、または読み書きの失敗時は既定値を使う。
  */
 
 const TEXTAREA_ROWS_KEY = "textareaRows"

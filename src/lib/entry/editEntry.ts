@@ -1,15 +1,9 @@
 /**
- * skyshare entry の見出しと本文の更新の判断（`specs/src-pages-thin` の EntryEdit）。
+ * Skyshare Entry の見出しと本文を更新する判断を行う。
  *
- * 責務と処理概要:
- * - entry レコードの見出し（heading）と本文（caption）を更新する。
- * - entry の URI の所有検証はページが行い、検証済みの rkey を入力として受け取る。
- * - 判断の結果を `Outcome` で返す。HTTP の応答への変換は呼び出し側（ページ）が行う。
- *
- * 注意:
- * - `lib/api` は参照しない（`lib/api` が `lib/entry` を参照する循環を避けるため）。
- * - 想定外の例外（entry が見つからない・書き込みの失敗など）は握りつぶさず、呼び出し側へ投げる。
- *   ページの外側の `catch` で、現行と同じ状態コードに変換される。
+ * - URI の所有確認は呼び出し側が済ませ、検証済み rkey を受け取る。
+ * - `lib/api` を参照しないのは、`lib/api` からの循環依存を避けるため。
+ * - 予期しない例外は呼び出し側へ投げ、ページ側で状態コードに変換する。
  */
 import type { Agent } from "@atproto/api"
 import { updateSkyshareEntry } from "@/lib/entry/skyshareRecord"

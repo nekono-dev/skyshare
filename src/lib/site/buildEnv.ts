@@ -1,12 +1,8 @@
 /**
- * ビルドの版・コミット・リポジトリの解決（純粋関数）。
+ * ビルド時の版・コミット・ソースリポジトリを解決する。
  *
- * 責務と処理概要:
- * - CI（GitHub Actions の `GITHUB_SHA`・`GITHUB_REPOSITORY`）の値を優先し、なければ手元の Git の値から、
- *   ビルドしたコミットとソースコードのリポジトリ（`owner/repo`）を決める。
- * - 不具合の報告に、動作中のビルドを特定できる情報を載せるために使う。
- * - `import.meta.env` と Node 固有の API に依存しない。`astro.config.mjs`（Node）からも読み込める
- *   （Git の値の読み出し自体は `astro.config.mjs` が行い、ここには文字列で渡す）。
+ * - CI のコミット・リポジトリ情報を優先し、不正または未設定なら渡された Git 情報を使う。
+ * - `astro.config.mjs`（Node）からも使うため、環境変数や Node API を直接読まず、Git 情報は引数で受け取る。
  */
 
 export type BuildInfo = {

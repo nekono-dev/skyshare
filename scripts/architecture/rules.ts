@@ -1,10 +1,8 @@
 /**
- * 依存規則の検査の規則部品（R1・R2・R4a・R4b・R4c）。
+ * モジュール間の import 辺に依存規則を適用する。
  *
- * 責務と処理概要:
- * - 辺の集合に規則を適用し、違反の一覧を返す。純粋な関数で、ファイルを読まない。
- * - 規則の根拠は steering（`structure.md`）の規約だけに限る（要件 10.1）。
- * - 型だけの辺にも、値の辺と同じ規則を適用する（要件 5.1）。
+ * - 判定は入力だけで行い、型だけの辺にも同じ規則を適用する。
+ * - 規則の根拠は `structure.md` の依存規約に限る。
  */
 import type { ModuleGraph, ImportEdge } from "./import-graph"
 import { libLayerOf } from "./lib-layers"
@@ -36,7 +34,7 @@ export type Violation = {
     message: string
 }
 
-/** 規則ごとの根拠（steering の節）。規則は steering の規約だけから導く（要件 10.1）。 */
+/** 規則ごとの根拠。判定規則は `structure.md` の依存規約から導く。 */
 export const RULE_BASIS: Record<RuleId, string> = {
     layer: "structure*.md「Code Organization Principles」（依存の向き）",
     uiInLib:

@@ -1,13 +1,8 @@
 #!/usr/bin/env node
 /**
- * `src/lib/api/schema/**` のZodスキーマからOpenAPI 3.1ドキュメントを組み立てる。
- *
- * 責務と処理概要:
- * - `buildOpenApiDocument()` は `config/orval.config.ts` からそのままimportされ、
- *   ファイル書き出しを経由せずインメモリのOpenAPIドキュメントオブジェクトとして
- *   orvalに渡される(フロントエンド用クライアント生成はここに依存する)。
- * - CLIとしても実行可能(`npm run apigen:doc`)。ドキュメントを組み立てられるかを検証するだけで、
- *   ファイルへは書き出さない(スキーマが不正なら `createDocument` が失敗する)。
+ * Zod API スキーマから OpenAPI 3.1 文書を組み立て、Orval のクライアント生成へ渡す。
+ * CLI は文書を組み立てて検証し、ファイルには書き出さない。
+ * 使い方: `npm run apigen:doc`
  */
 import { fileURLToPath } from "url"
 import { createDocument } from "zod-openapi"

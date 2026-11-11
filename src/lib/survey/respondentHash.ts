@@ -1,12 +1,9 @@
 /**
- * RespondentHash: 回答者の一方向の値。
+ * 回答者をアンケートごとに照合する一方向ハッシュを生成する。
  *
- * 責務と処理概要:
- * - HMAC-SHA256(鍵, surveyId + did) を 16 進 64 文字で返す。
- * - 鍵は Base64 の 32 バイト。不正なら値を含まない固定の例外を投げる。
- * - 鍵・did・値をログや例外に含めない。Web Crypto だけに依存する（@atproto/* は import しない）。
- * - 入力は surveyId（[a-z0-9-] のみ）と did（"did:" 始まり）を区切りなしで連結する。
- *   surveyId は ":" を含まないため連結の境界は曖昧にならない。連結方法を変えると既存の記録と一致しなくなる。
+ * - HMAC-SHA256 の鍵は Base64 の 32 バイト。入力は `surveyId + did` を区切りなしで連結し、変更すると既存記録と一致しない。
+ * - surveyId は `[a-z0-9-]`、did は `did:` 始まり。鍵・did・ハッシュはログや例外に含めない。
+ * - Web Crypto のみを使う。不正な鍵は値を含まない固定例外とする。
  */
 
 const KEY_BYTES = 32
@@ -36,6 +33,8 @@ const decodeKey = (key: string): Uint8Array<ArrayBuffer> => {
  * Input: key（Base64 の 32 バイト）, surveyId, did
  * Output: 64 文字の 16 進
  * 例: respondentHash(key, "survey-2026-11", "did:plc:xxx") -> "f15d5e..."
+ * `surveyId` は `:` を含まず、入力を区切りなしで連結しても境界は曖昧にならない。
+ * 連結方法を変えると既存の記録と一致しない。
  */
 export const respondentHash = async (
     key: string,

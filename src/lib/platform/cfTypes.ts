@@ -1,9 +1,7 @@
 /**
- * 予約投稿が使う Cloudflare のバインディングの最小の型。
+ * 予約投稿で使用する Cloudflare バインディングの型を定義する。
  *
- * 責務と処理概要:
- * - リポジトリには `wrangler types` の生成物（worker-configuration.d.ts）を置かないため、
- *   予約投稿が実際に呼ぶメソッドだけを構造的に定義する。
+ * - リポジトリに `wrangler types` の生成物 `worker-configuration.d.ts` を置かないため、予約投稿が実際に呼ぶメソッドだけを構造的に定義する。
  * - テストでは同じ形のフェイクを渡せる。
  */
 

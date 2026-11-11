@@ -2,7 +2,6 @@
  * GET /v2/bsky/images/ — 自分のPDSから生の画像blobを取得する(Bluesky CDNはCORSヘッダを
  * 持たないためバイパスする)。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

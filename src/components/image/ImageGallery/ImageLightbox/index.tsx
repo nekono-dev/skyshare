@@ -1,21 +1,14 @@
+/**
+ * 画像を全画面で拡大表示し、複数画像の移動操作を提供する。
+ *
+ * - Esc・背景クリック・スクロールロックは Overlay に委ねる。
+ * - フォーカスを表示内に保ち、現在画像と前後1枚だけを描画して隣の画像を先読みする。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import React, { useEffect, useRef, useState } from "react"
 import Overlay from "@/components/common/dialog/Overlay"
 import type { SourceImage } from "@/lib/entry/entry"
 import styles from "./index.module.css"
-
-/**
- * 画像の拡大表示（ライトボックス）。
- *
- * 責務と処理概要:
- * - `Overlay` を土台に、画像を画面全体へ重ねて表示する（Esc・背景クリック・スクロールロックは Overlay が担う）。
- * - 複数枚のとき、前後ボタン・左右矢印キー・左右スワイプで画像を切り替える。
- * - 切り替えはスライドアニメーションで行う。前後の画像を横に並べ、スワイプ中は指に追従させ、
- *   離したときに閾値を超えていれば隣へ移動し、満たなければ元の位置へ戻す。
- * - マウント時に閉じるボタンへフォーカスし、Tab を拡大表示内の操作要素だけで巡回させる。
- * - 現在の画像と前後1枚だけをスライドとして描画する（隣の画像はスライド描画により先読みされる）。
- * - 設計: specs/image-gallery
- */
 
 type Props = {
   images: SourceImage[]

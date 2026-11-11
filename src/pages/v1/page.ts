@@ -1,19 +1,10 @@
 /**
- * legacy pageDB 投稿削除 API（v2 セッションを経由した legacy backend へのプロキシ）。
+ * legacy pageDB 投稿の削除 API（v2 セッションの cookie から legacy backend の `DELETE /page` を呼ぶプロキシ）。
  *
- * 責務と処理概要:
- * - `/posts/{dbIndex}/{slug}` (legacy pageDB 投稿表示ページ)からの削除リクエストを受け付ける。
- * - v2 の `atp_session` cookie から Bluesky の DID / accessJwt を復号し、
- *   legacy backend の `DELETE /page` をサーバー間通信で呼び出す。
- * - accessJwt をクライアントへ渡さずに済むよう、削除操作は必ずこのエンドポイント経由で行う。
- * - OAuth のセッションは、アクセストークンが DPoP に結び付き旧バックエンドで使えないため、
- *   旧バックエンドへ送らずに `OAuthSessionUnsupported` の 403 で拒否する（画面はアプリパスワードでの
- *   ログインを案内する）。
- *
- * 実装上の制約:
+ * - accessJwt をクライアントへ渡さないため、削除は必ずこのエンドポイントがサーバー間通信で行う。
+ * - OAuth のセッションは、アクセストークンが DPoP に結び付き legacy backend で使えないため、403 で拒否する。
  * - Cloudflare Workers 環境で動作するため Node.js 固有 API は使わない。
  */
-
 import type { APIRoute } from "astro"
 import { parseSessionFromRequest } from "@/lib/session/cookies"
 import { errorResponseFromStatus } from "@/util/http"
@@ -92,7 +83,10 @@ export const DELETE: APIRoute = async ({ request }: { request: Request }) => {
             return errorResponseFromStatus(400)
         }
 
+        // `/posts/{dbIndex}/{slug}`（legacy pageDB 投稿表示ページ）からの削除は、
+        // v2 の `atp_session` cookie から Bluesky の DID / accessJwt を復号して行う
         const stored = parseSessionFromRequest(request)
+        // legacy backend へは送らず `OAuthSessionUnsupported` で拒否する（画面はアプリパスワードでのログインを案内する）
         if (stored?.kind === "oauth") {
             return new Response(
                 JSON.stringify({ error: "OAuthSessionUnsupported" }),

@@ -1,5 +1,7 @@
-// 変異テスト（要件 4.6）: P0 の unit 層モジュールに変異を入れ、生き残った変異体を報告する。
-// 数値の下限は置かず（break: null）、ゲートにしない。ローカルか定期実行で `npm run test:mutation` を使う。
+/**
+ * Run mutation analysis on high-priority unit modules and report surviving mutants.
+ * No mutation score gate is enforced (`break: null`); run locally or on a schedule.
+ */
 export default {
   testRunner: "vitest",
   vitest: { configFile: "config/test/vitest.unit.config.ts" },

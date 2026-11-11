@@ -1,17 +1,12 @@
 ---
 /**
- * Sidebar/FooterNav 共通のナビアイコン描画コンポーネント。
+ * Sidebar と FooterNav が共有するナビアイコン。
  *
- * 責務と処理概要:
- * - entries/post: 非アクティブ色(muted)・アクティブ色(bluesky)それぞれで塗り分けた
- *   実SVGファイルを重ねて配置し、呼び出し側CSSの `.item:hover`/`.item[aria-current="page"]`
- *   に応じて data-nav-icon="active" 側の opacity を切り替えるクロスフェード方式で
- *   動的な色変化を表現する(インラインSVGの複製を避けるための方式)。
- * - accounts: 現在ログイン中のアカウントアバターを円形に表示する。実際のURLは
- *   prerender時点では取得できないため、初期状態はプレースホルダーのみを表示し、
- *   syncAccountAvatar.ts がクライアント側で data-account-avatar-img の src を補完する。
- * - サイズは呼び出し側CSSが `[data-nav-icon-root]` を介して指定する(tokens.css の
- *   --size-icon-sm/--size-icon-md を使うこと)。
+ * - 色違いの SVG を重ね、呼び出し側 CSS が `.item:hover`・`.item[aria-current="page"]` で
+ *   `data-nav-icon="active"` 側の opacity を切り替える（インライン SVG の複製を避けるため）。
+ * - accounts のアバターの URL は prerender 時に分からないため、プレースホルダーだけを出し、
+ *   `nav/syncAccountAvatar.ts` がクライアントで `data-account-avatar-img` の src を補う。
+ * - サイズは呼び出し側 CSS が `[data-nav-icon-root]` で指定する（tokens.css の `--size-icon-sm`・`--size-icon-md`）。
  */
 import styles from "./index.module.css"
 import docBluesky from "@/images/doc.svg"

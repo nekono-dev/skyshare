@@ -1,11 +1,4 @@
-/**
- * skyshare API の複数エンドポイントで共有される Zod スキーマ定義。
- *
- * 責務と処理概要:
- * - バリデーション(各APIルートの`.safeParse()`)とOpenAPIドキュメント生成
- *   (`scripts/build/build-openapi-document.ts`)の両方から、このファイルのスキーマを
- *   直接importして使う「単一の真実の源」とする。
- */
+/** 複数の API エンドポイントで共有する Zod スキーマ。 */
 import { z } from "zod/v4"
 import type { ZodOpenApiResponsesObject } from "zod-openapi"
 import { MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
@@ -82,9 +75,7 @@ export const CommonGateSettingsSchema = z
     .object({
         replyAudience: z.enum(["everyone", "nobody", "custom"]).meta({
             description:
-                "everyone: 誰でも返信可能(allow未指定、threadgateレコード自体を作らない)。" +
-                "nobody: 誰も返信不可(allow=[])。" +
-                "custom: 以下のフラグ・リストの組み合わせでallowを構築する。",
+                "everyone: 誰でも返信可能(allow未指定、threadgateレコード自体を作らない)。nobody: 誰も返信不可(allow=[])。custom: 以下のフラグ・リストの組み合わせでallowを構築する。",
         }),
         allowMentioned: z.boolean().meta({
             description:
@@ -98,14 +89,10 @@ export const CommonGateSettingsSchema = z
             description:
                 "customの場合のみ意味を持つ。フォロー中の人からの返信を許可(#followingRule)",
         }),
-        listUris: z
-            .array(z.string())
-            .max(5)
-            .meta({
-                description:
-                    "customの場合のみ意味を持つ。返信を許可するリストのAT-URI配列(#listRule)。" +
-                    "allowMentioned/allowFollower/allowFollowingと合計で最大5件(サーバ側でも防御的にclamp)。",
-            }),
+        listUris: z.array(z.string()).max(5).meta({
+            description:
+                "customの場合のみ意味を持つ。返信を許可するリストのAT-URI配列(#listRule)。",
+        }),
         allowQuote: z.boolean().meta({
             description:
                 "引用/embedを許可するか(postgate)。falseの場合embeddingRulesに#disableRuleを設定。",
@@ -170,9 +157,7 @@ export type CommonFacetType = z.infer<typeof CommonFacetSchema>
 
 export const CommonFacetsSchema = z.array(CommonFacetSchema).meta({
     description:
-        "app.bsky.feed.postのfacets(リッチテキスト注釈)。クライアント側で" +
-        "組み立て済みのものをそのまま渡す(サーバはURL/メンション/ハッシュタグの" +
-        "自動検出を行わない)。",
+        "app.bsky.feed.postのfacets(リッチテキスト注釈)。クライアント側で組み立て済みのものをそのまま渡す(サーバはURL/メンション/ハッシュタグの自動検出を行わない)。",
 })
 export type CommonFacetsType = z.infer<typeof CommonFacetsSchema>
 
@@ -247,25 +232,7 @@ const ERROR_STATUS_DESCRIPTIONS: Record<string, string> = {
 }
 
 /**
- * 複数ステータスコードに共通のエラースキーマを割り当てたOpenAPI responses
- * フラグメントを組み立てる。
- *
- * 処理の趣旨:
- * - 各エンドポイントのエラーレスポンス(400/401/404/429/500等)は、いずれも
- *   同一のエラースキーマ(既定は`CommonErrorSchema`)を指すだけの反復になりがち。
- *   これを全operationファイルで個別に再エクスポートさせず、ここに一本化する。
- *
- * Input:
- * - `statuses`: 対象ステータスコード文字列の配列(例: `["400", "401", "500"]`)
- * - `schema`: エラーレスポンスのスキーマ(既定: `CommonErrorSchema`)
- *
- * Output:
- * - `operation.responses` にスプレッドできるresponsesフラグメント
- *
- * 例:
- * - 入力: `errorResponses(["400", "401"])`
- * - 出力: `{ "400": { description: "Bad Request", ... }, "401": { description: "Unauthorized", ... } }`
- */
+/** 各ステータスに共通のエラースキーマを割り当てる OpenAPI response 定義を作る。 */
 export const errorResponses = (
     statuses: string[],
     schema: z.ZodTypeAny = CommonErrorSchema,

@@ -1,17 +1,8 @@
 /**
- * 依存規則の検査の規則 typesOnly（structure-checks 3.4）。
+ * `src/types/` に型だけを置く規則を検査する。
  *
- * 責務と処理概要:
- * - `src/types/` の `.ts` の本文を構文木で読み、型だけの文以外を違反として返す。
- * - 型だけの文は `type` 宣言・`interface` 宣言・`export type`・`export interface`・`import type`
- *   と、`export type` 付きの再エクスポート（`export type * from`・`export type * as ns from`・
- *   `export type { ... } from`）。
- * - それ以外（値の宣言・`export default`・値の import・`export *`・`export * as`・値の `export { } from`）は違反（specifier は空文字）。
- * - 純粋な関数で、ファイルを読まない。読み取りは `check-imports.ts` が行う。
- *
- * 実装上の制約:
- * - 構文木の解析は `import-graph.ts` と同じ `typescript` を使う（新しい依存を増やさない）。
- * - `export type` 付きの再エクスポート（`*`・`* as`・名前付き）は型だけの文として許容する（requirements 8.4）。
+ * - 構文木で判定し、ファイルの読み込みは呼び出し元が行う。
+ * - 型付きの再エクスポートも型だけの文として扱う。
  */
 import ts from "typescript"
 import type { Violation } from "./rules"

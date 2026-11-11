@@ -1,12 +1,7 @@
 /**
- * 返信可能ユーザー設定(threadgate)・引用許可設定(postgate)の
- * デフォルト値永続化ユーティリティ。
+ * threadgate の返信設定・postgate の引用設定の既定値と、投稿後に既定値を更新する設定を永続化する。
  *
- * 責務と処理概要:
- * - PostForm/Settingsが参照する `PostGateValue` のデフォルト値を localStorage で管理する。
- * - 「投稿後にデフォルト値を更新するか」トグルの状態も同様に管理する。
- * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする
- *   （`shareSettings.ts`/`hashtagHistorySettings.ts` と同じ方針）。
+ * - SSR や localStorage の利用不可時、または保存値が不正な場合は既定値へフォールバックする。
  */
 
 import {

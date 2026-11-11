@@ -1,10 +1,5 @@
 /**
- * 既存の Bluesky 投稿から skyshare entry を発行する（from-post 相当）処理。
- *
- * 責務と処理概要:
- * - POST /v2/entry で `uri` が指定された場合のオーケストレーション処理を担う。
- * - `uri` の所有権検証・サムネイルアップロード・
- *   skyshare entry 作成という一連の流れを合成する。
+ * 自分の既存 Bluesky 投稿から Skyshare Entry を発行する。
  */
 
 import { type Agent, type AppBskyFeedPost } from "@atproto/api"
@@ -106,7 +101,7 @@ export const createEntryFromExistingPost = async (
     }
 
     // sourceは検証済みの対象投稿自身。reply.rootを辿る自動解決は行わない
-    // （どの投稿をsourceにするかはクライアントの責務、specs/entry-api）。
+    // source の投稿はクライアントが指定し、reply.root から自動解決しない。
     const source = { uri: postUri, cid: postCid }
 
     let skyshareEntry: CreatedSkyshareEntry

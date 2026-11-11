@@ -1,14 +1,10 @@
 /**
- * デスクトップ(Sidebar)・モバイル(FooterNav)共通のナビゲーション項目定義。
+ * Sidebar と FooterNav が共有するナビゲーション項目と、現在地の判定。
  *
- * 責務と処理概要:
- * - Sidebar/FooterNav 双方の Astro フロントマター(SSR)と、
- *   syncActiveState.ts(クライアント)の両方から同一の定義を参照できるようにする。
- * - DOM APIに依存しない純粋な値・関数のみを持つ。文言は翻訳済み文字列ではなく文言キーで持つ。
- * - Sidebar と FooterNav とで表示順序が異なるため、共通のitem定義から
- *   `sidebarNavItems`/`footerNavItems` をそれぞれ独立に導出する。
+ * - Sidebar・FooterNav の Astro フロントマター（SSR）と `syncActiveState.ts`（クライアント）が
+ *   同じ定義を参照するため、DOM API に依存しない値と関数だけを置く。文言は文言キーで持つ。
+ * - 表示順が Sidebar と FooterNav で異なるため、共通の項目から `sidebarNavItems`・`footerNavItems` を別々に並べる。
  */
-
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 
 export interface NavItem {

@@ -1,13 +1,7 @@
 /**
- * OAuth のセッションで動く `@atproto/api` のエージェントの生成。
+ * DPoP 付き PDS 要求を送る atproto エージェントを作る。
  *
- * 責務と処理概要:
- * - DPoP つきで PDS へ送る要求の関数を、`Agent` の `fetchHandler` として包む。
- *   ハンドラはアプリパスワードのセッションと同じ `agent.com.atproto.*`・`agent.app.bsky.*` を使える。
- *
- * 実装上の制約:
- * - `@atproto/api` を静的に読み込むため、全リクエストで読み込まれる経路（ミドルウェア）からは
- *   OAuth のセッションを再開する時点で動的に読み込む（`oauthSession.ts` の `resumeOAuthSession`）。
+ * - `@atproto/api` は全リクエスト経路から静的に読み込まず、OAuth セッション再開時に動的に読み込む。
  */
 import { Agent } from "@atproto/api"
 

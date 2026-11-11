@@ -1,15 +1,10 @@
 /**
- * Sidebar/FooterNav のナビリンクに、実際のブラウザURLの `?guest=1` を同期し直す。
+ * Sidebar・FooterNav のナビリンクに、実際のブラウザ URL の `?guest=1` を反映する。
  *
- * 処理の趣旨:
- * - Sidebar/FooterNav は `prerender = true` なページに埋め込まれており、`href` に
- *   `?guest=1` を付与するかどうかの判定(`guestModeActive`)はビルド時に一度だけ
- *   計算される。ビルド時には実際のリクエストURLが存在しないため、この判定は常に
- *   `false` に固まってしまい、ゲスト表示中でもリンクから `?guest=1` が失われる。
- * - `astro:page-load` は通常のページ読み込み・View Transitionsによる遷移のどちらでも
- *   発火するため、これを契機に実際の `location.search` を見て `href` を補正する。
- * - Sidebar/FooterNav それぞれの <script> から
- *   `import "@/components/layout/nav/syncGuestModeQuery"` の形で副作用importするだけでよい。
+ * - 両コンポーネントは `prerender = true` のページに埋め込まれ、ビルド時にはリクエスト URL が無いため、
+ *   `href` へ `?guest=1` を付ける判定が常に偽になり、ゲスト表示中でもリンクから失われる。
+ *   通常の読み込みと View Transitions の両方で発火する `astro:page-load` で `location.search` を見て補う。
+ * - 両コンポーネントの `<script>` から副作用 import するだけでよい。
  */
 import { isGuestModeRequested, withGuestModeQuery } from "@/lib/guestMode"
 

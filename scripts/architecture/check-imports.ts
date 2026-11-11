@@ -1,14 +1,8 @@
 /**
- * 依存規則の検査の CLI 入口（`npm run test:imports`）。
+ * 依存規則を検査する CLI（`npm run test:imports`）。
  *
- * 責務と処理概要:
- * - 走査・規則・循環・許容リスト・typesOnly（`src/types/` の `.ts` の本文）を組み合わせ、結果を表示して終了コードを返す。
- * - 許容されていない違反、または許容リストのエラーがあれば終了コード 1。それ以外は 0。
- * - stale（消えた許容の項目）は警告として表示するだけで、終了コードは変えない。
- * - `--emit-allowlist` は現在の違反の下書きを JSON で標準出力に出す。ファイルは書き換えない。
- *
- * 実装上の制約:
- * - 検査の本体は `runImportCheck`（純粋に近い関数）。入口だけが標準入出力と終了コードを扱う。
+ * - `--emit-allowlist` は違反一覧を JSON で標準出力に出し、ファイルは変更しない。
+ * - 許容リストの古い項目は警告に留め、終了コードに影響させない。
  */
 import fs from "node:fs"
 import path from "node:path"
@@ -34,7 +28,7 @@ export type ImportCheckResult = {
 
 /**
  * 違反・stale の対象の表示。specifier が空の規則（utilShared・typesOnly など）は「で import」を省く。
- * specifier がある場合の表示は従来どおり。
+ * specifier がある場合は、import 元と指定先を表示する。
  */
 const label = (item: {
     ruleId: string

@@ -1,4 +1,7 @@
-// 偽の Bluesky（要件 5.1・10.5）: 定義された経路は応答し、未定義の経路は 404 を返す。実サービスへ転送しない
+/**
+ * Provides an isolated Bluesky HTTP server for tests.
+ * Configured paths receive fixture responses; unknown paths return 404 without forwarding.
+ */
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { type FakeBluesky, startFakeBluesky } from "../../support/fakeBluesky"
 

@@ -1,4 +1,8 @@
-// Cookie の codec の境界条件（P0・要件 4.4）: Buffer が無い実行環境の base64 経路、Cookie 解析の異常系
+/**
+ * Verifies base64 and Cookie parsing across runtime edge cases.
+ *
+ * - Workers lack Node’s Buffer, so base64 conversion must use web APIs.
+ */
 import { afterEach, describe, expect, it, vi } from "vitest"
 import {
     decodeBase64Json,
@@ -12,7 +16,7 @@ afterEach(() => {
     vi.unstubAllGlobals()
 })
 
-describe("codec: base64 の UTF-8 変換（Buffer が無い Workers 相当の環境）", () => {
+describe("codec: base64 UTF-8 conversion without Buffer", () => {
     // Cloudflare Workers には Node の Buffer が無いため、Web 標準 API の経路を検証する
     const hideBuffer = () => vi.stubGlobal("Buffer", undefined)
 
@@ -62,7 +66,7 @@ describe("codec: base64 の UTF-8 変換（Buffer が無い Workers 相当の環
     })
 })
 
-describe("codec: Cookie ヘッダの解析", () => {
+describe("codec: parses Cookie headers", () => {
     it("returns an empty object for an empty header", () => {
         expect(parseCookies("")).toEqual({})
         expect(parseCookies()).toEqual({})

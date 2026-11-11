@@ -1,4 +1,6 @@
-// エントリ API（/v2/entry の POST・PUT・DELETE）の失敗系の特性化テスト（要件 1.2）。
+/**
+ * Verifies entry API validation and response behavior.
+ */
 // 不正なヘッダ・未認証・返信の所有違い・対象がない場合の状態コードを、現行の値で固定する。
 // 成功系の応答は e2e が守るため、ここでは扱わない。振る舞いを変えるためのテストではない。
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -85,7 +87,7 @@ const del = (opts: { body: string; cookie?: boolean; locals?: object }) => {
     return DELETE({ request, locals: opts.locals ?? {} } as never)
 }
 
-describe("POST /v2/entry の失敗系（特性化）", () => {
+describe("POST /v2/entry failure responses", () => {
     /** 警告ログの検査用（現行は所有の検証の失敗を warn に記録する） */
     let warnSpy: ReturnType<typeof vi.spyOn>
 
@@ -149,7 +151,7 @@ describe("POST /v2/entry の失敗系（特性化）", () => {
     })
 })
 
-describe("PUT /v2/entry の失敗系（特性化）", () => {
+describe("PUT /v2/entry failure responses", () => {
     beforeEach(() => {
         vi.spyOn(console, "warn").mockImplementation(() => {})
         vi.spyOn(console, "error").mockImplementation(() => {})
@@ -222,7 +224,7 @@ describe("PUT /v2/entry の失敗系（特性化）", () => {
     })
 })
 
-describe("DELETE /v2/entry の失敗系（特性化）", () => {
+describe("DELETE /v2/entry failure responses", () => {
     beforeEach(() => {
         vi.spyOn(console, "warn").mockImplementation(() => {})
         vi.spyOn(console, "error").mockImplementation(() => {})
@@ -285,8 +287,8 @@ describe("DELETE /v2/entry の失敗系（特性化）", () => {
     })
 })
 
-describe("POST /v2/entry の成功（json200 の応答の形）", () => {
-    it("成功は 200 と content-type だけを返し、cache-control は付けない（特性化）", async () => {
+describe("POST /v2/entry success response shape", () => {
+    it("returns 200 with only content-type and no cache-control", async () => {
         const res = await post({ form: postForm(), locals: authedLocals() })
         expect(res.status).toBe(200)
         expect(res.headers.get("content-type")).toBe("application/json")

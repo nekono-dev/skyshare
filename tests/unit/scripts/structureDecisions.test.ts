@@ -1,13 +1,7 @@
 /**
- * `structure.md` の「領域の判断の記録」と領域の一覧の整合を検査するテスト（components-small-areas 2.3・要件 3.2・3.3）。
+ * Checks that component-area decisions and the documented area list match repository usage.
  *
- * 責務と処理概要:
- * - `src/components/` の直下のフォルダ（領域）と、`structure.md` の「`src/components/` の領域」の一覧を照合する。不足も余分も報告する。
- * - 判断の表の四つの小さい部品領域（`share`・`feedback`・`privacy`・`help`）について、表の判断が「統合の条件」から導いた結果と一致することを、
- *   `src/`・`tests/`・`scripts/` の import の実測で確かめる。
- * - 判断の表の部品が実在すること、利用元の欄に実測の利用元（`pages/<ファイル>` または `<親>/<部品フォルダ>`）が含まれることを確かめる。
- * - 負例（検査が機能することの確認）: 固定の利用元の一覧・固定の文書の断片を与え、不一致が検出されることを確かめる。
- * - 検査は文字列とファイルの走査だけを行い、対象のモジュールは import しない。
+ * - Scans imports and paths without importing modules.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
@@ -164,8 +158,8 @@ const listedComponentRegions = (markdown: string): string[] => {
 const steering = readSteeringStructure()
 const rows = parseDecisionRows(readStructureDecisions())
 
-describe("structure の領域の一覧と実装（components-small-areas 2.3・要件 3.2）", () => {
-    it("領域の一覧が src/components/ の直下のフォルダと一致する（不足も余分もない）", () => {
+describe("Documented component areas match the source tree", () => {
+    it("the component area list matches the direct folders under src/components", () => {
         const actual = listDirectories(componentsDir)
         const listed = listedComponentRegions(steering)
         expect(diffRegionNames(listed, actual)).toEqual({
@@ -174,15 +168,15 @@ describe("structure の領域の一覧と実装（components-small-areas 2.3・�
         })
     })
 
-    it("負例: 一覧の不足と余分を報告する", () => {
+    it("reports missing and extra areas in the list", () => {
         expect(
             diffRegionNames(["share", "stale"], ["share", "feedback"]),
         ).toEqual({ missing: ["feedback"], stale: ["stale"] })
     })
 })
 
-describe("判断の表と統合の条件・実測の利用元の整合（components-small-areas 2.3・要件 3.2・3.3）", () => {
-    it("判断の表に四つの小さい部品領域の行があり、判断はすべて「残す」", () => {
+describe("Component decisions match their usage and consolidation criteria", () => {
+    it("the decision table lists all four small areas and keeps each as a separate component", () => {
         const small = rows.filter(row => smallRegions.includes(row.region))
         expect(small.map(row => row.region).sort()).toEqual(
             [...smallRegions].sort(),
@@ -193,7 +187,7 @@ describe("判断の表と統合の条件・実測の利用元の整合（compone
     })
 
     it.each(smallRegions)(
-        "%s の表の判断が、統合の条件から導いた判断と一致する",
+        "%s table decision matches the result derived from consolidation criteria",
         region => {
             const row = rows.find(candidate => candidate.region === region)
             expect(row).toBeDefined()
@@ -202,7 +196,7 @@ describe("判断の表と統合の条件・実測の利用元の整合（compone
     )
 
     it.each(smallRegions)(
-        "%s の表の利用元の欄が、実測の利用元をすべて含む",
+        "%s table usage column includes every observed usage",
         region => {
             const row = rows.find(candidate => candidate.region === region)
             for (const label of actualUsages(region)) {
@@ -211,7 +205,7 @@ describe("判断の表と統合の条件・実測の利用元の整合（compone
         },
     )
 
-    it("判断の表の部品（i18n を含む）がすべて実在する", () => {
+    it("all components in the decision table exist, including internationalization", () => {
         for (const row of rows) {
             const names = listTreeNames(path.join(componentsDir, row.region))
             const tokens = [...row.parts.matchAll(/`([^`]+)`/g)].map(
@@ -226,14 +220,14 @@ describe("判断の表と統合の条件・実測の利用元の整合（compone
         }
     })
 
-    it("i18n の行は「移動しない」で、表の判断と部品が実装と一致する", () => {
+    it("the internationalization row says to keep its location and matches the source tree", () => {
         const row = rows.find(candidate => candidate.region === "i18n")
         expect(row?.decision).toBe("移動しない")
         expect(row?.parts).toContain("useTranslation.ts")
         expect(row?.parts).toContain("renderSlots.tsx")
     })
 
-    it("負例: 利用元が pages/ だけなのに「統合する」と書かれた表を不一致として検出する", () => {
+    it("detects a consolidation decision when usage comes only from pages", () => {
         const fixture = [
             "### 判断の表",
             "",
@@ -251,7 +245,7 @@ describe("判断の表と統合の条件・実測の利用元の整合（compone
         )
     })
 
-    it("負例: 統合の条件の判定（一つの親は統合、二つの親・pages/ の混在・利用元なしは残す）", () => {
+    it("applies consolidation criteria to one parent, multiple parents, pages usage, and no usage", () => {
         expect(decideIntegration(["composer/ThreadComposer"])).toBe("統合する")
         expect(
             decideIntegration(["composer/ThreadComposer", "timeline/Timeline"]),

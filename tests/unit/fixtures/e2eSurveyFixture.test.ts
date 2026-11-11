@@ -1,4 +1,6 @@
-// E2E の起動スクリプトが使うアンケートの固定の設定が、現在の設定の規則で有効であることを確かめる
+/**
+ * Checks that the survey fixture used by the E2E launcher passes current config rules.
+ */
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"

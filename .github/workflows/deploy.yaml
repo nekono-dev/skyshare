@@ -1,15 +1,15 @@
-# release/* と develop への push をトリガーに、Cloudflare Workers へ自動デプロイする。
+# release/* と develop の push で Cloudflare Workers へデプロイする。`e2e.yaml` を `workflow_call` で呼び出す。
 #
 # - release/*: 本番の Worker（skyshare、SITE_HOST のドメイン）
 # - develop: develop 用の別の Worker（skyshare-develop、develop.<SITE_HOST>）。Cron が動く確認用の環境で、
 #   D1・R2 も develop 専用。dev/* のプレビュー（preview.yaml）はこの Worker に作られる
 #
-# verify（テスト・型検査）と e2e（Playwright）の両方に成功した場合のみデプロイする。
+# verify と e2e の両ジョブが成功した場合だけデプロイする。verify は unit・component・route・render と型検査を実行し、E2E は e2e ジョブで実行する。
 # 必要な設定は docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
 # - Secrets:   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
 # - Variables: PUBLIC_LEGACY_BACKEND_ENDPOINT / PUBLIC_DEFAULT_ATP_SERVICE / PUBLIC_NODE_ENV /
 #              PUBLIC_OGP_EXTRACTOR_API / PUBLIC_PLC_DIRECTORY_BASE_URL と、運用者ごとの設定（docs/DEVELOP.md）
-# 手動実行（workflow_dispatch）で dry_run を true にすると、ビルドと wrangler の検証のみ行い、公開はしない。
+# 手動実行で `dry_run` が true の場合はビルドと wrangler の検証だけを行い、公開しない。
 name: deploy
 
 on:
@@ -22,7 +22,7 @@ on:
         type: boolean
         default: true
 
-# 同じ配備先へのデプロイを直列化する。別の release ブランチ同士も本番を同時更新しない
+# 同じ配備先へのデプロイを直列化し、別の release ブランチが本番を同時更新しないようにする。
 concurrency:
   group: deploy-${{ github.ref_name == 'develop' && 'develop' || 'production' }}
   cancel-in-progress: false
@@ -46,32 +46,32 @@ env:
   PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
 
 jobs:
-  # テストと型検査。失敗した場合はデプロイしない
+  # テストと型検査。失敗した場合はデプロイしない。
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          # lexicons/com/atproto/repo/strongRef.json は atproto サブモジュールへのシンボリックリンク。
           submodules: true
       - uses: actions/setup-node@v4
         with:
-          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（CLAUDE.md 参照）
+          # Cloudflare Workers が扱える Node.js のバージョンを指定する。
           node-version: 22.16.0
           cache: npm
       - run: npm ci
-      # src/client 配下の生成コード（atproto / openapi）を作る。型検査とテストの前提
+      # 型検査とテストが使う src/client の atproto / openapi 生成コードを作る。
       - run: npm run codegen
       - run: npm run test:type
-      # 単体・component・route・render の層（E2E は e2e ジョブで実行する）
+      # unit・component・route・render を実行する。E2E は呼び出した e2e ジョブが担う。
       - run: npm run test:unit
       - run: npm run test:component
       - run: npm run test:route
       - run: npm run test:render
-      # 依存規則の検査（層の向き・循環・領域をまたぐ import）。許容リストに無い違反で失敗する
+      # 層の向き・循環・領域をまたぐ import を検査し、許容リストに無い違反で失敗する。
       - run: npm run test:imports
-      # lexicon の lint（goat）。リリースのチェックサムを検証してから導入する
+      # lexicon の lint。導入前に配布物のチェックサムを検証する。
       - name: Run goat lint
         env:
           GOAT_VERSION: 0.2.5
@@ -83,14 +83,14 @@ jobs:
           goat --version
       - run: npm run test:lexicon
 
-  # E2E（ライブテスト・他ブラウザを含む）。失敗した場合はデプロイしない
+  # E2E（複数ブラウザ。実アカウントの live 層は含まない）。失敗した場合はデプロイしない。
   e2e:
     uses: ./.github/workflows/e2e.yaml
     secrets: inherit
 
   deploy:
     needs: [verify, e2e]
-    # 手動実行で他のブランチを選んでも、本番や develop 環境へ配備しない
+    # 手動実行で別のブランチが選ばれても、本番や develop 環境へ配備しない。
     if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -103,29 +103,29 @@ jobs:
           node-version: 22.16.0
           cache: npm
       - run: npm ci
-      # scripts/config/render-deploy-config.mjs が使う branch-release-workflow プラグイン（リポジトリに同梱しない）を取得する。
-      # 秘密情報を扱うジョブで実行するため、指定ブランチの最新コミットを取得する（取得元は .branch-release-workflow-source.json）
+      # scripts/config/render-deploy-config.mjs が使う外部 branch-release-workflow プラグインを取得する。
+      # 秘密情報を扱うため、取得元（.branch-release-workflow-source.json）で指定されたブランチの最新コミットを使う。
       - name: Fetch branch-release-workflow
         run: |
           brw_dir="$(node scripts/agent/setup-brw.mjs)"
           echo "BRW_PLUGIN_DIR=$brw_dir" >> "$GITHUB_ENV"
-      # wrangler.jsonc と _legacy/frontend/.env.production は .gitignore 対象のため、Variables から生成する
-      # develop へは develop 用の Worker として配備する（D1 の ID を名前から引くため Cloudflare の認証情報を渡す）
+      # Git 管理外の wrangler.jsonc と _legacy/frontend/.env.production を Variables から生成する。
+      # develop では専用 Worker を使い、D1 の ID を名前から解決するため Cloudflare 認証情報を渡す。
       - name: Configure build setting
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           TARGET_FLAG: ${{ github.ref_name == 'develop' && '--develop' || '' }}
         run: node scripts/config/render-deploy-config.mjs $TARGET_FLAG
-      # アンケートの設定の元の変数（SURVEY_CONFIG）はビルドにだけ渡す。生成に失敗するとビルドごと止まり、配備には進まない
-      # サイトの URL（共有リンクなど）は生成した wrangler.jsonc の経路（develop は develop.<SITE_HOST>）から決まる
+      # SURVEY_CONFIG は設定生成に使うビルドだけに渡し、生成失敗時はデプロイを止める。
+      # サイト URL（共有リンクなど）は生成した wrangler.jsonc の設定から決まる。
       - name: Run build
         env:
           SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}
         run: npm run build
       - name: Dry run cloudflare deploy
         run: npx wrangler deploy --dry-run
-      # 配備先の D1（release/* は本番、develop は develop 用）に、未適用のマイグレーションを適用する（適用済みのものは再実行されない）
+      # 対象環境の D1 に未適用のマイグレーションを適用する（適用済みのものは再実行されない）。
       - name: Apply D1 migrations
         if: ${{ hashFiles('migrations/*.sql') != '' && (github.event_name == 'push' || inputs.dry_run == false) }}
         run: npx wrangler d1 migrations apply DB --remote -c dist/server/wrangler.json
@@ -138,8 +138,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # 配備先の Worker（develop ではプレビューの基本設定も）に、未登録のシークレット（OAUTH_CLIENT_KEY など）を生成して登録する。
-      # 登録済みの値は上書きしない。初回の配備で Worker ができてから登録できるよう、配備の後に行う
+      # Worker（develop ではプレビューの基本設定も）に未登録のシークレットを生成して登録する。
+      # 登録済みの値は上書きしない。初回の配備で Worker を作成してから登録する。
       - name: Ensure worker secrets
         if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
         run: node scripts/secrets/ensure-worker-secrets.mjs $TARGET_FLAG

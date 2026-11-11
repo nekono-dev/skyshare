@@ -1,3 +1,6 @@
+/**
+ * OpenAPI クライアントの URL とレスポンスを、接続先ごとの契約に合わせて処理する。
+ */
 import { extractorApi } from "@/vars"
 import { v1Endpoint } from "@/env"
 
@@ -8,8 +11,7 @@ import { v1Endpoint } from "@/env"
  * - openapi 上のパスは本アプリ自身のルーティング（`trailingSlash: "always"`）に
  *   合わせて末尾スラッシュ付きで定義しているが、転送先の外部サービス
  *   （legacy backend / OGP 抽出サービス）はこの設定と無関係であり、
- *   末尾スラッシュ付きのパスを受け取る保証がない。転送直前に取り除くことで、
- *   外部サービスへのリクエスト形状を変更前と同じに保つ。
+ *   末尾スラッシュ付きのパスを受け取る保証がないため、転送直前に取り除く。
  */
 const stripPathTrailingSlash = (path: string): string => {
     const queryIndex = path.indexOf("?")

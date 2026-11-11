@@ -1,6 +1,6 @@
-# E2E（Playwright）を実行する。PR の必須ゲート（要件 9.1）であり、deploy.yaml からも呼び出される（workflow_call）。
-# 実行は npm run test:e2e に揃える。偽の Bluesky を起動し、接続先の環境変数を dev サーバーと Playwright に渡す（要件 10.3）。
-# 実アカウントの live 層は実行しない（要件 9.3）。unit・component・route・render の層は必須にしない（要件 9.2）。
+# PR の必須ゲートとなる E2E（Playwright）を実行する。`deploy.yaml` から `workflow_call` でも呼び出される。
+# `npm run test:e2e` が偽の Bluesky と接続先の環境変数を dev サーバー・Playwright に渡す。実アカウントの live 層は実行しない。
+# unit・component・route・render 層はこの workflow の必須条件に含めない。
 # 実行対象ブラウザ: chromium / firefox / webkit / webkit-iphone
 name: e2e
 
@@ -12,7 +12,7 @@ on:
 permissions:
   contents: read
 
-# 接続先と運営者の設定は、E2E の起動（npm run test:e2e）が config/e2e.json から wrangler.jsonc を生成して使う。GitHub の Variables は使わない
+# E2E の接続先と運営者設定は `npm run test:e2e` が config/e2e.json から wrangler.jsonc を生成して使うため、GitHub Variables は使わない。
 
 jobs:
   e2e:
@@ -21,20 +21,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # lexicons/com/atproto/repo/strongRef.json が atproto サブモジュールへのシンボリックリンクのため必要
+          # lexicons/com/atproto/repo/strongRef.json は atproto サブモジュールへのシンボリックリンク。
           submodules: true
       - uses: actions/setup-node@v4
         with:
-          # Cloudflare Workers が扱える Node.js の最新バージョンに固定（CLAUDE.md 参照）
+          # Cloudflare Workers が扱える Node.js のバージョンを指定する。
           node-version: 22.16.0
           cache: npm
       - run: npm ci
 
-      # OS のパッケージ（日本語・国旗絵文字のフォント、動画のライブテストの素材作成用 ffmpeg、
-      # Playwright のブラウザが使うライブラリ）は、取得した deb ファイルをキャッシュに保存し、
-      # 2回目以降は Ubuntu のミラーを使わずに入れる。ミラーが遅い日にダウンロードだけで
-      # ジョブの上限（60分）に達したため。キーはランナーのイメージと Playwright の版で分ける
-      # （イメージが変わると足りない依存が変わるため）。
+      # OS パッケージ（日本語・国旗フォント、動画素材用 ffmpeg、Playwright の依存）は deb をキャッシュし、以後 Ubuntu ミラーからの取得を避ける。
+      # ミラーの遅延だけで 60 分の上限に達しうるため。ランナーイメージと Playwright の版をキーに含め、必要な依存の違いを分ける。
       - name: Resolve cache keys
         id: keys
         run: |
@@ -78,7 +75,7 @@ jobs:
           path: ~/apt-debs
           key: apt-debs-${{ steps.keys.outputs.image }}-pw${{ steps.keys.outputs.playwright }}-${{ hashFiles('.github/workflows/e2e.yaml') }}
 
-      # ブラウザ本体は Playwright の版ごとにキャッシュする（依存のライブラリは上の手順で入れる）
+      # ブラウザ本体は Playwright の版ごとにキャッシュする。依存ライブラリは上の手順で導入する。
       - name: Restore Playwright browsers
         id: pw-cache
         uses: actions/cache@v4
@@ -92,7 +89,7 @@ jobs:
 
       - run: npm run codegen
 
-      # 偽の Bluesky の起動、dev サーバーの起動、Playwright の実行は npm run test:e2e が行う（ローカルと同じ経路）
+      # 偽の Bluesky・dev サーバー・Playwright は `npm run test:e2e` が起動し、ローカルと同じ経路を使う。
       - name: Run E2E
         run: npm run test:e2e
         env:

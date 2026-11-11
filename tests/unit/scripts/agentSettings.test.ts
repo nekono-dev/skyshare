@@ -1,6 +1,6 @@
 /**
- * Claude の設定と導入の呼び出しを、読み取りだけで確かめる。
- * BRW の宣言、導入の引数、Codex 向け導入物の不在。
+ * Checks Claude settings for BRW configuration and installer arguments.
+ * Also verifies that Codex-specific installation files are absent.
  */
 import fs from "node:fs"
 import path from "node:path"
@@ -15,10 +15,10 @@ const sessionStartCommands = (settings: any): string[] =>
         (group.hooks ?? []).map((hook: any) => String(hook.command)),
     )
 
-describe("プロジェクトの Claude 設定（BRW の有効化）", () => {
+describe("Project Claude settings enable BRW", () => {
     const settings = readJson(".claude/settings.json")
 
-    it("marketplace の宣言（nekono-dev → GitHub の nekono-dev/claude-plugins）を持つ", () => {
+    it("declares the nekono-dev marketplace", () => {
         expect(settings.extraKnownMarketplaces?.["nekono-dev"]?.source).toEqual(
             {
                 source: "github",
@@ -27,20 +27,20 @@ describe("プロジェクトの Claude 設定（BRW の有効化）", () => {
         )
     })
 
-    it("branch-release-workflow@nekono-dev を有効にする", () => {
+    it("enables branch-release-workflow@nekono-dev", () => {
         expect(
             settings.enabledPlugins?.["branch-release-workflow@nekono-dev"],
         ).toBe(true)
     })
 
-    it("SessionStart に、利用者の marketplace を入れ替える呼び出し（setup-brw --install）が無い", () => {
+    it("does not replace the user's marketplace during SessionStart", () => {
         const commands = sessionStartCommands(settings)
         expect(commands.some(command => command.includes("setup-brw"))).toBe(
             false,
         )
     })
 
-    it("SessionStart の cc-sdd の導入は --claude だけを呼ぶ", () => {
+    it("installs cc-sdd with --claude during SessionStart", () => {
         const commands = sessionStartCommands(settings)
         const installs = commands.filter(command =>
             command.includes("install-cc-sdd.sh"),
@@ -50,14 +50,14 @@ describe("プロジェクトの Claude 設定（BRW の有効化）", () => {
     })
 })
 
-describe("Codex 向けの導入の取り消し", () => {
-    it(".codex/hooks.json が無い（Codex の SessionStart で導入しない）", () => {
+describe("Codex installation is disabled", () => {
+    it("does not configure a Codex SessionStart hook", () => {
         expect(fs.existsSync(path.join(repoRoot, ".codex/hooks.json"))).toBe(
             false,
         )
     })
 
-    it("AGENTS.md と .codex/agents/ が無い", () => {
+    it("does not create AGENTS.md or .codex/agents/", () => {
         expect(fs.existsSync(path.join(repoRoot, "AGENTS.md"))).toBe(false)
         expect(fs.existsSync(path.join(repoRoot, ".codex/agents"))).toBe(false)
     })

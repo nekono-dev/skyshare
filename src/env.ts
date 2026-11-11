@@ -1,9 +1,13 @@
-// 非秘密の設定は wrangler.jsonc の vars（config/ から生成）に一本化している。ここはその参照の入口。
+/**
+ * 公開設定値をアプリケーションへ提供する。
+ *
+ * - 公開設定は `wrangler.jsonc` の `vars` から生成する。
+ */
 import { publicEndpoints } from "@/lib/platform/publicEndpoints"
 
 export const atpService = publicEndpoints.appView
 export const plcDirectoryBaseUrl = publicEndpoints.plcDirectory
-// ログインフォームが送る認可サーバー
+// ログインフォームが認可コードを要求するサーバー
 export const publicAuthServer = publicEndpoints.authServer
-// legacy backend(pageDB)への接続先。/posts配下の旧投稿表示ページから参照する。
+// `/posts` 配下の旧投稿表示ページが参照する legacy backend (pageDB) の接続先。
 export const v1Endpoint = import.meta.env.PUBLIC_LEGACY_BACKEND_ENDPOINT ?? ""

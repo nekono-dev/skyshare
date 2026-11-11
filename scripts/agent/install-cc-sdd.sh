@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# cc-sdd を固定版で Claude 向けに導入する。SessionStart（.claude/settings.json）がこのスクリプトを呼ぶ。
+# Claude Code 用の作業手順書と設定雛形を固定版で導入する。SessionStart（.claude/settings.json）がこのスクリプトを呼ぶ。
 #
 # 使い方: scripts/agent/install-cc-sdd.sh --claude
 #
 # 導入するのはスキルと設定の雛形だけ（.claude/skills/kiro-*・.kiro/settings/）。
-# いずれも cc-sdd（MIT）の成果物で本リポジトリとはライセンスが異なるため、.gitignore の対象でコミットしない。
+# いずれも外部ツールの成果物で本リポジトリとはライセンスが異なるため、.gitignore の対象でコミットしない。
 # CLAUDE.md は導入の対象から外す（プロジェクトの文書で、導入のたびに書き換えない）。
 # 版はこのファイルの CC_SDD_VERSION だけに書く。上げるときは版を変え、導入物を入れ直して動作を確かめる。
 #
@@ -25,7 +25,7 @@ cd "$(dirname "$0")/../.."
 
 failure_record=".cache/cc-sdd-install.failed"
 
-# 導入の対象の一覧。cc-sdd の既定の一覧（manifests/*.json）から、文書（doc_main）だけを外したもの。
+# 導入対象の一覧。外部ツールの既定一覧（manifests/*.json）から、文書（doc_main）だけを外す。
 # 文書は CLAUDE.md の書き換えになるため含めない
 manifest="$(mktemp)"
 trap 'rm -f "$manifest"' EXIT

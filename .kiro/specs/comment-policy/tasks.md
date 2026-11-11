@@ -103,3 +103,16 @@
   - この作業の差分が、基準・検査の規則・検査のテスト・許容リスト・tech.md の 1 行に限られ、`src/` 配下に差分が無い
   - _Depends: 5.1_
   - _Requirements: 7.1_
+
+## Implementation Notes
+
+### feature 検証（kiro-validate-impl, 2026-11-10）
+
+- 判定は `GO`。`npm run test:type`・`test:imports`（違反 0 件）・`test:unit`（705 件通過）・`test:component`（13）・`test:route`（212）・`test:render`（2）は、いずれも終了コード 0。起動の確認として `npm run test:e2e` も実行し、10 件が通過した。タスクは全て `[x]`、`_Blocked:_` は無い。
+- 受入基準（1.1〜8.2 の 40 件）は、全てタスクの `_Requirements` から参照されており、実体（基準の文書・検査の規則・検査のテスト・許容リスト）が満たしている。この突き合わせは Codex の独立レビュー（読み取りのみ）で行い、指摘は Info だけだった。
+- 境界: 許容リストの項目の解消は comments-* の作業のままで、この spec は取り込んでいない。基準の本文は 165216e から内容が変わっていない（検査のファイル名の表記と更新日だけ）。
+- 文書と現況の差（違反ではない）は、design.md の「現況との対応（2026-11-10 追補）」に書いた。
+
+### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
+
+- 判定は `GO`。要件 40 件がすべて「満たす」。後続の comments-* の 5 spec が許容リストの項目を全て消し、許容リストの仕組み（所有 spec・理由・解消済みの項目の検出）が実際の運用で機能した。許容リストは現在 1 件（`kiro-gate.mjs` の許容する例外）。requirements・research・design の一部に残る初期の件数（642 件・614 件）と旧名（`commentRules.ts`）は、履歴の記録で、実装との不一致ではない。

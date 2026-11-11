@@ -1,3 +1,10 @@
+/**
+ * 呼び出し側が求めた位置に追従するフローティングパネル。
+ *
+ * - 実寸で位置だけを補正し、パネルの幅・高さは縮めない。サイズ変化も `ResizeObserver` で補正する。
+ * - スクロールやリサイズで位置が古くなる場合は閉じる。内部スクロールでは閉じない。
+ * - 外側クリックとフォーカスアウトの扱いは用途ごとに異なるため、呼び出し側に委ねる。
+ */
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import styles from "./index.module.css"

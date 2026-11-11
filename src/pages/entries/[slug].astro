@@ -1,14 +1,9 @@
 ---
 /**
- * Skyshare エントリ詳細ページ（SSR）。
+ * Skyshare Entry 詳細ページ（SSR）。slug から PDS 上の skyshare レコードと元投稿を取得して表示する。
  *
- * 責務と処理概要:
- * - URL slug からエントリ識別子を解析し、PDS 上の skyshare レコードを取得する。
- * - 元投稿情報（本文・画像）を取得してページ表示用データへ整形する。
- * - 取得失敗時は HTTP ステータスと理由を切り替えてエラーページを返す。
- *
- * 実装上の制約:
- * - Cloudflare Workers 環境で動作するため Node.js 固有 API は利用しない。
+ * - Cloudflare Workers 上で動くため Node.js 固有 API を使わない。
+ * - 取得に失敗したときは、HTTP ステータスと理由を切り替えてエラー表示にする。
  */
 
 export const prerender = false
@@ -45,7 +40,7 @@ const robots = ["index", "follow", "noarchive", "noimageindex"]
 const slug = Astro.params.slug
 
 // PostView（AppView算出のリアクション数を含む）から、投稿カード1件分の表示用データを作る。
-// リアクション数は各投稿自身の値（数値でなければ 0）を使う（specs/entry-detail）。
+// リアクション数は各投稿自身の値（数値でなければ 0）を使う。
 const toEntryPostView = (post: AppBskyFeedDefs.PostView, repoDid: string, webUrl: string): EntryPostView => {
     const record = post.record as AppBskyFeedPost.Main
     const count = (value: unknown) => (typeof value === "number" ? value : 0)
@@ -170,7 +165,7 @@ if (typeof slug === "undefined") {
 
             // PostView（AppView算出のリアクション数を含む）を1回のバッチ取得APIで取得する。
             // 生レコード取得用の agent.getPost（com.atproto.repo.getRecord）は
-            // PostView の上位互換情報を持たないため、こちらに一本化している。
+            // リアクション数などの PostView の情報を持たないため、使わない。
             const postsRes = await agent.getPosts({ uris: [sourceUriFromEntry] })
             const postView = postsRes.data.posts[0]
             if (postView) {
@@ -181,7 +176,7 @@ if (typeof slug === "undefined") {
                 posts = [toEntryPostView(postView, parsedSourceUri.repo, sourceWebUrl)]
 
                 // source投稿を起点に、entry所有者自身が投稿した後続投稿のみを直線的に辿る
-                // （specs/entry-detail）。取得・抽出に失敗しても500にはせず、
+                // 取得・抽出に失敗しても500にはせず、
                 // 単一投稿のカード表示へフォールバックする。
                 try {
                     const threadRes = await agent.app.bsky.feed.getPostThread({

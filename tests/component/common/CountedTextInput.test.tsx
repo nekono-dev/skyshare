@@ -1,5 +1,7 @@
+/**
+ * Verifies value updates and character count display for the counted text input.
+ */
 // @vitest-environment happy-dom
-// 文字数カウンタ付きの入力（component 層・要件 1.4）: 入力の伝達と、カウンタの表示
 import { fireEvent, render, screen } from "@testing-library/react"
 import { useState } from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -14,7 +16,7 @@ const counters = [
   },
 ]
 
-/** 親の状態を持つ最小の利用例（実際の利用と同じく、onChange で値を更新する） */
+/** Minimal controlled input harness used by these tests. */
 const Harness = ({ onChange }: { onChange: (next: string) => void }) => {
   const [value, setValue] = useState("")
   return (

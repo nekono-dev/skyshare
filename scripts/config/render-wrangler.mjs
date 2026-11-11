@@ -1,17 +1,7 @@
-// wrangler.jsonc を、設定ファイル（config/<名前>.json）と config/wrangler.template.jsonc から生成する。
-//
-// 責務:
-// - wrangler.jsonc は生成物（.gitignore 対象）。常に上書きし、手で編集しない。
-// - 非秘密の値（vars）と公開するドメイン（siteHost）は config/<名前>.json から入れる。
-//   wrangler.jsonc の vars は、開発サーバー・ビルド（import.meta.env）と実行時（Worker の env）の両方の源になる。
-// - 秘密情報は含めない（.dev.vars・Worker のシークレットに置く）。
-// - `--develop` は CI で develop 用の別の Worker を配備するときの設定（名前・D1・R2 に -develop を付け、プレビューを有効にする）。
-// - 他のスクリプトは `renderWranglerFile` を import して同じプロセスで呼ぶ（子プロセスは起動しない）。失敗は RenderError を投げる。
-//
-// 使い方: node scripts/config/render-wrangler.mjs <設定の名前> [--develop]
-//   例: node scripts/config/render-wrangler.mjs develop   （開発）
-//       node scripts/config/render-wrangler.mjs e2e       （E2E）
-//       node scripts/config/render-wrangler.mjs production （本番。CI が config/production.json を生成した後）
+/** 設定ファイルと Wrangler テンプレートから `wrangler.jsonc` を生成する。
+ * 秘密情報は含めず、失敗は呼び出し元が扱える `RenderError` として返す。
+ * 使い方: node scripts/config/render-wrangler.mjs <設定の名前> [--develop]
+ */
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"

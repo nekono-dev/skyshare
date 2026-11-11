@@ -1,3 +1,9 @@
+/**
+ * 複数画像のクロップ調整をまとめて確定するダイアログ。
+ *
+ * - 合成サムネイルの調整画面では画像ごとのラベルを表示しない。
+ * - 全スロットのクロップ完了後に画像処理を行い、処理中は閉じ操作を抑止する。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import { useEffect, useState } from "react"
 import CropSlot, {
@@ -14,19 +20,6 @@ import {
 import { VISUAL_IMAGE_COUNT } from "@/lib/image/postImageLimits"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
-
-/**
- * 複数画像クロップをまとめて確定するダイアログコンポーネント。
- *
- * 責務と処理概要:
- * - 画像枚数に応じたスロット定義で `CropSlot` を並べる。合成後のサムネイル
- *   （実際にリンクカードとして使われる画像）の視覚表示に徹するため、
- *   画像ごとのラベル文字は表示しない。
- * - ズームスライダーはクロップビューと重ねず、ビュー群と確定ボタンの間に
- *   画像ごとに横並び（flex）で配置する。
- * - 全スロットのクロップ完了を確認してから画像処理を実行する。
- * - 処理中は閉じ操作を抑止し、オーバーレイで進行状態を示す。
- */
 
 type Props = {
   imageUrls: string[]

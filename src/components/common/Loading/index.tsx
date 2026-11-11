@@ -1,3 +1,8 @@
+/**
+ * 状態を読み上げ可能なローディング表示にする。
+ *
+ * - overlay の有無でインライン表示と全画面表示を切り替える。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"

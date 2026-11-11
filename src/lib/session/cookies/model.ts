@@ -1,6 +1,7 @@
 /**
- * セッションのモデル（型・`atp_session` の名前・検証・識別子・プールの項目への変換）。
- * 外部への依存は `@/env` の `atpService` と型のみ。
+ * Cookie に保持するセッションの型、検証、識別とプール項目への変換を定義する。
+ *
+ * - 保存時に `service` のないアプリパスワード Cookie は、環境依存を避けて既定のサービスとして読む。
  */
 
 import type { AtpSessionData } from "@atproto/api"
@@ -66,7 +67,7 @@ export const isRecord = (value: unknown): value is Record<string, unknown> =>
  *
  * 想定する入力形状(最小要件):
  * - OAuth: `{ kind: "oauth", did, handle, pds, oauth: { accessToken, expiresAt, refreshToken, dpopJwk, issuer, tokenEndpoint, clientId } }`
- * - アプリパスワード: `{ kind?: "password", session: { did, handle, ... }, service? }`（`kind` の無い以前の形式を含む）
+ * - アプリパスワード: `{ kind?: "password", session: { did, handle, ... }, service? }`（`kind` の省略を許す）
  *
  * Output: セッション。形が違えば undefined
  */
@@ -103,7 +104,7 @@ export const toStoredSession = (value: unknown): StoredSession | undefined => {
     return {
         kind: "password",
         session: session as unknown as AtpSessionData,
-        // 保存時に service を書かなかった旧形式の Cookie は、本番と同じ既定値として読む（同期の関数のため実行時の環境は使わない）
+        // service が省略された Cookie は、本番と同じ既定値として読む（同期の関数のため実行時の環境は使わない）
         service: typeof value.service === "string" ? value.service : atpService,
     }
 }

@@ -1,4 +1,6 @@
-// フィードバックの Issue 作成（P0・要件 2.1 の「フィードバック送信」）: 成功と、各失敗の種類（応答の状態・形・通信）
+/**
+ * Verifies GitHub issue creation requests and response handling.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { createGithubIssue } from "@/lib/feedback/githubIssue"
 

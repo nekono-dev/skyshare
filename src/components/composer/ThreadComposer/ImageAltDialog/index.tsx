@@ -1,12 +1,8 @@
 /**
- * 投稿画像1枚分の alt テキスト（代替テキスト）を編集するダイアログ。
+ * 投稿画像 1 枚分の alt テキストを編集するダイアログ。
  *
- * 責務と処理概要:
- * - `value`（現在の alt テキスト）を編集フォームとして表示し、「適用」時のみ
- *   確定値を親へ通知する（Overlayの背景クリック/Escでの誤操作コミットを避けるため、
- *   `PostGateDialog` と同じく明示的なコミット方式にする）。
- * - テキスト入力は `CountedTextInput`（Entry編集フォーム・PostFormと共通のコンポーネント）を使い、
- *   複数行入力・文字数カウンタの見た目をアプリ全体で揃える。Blueskyのalt上限は1000文字。
+ * - 適用操作でのみ変更を親へ通知し、閉じる操作による誤確定を防ぐ。
+ * - Bluesky の alt テキスト上限に合わせ、文字数カウンターは 1000 文字を上限として扱う。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import { useEffect, useId, useState } from "react"
@@ -65,7 +61,7 @@ export const ImageAltDialog = ({
   const inputId = useId()
   const [draft, setDraft] = useState(value)
 
-  // ダイアログを開くたびに前回の編集内容を引きずらず、渡された値で同期する。
+  // 開くたびに編集内容を破棄し、親から渡された値で同期する。
   useEffect(() => {
     if (open) setDraft(value)
   }, [open, value])

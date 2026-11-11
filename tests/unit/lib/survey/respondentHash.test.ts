@@ -1,4 +1,6 @@
-// アンケートの回答者の鍵付きハッシュ（P0・要件 2.1 の「アンケートの匿名性」）: 既知の値、アンケートごとの違い、失敗の種類
+/**
+ * Verifies keyed respondent hashes and invalid-key handling.
+ */
 import { describe, expect, it } from "vitest"
 import { respondentHash } from "@/lib/survey/respondentHash"
 import { TEST_DID, TEST_KEY_BASE64 } from "../../../fixtures/identities"

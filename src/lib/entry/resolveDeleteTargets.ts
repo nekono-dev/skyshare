@@ -1,12 +1,9 @@
 /**
- * entry削除時のBluesky投稿削除（`deleteBskyPost:true`）の削除対象を導出する
- * （`specs/entry-api`）。DELETEハンドラのみが呼び出す。
+ * Entry 削除に伴う Bluesky 投稿の削除対象を安全に導出する。
  *
- * 責務と処理概要:
- * - `sourceUri`を起点に`getPostThread`でreply chainを取得し、`source`が返信投稿
- *   （起点でない）なら`notThreadRoot`、既に存在しなければ`sourceGone`を返す。
- * - 起点であれば、呼び出し者自身の後続投稿のみを直線的に辿り（`extractOwnedLinearReplyChain`）、
- *   各投稿の所有者を検証したrkey一覧を返す。
+ * - `sourceUri` が返信投稿なら `notThreadRoot`、存在しなければ `sourceGone` を返す。
+ * - 起点から呼び出し者自身の直線的な返信だけを辿り、所有者を確認した rkey を返す。
+ * - `NotFound` 以外の取得失敗は例外として呼び出し側へ伝える。
  */
 import { AppBskyFeedDefs } from "@atproto/api"
 import type { Agent } from "@atproto/api"

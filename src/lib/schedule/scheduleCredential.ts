@@ -1,15 +1,4 @@
-/**
- * 予約用の認証情報の状態（GET /v2/schedules/credential）と、予約投稿の無効化（DELETE /v2/schedules/credential）の判断。
- *
- * 責務と処理概要:
- * - 認証情報の状態は、応答の本体と登録状態のヒント（cookie の値の元になる形）を返す。トークンは返さない。
- * - 無効化は、実行中の予約の確認 → 待機中と失敗の予約の削除と画像の後始末 → トークンの取り消し → 認証情報の削除、の順で行う。
- * - バインディングは関数の中で取得する。想定外の例外は捕まえず、呼び出し側へ投げる。
- *
- * 実装上の制約:
- * - `lib/api` を import しない（HTTP の形は持たない）。応答の本体は、このファイルのローカルの型で表す。
- * - Cookie の組み立て（Set-Cookie の値）は行わない。ページが `hint` から組み立てる。
- */
+/** 予約用認証情報の状態取得と予約投稿の無効化を扱う。 */
 import type { Outcome } from "@/types/outcome"
 import type { ScheduleHint } from "@/lib/schedule/availabilityHint"
 import { getScheduleEnv } from "@/lib/schedule/env"

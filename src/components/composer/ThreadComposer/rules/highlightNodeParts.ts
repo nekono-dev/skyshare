@@ -1,16 +1,6 @@
 /**
- * `computeHighlightSegments`の出力を、contenteditableのDOM子ノード1つずつに対応する
- * 単位（`NodePart`）まで展開し、新旧の並びを比較するためのユーティリティ。
- *
- * 責務と処理概要:
- * - PostBodyEditorはもはやキー入力の度にDOMを全て作り直さない。代わりに、現在の実DOMから
- *   読み取った`NodePart[]`（旧）と、`value`から計算した`NodePart[]`（新）を比較し、
- *   両者が一致する区間はDOMに一切触れず、差分のある区間だけをピンポイントで置き換える
- *   （`contentEditableReconcile.ts`が担当）。このファイルはその比較に使う純粋関数のみを持つ。
- * - CARET_ANCHOR（末尾が`<br>`の場合にのみ付与する不可視のキャレット用マーカー文字。
- *   `contentEditableModel.ts`参照）の付与判定もここに集約する。従来は
- *   `PostBodyEditor`内の`rebuildContent`とこのファイルの2箇所に分散していたロジックを
- *   1箇所にまとめる。
+ * ハイライト区間を contenteditable の子ノード単位へ変換し、差分比較する。
+ * 末尾の br に続く場合だけキャレット用アンカーを付ける。
  */
 import {
     computeHighlightSegments,

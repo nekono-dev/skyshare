@@ -1,13 +1,9 @@
 /**
- * Worker のエントリ。
+ * Astro の HTTP ハンドラと Cloudflare Cron Trigger の処理を束ねる Worker。
  *
- * 責務と処理概要:
- * - 画面と API のリクエスト（fetch）は、Astro のアダプタが提供するハンドラに任せる。
- * - Cron Trigger による定期実行（scheduled）で、実行時刻が到来した予約投稿を毎分実行し、
- *   1日1回（`isHousekeepingTime`）だけ終了した予約と不要な認証情報の後片付けを行う。
- *   同じ日次の枠で、保持期限を過ぎたアンケートのデータの削除（`runSurveyRetention`）も、
- *   予約投稿の後片付けとは別の `waitUntil` で起動する（互いの失敗が影響しない）。毎分の予約実行には何も足さない。
- *   scheduled は Cloudflare のプラットフォームだけが呼び、HTTP の経路から到達できない。
+ * - `scheduled` はプラットフォームが Cron ごとに実行し、HTTP からは呼ばれない。
+ * - 予約投稿を先に登録し、日次枠では後片付けとアンケート削除を独立して登録する。
+ * - `waitUntil` を分け、一方の日次処理の失敗が他方へ伝播しないようにする。
  */
 import { handle } from "@astrojs/cloudflare/handler"
 import type { ScheduleEnv } from "@/lib/platform/cfTypes"

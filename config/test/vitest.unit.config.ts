@@ -1,13 +1,8 @@
 /**
- * unit 層（純粋な規則）の vitest 設定。
+ * Vitest configuration for pure unit tests.
  *
- * 責務と処理概要:
- * - `tests/unit` 配下の `*.test.ts` を Node 環境で実行する。
- * - 対象は `src/` の純粋な規則。Astro・Cloudflare・DOM に依存しない。
- * - `@` のエイリアスを `src` に解決する。
- * - `.astro` の描画は render 層（`vitest.astro.config.ts`）、API ルートは route 層、
- *   DOM を使う部品は component 層で実行する。
- * - 分岐カバレッジの計測は istanbul を使う（v8 は workerd で使わないため、層の間で統一する）。
+ * Tests run in Node without Astro, Cloudflare, or DOM dependencies.
+ * Istanbul measures branch coverage consistently because workerd does not support V8 coverage.
  */
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -32,9 +27,7 @@ export default defineConfig({
     test: {
         environment: "node",
         include: ["tests/unit/**/*.test.ts"],
-        // P0 の unit 層モジュール（要件 4.1）。閾値は分岐 80%。
-        // cookies/ は 1 ファイルから 4 ファイルへ分割した。フォルダ合算の回避策は使わず、
-        // 4 ファイルのそれぞれを単独で分岐 80% 以上と判定する（index.ts は再エクスポートのみのため対象外）
+        // Each cookie module must meet 80% branch coverage independently; index.ts only re-exports.
         coverage: {
             enabled: true,
             provider: "istanbul",

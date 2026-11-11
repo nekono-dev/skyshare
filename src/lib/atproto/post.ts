@@ -1,7 +1,5 @@
 /**
  * `app.bsky.feed.post` レコードの値を組み立てる純粋関数と、返信の参照の検証。
- *
- * - 書き込みは行わず、レコードの値を返すだけである。
  */
 
 import type { BskyFacets, BskyReplyRef } from "@/lib/atproto/recordTypes"

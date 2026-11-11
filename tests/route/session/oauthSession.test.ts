@@ -1,4 +1,6 @@
-// OAuth セッションの更新（P0・要件 2.1 の「セッション処理（トークン更新・書き戻し）」）:
+/**
+ * Verifies OAuth session refresh, revocation, and nonce handling.
+ */
 // 期限が近いときだけ更新し、更新は同じアカウントのトークンに限り、失敗の種類を正しい状態コードに写す
 import { describe, expect, it, vi } from "vitest"
 import {

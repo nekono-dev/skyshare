@@ -1,3 +1,9 @@
+/**
+ * legacy pageDB 投稿を legacy v1 backend API で削除するボタン。
+ *
+ * - OAuth セッションは legacy backend で扱えないため、該当する 403 はアプリパスワードでのログインを案内する。
+ * - 本人確認は backend が行い、他人の投稿の削除を拒否する。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useState } from "react"
@@ -6,20 +12,10 @@ import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
 /**
- * legacy pageDB 投稿の削除ボタン。
- *
- * 責務と処理概要:
- * - `/posts/{dbIndex}/{slug}` (legacy pageDB 投稿表示ページ)に配置し、
- *   `/v1/page` 経由で legacy v1 backend の削除 API を実行する。
- * - v2 の session cookie を持つ閲覧者にのみ表示される想定（表示可否は呼び出し元が制御する）。
- *   本人以外の投稿を対象にした場合は legacy backend 側の本人確認で拒否される。
- */
-
-/**
  * 削除の失敗の応答から、表示する文言のキーを決める。
  *
- * 想定する入力形状(最小要件):
- * - 403 の本文 `{ error: "OAuthSessionUnsupported" }`（OAuth のセッションでは旧バックエンドへ送れない）
+ * Input:
+ * - 403 の本文 `{ error: "OAuthSessionUnsupported" }`（OAuth のセッションは legacy backend で扱えない）
  *
  * Output: OAuth のセッションでの拒否ならアプリパスワードでのログインを求める文言、それ以外は削除失敗の文言
  *

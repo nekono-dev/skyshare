@@ -1,3 +1,10 @@
+/**
+ * 入れ子に対応したモーダル用オーバーレイ。
+ *
+ * - 背景上の押下と解放が両方背景で起きた場合に閉じ、内容領域からのドラッグでは閉じない。
+ * - Esc は最前面のインスタンスだけが処理し、スクロール位置は共有ロックで復元する。
+ * - ブラウザでは `document.body` に portal 描画する。
+ */
 import React, { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { acquireScrollLock, releaseScrollLock } from "./rules/scrollLock"

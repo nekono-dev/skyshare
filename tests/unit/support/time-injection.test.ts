@@ -1,4 +1,6 @@
-// 時刻の注入（要件 5.2）: テストが fake timers で現在時刻を決める（Node）
+/**
+ * Checks that Node fake timers let tests control the current time.
+ */
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 describe("time injection (node)", () => {

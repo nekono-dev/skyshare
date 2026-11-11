@@ -1,16 +1,6 @@
 /**
- * 1件の Bluesky 投稿を表示するカード。
- *
- * 責務と処理概要:
- * - 投稿の表示部（作者・日時・本文・画像）は `PostBody` に委譲し、ツールバーをその下に配置する
- *   （`hideToolbar` 指定時はツールバーを出さない）。
- * - `skyshareEntry` が付与されている場合は元画像・動画の代わりにその visual を1枚、拡大なしで表示し、
- *   Entry ページへのリンクを出す。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
- * - `skyshareEntry` が無く画像投稿の場合は、既存投稿から skyshare entry を発行するボタンを出す。
- * - 投稿先選択ダイアログ・WebShareの共有文は、「Skyshareのリンクカードを優先表示」に従って
- *   本文のURLを取り除く（`resolveShareBody`、`specs/link-card-priority`）。
- * - Entry の作成・削除に伴う状態遷移自体は `useSkyshareEntryStatus` に委譲し、
- *   このコンポーネントはその結果（`display`）を描画するだけに徹する。
+ * Bluesky 投稿と Entry の visual、共有・Entry 操作をカードに表示する。
+ * Entry visual は OGP 比率（1200×630）で全体を表示し、拡大操作の対象にしない。
  */
 
 import { useT } from "@/components/i18n/useTranslation"
@@ -40,22 +30,16 @@ import { readEffectiveLinkCardPriority } from "@/lib/settings/shareSettings"
 type PostCardProps = {
   item: TimelinePost
   /**
-   * Bluesky投稿ごと削除された直後に呼び出されるコールバック。呼び出し元
-   * （`ThreadCard`）は、Timelineのページング対象アイテムがスレッドグループ単位
-   * であるため（`specs/timeline`）、常にそのスレッドグループ全体を
-   * 一覧から除去する。
+   * Bluesky 投稿の削除成功後に呼び出す。呼び出し元はページング単位のスレッド全体を一覧から除く。
    */
   onPostDeleted?: () => void
   /**
-   * ログイン不要のゲスト用デモ表示。Bluesky投稿への実際の書き込みを伴う操作
-   * （Entry作成・元投稿へのリンク）のみ無効化する。Entry削除は有効で、削除範囲の判定・
-   * 削除の実行はアプリ内で模擬する（`specs/entry-delete-dialog`）。クロスポスト（Xへの
-   * 共有intentポップアップ）とWebShare共有はatproto認証を必要としないため
-   * 通常通り操作でき、「Entryを開く」もサンプルEntryページへ遷移できる。
+   * ログイン不要のデモ表示。Entry 作成は無効だが、削除はアプリ内で模擬し、通信しない。
+   * X 共有と Web Share は atproto 認証を使わず、Entry リンクはサンプルページを開く。
    */
   guestMode?: boolean
   /**
-   * 事後entry作成ボタンの表示制御（`specs/timeline`）。
+   * 事後 Entry 作成ボタンの表示制御。
    * - `undefined`（既定）: 単独投稿と同じ、投稿自身の適格性のみで判定する。
    * - `true`: スレッドのルート投稿として明示的にボタンを表示する
    *   （`entryVisualSourcePost`がある場合はそちらの画像を使う）。
@@ -64,27 +48,24 @@ type PostCardProps = {
    */
   postCreateEntryButton?: boolean
   /**
-   * 下部のツールバー（Blueskyで開く・共有・Entry関連の操作・Entryを開くリンク）を表示しないか
-   * （`specs/timeline`）。操作はスレッドの起点の投稿に対して行うため、`ThreadCard`が
-   * スレッドの返信のカードに指定する。既定は表示する。
+   * 下部ツールバーを表示しないか。操作はスレッドの起点に集約するため、ThreadCard が返信カードに指定する。
    */
   hideToolbar?: boolean
   /**
-   * 事後entry作成のVisual（カバー画像）を`item`の代わりに取得する投稿
-   * （`resolveEntryVisualSourcePost`、`specs/timeline`）。
+   * 事後 Entry の visual（カバー画像）を item の代わりに取得する投稿。
    * `ThreadCard`がスレッドのルート投稿向けに、ルート自身が画像を持たない場合の
    * 代わりの画像取得元（ルートに最も近い画像付き投稿）を渡す。未指定時は`item`
    * 自身が対象になる。
    */
   entryVisualSourcePost?: TimelinePost
   /**
-   * 作成するentryの`source`にする投稿（`specs/timeline`）。
+   * 作成する Entry の source にする投稿。
    * `ThreadCard`がルート投稿のカードに、スレッドのルート投稿を渡す。
    * 未指定時は`item`自身が`source`になる。
    */
   entrySourcePost?: TimelinePost
   /**
-   * カードの中身のコントラストを下げるか（`specs/timeline`）。
+   * カードの中身のコントラストを下げるか。
    * - `undefined`（既定）: 投稿自身がEntryを持たず作成対象にも該当しない（`display.kind === "ineligible"`）ときに下げる。
    * - `true`/`false`: 呼び出し側の判定に従う。`ThreadCard`がスレッドの返信のカードに、
    *   グループ全体が作成対象外か（どの投稿も画像・動画・entryを持たないか）を渡す。
@@ -150,23 +131,15 @@ const Component = ({
     shareViaWebApi,
   } = useWebShareCrosspost(item, entryWebUrl ?? null, guestMode)
 
-  // ページ内リンクは entry 自身の AT URI から直接パスを組み立てる（常に相対パス）。
-  // X共有（IntentShareDialog）は外部サービスへの絶対URLが必要なため、
-  // そちらは本番ドメイン固定で生成された entryWebUrl をそのまま渡す。
-  // ゲストモードのダミーEntryはPDS上に実レコードを持たないため、AT URIから
-  // 算出するパスの代わりに、実際に閲覧できるサンプルEntryページのパス
-  // （`activeEntry.webUrl`、`@/lib/timeline/guest`で用意）をそのまま使う。
-  // このページは `entries/[slug].astro` と同様ログイン不要の公開ページのため、
-  // `?guest`は引き継がない。
+  // ページ内リンクは相対パスにし、X 共有には本番ドメインの絶対 URL を渡す。
+  // ゲスト用 Entry に実 AT URI はないため、閲覧可能なサンプルページ URL を使う。
   const parsedEntryUri = activeEntry ? parseAtUri(activeEntry.uri) : undefined
   const entryPath = guestMode
     ? activeEntry?.webUrl
     : parsedEntryUri
       ? skyshareEntryPath(parsedEntryUri.repo, parsedEntryUri.rkey)
       : undefined
-  // Entry を持つ投稿（スレッドのルート投稿・単独投稿）は元画像の代わりに visual を1枚、
-  // 拡大なしで表示する。Entry を持たない投稿は元画像を拡大可能なサムネイルで表示する。
-  // visual は OGP 仕様（1200x630）で生成されるため、その比率を指定して全体を表示する（クロップしない）。
+  // visual は OGP 比率（1200×630）で生成されるため、全体を表示してクロップしない。
   const entryVisualImages: SourceImage[] | undefined = activeEntry?.visualUrl
     ? [
         {
@@ -177,8 +150,7 @@ const Component = ({
         },
       ]
     : undefined
-  // Entry の visual がある場合は動画投稿でもそれを表示し、動画のサムネイル・利用不可表示は出さない。
-  // Entry が無い動画投稿・利用不可の動画は、動画のサムネイル（または利用不可表示）を出す。
+  // Entry visual があれば動画のサムネイルや利用不可表示より優先する。
   const showEntryVisual = entryVisualImages !== undefined
   const video = showEntryVisual ? undefined : item.video
   const unsupportedVideo = showEntryVisual ? undefined : item.unsupportedVideo
@@ -187,14 +159,10 @@ const Component = ({
     ? []
     : (entryVisualImages ?? item.images)
   const imagesInteractive = entryVisualImages === undefined
-  // Entry も無く作成対象にも該当しない投稿（画像を持たない投稿）はカード全体をグレーアウトする。
-  // スレッドの返信は呼び出し側（`ThreadCard`）がグループ単位で判定した`muted`に従う。
-  // この判定はpostCreateEntryButtonによるボタン抑制（下記actionsDisplay）とは独立して評価する。
+  // カードのグレーアウト判定は、作成ボタンだけを抑制する postCreateEntryButton と独立している。
   const isSkyshareIneligible = muted ?? display.kind === "ineligible"
 
-  // postCreateEntryButton===false（スレッド内で事後entry作成の対象に選ばれなかった
-  // 投稿）の場合のみ、ボタン表示用のdisplayを「作成対象外」に差し替える。
-  // display自体（isSkyshareIneligible等）は変更しない。
+  // false は操作ボタンだけを隠し、カード自体の適格性表示は変えない。
   const actionsDisplay: SkyshareEntryDisplayState =
     postCreateEntryButton === false && display.kind === "creatable"
       ? { kind: "ineligible" }
@@ -305,7 +273,7 @@ const Component = ({
         request={
           shareDialogOpen
             ? {
-                // 「Skyshareのリンクカードを優先表示」はダイアログを開くたびに最新の保存値で判定する
+                // 設定変更を反映するため、ダイアログを開くたびに保存値を読み直す。
                 postText: resolveShareBody({
                   text: item.text,
                   facets: item.facets ?? [],

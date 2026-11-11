@@ -1,16 +1,9 @@
 /**
- * entry の作成（POST）のうち、createEntry の検証・埋め込みの作成・画像と動画のアップロードを扱う。
+ * 投稿に含まれる Entry 素材・埋め込み・画像や動画のアップロードを準備する。
  *
- * 責務と処理概要:
- * - 5a: トップレベル `createEntry:true` の検証（`visual` 必須）。
- * - 5b: `posts[i]` ごとに、画像メタデータ検証・facets 検証・embed 作成（動画、画像、OGP の順に優先）・
- *   画像のアップロードを行い、スレッドの 1 件分の入力（`ThreadPostInput`）を返す。
- * - 5c: `createEntry:true` の場合に visual を 1 回だけアップロードし、entry 作成の入力（`ThreadEntryInput`）を返す。
- *
- * 実装上の制約:
- * - `lib/api`（api のスキーマと推論型）を import しない。入力は、ページが検証した値をこの領域の型で受け取る。
- * - 失敗は `Outcome` の `status` で返す。想定外の例外は throw し、ページの外側の `catch` が扱う。
- * - console のログ文言と、検証・アップロードの順序は、移動の前と同じに保つ。
+ * - `lib/api` に依存せず、ページが検証した値をこの領域の型で受け取る。
+ * - 想定可能な失敗は `Outcome.status` で返し、予期しない例外は呼び出し側へ投げる。
+ * - 埋め込みは動画、画像、OGP の順に優先し、visual は一度だけアップロードする。
  */
 
 import { uploadBlob } from "@/lib/atproto/blob"

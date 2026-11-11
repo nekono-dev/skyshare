@@ -1,3 +1,9 @@
+/**
+ * OGP の取得状態と画像プレビューを表示する。
+ *
+ * - 取得ボタンと分離し、フォーム側でレイアウトを組み替えられる。
+ */
+
 import { useT } from "@/components/i18n/useTranslation"
 import React from "react"
 import type { UseOgpFetchResult } from "@/components/composer/ThreadComposer/OgpFetchButton"

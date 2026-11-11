@@ -1,9 +1,6 @@
 /**
- * 依存規則の検査（scripts/architecture）の単体テスト。
- *
- * 責務と処理概要:
- * - 走査（importGraph）と領域の判定（regions）の期待値を、fixture の木で固定する。
- * - 規則・循環・許容リスト・終了コードのテストは、後続の節で追加する。
+ * Tests the import graph, architecture rules, allowlist, and command-line check.
+ * Fixtures keep expected behavior stable across representative project layouts.
  */
 import fs from "node:fs"
 import os from "node:os"
@@ -26,7 +23,7 @@ import { runImportCheck } from "../../../scripts/architecture/check-imports"
 
 const scanRoot = path.resolve(__dirname, "../../fixtures/import-rules/scan")
 
-describe("走査（importGraph）", () => {
+describe("Module scanning", () => {
     const graph = scanModules(scanRoot)
     const targetsOf = (from: string) =>
         graph.edges
@@ -37,13 +34,13 @@ describe("走査（importGraph）", () => {
                 target: e.target,
             }))
 
-    it("生成物と型宣言ファイルを列挙しない", () => {
+    it("excludes generated files and declaration files", () => {
         expect(graph.modules).not.toContain("src/client/openapi/client.ts")
         expect(graph.modules).not.toContain("src/global.d.ts")
         expect(graph.modules).toContain("src/lib/entry/entry.ts")
     })
 
-    it("型だけの import と動的 import の文字列リテラルを区別して取り出す", () => {
+    it("extracts type-only imports and dynamic import literals distinctly", () => {
         const edges = targetsOf("src/lib/entry/entry.ts")
         expect(edges).toContainEqual({
             spec: "@/lib/timeline/shape",
@@ -57,7 +54,7 @@ describe("走査（importGraph）", () => {
         })
     })
 
-    it("相対パスを書かれた位置から解決する", () => {
+    it("resolves relative paths from the importing file", () => {
         expect(targetsOf("src/lib/entry/entry.ts")).toContainEqual({
             spec: "./helper",
             typeOnly: false,
@@ -65,20 +62,20 @@ describe("走査（importGraph）", () => {
         })
     })
 
-    it("生成物への import は辺にも未解決にもしない（設計: 生成物は検査の対象外）", () => {
+    it("ignores imports of generated files", () => {
         expect(targetsOf("src/lib/entry/gen.ts")).toEqual([])
         expect(
             graph.unresolved.some(u => u.from === "src/lib/entry/gen.ts"),
         ).toBe(false)
     })
 
-    it("astro はフロントマターの import だけを取り出し、本文の script は含めない", () => {
+    it("extracts Astro frontmatter imports and ignores script contents", () => {
         const specs = targetsOf("src/pages/index.astro").map(e => e.spec)
         expect(specs).toContain("@/components/common/Badge/index")
         expect(specs).not.toContain("@/nothere/ignored")
     })
 
-    it("外部パッケージは package として取り出し、型だけかどうかを区別する", () => {
+    it("resolves external packages and records whether imports are type-only", () => {
         expect(targetsOf("src/lib/entry/view.ts")).toContainEqual({
             spec: "react",
             typeOnly: true,
@@ -87,7 +84,7 @@ describe("走査（importGraph）", () => {
     })
 })
 
-describe("領域の判定（regionOf）", () => {
+describe("Region classification", () => {
     it.each([
         ["src/lib/entry/entry.ts", "lib/entry"],
         ["src/lib/guestMode.ts", "lib"],
@@ -96,7 +93,7 @@ describe("領域の判定（regionOf）", () => {
         ["src/pages/index.astro", "pages"],
         ["src/util/http.ts", "util"],
         ["src/env.ts", "(root)"],
-    ])("%s は %s", (file, region) => {
+    ])("%s belongs to region %s", (file, region) => {
         expect(regionOf(file)).toBe(region)
     })
 })
@@ -106,7 +103,7 @@ const violationsRoot = path.resolve(
     "../../fixtures/import-rules/violations",
 )
 
-describe("規則（rules）", () => {
+describe("Import rules", () => {
     const violations = evaluateImportRules(scanModules(violationsRoot))
     const has = (ruleId: string, from: string, specifier: string) =>
         violations.some(
@@ -116,7 +113,7 @@ describe("規則（rules）", () => {
                 v.specifier === specifier,
         )
 
-    it("R1: lib から components・pages への import を違反にする（要件 1.1・1.2）", () => {
+    it("rejects imports from lib into components and pages", () => {
         expect(
             has(
                 "layer",
@@ -126,20 +123,20 @@ describe("規則（rules）", () => {
         ).toBe(true)
     })
 
-    it("R1: util から lib への import を違反にする（要件 1.3）", () => {
+    it("rejects imports from util into lib", () => {
         expect(
             has("layer", "src/util/bad-util.ts", "@/lib/timeline/shape"),
         ).toBe(true)
     })
 
-    it("R2: lib の react・react-easy-crop の import（型だけを含む）を違反にする（要件 2.1・5.1）", () => {
+    it("rejects react and react-easy-crop imports from lib, including type-only imports", () => {
         expect(has("uiInLib", "src/lib/timeline/ui.ts", "react")).toBe(true)
         expect(
             has("uiInLib", "src/lib/timeline/ui.ts", "react-easy-crop"),
         ).toBe(true)
     })
 
-    it("R2: components の react の import は違反にしない", () => {
+    it("allows react imports from components", () => {
         expect(
             violations.some(
                 v => v.from === "src/components/common/Badge/index.tsx",
@@ -147,7 +144,7 @@ describe("規則（rules）", () => {
         ).toBe(false)
     })
 
-    it("R4a: 領域をまたぐ相対 import を違反にする（要件 4.1）", () => {
+    it("rejects relative imports that cross regions", () => {
         expect(
             has(
                 "crossRegionRelative",
@@ -157,13 +154,13 @@ describe("規則（rules）", () => {
         ).toBe(true)
     })
 
-    it("R4a: 同じ領域内の相対 import は違反にしない（要件 4.2）", () => {
+    it("allows relative imports within the same region", () => {
         expect(violations.some(v => v.from === "src/lib/entry/same.ts")).toBe(
             false,
         )
     })
 
-    it("R4b: ../ が 3 段以上の import を違反にする（要件 4.3）", () => {
+    it("rejects imports with three or more parent-directory segments", () => {
         expect(
             has(
                 "relativeDepth",
@@ -173,7 +170,7 @@ describe("規則（rules）", () => {
         ).toBe(true)
     })
 
-    it("R4c: .js 付きの import を違反にする（要件 4.4）", () => {
+    it("rejects imports with a .js extension", () => {
         expect(
             has(
                 "jsExtension",
@@ -183,13 +180,13 @@ describe("規則（rules）", () => {
         ).toBe(true)
     })
 
-    it("違反のない import（clean）は違反にしない", () => {
+    it("allows imports that do not violate any rule", () => {
         expect(violations.some(v => v.from === "src/lib/clean/ok.ts")).toBe(
             false,
         )
     })
 
-    it("R3: 型だけの循環を両方向とも違反にする（要件 3.1・5.1）", () => {
+    it("reports both directions of a type-only cycle", () => {
         const cycles = findCycleViolations(scanModules(violationsRoot))
         expect(cycles.map(v => v.from).sort()).toEqual([
             "src/lib/cyc/a.ts",
@@ -199,7 +196,7 @@ describe("規則（rules）", () => {
     })
 })
 
-describe("許容リスト（allowlist）", () => {
+describe("Allowlist", () => {
     const viol = (
         ruleId:
             | "layer"
@@ -237,7 +234,7 @@ describe("許容リスト（allowlist）", () => {
     const ownerExists = (owner: string) =>
         owner === "src-cycles" || owner === "src-import-style"
 
-    it("許容された違反は失敗にせず、件数だけを数える（要件 6.1）", () => {
+    it("counts listed violations without treating them as failures", () => {
         const result = checkAllowlist(
             [viol("cycle", "src/a.ts", "./b")],
             [entry("cycle", "src/a.ts", "./b")],
@@ -246,18 +243,18 @@ describe("許容リスト（allowlist）", () => {
         expect(result.listedCount).toBe(1)
     })
 
-    it("許容されていない違反は unlisted に入る（要件 6.2）", () => {
+    it("includes unlisted violations in the unlisted results", () => {
         const result = checkAllowlist([viol("cycle", "src/a.ts", "./b")], [])
         expect(result.unlisted).toHaveLength(1)
     })
 
-    it("違反が消えた許容の項目は stale に入る（要件 6.4）", () => {
+    it("marks allowlist entries with no remaining violation as stale", () => {
         const result = checkAllowlist([], [entry("cycle", "src/a.ts", "./b")])
         expect(result.stale).toHaveLength(1)
         expect(result.unlisted).toEqual([])
     })
 
-    it("壊れた JSON・重複キー・未知の規則・存在しない owner はエラーになる（要件 6.3）", () => {
+    it("rejects malformed JSON, duplicate keys, unknown rules, and missing owners", () => {
         expect(
             loadAllowlist(tmpFile("{ broken"), ownerExists).errors.length,
         ).toBeGreaterThan(0)
@@ -287,7 +284,7 @@ describe("許容リスト（allowlist）", () => {
         ).toBeGreaterThan(0)
     })
 
-    it("reason が欠落・空・空白だけの項目は読み込みエラーになり、entries に入らない（要件 4.1・4.2）", () => {
+    it("rejects entries with missing or blank reasons", () => {
         const missing = {
             ruleId: "cycle",
             from: "src/a.ts",
@@ -307,7 +304,7 @@ describe("許容リスト（allowlist）", () => {
         }
     })
 
-    it("正しい項目は errors が空になり、entries を返す", () => {
+    it("returns valid entries without errors", () => {
         const ok = JSON.stringify({
             version: 1,
             entries: [entry("cycle", "src/a.ts", "./b")],
@@ -317,7 +314,7 @@ describe("許容リスト（allowlist）", () => {
         expect(loaded.entries).toHaveLength(1)
     })
 
-    it("下書きは規則ごとの既定の所有 spec を付け、そのまま照合すると違反も stale も 0 件になる（要件 6.3・7.1）", () => {
+    it("assigns default owners to drafts that match without unlisted or stale entries", () => {
         const violations = [
             viol("cycle", "src/a.ts", "./b"),
             viol(
@@ -338,8 +335,8 @@ describe("許容リスト（allowlist）", () => {
     })
 })
 
-describe("CLI（check-imports）", () => {
-    // 実際の検査は .kiro/specs の存在を見る。規則の既定の所有 spec（structure-checks など）も存在するものとして扱う
+describe("Import check CLI", () => {
+    // Owner validation checks configured owners, including built-in owners.
     const ownerExists = (owner: string) =>
         owner.startsWith("src-") || owner === "structure-checks"
     const writeAllowlist = (entries: unknown[]) => {
@@ -349,7 +346,7 @@ describe("CLI（check-imports）", () => {
         return file
     }
 
-    it("許容リストが無い場合、終了コードは 1 になる（要件 7.2）", () => {
+    it("returns exit code 1 when the allowlist is missing", () => {
         const result = runImportCheck({
             root: violationsRoot,
             allowlistPath: path.join(
@@ -362,7 +359,7 @@ describe("CLI（check-imports）", () => {
         expect(result.exitCode).toBe(1)
     })
 
-    it("許容されていない違反があると終了コード 1 になり、違反を 1 行ずつ示す（要件 7.2）", () => {
+    it("returns exit code 1 and reports an unlisted violation in the output lines", () => {
         const result = runImportCheck({
             root: violationsRoot,
             allowlistPath: writeAllowlist([]),
@@ -375,11 +372,11 @@ describe("CLI（check-imports）", () => {
         ).toBe(true)
     })
 
-    // 下書きの reason は空で出るため、読み込む前に理由を埋める（要件 4.3）
+    // Draft reasons are empty, so fill them before loading the allowlist.
     const fillReasons = (entries: { reason: string }[]) =>
         entries.map(e => ({ ...e, reason: "テスト用の理由" }))
 
-    it("--emit-allowlist の下書きは reason が空で、理由を埋めれば違反も stale も 0 件で終了コード 0 になる（要件 4.3・6.1・7.1）", () => {
+    it("emits drafts with empty reasons and succeeds after reasons are filled", () => {
         const draft = runImportCheck({
             root: violationsRoot,
             allowlistPath: "",
@@ -408,7 +405,7 @@ describe("CLI（check-imports）", () => {
         expect(result.lines.some(line => line.startsWith("警告"))).toBe(false)
     })
 
-    it("理由が欠落・空の許容リストは読み込みエラーとなり、終了コード 1 になる（要件 4.2）", () => {
+    it("returns exit code 1 when an allowlist entry has no reason", () => {
         const draft = runImportCheck({
             root: violationsRoot,
             allowlistPath: "",
@@ -442,7 +439,7 @@ describe("CLI（check-imports）", () => {
         ).toBe(true)
     })
 
-    it("消えた許容の項目は警告として示し、終了コードは 0 のままになる（要件 6.4）", () => {
+    it("warns about stale allowlist entries while returning exit code 0", () => {
         const extra = {
             ruleId: "cycle",
             from: "src/lib/gone.ts",
@@ -477,8 +474,8 @@ describe("CLI（check-imports）", () => {
         ).toBe(true)
     })
 
-    it("許容リストにエラーがあると終了コードは 1 になる（要件 6.3）", () => {
-        // reason は埋めておき、失敗の原因を owner の検査の経路だけに絞る
+    it("returns exit code 1 when the allowlist contains an invalid owner", () => {
+        // A valid reason isolates the owner validation error.
         const bad = {
             ruleId: "cycle",
             from: "src/a.ts",
@@ -493,7 +490,7 @@ describe("CLI（check-imports）", () => {
             ownerExists,
         })
         expect(result.exitCode).toBe(1)
-        // 終了コード 1 は未許容の違反でも起きるため、owner のエラー行が出ていることも確かめる
+        // Unlisted violations also cause exit code 1, so verify the owner error line.
         expect(
             result.lines.some(
                 line =>
@@ -504,7 +501,7 @@ describe("CLI（check-imports）", () => {
         expect(result.lines.some(line => line.includes("reason"))).toBe(false)
     })
 
-    describe("utilShared の合流（structure-checks 3.2）", () => {
+    describe("utilShared rule", () => {
         const utilSharedRoot = path.resolve(
             __dirname,
             "../../fixtures/import-rules/util-shared",
@@ -521,7 +518,7 @@ describe("CLI（check-imports）", () => {
             reason: "テスト用の理由",
         }
 
-        it("利用元の領域が一つだけの util は違反として表示され、終了コード 1 になる（要件 2.5・7.1）", () => {
+        it("reports a util used by only one region and returns exit code 1", () => {
             const result = runImportCheck({
                 root: utilSharedRoot,
                 allowlistPath: writeAllowlist([]),
@@ -536,7 +533,7 @@ describe("CLI（check-imports）", () => {
             ).toBe(true)
         })
 
-        it("理由付きで許容リストに載れば、終了コード 0 になる（要件 2.5・7.1）", () => {
+        it("returns exit code 0 when the violation is allowlisted with a reason", () => {
             const result = runImportCheck({
                 root: utilSharedRoot,
                 allowlistPath: writeAllowlist([lonelyEntry]),
@@ -549,7 +546,7 @@ describe("CLI（check-imports）", () => {
             )
         })
 
-        it("利用元が二つの領域にある util は違反にならず、終了コード 0 になる（要件 2.5）", () => {
+        it("allows a util used by two regions and returns exit code 0", () => {
             const result = runImportCheck({
                 root: utilSharedOkRoot,
                 allowlistPath: writeAllowlist([]),
@@ -562,7 +559,7 @@ describe("CLI（check-imports）", () => {
             )
         })
 
-        it("--emit-allowlist の下書きに utilShared の項目が出て、所有 spec は structure-checks になる（要件 7.1）", () => {
+        it("includes utilShared entries with the built-in owner in emitted drafts", () => {
             const draft = runImportCheck({
                 root: utilSharedRoot,
                 allowlistPath: "",
@@ -582,7 +579,7 @@ describe("CLI（check-imports）", () => {
         })
     })
 
-    describe("typesOnly の合流（structure-checks 3.5）", () => {
+    describe("typesOnly rule", () => {
         const typesOnlyRoot = path.resolve(
             __dirname,
             "../../fixtures/import-rules/types-only",
@@ -599,7 +596,7 @@ describe("CLI（check-imports）", () => {
             reason: "テスト用の理由",
         }
 
-        it("値の宣言を含む src/types/ の .ts は違反として表示され、終了コード 1 になる（要件 8.4・7.1）", () => {
+        it("reports src/types .ts files with value declarations and returns exit code 1", () => {
             const result = runImportCheck({
                 root: typesOnlyRoot,
                 allowlistPath: writeAllowlist([]),
@@ -614,7 +611,7 @@ describe("CLI（check-imports）", () => {
             ).toBe(true)
         })
 
-        it("理由付きで許容リストに載れば、終了コード 0 になる（要件 8.4・7.1）", () => {
+        it("returns exit code 0 when the violation is allowlisted with a reason", () => {
             const result = runImportCheck({
                 root: typesOnlyRoot,
                 allowlistPath: writeAllowlist([badEntry]),
@@ -627,7 +624,7 @@ describe("CLI（check-imports）", () => {
             )
         })
 
-        it("型だけの文だけの src/types/ の .ts は違反にならず、終了コード 0 になる（要件 8.4）", () => {
+        it("allows src/types .ts files containing only type declarations", () => {
             const result = runImportCheck({
                 root: typesOnlyOkRoot,
                 allowlistPath: writeAllowlist([]),
@@ -640,7 +637,7 @@ describe("CLI（check-imports）", () => {
             )
         })
 
-        it("astro は typesOnly の対象外で、値の宣言を含んでも違反として表示しない（要件 8.4）", () => {
+        it("excludes Astro files from typesOnly violations", () => {
             const result = runImportCheck({
                 root: typesOnlyRoot,
                 allowlistPath: writeAllowlist([badEntry]),
@@ -652,7 +649,7 @@ describe("CLI（check-imports）", () => {
             )
         })
 
-        it("specifier が空の違反の表示は「で import」を含まず、二重空白にならない（前回の残件）", () => {
+        it("formats violations with an empty specifier without extra words or spaces", () => {
             const result = runImportCheck({
                 root: typesOnlyRoot,
                 allowlistPath: writeAllowlist([]),
@@ -665,7 +662,7 @@ describe("CLI（check-imports）", () => {
             expect(line).not.toContain("  ")
         })
 
-        it("specifier が空の utilShared の表示も「で import」を含まない（前回の残件）", () => {
+        it("formats utilShared violations with an empty specifier without extra words", () => {
             const result = runImportCheck({
                 root: path.resolve(
                     __dirname,
@@ -681,7 +678,7 @@ describe("CLI（check-imports）", () => {
             expect(line).not.toContain("  ")
         })
 
-        it("specifier がある違反の表示は従来どおり「を … で import」の形を保つ", () => {
+        it("formats violations with a specifier as an import message", () => {
             const result = runImportCheck({
                 root: violationsRoot,
                 allowlistPath: writeAllowlist([]),
@@ -695,27 +692,27 @@ describe("CLI（check-imports）", () => {
     })
 })
 
-describe("想定の構成からの独立（要件 10）", () => {
+describe("Independence from a prescribed project layout", () => {
     const arbitraryRoot = path.resolve(
         __dirname,
         "../../fixtures/import-rules/arbitrary",
     )
 
-    it("任意の名前と配置のフォルダだけの木で、違反が 0 件になる（要件 10.2）", () => {
+    it("reports no violations for a tree with arbitrary folder names and layout", () => {
         const graph = scanModules(arbitraryRoot)
         expect(evaluateImportRules(graph)).toEqual([])
         expect(findCycleViolations(graph)).toEqual([])
     })
 
-    it("すべての規則に、根拠となる steering の節が紐づいている（要件 10.1）", () => {
+    it("associates every rule with a supporting steering section", () => {
         for (const id of RULE_IDS) {
             expect(RULE_BASIS[id]).toMatch(/structure\*\.md/)
         }
     })
 })
 
-describe("層の逆流の規則（libLayer）", () => {
-    // 基盤 → 業務の辺だけを違反にする。fixture の各辺の層は対応表（lib-layers.ts）に従う
+describe("libLayer rule", () => {
+    // Fixture edge layers follow the mapping in lib-layers.ts.
     const libLayerRoot = path.resolve(
         __dirname,
         "../../fixtures/import-rules/lib-layers",
@@ -724,7 +721,7 @@ describe("層の逆流の規則（libLayer）", () => {
         .filter(v => v.ruleId === "libLayer")
         .map(v => [v.from, v.specifier])
 
-    it("基盤 → 業務の import を違反にする（要件 2.1・3.1）", () => {
+    it("rejects imports from foundation modules into business modules", () => {
         expect(libLayerViolations).toContainEqual([
             "src/lib/api/bad.ts",
             "@/lib/feedback/y",
@@ -735,8 +732,8 @@ describe("層の逆流の規則（libLayer）", () => {
         ])
     })
 
-    it("業務 → 基盤・基盤どうし・業務どうしは違反にしない（要件 2.2）", () => {
-        // 違反は上の 2 件だけで、正例（業務 → 基盤、基盤 → 基盤、業務 → 業務）は含まれない
+    it("allows business-to-foundation, foundation-to-foundation, and business-to-business imports", () => {
+        // Only the two invalid imports above are present; valid direction examples are excluded.
         expect(libLayerViolations).toHaveLength(2)
         expect(
             libLayerViolations.some(
@@ -751,7 +748,7 @@ describe("層の逆流の規則（libLayer）", () => {
         ).toBe(false)
     })
 
-    it("guestMode.ts は業務として扱い、業務の import（timeline）を違反にしない（要件 1.1・2.2）", () => {
+    it("treats guestMode.ts as a business module and allows its timeline import", () => {
         expect(
             libLayerViolations.some(
                 ([from]) => from === "src/lib/guestMode.ts",
@@ -759,7 +756,7 @@ describe("層の逆流の規則（libLayer）", () => {
         ).toBe(false)
     })
 
-    it("基盤から guestMode.ts（業務）を import すると違反にする（要件 1.1・2.1）", () => {
+    it("rejects imports of guestMode.ts from foundation modules", () => {
         expect(
             libLayerViolations.some(
                 ([from, spec]) =>

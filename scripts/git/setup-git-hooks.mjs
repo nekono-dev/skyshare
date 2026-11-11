@@ -1,6 +1,7 @@
-// core.hooksPath をリポジトリの .githooks に設定する（要件 8.1・8.2）。
-// 責務: npm の prepare（npm install・npm ci の後）と、エージェントのセッション開始で実行する。
-// git の作業ツリーでない環境（パッケージとしての利用など）では何もしない。何度実行しても結果は同じ。
+/**
+ * npm の prepare とエージェントのセッション開始時に、リポジトリの Git フック先を `.githooks` に設定する。
+ * Git 作業ツリー外では何もせず、繰り返し実行しても設定結果は同じ。
+ */
 import { spawnSync } from "node:child_process"
 
 const inside = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], {

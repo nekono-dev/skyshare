@@ -8,6 +8,7 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページ
 - 外部: Bluesky の PDS・AppView・認可サーバー、OGP 抽出サービス、旧バックエンド（pageDB）、GitHub API（Issue 作成）
 - 送信の間隔制限: Workers の Rate Limiter（フィードバックの送信。ログイン中のアカウントの DID をキーにする。`src/lib/feedback/submitFeedback.ts`）
 - アクセス解析（任意）: 測定 ID（`PUBLIC_GA_MEASUREMENT_ID`）を設定したときだけ Google Analytics のタグを出す。タグは Partytown で Web Worker 上で動かし、画面の処理を妨げない（`src/components/layout/AnalyticsTag/`）
+- 設定と秘密: 運用者ごとの非秘密の値は `config/<名前>.json`（`develop`・`production`・`e2e`。雛形は `*.example.json`）に置き、`scripts/config/render-wrangler.mjs` が `config/wrangler.template.jsonc` から `wrangler.jsonc` を生成する（生成物・`config/*.json` とも gitignore 対象。手で編集しない）。秘密は `.dev.vars` と Worker のシークレットに置き、`scripts/secrets/` が生成・登録する。dotenv・JSONC の解析は `scripts/lib/` の共通関数を使う
 - 生成物: `scripts/build/build-openapi-document.ts` が OpenAPI を作り、`orval` が `src/client/openapi/` のクライアントを作る（手で編集しない）
 
 ## Core Technologies
@@ -77,4 +78,4 @@ npm run build
 ---
 
 _Document standards and patterns, not every dependency._
-_updated_at: 2026-11-10_
+_updated_at: 2026-11-11_

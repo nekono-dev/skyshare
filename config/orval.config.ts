@@ -1,3 +1,4 @@
+/** Zod から組み立てた OpenAPI 文書を入力に、フロントエンド用クライアントの生成設定を定義する。 */
 import { defineConfig } from "orval"
 
 import { buildOpenApiDocument } from "../scripts/build/build-openapi-document"

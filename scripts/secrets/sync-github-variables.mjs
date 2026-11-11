@@ -1,22 +1,9 @@
-// config/production.json と .dev.vars の値を、GitHub の Variables・Secrets（と --worker で Worker のシークレット）へ登録するスクリプト。
-//
-// 責務:
-// - 登録の元は2つだけ。公開してよい値は config/production.json（siteHost → 変数 SITE_HOST、vars → 同名の変数）、
-//   秘匿情報は .dev.vars（.gitignore 対象）。CI（deploy.yaml）は GitHub の Variables・Secrets を読んで配備する。
-// - 運用者（config/production.json がある人）だけが動く。GitHub の書き込み権限（admin）が無い人は、エラーで止めずに登録をスキップする。
-//   worktree など config/production.json が無い場所では、何もせず成功する（--if-configured）。
-// - gh variable list で登録済みの値を読み、違う値だけを gh variable set で登録する（同じ値には触らない）。
-// - Secrets は値を比べられないため、.dev.vars に値がある名前を毎回登録する。空の値は登録しない（登録済みの値を消さないため）。
-// - Worker のシークレット（FEEDBACK_GITHUB_TOKEN）は --worker のときだけ、本番・develop・プレビューの Worker へ登録する。
-// - 値は標準入力（または環境変数）で渡し、引数やプロセスの一覧に載せない。画面には名前と結果だけを出し、値は出さない。
-// - 削除はしない。config に無い変数は警告だけする。SURVEY_CONFIG は `npm run survey` が管理するため対象外。
-// - 例示ドメイン（example.com など）の値は、例の設定を本番へ誤って登録しないよう拒否する。
-//
-// 使い方: npm run sync:github [-- --dry-run] [-- --if-configured] [-- --worker] [-- --repo <owner/repo>]
-//   --dry-run        登録せず、登録する名前だけを表示する
-//   --if-configured  config/production.json が無いときは何もせず成功する（push の hook が使う）
-//   --worker         Worker のシークレットも登録する（本番・develop・プレビュー）
-//   --repo           GitHub のリポジトリ（既定: git remote の origin から判定する）
+/** 設定値を GitHub Variables・Secrets と、指定時は Worker のシークレットへ同期する。
+ * 秘密値を引数やログに出さず、空値で登録済みの Secret を消さない。
+ * 値は標準入力または環境変数で渡し、プロセス一覧にも載せず、画面には名前と結果だけを出す。
+ * 使い方: npm run sync:github [-- --dry-run] [-- --if-configured] [-- --worker] [-- --repo <owner/repo>]
+ * `--dry-run` は登録名のみ表示し、`--if-configured` は production 設定が無い場合に成功終了する。
+ */
 import { spawnSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"

@@ -1,12 +1,6 @@
 /**
- * OAuth のクライアントの秘密鍵のシークレットの取得。
- *
- * 責務と処理概要:
- * - Worker のシークレット `OAUTH_CLIENT_KEY`（`kid` を含む P-256 の秘密鍵の JWK の JSON）を返す。
- *
- * 実装上の制約:
- * - `cloudflare:workers` は Workers の実行環境だけにあるため、呼び出す時点で動的に読み込む
- *   （単体テストでは `vi.mock` で差し替える）。
+ * OAuth クライアントの秘密鍵シークレットを Worker 環境から取得する。
+ * - `cloudflare:workers` は実行時に動的 import するため、単体テストでは `vi.mock` で差し替えられる。
  */
 
 /**

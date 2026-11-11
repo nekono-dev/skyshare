@@ -1,3 +1,9 @@
+/**
+ * 予約投稿の認可を開始するダイアログ。
+ *
+ * - 許可対象は現在のアクティブアカウントで、資格情報は端末に置かずサーバー側で保持する。
+ * - OAuth 戻り先を開始元ページにし、投稿フォームから開いた場合は遷移を差し替えられる。
+ */
 import { useEffect, useRef, useState } from "react"
 import { startScheduleAuthorization } from "@/client/openapi/client"
 import Overlay from "@/components/common/dialog/Overlay"
@@ -7,22 +13,6 @@ import { renderSlots } from "@/components/i18n/renderSlots"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
-
-/**
- * 予約投稿を有効にするダイアログ（Bluesky の OAuth の認可へ送る）。
- *
- * 責務と処理概要:
- * - 設定で予約投稿をオンにしたときに開き、何を許可するか・どのアカウントで有効にするか・
- *   認証情報の保存先を示す。
- * - ユーザー名・パスワードの入力欄は置かない。認可するアカウントは、ログイン中のアカウントに決まる。
- * - 許可が無効になった後の再度の許可でも、初回と同じ見出しと文で案内する。
- * - 「認証する」で `POST /v2/schedules/credential/authorization` に今のページのパスを
- *   渡して呼び、返った認可の画面の URL へ移る。認可の画面から戻ると今のページが開き、
- *   全ページ共通の `AuthorizationReturn` が完了と結果の表示を行う。
- * - 投稿フォームから開いたときは、移る前に作成中の内容の扱いを確かめられるよう、
- *   移る処理（`navigate`）を投稿フォームが差し替える。
- * - スマホ幅では、投稿フォームと同様に画面の上部に固定する。
- */
 
 type Props = {
   open: boolean

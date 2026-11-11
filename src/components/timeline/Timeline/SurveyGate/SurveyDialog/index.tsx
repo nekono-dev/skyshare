@@ -1,19 +1,6 @@
 /**
- * SurveyDialog（ボタンから開くアンケートダイアログ）。
- *
- * 責務と処理概要:
- * - 検証済みのアンケートを `Overlay` の上に `role="dialog"` のカードとして描画する。
- * - 選択状態（`SurveyDraft`）を内部に持ち、部品から受けた選択を `answerDraft` の規則で補正して保持する。
- *   言語の切り替えでは再マウントしないため、選択は保たれる。
- * - 送信の操作は、「回答しない」を含む間は「閉じる」（`onDecline`）、完了していれば送信（`onSubmit`）、
- *   未完了の間は押せない。送信中は質問と操作をすべて押せなくする。
- * - 背景クリック・Esc では閉じない（`Overlay` の `onClose` は何もしない）。
- * - 固定の文言は `survey.*` の辞書から、質問・選択肢の文言は設定から、表示言語で取り出す。
- * - 本体（`SurveyDialogBody`）は選択状態を持たず、渡された値だけで描画する（描画の確認を node 環境で行えるようにするため）。
- *
- * 純粋関数の責務:
- * - `applySelectionChange`: 1 問の選択を補正した新しい選択状態を返す（入力の状態は書き換えない）。
- * - `resolveSubmitAction`: 送信の操作が何をするか（未完了・閉じる・送信）を決める。
+ * アンケートの選択状態を管理し、回答・辞退の操作をダイアログとして表示する。
+ * 言語を切り替えても選択を保ち、背景クリックと Esc では閉じない。
  */
 import React, { useId, useState } from "react"
 import ChoiceQuestion from "@/components/common/select/ChoiceQuestion"
@@ -155,6 +142,7 @@ const ignoreClose = () => {}
  *
  * 例: `action.kind === "decline"` のときは「閉じる」の操作になり、`onAction` を呼ぶ。
  */
+// 選択状態を持たないため、ブラウザ API に依存せず Node 環境でも描画を検証できる。
 export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   survey,
   draft,

@@ -49,6 +49,13 @@ export const codexExecTool = {
         description:
           "Sandbox for the run. Omitted means workspace-write, the default.",
       },
+      effort: {
+        type: "string",
+        enum: ["medium", "high"],
+        default: "medium",
+        description:
+          "Reasoning effort, only for sandbox workspace-write (implementation). Read-only runs (review, investigation) always use medium. The model is chosen by sandbox: read-only uses Sol, workspace-write uses Luna.",
+      },
       cwd: {
         type: "string",
         description:

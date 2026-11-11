@@ -1,6 +1,5 @@
 /**
- * 「自動ポップアップするSNS」の読み取りの特性化テスト（src-duplicates 1.3・要件 4.2・4.3）。
- * 旧キーのみの保存値は、移行を削除した後は既定値を示す（意図した変化）。新しいキーの値は変わらない。
+ * Reads current popup settings while safely ignoring obsolete stored keys.
  */
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { readAutoPopupTargetSetting } from "@/lib/settings/shareSettings"
@@ -27,14 +26,14 @@ afterEach(() => {
     vi.unstubAllGlobals()
 })
 
-describe("旧キーのみを持つ保存値（旧共有設定の移行は削除済み）", () => {
-    it("移行を行わず、既定値を示す（意図した変化）", () => {
+describe("stored settings with legacy keys only", () => {
+    it("uses defaults without migrating legacy keys", () => {
         const storage = createFakeStorage({ crosspostToTaittsuu: "true" })
         stubWindow(storage)
         expect(readAutoPopupTargetSetting("x")).toBe("x")
     })
 
-    it("旧キーに触れず、新しいキーも作らない", () => {
+    it("does not read legacy keys or create new keys", () => {
         const storage = createFakeStorage({ crosspostToTaittsuu: "true" })
         stubWindow(storage)
         readAutoPopupTargetSetting("x")
@@ -43,8 +42,8 @@ describe("旧キーのみを持つ保存値（旧共有設定の移行は削除�
     })
 })
 
-describe("移行の済みの設定（新しいキーを持つ）", () => {
-    it("新しいキーの値を示し、旧キーがあっても上書きしない", () => {
+describe("stored settings with current keys", () => {
+    it("uses current values without overwriting them from legacy keys", () => {
         const storage = createFakeStorage({
             autoPopupTarget: "mastodon",
             crosspostToTaittsuu: "true",
@@ -54,7 +53,7 @@ describe("移行の済みの設定（新しいキーを持つ）", () => {
         expect(storage.data.get("autoPopupTarget")).toBe("mastodon")
     })
 
-    it("保存値が無いときは既定値を示す", () => {
+    it("uses defaults when no setting is stored", () => {
         stubWindow(createFakeStorage({}))
         expect(readAutoPopupTargetSetting("ask")).toBe("ask")
     })

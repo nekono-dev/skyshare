@@ -1,7 +1,6 @@
 /**
  * GET /v2/schedules/ — 自分の予約を、実行時刻の昇順で一覧する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

@@ -1,24 +1,9 @@
 /**
- * skyshare entry 1件を表示するカード。
+ * Skyshare Entry 1件を表示し、編集・削除操作を提供する。
  *
- * 責務と処理概要:
- * - entry の createdAt・manifest.caption・manifest.visual を表示する。
- *   caption の中の URL・ハッシュタグは Timeline の本文と同じくリンクにする（`PostRichText`）。
- *   visual は Timeline（`PostCard`）と同様に caption の下へ、OGP 比率（1200x630）を
- *   維持したまま（クロップせず）拡大なしで `ImageGallery` により表示する。
- * - `item.orphaned`（紐づく Bluesky 投稿が削除済み）の場合、`ui["card-muted"]` により
- *   `PostCard` の作成対象外投稿と同じ要領で背景色を変えて識別しやすくする。
- *   あわせて作成日時の横に「元投稿削除済み」バッジを表示する。
- * - 削除ボタン: `item.orphaned` に応じて確認ダイアログを出し分ける。
- *   - orphaned: `ChoiceDialog` による単純確認のみ（対応する Bluesky 投稿は既に
- *     存在しないため `deleteBskyPost` は付与しない）。
- *   - 非orphaned: `PostCard` と同じ `EntryDeleteConfirmDialog` を用い、
- *     「Skyshareリンクを削除」「リンク・Bluesky投稿を削除」（最終確認あり、旧entryは無効化）
- *     を提示する。
- * - 編集ボタン: `EntryEditForm` を開き heading/caption を編集できる。
- *   保存成功時は `onSaved` を呼び出し、一覧側の表示を更新する。
+ * - visual は OGP 比率を保って全体を表示し、クロップや拡大をしない。
+ * - 関連投稿が削除済みの場合は区別して示し、その投稿への削除操作を出さない。
  */
-
 import { useFormat, useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import { useRef, useState } from "react"
@@ -48,7 +33,7 @@ type Props = {
   onSaved?: (next: { heading: string; caption: string }) => void
   /**
    * ログイン不要のゲスト表示。編集は無効化する。削除は有効だが、削除範囲の判定・削除の
-   * 実行はアプリ内で模擬し、通信は行わない（`specs/entry-delete-dialog`）。
+   * 実行はアプリ内で模擬し、通信は行わない。
    * 「Entryを開く」はサンプルEntryページ（`item.webUrl`）へ遷移できる。
    */
   guestMode?: boolean

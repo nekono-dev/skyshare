@@ -1,4 +1,4 @@
-/** Entry（一覧・カード・編集・削除・下書き・詳細）関連の文言（英語）。キー集合は日本語辞書と一致させる。 */
+/** Entry関連の文言（英語）。キー集合は日本語辞書と一致させる。 */
 import type { MessageEntries } from "../../messageEntries"
 
 export const entry = {

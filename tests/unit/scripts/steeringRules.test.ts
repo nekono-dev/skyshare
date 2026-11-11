@@ -1,13 +1,7 @@
 /**
- * `structure.md` の「依存規則の検査」の表・規則の根拠・置き場の節と、規則の一覧（`RULE_IDS`・`RULE_BASIS`）の整合を検査するテスト（structure-checks 5.2・要件 5.1〜5.4）。
+ * Checks that the architecture guide documents the implemented dependency rules.
  *
- * 責務と処理概要:
- * - 「## 依存規則の検査」の表の一列目（規則名）と `RULE_IDS` が双方向に一致することを確かめる。不足も余分も報告する。
- * - `RULE_BASIS` の「」内の名前が、`structure.md` の見出しと一致することを確かめる。
- * - `structure.md` に「共通（`src/util/`・`src/styles/`）」「型（`src/types/`）」の節があり、部品の節に骨格（`layout`）の `src/layout/` を置かない旨の一文があることを確かめる。
- * - 規則の実装が完了した後に、規則（`utilShared`・`typesLeaf`・`typesOnly`・`reason`）を「予定」「検査しない」と書く古い注が残っていないことを確かめる。
- * - 負例（検査が機能することの確認）: 規則が一つ欠けた表・余分な行を持つ表・古い注を含む文書を与え、差が報告されることを確かめる。
- * - 検査は `structure.md` の文字列に対して行う。規則の一覧（`RULE_IDS`・`RULE_BASIS`）だけを値として読む（規則の単一の正は `rules.ts`）。
+ * - Uses fixed document snippets to verify mismatch detection.
  */
 import { describe, expect, it } from "vitest"
 import { RULE_BASIS, RULE_IDS } from "../../../scripts/architecture/rules"
@@ -92,10 +86,10 @@ const findStaleNotes = (markdown: string): string[] =>
                 STALE_WORDS.some(word => line.includes(word)),
         )
 
-describe("structure の依存規則の表と規則の一覧（RULE_IDS・RULE_BASIS）", () => {
+describe("Dependency rule table matches RULE_IDS and RULE_BASIS", () => {
     const markdown = readSteeringStructure()
 
-    it("表の一列目と RULE_IDS が双方向に一致する", () => {
+    it("the first table column matches RULE_IDS in both directions", () => {
         const table = parseRuleTable(readStructureChecks())
         expect(table.length).toBeGreaterThan(0)
         expect(diffRuleNames(table, RULE_IDS)).toEqual({
@@ -104,23 +98,23 @@ describe("structure の依存規則の表と規則の一覧（RULE_IDS・RULE_BA
         })
     })
 
-    it("RULE_BASIS の「」内の名前が structure.md の見出しと一致する", () => {
+    it("names in RULE_BASIS match architecture guide headings", () => {
         expect(findUnmatchedBasisNames(RULE_BASIS, markdown)).toEqual([])
     })
 
-    it("「共通（`src/util/`・`src/styles/`）」と「型（`src/types/`）」の節がある", () => {
+    it("the shared utility and type sections are present", () => {
         expect(findMissingHeadings(markdown, REQUIRED_HEADINGS)).toEqual([])
     })
 
-    it("部品の節の骨格（layout）に、src/layout/ を置かない旨の一文がある", () => {
+    it("the component section says layout files do not belong under src/layout", () => {
         expect(markdown.includes(LAYOUT_SENTENCE)).toBe(true)
     })
 
-    it("規則の実装の完了後に、規則と reason を予定・検査しないと書く古い注が残っていない", () => {
+    it("no obsolete notes say implemented rules are planned or unchecked", () => {
         expect(findStaleNotes(markdown)).toEqual([])
     })
 
-    it("負例: 規則が一つ欠けた表は、欠けた規則を不足として報告する", () => {
+    it("reports a missing rule from the table", () => {
         const withoutTypesOnly = RULE_IDS.filter(id => id !== "typesOnly")
         const fixtureTable = [
             "| 規則 | 内容 | 根拠 |",
@@ -136,7 +130,7 @@ describe("structure の依存規則の表と規則の一覧（RULE_IDS・RULE_BA
         })
     })
 
-    it("負例: 余分な行を持つ表は、余分な規則名を差として報告する", () => {
+    it("reports an extra rule in the table", () => {
         const fixtureTable = [
             "| 規則 | 内容 | 根拠 |",
             "| --- | --- | --- |",
@@ -152,7 +146,7 @@ describe("structure の依存規則の表と規則の一覧（RULE_IDS・RULE_BA
         })
     })
 
-    it("負例: 見出しに無い根拠の名前と、骨格の一文・節が無い文書を検出する", () => {
+    it("detects missing headings, rationale names, and the layout statement", () => {
         const fixture = ["## Code Organization Principles", "- 部品の節"].join(
             "\n",
         )
@@ -168,7 +162,7 @@ describe("structure の依存規則の表と規則の一覧（RULE_IDS・RULE_BA
         expect(fixture.includes(LAYOUT_SENTENCE)).toBe(false)
     })
 
-    it("負例: 古い注（予定・検査しない）の行を検出する", () => {
+    it("detects obsolete notes that describe rules as planned or unchecked", () => {
         const fixture = [
             "- 葉と型だけの規則（`typesLeaf`・`typesOnly`）は、現時点の `npm run test:imports` では検査しない。",
             "`utilShared`・`typesLeaf`・`typesOnly` は、規則の実装の完了後に検査する（予定）。",

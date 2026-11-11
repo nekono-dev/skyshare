@@ -1,3 +1,10 @@
+/**
+ * Skyshare v2 entry API。Bluesky 投稿（テキスト・OGP リンク・画像・動画。1 件またはスレッド）の作成と、紐づく skyshare entry の作成・更新・削除を扱う統合エンドポイント。
+ *
+ * - POST は `uri` 指定なら自分の既存の投稿から entry を発行し（from-post）、`posts` 指定なら新規投稿を `com.atproto.repo.applyWrites` で原子的に作成する（全件成功か全件失敗）。
+ * - PUT は entry の manifest.heading/caption を更新する（主に、紐づく投稿が削除済みの「孤立 entry」の編集用）。DELETE は `deleteBskyPost` 指定時に紐づく投稿も削除する。
+ * - 画像アップロード・facets 検証・外部 API 呼び出しの副作用が複数あり、Cloudflare Workers 環境で動くため Node.js 固有 API は使わない。
+ */
 import type { APIRoute } from "astro"
 
 import { resolveXrpcStatus } from "@/lib/api/response"
@@ -13,26 +20,6 @@ import * as PostSchema from "@/lib/api/schema/v2/entry/post"
 import * as PutSchema from "@/lib/api/schema/v2/entry/put"
 import * as DeleteSchema from "@/lib/api/schema/v2/entry/delete"
 import { parseOwnedAtUri } from "@/lib/atproto/atUri"
-
-/**
- * Skyshare v2 entry API。
- *
- * 責務と処理概要:
- * - Bluesky投稿（テキスト/OGPリンク/画像/動画。1件、またはスレッドとして複数件）の作成と、
- *   スレッド全体に紐づく skyshare entry（`createEntry`フラグ指定時）の作成を扱う、
- *   統合エンドポイント（旧`/v2/bsky/record`はこのエンドポイントに統合され廃止された）。
- * - POST: `uri`が指定された場合は既存の自分のBluesky投稿からskyshare entryを発行する
- *   （from-post）。`posts`が指定された場合は新規投稿（1件、またはスレッドとして複数件）を
- *   `com.atproto.repo.applyWrites`で原子的に作成する（全件成功か全件失敗）。
- * - PUT: skyshare entry の manifest.heading/caption を更新する
- *   （主に、紐づく Bluesky 投稿が削除済みの「孤立entry」の編集用途）。
- * - DELETE: skyshare entry を削除する。`deleteBskyPost` 指定時は紐づく Bluesky 投稿も削除する。
- * - 入力不正時は 400、認証不備は 401、対象投稿が見つからない場合は 404、外部連携失敗は 500 を返す。
- *
- * 実装上の制約:
- * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
- * - 画像アップロード・facets 検証・外部 API 呼び出しを含む副作用が複数発生する。
- */
 
 /**
  * POST /v2/entry — Bluesky投稿（1件、またはスレッドとして複数件）を新規作成する、

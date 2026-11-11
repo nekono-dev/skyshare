@@ -1,14 +1,9 @@
 ---
 /**
- * legacy pageDB 投稿表示ページ(SSR)。
+ * legacy pageDB の投稿表示ページ（SSR）。dbIndex/slug から OGP 画像・投稿者 handle・添付画像を取得して表示する。
  *
- * 責務と処理概要:
- * - URLの dbIndex/slug から legacy pageDB 上の投稿情報(OGP画像・投稿者handle・添付画像)を取得する。
- * - 取得結果を v2 デザインで表示し、投稿者プロフィール・元のBluesky投稿へのリンクを提供する。
- * - 取得失敗時は HTTP ステータスと理由を切り替えてエラー表示に切り替える。
- *
- * 実装上の制約:
- * - Cloudflare Workers 環境で動作するため Node.js 固有 API は利用しない。
+ * - Cloudflare Workers 上で動くため Node.js 固有 API を使わない。
+ * - 取得に失敗したときは、HTTP ステータスと理由を切り替えてエラー表示にする。
  */
 
 export const prerender = false

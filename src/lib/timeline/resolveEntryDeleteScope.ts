@@ -1,19 +1,8 @@
 /**
- * entry削除確認ダイアログで「リンク・Bluesky投稿を削除」の可否・削除件数を判定する
- * ロジック（`specs/entry-delete-dialog`）。
- * `EntryCard`（entry一覧）・`PostCard`（Timeline一覧、`specs/timeline`）の
- * 双方から共有利用するため`src/lib/entry/`に置く。
- *
- * 責務と処理概要:
- * - 削除予定投稿の一覧表示（`DeletePostListDialog`）用に、取得済みの投稿を`TimelinePost`へ
- *   変換して保持する（追加通信なし）。
- * - `sourceUri`を起点に`app.bsky.feed.getPostThread`（公開API、未認証で呼べる）で
- *   スレッドを取得し、`source`が起点でなければ`legacy`、起点なら自己後続投稿の件数を
- *   数えて`deletable`を返す。判定不能は`unknown`（安全側＝Bluesky投稿の削除を無効化）。
- * - 起点判定（`isThreadRootPost`）・後続投稿の抽出（`extractOwnedLinearReplyChain`）は
- *   サーバ（`resolveDeleteTargets`）と同一の関数を用い、ダイアログの提示内容と
- *   実際の削除挙動を一致させる。
- * - `sourceUri`のrepo（DID）自体がentry所有者のDIDと一致するため、追加のセッション取得は不要。
+ * Entry 削除確認で、Bluesky 投稿を削除できるかと対象範囲を判定する。
+ * 判定不能な場合は安全側に倒し、投稿削除を無効にする情報を返す。
+ * - 未認証で呼べる公開 API `app.bsky.feed.getPostThread` を使い、セッションを追加取得しない。
+ * - サーバと同じスレッド起点・投稿列判定を使い、表示内容と削除対象を一致させる。
  */
 import { AppBskyFeedDefs } from "@atproto/api"
 import { publicAtpAgent } from "@/lib/atproto/publicAgent"
@@ -31,7 +20,7 @@ import { parseAtUri } from "@/lib/atproto/atUri"
 export type EntryDeleteScope =
     /** sourceが起点。`posts`は削除される自己投稿（古い→新しい順、単発は1件。件数は`posts.length`） */
     | { kind: "deletable"; posts: TimelinePost[] }
-    /** sourceが返信投稿（旧実装で作成されたentry） */
+    /** source がスレッド返信に紐づく Entry */
     | { kind: "legacy" }
     /** 判定不能 */
     | { kind: "unknown" }
@@ -48,6 +37,7 @@ export type EntryDeleteScope =
 export const resolveEntryDeleteScope = async (
     sourceUri: string,
 ): Promise<EntryDeleteScope> => {
+    // sourceUri の repo DID は Entry 所有者の DID と一致するため、追加のセッション取得は不要。
     const parsedSourceUri = parseAtUri(sourceUri)
     if (!parsedSourceUri) return { kind: "unknown" }
 
@@ -68,7 +58,7 @@ export const resolveEntryDeleteScope = async (
             parsedSourceUri.repo,
             MAX_THREAD_POST_COUNT,
         )
-        // 一覧表示用に変換する。変換不能な投稿（最小要件不足）があると、サーバの削除対象と
+        // 一覧表示用に変換する。変換不能な投稿（最小要件を満たさないもの）があると、サーバの削除対象と
         // 一覧がずれるため、安全側で判定不能にする。
         const posts: TimelinePost[] = []
         for (const post of chain) {

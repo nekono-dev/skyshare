@@ -1,12 +1,9 @@
 /**
- * 表示言語を React コンポーネントから使うためのフック。
+ * React コンポーネントで表示言語に応じた翻訳・書式化を使うフック。
  *
- * 責務と処理概要:
- * - `store.ts` の言語を `useSyncExternalStore` で購読し、言語が変わると再描画する。
- * - サーバー描画・水和時は `getServerSnapshot` が既定言語を返すため、日本語で描画された
- *   HTMLと一致し、水和後に実際の言語へ再描画される（hydration mismatch を起こさない）。
- * - 言語切り替えは再描画のみで行い、コンポーネントを再マウントしない
- *   （入力中のフォーム・開いたダイアログを保持するため）。`key` に言語を使ってはならない。
+ * - SSR と水和では既定言語を使い、サーバー HTML との不一致（hydration mismatch）を防ぐ。
+ * - 言語変更時は再描画のみで再マウントしない（入力中のフォーム・開いたダイアログを保つため）。
+ *   `key` に言語を使ってはならない。
  */
 import { useMemo, useSyncExternalStore } from "react"
 import { formatDateTime, formatNumber } from "@/lib/i18n/format"

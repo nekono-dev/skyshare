@@ -1,3 +1,10 @@
+/**
+ * Bluesky OAuth とアプリパスワードによるログインを提供する。
+ *
+ * - OAuth の戻りは SameSite=Strict cookie が届かないため、このページで完了 API を呼ぶ。
+ * - フォームは `base-card` 自身であり、入れ子にすると Proton Pass が入力欄を検出できない。
+ * - 入力欄には autocomplete と対応する label を設定する。
+ */
 import React, { useEffect, useState } from "react"
 import {
   completeSessionAuthorization,
@@ -15,32 +22,6 @@ import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
 import { publicAuthServer } from "@/env"
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
-
-/**
- * Bluesky ログインフォームコンポーネント。
- *
- * 責務と処理概要:
- * - 「Bluesky でログイン」のボタンだけを表示し、その下の折りたたみ（従来形式でのログイン）を開くと
- *   アプリパスワードのフォームを表示する。
- * - OAuth のボタンはユーザー名の入力欄を持たず、ログインの開始 API を呼び、返った認可の画面
- *   （Bluesky の画面。ハンドルとパスワードはそこで入力する）へ遷移する。
- * - 認可の画面からの戻り（このページの住所のフラグメントに、用途 `session` と戻りの項目が入る）なら、
- *   再読み込みで同じ項目を送らないよう先に住所から消し、ログインの完了 API を呼ぶ。
- * - アプリパスワードのフォームは、ハンドルとアプリパスワードを受け取り、セッション作成 API を呼び出す。
- * - OAuth の開始・戻りの完了・アプリパスワードのログインの進行と結果は、いずれもフォーム内の
- *   同じステータスメッセージ（`#message`）で表示し、成功時は一定時間の後にトップページへ遷移する。
- * - `<html data-oauth-returning>` は、Baselayout の先頭のスクリプトが戻りの住所を見て `pending` で付ける。
- *   付いている間はフォームを押せず、`pending` の間は水和の前から「ログイン中…」を出す（CSS）。
- *   水和したら `active` に変えて表示を引き継ぎ、失敗したら外してやり直せるようにする。
- *   成功したら遷移まで付けたままにする。
- *
- * 利用上の制約:
- * - 自身が `base-card` のため、別の `base-card` の中に入れ子にしないこと。
- *   入れ子にすると Proton Pass が入力欄を検出できなくなる（検証で確認済み）。
- *   折りたたみもこのフォームの中に置き、フォーム自体がカードという構造を保つ。
- * - 入力欄には `autoComplete`（username / current-password）と label の `htmlFor` を設定している。
- * - 戻りは別のサイトからの遷移で `SameSite=Strict` の cookie が届かないため、完了はこのページから呼ぶ。
- */
 
 /** 成功の表示から遷移までの時間 */
 const REDIRECT_DELAY_MS = 700

@@ -1,12 +1,7 @@
 /**
- * 削除予定のBluesky投稿1件分の行（投稿日時・省略本文・サムネイル）。
+ * 投稿削除の最終確認に表示する投稿1件分の行。
  *
- * 責務と処理概要:
- * - `DeletePostListDialog`が`ComponentList`の`itemComponent`として使う1要素の描画のみを担う。
- * - 本文は最大3行で省略し、空なら「（本文なし）」を表示する。
- * - 画像は先頭4枚までサムネイル表示し、超過分は「+N」で示す。画像が無ければサムネイル欄を描画しない。
- * - 動画投稿（`video`）は poster を同じ大きさで1枚表示し、小さな再生マークを重ねて動画と分かるようにする。
- *   利用不可の動画（`unsupportedVideo`）は削除対象の投稿に含まれ得るため、同様に poster のみ表示する。
+ * - 動画は再生可否にかかわらず poster を表示する。利用不可の動画も削除対象に含まれる。
  */
 import { useFormat, useT } from "@/components/i18n/useTranslation"
 import React from "react"

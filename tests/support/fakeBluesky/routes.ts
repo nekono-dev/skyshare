@@ -1,5 +1,7 @@
-// 偽の Bluesky の応答の定義（HTTP に依存しない）。E2E の偽サーバーと route 層の outboundService が同じ定義を使う。
-// 認可の往復（PAR → authorize → token）の状態と、書き込まれたレコードは、ストア（この定義の中の記録）で持つ。
+/**
+ * Defines fake Bluesky responses shared by E2E and route tests.
+ * Authorization state and written records live in the request store.
+ */
 import type { FakeBlueskyFixtures } from "./types"
 
 export type FakeReply = {
@@ -8,12 +10,12 @@ export type FakeReply = {
     readonly headers?: Record<string, string>
 }
 
-/** 書き込まれたレコード（AT URI → cid と値）。取得の経路（getRecord・getPosts）が読む */
+/** A written record keyed by AT URI; getRecord and getPosts read these values. */
 export type FakeRecord = { readonly cid: string; readonly value: unknown }
 
 /**
- * 認可の往復の状態と、書き込まれたレコード。
- * `par`: PAR で受けた要求を request_uri で引けるように保つ。`records`: applyWrites と putRecord で書かれた値。
+ * Holds pending authorization requests and written records.
+ * `par` maps request URIs to PAR requests; `records` stores values written by applyWrites and putRecord.
  */
 export type FakeStore = {
     readonly par: Map<string, Record<string, string>>
@@ -32,15 +34,15 @@ export type FakeRequest = {
     readonly store: FakeStore
 }
 
-/** 経路の定義。E2E の六つの流れが呼ぶ endpoint だけを置く */
+/** Route definitions include only endpoints used by the E2E flows. */
 type Route = {
     readonly method: string
     readonly match: (url: URL) => boolean
     readonly handle: (req: FakeRequest) => FakeReply
 }
 
-/** 画像の CID（形式の正しい固定値。画像の実体は持たない） */
-// 形式の正しい TID（コミットの rev に使う）
+/** Syntactically valid fixed CID; no image payload is stored. */
+// A syntactically valid TID used as the commit revision.
 const FAKE_REV = "3jzfcijpj2z2a"
 const FAKE_CID = "bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku"
 
@@ -81,7 +83,7 @@ const ROUTES: readonly Route[] = [
             }),
     },
     {
-        // 認可の要求を事前に受け付ける。以降の authorize は request_uri で引く
+        // Accept the authorization request up front; authorize resolves it by request_uri.
         method: "POST",
         match: pathIs("/oauth/par"),
         handle: ({ body, store }) => {
@@ -91,7 +93,7 @@ const ROUTES: readonly Route[] = [
         },
     },
     {
-        // 利用者の認可の画面を省略し、要求の redirect_uri へ認可コードを返す
+        // Skip user consent and return an authorization code to the requested redirect URI.
         method: "GET",
         match: pathIs("/oauth/authorize"),
         handle: ({ url, store }) => {
@@ -120,9 +122,9 @@ const ROUTES: readonly Route[] = [
             }),
     },
     {
-        // PLC の DID 文書。サービスの PDS は、この fake の origin を指す
+        // The PLC DID document points the service PDS to this fake origin.
         method: "GET",
-        // DID の経路は URL エンコードされて届く（%3A）ため、復号してから見る
+        // DID paths arrive URL-encoded, so decode them before matching.
         match: url => decodeURIComponent(url.pathname).startsWith("/did:"),
         handle: ({ url, fixtures }) => {
             const path = decodeURIComponent(url.pathname)
@@ -154,7 +156,7 @@ const ROUTES: readonly Route[] = [
             }),
     },
     {
-        // アプリパスワードのセッションは要求のたびに更新されるため、同じ形の応答を返す
+        // App-password sessions refresh on each request, so return the same response shape.
         method: "POST",
         match: pathIs("/xrpc/com.atproto.server.refreshSession"),
         handle: ({ fixtures }) =>
@@ -233,7 +235,7 @@ const ROUTES: readonly Route[] = [
         },
     },
     {
-        // 書き込まれたレコードを返す（PDS の取得）。無ければ RecordNotFound
+        // Return a stored PDS record or RecordNotFound when it is absent.
         method: "GET",
         match: pathIs("/xrpc/com.atproto.repo.getRecord"),
         handle: ({ url, fixtures, store }) => {
@@ -244,7 +246,7 @@ const ROUTES: readonly Route[] = [
         },
     },
     {
-        // AppView の投稿の取得。書き込まれた投稿を、閲覧に要る形（author・record・件数）で返す
+        // Return stored posts in the author, record, and count shape expected by AppView.
         method: "GET",
         match: pathIs("/xrpc/app.bsky.feed.getPosts"),
         handle: ({ url, fixtures, store }) => {
@@ -273,7 +275,7 @@ const ROUTES: readonly Route[] = [
         },
     },
     {
-        // 自分の投稿の一覧（タイムライン）。E2E の利用者は投稿を一覧に出すまで持たないため、空の一覧を返す
+        // E2E users have no timeline posts, so return an empty feed.
         method: "GET",
         match: pathIs("/xrpc/app.bsky.feed.getAuthorFeed"),
         handle: () => json(200, { feed: [] }),
@@ -285,7 +287,7 @@ const ROUTES: readonly Route[] = [
             json(200, {
                 blob: {
                     $type: "blob",
-                    // 実在する形の CID（lexicon の検査を通す）。画像の実体は配信しない
+                    // Use a valid CID for lexicon validation without serving image bytes.
                     ref: { $link: FAKE_CID },
                     mimeType: "image/png",
                     size: 79,
@@ -294,10 +296,7 @@ const ROUTES: readonly Route[] = [
     },
 ]
 
-/**
- * 経路に対する応答を返す。定義されていなければ `undefined`（呼び出し側は 404 にする）。
- * Input: method、URL（origin はこの値で決まる）、fixtures、本文、ストア
- */
+/** Returns a route response, or `undefined` when the caller should return 404. */
 export const respondTo = (input: {
     readonly method: string
     readonly url: URL
