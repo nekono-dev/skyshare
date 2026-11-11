@@ -1,3 +1,8 @@
+/**
+ * 投稿後に開く外部 SNS の選択肢を表示する。
+ *
+ * - 永続化と表示条件は呼び出し側が決め、選択中の内容に合わせて幅を調整する。
+ */
 import Dropdown, {
   type DropdownOption,
 } from "@/components/common/select/Dropdown"

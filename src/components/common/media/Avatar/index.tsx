@@ -1,3 +1,9 @@
+/**
+ * 指定サイズの円形ユーザーアバターを表示する。
+ *
+ * - URL が無い場合や読み込みに失敗した場合はプレースホルダーを表示する。
+ * - サイズは `sm`・`md`・`lg` の 3 種類に限る。
+ */
 import React, { useEffect, useState } from "react"
 import someone from "@/images/someone.svg"
 import styles from "./index.module.css"

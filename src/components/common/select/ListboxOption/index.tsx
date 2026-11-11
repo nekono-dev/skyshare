@@ -1,3 +1,8 @@
+/**
+ * Dropdown と SuggestPopover が共有するリストボックスの選択肢行。
+ *
+ * - `mousedown` で確定するため、blur より先に処理して入力欄のフォーカスやカーソル位置を保つ。
+ */
 import React from "react"
 import styles from "./index.module.css"
 

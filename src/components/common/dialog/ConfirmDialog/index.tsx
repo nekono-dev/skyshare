@@ -1,13 +1,8 @@
 /**
- * タイトル・本文メッセージ・確定/キャンセルボタンを持つ汎用確認ダイアログ。
+ * 本文で理由を伝える、確定・キャンセル操作付きの確認ダイアログ。
  *
- * 責務と処理概要:
- * - `ChoiceDialog`はボタン列挙のみを責務とし、ユーザ向けの警告文（本文メッセージ）を
- *   表示する仕組みを持たない。取り消し不能な操作の最終確認など、理由を明示する文章が
- *   必要な場面のために、`Overlay`を直接使い本文メッセージ付きの確認ダイアログとして
- *   独立に実装する（`ChoiceDialog`の継承・多段化はしない）。
- * - ボタンの配色は`ChoiceDialog`が定義する`DialogButtonVariant`型・`variantClassName`を
- *   再利用し、アプリ全体のボタン配色と一貫させる。
+ * - `ChoiceDialog` は本文メッセージを表示できないため、`Overlay` を直接使い、継承や多段化はしない。
+ * - ボタンの配色型とクラスは `ChoiceDialog` と共有し、操作の種類を揃える。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import React from "react"

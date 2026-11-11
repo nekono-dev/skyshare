@@ -1,3 +1,9 @@
+/**
+ * システム設定・日本語・English から表示言語を選ぶプルダウン。
+ *
+ * - SSR では `system` を描画し、マウント後に保存値へ揃えて hydration mismatch を避ける。
+ * - 言語名は常に「日本語」「English」と表示し、切り替え後も元の言語を選び直せるようにする。
+ */
 import { useEffect, useState } from "react"
 import Dropdown from "@/components/common/select/Dropdown"
 import { isLocale, type LocaleSetting } from "@/lib/i18n/locale"

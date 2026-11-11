@@ -1,13 +1,8 @@
 /**
- * ToggleSwitch コンポーネント。
+ * 条件付きの変更判定を備えた、制御式の ON/OFF スイッチ。
  *
- * 責務と処理概要:
- * - boolean 値を持つ設定項目を ON/OFF で切り替えるトグルスイッチ UI を提供する。
- * - Controlled コンポーネントとして設計しており、状態管理は常に呼び出し元が担う。
- * - オプションで「変更前判定コールバック」（onBeforeCheckedChange）を受け取り、
- *   コールバックが false を返した場合は変更を抑止する。
- *   これにより、「Web Share API が使用不可なら ON にできない」などの条件付き挙動を実現する。
- * - Cloudflare Workers 環境で動作するため Node.js 固有 API は一切使用しない。
+ * - `onBeforeCheckedChange` が提案値と異なる値を返すと、その変更を抑止する。
+ * - Cloudflare Workers で動作するため、Node.js 固有 API に依存しない。
  */
 import React, { useId } from "react"
 import styles from "./index.module.css"

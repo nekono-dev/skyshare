@@ -1,3 +1,9 @@
+/**
+ * 選択状態とキーボード操作を扱うタブリスト。
+ *
+ * - 無効タブを飛ばして矢印・Home・End で移動し、選択中のタブだけを Tab 順に含める。
+ * - タブパネルは呼び出し側が対応する ID で描画する。
+ */
 import React, { useRef } from "react"
 import styles from "./index.module.css"
 

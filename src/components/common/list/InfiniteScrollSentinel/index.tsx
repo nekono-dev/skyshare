@@ -1,3 +1,9 @@
+/**
+ * ビューポート接近を検知して次ページ取得を促す一覧末尾の sentinel。
+ *
+ * - 取得処理やページ状態は保持せず、`onLoadMore` に委ねる。
+ * - 全件読み込み済みのメッセージは `showEndMessage` が有効な場合だけ表示する。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import { useEffect, useRef } from "react"
 import Loading from "@/components/common/Loading"

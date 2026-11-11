@@ -1,17 +1,8 @@
 /**
- * RadioButton コンポーネント。
+ * 複数候補から一つを選ぶ、制御式のカード型ラジオボタン。
  *
- * 責務と処理概要:
- * - 複数選択肢から1つを選ぶ、カード状のラジオボタンUIを提供する
- *   （Bluesky公式アプリの「返信できるユーザー」選択のような、横並びの大きめカードボタン）。
- * - Controlledコンポーネントとして設計しており、状態管理は常に呼び出し元が担う。
- * - ネイティブ`<input type="radio">`の性質上、選択された時のみ`onSelect`を呼ぶ
- *   （Checkboxの`onCheckedChange(next: boolean)`とは異なり、選択解除は呼び出し元が
- *   別の選択肢の`onSelect`を通じて行う）。
- * - カードの外枠（境界線・背景・角丸）は`Checkbox`(variant="card")と共有する
- *   `ui["base-card"]`+`ui["selectable-card"]`/`ui["selectable-card-checked"]`
- *   （`src/styles/button.ui.module.css`）を使う。ラジオ固有の丸印（`.dot`）のみ
- *   このコンポーネント側で持つ。
+ * - 選択時だけ `onSelect` を呼び、選択解除は呼び出し側が別候補を選ぶことで行う。
+ * - カード外枠は `Checkbox` の card 表示と共有し、ラジオ固有の印を描画する。
  */
 import React, { useId } from "react"
 import styles from "./index.module.css"

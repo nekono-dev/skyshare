@@ -1,3 +1,8 @@
+/**
+ * システム設定・ライト・ダークから表示テーマを選ぶプルダウン。
+ *
+ * - 永続化と DOM への反映は呼び出し側が行う。
+ */
 import type { ThemeMode } from "@/lib/settings/themeSettings"
 import Dropdown from "@/components/common/select/Dropdown"
 import { useT } from "@/components/i18n/useTranslation"

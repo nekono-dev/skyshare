@@ -5,7 +5,7 @@
 前提: 先行 spec は comment-policy（基準・検査・許容リストの仕組み）で、未実装の間はこの計画を実行しない（`spec.json` の `ready_for_implementation` は false）。comments-* の spec 同士も共有の許容リストを使うため、並列にせず直列に実行する。
 
 - [ ] 1. G1 common（`src/components/common/**`）のコメントを書き直し、検査を通す
-- [ ] 1.1 common の部品のコメントを書き直す
+- [x] 1.1 common の部品のコメントを書き直す
   - 許容リストの 19 件のファイル（dialog・input・list・media・section・select と `Loading`）の先頭ヘッダと、コメントの行を、基準に従って書き直す
   - 書き直した内容が、対応するコードの現在の振る舞いと一致している
   - 判別に迷うコメントは残し、完了の報告に挙げる
