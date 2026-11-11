@@ -1,14 +1,8 @@
 /**
- * 依存規則の検査の許容リスト部品。
+ * 依存規則の違反を許容リストと照合し、更新用の下書きを生成する。
  *
- * 責務と処理概要:
- * - 許容リスト（JSON）を読み込み、形式・重複・未知の規則・所有 spec の存在・理由（reason）の記入を検証する。
- * - 違反と許容リストを照合し、許容されていない違反（unlisted）と消えた許容の項目（stale）を分ける。
- * - 現在の違反から下書きを作る（規則ごとの既定の所有 spec を付ける）。
- *
- * 実装上の制約:
- * - 照合のキーは `ruleId|from|specifier`。
- * - 所有 spec は存在だけを見る（承認の状態は見ない）。
+ * - 所有先は存在だけを検証し、承認状態には依存しない。
+ * - 照合キーは `ruleId|from|specifier`。
  */
 import fs from "node:fs"
 import { RULE_IDS, type RuleId, type Violation } from "./rules"
@@ -33,7 +27,7 @@ export type CheckResult = {
     listedCount: number
 }
 
-/** 規則ごとの既定の所有 spec（設計の表と一致させる）。 */
+/** 規則ごとの既定の所有 spec。 */
 export const DEFAULT_OWNERS: Record<RuleId, string> = {
     layer: "src-pages-thin",
     uiInLib: "src-lib-ui-boundary",

@@ -1,24 +1,10 @@
 #!/usr/bin/env node
 /**
- * kiro ワークフローのゲート（Claude Code のフック）。
+ * Claude Code のフックで、専用手順書の読了と作業完了条件を判定する。
  *
- * 目的: `/kiro-*` のスラッシュコマンドで始めたセッションが、対応する SKILL.md を読んでから作業し、
- * roadmap の新規 spec に brief.md が揃うまで終わらないように、モデルに関係なく Claude Code 本体で止める。
- *
- * 使い方: node scripts/agent/kiro-gate.mjs <session-start|user-prompt-submit|pre-tool-use|post-tool-use|stop>
- * 入力はフックの標準入力（JSON）、判定は標準出力の JSON で返す（Claude Code のフック仕様）。
- *
- * 仕組み:
- * - session-start: spec の状態（phase・承認）を文脈に入れる（助言）。
- * - user-prompt-submit: `/kiro-*` を検出し、セッションの状態に「読む手順書」を記録する。
- *   その他の入力では状態を無効にする。
- * - pre-tool-use: 手順書が未読の間は、その Read と ToolSearch 以外を deny する（強制）。
- * - post-tool-use: 成功した Read を記録し、手順書の未読を減らす。
- * - stop: 手順書が未読、または roadmap の新規 spec に brief.md が無いときは終了を一度止める（強制）。
- *   `stop_hook_active` が真のときは通す（無限に止めないため）。
- *
- * 失敗時の方針: 例外は標準エラーに出し、何も判定せず終了 0 にする（通常の作業を止めない）。
- * 状態は OS の一時ディレクトリに、セッション ID ごとのファイルとして置く（リポジトリには残さない）。
+ * - 起動: `node scripts/agent/kiro-gate.mjs <session-start|user-prompt-submit|pre-tool-use|post-tool-use|stop>`。
+ * - 入出力はフック仕様の JSON。失敗時は標準エラーに出して通し、通常作業を止めない。
+ * - セッション状態は OS の一時ディレクトリに保存し、リポジトリに残さない。
  */
 import fs from "node:fs"
 import os from "node:os"
@@ -34,7 +20,7 @@ const ANY_HEADING = /^#{1,6} /
 const SPEC_ITEM = /^- \[[ x]\] ([a-z0-9][a-z0-9-]*) --/
 
 /**
- * プロンプト文字列から先頭の kiro コマンド名を取り出す（例: "/kiro-discovery 依頼" → "kiro-discovery"）。
+ * プロンプト文字列から先頭の専用コマンド名を取り出す。
  * @param {string} text
  * @returns {string | null}
  */
@@ -58,7 +44,7 @@ export const skillPathFor = (root, name) =>
   path.join(root, ".claude", "skills", name, "SKILL.md")
 
 /**
- * 新しい kiro コマンドのセッション状態。
+ * 専用コマンドのセッション状態。
  * @param {{ command: string, skillPath: string, now: number, inputKeys?: string[] }} args
  */
 export const startState = ({ command, skillPath, now, inputKeys }) => ({
@@ -167,7 +153,7 @@ export const decideStop = ({
 }
 
 /**
- * spec の状態の要約（session-start の文脈）。
+ * 作業計画の状態の要約（session-start の文脈）。
  * @param {string} root
  * @returns {string[]}
  */
@@ -253,7 +239,7 @@ const handlers = {
         startedAt: Date.now(),
         inputKeys: Object.keys(input),
       })
-      // 導入の物（スキル）が無いと、kiro のスラッシュコマンドは使えない。プロンプトを止めて、導入を促す
+      // 専用コマンドの手順書が無い場合は作業を止め、導入スクリプトの実行を案内する。
       emit({
         decision: "block",
         reason: `/${command} は使えません。cc-sdd が導入されていません（${skillPath} が無い）。scripts/agent/install-cc-sdd.sh --claude を実行して cc-sdd を導入してから、もう一度入力してください。`,
