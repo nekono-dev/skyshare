@@ -31,8 +31,7 @@ export const toShareFile = (blob: Blob, index: number) => {
  * WebShareAPI へ渡す共有テキストを組み立てる。
  *
  * 処理の趣旨:
- * - `@/lib/share/intent`の`buildIntentText`と同じ「本文 + 改行 + URL」形式を
- *   WebShareAPI向けにも踏襲する。
+ * - `@/lib/share/intent`の`buildIntentText`と同じ「本文 + 改行 + URL」の形式にする。
  *
  * Input:
  * - `text`: 元の投稿本文
