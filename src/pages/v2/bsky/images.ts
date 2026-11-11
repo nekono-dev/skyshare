@@ -1,17 +1,9 @@
 /**
- * Skyshare v2 bsky/images API。
+ * Skyshare v2 bsky/images API。Cookie セッションを検証した上で、Bluesky PDS の生 blob（com.atproto.sync.getBlob）を同一オリジンでそのまま返す。
  *
- * 責務と処理概要:
- * - Cookie セッションを検証した上で、Bluesky PDS の生 blob（com.atproto.sync.getBlob）を
- *   同一オリジンでそのまま返す。
- * - cdn.bsky.app（画像CDN）は Access-Control-Allow-Origin を返さないため、ブラウザの
- *   Canvas 合成（Timelineからのentry作成時のデフォルト配置サムネイル生成）用に画像バイトを
- *   読み出す手段として、PDS本体の getBlob を経由するこのエンドポイントを用意している。
- *
- * 実装上の制約:
+ * - cdn.bsky.app（画像 CDN）は Access-Control-Allow-Origin を返さず、ブラウザの Canvas 合成（Timeline からの entry 作成時のデフォルト配置のサムネイル生成）で画像バイトを読めないため、PDS 本体の getBlob を経由する。
+ * - 対象は常にセッション自身の repo（session.did）に限り、他人の repo を任意に読める汎用プロキシにはしない。
  * - Cloudflare Workers 環境で動作するため Node.js 固有 API は使わない。
- * - 対象は常にセッション自身の repo（session.did）に限定し、他人の repo を
- *   任意に読み出せる汎用プロキシにはしない（必要になれば did パラメータを追加検討する）。
  */
 import type { APIRoute } from "astro"
 
@@ -54,6 +46,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
             return errorResponseFromStatus(400)
         }
 
+        // 他人の repo を読めないよう、repo は常にセッション自身の DID に固定する
         const blobRes = await agent.com.atproto.sync.getBlob({
             did: session.did,
             cid,

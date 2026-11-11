@@ -1,3 +1,10 @@
+/**
+ * Skyshare v2 entries API。自分の Bluesky 投稿一覧（`app.bsky.feed.getAuthorFeed`）を、紐づく `dev.nekono.skyshare.entry` と embed し、バックエンドでスレッド構造化（`buildTimelineThreads`）した post 中心のタイムライン一覧を返す。Timeline コンポーネントが利用する。
+ *
+ * - entry は `source.uri` で突き合わせ、表示する投稿の日時の範囲だけを新しい順に取得する。
+ * - skyshare entry 自体の一覧・作成・削除は `/v2/entry`・`/v2/entries/skyshare` を参照。
+ * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
+ */
 import type { APIRoute } from "astro"
 
 import { Agent, AppBskyFeedDefs } from "@atproto/api"
@@ -12,22 +19,6 @@ import {
     resolveEntryRangeStartMs,
 } from "@/lib/timeline/timelineThreads"
 import { listRecordsSince } from "@/lib/atproto/repo"
-
-/**
- * Skyshare v2 entries API。
- *
- * 責務と処理概要:
- * - 自分の Bluesky 投稿一覧（`app.bsky.feed.getAuthorFeed`）を、紐づく
- *   `dev.nekono.skyshare.entry`（`source.uri` で突き合わせ。表示する投稿の日時の範囲だけ
- *   新しい順に取得する）と embed し、
- *   バックエンド側で権威的にスレッド構造化（`buildTimelineThreads`）した
- *   post 中心のタイムライン一覧 API。Timeline コンポーネントが利用する
- *   （`specs/timeline-api`）。
- * - skyshare entry 自体の一覧・作成・削除は `/v2/entry`・`/v2/entries/skyshare` を参照。
- *
- * 実装上の制約:
- * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
- */
 
 /**
  * 1 リクエストあたりに getAuthorFeed をページングして良い最大回数。

@@ -132,7 +132,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 8. G8 API の入口（`src/pages/oauth/`・`v1/`・`v2/`）のコメントを書き直し、検査を通す
-- [ ] 8.1 oauth・v1・v2 の bsky・entries・entry・feedback のコメントを書き直す
+- [x] 8.1 oauth・v1・v2 の bsky・entries・entry・feedback のコメントを書き直す
   - 対象: `oauth/`（3 件）・`v1/page.ts`・`v2/bsky/`（`drafts`・`images`・`session`・`session/[did]`・`session/authorization`・`session/authorization/completion`・`video/upload-token`）・`v2/entries.ts`・`v2/entries/skyshare.ts`・`v2/entry.ts`・`v2/feedback.ts`（許容リストの 15 件）
   - 認証・Cookie・OAuth の判断は、現在の仕組みと理由を書く（旧の方式・経緯を残さない）
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない

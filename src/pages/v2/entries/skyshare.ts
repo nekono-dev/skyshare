@@ -1,3 +1,9 @@
+/**
+ * Skyshare v2 entries/skyshare API。自分の `dev.nekono.skyshare.entry` レコードを一覧取得する、entry 中心の API。
+ *
+ * - 各 entry に、紐づく Bluesky 投稿（source）が削除済みで存在しないかを `orphaned` として付け、絞り込まず常に全件を返す。
+ * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
+ */
 import type { APIRoute } from "astro"
 
 import { Agent } from "@atproto/api"
@@ -9,18 +15,6 @@ import {
     normalizeTimelineEntry,
     type TimelineSkyshareEntry,
 } from "@/lib/timeline/posts"
-
-/**
- * Skyshare v2 entries/skyshare API。
- *
- * 責務と処理概要:
- * - 自分の `dev.nekono.skyshare.entry` レコードを一覧取得する、entry 中心の API。
- * - 各entryについて、紐づく Bluesky 投稿（source）が既に削除され存在しないかどうかを
- *   `orphaned` フラグとして付与して返す。絞り込みは行わず、常に全件を返す。
- *
- * 実装上の制約:
- * - Cloudflare Workers 環境で動作するため、Node.js 固有 API は使用しない。
- */
 
 /**
  * `app.bsky.feed.getPosts` の `uris` に一度に渡せる最大件数。

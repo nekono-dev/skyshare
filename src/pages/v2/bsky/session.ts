@@ -1,3 +1,9 @@
+/**
+ * Skyshare v2 bsky/session API（GET: アカウント一覧、POST: アプリパスワードでのログイン、PUT: アカウントの切り替え）。OAuth のログインは `session/authorization` が受け持つ。
+ *
+ * - セッショントークンは HttpOnly cookie の中だけに置き、レスポンス JSON には含めない（クライアント JS から読めないようにするため）。
+ * - 全レスポンスに `Cache-Control: no-store` を付ける。GET の URL はクエリが無く常に同一で、ログイン前の 401 や空一覧がキャッシュされると、ログイン直後も古い応答が返り続けるため。
+ */
 import { makeScheduleHintClearCookie } from "@/lib/schedule/availabilityHint"
 import type { APIRoute } from "astro"
 
@@ -23,33 +29,13 @@ import { atpService, publicAuthServer } from "@/env"
 import { hasCookieHeader } from "@/util/http"
 
 /**
- * Skyshare v2 bsky/session API。
- *
- * 概要:
- * - GET: この端末で有効なアクティブアカウント＋プール中の非アクティブアカウントの一覧を返す（トークンは含めない）。
- * - POST: アプリパスワードの認証情報を受け取り atproto へ login を実行する。既に別アカウントがアクティブな場合は、
- *   そのセッションをプール(`atp_account_<n>`)へ退避してから新しいセッションに切り替える（アカウント追加ログイン）。
- *   OAuth によるログインは `session/authorization` が受け持ち、同じ規則（`admitSession`）でプールを決める。
- * - PUT: プール中のアカウントを、現在のアクティブアカウントと入れ替える（アカウント切り替え）。
- *   「session を別の session で上書きする」という操作であるため、対象はリソース本体(body の `did`)で指定する。
- *   切り替え先が OAuth のセッションなら、期限の近いアクセストークンを更新してからアクティブにする。
- *
- * 実装上の制約:
- * - セッショントークン本体は常に HttpOnly cookie 内にのみ存在させ、レスポンス JSON には一切含めない
- *   （クライアント JS からトークンを読み取れる状態を作らないことが、複数アカウント機能導入時の必須要件）。
- * - 全レスポンスに `Cache-Control: no-store` を付与する。GET のURLはクエリを持たず常に同一のため、
- *   これが無いとログイン前に取得した 401/空一覧のレスポンスがブラウザ/CDNにキャッシュされ、
- *   ログイン直後もキャッシュされた古い応答が返り続ける不具合が起きる。
- */
-
-/**
  * アカウントの表示用メタデータ(displayName/avatarUrl)を取得する。
  *
  * 処理の趣旨:
  * - `app.bsky.actor.getProfile` は公開情報であり認証不要のため、公開 AppView（`atpService`）への
  *   未認証アクセスで取得する。対象アカウント自身の accessJwt/refreshJwt で `resumeSession` してしまうと、
  *   一覧表示のたびに（プール中の非アクティブアカウントまで含めて）不要なトークンリフレッシュが走り、
- *   atproto 側でローテーションした新しい refreshJwt を cookie へ書き戻していない現状の実装では
+ *   atproto 側でローテーションした新しい refreshJwt を cookie へ書き戻さないため
  *   古い refreshJwt が失効し、かえってセッションを壊しかねない。プロフィール取得は対象アカウントの
  *   認証状態に触れる必要のない公開情報の読み取りに過ぎない。
  * - 取得に失敗しても致命的ではないため例外を握りつぶして `{}` にフォールバックする
@@ -190,6 +176,7 @@ export const POST: APIRoute = async ({ request }: { request: Request }) => {
         }
 
         // 新しくログインしたアカウントがプールにあれば除き、別アカウントがアクティブならプールへ退避する。
+        // OAuth のログイン（`session/authorization`）も同じ規則（`admitSession`）でプールを決める。
         const pool = admitSession(
             parseSessionFromRequest(request),
             parseAccountsFromRequest(request),

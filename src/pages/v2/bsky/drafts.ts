@@ -1,17 +1,10 @@
 /**
- * Skyshare v2 bsky/drafts API。
+ * Skyshare v2 bsky/drafts API。Bluesky の `app.bsky.draft.*` を仲介し、入力と出力を OpenAPI 生成スキーマで検証して共通エラー形式へ正規化する。
  *
- * 責務と処理概要:
- * - Bluesky の `app.bsky.draft.*` API を仲介する（認証済みセッションは
- *   `bskySessionRefresh` ミドルウェアが `locals.agent` として供給する）。
- * - `v2/bsky` はBluesky APIをbypassするリソース群の名前空間であり、skyshare固有の
- *   処理（entry作成等）は含めない。
- * - OpenAPI 生成スキーマで入力と出力を検証し、共通エラー形式へ正規化する。
- *
- * 実装上の制約:
+ * - 認証済みセッションは `bskySessionRefresh` ミドルウェアが `locals.agent` として供給する。
+ * - `v2/bsky` は Bluesky API をそのまま仲介するリソース群の名前空間のため、skyshare 固有の処理（entry 作成等）は含めない。
  * - Cloudflare Workers 環境で動作するため Node.js 固有 API は使わない。
  */
-
 import type { APIRoute } from "astro"
 
 import { resolveXrpcStatus } from "@/lib/api/response"

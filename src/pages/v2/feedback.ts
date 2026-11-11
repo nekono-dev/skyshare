@@ -1,14 +1,7 @@
 /**
- * Skyshare v2 feedback API（不具合の報告と機能の提案の受付）。
+ * Skyshare v2 feedback API（不具合の報告と機能の提案の受付）。ログイン中の利用者の報告か提案を検証し、送信の判定（`submitFeedback`）の結果を HTTP の応答に変換する。
  *
- * 責務と処理概要:
- * - POST: ログイン中の利用者の報告か提案を検証し、送信の判定（`submitFeedback`）に渡して、
- *   その結果を HTTP の応答に変換する。
- * - 報告者の DID とハンドルはログインのセッション（`locals.session`）からだけ取る。
- * - 入力不正は 400、未認証は 401、同じアカウントからの60秒以内の再送信は 429、
- *   認証情報かリポジトリが未設定なら 503、GitHub の登録の失敗は 500 を返す。
- *
- * 実装上の制約:
+ * - 報告者の DID とハンドルは、ログインのセッション（`locals.session`）からだけ取る。
  * - `@atproto/*` を読み込まない（無料枠の CPU 時間を守るため）。
  * - 環境の値（認証情報・回数の制限の機能）と Issue の組み立てには触れない（`lib/feedback` が担う）。
  */
@@ -67,6 +60,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         )
         if (!body.success) return errorResponseFromStatus(400)
 
+        // 判定の失敗は status をそのまま返す: 認証情報かリポジトリが未設定なら 503、
+        // 同じアカウントからの 60 秒以内の再送信は 429、GitHub への登録の失敗は 500
         const result = await submitFeedback({
             session,
             submission: body.data,
