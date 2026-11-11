@@ -174,26 +174,26 @@
   - _Boundary: G7 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 9. 最終統合の検証
-- [ ] 9.1 生成物に差分が出ていないことを確かめる
+- [x] 9. 最終統合の検証
+- [x] 9.1 生成物に差分が出ていないことを確かめる
   - `npm run codegen` を実行し、`src/client` に差分が無い
   - _Boundary: 最終統合_
   - _Requirements: 5.3_
 
-- [ ] 9.2 行末のコメントを含めて残りを確かめる
+- [x] 9.2 行末のコメントを含めて残りを確かめる
   - `src/lib`（`api/schema` を除く）の全行を対象に、`specs/`・`要件 数字.数字`・`AC`/`FR`/`NFR` と数字・`cc-sdd`・`kiro`・バッククォートの外の `20YY-MM-DD` を grep し、残りが無い（残す語は、読んで判断した理由とともに報告に挙げる）
   - 「旧」「移行」「以前は」「かつては」の語（`comments.md` の一覧）を grep し、残った箇所を読んで、経緯の記述でないことを確かめる
   - _Boundary: 最終統合_
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.3, 7.1_
 
-- [ ] 9.3 許容リストと検査が整合していることを確かめる
+- [x] 9.3 許容リストと検査が整合していることを確かめる
   - `config/comments/allowlist.json` の所有者 `comments-lib` の項目が 0 件である
   - 他の所有者の項目の数が、1.1 の基準線から変わっていない（`comments-tests`・`comments-components-pages`・`comments-scripts-config`・`comments-api-schema` の項目の数が 449 件から変わらない）
   - `commentRules.test.ts` が 20 件すべて通過する
   - _Boundary: 最終統合_
   - _Requirements: 6.1, 6.2, 6.3, 6.5_
 
-- [ ] 9.4 全体の検証を通し、判別に迷ったコメントを報告にまとめる
+- [x] 9.4 全体の検証を通し、判別に迷ったコメントを報告にまとめる
   - `npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
   - 判別に迷って残したコメントを、ファイルと行の一覧にして完了の報告に挙げる。また、`tech.md` の先頭ヘッダの記述が基準と食い違う件（comment-policy の作業 4.1 で改訂する、未実施）を、報告に挙げる
   - _Boundary: 最終統合_
@@ -217,3 +217,13 @@
 - 長い先頭ヘッダを縮めるときは、作業前のヘッダの文ごとに、残した場所（ヘッダ・宣言の JSDoc・行のコメント）を対応させて確かめる。理由（制約の根拠、数値、失敗時の扱い、実行環境の前提、依存の向き）は、責務の列挙と一緒に削らない。
 - タスク 7.1 の注記にある「`cache-control: no-store`」は、`src/lib/session` のコメントにもコードにも存在しない（作業前から無い）。`no-store` を設定するのは `src/pages/` のレスポンスで、`src/pages` は comments-components-pages の担当。7.1 では、この領域に実在する理由（HttpOnly の Cookie にだけ置く理由、Cookie の枠）だけを残す。
 - 検査の違反が無く、責務の列挙などで基準に反する箇所も無いファイルは、書き換えない（作業前の版のまま残す）。タスク 8.1 では、違反の無い `image/postImageProcessing/compose.ts` で「最小要件」の語（要件 4.4）と関数の使われる場面が失われたため、作業前の版に戻した。
+
+### 完了の報告（タスク 9。2026-11-11）
+
+- 9.1: `npm run codegen` を実行し、生成物（`src/client`、git の追跡外）が、元のチェックアウトの生成物と一致した（`diff -r` が 0 件）。`src/lib/api/schema` は作業前から変更が無い（差分 0 行）。
+- 9.2: `src/lib`（`api/schema` と `*.d.ts` を除く 222 ファイル）を、行末のコメントを含めて grep した。`specs/`・要件番号・AC/FR/NFR・cc-sdd・kiro・バッククォート外の日付は 0 件。経緯の語（旧・移行・以前・かつて・経緯・従来・踏襲・これまで・もともと）は、`src/lib/entry/legacyPagedb.ts` の「旧サービス pageDB」「旧形式データ」だけで、製品の用語として残した（要件 3.3）。
+- 9.3: 許容リストの所有者 `comments-lib` の項目は 0 件（作業前 167 件）。他の所有者の項目は、comments-scripts-config 42・comments-tests 197・comments-components-pages 203・comments-api-schema 5（合計 447）で、作業前から変わらない。タスク 1.1 の基準線にある「449 件」は、作業開始時点の実際の値（447 件）と合っていなかった。`commentRules.test.ts` は 33 件が通過する（基準線の 20 件は、comment-policy の後にテストが増えた）。
+- 9.4: `npm run test:type`・`test:imports`（違反 0・許容 0・stale 0）・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。`src/lib`（`api/schema` を除く）222 ファイルの字句比較（基準は作業開始時の 0f4b7e32）は差分 0 件。
+- 判別に迷って残したコメントは、上の「判別に迷って残したコメント」の 2 件（`src/lib/atproto/richTextSegments.ts:5`、`src/lib/i18n/messages/en/{account,page,post,settings}.ts:1`）と `src/lib/entry/legacyPagedb.ts:5`。
+- `tech.md` の先頭ヘッダの記述が基準と食い違う件は、comment-policy の作業 4.1 で解消済み（`tech.md` の「Code Quality」は `comments.md` への参照 1 行）。
+- `cache-control: no-store`（タスク 7.1 の注記）は `src/lib/session` に存在せず、`src/pages` の担当（comments-components-pages）。
