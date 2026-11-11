@@ -1,9 +1,6 @@
 /**
- * Canvas を Blob に変換し、バイト予算に収まるまで圧縮する（Canvas の圧縮）。
- *
- * 責務と処理概要:
- * - PNG（可逆）を優先し、収まらない場合のみ JPEG 品質の二分探索と解像度の縮小を行う。
- * - 圧縮の定数（元画像の長辺上限・JPEG 品質・バイト予算）と、投稿条件の判定を持つ。
+ * Canvas 画像を、用途ごとのバイト予算に収まるよう圧縮する。
+ * - PNG を先に試し、収まらない場合は JPEG 品質と解像度を調整する。
  */
 
 export const MAX_SOURCE_SIDE = 4096 // 元画像取り込み時の長辺上限（メモリ保護）
@@ -19,7 +16,7 @@ const ABSOLUTE_MIN_OUTPUT_SIDE = 64
 /**
  * atproto 側の実上限（安全マージン込み）。上限が変わった場合はここだけ更新すればよい。
  * - POST_IMAGE_BYTE_BUDGET: app.bsky.embed.images#image.maxSize = 2,000,000
- *   （Bluesky投稿本体の添付画像。旧 1,000,000 から引き上げ済み）
+ *   （Bluesky 投稿本体の添付画像）
  * - LINK_CARD_THUMBNAIL_BYTE_BUDGET: app.bsky.embed.external#external.thumb.maxSize = 1,000,000
  *   （OGPリンクカードのサムネイル）
  * - COMPOSITE_VISUAL_BYTE_BUDGET: dev.nekono.skyshare.entry の manifest.visual

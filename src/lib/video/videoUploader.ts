@@ -1,7 +1,6 @@
 /**
- * 動画のアップロード本体。ブラウザから Bluesky の動画サービスへ直接、分割アップロード
- * （`startUpload` → `uploadPart` → `finishUpload`）し、変換完了（`getJobStatus`）を待って
- * blob 参照を返す。動画の実体は Skyshare のサーバーを経由しない（NFR-1）。
+ * ブラウザから Bluesky の動画サービスへ動画を直接アップロードし、変換後の blob 参照を返す。
+ * - 動画の実体を Workers 経由で送らないため、サーバー側のリクエスト容量制限を受けない。
  */
 import { CommonVideoBlobSchema } from "@/lib/video/videoBlob"
 import {

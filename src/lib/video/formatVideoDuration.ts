@@ -1,3 +1,6 @@
+/**
+ * 動画の再生時間を、投稿表示用の文字列に整形する。
+ */
 import { padTwoDigits } from "@/util/padTwoDigits"
 
 /**
