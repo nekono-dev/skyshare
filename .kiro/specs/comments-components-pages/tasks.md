@@ -178,17 +178,33 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2, 7.4_
 
 - [ ] 10. 全体の検証と完了の報告
-- [ ] 10.1 範囲の全体で、検査と全テストを通す
+- [x] 10.1 範囲の全体で、検査と全テストを通す
   - `npx tsx scripts/architecture/commentRules.ts --emit-allowlist` の出力で、範囲（`src/components`・`src/pages`・`src/*.ts`・`src/types`・`src/util`）に当たる違反が 0 件である
   - `npm run test:type`・`npm run test:imports`・`npm run test:unit`・`npm run test:component`・`npm run test:route`・`npm run test:render` が通過する（失敗があれば、コメントの変更と無関係な原因かを切り分けて報告する）。`npm run test:e2e` は、この spec の検証には含めない（comments-api-schema が実行する）
   - 完了の条件: 上のテストが通過し、その結果が完了の報告に記録されている
   - _Boundary: G10 final_
   - _Requirements: 7.3, 6.2_
 
-- [ ] 10.2 許容リストと変更範囲を確かめ、完了の報告を作る
+- [x] 10.2 許容リストと変更範囲を確かめ、完了の報告を作る
   - 許容リストのうち、所有が `comments-components-pages` の項目が 0 件であり、他の所有の項目が変わっていない（`git diff -- config/comments/allowlist.json` で、消した項目が範囲内のパスだけであることを確かめる）
   - `git status` で、ファイルの追加・削除・移動が無く、変更が範囲内のコメントと空行と許容リストだけである
   - `src/components`・`src/pages`・`src/` 直下・`src/types`・`src/util`・`src/styles` の CSS と `global.d.ts` を、禁止パターンと経緯の語で検索し、結果を報告する
   - 完了の報告に、判別に迷って残したコメント、正当な用法として残した語、残っている README の参照、検証の結果を含める
   - _Boundary: G10 final, 許容リスト_
   - _Requirements: 6.2, 6.3, 6.4, 6.5, 5.2, 7.4, 7.5_
+
+## Implementation Notes
+
+### 完了の報告（タスク 10。2026-11-11）
+
+- 10.1: 許容リストの所有 `comments-components-pages` の項目は 0 件（作業前 203 件）。他の所有者は comments-tests 197・comments-scripts-config 42・comments-api-schema 5 で、作業前から変わらない。検査の出力に、範囲（`src/components`・`src/pages`・`src/` 直下・`types`・`util`）の違反は無い。`npm run test:type`・`test:imports`・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。範囲の `.ts`・`.tsx` 130 ファイルの字句比較（基準は作業開始時の ff045b65）は差分 0 件。`.astro` と CSS は、DiffCheck（コメント以外の行の差分）で確かめた（ヘッダを import の前へ移した import 行の移動を除き空）。
+- 10.2: `git diff --name-status` に、変更（M）以外（追加・削除・改名）は無い。変更は範囲内のコメント・空行と許容リストの項目の削除だけ。`src/lib`・`tests`・`scripts`・`config`（許容リストを除く）への差分は 0。範囲を禁止パターン（`specs/`・AC/FR/NFR・cc-sdd・kiro）で検索した結果は 0 件（README を除く）。
+- 判別に迷って残したコメントは無い。
+- 正当な用法として残した語: `src/components/account/LoginIntro/index.tsx` の「旧UI」（旧 UI への案内リンクを指す）、`src/pages/posts/[slug].astro` の「旧形式URL」と `legacy pageDB`、`src/pages/v1/page.ts`・`src/env.ts` の `legacy backend`・「旧投稿表示ページ」、`src/styles/ui.module.css` の「旧画面」（View Transitions で切り替わる前の画面を指す）。
+- 残っている README の参照: `src/components/common/README.md:42` の `specs/dropdown` への参照（README は範囲外）。
+- 作業の記録: 経緯語・参照を除くほか、削ったヘッダの理由は宣言の JSDoc・行コメントへ移した。作業前から存在する「Input:/Output:/例:」の節は残した（独立レビューが 8.2 の `fail`・`internalError` で指摘したが、取り決めに従い変更しない）。
+- 委譲: 実装とレビューは Codex に委譲した。6.1 の実装、7.1 の実装とレビュー、8.1 の実装、6.1 の独立レビューは、Codex の利用上限のあいだ、新しいサブエージェントで行った。9.2（CSS の参照 4 件と言い回し）は数行の修正のため直接行った。
+
+### feature 検証（kiro-validate-impl, 2026-11-11）
+
+- 判定は `GO`。タスクは全て `[x]`、`_Blocked:_` は無い。`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が終了コード 0（10.1 を参照）。許容リストの所有 `comments-components-pages` は 0 件、他の所有者は変わらない。変更は範囲内のコメント・空行と許容リストの項目の削除だけで、境界の外への差分とファイルの追加・削除・改名は無い。Revalidation Triggers は発火していない。起動の確認（e2e）は、この spec の検証に含めず、push 前フックの `npm run test:all` が行う。
