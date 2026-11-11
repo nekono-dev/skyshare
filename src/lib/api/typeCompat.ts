@@ -1,10 +1,8 @@
 /**
- * API の推論結果が、atproto・feedback 側の型に代入可能であることを確かめる型検査（実行時には何もしない）。
+ * API の推論型が atproto・feedback 側の型に代入可能かを検査する（実行時には何もしない）。
  *
- * 責務と処理概要:
- * - API のスキーマ（`schema/`）は、コード生成ツールが相対 import で読み込むため、別の領域を参照しない。
- *   代入可能性の検査は、この API 領域の内側（ここ）に置く。
- * - atproto と feedback は api を import しないため、確かめる側はここに置く（依存の向きは lib/api → 他の領域の一方向）。
+ * - API スキーマ（`schema/`）はコード生成ツールが相対 import で読み込むため、他領域を参照しない。代入可能性の検査は API 領域の内側に置く。
+ * - atproto と feedback は api を import しないため、依存は lib/api から他領域への一方向になる。
  */
 import type {
     CommonFacetsType,

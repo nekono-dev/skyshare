@@ -1,14 +1,7 @@
 /**
- * フィードバック（不具合の報告・機能の提案）の送信内容の型。
+ * フィードバック送信内容の契約を定義する。
  *
- * 責務と処理概要:
- * - Issue の本文を作る処理（`lib/feedback/issueContent.ts`）が受け取る形を定める。
- * - API のスキーマ（`api/schema/v2/feedback/post.ts`）の推論結果は、この型に代入可能であることを、
- *   `api/typeCompat.ts` の型検査で確かめる。
- *
- * 実装上の制約:
- * - 型だけを持つ。実行時の処理と import を持たない（`@/lib/api/contract/feedbackLimits` の型は参照してよい）。
- * - 業務（`lib/feedback`）を import しない（基盤の契約は業務から参照される側に置く）。
+ * - 業務の処理から参照される基盤の契約として、業務領域に依存しない。
  */
 import type { Reproducibility } from "@/lib/api/contract/feedbackLimits"
 
