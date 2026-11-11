@@ -1,13 +1,8 @@
-// ローカル実行（npm run dev）の前に、手作業が要らないよう .dev.vars を整えるスクリプト。
-//
-// 責務:
-// - config/develop.json が無ければ config/develop.example.json から作り、wrangler.jsonc を生成する（非秘密の設定は config/ に置く）
-// - .dev.vars が無ければ config/.dev.vars.template から作る（秘密情報だけを置く）
-// - 予約投稿・OAuth・アンケートのシークレット（SCHEDULE_ENC_KEY・OAUTH_CLIENT_KEY・SURVEY_HASH_KEY）が未設定なら、ランダムに生成して書き込む
-// - 設定済みの値は決して上書きしない（鍵を替えると、保管済みの予約の認証情報が復号できなくなり、アンケートの回答済みの記録とも一致しなくなるため）
-//
-// 使い方: node scripts/secrets/prepare-local-env.mjs
-// 生成した値は .dev.vars（.gitignore 対象）にだけ書き、標準出力には出さない。
+/** ローカル開発設定と `.dev.vars` を準備し、不足するシークレットを補う。
+ * 既存の鍵は保存済みデータの復号・照合に必要なため上書きせず、値は標準出力に出さない。
+ * 秘密値は gitignore 対象の `.dev.vars` にだけ保存する。
+ * 使い方: node scripts/secrets/prepare-local-env.mjs
+ */
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"

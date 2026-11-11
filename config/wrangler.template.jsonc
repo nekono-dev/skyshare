@@ -4,7 +4,7 @@
   "name": "skyshare",
   // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
   "main": "src/worker.ts",
-  // Set this to today's date
+  // Cloudflare Workers の互換性を適用する基準日を指定する
   "compatibility_date": "2026-10-08",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {

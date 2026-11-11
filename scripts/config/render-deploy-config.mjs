@@ -1,15 +1,8 @@
-// CI/CD(GitHub Actions)用に、デプロイ設定を環境変数から生成するスクリプト。
-//
-// 責務:
-// - GitHub の Variables の値から config/production.json を作る（.gitignore 対象。都度上書きする）
-// - scripts/config/render-wrangler.mjs で wrangler.jsonc を生成する（`--develop` では develop 用の別の Worker の設定）
-// - branch-release-workflow のプラグインで、生成した wrangler.jsonc の workers_dev / preview_urls を
-//   独自ドメインの有効状況に合わせて設定する（省略しない）
-// - _legacy/frontend/.env.production を生成する（.gitignore 対象）
-//
-// 使い方: BRW_PLUGIN_DIR=<branch-release-workflow の clone> node scripts/config/render-deploy-config.mjs [--develop]
-// 必要な環境変数は docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
-// 必須の環境変数が1つでも未設定/空の場合は、設定漏れによる誤デプロイを防ぐため異常終了する。
+/** GitHub Actions の環境変数から配備用設定を生成する。
+ * 必須値が欠けると設定漏れの配備を防ぐため異常終了する。
+ * 使い方: BRW_PLUGIN_DIR=<branch-release-workflow の clone> node scripts/config/render-deploy-config.mjs [--develop]
+ * 必要な環境変数: docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
+ */
 import { execFileSync } from "node:child_process"
 import { existsSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"

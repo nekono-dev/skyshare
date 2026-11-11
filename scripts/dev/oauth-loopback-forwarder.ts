@@ -1,17 +1,8 @@
 /**
- * 開発サーバーで、Bluesky の OAuth の開発用の公開クライアントの戻り先を中継する Vite のプラグイン。
- *
- * 責務と処理概要:
- * - 開発用の公開クライアントの戻り先は、ループバックの IP の http の住所（`http://127.0.0.1:4322/oauth/callback/`）
- *   に限られる。開発サーバーは https（`https://localhost:4321`）で待ち受けるため、この住所への遷移を
- *   同じパスとクエリのまま開発サーバーへ 302 で転送する。
- * - 転送先のホスト名を `localhost` にするのは、認可の開始で入れた戻り先の cookie と、ログインの途中の状態の
- *   cookie が、開始したページのホスト（`localhost`）にだけあるためである。
- *
- * 実装上の制約:
- * - Node の http を使うため、Workers に配備する `src/` の外に置き、`astro.config.mjs` から開発サーバーにだけ組み込む。
- *   Vite は `configureServer` を開発サーバーでだけ呼ぶため、本番のビルドでは動かない。
- * - 戻り先の住所はクエリに認可コードを含むため、ログに住所を出さない。
+ * 開発サーバーで OAuth のループバック callback を HTTPS の localhost に中継する Vite プラグイン。
+ * - 開発用の公開クライアントの戻り先はループバック IP の http（`http://127.0.0.1:<port>/oauth/callback/`）に限られるため、同じパスとクエリのまま `https://localhost` へ 302 で転送する。認可の開始時の cookie は `localhost` にだけあるため、転送先を `localhost` にする。
+ * - Node HTTP のため開発時だけ動かし、認可コードを含む URL はログに出さない。
+ * - ポートが使用中なら警告して中継を無効にする。
  */
 import http from "node:http"
 import type { Plugin } from "vite"

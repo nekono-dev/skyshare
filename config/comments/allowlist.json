@@ -2,70 +2,10 @@
   "version": 1,
   "entries": [
     {
-      "path": "config/orval.config.ts",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "hack/survey-cli/config.ts",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "scripts/agent/kiro-gate.mjs",
       "rule": "forbidden:kiro",
       "owner": "comments-scripts-config",
       "reason": "許容する例外: 起動例の実行コマンドのパス（kiro-gate.mjs）に含まれる語で、言い換えると使い方が伝わらない"
-    },
-    {
-      "path": "scripts/build/build-openapi-document.ts",
-      "rule": "header-too-long",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/config/render-deploy-config.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/config/render-wrangler.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/dev/oauth-loopback-forwarder.ts",
-      "rule": "header-too-long",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/dev/oauth-loopback-forwarder.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/e2e/run-e2e.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/e2e/run-e2e.mjs",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/e2e/survey-e2e-harness.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
       "path": "scripts/git/setup-git-hooks.mjs",
@@ -106,42 +46,6 @@
     {
       "path": "scripts/lib/wrangler.mjs",
       "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/secrets/ensure-worker-secrets.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/secrets/generators.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/secrets/prepare-local-env.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/secrets/sync-github-variables.mjs",
-      "rule": "header-missing",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/survey/render-survey-config.ts",
-      "rule": "header-too-long",
-      "owner": "comments-scripts-config",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "scripts/survey/render-survey-config.ts",
-      "rule": "header-too-many-bullets",
       "owner": "comments-scripts-config",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },

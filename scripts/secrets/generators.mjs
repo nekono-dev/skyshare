@@ -1,15 +1,12 @@
-// 自動生成するシークレットの生成関数の、唯一の定義。
-//
-// 使う場所: scripts/secrets/prepare-local-env.mjs（ローカルの .dev.vars に書く）と、scripts/secrets/ensure-worker-secrets.mjs（Worker へ登録する）。
-// 責務: 名前と生成関数の対応だけを持つ。値を保存はしない（呼び出し側が扱う）。
-// 手作業で値を出す使い方（値をファイルに残さず、そのままシークレットへ渡す）:
-//   node scripts/secrets/generators.mjs OAUTH_CLIENT_KEY | npx wrangler secret put OAUTH_CLIENT_KEY --name <Worker 名>
+/** ローカル環境と Worker 登録で使うシークレット値を生成する。
+ * 手作業では値をファイルに残さず、`node scripts/secrets/generators.mjs OAUTH_CLIENT_KEY | npx wrangler secret put OAUTH_CLIENT_KEY --name <Worker 名>` を使う。
+ */
 import { randomBytes, webcrypto } from "node:crypto"
 import { pathToFileURL } from "node:url"
 
 /**
  * OAuth のクライアント秘密鍵（`kid` を含む P-256 の JWK）を1行の JSON 文字列で生成する。
- * - `kid` は生成の日時から作る。鍵を入れ替えたときに、認可サーバーが新しい鍵を区別できるようにする。
+ * - `kid` は生成日から作り、鍵を入れ替えたとき認可サーバーが新しい鍵を区別できるようにする。
  * - 出力は秘密鍵そのもの。ログやリポジトリに残さないこと。
  */
 const generateOauthKey = async () => {
