@@ -139,7 +139,7 @@
   - _Boundary: G8 pages-api_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 5.1, 5.3_
 
-- [ ] 8.2 v2 の schedules・surveys のコメントを書き直す
+- [x] 8.2 v2 の schedules・surveys のコメントを書き直す
   - 対象: `v2/schedules.ts`・`v2/schedules/[id].ts`・`v2/schedules/[id]/images/[index].ts`・`v2/schedules/credential.ts`・`v2/schedules/credential/authorization.ts`・`v2/schedules/credential/authorization/completion.ts`・`v2/schedules/limits.ts`・`v2/surveys/[surveyId]/answers.ts`・`v2/surveys/[surveyId]/respondent.ts`（許容リストの 9 件）
   - アンケートの匿名性と保持期限の記述は、現在の仕組みと理由だけを書く（日付入りの決定を残さない）
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない

@@ -1,3 +1,9 @@
+/**
+ * 予約投稿用 OAuth 認可を開始する API。
+ *
+ * - 戻り先は cookie に保存し、認可コードとトークンはログに出さない。
+ * - `@atproto/*` を使わず、WebCrypto と fetch で認可を行う。
+ */
 import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus, jsonResponse } from "@/util/http"
@@ -5,18 +11,6 @@ import * as PostSchema from "@/lib/api/schema/v2/schedules/credential/authorizat
 import { getScheduleEnv } from "@/lib/schedule/env"
 import { startAuthorization } from "@/lib/schedule/oauth/flow"
 import { returnCookie } from "@/lib/oauth/returnPath"
-
-/**
- * Skyshare v2 schedules/credential/authorization API（予約投稿の OAuth の認可）。
- *
- * - POST: ログイン中のアカウントで認可を開始し、利用者を送る認可の画面の URL を返す。
- *   本文の `returnTo`（許可を始めたページのパス）を、戻り先だけに送られる cookie に入れる。
- * - 戻り先は `/oauth/callback/`、完了は `authorization/completion` が受け持つ。
- *
- * 実装上の制約:
- * - `@atproto/*` を読み込まない（予約の実行と同じ、WebCrypto と fetch だけの実装を使う）。
- * - トークンと認可コードをログに出さない。
- */
 
 export const POST: APIRoute = async ({ request, locals }) => {
     try {

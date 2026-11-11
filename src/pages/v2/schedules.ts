@@ -1,3 +1,9 @@
+/**
+ * 予約投稿の作成と一覧を提供する API。
+ *
+ * - `@atproto/*` を読み込まず、無料枠の CPU 時間を抑える。
+ * - 入力と認証を確認し、予約の判断は schedule ライブラリに委ねる。
+ */
 import type { APIRoute } from "astro"
 
 import { errorResponseFromStatus, jsonResponse } from "@/util/http"
@@ -9,21 +15,6 @@ import {
     createSchedule,
     listScheduleSummaries,
 } from "@/lib/schedule/scheduleCollection"
-
-/**
- * Skyshare v2 schedules API（予約の作成と一覧）。
- *
- * 責務と処理概要:
- * - POST: 投稿（1件、またはスレッド）を、実行時刻を指定して予約する。画像は R2 へ一時保管し、
- *   本文は D1 へ保存する。投稿の実行は定期実行（Cron Trigger）が行う。
- * - GET: 自分の予約を実行時刻の昇順で一覧する。
- * - 入力不正は 400、未認証は 401、予約用の認証情報が未登録なら 409、
- *   待機中の予約が上限なら 429、保管の失敗は 500 を返す。
- *
- * 実装上の制約:
- * - `@atproto/*` を静的にも動的にも読み込まない（無料枠の CPU 時間を守るため）。
- * - ページは判断を持たない。ヘッダー・セッション・クエリの確認と、判断の結果の応答への変換だけを行う。
- */
 
 /**
  * POST /v2/schedules — 予約を作成する。
