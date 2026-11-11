@@ -1,18 +1,10 @@
 /**
- * 投稿時に自分が使ったハッシュタグの履歴を localStorage で管理するユーティリティ。
+ * 投稿時に使ったハッシュタグを候補表示に使い、全体のトレンドを補う。
+ * `app.bsky.unspecced.getTrendingTopics` だけでは得られないブラウザ内の履歴を扱う。
  *
- * 責務と処理概要:
- * - PostForm のハッシュタグ候補（`src/components/composer/ThreadComposer/rules/suggestHashtags.ts`）に、
- *   Bluesky公開APIのグローバルなトレンド一覧（`app.bsky.unspecced.getTrendingTopics`）だけでは
- *   出せない「このブラウザで過去に自分が使ったタグ」を補うために使う。
- * - SSR/プライベートモードなどで localStorage が利用不可でも安全に既定値へフォールバックする
- *   （`src/lib/settings/shareSettings.ts` と同じ方針）。
- * - 同一ブラウザで複数アカウントを切り替えて使うケースを考慮し、`accountDid` ごとにキーを分けて
- *   保存する。`accountDid` が未解決（ログインセッション取得前など）の間は履歴なし扱いとし、
- *   読み書きどちらもスキップする（アカウント間の履歴混在を防ぐため）。
- * - 保持件数の上限は `PUBLIC_HASHTAG_HISTORY_MAX` 環境変数で調整できる（未設定/不正値なら
- *   `DEFAULT_HASHTAG_HISTORY_MAX` にフォールバック）。呼び出しごとに動的に解決するため、
- *   テストからは `vi.stubEnv` で値を差し替えて挙動を検証できる。
+ * - SSR や localStorage の利用不可時は空履歴として扱い、読み書きの失敗を投稿操作へ伝えない。
+ * - `accountDid` ごとに保存キーを分け、未解決の間は読み書きをスキップして履歴の混在を防ぐ。
+ * - 上限は `PUBLIC_HASHTAG_HISTORY_MAX` の正の整数を使い、未設定・不正値では 100 件にする。
  */
 
 const HASHTAG_HISTORY_KEY_PREFIX = "hashtagHistory"

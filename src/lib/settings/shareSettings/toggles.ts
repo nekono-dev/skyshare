@@ -1,10 +1,5 @@
 /**
- * 真偽値の共有設定（トグル）の読み書きと、リンクカード優先の実効値を扱う。
- *
- * 責務と処理概要:
- * - ポップアップの代わりの Web Share・長文の切り詰め・固定フォーム・手動の画像添付・リンクカード優先の
- *   真偽値を localStorage から読み書きする。
- * - 「Skyshareのリンクカードを優先表示」の実効値を、「画像を自分で添付する」設定と合わせて決める。
+ * 共有時の表示や投稿フォームに関する設定を保持する。
  */
 
 const POPUP_INTENT_INSTEAD_OF_WEBSHARE_KEY = "popupIntentInsteadOfWebshare"
@@ -13,7 +8,7 @@ const PINNED_FORM_DISABLED_KEY = "pinnedFormDisabled"
 const MANUAL_IMAGE_ATTACH_KEY = "manualImageAttach"
 const LINK_CARD_PRIORITY_KEY = "preferSkyshareLinkCard"
 
-/** 「Skyshareのリンクカードを優先表示」が未設定の場合に使う既定値（`specs/link-card-priority`）。 */
+/** 「Skyshareのリンクカードを優先表示」が未設定の場合に使う既定値。 */
 export const DEFAULT_LINK_CARD_PRIORITY = true
 
 /**

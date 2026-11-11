@@ -1,9 +1,5 @@
 /**
- * Mastodon・Misskey のインスタンスドメインの既定値・検証・保存を扱う。
- *
- * 責務と処理概要:
- * - 保存値から実際に使うドメインを決める（空白は既定値、不正な形式は `null`）。
- * - Mastodon・Misskey のドメインを localStorage から読み書き・削除する。
+ * Mastodon・Misskey の共有先インスタンスドメイン設定を管理する。
  */
 import { isValidInstanceDomain } from "@/lib/share/intent"
 import type { AutoPopupTarget } from "@/lib/share/autoPopupTarget"
