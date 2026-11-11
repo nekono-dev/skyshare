@@ -1,7 +1,6 @@
 /**
  * PUT /v2/entry/ — 既存のskyshare entryのheading/captionを更新する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

@@ -1,7 +1,6 @@
 /**
  * PUT /v2/bsky/session/ — アクティブセッションを、プールされたアカウントのセッションで上書きする(アカウント切り替え)。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

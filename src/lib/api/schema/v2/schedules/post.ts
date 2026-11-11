@@ -3,7 +3,6 @@
  *
  * 入力は投稿の作成（/v2/entry/）の新規投稿と同じ multipart/form-data で、
  * 動画の分岐を除いた3分岐の投稿の配列と、`runAt`（タイムゾーンの差を含む ISO 8601）を持つ。
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

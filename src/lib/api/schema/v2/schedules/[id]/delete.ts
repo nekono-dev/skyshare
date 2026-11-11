@@ -1,7 +1,6 @@
 /**
- * DELETE /v2/schedules/{id}/ — 待機中の予約を取り消す、または投稿済み・失敗の予約の履歴を削除する。
+ * DELETE /v2/schedules/{id}/ — 待機中の予約を取り消す、または失敗した予約の履歴を削除する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

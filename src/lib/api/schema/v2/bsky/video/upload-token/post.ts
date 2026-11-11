@@ -1,10 +1,7 @@
 /**
  * POST /v2/bsky/video/upload-token — 動画アップロード用のサービス認証トークンを発行する。
  *
- * 動画の実体はブラウザから Bluesky の動画サービスへ直接送るため、Skyshare は
- * 短命のトークン発行のみを担う（NFR-1・NFR-2）。
- *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
+ * 動画データはブラウザから Bluesky の動画サービスへ直接送る。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

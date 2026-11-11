@@ -2,7 +2,6 @@
  * GET /v2/entries/skyshare/ — 自分のskyshare entry一覧を、元投稿が現存するかの
  * フラグ(orphaned)付きで返す。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

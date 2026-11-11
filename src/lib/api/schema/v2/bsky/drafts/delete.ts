@@ -1,7 +1,6 @@
 /**
  * DELETE /v2/bsky/drafts/ — Blueskyの下書きを削除する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  */
 import { z } from "zod/v4"
 import type { ZodOpenApiOperationObject } from "zod-openapi"

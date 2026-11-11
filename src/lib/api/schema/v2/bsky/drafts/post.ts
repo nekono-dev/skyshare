@@ -1,7 +1,6 @@
 /**
  * POST /v2/bsky/drafts/ — Blueskyの下書きを新規作成する。
  *
- * バリデーションとOpenAPIドキュメント生成の両方から参照される単一の真実の源。
  * `posts` は1件ならテキストのみの下書き、複数件ならスレッド(reply chain予定)の
  * 下書きを表す（`app.bsky.draft#draft.posts` にそのまま対応）。
  */

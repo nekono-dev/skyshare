@@ -6,36 +6,6 @@
       "rule": "forbidden:kiro",
       "owner": "comments-scripts-config",
       "reason": "許容する例外: 起動例の実行コマンドのパス（kiro-gate.mjs）に含まれる語で、言い換えると使い方が伝わらない"
-    },
-    {
-      "path": "src/lib/api/schema/v2/bsky/video/upload-token/post.ts",
-      "rule": "forbidden:AC/FR/NFRタグ",
-      "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/schema/v2/entries/get.ts",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/schema/v2/entry/delete.ts",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/schema/v2/entry/post.ts",
-      "rule": "header-too-long",
-      "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/lib/api/schema/v2/entry/post.ts",
-      "rule": "forbidden:spec参照",
-      "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
     }
   ]
 }
