@@ -1,22 +1,7 @@
 /**
- * 対象の API の入口（薄い入口）の形を静的に検査するテスト（src-pages-thin 6.1・要件 4.1）。
+ * Statically checks that selected API entry points contain no business logic or forbidden imports.
  *
- * 責務と処理概要:
- * - 対象の 6 ファイル（`src/pages/v2` 配下の入口）を `node:fs` で読み、ソースの文字列として検査する。
- * - ページモジュール自体は import しない（静的な文字列の検査のみ）。
- * - 検査は 2 種類。
- *   1. バインディングの参照がないこと: `env.` で始まる参照、および
- *      `getScheduleEnv` / `getFeedbackEnv` / `FEEDBACK_GITHUB_TOKEN` / `FEEDBACK_RATE_LIMITER` /
- *      `SCHEDULE_IMAGES` / `SCHEDULE_ENC_KEY` / `.DB` の識別子がコードに現れないこと。
- *   2. 禁止したモジュールを import しないこと: `@/lib/schedule/env`、`@/lib/feedback/env`、
- *      `@/lib/schedule/store`、`@/lib/schedule/imageStaging`、`@/lib/schedule/stageSchedule`、
- *      `@/lib/schedule/oauth` 配下、`cloudflare:workers`。
- * - コメントを除いてから照合する方法: 複数行コメント `/* ... *\/` を正規表現で取り除き、
- *   次に行頭（空白の後）が `//` で始まる行を取り除く。文字列中の `//`（URL など）は行頭でない限り残るため、
- *   コード中の参照は取りこぼさない。コメント内の語（`env.DB` など）は照合対象外になる。
- * - 負例（検査が機能することの確認）: `findViolations` に、違反を含む文字列
- *   （`env.DB` の参照と `@/lib/schedule/store` の import）を与え、違反として報告されることを確かめる。
- *   この負例は本ファイル内の固定文字列で行い、実ファイルは使わない。
+ * - Reads source text without importing page modules.
  */
 import { readFileSync } from "node:fs"
 import path from "node:path"
@@ -126,9 +111,9 @@ const findViolations = (source: string): string[] => {
 const violationsOf = (relativePath: string): string[] =>
     findViolations(readFileSync(path.join(repoRoot, relativePath), "utf8"))
 
-describe("対象の API の入口の形（src-pages-thin 6.1・要件 4.1）", () => {
+describe("Selected API entry points follow the thin entry point rules", () => {
     it.each(THIN_ENTRY_FILES)(
-        "%s にバインディングの参照がない（env. の参照・禁止した識別子・.DB がない）",
+        "%s has no binding reference (env. reference, forbidden identifier, or .DB)",
         relativePath => {
             const source = readFileSync(
                 path.join(repoRoot, relativePath),
@@ -147,7 +132,7 @@ describe("対象の API の入口の形（src-pages-thin 6.1・要件 4.1）", (
     )
 
     it.each(THIN_ENTRY_FILES)(
-        "%s が禁止したモジュール（env・store・imageStaging・stageSchedule・oauth・cloudflare:workers）を import しない",
+        "%s does not import forbidden modules (env, store, imageStaging, stageSchedule, oauth, cloudflare:workers)",
         relativePath => {
             const source = readFileSync(
                 path.join(repoRoot, relativePath),
@@ -167,7 +152,7 @@ describe("対象の API の入口の形（src-pages-thin 6.1・要件 4.1）", (
         },
     )
 
-    it("6 ファイルすべてに違反がない（統合の確認）", () => {
+    it("all six files have no violations", () => {
         const report = Object.fromEntries(
             THIN_ENTRY_FILES.map(file => [file, violationsOf(file)]),
         )
@@ -176,8 +161,8 @@ describe("対象の API の入口の形（src-pages-thin 6.1・要件 4.1）", (
         )
     })
 
-    describe("検査の負例（検査が違反を検出できることの確認）", () => {
-        it("env.DB の参照と禁止した import を含む文字列を違反として報告する", () => {
+    describe("Violation detection examples", () => {
+        it("reports env.DB references and forbidden imports in source text", () => {
             const fixture = [
                 'import { getScheduleStore } from "@/lib/schedule/store"',
                 "export const POST = async ({ locals }) => {",
@@ -192,7 +177,7 @@ describe("対象の API の入口の形（src-pages-thin 6.1・要件 4.1）", (
             )
         })
 
-        it("oauth 配下・cloudflare:workers・禁止した識別子を違反として報告する", () => {
+        it("reports oauth imports, cloudflare:workers, and forbidden identifiers", () => {
             const fixture = [
                 'import { x } from "@/lib/schedule/oauth/session"',
                 'import { env } from "cloudflare:workers"',
@@ -207,7 +192,7 @@ describe("対象の API の入口の形（src-pages-thin 6.1・要件 4.1）", (
             expect(violations).toContain("禁止した識別子: SCHEDULE_ENC_KEY")
         })
 
-        it("コメント内だけの語は違反として報告しない", () => {
+        it("ignores terms that appear only in comments", () => {
             const fixture = [
                 "// env.DB と SCHEDULE_IMAGES はここでは使わない",
                 "/* import from '@/lib/schedule/store' は禁止 */",

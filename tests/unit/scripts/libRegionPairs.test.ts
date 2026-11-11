@@ -1,10 +1,7 @@
 /**
- * lib の領域どうしが双方向・長い閉路で依存しないことを確かめるテスト（src-cycles 3.1〜5.1・要件 3.1）。
+ * Checks dependencies between library areas for reciprocal edges and cycles.
  *
- * 責務と処理概要:
- * - リポジトリ全体の依存を走査し、`lib` の領域の組（A → B）を集める。
- * - 双方向の組が 0 件であることを確かめる。長さ 3 以上を含む閉路が 0 件であることも確かめる。
- * - 検査（src-import-rules）の規則は変えず、このテストで確かめる。`src/` 直下（`(root)`）は対象外。
+ * - Excludes modules directly under `src/`.
  */
 import path from "node:path"
 import { describe, expect, it } from "vitest"
@@ -28,8 +25,8 @@ const libRegionPairs = (): Set<string> => {
     return pairs
 }
 
-describe("lib の領域どうしの依存（src-cycles）", () => {
-    it("双方向の依存（A → B と B → A の両方）が 0 組である（要件 3.1）", () => {
+describe("Dependencies between library areas", () => {
+    it("there are no reciprocal dependencies between library areas", () => {
         const pairs = libRegionPairs()
         const bidirectional = [...pairs]
             .map(pair => pair.split(" -> "))
@@ -38,7 +35,7 @@ describe("lib の領域どうしの依存（src-cycles）", () => {
         expect(bidirectional).toEqual([])
     })
 
-    it("lib の領域どうしの閉路（長さ 2 以上）が 0 件である", () => {
+    it("there are no cycles between library areas", () => {
         const adjacency = new Map<string, Set<string>>()
         for (const pair of libRegionPairs()) {
             const [from, to] = pair.split(" -> ")

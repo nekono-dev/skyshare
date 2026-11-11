@@ -79,7 +79,7 @@
   - _Boundary: tests/unit/scripts（importRules.test.ts・commentRules.test.ts を除く）_
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 4.2 題名を英語にする
+- [x] 4.2 題名を英語にする
   - 日本語を含む題名 186 件（`commentRules.test.ts` の 20 件を含む。`importRules.test.ts` の 55 件は 3.1 で扱う）を、期待値が確かめている振る舞いの英語の題名に書き換える
   - 題名の要件番号（「（要件 x.y）」「（要件 x.y・z.w）」）・spec 名（「src-pages-thin 6.1」「components-small-areas 2.3」など）・経緯（「前回の残件」）を含む英語の題名も、同じ規則で書き換える
   - 「所有 spec」「spec の要約」など、概念の名前として使われる `spec` の語は残す（具体的な spec 文書を指さないため）。残した語は報告に挙げる

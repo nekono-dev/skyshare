@@ -1,4 +1,6 @@
-// wrangler 設定からの Worker 名の読み取り（scripts/lib/wrangler.mjs）と、設定の不足を例外にすること（scripts/config/render-wrangler.mjs の readConfig）
+/**
+ * Tests reading a Worker name from Wrangler configuration and handling invalid configuration.
+ */
 import { describe, expect, it } from "vitest"
 import { workerNameFrom } from "../../../scripts/lib/wrangler.mjs"
 import {
@@ -7,7 +9,7 @@ import {
 } from "../../../scripts/config/render-wrangler.mjs"
 
 describe("workerNameFrom", () => {
-    it("トップレベルの name を返し、入れ子の name は取らない", () => {
+    it("returns the top-level name and ignores nested names", () => {
         const source = `{
       // コメントと末尾のカンマを許す
       "d1_databases": [{ "name": "not-the-worker" },],
@@ -16,7 +18,7 @@ describe("workerNameFrom", () => {
         expect(workerNameFrom(source)).toBe("skyshare")
     })
 
-    it("name が無い・空・文字列でないときは例外にする", () => {
+    it("throws when name is missing, empty, or not a string", () => {
         expect(() => workerNameFrom(`{ "d1_databases": [] }`)).toThrow()
         expect(() => workerNameFrom(`{ "name": "  " }`)).toThrow()
         expect(() => workerNameFrom(`{ "name": 1 }`)).toThrow()
@@ -24,7 +26,7 @@ describe("workerNameFrom", () => {
 })
 
 describe("readConfig", () => {
-    it("設定ファイルが無いときは process.exit せず RenderError を投げる", () => {
+    it("throws RenderError instead of exiting when configuration is missing", () => {
         expect(() => readConfig("__no_such_config__")).toThrow(RenderError)
     })
 })

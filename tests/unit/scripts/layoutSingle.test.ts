@@ -1,13 +1,7 @@
 /**
- * 骨格（`Baselayout`）の置き場が `src/components/layout/` の一つだけであることを静的に検査するテスト（structure-checks 4.1・要件 3.1〜3.4・6.3）。
+ * Checks that layout components live only under `src/components/layout/`.
  *
- * 責務と処理概要:
- * - 純粋関数 `findLayoutViolations` は、エントリの一覧（ファイルとフォルダの相対パス）に対して `src/layout` とその下のすべてを違反として返す（要件 3.1）。
- * - 純粋関数 `findLayoutImportViolations` は、ソースの本文（文字列）に `@/layout/` で始まる文字列リテラルを持つファイルを違反として返す（要件 3.2）。
- * - `src/` の全エントリ（ファイル・フォルダ）と、全ソース（`.ts`・`.tsx`・`.astro`）の本文を文字列として読んで、上の判定にかける。
- * - `src/components/layout/Baselayout/index.astro` が存在することを確かめる（要件 3.3）。
- * - 負例（検査が機能することの確認）: 固定のエントリの一覧と固定の本文を与え、違反だけが報告されることを確かめる（要件 3.4）。
- * - 検査はパスと文字列の走査だけを行い、対象のモジュールは実行・import しない（要件 6.3）。
+ * - Scans source paths and text without importing page modules.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
@@ -54,33 +48,33 @@ const listSourceFiles = (): string[] =>
         e => SOURCE_FILE.test(e) && statSync(path.join(repoRoot, e)).isFile(),
     )
 
-describe("骨格の置き場（src/layout を置かない）", () => {
+describe("Layout components stay under src/components/layout", () => {
     const entries = listEntries()
     const files = listSourceFiles()
 
-    it("src/ のエントリ（ファイル・フォルダ）に src/layout の下のものはない", () => {
+    it("no src/layout entries exist in the source tree", () => {
         expect(findLayoutViolations(entries)).toEqual([])
     })
 
-    it("src/ のソースの本文に @/layout/ で始まる文字列リテラルはない", () => {
+    it("no source file contains a string literal beginning with @/layout/", () => {
         const sources = Object.fromEntries(
             files.map(f => [f, readFileSync(path.join(repoRoot, f), "utf8")]),
         )
         expect(findLayoutImportViolations(sources)).toEqual([])
     })
 
-    it("骨格（Baselayout）は src/components/layout/ の部品フォルダとして存在する", () => {
+    it("Baselayout exists under src/components/layout/", () => {
         expect(existsSync(path.join(repoRoot, baselayoutPath))).toBe(true)
     })
 
-    it("負例: src/layout の下のファイルだけを違反として報告する", () => {
+    it("reports only files under src/layout as violations", () => {
         const fixture = ["src/layout/Baselayout.astro", baselayoutPath]
         expect(findLayoutViolations(fixture)).toEqual([
             "src/layout/Baselayout.astro",
         ])
     })
 
-    it("負例: css・json のファイルだけのフォルダ、空のフォルダも違反として報告する", () => {
+    it("reports folders containing only CSS or JSON files and empty folders", () => {
         const fixture = [
             "src/layout",
             "src/layout/Baselayout.css",
@@ -96,7 +90,7 @@ describe("骨格の置き場（src/layout を置かない）", () => {
         ])
     })
 
-    it("負例: @/layout/ の文字列リテラルを持つファイルだけを違反として報告する", () => {
+    it("reports only files containing an @/layout/ string literal", () => {
         const fixture = {
             "src/pages/index.astro":
                 'import Base from "@/layout/Baselayout.astro"',

@@ -79,14 +79,14 @@ const ownerMismatches = (entries: AllowEntry[]): string[] =>
                 `${entry.path} [${entry.rule}] owner=${entry.owner} 期待=${ownerOf(entry.path)}`,
         )
 
-describe("先頭ヘッダの規則", () => {
-    it("目的を書いた先頭のブロックコメントは違反にならない", () => {
+describe("Leading header rules", () => {
+    it("accepts a leading block comment that states its purpose", () => {
         const text =
             "/**\n * 目的を書く。\n *\n * - 制約 1\n */\nexport const a = 1\n"
         expect(rulesOf("src/lib/x.ts", text)).toEqual([])
     })
 
-    it("先頭にブロックコメントが無いと違反（import の後のヘッダも違反）", () => {
+    it("flags a missing leading block comment, including one after imports", () => {
         expect(rulesOf("src/lib/x.ts", "export const a = 1\n")).toEqual([
             "header-missing",
         ])
@@ -94,7 +94,7 @@ describe("先頭ヘッダの規則", () => {
         expect(rulesOf("src/lib/x.ts", afterImport)).toEqual(["header-missing"])
     })
 
-    it("`//` の行コメントはヘッダとして認めない", () => {
+    it("does not accept a line comment as a header", () => {
         expect(
             rulesOf("src/lib/x.ts", "// 目的\nexport const a = 1\n"),
         ).toEqual(["header-missing"])
@@ -103,36 +103,36 @@ describe("先頭ヘッダの規則", () => {
     const headerWith = (contentLines: string[]) =>
         `/**\n${contentLines.map(s => ` * ${s}`).join("\n")}\n */\nexport const a = 1\n`
 
-    it("内容が 6 行を超えると違反（7 行の場合）", () => {
+    it("flags a header with more than six content lines", () => {
         const text = headerWith(["目的。", "- a", "- b", "1", "2", "3", "4"])
         expect(rulesOf("src/lib/x.ts", text)).toEqual(["header-too-long"])
     })
 
-    it("内容がちょうど 6 行なら違反にならない（上限の境界）", () => {
+    it("accepts a header with exactly six content lines", () => {
         const text = headerWith(["目的。", "- a", "- b", "1", "2", "3"])
         expect(rulesOf("src/lib/x.ts", text)).toEqual([])
     })
 
-    it("箇条書きが 3 件を超えると違反（4 件で判定）", () => {
+    it("flags a header with more than three bullets", () => {
         const text = "/**\n * 目的。\n * - a\n * - b\n * - c\n * - d\n */\n"
         expect(rulesOf("src/lib/x.ts", text)).toEqual([
             "header-too-many-bullets",
         ])
     })
 
-    it("箇条書きがちょうど 3 件なら違反にならない（上限の境界）", () => {
+    it("accepts a header with exactly three bullets", () => {
         const text =
             "/**\n * 目的。\n * - a\n * - b\n * - c\n */\nexport const a = 1\n"
         expect(rulesOf("src/lib/x.ts", text)).toEqual([])
     })
 
-    it("内容が空のブロックコメント（`/**` と `*/` だけ）は、ヘッダが無いと違反", () => {
+    it("flags an empty block comment as a missing header", () => {
         expect(
             rulesOf("src/lib/x.ts", "/**\n */\nexport const a = 1\n"),
         ).toEqual(["header-missing"])
     })
 
-    it("シェバン行と Astro のフロントマターの後のヘッダは認める", () => {
+    it("accepts a header after a shebang or Astro frontmatter", () => {
         expect(
             rulesOf(
                 "scripts/x.mjs",
@@ -147,26 +147,26 @@ describe("先頭ヘッダの規則", () => {
         ).toEqual([])
     })
 
-    it("headerOf は、ヘッダの開始行と内容を返す", () => {
+    it("headerOf returns the header start line and content", () => {
         const found = headerOf(["/**", " * 目的。", " * - 制約", " */"])
         expect(found).toEqual({ start: 1, content: ["目的。", "- 制約"] })
     })
 })
 
-describe("禁止パターン", () => {
+describe("Forbidden patterns", () => {
     it.each([
-        ["spec参照", "// 詳細は specs/entry-api を参照"],
-        ["要件番号", " * 要件 2.1 の範囲"],
-        ["AC/FR/NFRタグ", "// [spec/AC-3] を検証する"],
+        ["spec reference", "// 詳細は specs/entry-api を参照"],
+        ["requirement number", " * 要件 2.1 の範囲"],
+        ["AC/FR/NFR tag", "// [spec/AC-3] を検証する"],
         ["cc-sdd", "// cc-sdd の導入で追加された"],
         ["kiro", "// kiro-review の手順に従う"],
-    ])("コメント中の %s を違反にする", (name, line) => {
+    ])("flags a %s in a comment", (name, line) => {
         expect(
             rulesOf("src/lib/x.ts", `/**\n * 目的。\n */\n${line}\n`),
         ).toEqual([`forbidden:${name}`])
     })
 
-    it("日付はバッククォートの入力例の中だけ許す", () => {
+    it("allows dates only inside backtick-quoted examples", () => {
         expect(
             rulesOf(
                 "src/lib/x.ts",
@@ -181,14 +181,14 @@ describe("禁止パターン", () => {
         ).toEqual(["date"])
     })
 
-    it("コードの中の文字列（コメントでない行）は、API スキーマの summary・description 以外は見ない", () => {
+    it("ignores strings in code except API schema summaries and descriptions", () => {
         const code = 'const label = "specs/entry-api"\n'
         expect(rulesOf("src/lib/x.ts", `/**\n * 目的。\n */\n${code}`)).toEqual(
             [],
         )
     })
 
-    it("API スキーマの summary・description は禁止パターンを見る", () => {
+    it("checks API schema summaries and descriptions for forbidden patterns", () => {
         const text =
             '/**\n * 目的。\n */\nexport const r = { summary: "要件 1.2 の一覧", description: "ok" }\n'
         expect(rulesOf("src/lib/api/schema/x.ts", text)).toEqual([
@@ -196,7 +196,7 @@ describe("禁止パターン", () => {
         ])
     })
 
-    it("API スキーマの description の行も禁止パターンを見る（summary と別の行）", () => {
+    it("checks API schema description lines separately from summaries", () => {
         const text =
             '/**\n * 目的。\n */\nexport const r = {\n    description: "specs/entry-api の一覧",\n}\n'
         expect(rulesOf("src/lib/api/schema/x.ts", text)).toEqual([
@@ -204,14 +204,14 @@ describe("禁止パターン", () => {
         ])
     })
 
-    it("同じ規則の違反は、ファイルごとに 1 件にまとめる", () => {
+    it("reports at most one violation per rule in each file", () => {
         const text = "/**\n * 目的。\n */\n// specs/a\n// specs/b\n"
         expect(checkSource("src/lib/x.ts", text)).toHaveLength(1)
     })
 })
 
-describe("所有 spec の割り当て", () => {
-    it("パスから、解消を担当する spec を決める", () => {
+describe("Owner assignment", () => {
+    it("selects the responsible owner from a path", () => {
         expect(ownerOf("src/lib/api/schema/v2/x.ts")).toBe(
             "comments-api-schema",
         )
@@ -227,7 +227,7 @@ describe("所有 spec の割り当て", () => {
     })
 })
 
-describe("リポジトリ全体の違反と許容リスト", () => {
+describe("Repository violations and allowlist", () => {
     const violations = findCommentViolations(repoRoot)
     const allow: AllowEntry[] = existsSync(allowlistPath)
         ? (
@@ -239,21 +239,21 @@ describe("リポジトリ全体の違反と許容リスト", () => {
     const allowed = new Set(allow.map(entry => keyOf(entry.path, entry.rule)))
     const violated = new Set(violations.map(v => keyOf(v.path, v.rule)))
 
-    it("許容リストに無い違反が無い（新しい違反を増やさない）", () => {
+    it("has no violations missing from the allowlist", () => {
         const unlisted = violations
             .filter(v => !allowed.has(keyOf(v.path, v.rule)))
             .map(v => `${v.path}:${v.line} [${v.rule}] ${v.detail}`)
         expect(unlisted).toEqual([])
     })
 
-    it("許容リストの項目は、まだ違反している（解消した項目は消す）", () => {
+    it("requires every allowlist entry to match a current violation", () => {
         const stale = allow
             .filter(entry => !violated.has(keyOf(entry.path, entry.rule)))
             .map(entry => `${entry.path} [${entry.rule}]`)
         expect(stale).toEqual([])
     })
 
-    it("許容リストの各項目は、既知の所有 spec と理由を持つ", () => {
+    it("requires each allowlist entry to have a known owner and a reason", () => {
         const invalid = allow
             .filter(
                 entry =>
@@ -263,20 +263,20 @@ describe("リポジトリ全体の違反と許容リスト", () => {
         expect(invalid).toEqual([])
     })
 
-    it("許容リストの各項目は、path・rule・owner・reason を空でない文字列で持つ（既知の規則）", () => {
+    it("requires non-empty path, rule, owner, and reason fields with a known rule", () => {
         expect(formatProblems(allow)).toEqual([])
     })
 
-    it("許容リストに、同じ (path, rule) の組の重複が無い", () => {
+    it("has no duplicate path and rule pairs in the allowlist", () => {
         expect(duplicateKeys(allow)).toEqual([])
     })
 
-    it("許容リストの各項目の owner は、ownerOf(path) と一致する（要件 5.5）", () => {
+    it("requires each entry owner to match the owner assigned to its path", () => {
         expect(ownerMismatches(allow)).toEqual([])
     })
 })
 
-describe("許容リストの検査の負例（固定の項目の列）", () => {
+describe("Allowlist validation with fixed sample entries", () => {
     const sample: AllowEntry = {
         path: "src/lib/x.ts",
         rule: "header-missing",
@@ -284,28 +284,28 @@ describe("許容リストの検査の負例（固定の項目の列）", () => {
         reason: "理由",
     }
 
-    it("正しい項目は、形式・重複・所有 spec の違反にならない", () => {
+    it("accepts a valid entry without format, duplicate, or ownership problems", () => {
         expect(formatProblems([sample])).toEqual([])
         expect(duplicateKeys([sample])).toEqual([])
         expect(ownerMismatches([sample])).toEqual([])
     })
 
-    it("同じ (path, rule) の組が 2 回あると、重複として検出する", () => {
+    it("detects duplicate entries with the same path and rule", () => {
         const dup = [sample, { ...sample, reason: "別の理由" }]
         expect(duplicateKeys(dup)).toEqual([keyOf(sample.path, sample.rule)])
     })
 
-    it("同じ path でも rule が違えば、重複にならない", () => {
+    it("allows the same path with a different rule", () => {
         const other = { ...sample, rule: "date" as const }
         expect(duplicateKeys([sample, other])).toEqual([])
     })
 
-    it("owner が ownerOf(path) と違うと、不一致として検出する", () => {
+    it("detects an owner that does not match the path assignment", () => {
         const wrong = { ...sample, owner: "comments-tests" }
         expect(ownerMismatches([wrong])).toHaveLength(1)
     })
 
-    it("必須フィールドが無い・空の項目は、形式の違反として検出する", () => {
+    it("detects entries with missing or empty required fields", () => {
         expect(formatProblems([{ ...sample, reason: "" }])).toHaveLength(1)
         expect(formatProblems([{ ...sample, reason: undefined }])).toHaveLength(
             1,
@@ -317,7 +317,7 @@ describe("許容リストの検査の負例（固定の項目の列）", () => {
         ).toHaveLength(1)
     })
 
-    it("既知でない規則の項目は、形式の違反として検出する", () => {
+    it("detects entries with an unknown rule", () => {
         expect(
             formatProblems([{ ...sample, rule: "forbidden:未知" }]),
         ).toHaveLength(1)

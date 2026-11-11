@@ -1,4 +1,6 @@
-// wrangler.jsonc の生成（scripts/config/render-wrangler.mjs）: 設定の値の反映、公開ドメインの経路、develop 用の名前と D1・R2 の付け替え
+/**
+ * Tests Wrangler configuration parsing and environment-specific configuration generation.
+ */
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"

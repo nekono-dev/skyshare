@@ -1,4 +1,6 @@
-// ローカルのシークレットの補充（scripts/secrets/prepare-local-env.mjs の fillMissingSecrets）: 空の値だけを埋め、設定済みの値とコメントは変えない
+/**
+ * Tests filling missing local secrets while preserving configured values and comments.
+ */
 import { describe, expect, it } from "vitest"
 import { fillMissingSecrets } from "../../../scripts/secrets/prepare-local-env.mjs"
 
@@ -8,7 +10,7 @@ const generators = {
 }
 
 describe("fillMissingSecrets", () => {
-    it("設定済みの値は変えず、無い名前は末尾に追記する", async () => {
+    it("preserves configured values and appends missing names", async () => {
         const result = await fillMissingSecrets(
             "SCHEDULE_ENC_KEY='keep'\nFOO=1\n",
             generators,
@@ -19,7 +21,7 @@ describe("fillMissingSecrets", () => {
         expect(result.filled).toEqual(["SURVEY_HASH_KEY"])
     })
 
-    it("空の値は埋め、コメントアウトされた行は値として読まない", async () => {
+    it("fills empty values and ignores commented-out lines", async () => {
         const result = await fillMissingSecrets(
             "#SCHEDULE_ENC_KEY=old\nSCHEDULE_ENC_KEY=''\n",
             generators,
