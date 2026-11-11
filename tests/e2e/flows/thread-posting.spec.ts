@@ -1,5 +1,6 @@
-// スレッド投稿の流れ（要件 10.1・10.3・10.4）: ログイン後に投稿フォームから投稿でき、
-// 投稿は偽の Bluesky の PDS の書き込み（applyWrites）まで届く。実アカウントは使わない
+/**
+ * Verifies that a post from the composer reaches the fake Bluesky PDS.
+ */
 import { expect, test } from "@playwright/test"
 import { fakeRequestPaths, loginWithAppPassword } from "./support"
 
@@ -11,9 +12,9 @@ test.describe("thread posting flow", () => {
         const before = (await fakeRequestPaths()).length
 
         await page.goto("/post/")
-        // 画面の初期化（セッションの復元とフォームの読み込み）が落ち着いてから入力する
+        // Wait for session restoration and form loading before entering text.
         await page.waitForLoadState("networkidle")
-        // 入力欄が操作できる（画面の読み込みとセッションの復元が済んだ）ことを待つ
+        // Wait until the editor is ready for input.
         const body = page.locator('[contenteditable="true"]').first()
         await expect(body).toBeVisible()
         await body.click()
@@ -22,7 +23,7 @@ test.describe("thread posting flow", () => {
         await expect(submit).toBeEnabled({ timeout: 15_000 })
         await submit.click()
 
-        // 投稿の API（サーバー）が、偽の PDS へ書き込みを送ったことを確かめる
+        // Verify that the post API sends a write to the fake PDS.
         await expect
             .poll(async () => (await fakeRequestPaths()).slice(before), {
                 timeout: 30_000,

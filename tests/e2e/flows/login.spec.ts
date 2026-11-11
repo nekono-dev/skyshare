@@ -1,5 +1,6 @@
-// ログインの流れ（要件 10.1）: アプリパスワードと OAuth のどちらでも、画面からログインでき、
-// 偽の Bluesky の認可・セッションの経路を通って、セッションの Cookie が発行される
+/**
+ * Verifies app password and OAuth login through the fake Bluesky service.
+ */
 import { expect, test } from "@playwright/test"
 import { fakeRequestPaths, hasSessionCookie } from "./support"
 

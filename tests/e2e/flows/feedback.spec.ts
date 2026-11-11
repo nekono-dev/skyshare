@@ -1,6 +1,7 @@
-// フィードバックの流れ（要件 10.1・10.3）: 送信フォームから不具合の報告を送ると、送信の API（/v2/feedback/）まで届き、
-// 画面は API の応答を示す。GitHub の Issue の作成は検査しない（E2E では GitHub の認証情報を持たせず、
-// 送信は受け付けの停止（503）になる。実際の Issue は作らない）
+/**
+ * Verifies that a bug report reaches the feedback API and its response appears.
+ * GitHub issue creation is disabled in E2E, so the API responds with 503.
+ */
 import { expect, test } from "@playwright/test"
 import { loginWithAppPassword } from "./support"
 
@@ -23,7 +24,7 @@ test.describe("feedback flow", () => {
                 res.request().method() === "POST",
         )
         await form.getByRole("button", { name: "送信する" }).click()
-        // 送信の API が呼ばれ、応答（E2E では受け付けの停止）が画面に出る
+        // The API response appears in the page; E2E returns 503 because submissions are disabled.
         expect((await sent).status()).toBe(503)
         await expect(page.getByRole("alert")).toContainText(
             "ただいま受け付けを停止しています",

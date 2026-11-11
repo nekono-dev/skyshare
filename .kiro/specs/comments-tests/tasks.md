@@ -149,7 +149,7 @@
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
 - [ ] 7. tests/component と tests/render の書き換え
-- [ ] 7.1 コメントと題名を書き換える
+- [x] 7.1 コメントと題名を書き換える
   - 対象は `tests/component/`（common・composer・i18n・support の 7 ファイル）と `tests/render/components/`（1 ファイル）
   - `tests/render/astro.d.ts` は対象外（`*.d.ts`）
   - 先頭ヘッダ（不足を含む）と禁止パターンを、4.1〜5.5 の規則に従って書き換える
@@ -169,7 +169,7 @@
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
 - [ ] 8. tests/support と tests/e2e の書き換え
-- [ ] 8.1 tests/support のコメントを書き換える
+- [x] 8.1 tests/support のコメントを書き換える
   - 対象は `tests/support/`（`fakeBluesky/` の 4 ファイルと `fakeOutbound.ts`）
   - 先頭ヘッダ（不足を含む）と禁止パターン（要件番号など）を、4.1〜5.5 の規則に従って書き換える
   - 偽の Bluesky の応答の内容（固定の値・経路）は変えない
@@ -178,7 +178,7 @@
   - _Boundary: tests/support_
   - _Requirements: 2.1, 2.3, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [ ] 8.2 tests/e2e のコメントを書き換える
+- [x] 8.2 tests/e2e のコメントを書き換える
   - 対象は `tests/e2e/flows/`（8 ファイル。`support.ts` と、利用者の六つの流れ・`util-placement.spec.ts`）
   - 先頭ヘッダ（不足を含む）と禁止パターン（要件番号・`要件` の語）を、4.1〜5.5 の規則に従って書き換える
   - 題名は、日本語を含むものが 0 件であることと、要件番号・spec 名・経緯を含むものがないことを確かめ、あれば 6.1 と同じ規則で書き換える（E2E の題名に要件番号が無いことを確かめる）

@@ -1,9 +1,11 @@
-// アンケートの流れ（要件 10.1・10.3）: タイムラインの下の入口からアンケートを開き、回答を送信すると、
-// 回答が保存され（API が保存を返し）、再読み込み後は入口が出ない。回答の内容は検査しない（匿名化は route 層で検査）
+/**
+ * Verifies that a submitted survey answer is saved and hides the entry point.
+ * Answer anonymization is covered by route tests.
+ */
 import { expect, test } from "@playwright/test"
 import { loginWithAppPassword } from "./support"
 
-// 検証用の設定（tests/fixtures/survey/e2e-open.json）の識別子
+// Identifies the open survey fixture used by this flow.
 const SURVEY_ID = "e2e-open"
 
 test.describe("survey flow", () => {
@@ -31,7 +33,7 @@ test.describe("survey flow", () => {
         expect((await saved).status()).toBe(201)
         await expect(dialog).toBeHidden()
 
-        // 保存されたため、再読み込み後は入口が出ない
+        // A saved answer hides the entry point after reload.
         await page.reload()
         await page.waitForLoadState("networkidle")
         await expect(

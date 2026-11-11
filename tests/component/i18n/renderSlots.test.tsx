@@ -1,5 +1,6 @@
-// リッチな文言の描画（スロットの差し込み）を、移動の前の結果で固定する（要件 1.3）。
-// 語順の違う日本語と英語が、同じ描画の規則で処理されることも確かめる。
+/**
+ * Verifies rich text slot replacement, including templates with different word orders.
+ */
 import { createElement, Fragment, type ReactNode } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
@@ -10,8 +11,8 @@ const render = (template: string, slots: Record<string, ReactNode>) =>
     createElement(Fragment, null, renderSlots(template, slots)),
   )
 
-describe("renderSlots（リッチな文言の描画）", () => {
-  it("プレースホルダを、対応するスロットの要素へ置き換える", () => {
+describe("renderSlots rich text rendering", () => {
+  it("replaces a placeholder with its slot element", () => {
     expect(
       render("{share}にクロスポスト", {
         share: createElement("span", null, "S"),
@@ -19,7 +20,7 @@ describe("renderSlots（リッチな文言の描画）", () => {
     ).toBe("<span>S</span>にクロスポスト")
   })
 
-  it("スロットに無い名前は、{name} の文字列のまま残す", () => {
+  it("preserves placeholders without a matching slot", () => {
     expect(
       render("前{other}後{share}", {
         share: createElement("b", null, "S"),
@@ -27,7 +28,7 @@ describe("renderSlots（リッチな文言の描画）", () => {
     ).toBe("前{other}後<b>S</b>")
   })
 
-  it("語順の違う日本語と英語を、同じ規則で描画する", () => {
+  it("renders templates with different word orders using the same rules", () => {
     const icon = createElement("i", null, "I")
     expect(render("{share}の代わりに開く", { share: icon })).toBe(
       "<i>I</i>の代わりに開く",
@@ -37,7 +38,7 @@ describe("renderSlots（リッチな文言の描画）", () => {
     )
   })
 
-  it("プレースホルダが無い文言は、そのまま文字列として返す", () => {
+  it("returns text without placeholders unchanged", () => {
     expect(render("スロットなし", {})).toBe("スロットなし")
   })
 })

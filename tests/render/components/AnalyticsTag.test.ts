@@ -1,4 +1,6 @@
-// 解析タグの描画（render 層・要件 1.5）: 測定 ID の有無で、サーバー描画の出力が変わる
+/**
+ * Verifies server-rendered analytics markup with and without a measurement ID.
+ */
 import { experimental_AstroContainer as AstroContainer } from "astro/container"
 import { describe, expect, it } from "vitest"
 import AnalyticsTag from "@/components/layout/AnalyticsTag/index.astro"

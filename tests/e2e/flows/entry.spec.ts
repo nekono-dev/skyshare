@@ -1,5 +1,6 @@
-// Entry の流れ（要件 10.1・10.2・10.3）: 画像を添えた投稿から Entry が作られ（POST /v2/entry/ が Entry を返す）、
-// Entry のページで投稿の本文と画像の枠が表示される。Entry の取得は偽の Bluesky の PDS と AppView を通る
+/**
+ * Verifies entry creation from an image post and rendering on its entry page.
+ */
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { expect, test } from "@playwright/test"
@@ -39,7 +40,7 @@ test.describe("entry flow", () => {
         await submit.click()
         const res = await created
         expect(res.status()).toBe(200)
-        // Entry の作成は、偽の Bluesky の PDS へ画像と書き込み（applyWrites）を送る
+        // Entry creation uploads the image and writes the post to the fake PDS.
         expect((await fakeRequestPaths()).slice(before)).toEqual(
             expect.arrayContaining([
                 "POST /xrpc/com.atproto.repo.uploadBlob",
@@ -47,7 +48,7 @@ test.describe("entry flow", () => {
             ]),
         )
 
-        // 作られた Entry の AT URI（at://<DID>/<コレクション>/<rkey>）から、Entry のページを開く
+        // Open the entry page using the AT URI returned by the creation response.
         const { skyshareEntry } = (await res.json()) as {
             skyshareEntry?: { atUri: string }
         }
