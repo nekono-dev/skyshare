@@ -155,12 +155,12 @@ describe("Leading header rules", () => {
 
 describe("Forbidden patterns", () => {
     it.each([
-        ["spec reference", "// 詳細は specs/entry-api を参照"],
-        ["requirement number", " * 要件 2.1 の範囲"],
-        ["AC/FR/NFR tag", "// [spec/AC-3] を検証する"],
+        ["spec参照", "// 詳細は specs/entry-api を参照"],
+        ["要件番号", " * 要件 2.1 の範囲"],
+        ["AC/FR/NFRタグ", "// [spec/AC-3] を検証する"],
         ["cc-sdd", "// cc-sdd の導入で追加された"],
         ["kiro", "// kiro-review の手順に従う"],
-    ])("flags a %s in a comment", (name, line) => {
+    ])("flags forbidden pattern case %# in a comment", (name, line) => {
         expect(
             rulesOf("src/lib/x.ts", `/**\n * 目的。\n */\n${line}\n`),
         ).toEqual([`forbidden:${name}`])

@@ -90,7 +90,7 @@
   - _Boundary: tests/unit/scripts（importRules.test.ts を除く。commentRules.test.ts は題名のみ）_
   - _Requirements: 2.1, 3.2, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
 
-- [ ] 4.3 この単位を確認し、許容リストの項目を消す
+- [x] 4.3 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、`tests/unit/scripts/` の対象の違反（`commentRules.test.ts` を除く）が 0 件である
   - 許容リストから、所有者 `comments-tests` で `tests/unit/scripts/` の項目を消す
   - `tests/unit/scripts`（`commentRules.test.ts` を除く）の vitest 実行の失敗件数が 0 件で、件数が 1.1 の記録と一致する
