@@ -41,9 +41,34 @@ describe("validateExecInput", () => {
             value: {
                 prompt: "do it",
                 sandbox: "workspace-write",
+                effort: "medium",
                 cwd: repoRoot,
             },
         })
+    })
+
+    it("accepts effort high for workspace-write", () => {
+        const result = validateExecInput({ prompt: "x", effort: "high" }, env())
+        expect(result.ok).toBe(true)
+        if (result.ok) expect(result.value.effort).toBe("high")
+    })
+
+    it.each(["low", "xhigh", "", 1, null])(
+        "rejects an unknown effort value %j with invalid_effort",
+        effort => {
+            const result = validateExecInput({ prompt: "x", effort }, env())
+            expect(result.ok).toBe(false)
+            if (!result.ok) expect(result.error.kind).toBe("invalid_effort")
+        },
+    )
+
+    it("rejects effort on a read-only run with effort_on_read_only", () => {
+        const result = validateExecInput(
+            { prompt: "x", sandbox: "read-only", effort: "high" },
+            env(),
+        )
+        expect(result.ok).toBe(false)
+        if (!result.ok) expect(result.error.kind).toBe("effort_on_read_only")
     })
 
     it("accepts read-only sandbox as given", () => {
@@ -87,6 +112,7 @@ describe("validateExecInput", () => {
             value: {
                 prompt: "x",
                 sandbox: "workspace-write",
+                effort: "medium",
                 cwd: path.join(repoRoot, "src"),
             },
         })
@@ -158,6 +184,10 @@ describe("buildCodexArgs", () => {
             "--ask-for-approval",
             "never",
             "exec",
+            "--model",
+            "gpt-6.1-sol",
+            "--config",
+            'model_reasoning_effort="medium"',
             "--sandbox",
             "read-only",
             "--cd",
@@ -174,6 +204,22 @@ describe("buildCodexArgs", () => {
             "/o",
         )
         expect(args[args.indexOf("--sandbox") + 1]).toBe("workspace-write")
+    })
+
+    it("uses Luna with the requested effort for workspace-write", () => {
+        const args = buildCodexArgs(
+            {
+                prompt: "p",
+                sandbox: "workspace-write",
+                effort: "high",
+                cwd: "/r",
+            },
+            "/o",
+        )
+        expect(args[args.indexOf("--model") + 1]).toBe("gpt-6-luna")
+        expect(args[args.indexOf("--config") + 1]).toBe(
+            'model_reasoning_effort="high"',
+        )
     })
 })
 

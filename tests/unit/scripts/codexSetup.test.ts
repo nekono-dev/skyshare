@@ -196,6 +196,14 @@ describe("delegation policy", () => {
         expect(body).toMatch(/do not delegate/i)
     })
 
+    it("chooses Codex models by sandbox and Claude subagent models by kind of work", () => {
+        expect(itemText(4)).toContain("gpt-6.1-sol")
+        expect(itemText(4)).toContain("gpt-6-luna")
+        expect(itemText(6)).toContain("--model")
+        expect(itemText(9)).toContain('model: "sonnet"')
+        expect(itemText(9)).toContain('model: "haiku"')
+    })
+
     it("waits for the preceding write call before the CLI fallback when the wait limit is hit", () => {
         const body = itemText(6)
         expect(body).toMatch(/wait limit|wait-limit/i)

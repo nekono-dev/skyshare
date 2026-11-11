@@ -390,19 +390,23 @@ describe("tools/call with a fake codex", () => {
             .readFileSync(path.join(harness.dir, "argv.txt"), "utf8")
             .split("\n")
             .filter(line => line !== "")
-        expect(argv.slice(0, 6)).toEqual([
+        expect(argv.slice(0, 10)).toEqual([
             "--ask-for-approval",
             "never",
             "exec",
+            "--model",
+            "gpt-6.1-sol",
+            "--config",
+            'model_reasoning_effort="medium"',
             "--sandbox",
             "read-only",
             "--cd",
         ])
-        expect(argv[6]).toBe(fs.realpathSync(harness.repoRoot))
-        expect(argv[7]).toBe("--output-last-message")
-        expect(argv[8]).toMatch(/last-message\.txt$/)
-        expect(argv[9]).toBe("-")
-        expect(argv).toHaveLength(10)
+        expect(argv[10]).toBe(fs.realpathSync(harness.repoRoot))
+        expect(argv[11]).toBe("--output-last-message")
+        expect(argv[12]).toMatch(/last-message\.txt$/)
+        expect(argv[13]).toBe("-")
+        expect(argv).toHaveLength(14)
 
         // 依頼文は標準入力で渡り、ログには依頼文も結果の本文も出ない
         expect(

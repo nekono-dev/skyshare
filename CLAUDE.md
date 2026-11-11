@@ -99,6 +99,7 @@ Codex is available to Claude as the MCP tool `codex_exec`. Before starting any t
    - A call is complete when its result (success or error) comes back. Wait for it before starting the next call.
    - Do not instruct a read call while a write call is running. If a read call covers a directory that other work is changing, the prompt must include a warning about it.
    - The CLI fallback in item 6 follows the same order and runs in the foreground.
+   - **Models and effort are chosen by `sandbox`, in `scripts/agent/codex-exec-request.mjs` (`MODEL_BY_SANDBOX`), not in the prompt.** `read-only` (independent review, investigation, analysis) runs Sol (`gpt-6.1-sol`) at medium effort. `workspace-write` (implementation, fixes) runs Luna (`gpt-6-luna`) at medium effort by default; pass `effort: "high"` only for work that needs it (for example a design-heavy or cross-file change). `effort` is rejected on `read-only`. Do not change the model in `~/.codex/config.toml` to steer a single call.
 5. **Report delegation and direct work.** Describe each delegation and its purpose in the final report. If you skip delegation for thinking-heavy work, state the reason in the final report. Work directly without delegation in these cases:
    - mechanical fixes of one to a few lines (typos, configuration value changes);
    - decisions that wait for the user;
@@ -110,8 +111,8 @@ Codex is available to Claude as the MCP tool `codex_exec`. Before starting any t
    State the reason for each piece of direct work in the final report.
 6. **Fall back when MCP fails.**
    - If a `codex_exec` call returns an error and the `codex` executable works, run the same request through the CLI with the same `sandbox` value:
-     `codex -a never exec --sandbox <same value> --cd <repo root> - < <prompt file>`
-     Put `-a never` before `exec`.
+     `codex -a never exec --sandbox <same value> --model <gpt-6.1-sol for read-only, gpt-6-luna for workspace-write> --config 'model_reasoning_effort="<medium or high>"' --cd <repo root> - < <prompt file>`
+     Put `-a never` before `exec`. Use the same model and effort that the MCP tool would have used (item 4).
    - Write the prompt file in the session scratchpad, never in `/tmp`.
    - If the call failed because the wait limit was reached, first wait for the preceding write call to finish, then run the CLI fallback.
    - If `codex_exec` is unavailable and the cause is a plan limit (a usage or billing limit in the response), do not delegate. Do the work directly and state the reason in the final report. Codex is then treated as not usable for this work (item 9).
@@ -135,3 +136,4 @@ Codex is available to Claude as the MCP tool `codex_exec`. Before starting any t
    - The final report lists what Codex did, what Claude verified, and what is still unverified.
    - Follow `kiro-verify-completion` before any success or completion claim.
 9. **Work without Codex.** Codex is not usable when the `codex` executable is absent (for example, in cloud sessions), or when item 6 decides not to delegate because of a plan limit, or when both `codex_exec` and the CLI fallback are unusable. Where Codex is not usable, do not stop: complete the work alone. Otherwise the delegation duty in items 1 and 2 applies. If the `codex` MCP server fails to start (for example, when `sh` or `git` is missing), continue the work without `codex_exec`.
+   When the work is delegated to Claude subagents instead (the Agent tool), choose the model by the kind of work, the same way as for Codex: independent review runs on `model: "sonnet"` (Sonnet 5.5); implementation and fixes run on `model: "haiku"`. Set `model` explicitly on every Agent call; do not rely on the default. Investigation and debugging that only reads files follows the review rule. Subagent review is still independent only when it is a fresh agent that did not write the code under review.

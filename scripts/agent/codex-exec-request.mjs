@@ -6,6 +6,17 @@ import path from "node:path"
 
 const SANDBOXES = ["read-only", "workspace-write"]
 const DEFAULT_SANDBOX = "workspace-write"
+const EFFORTS = ["medium", "high"]
+const DEFAULT_EFFORT = "medium"
+
+/**
+ * 依頼の種類（sandbox）ごとのモデル。読み取りだけの依頼（レビュー・調査）は Sol、
+ * 書き込みの依頼（実装・修正）は Luna を使う。推論の強さは、書き込みの依頼だけ依頼ごとに選べる。
+ */
+export const MODEL_BY_SANDBOX = {
+  "read-only": "gpt-6.1-sol",
+  "workspace-write": "gpt-6-luna",
+}
 const STDERR_TAIL_LIMIT = 4000
 
 /** 依頼の入力を検証し、問題があれば理由付きの error を返す。 */
@@ -20,6 +31,20 @@ export const validateExecInput = (raw, env) => {
     )
   }
 
+  const effort = input.effort === undefined ? DEFAULT_EFFORT : input.effort
+  if (!EFFORTS.includes(effort)) {
+    return fail(
+      "invalid_effort",
+      `effort は ${EFFORTS.join(" か ")} で指定してください`,
+    )
+  }
+  if (input.effort !== undefined && sandbox === "read-only") {
+    return fail(
+      "effort_on_read_only",
+      "effort は sandbox が workspace-write のときだけ指定できます（読み取りの依頼は medium 固定）",
+    )
+  }
+
   const prompt = input.prompt
   if (typeof prompt !== "string" || prompt.trim() === "") {
     return fail("empty_prompt", "依頼文（prompt）が空です")
@@ -27,7 +52,7 @@ export const validateExecInput = (raw, env) => {
 
   const realRepoRoot = env.realpath(env.repoRoot)
   if (input.cwd === undefined) {
-    return { ok: true, value: { prompt, sandbox, cwd: realRepoRoot } }
+    return { ok: true, value: { prompt, sandbox, effort, cwd: realRepoRoot } }
   }
 
   const cwd = resolveCwd(input.cwd, env)
@@ -40,20 +65,25 @@ export const validateExecInput = (raw, env) => {
       `cwd がリポジトリの外を指しています: ${cwd}`,
     )
   }
-  return { ok: true, value: { prompt, sandbox, cwd } }
+  return { ok: true, value: { prompt, sandbox, effort, cwd } }
 }
 
 /**
  * codex exec の引数を作る。承認の指定は exec より前に置き、標準入力は末尾の `-` で渡す。
  * 引数には依頼文（prompt）を入れない。依頼文は標準入力で渡すため、ここでは型として受け取るだけである。
- * @param {{ prompt: string, sandbox: string, cwd: string }} exec validateExecInput が返した検証済みの依頼
+ * モデルは sandbox で決め（`MODEL_BY_SANDBOX`）、推論の強さは `effort`（省略時は medium）で指定する。
+ * @param {{ prompt: string, sandbox: string, effort?: string, cwd: string }} exec validateExecInput が返した検証済みの依頼
  * @param {string} outputFile 最後のメッセージの出力先のパス
  * @returns {string[]} codex exec の引数
  */
-export const buildCodexArgs = ({ sandbox, cwd }, outputFile) => [
+export const buildCodexArgs = ({ sandbox, effort, cwd }, outputFile) => [
   "--ask-for-approval",
   "never",
   "exec",
+  "--model",
+  MODEL_BY_SANDBOX[sandbox],
+  "--config",
+  `model_reasoning_effort="${effort ?? DEFAULT_EFFORT}"`,
   "--sandbox",
   sandbox,
   "--cd",
