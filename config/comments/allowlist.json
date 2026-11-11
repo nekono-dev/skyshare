@@ -338,12 +338,6 @@
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {
-      "path": "src/env.ts",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
       "path": "src/lib/api/schema/v2/bsky/video/upload-token/post.ts",
       "rule": "forbidden:AC/FR/NFRタグ",
       "owner": "comments-api-schema",
@@ -371,66 +365,6 @@
       "path": "src/lib/api/schema/v2/entry/post.ts",
       "rule": "forbidden:spec参照",
       "owner": "comments-api-schema",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/middleware.ts",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/util/formData.ts",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/util/http.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/util/padTwoDigits.ts",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/util/padTwoDigits.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/util/waitForImageLoad.ts",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/util/waitForImageLoad.ts",
-      "rule": "header-too-many-bullets",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/vars.ts",
-      "rule": "header-missing",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/vars.ts",
-      "rule": "forbidden:要件番号",
-      "owner": "comments-components-pages",
-      "reason": "コメントの整理（comments-* の spec）で解消する"
-    },
-    {
-      "path": "src/worker.ts",
-      "rule": "header-too-long",
-      "owner": "comments-components-pages",
       "reason": "コメントの整理（comments-* の spec）で解消する"
     },
     {

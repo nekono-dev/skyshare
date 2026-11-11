@@ -169,7 +169,7 @@
   - _Boundary: G9 root-types-util-styles_
   - _Requirements: 2.6, 3.1, 3.3, 4.1, 4.4, 5.1, 5.3_
 
-- [ ] 9.3 G9 の段階の完了を確かめ、許容リストの項目を消す
+- [x] 9.3 G9 の段階の完了を確かめ、許容リストの項目を消す
   - 検査の出力のうち `src/env.ts`・`src/vars.ts`・`src/worker.ts`・`src/middleware.ts`・`src/util/` に当たる項目が 0 件であることを確かめる
   - 許容リストから、これらのパスで所有が `comments-components-pages` の項目を消す
   - `git diff` の変更行（`src/` 直下・`util/`・`types/`・`styles/`・`global.d.ts`）が、コメントの行と空行だけであることを確かめる
