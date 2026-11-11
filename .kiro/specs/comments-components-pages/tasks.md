@@ -116,7 +116,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 7. G7 画面の入口（`src/pages/*.astro`・`entries/`・`posts/`）のコメントを書き直し、検査を通す
-- [ ] 7.1 画面の `.astro` のコメントを書き直す
+- [x] 7.1 画面の `.astro` のコメントを書き直す
   - 対象: `accounts.astro`・`feedback.astro`・`help.astro`・`jump.astro`・`privacy.astro`・`entries/[slug].astro`・`entries/index.astro`・`entries/sample.astro`・`posts/[dbIndex]/[slug].astro`（許容リストの 9 件）
   - `entries/sample.astro` は確認用のページ。削除の予定に関する記述は、現在の扱い（残している）として書く
   - 完了の条件: これらのファイルに違反が無く、Astro のフロントマター（`---`）と HTML のコメントの行が、必要なものを除いて変わっていない

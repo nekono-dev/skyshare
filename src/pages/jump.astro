@@ -1,19 +1,11 @@
 ---
 /**
- * SNSクロスポスト用ポップアップの繋ぎページ。
+ * SNS クロスポスト用ポップアップの繋ぎページ。遷移中であることを示す待機画面だけを出す。
  *
- * 責務と処理概要:
- * - PostForm は投稿API呼び出し（await）の前に、ユーザー操作と同期的なコールスタック内で
- *   このページをポップアップとして開いておき（`preOpenPopupWindow`）、投稿完了後に
- *   `location.href` で実際のintent URL（x.com/taittsuu/Mastodon/Misskey）へ遷移させる
- *   （詳細は `src/components/share/IntentShareDialog/openIntentPopup.ts` を参照）。
- * - 空白（about:blank）のまま数秒待たせるとユーザーが不安になるため、遷移中である
- *   ことを示す待機画面のみを提供する。このページ自身は次の遷移先を知らず、
- *   呼び出し元ウィンドウからの`location.href`書き換えを待つだけの受け皿。
- * - スピナー表示は`Loading`（既存の共通コンポーネント。PostForm等の「投稿中...」と
- *   同じ見た目）をそのまま流用し、このページ専用のスタイルは持たない。
- * - 何らかの理由で遷移が行われないまま残った場合（例: 呼び出し元が誤って閉じ忘れた）
- *   に備え、一定時間後に案内文を表示する。
+ * - PostForm が投稿 API の await 前（ユーザー操作と同期のコールスタック内）にこのページを開いておき
+ *   （`preOpenPopupWindow`）、投稿完了後に呼び出し元が `location.href` で intent URL へ遷移させる。
+ *   遷移先はこのページでは分からない（`src/components/share/IntentShareDialog/openIntentPopup.ts`）。
+ * - about:blank のまま数秒待たせると利用者が不安になるため待機画面を出す。スピナーは共通の `Loading` を使う。
  */
 export const prerender = true
 import Loading from "@/components/common/Loading"
