@@ -1,3 +1,8 @@
+/**
+ * 画像サムネイルを表示し、操作可能な場合はライトボックスを開く。
+ *
+ * - 4枚以下はグリッド、5枚以上は横スクロールにし、非操作表示でも同じレイアウトを保つ。
+ */
 import { useT } from "@/components/i18n/useTranslation"
 import React, { useRef, useState } from "react"
 import ImageLightbox from "@/components/image/ImageGallery/ImageLightbox"
@@ -5,16 +10,6 @@ import type { SourceImage } from "@/lib/entry/entry"
 import { resolveGalleryLayout } from "@/lib/image/galleryLayout"
 import { MAX_POST_IMAGES } from "@/lib/image/postImageLimits"
 import styles from "./index.module.css"
-
-/**
- * 画像のサムネイル表示。タップで `ImageLightbox` を開く。
- *
- * 責務と処理概要:
- * - 4枚以下は比率固定でクロップするグリッド、5枚以上は高さ固定の横スクロール1行（`resolveGalleryLayout`）。
- * - 拡大中の画像インデックスを保持し、閉じたときに開いたサムネイルへフォーカスを戻す。
- * - `interactive=false` のときは拡大表示を持たない静的表示にする（レイアウトは同一）。
- * - 設計: specs/image-gallery
- */
 
 type Props = {
   images: SourceImage[]

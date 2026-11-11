@@ -1,22 +1,14 @@
+/**
+ * 予約投稿の OAuth 戻りを完了し、結果を全ページ共通で表示する。
+ *
+ * - 戻り値は再送防止のため先に URL から除き、SameSite cookie が届かない OAuth 戻りはこのページから完了する。
+ * - API クライアントは戻り値がある場合だけ読み込む。
+ */
 import { useEffect, useState } from "react"
 import ChoiceDialog from "@/components/common/dialog/ChoiceDialog"
 import { useT } from "@/components/i18n/useTranslation"
 import { readAuthorizationFragment } from "@/lib/oauth/callbackFragment"
 import { notifyScheduleCredentialChange } from "@/components/schedule/ScheduleSetting/useScheduleAvailability"
-
-/**
- * 予約投稿の許可の画面から戻ったときの完了と結果の表示（全ページ共通）。
- *
- * 責務と処理概要:
- * - 戻り先（`/oauth/callback/`）は、許可を始めたページの住所のフラグメントに戻りの項目を入れて転送する。
- *   このフラグメントを読んだら、再読み込みで同じ項目を送らないよう先に住所から消し、
- *   認可の完了の API を呼んで、結果をダイアログで表示する。
- * - 成功したら、同じページの設定のスイッチと投稿フォームへ登録状態の変更を知らせる。
- *
- * 実装上の制約:
- * - すべてのページに置くため、API のクライアントは戻りの項目があるときだけ読み込む。
- * - 戻りは別のサイトからの遷移でセッションの cookie が届かないため、完了はこのページから呼ぶ。
- */
 
 /**
  * 認可の戻りの結果から、表示する文言のキーを決める。

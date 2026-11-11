@@ -1,18 +1,9 @@
 ---
 /**
- * Skyshare Entry詳細ページの本文表示（ヘッダーカード・投稿カード・下部余白・エラーペイン）。
+ * Skyshare Entry 詳細ページの本文を表示し、SSR ページとサンプルページで共有する。
  *
- * 責務と処理概要:
- * - `entries/[slug].astro`（PDSから実レコードをSSR取得する本来のEntry詳細ページ）と
- *   `entries/sample*.astro`（ログイン不要のゲストモード・e2e向け固定サンプルページ）から共通で使う。
- * - 単発投稿由来とスレッド由来を区別せず「ヘッダーカード＋投稿カード配列」の1経路で描画する。
- *   各投稿カードは Timeline と共通の `PostBody` で、その投稿自身のリアクション数を表示する。
- * - 最下部に内容を持たない余白（`.page-footer`）を常に置き、Xアプリ内ブラウザ等で
- *   下部が見切れないようにする（エラーペイン時も含む）。
- * - heading は本文に表示しない（`<title>`・OGP用の値）。
- * - caption の中の URL（スキーム省略を含む）は、投稿本文と同じくリンクにする（`PostRichText`）。
- * - `Baselayout`でのラップ（`pageTitle`/`cardPath`等のメタ情報）は呼び出し側の責務。
- * - 設計: specs/entry-detail
+ * - 下端の余白を常に置き、X アプリ内ブラウザなどで本文末尾が隠れるのを防ぐ。
+ * - 見出しは本文に出さず、ページタイトルと OGP に使う。
  */
 import EntryPostedAt from "@/components/entry/EntryDetailView/EntryPostedAt"
 import PostBody from "@/components/timeline/PostBody"

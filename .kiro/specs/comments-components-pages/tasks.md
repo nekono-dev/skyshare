@@ -84,7 +84,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 5. G5 account・entry・image・schedule（`src/components/` の 4 領域）のコメントを書き直し、検査を通す
-- [ ] 5.1 account・entry・image・schedule の部品のコメントを書き直す
+- [x] 5.1 account・entry・image・schedule の部品のコメントを書き直す
   - 対象: `account/`（3 件）・`entry/`（8 件、`EntryDetailView/index.astro` を含む）・`image/`（2 件）・`schedule/`（4 件、`useScheduleAvailability.ts` を含む）（許容リストの 17 件）
   - 予約（`schedule/`）の認可と資格情報の扱いは、現在の仕組みと理由を書く（日付・経緯を残さない）
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない

@@ -1,16 +1,7 @@
 /**
- * Skyshare entryのheading/captionを編集するフォーム。
+ * Entry の見出しとキャプションを編集するオーバーレイフォーム。
  *
- * 責務と処理概要:
- * - Overlay 上に baseCard を重ね、`role="dialog"` の編集フォームを描画する。
- * - open のたびに初期値（item.heading / item.caption）から入力stateを再同期する。
- * - 保存ボタンから `PUT /v2/entry`（`updateEntry`）を呼び出し、成功時は
- *   `onSaved` で呼び出し元へ更新後の値を通知する。ダイアログを閉じるかどうかの
- *   判断は呼び出し元（EntryCard）に委ねる。
- *
- * 画面全体をオーバーレイしてユーザー操作を一時的に限定するフォームであり、
- * PostFormと同種の性質を持つが内容が個別具体的なためコンポーネントとしては汎化しない。
- * カード外枠・縦積みレイアウトはdialog.ui.module.cssを通じてPostForm/ChoiceDialogと共通化する。
+ * - Entry 固有の編集内容を扱うため専用部品とし、カードと縦積みの見た目は共通スタイルを使う。
  */
 import { useT } from "@/components/i18n/useTranslation"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
