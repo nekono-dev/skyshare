@@ -12,7 +12,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 現在の状態（2026-11-10 追補 3）: Phase 7 の `comment-policy` は feature 検証の判定が `GO` で、`implementation-complete` になった（根拠は同 spec の tasks.md の Implementation Notes）。Phase 7 の残りは `comments-*` の 5 件。
 
-現在の状態（2026-11-11 追補）: Phase 7 の `comments-lib` は feature 検証の判定が `GO` で、`implementation-complete` になった（`src/lib` の 222 ファイルのコメントを基準に合わせ、許容リストの `comments-lib` の項目 167 件を 0 件にした。根拠は同 spec の tasks.md の Implementation Notes）。Phase 7 の `comments-components-pages` も `implementation-complete` になった（`src/components`・`src/pages`・`src/` 直下・`types`・`util`・`styles` のコメントを基準に合わせ、許容リストの項目 203 件を 0 件にした）。Phase 7 の残りは `comments-api-schema`・`comments-tests`・`comments-scripts-config` の 3 件（許容リストの残りは 244 件）。
+現在の状態（2026-11-11 追補）: Phase 7 の `comments-lib` は feature 検証の判定が `GO` で、`implementation-complete` になった（`src/lib` の 222 ファイルのコメントを基準に合わせ、許容リストの `comments-lib` の項目 167 件を 0 件にした。根拠は同 spec の tasks.md の Implementation Notes）。Phase 7 の `comments-components-pages` も `implementation-complete` になった（`src/components`・`src/pages`・`src/` 直下・`types`・`util`・`styles` のコメントを基準に合わせ、許容リストの項目 203 件を 0 件にした）。Phase 7 の `comments-tests` も `implementation-complete` になった（`tests`・`config/test` のコメントを基準に合わせ、日本語を含む題名 439 件を英語にし、許容リストの項目 197 件を 0 件にした）。Phase 7 の残りは `comments-api-schema`・`comments-scripts-config` の 2 件（許容リストの残りは 47 件）。
 
 ## Completion の定義
 
@@ -188,7 +188,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 - [x] comment-policy -- コメントの基準（残す・削る・判別）を `.kiro/steering/comments.md` に書く。Dependencies: none
 - [x] comments-lib -- `src/lib`（`api/schema` を除く）のコメントを基準に従って書き換える。Dependencies: comment-policy
 - [x] comments-components-pages -- `src/components`・`src/pages`・`src/` 直下・`src/types`・`src/util`・`src/styles` のコメントを書き換える。Dependencies: comment-policy
-- [ ] comments-tests -- `tests/`・`config/test/` のコメントを書き換え、日本語を含むテストの題名（362 件）を英語にする（要件番号・spec 名を含むものは振る舞いの英語の題名へ）。Dependencies: comment-policy
+- [x] comments-tests -- `tests/`・`config/test/` のコメントを書き換え、日本語を含むテストの題名（362 件）を英語にする（要件番号・spec 名を含むものは振る舞いの英語の題名へ）。Dependencies: comment-policy
 - [ ] comments-scripts-config -- `scripts`・`hack`・`config`・`.githooks` のコメントを書き換える。Dependencies: comment-policy
 - [ ] comments-api-schema -- `src/lib/api/schema` の説明を直し（説明文の文章の上限は削り、zod の制約だけで表す）、`npm run codegen` で生成物を作り直す。説明文以外の差分が無いことを確かめる。Dependencies: comment-policy, comments-lib
 
