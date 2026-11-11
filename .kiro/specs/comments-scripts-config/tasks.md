@@ -153,3 +153,5 @@
 ### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
 
 - 判定は `MANUAL_VERIFY_REQUIRED`。要件 27 件のうち 26 件が「満たす」で、1 件（6.2）は、記録のファイル数（39）と実際の差分（35）が違うため「部分的」だった。記録を 35 に訂正した。許容リストの例外（`kiro-gate.mjs` の 1 件）は tasks.md 2.1 と整合する。起動の確認は `test:e2e`（終了コード 0）の記録による。`test:lexicon` はこの spec の検証に含めない（設計書の Verification Approach）。
+
+- 起動確認の再実施（2026-11-11, コミット b60199a2）: 検証が読み取り専用で起動を実行できず `MANUAL_REQUIRED` となった点を補った。`npm run test:e2e` は 10 件成功。`SITE_HOST` を仮の値で与えた `npm run build:v2` は成功し、ビルド済み成果物を `astro preview` で起動して 7 ページを Chromium で開き、例外は 0 件（未ログインの認証付き API による 401 の console エラーのみ）。Web Share API は手動で確認済み。

@@ -277,3 +277,5 @@
 ### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
 
 - 判定は `NO-GO` だったが、原因は、検証が `ff045b65` からの全体の差分を見たため、本 spec と無関係な後のコミット（Codex のモデルの使い分け）で変わった `tests/unit/scripts/codexExecRequest.test.ts`・`codexSetup.test.ts` を、本 spec の差分に含めたこと。この 2 ファイルは、本 spec の最後のコミット（`830f00f4`）までは変更が無い（`git diff --name-only ff045b65 f15d77f1~1 -- tests` で確認）。それ以外の指摘（サンプル 20 ファイルでの題名の意味・コメントの理由・`.each` のラベル）に不備は無く、日本語題名の検査 (a)・(b) は 0 件だった。受入基準の「部分的」は、全件を独立に照合していないサンプル検証による。
+
+- 起動確認の再実施（2026-11-11, コミット b60199a2）: 検証が読み取り専用で起動を実行できず `MANUAL_REQUIRED` となった点を補った。`npm run test:e2e` は 10 件成功。`SITE_HOST` を仮の値で与えた `npm run build:v2` は成功し、ビルド済み成果物を `astro preview` で起動して 7 ページを Chromium で開き、例外は 0 件（未ログインの認証付き API による 401 の console エラーのみ）。Web Share API は手動で確認済み。

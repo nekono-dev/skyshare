@@ -111,3 +111,5 @@
 ### 独立した検証（kiro-validate-impl を Codex で実施, 2026-11-11）
 
 - 判定は `NO-GO`。要件 1.4（説明文に数値の上限の文章を書かない）に対し、`v2/feedback/post.ts` の `requiredText` の `description` が `up to ${max} graphemes` を持つ、という指摘だった。指摘のとおり直した（上の「判断に迷って残したもの」の記録を参照）。他の要件は「満たす」。
+
+- 起動確認の再実施（2026-11-11, コミット b60199a2）: 検証が読み取り専用で起動を実行できず `MANUAL_REQUIRED` となった点を補った。`npm run test:e2e` は 10 件成功。`SITE_HOST` を仮の値で与えた `npm run build:v2` は成功し、ビルド済み成果物を `astro preview` で起動して 7 ページを Chromium で開き、例外は 0 件（未ログインの認証付き API による 401 の console エラーのみ）。Web Share API は手動で確認済み。
