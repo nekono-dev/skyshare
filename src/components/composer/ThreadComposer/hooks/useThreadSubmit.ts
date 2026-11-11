@@ -1,3 +1,7 @@
+/**
+ * 投稿・予約の送信状態、結果表示、成功後の後処理を管理する。
+ * リクエスト本文の組み立てと共有先の分岐は純粋な判断関数へ委ねる。
+ */
 import { type Dispatch, type SetStateAction, useRef, useState } from "react"
 import { RichText } from "@atproto/api"
 import type { CreateScheduleBody } from "@/client/openapi/model"

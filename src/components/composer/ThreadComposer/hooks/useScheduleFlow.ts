@@ -1,3 +1,7 @@
+/**
+ * 予約日時・編集中の予約・取り消しに関する状態と手順を管理する。
+ * 予約の取り消しと適用は下書きフローにも依存するため、フォーム本体が組み合わせる。
+ */
 import { type Dispatch, type SetStateAction, useEffect, useState } from "react"
 import {
     cancelSchedule,

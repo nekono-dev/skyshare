@@ -1,13 +1,9 @@
 /**
- * PostForm本文入力欄における「@メンション/#ハッシュタグ候補」の状態管理フック。
+ * 本文中のメンションとハッシュタグ候補の取得・選択状態を管理する。
  *
- * 責務と処理概要:
- * - 本文欄(`PostBodyEditor`、contenteditableなdiv)内のカーソル直前のトークンを
- *   `detectSuggestTrigger` で判定し、200msデバウンスの上でBluesky公開API
- *   （メンション: `searchMentionSuggestions`、ハッシュタグ: `getHashtagCandidates`）を呼び候補を取得する。
- * - IME変換中は評価・キー操作の横取りを一切行わない（変換候補選択を妨げないため）。
- * - 候補取得の失敗は本文入力・投稿フローに一切影響させない（呼び出し先が既に例外を握りつぶし
- *   空配列を返す設計のため、ここでは候補が0件のままポップアップを開かないだけで済む）。
+ * - 候補取得は入力から 200ms 待って開始する。
+ * - IME 変換中は評価とキー操作の処理を行わない。
+ * - 取得失敗は候補なしとして扱い、本文入力と投稿を継続できる。
  */
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react"
 import {
