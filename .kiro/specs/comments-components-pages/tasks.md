@@ -155,7 +155,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 9. G9 共通の入口・型・ユーティリティ・CSS（`src/` 直下・`types/`・`util/`・`styles/`・`global.d.ts`）のコメントを書き直す
-- [ ] 9.1 `src/` 直下・`util/` のコメントを書き直す
+- [x] 9.1 `src/` 直下・`util/` のコメントを書き直す
   - 対象: `env.ts`・`vars.ts`・`worker.ts`・`middleware.ts`（許容リストの対象）と、`util/formData.ts`・`util/http.ts`・`util/padTwoDigits.ts`・`util/waitForImageLoad.ts`（許容リストの対象）
   - `worker.ts` の Cron の入口（`scheduled`）の説明は、実行の順序と理由を現在形で書く
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない

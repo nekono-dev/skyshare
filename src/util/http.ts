@@ -1,12 +1,4 @@
-/**
- * HTTP リクエスト/レスポンス補助の汎用ユーティリティ群。
- *
- * 責務と処理概要:
- * - `Headers` を通常のオブジェクトへ変換し、ログ出力やJSON化を扱いやすくする。
- * - `limit` クエリパラメータの妥当性を検証する。
- * - cookie ヘッダの有無、Content-Type が multipart/form-data かどうかを判定する。
- * - いずれもskyshare固有のドメイン知識を持たない、Fetch API標準の型のみを扱う処理。
- */
+/** HTTP API が使う Fetch API の値を検証・変換し、共通レスポンスを生成する。 */
 
 /**
  * limit クエリを検証する。
@@ -32,9 +24,6 @@ export const parseLimit = (value: string | null) => {
 
 /**
  * `Headers` をプレーンオブジェクトへ変換する。
- *
- * 処理の趣旨:
- * - `Headers` はそのまま JSON 化しづらいため、key/value の通常オブジェクトへ展開する。
  *
  * Input:
  * - `headers`: Fetch API の `Headers` インスタンス
@@ -132,10 +121,7 @@ export const jsonResponse = (
  * HTTP ステータスに対応する JSON エラーレスポンスを生成する。
  *
  * 処理の趣旨:
- * - API 層で共通のエラー形式 `{ error: string }` を維持する。
- * - `switch` で主要なクライアント/認証/レート制限エラーを明示し、未定義は 500 相当へ寄せる。
- * - `cache-control: no-store` を付与し、cookie 依存のレスポンスをブラウザ/CDNにキャッシュさせない
- *   （キャッシュされると、ログイン直後でも古い 401 応答が返り続ける不具合につながるため）。
+ * - cookie に依存する応答をキャッシュすると古い 401 が残るため、`no-store` を付ける。
  *
  * Input:
  * - `status`: 返却する HTTP ステータス
