@@ -1,14 +1,11 @@
 /**
- * Bluesky 投稿レコードの組み立ての特性化テスト（src-cycles 1.3・要件 3.2）。
- *
- * 責務と処理概要:
- * - 代表的な入力に対して、投稿レコードの形（種別・本文・作成日時・由来）が変わらないことを固定する。
+ * Builds Bluesky post records from text and creation metadata.
  */
 import { describe, expect, it } from "vitest"
 import { buildBskyPostRecord } from "@/lib/atproto/post"
 
-describe("投稿レコードの組み立て（特性化）", () => {
-    it("本文と作成日時だけの入力から、投稿レコードの形を組み立てる", () => {
+describe("buildBskyPostRecord", () => {
+    it("builds a post record from text and creation time", () => {
         expect(
             buildBskyPostRecord({
                 text: "hello",

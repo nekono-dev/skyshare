@@ -1,4 +1,6 @@
-// Entry の削除の範囲（P0・要件 2.1 の「Entry の削除の範囲」）: 所有者の直線の返信の鎖だけを削除対象にする
+/**
+ * Selects deletable posts from an owner’s linear reply chain.
+ */
 import { describe, expect, it, vi } from "vitest"
 import { resolveDeleteTargets } from "@/lib/entry/resolveDeleteTargets"
 import { TEST_DID } from "../../../fixtures/identities"

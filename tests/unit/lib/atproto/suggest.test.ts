@@ -1,6 +1,5 @@
 /**
- * 候補の取得（`@/lib/atproto/suggest`）の中断の振る舞いを確かめる。
- * 呼び出し元の中断信号を渡しても、タイムアウトが効き続けることを対象にする。
+ * Verifies cancellation and timeout behavior for mention suggestions.
  */
 import { afterEach, describe, expect, it, vi } from "vitest"
 

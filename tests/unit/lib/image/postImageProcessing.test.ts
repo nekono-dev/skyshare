@@ -1,5 +1,8 @@
-// 画像の切り抜きと加工の純粋な計算を、移動と型の変更の前の値で固定する（要件 2.2・2.3）。
-// canvas を使う処理（createProcessedImages など）は対象外（DOM の実行環境が必要）。
+/**
+ * Verifies image slot layouts and crop calculations.
+ *
+ * - Canvas based processing requires a DOM and is outside this unit test.
+ */
 import { describe, expect, it } from "vitest"
 import {
     computeCropAroundCenter,
@@ -9,8 +12,8 @@ import {
     TARGET_WIDTH,
 } from "@/lib/image/postImageProcessing"
 
-describe("getSlotDefs（枠の割り当て）", () => {
-    it("1 枚と 0 枚は、全面の 1 枠を返す", () => {
+describe("getSlotDefs assigns image slots", () => {
+    it("returns one full-frame slot for zero or one image", () => {
         const expected = [
             {
                 x: 0,
@@ -24,7 +27,7 @@ describe("getSlotDefs（枠の割り当て）", () => {
         expect(getSlotDefs(0)).toEqual(expected)
     })
 
-    it("2 枚は左右の半分の 2 枠を返す", () => {
+    it("returns two half-width slots for two images", () => {
         expect(
             getSlotDefs(2).map(({ x, y, w, h }) => ({ x, y, w, h })),
         ).toEqual([
@@ -33,7 +36,7 @@ describe("getSlotDefs（枠の割り当て）", () => {
         ])
     })
 
-    it("3 枚は左 1 枠と右上下の 2 枠を返す", () => {
+    it("returns one left slot and two stacked right slots for three images", () => {
         expect(
             getSlotDefs(3).map(({ x, y, w, h }) => ({ x, y, w, h })),
         ).toEqual([
@@ -43,7 +46,7 @@ describe("getSlotDefs（枠の割り当て）", () => {
         ])
     })
 
-    it("4 枚以上は 2 行 2 列の 4 枠を返す", () => {
+    it("returns a four-slot grid for four or more images", () => {
         const slots = getSlotDefs(4).map(({ x, y, w, h }) => ({ x, y, w, h }))
         expect(slots).toEqual([
             { x: 0, y: 0, w: 600, h: 315 },
@@ -54,14 +57,14 @@ describe("getSlotDefs（枠の割り当て）", () => {
         expect(getSlotDefs(9)).toEqual(getSlotDefs(4))
     })
 
-    it("目標の寸法は 1200x630 である", () => {
+    it("uses 1200x630 as the target dimensions", () => {
         expect(TARGET_WIDTH).toBe(1200)
         expect(TARGET_HEIGHT).toBe(630)
     })
 })
 
-describe("computeInitialCrop（中央基準の初期クロップ）", () => {
-    it("横長の原本は、高さを残して左右を中央で切り出す", () => {
+describe("computeInitialCrop centers the initial crop", () => {
+    it("crops a landscape image horizontally around the center", () => {
         // 1920x1080（16:9）は 1200x630（約 1.905）より横が広いため、幅を残す
         expect(computeInitialCrop(1920, 1080, 1200, 630)).toEqual({
             x: 0,
@@ -72,8 +75,8 @@ describe("computeInitialCrop（中央基準の初期クロップ）", () => {
     })
 })
 
-describe("computeCropAroundCenter（指定中心の切り出し）", () => {
-    it("正方形の原本は、幅を残して上下を指定の中心で切り出す", () => {
+describe("computeCropAroundCenter crops around a requested center", () => {
+    it("crops a square image vertically around the requested center", () => {
         expect(
             computeCropAroundCenter(1000, 1000, 1200, 630, 500, 500),
         ).toEqual({
@@ -84,7 +87,7 @@ describe("computeCropAroundCenter（指定中心の切り出し）", () => {
         })
     })
 
-    it("中心が左上に寄っていても、画像の内側へ clamp する", () => {
+    it("clamps a center near the top-left to the image bounds", () => {
         expect(computeCropAroundCenter(1000, 1000, 1200, 630, 0, 0)).toEqual({
             x: 0,
             y: 0,
@@ -93,7 +96,7 @@ describe("computeCropAroundCenter（指定中心の切り出し）", () => {
         })
     })
 
-    it("極端に横長の原本は、高さを残して中央の幅で切り出す", () => {
+    it("crops an extremely wide image around the center while preserving height", () => {
         expect(computeCropAroundCenter(2400, 600, 1200, 630)).toEqual({
             x: 629,
             y: 0,

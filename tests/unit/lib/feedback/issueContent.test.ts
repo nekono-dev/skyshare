@@ -1,4 +1,6 @@
-// フィードバックの本文の無害化（P0・要件 2.1 の「フィードバック送信（本文の無害化）」）
+/**
+ * Sanitizes feedback fields before building an issue body.
+ */
 import { describe, expect, it } from "vitest"
 import {
     buildIssue,

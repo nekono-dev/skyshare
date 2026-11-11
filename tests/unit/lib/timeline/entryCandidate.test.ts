@@ -1,4 +1,6 @@
-// スレッドグループの entry 判定（事後 entry の Visual 取得元・entry の運び手）の規則
+/**
+ * Selects the post that supplies an entry visual or carries the entry.
+ */
 import { describe, expect, it } from "vitest"
 import {
     findEntryCarrier,
@@ -51,56 +53,56 @@ const group = (
     replies: TimelinePost[] = [],
 ): ThreadGroup => ({ rootPost, replies })
 
-describe("resolveEntryVisualSourcePost（事後 entry の Visual 取得元）", () => {
-    it("単独投稿は null（画像があっても対象にしない）", () => {
+describe("resolveEntryVisualSourcePost selects a visual source post", () => {
+    it("returns null for a standalone post, even when it has an image", () => {
         const g = group(post("root", { images: [IMAGE] }))
         expect(resolveEntryVisualSourcePost(g)).toBeNull()
     })
 
-    it("ルートが画像を持てばルート自身を返す", () => {
+    it("returns the root when it has an image", () => {
         const root = post("root", { images: [IMAGE] })
         const g = group(root, [post("reply", { images: [IMAGE] })])
         expect(resolveEntryVisualSourcePost(g)).toBe(root)
     })
 
-    it("ルートが動画を持てばルート自身を返す（動画も素材になる）", () => {
+    it("returns the root when it has a video", () => {
         const root = post("root", { video: VIDEO })
         const g = group(root, [post("reply")])
         expect(resolveEntryVisualSourcePost(g)).toBe(root)
     })
 
-    it("ルートに素材が無ければ、古い順で最初に素材を持つ返信を返す", () => {
+    it("returns the oldest reply with media when the root has none", () => {
         const first = post("reply1", { images: [IMAGE] })
         const second = post("reply2", { images: [IMAGE] })
         const g = group(post("root"), [post("reply0"), first, second])
         expect(resolveEntryVisualSourcePost(g)).toBe(first)
     })
 
-    it("ルートも返信も素材を持たなければ null", () => {
+    it("returns null when no post in the thread has media", () => {
         const g = group(post("root"), [post("reply1"), post("reply2")])
         expect(resolveEntryVisualSourcePost(g)).toBeNull()
     })
 })
 
-describe("findEntryCarrier（entry が紐づく投稿）", () => {
-    it("単独投稿は、entry があっても null", () => {
+describe("findEntryCarrier selects the post linked to an entry", () => {
+    it("returns null for a standalone post, even when it has an entry", () => {
         const g = group(post("root", { entry: ENTRY }))
         expect(findEntryCarrier(g)).toBeNull()
     })
 
-    it("ルートに entry があればルート自身を返す", () => {
+    it("returns the root when it has an entry", () => {
         const root = post("root", { entry: ENTRY })
         const g = group(root, [post("reply", { entry: ENTRY })])
         expect(findEntryCarrier(g)).toBe(root)
     })
 
-    it("ルートに無く返信に entry があれば、その返信を返す", () => {
+    it("returns the reply when only it has an entry", () => {
         const reply = post("reply", { entry: ENTRY })
         const g = group(post("root"), [post("reply0"), reply])
         expect(findEntryCarrier(g)).toBe(reply)
     })
 
-    it("グループのどこにも entry が無ければ null", () => {
+    it("returns null when no post in the group has an entry", () => {
         const g = group(post("root"), [post("reply")])
         expect(findEntryCarrier(g)).toBeNull()
     })

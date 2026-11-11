@@ -1,4 +1,6 @@
-// 共有の本文とリンクカード（P0・要件 2.1 の「共有の文字数と URL の規則」）: URL の取り除きと補わない規則
+/**
+ * Builds share text and link-card values from entry link facets.
+ */
 import { describe, expect, it } from "vitest"
 import { resolveShareBody } from "@/lib/share/shareBody"
 

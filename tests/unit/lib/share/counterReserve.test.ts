@@ -1,4 +1,6 @@
-// 共有の文字数の予約（P0・要件 2.1 の「共有の文字数」）: 共有先の決め方と、URL 分の上限の補正
+/**
+ * Reserves text capacity for share targets and appended entry URLs.
+ */
 import { describe, expect, it } from "vitest"
 import {
     resolveCounterReserve,

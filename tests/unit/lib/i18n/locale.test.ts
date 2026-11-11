@@ -1,4 +1,6 @@
-// 表示言語の判定（P0・要件 2.1 の「表示言語の判定」）: 保存された値、ブラウザの言語、既定と非対応の退避
+/**
+ * Resolves the display locale from stored and browser language preferences.
+ */
 import { describe, expect, it } from "vitest"
 import {
     DEFAULT_LOCALE,

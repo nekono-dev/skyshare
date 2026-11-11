@@ -1,7 +1,7 @@
 /**
- * listRecordsSince のページング（打ち切りの条件と、並び順の前提）を固定する。
+ * Verifies pagination and stopping conditions for repository records.
  *
- * - 既定の並び（新しい順）で取得し、ページ内の全件が sinceMs より古いときだけ打ち切る。
+ * - Pagination stops only when every record on a page is older than the cutoff.
  */
 import { describe, expect, it, vi } from "vitest"
 import { listRecordsSince } from "@/lib/atproto/repo"

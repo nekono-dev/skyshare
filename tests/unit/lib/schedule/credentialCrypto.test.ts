@@ -1,4 +1,6 @@
-// 予約の認証情報の暗号化（P0・要件 2.1 の「予約の実行（暗号化）」）: 往復、失敗の種類、IV の一意性
+/**
+ * Verifies encryption and decryption of scheduled-post credentials.
+ */
 import { describe, expect, it } from "vitest"
 import { decryptToken, encryptToken } from "@/lib/schedule/credentialCrypto"
 import { TEST_DID, TEST_KEY_BASE64 } from "../../../fixtures/identities"

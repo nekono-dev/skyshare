@@ -1,4 +1,6 @@
-// 接続先の解決（要件 12.1〜12.3）: 既定値、上書き、空文字の扱い
+/**
+ * Resolves Bluesky service endpoints from defaults and overrides.
+ */
 import { describe, expect, it } from "vitest"
 import { resolveBlueskyEndpoints } from "@/lib/platform/blueskyEndpoints"
 
