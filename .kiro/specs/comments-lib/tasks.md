@@ -227,3 +227,11 @@
 - 判別に迷って残したコメントは、上の「判別に迷って残したコメント」の 2 件（`src/lib/atproto/richTextSegments.ts:5`、`src/lib/i18n/messages/en/{account,page,post,settings}.ts:1`）と `src/lib/entry/legacyPagedb.ts:5`。
 - `tech.md` の先頭ヘッダの記述が基準と食い違う件は、comment-policy の作業 4.1 で解消済み（`tech.md` の「Code Quality」は `comments.md` への参照 1 行）。
 - `cache-control: no-store`（タスク 7.1 の注記）は `src/lib/session` に存在せず、`src/pages` の担当（comments-components-pages）。
+
+### feature 検証（kiro-validate-impl, 2026-11-11）
+
+- 判定は `GO`。コミット済みの状態（d00e23da）で、`npm run test:type`・`test:imports`・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）がすべて終了コード 0。起動の確認として、push 前フックの `npm run test:all`（e2e 10 件を含む）も通過した。タスクは全て `[x]`、`_Blocked:_` は無い。
+- 受入基準 42 件（要件 1〜7）は、全てタスクの `_Requirements:_` から参照されている。判断が要る要件（3・4・7）は、独立レビューが 6 領域・19 ファイルを作業前の版と比べて確かめ、欠落や基準違反は見つからなかった。
+- 境界: 変更は `src/lib`（`api/schema` を除く）と許容リストの `comments-lib` の項目の削除だけ。`src/lib/api/schema`・`src/components`・`src/pages`・`tests`・`scripts`・`comments.md` への差分は 0。ファイルの追加・削除・改名は 0。Revalidation Triggers は発火していない。コードの字句は、222 ファイルで作業前と同一。
+- 設計書の追補の決定 2 件（`gate.ts` の許可ルールの合計の上限、`feedback` の送信間隔と rate limit の対応）は反映済み。
+- 設計書の「実装の前提」に残っていた古い記述（実装の保留）は、design.md に「現況（2026-11-11 追補）」を加えて更新した。

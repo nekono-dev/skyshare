@@ -12,6 +12,8 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 
 現在の状態（2026-11-10 追補 3）: Phase 7 の `comment-policy` は feature 検証の判定が `GO` で、`implementation-complete` になった（根拠は同 spec の tasks.md の Implementation Notes）。Phase 7 の残りは `comments-*` の 5 件。
 
+現在の状態（2026-11-11 追補）: Phase 7 の `comments-lib` は feature 検証の判定が `GO` で、`implementation-complete` になった（`src/lib` の 222 ファイルのコメントを基準に合わせ、許容リストの `comments-lib` の項目 167 件を 0 件にした。根拠は同 spec の tasks.md の Implementation Notes）。Phase 7 の残りは `comments-api-schema`・`comments-components-pages`・`comments-tests`・`comments-scripts-config` の 4 件（許容リストの残りは 447 件）。
+
 ## Completion の定義
 
 - `[x]` は、`spec.json` の phase が `implementation-complete` のものに限る（cc-sdd の検証を通過した状態）。
@@ -184,7 +186,7 @@ Skyshare の現行実装（`src/`・設定ファイル・D1 のマイグレー�
 （2026-11-08 batch: 6 件とも spec の作成（requirements・design・tasks）と承認を済ませた。`[ ]` は実装が未着手であることを表す。実装は依存の順（comment-policy → comments-lib → comments-api-schema の 1 → 残り 3 件 → comments-api-schema の残り）で `/kiro-impl` により行う。）
 
 - [x] comment-policy -- コメントの基準（残す・削る・判別）を `.kiro/steering/comments.md` に書く。Dependencies: none
-- [ ] comments-lib -- `src/lib`（`api/schema` を除く）のコメントを基準に従って書き換える。Dependencies: comment-policy
+- [x] comments-lib -- `src/lib`（`api/schema` を除く）のコメントを基準に従って書き換える。Dependencies: comment-policy
 - [ ] comments-components-pages -- `src/components`・`src/pages`・`src/` 直下・`src/types`・`src/util`・`src/styles` のコメントを書き換える。Dependencies: comment-policy
 - [ ] comments-tests -- `tests/`・`config/test/` のコメントを書き換え、日本語を含むテストの題名（362 件）を英語にする（要件番号・spec 名を含むものは振る舞いの英語の題名へ）。Dependencies: comment-policy
 - [ ] comments-scripts-config -- `scripts`・`hack`・`config`・`.githooks` のコメントを書き換える。Dependencies: comment-policy

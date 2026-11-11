@@ -27,6 +27,10 @@
 - **実行の順序**: comment-policy → comments-lib（本 spec）→ comments-api-schema の作業 1（変更前の基準の記録）→ comments-components-pages・comments-tests・comments-scripts-config → comments-api-schema の残りの作業。全ての comments-* は同じ許容リスト（`config/comments/allowlist.json`）を手で編集するため、並列にせず、本 spec と直列に行う。
 - **対象外の明示**: `src/lib/api/schema` は本 spec の対象外で、comments-api-schema が担当する（本 spec の後に行う）。
 
+### 現況（2026-11-11 追補）
+
+上の「保留の理由」は解消した。comment-policy の作業 4.1（`tech.md` の「Code Quality」を基準への参照に揃える）は完了し、comment-policy は `implementation-complete` になった。本 spec の実装（G1〜G7 と最終統合）は 2026-11-11 に完了し、feature 検証の判定は `GO`（根拠は tasks.md の `## Implementation Notes`）。`spec.json` の `ready_for_implementation` の値は、実装が終わったため意味を持たない。「Open Questions / Risks」の 1（`tech.md` の先頭ヘッダの記述との食い違い）は解消済み。
+
 ## Boundary Commitments
 
 ### This Spec Owns
