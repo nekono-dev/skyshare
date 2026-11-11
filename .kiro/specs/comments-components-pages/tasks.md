@@ -4,7 +4,7 @@
 
 前提: 先行 spec は comment-policy（基準・検査・許容リストの仕組み）で、未実装の間はこの計画を実行しない（`spec.json` の `ready_for_implementation` は false）。comments-* の spec 同士も共有の許容リストを使うため、並列にせず直列に実行する。
 
-- [ ] 1. G1 common（`src/components/common/**`）のコメントを書き直し、検査を通す
+- [x] 1. G1 common（`src/components/common/**`）のコメントを書き直し、検査を通す
 - [x] 1.1 common の部品のコメントを書き直す
   - 許容リストの 19 件のファイル（dialog・input・list・media・section・select と `Loading`）の先頭ヘッダと、コメントの行を、基準に従って書き直す
   - 書き直した内容が、対応するコードの現在の振る舞いと一致している
@@ -21,7 +21,7 @@
   - _Boundary: G1 common, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 2. G2 composer の中心（`ThreadComposer/index.tsx`・`hooks/`・`rules/`）のコメントを書き直し、検査を通す
+- [x] 2. G2 composer の中心（`ThreadComposer/index.tsx`・`hooks/`・`rules/`）のコメントを書き直し、検査を通す
 - [x] 2.1 ThreadComposer の中心・hooks・rules のコメントを書き直す
   - 許容リストの 15 件（`index.tsx`・`hooks/` の 6 件・`rules/` の 8 件）の先頭ヘッダと、コメントの行を書き直す
   - `rules/` の判断は、純粋な関数の意図と、その理由（境界の扱い・順序の制約）を書く。関数の使い方のうち、シグネチャから分からないこと（単位・境界値・失敗のしかた）を残す
@@ -38,7 +38,7 @@
   - _Boundary: G2 composer core, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 3. G3 composer の子部品（`PostGateDialog`・`ThreadComposer` の子）のコメントを書き直し、検査を通す
+- [x] 3. G3 composer の子部品（`PostGateDialog`・`ThreadComposer` の子）のコメントを書き直し、検査を通す
 - [x] 3.1 ThreadComposer の直下の子部品（dialog・option・picker・list・button）のコメントを書き直す
   - 対象: `PostGateDialog`・`ComposerDialogs`・`ComposerOptions`・`ImageAltDialog`・`ImageCropDialog`（`CropSlot` を含む）・`ImagePicker`・`OgpFetchButton`・`RunAtPicker`・`ScheduleList`（許容リストの 11 件）
   - 先頭ヘッダと、コメントの行を基準に従って書き直す。部品の配置は変えない
@@ -61,7 +61,7 @@
   - _Boundary: G3 composer children, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 4. G4 timeline（`src/components/timeline/**`）のコメントを書き直し、検査を通す
+- [x] 4. G4 timeline（`src/components/timeline/**`）のコメントを書き直し、検査を通す
 - [x] 4.1 PostBody・PostRichText のコメントを書き直す
   - 対象: `timeline/PostBody/` の配下（`PostEngagementStats`・`PostLinkCard`・`PostQuote`・`VideoPlayButton`・`VideoPlayer`・`VideoThumbnail`・`VideoUnavailable` と `index.tsx`）と `PostRichText/index.tsx`（許容リストの 9 件）
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない
@@ -83,7 +83,7 @@
   - _Boundary: G4 timeline, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 5. G5 account・entry・image・schedule（`src/components/` の 4 領域）のコメントを書き直し、検査を通す
+- [x] 5. G5 account・entry・image・schedule（`src/components/` の 4 領域）のコメントを書き直し、検査を通す
 - [x] 5.1 account・entry・image・schedule の部品のコメントを書き直す
   - 対象: `account/`（3 件）・`entry/`（8 件、`EntryDetailView/index.astro` を含む）・`image/`（2 件）・`schedule/`（4 件、`useScheduleAvailability.ts` を含む）（許容リストの 17 件）
   - 予約（`schedule/`）の認可と資格情報の扱いは、現在の仕組みと理由を書く（日付・経緯を残さない）
@@ -99,7 +99,7 @@
   - _Boundary: G5 account-entry-image-schedule, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 6. G6 settings・share・feedback・help・privacy・i18n・layout のコメントを書き直し、検査を通す
+- [x] 6. G6 settings・share・feedback・help・privacy・i18n・layout のコメントを書き直し、検査を通す
 - [x] 6.1 layout・i18n・settings・share・feedback のコメントを書き直す
   - 対象: `layout/`（`Baselayout`・`FooterNav`・`NavIcon`・`Sidebar` の `.astro` と、`nav/` の 4 件の `.ts`）・`i18n/useTranslation.ts`・`settings/`（`SettingList`・`Settings` と `useShareToggles.ts`）・`share/IntentShareDialog/`（2 件）・`feedback/FeedbackForm/`（2 件）（許容リストの 16 件）
   - `nav/` の共有の処理（`navItems.ts`・`sync*.ts`）は、Sidebar と FooterNav が共有する理由を書く
@@ -115,7 +115,7 @@
   - _Boundary: G6 settings-share-layout, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 7. G7 画面の入口（`src/pages/*.astro`・`entries/`・`posts/`）のコメントを書き直し、検査を通す
+- [x] 7. G7 画面の入口（`src/pages/*.astro`・`entries/`・`posts/`）のコメントを書き直し、検査を通す
 - [x] 7.1 画面の `.astro` のコメントを書き直す
   - 対象: `accounts.astro`・`feedback.astro`・`help.astro`・`jump.astro`・`privacy.astro`・`entries/[slug].astro`・`entries/index.astro`・`entries/sample.astro`・`posts/[dbIndex]/[slug].astro`（許容リストの 9 件）
   - `entries/sample.astro` は確認用のページ。削除の予定に関する記述は、現在の扱い（残している）として書く
@@ -131,7 +131,7 @@
   - _Boundary: G7 pages-astro, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 8. G8 API の入口（`src/pages/oauth/`・`v1/`・`v2/`）のコメントを書き直し、検査を通す
+- [x] 8. G8 API の入口（`src/pages/oauth/`・`v1/`・`v2/`）のコメントを書き直し、検査を通す
 - [x] 8.1 oauth・v1・v2 の bsky・entries・entry・feedback のコメントを書き直す
   - 対象: `oauth/`（3 件）・`v1/page.ts`・`v2/bsky/`（`drafts`・`images`・`session`・`session/[did]`・`session/authorization`・`session/authorization/completion`・`video/upload-token`）・`v2/entries.ts`・`v2/entries/skyshare.ts`・`v2/entry.ts`・`v2/feedback.ts`（許容リストの 15 件）
   - 認証・Cookie・OAuth の判断は、現在の仕組みと理由を書く（旧の方式・経緯を残さない）
@@ -154,7 +154,7 @@
   - _Boundary: G8 pages-api, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
-- [ ] 9. G9 共通の入口・型・ユーティリティ・CSS（`src/` 直下・`types/`・`util/`・`styles/`・`global.d.ts`）のコメントを書き直す
+- [x] 9. G9 共通の入口・型・ユーティリティ・CSS（`src/` 直下・`types/`・`util/`・`styles/`・`global.d.ts`）のコメントを書き直す
 - [x] 9.1 `src/` 直下・`util/` のコメントを書き直す
   - 対象: `env.ts`・`vars.ts`・`worker.ts`・`middleware.ts`（許容リストの対象）と、`util/formData.ts`・`util/http.ts`・`util/padTwoDigits.ts`・`util/waitForImageLoad.ts`（許容リストの対象）
   - `worker.ts` の Cron の入口（`scheduled`）の説明は、実行の順序と理由を現在形で書く
@@ -177,7 +177,7 @@
   - _Boundary: G9 root-types-util-styles, 許容リスト_
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2, 7.4_
 
-- [ ] 10. 全体の検証と完了の報告
+- [x] 10. 全体の検証と完了の報告
 - [x] 10.1 範囲の全体で、検査と全テストを通す
   - `npx tsx scripts/architecture/commentRules.ts --emit-allowlist` の出力で、範囲（`src/components`・`src/pages`・`src/*.ts`・`src/types`・`src/util`）に当たる違反が 0 件である
   - `npm run test:type`・`npm run test:imports`・`npm run test:unit`・`npm run test:component`・`npm run test:route`・`npm run test:render` が通過する（失敗があれば、コメントの変更と無関係な原因かを切り分けて報告する）。`npm run test:e2e` は、この spec の検証には含めない（comments-api-schema が実行する）
