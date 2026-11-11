@@ -68,7 +68,7 @@
   - _Boundary: G2 の検査と許容リスト_
   - _Requirements: 5.1, 5.4, 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 4. G3（`schedule`）を書き直す
+- [x] 4. G3（`schedule`）を書き直す
 - [x] 4.1 `schedule` の先頭ヘッダとコメントを書き直す（30 ファイル）
   - 2.1 と同じ判断で書き直す
   - Cron の経路の制約（`@atproto/*` を読まない、WebCrypto と fetch だけを使う、Free の CPU 制限）の理由は残し、現在形で書く
@@ -77,7 +77,7 @@
   - _Boundary: G3 の schedule_
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4, 3.5, 4.1, 4.2, 4.3, 4.4, 4.5, 7.1, 7.2, 7.3_
 
-- [ ] 4.2 G3 の検査を通し、許容リストの G3 の項目を消す
+- [x] 4.2 G3 の検査を通し、許容リストの G3 の項目を消す
   - 検査（`--emit-allowlist` の出力を読むだけ）で、G3 のファイルに違反が無い
   - `config/comments/allowlist.json` から、所有者 `comments-lib` で G3 のパスの項目だけを手で消す
   - `commentRules.test.ts` が 20 件すべて通過し、`npm run test:type`・`test:imports`・`test:unit`・`test:component`・`test:route`・`test:render` が通過する
