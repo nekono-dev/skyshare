@@ -1,12 +1,8 @@
 /**
  * `.astro` が出力した静的DOMの文言を、表示言語に合わせて書き換える。
  *
- * 責務と処理概要:
- * - Astro コンポーネントは SSG 時に日本語（または Accept-Language）で描画済みで、
- *   クライアントで React のように再描画されない。そのため、翻訳対象の要素に付けた
- *   `data-i18n`（textContent）・`data-i18n-aria-label`（aria-label 属性）・
- *   `<title data-i18n-title>`（ページタイトル）を、言語変更・ページ遷移のたびに書き換える。
- * - React が管理するDOMには `data-i18n` を付けない（React の再描画と競合するため）。
+ * - SSG の静的DOMはクライアントで再描画されないため、言語変更時に翻訳対象を更新する。
+ * - React が管理するDOMには翻訳属性を付けない（再描画と競合するため）。
  */
 import { serviceName } from "@/vars"
 import type { Locale } from "./locale"

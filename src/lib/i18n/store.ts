@@ -1,13 +1,11 @@
 /**
  * クライアント側の表示言語ストア。
  *
- * 責務と処理概要:
- * - 現在の表示言語をモジュール状態として保持し、購読者（React の `useSyncExternalStore`）へ通知する。
- * - Astro の各 island は別々の React ルートだが、同一バンドル内のモジュールは共有されるため、
- *   このストアひとつで全 island の言語が同期する。
- * - 言語が変わるたびに `<html lang>` と `.astro` の静的DOMを更新する。
- * - 別タブでの言語設定の変更（`storage` イベント）にも追従する。
- * - ブラウザ専用。サーバーでは `getLocale` を呼ばない（React 側は `getServerSnapshot` で既定言語を返す）。
+ * ブラウザ内の表示言語を同期し、React の購読者と静的DOMへ反映する。
+ *
+ * - 同一バンドルの Astro island はモジュール状態を共有する。
+ * - SSR は既定言語で描画し、ブラウザ初期化後に同期する。
+ * - 別タブの設定変更は `storage` イベントで反映する。
  */
 import { applyDomTranslations } from "./applyDom"
 import {

@@ -1,11 +1,7 @@
 /**
  * 表示言語設定の永続化ユーティリティ。
  *
- * 責務と処理概要:
- * - 「システム設定に従う/日本語/English」の選択値を localStorage で管理する。
- * - `system` は値を保存せずキーを削除した状態で表す。
- * - SSR・プライベートモード等で localStorage が使えない場合は既定値へ安全にフォールバックする
- *   （`themeSettings.ts` と同方式）。サーバーはこの設定を読まない。
+ * - `system` は保存キーの削除で表し、SSR や localStorage の失敗時は「system」を使う。
  */
 import { isLocale, type LocaleSetting } from "./locale"
 

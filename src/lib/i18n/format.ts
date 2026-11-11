@@ -1,9 +1,7 @@
 /**
  * 日時・数値の書式化（表示言語に追従）。
  *
- * 責務と処理概要:
- * - `ja-JP` 固定だった `toLocaleString` を、表示言語に応じた `Intl` ロケールへ置き換える。
- * - `textCount.ts` の文字数計数用 `Intl.Segmenter` は表示言語と無関係なため対象外。
+ * - `Intl` のロケールは日本語で `ja-JP`、英語で `en-US` を使う。
  */
 import type { Locale } from "./locale"
 

@@ -1,10 +1,8 @@
 /**
  * 表示言語（Locale）の型定義と判定ロジック。
  *
- * 責務と処理概要:
- * - 対応言語の一覧と、外部入力（localStorage・Accept-Language・navigator.languages）から
- *   表示言語を決める純粋関数を提供する。
- * - 状態を持たない。Cloudflare Workers（SSR）とブラウザの双方から呼べる。
+ * - 保存値がない場合、言語タグが存在しなければ日本語、対応言語が無ければ英語を使う。
+ * - 状態を持たず、Cloudflare Workers（SSR）とブラウザの両方で使える。
  */
 
 export const LOCALES = ["ja", "en"] as const
