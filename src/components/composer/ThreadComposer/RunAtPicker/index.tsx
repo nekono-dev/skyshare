@@ -1,3 +1,10 @@
+/**
+ * 投稿の実行日時を選ぶボタンとダイアログ。
+ *
+ * - 既定値は設定済み日時か翌日の同時刻（秒以下切り捨て）。端末のタイムゾーンで入力する。
+ * - サーバーの許可範囲と予約枠に基づいて設定可否を示す。
+ * - 予約機能が利用不可でも `onUnavailable` があれば、案内を開くためボタン操作を受け付ける。
+ */
 import { useEffect, useState } from "react"
 import Overlay from "@/components/common/dialog/Overlay"
 import calendarIcon from "@/images/calendar.svg"
@@ -14,25 +21,6 @@ import {
 import styles from "./index.module.css"
 import ui from "@/styles/ui.module.css"
 
-/**
- * 投稿フォームのカレンダーのボタンと、実行日時の指定のダイアログ。
- *
- * 責務と処理概要:
- * - ボタンを押すと、日時の入力（端末のタイムゾーン）と「設定」「解除」「閉じる」のダイアログを開く。
- * - 入力の既定値は、設定済みの日時か、無ければ翌日の同時刻（秒以下は切り捨て）。
- * - サーバーが示す範囲の外の日時では「設定」を押せず、理由を表示する。
- * - 日時が設定されている間は、ボタンを強調の配色と `aria-pressed` で示す。
- * - ダイアログに、待機中の予約の枠（上限の件数ぶんのマス）を棒で示す。使用済みの枠を塗り、
- *   この予約が新たに使う枠を淡く塗る。新たに枠を使う予約で空きが無いときは「設定」を押せない。
- * - 許可の有効期限の目安が渡されたときは、予約するたびに延びる旨とともに日付を示す。
- * - 日時の保持と、設定・解除の結果の扱いは呼び出し側（投稿フォーム）が行う。
- * - `onUnavailable` が渡されたときは、予約投稿を使えない状態でもボタンを押せる（見た目は無効のまま
- *   `aria-disabled`）ようにして、押したときに呼び出し側が使えるようにする方法を案内できるようにする。
- *
- * 利用例:
- * `<RunAtPicker value={runAt} limits={limits} disabled={!enabled} onChange={next => ...} />`
- */
-
 /** 待機中の予約の枠。`consumes` はこの予約が新たに枠を使うか（編集中の予約は使わない） */
 export type ScheduleSlots = { used: number; max: number; consumes: boolean }
 
@@ -47,7 +35,7 @@ type Props = {
   onUnavailable?: () => void
   /** 待機中の予約の枠。取得前・取得の失敗は null（枠の表示を出さない） */
   slots?: ScheduleSlots | null
-  /** 許可の有効期限の目安。無ければ null（表示を出さない） */
+  /** 許可の有効期限の目安。予約の登録で延長される有効期限の日付を表示する */
   expiresAt?: Date | null
   onChange: (next: Date | null) => void
   /** 開く操作を外から行うための状態（フォーム内の実行日時の行から開く） */

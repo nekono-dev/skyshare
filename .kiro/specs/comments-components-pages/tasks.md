@@ -39,7 +39,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 3. G3 composer の子部品（`PostGateDialog`・`ThreadComposer` の子）のコメントを書き直し、検査を通す
-- [ ] 3.1 ThreadComposer の直下の子部品（dialog・option・picker・list・button）のコメントを書き直す
+- [x] 3.1 ThreadComposer の直下の子部品（dialog・option・picker・list・button）のコメントを書き直す
   - 対象: `PostGateDialog`・`ComposerDialogs`・`ComposerOptions`・`ImageAltDialog`・`ImageCropDialog`（`CropSlot` を含む）・`ImagePicker`・`OgpFetchButton`・`RunAtPicker`・`ScheduleList`（許容リストの 11 件）
   - 先頭ヘッダと、コメントの行を基準に従って書き直す。部品の配置は変えない
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない
