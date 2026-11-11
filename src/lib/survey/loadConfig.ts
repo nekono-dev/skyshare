@@ -1,11 +1,9 @@
 /**
- * SurveyConfigLoader: 配信用のアンケート設定の取得。
+ * 画面とサーバー向けに配信用アンケート設定を取得する（middleware から参照されるため `@atproto/*` を使わない）。
  *
- * 責務と処理概要:
- * - ビルドの旗 `PUBLIC_SURVEY_CONFIG_PRESENT` が "true" のときだけ、`/surveys/index.json` を取得する。偽なら通信も読み出しもしない（要件 4.1）。
- * - 404・通信エラー・解析の失敗・検証の失敗を区別せず `undefined`（なし）にし、例外を投げず、表示もしない（要件 4.2）。
- * - 画面側（fetchSurveyConfig）は再検証つきで取得する。サーバー側（readSurveyConfig）は ASSETS から読み、検証済みの設定の内容だけを短時間メモリに保持する。
- * - `@atproto/*` に依存しない（middleware から辿れるため）。
+ * - `PUBLIC_SURVEY_CONFIG_PRESENT` が `"true"` の場合だけ取得し、偽なら通信・読み出しをしない。
+ * - 取得・解析・検証の失敗は区別せず `undefined` とし、例外を出さない。
+ * - 画面は再検証し、サーバーは検証済み設定だけを 60 秒メモリ保持する。
  */
 
 import { parseSurveyConfig, type SurveyConfig } from "@/lib/survey/definition"

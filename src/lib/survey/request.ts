@@ -1,13 +1,9 @@
 /**
- * SurveyRequestGate: アンケートの 3 つの操作の共通の入口。
+ * アンケート API の共通前処理を行う。
  *
- * 責務と処理概要:
- * - 判定の順序は 認証(401) → surveyId の形式(400) → 設定の取得と現在のアンケートとの一致(404) → 鍵(503)。
- *   どの失敗でも D1 に触れない（この部品は D1 を呼ばない）。
- * - 設定なし・取得失敗・期間外・未定義は区別せず同じ 404 にする。
- * - 回答者の識別子は `locals.session.did` からだけ得る（パス・クエリ・本文からは得ない）。
- * - 応答はすべて `cache-control: no-store`。鍵や did を応答・ログに出さない。
- * - `@atproto/*` に依存しない（バインディングは env.ts が動的 import で得る）。
+ * - 判定順は認証 (401)、ID 形式 (400)、設定・開催中の一致 (404)、鍵 (503)。失敗時は D1 に触れない。
+ * - 設定なし・取得失敗・期間外は同じ 404。did は `locals.session.did` からだけ取得し、鍵と did は応答・ログに出さない。
+ * - 応答は `cache-control: no-store`。
  */
 import { errorResponseFromStatus } from "@/util/http"
 import { PathParamsSchema } from "@/lib/api/contract/surveyPath"

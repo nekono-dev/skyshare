@@ -1,12 +1,9 @@
 /**
- * 入口（SurveyGate）の画面の効果と、送信・辞退・入口の振る舞い（React に依存しない）。
+ * アンケート表示ゲートの画面効果と送信・辞退の振る舞いを扱う。
  *
- * 責務と処理概要:
- * - 画面の効果（状態の更新・端末の記録・辞退の印・判定の世代）は `GateRuntime` 経由で呼ぶ。
- *   React の配線は、この `GateRuntime` を組み立てて各関数に渡すだけにする。
- * - ダイアログの状態は `state.ts` の `gateReducer` だけが変える（ここでは `dispatch` で送る）。
- * - 除外ページの判定は `enterPage` が行い、結果を `planGateEntry` の `excluded` に渡す。
- * - 辞退の経路は `handleDecline` → `applyDecline` だけで、回答の送信も回答済みの記録も行わない。
+ * - React に依存せず、効果は `GateRuntime` 経由で受け取る。
+ * - ダイアログ状態は `state.ts` の `gateReducer` だけが変更する。
+ * - 辞退は `handleDecline` から `applyDecline` へ進み、送信も回答済み記録もしない。
  */
 import type { SubmitResult } from "@/lib/survey/client"
 import { isSurveyPageExcluded } from "@/lib/survey/launchCheck"
