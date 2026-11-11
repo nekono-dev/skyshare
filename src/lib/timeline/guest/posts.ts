@@ -1,3 +1,4 @@
+/** ゲスト表示用の投稿一覧とスレッドを組み立てる。 */
 import type { ThreadGroup, TimelinePost } from "@/lib/timeline/posts"
 import type { Translator } from "@/lib/i18n/translate"
 import { buildGuestBasicPosts } from "./postsBasic"
@@ -52,7 +53,7 @@ export const buildGuestThreads = (
     const find = (uri: string) => findGuestPost(posts, uri)
     /**
      * `GET /v2/entries`のスレッド構造化済みレスポンス（`threads`）を模したゲスト表示用データ。
-     * バックエンドが`buildTimelineThreads`で確定させる形（`specs/timeline-api`）を、
+     * バックエンドが`buildTimelineThreads`で確定させる形を、
      * `posts`の実体を再利用してあらかじめ手書きでネストしたもの。
      */
     const threads: ThreadGroup[] = [

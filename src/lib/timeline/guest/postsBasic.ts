@@ -1,9 +1,6 @@
 /**
  * ゲスト表示用のダミーデータのうち、単独の投稿（スレッドに属さない投稿）。
  *
- * 処理の趣旨:
- * - `guest1`〜`guest-rich-text` の投稿を、指定言語の文言で返すだけのデータ。
- * - 判断の関数（uri での検索・スレッドの組み立て）は含まない。`posts.ts` に置く。
  */
 import { entryAtUri } from "@/lib/atproto/nsid"
 import type { Translator } from "@/lib/i18n/translate"
@@ -138,7 +135,7 @@ export const buildGuestBasicPosts = (t: Translator["t"]): TimelinePost[] => {
             },
         },
         // 画像6枚の投稿（entry未作成）。カードには全6枚が横スクロールのサムネイルで表示され、
-        // 事後entry作成時に取得する画像は先頭4枚のみになる（specs/entry-visual）。
+        // 事後Entry作成で取得する画像は先頭4枚に限られる。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-multi-image",
             cid: "bafyreiguestmultiimage",
@@ -163,9 +160,9 @@ export const buildGuestBasicPosts = (t: Translator["t"]): TimelinePost[] => {
                 cid: `bafkreiguestmulti${index + 1}`,
             })),
         },
-        // 以下、Timelineのスレッドグルーピング表示（specs/timeline-api）のゲスト確認用。
+        // 以下はTimelineのスレッドグルーピング表示の確認用。
         // 本文にハッシュタグ・メンション・URLを持ち、entry作成済みの投稿
-        // （本文のリンク表示 `specs/post-rich-text` と、共有文のURLの除去 `specs/link-card-priority` の確認用）。
+        // （本文のリンク表示と、共有文からのURL除去の確認用）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-rich-text",
             cid: "bafyreiguestrichtext",

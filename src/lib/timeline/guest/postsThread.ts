@@ -1,9 +1,5 @@
 /**
- * ゲスト表示用のダミーデータのうち、スレッドの投稿と不明な投稿。
- *
- * 処理の趣旨:
- * - スレッドA〜E の root・mid・tail と `guest-unknown` の投稿を、指定言語の文言で返すだけのデータ。
- * - 判断の関数（uri での検索・スレッドの組み立て）は含まない。`posts.ts` に置く。
+ * ゲスト表示で使うスレッド投稿と、削除範囲が不明な投稿を組み立てる。
  */
 import { entryAtUri } from "@/lib/atproto/nsid"
 import type { Translator } from "@/lib/i18n/translate"
@@ -28,7 +24,7 @@ export const buildGuestThreadPosts = (t: Translator["t"]): TimelinePost[] => {
         // スレッドA: entry未作成、ルート投稿(guest-thread-a-root)は画像を持たないが
         // 中間segment(guest-thread-a-mid)が画像を持つケース。事後entry作成ボタンは
         // ルート投稿のカードに表示され、Visualはguest-thread-a-midの画像から生成される
-        // （FR-3、ボタンは常にルートのカードに表示・Visualはルートに最も近い画像投稿から）。
+        // （ボタンは常にルートのカードに表示し、Visualはルートに最も近い画像投稿から選ぶ）。
         // 配列は indexedAt 降順（新しい順）を維持する。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-a-tail",
@@ -76,7 +72,7 @@ export const buildGuestThreadPosts = (t: Translator["t"]): TimelinePost[] => {
             images: [],
         },
         // スレッドB: ルート投稿に既にentryが紐づき、後続投稿があるケース
-        // （一覧上のスレッド由来バッジ表示確認、FR-4）。
+        // （一覧上のスレッド由来バッジ表示確認）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-b-tail",
             cid: "bafyreiguestthreadbtail",
@@ -122,7 +118,7 @@ export const buildGuestThreadPosts = (t: Translator["t"]): TimelinePost[] => {
             },
         },
         // スレッドC: ルート投稿(guest-thread-c-root)自身が画像を持ち、entry未作成のケース
-        // （Visualがルート自身の画像から生成される正常系、FR-3）。
+        // （Visualがルート自身の画像から生成される正常系）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-c-tail",
             cid: "bafyreiguestthreadctail",
@@ -168,9 +164,9 @@ export const buildGuestThreadPosts = (t: Translator["t"]): TimelinePost[] => {
                 },
             ],
         },
-        // スレッドD: 旧実装で作成されたentry（スレッドの返信側にだけentryが付く）を再現する。
+        // スレッドD: 返信側にだけEntryが紐づく状態を再現する。
         // ルートは画像を持たないため、事後entry作成ボタンの表示条件には影響しない。
-        // 削除確認ダイアログでは「リンク・Bluesky投稿を削除」が無効化される（FR-5）。
+        // 削除確認ダイアログでは「リンク・Bluesky投稿を削除」が無効化される。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-d-mid",
             cid: "bafyreiguestthreaddmid",
@@ -211,7 +207,7 @@ export const buildGuestThreadPosts = (t: Translator["t"]): TimelinePost[] => {
         },
         // 削除範囲を判定できない場合（Bluesky投稿の状態を確認できない）を再現する単独投稿。
         // スレッドE: どの投稿も画像・動画・entryを持たないケース
-        // （スレッド全体のグレーアウト、`specs/timeline`）。
+        // （スレッド全体のグレーアウト）。
         {
             uri: "at://did:plc:guestdemo/app.bsky.feed.post/guest-thread-e-tail",
             cid: "bafyreiguestthreadetail",

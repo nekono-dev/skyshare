@@ -1,3 +1,4 @@
+/** ゲスト表示用の Entry と削除確認データを組み立てる。 */
 import type { EntryDeleteScope } from "@/lib/timeline/resolveEntryDeleteScope"
 import type { TimelinePost, TimelineSkyshareEntry } from "@/lib/timeline/posts"
 import type { Translator } from "@/lib/i18n/translate"
@@ -28,7 +29,7 @@ export const buildGuestDeleteScopes = (
 
     /**
      * ゲスト表示のEntry削除確認ダイアログが参照する、ダミーentryの`sourceUri`ごとの
-     * 削除範囲判定結果（`specs/entry-delete-dialog`）。実際の`getPostThread`は呼ばない。
+     * 削除範囲判定結果。実際の`getPostThread`は呼ばない。
      */
     const deleteScopes: Record<string, EntryDeleteScope> = {
         "at://did:plc:guestdemo/app.bsky.feed.post/guest2": {
@@ -92,7 +93,7 @@ export const buildGuestEntries = (
             webUrl: GUEST_SAMPLE_ENTRY_PATH,
             orphaned: true,
         },
-        // スレッドDの旧entry。返信のカードにはツールバーが無いため、一覧から削除を試せるようにする。
+        // 返信のカードにはツールバーが無いため、返信に紐づくEntryは一覧から削除を試せるようにする。
         {
             uri: entryAtUri("did:plc:guestdemo", "guestentrythreadd"),
             cid: "bafyreiguestentrythreadd",

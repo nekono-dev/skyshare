@@ -1,10 +1,5 @@
 /**
- * Bluesky の自分の投稿一覧をフロント表示用に整形するヘルパー。
- *
- * 責務と処理概要:
- * - `app.bsky.feed.getAuthorFeed` のレスポンスを投稿カード用の最小形へ変換する。
- * - `dev.nekono.skyshare.entry` を `source.uri` で突き合わせ、該当する投稿へ付与する。
- * - 画像 URL は CDN URL に展開し、一覧 UI でそのまま表示できる形にする。
+ * Bluesky の自分の投稿と Skyshare Entry を、タイムライン表示用の型へ正規化する。
  */
 
 import { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api"
@@ -69,7 +64,7 @@ export const hasEntryMedia = (post: TimelinePost): boolean =>
 
 /**
  * Timeline一覧上の1スレッドグループ。`buildTimelineThreads`（`@/lib/timeline/timelineThreads`）が
- * バックエンドで権威的に解決・確定させる（`specs/timeline-api`）。
+ * バックエンドで権威的に解決・確定させる。
  */
 export type ThreadGroup = {
     rootPost: TimelinePost
@@ -269,9 +264,8 @@ export const normalizeTimelinePost = (
 /**
  * `app.bsky.feed.getPostThread`が返す`PostView`を`TimelinePost`へ変換する。
  * `buildTimelineThreads`（`@/lib/timeline/timelineThreads`）が、スレッドのroot・返信
- * 双方を権威的に解決する際に使う（`specs/timeline-api`）。
+ * 双方を権威的に解決する際に使う。
  *
- * 処理の趣旨:
  * - `getPostThread`が返す`PostView`には`FeedViewPost.reply`（enriched view）が無いため、
  *   `{ post }`のみを渡して`normalizeTimelinePost`を呼ぶ。reply chain情報自体は
  *   `TimelinePost`が持たない（`ThreadGroup`という形で表現するため）。
