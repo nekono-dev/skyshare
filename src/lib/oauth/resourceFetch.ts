@@ -1,16 +1,7 @@
 /**
- * PDS への、DPoP に結び付けたアクセストークンでの要求。
- *
- * 責務と処理概要:
- * - 要求ごとに `Authorization: DPoP <アクセストークン>` と、アクセストークンの SHA-256（ath）を入れた
- *   DPoP の証明を付けて送る。
- * - PDS が nonce を求めたら（401 の `WWW-Authenticate` に `use_dpop_nonce`）、受け取った nonce で1回だけやり直す。
- * - 受け取った nonce は DPoP の状態に残り、利用側が次のリクエストへ持ち越せる。
- *
- * 実装上の制約:
- * - 全リクエストのミドルウェアと Cron の実行から使うため、atproto のライブラリを読み込まず
- *   WebCrypto と fetch だけを使う。
- * - アクセストークンと証明をログに出さない。
+ * DPoP に結び付いたアクセストークンで PDS に要求する。
+ * - nonce を求める応答には受信 nonce で一度だけ再試行し、nonce は DPoP 状態に保持する。
+ * - ミドルウェアと Cron から使うため WebCrypto と fetch のみを使い、トークンや証明をログに出さない。
  */
 import {
     type DpopSession,

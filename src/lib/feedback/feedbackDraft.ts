@@ -1,11 +1,6 @@
 /**
- * 不具合の報告と機能の提案のフォームの入力の状態と、送信の本文の組み立て。
- *
- * 責務と処理概要:
- * - 両方の種別の入力を1つの状態に持ち、種別を切り替えても他の種別の入力を残す。
- * - 種別に合う必須の項目がそろい、すべての欄が上限以内かを判定する（送信のボタンの可否）。
- * - 種別に合う項目だけを載せた、受付の API の本文を組み立てる。
- * - 文字数の数え方と上限は受付と共有する（`@/lib/api/contract/feedbackLimits`）。
+ * 不具合報告・機能提案の入力状態を扱い、受付 API の送信内容を組み立てる。
+ * - 文字数の数え方と上限は `@/lib/api/contract/feedbackLimits` と共有する。
  */
 import type { CreateFeedbackBody } from "@/client/openapi/model"
 import type { ClientEnvironment } from "@/types/clientEnvironment"

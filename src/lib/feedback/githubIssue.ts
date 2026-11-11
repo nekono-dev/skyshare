@@ -1,12 +1,6 @@
 /**
- * GitHub の REST API で Issue を作成する。
- *
- * 責務と処理概要:
- * - 組み立て済みの件名・本文・ラベルを `POST /repos/{owner}/{repo}/issues` に送り、作成した Issue の番号と URL を返す。
- * - 認証は Issues の読み書きだけを許す Fine-grained PAT（Worker のシークレット `FEEDBACK_GITHUB_TOKEN`）で行う。
- *
- * 実装上の制約:
- * - Cloudflare Workers の `fetch` を使う。GitHub の API は User-Agent の見出しを必須とする。
+ * GitHub REST API で Issue を作成する。
+ * - 認証には Issues の読み書きだけを許す Fine-grained PAT を使い、Workers の fetch と必須 User-Agent を使う。
  */
 import type { IssueContent } from "./issueContent"
 

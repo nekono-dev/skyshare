@@ -1,12 +1,7 @@
 /**
- * 不具合の報告と機能の提案から、GitHub の Issue の件名・本文・ラベルを組み立てる。
- *
- * 責務と処理概要:
- * - 種別でラベル（bug / enhancement）と本文の節を切り替える。
- * - 本文に、入力の本文・報告者（ハンドルと DID）・ビルドの版とコミット・環境の情報を載せる。
- * - Issue は公開のリポジトリに作られるため、利用者の入力はメンション・リンク・画像・HTML として
- *   解釈されない形（閉じられない囲いのコードブロック・インラインコード）で載せる。
- * - 本文の見出しと項目名は、開発者が読むため日本語に固定する（表示言語に依存しない）。
+ * 不具合報告・機能提案から GitHub Issue の件名・本文・ラベルを組み立てる。
+ * - 公開リポジトリの本文では利用者入力をコード表記にして、メンション・リンク・HTML として解釈させない。
+ * - 見出しと項目名は表示言語に依存しない日本語にする。
  */
 import type { FeedbackSubmission } from "@/lib/api/contract/feedbackSubmission"
 import type { Reproducibility } from "@/lib/api/contract/feedbackLimits"
