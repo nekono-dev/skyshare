@@ -62,7 +62,7 @@
   - _Requirements: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.3, 5.4, 6.1, 6.3, 6.4, 6.5, 7.1, 7.2_
 
 - [ ] 4. G4 timeline（`src/components/timeline/**`）のコメントを書き直し、検査を通す
-- [ ] 4.1 PostBody・PostRichText のコメントを書き直す
+- [x] 4.1 PostBody・PostRichText のコメントを書き直す
   - 対象: `timeline/PostBody/` の配下（`PostEngagementStats`・`PostLinkCard`・`PostQuote`・`VideoPlayButton`・`VideoPlayer`・`VideoThumbnail`・`VideoUnavailable` と `index.tsx`）と `PostRichText/index.tsx`（許容リストの 9 件）
   - 完了の条件: これらのファイルに違反が無く、コードの行が変わっていない
   - _Boundary: G4 timeline_

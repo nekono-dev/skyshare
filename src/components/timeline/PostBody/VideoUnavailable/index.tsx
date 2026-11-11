@@ -1,14 +1,9 @@
+/** Skyshare で再生できない動画を示し、元投稿へのリンクを提供する。 */
 import { useT } from "@/components/i18n/useTranslation"
 import type { SourceVideo } from "@/lib/entry/entry"
 import { videoAspectOf } from "@/components/timeline/PostBody/VideoThumbnail"
 import styles from "./index.module.css"
 
-/**
- * 利用不可の動画（Skyshare では再生・entry 化できない動画）の表示専用部品。
- *
- * - poster を暗くし、「Skyshareでは再生できません」の文言と元の Bluesky 投稿へのリンクを重ねる。
- * - 再生ボタンや `<button>` など、再生に関わる操作要素は持たない。
- */
 const VideoUnavailable = ({
   video,
   postUrl,

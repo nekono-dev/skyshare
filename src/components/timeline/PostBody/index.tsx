@@ -1,3 +1,7 @@
+/**
+ * Timeline と投稿詳細で共有する投稿本文・メディア・埋め込みの表示部。
+ * カードの枠と背景は呼び出し側が担う。
+ */
 import { useFormat } from "@/components/i18n/useTranslation"
 import Avatar from "@/components/common/media/Avatar"
 import ImageGallery from "@/components/image/ImageGallery"
@@ -15,19 +19,6 @@ import type {
   PostQuote as PostQuoteData,
 } from "@/lib/entry/postEmbedView"
 import styles from "./index.module.css"
-
-/**
- * 投稿カードの表示部（作者・日時・本文・画像・リアクション数）。
- *
- * 責務と処理概要:
- * - Timeline（`PostCard`）と Entry詳細ページの両方で使う、操作ロジックを持たない表示専用部品。
- * - カードの枠・背景は呼び出し側が持つ。
- * - 本文はメンション・ハッシュタグ・URLをリンクにして表示する（`PostRichText`、specs/post-rich-text）。
- * - 動画（`video`）・利用不可の動画（`unsupportedVideo`）・画像のいずれかを本文の下に表示する。
- * - `linkCard`・`quote` が渡された場合は、画像・動画の下にリンクカード・引用の枠の順に表示する。
- *   画像は `ImageGallery` で表示し、`engagement` が渡された場合のみ画像の下にリアクション数を表示する。
- * - 設計: specs/entry-detail、specs/post-rich-text
- */
 
 type Props = {
   author: { handle: string; displayName?: string; avatar?: string }

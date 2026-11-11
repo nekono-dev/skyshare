@@ -1,12 +1,9 @@
+/**
+ * 動画サムネイル上に再生記号を重ねる装飾部品。
+ * 寸法と色は `VIDEO_OVERLAY_SPEC` と共有し、親領域の中央に配置する。
+ */
 import { VIDEO_OVERLAY_SPEC } from "@/lib/video/videoOverlay"
 
-/**
- * 動画であることを示す再生ボタン（X の動画の再生ボタンを模した半透明の円＋白い再生記号）。
- *
- * 責務と処理概要:
- * - 色・寸法は `VIDEO_OVERLAY_SPEC`（visual の描画と同一の値）を S=1（CSS px）で使う。
- * - 装飾のため `aria-hidden`。親（`position: relative` の動画表示領域）の中心に置く。
- */
 const VideoPlayButton = () => {
   const spec = VIDEO_OVERLAY_SPEC
   return (

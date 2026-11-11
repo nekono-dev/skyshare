@@ -1,9 +1,6 @@
 /**
- * 投稿の外部リンクの埋め込み（`app.bsky.embed.external`）を表示するカード（`specs/entry-detail`）。
- *
- * 責務と処理概要:
- * - サムネイル・題名・説明・ドメインを並べ、カード全体をリンク先を新しいタブで開くリンクにする。
- * - 状態を持たない表示専用の部品で、サーバー描画だけでも表示とリンクが機能する。
+ * `app.bsky.embed.external` のリンクカードを表示する。
+ * 状態を持たず、サーバー描画でもリンクを利用できる。
  */
 import type { PostLinkCard } from "@/lib/entry/postEmbedView"
 import styles from "./index.module.css"

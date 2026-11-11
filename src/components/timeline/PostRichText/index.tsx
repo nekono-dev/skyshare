@@ -1,10 +1,6 @@
 /**
- * 投稿本文を、メンション・ハッシュタグ・URLをリンクにして描画する部品（`specs/post-rich-text`）。
- *
- * 責務と処理概要:
- * - 本文を facets の範囲で区間に切り出し（`segmentRichText`）、リンクの区間を新しいタブで開く `<a>` にする。
- * - リンク以外の区間は文字のまま描画する。外側の要素（`<p>` 等）と改行の扱いは呼び出し側が持つ。
- * - 状態を持たないため、サーバー描画だけでもリンクが表示される（JavaScript の実行を要しない）。
+ * 投稿本文をリンク付きで表示する。
+ * 外側の要素と改行の扱いは呼び出し側が担い、サーバー描画でもリンクを利用できる。
  */
 import { Fragment } from "react"
 import { segmentRichText, type PostFacet } from "@/lib/atproto/richTextSegments"
