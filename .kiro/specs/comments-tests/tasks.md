@@ -109,7 +109,7 @@
   - _Boundary: tests/unit（components・support・util・fixtures）_
   - _Requirements: 2.1, 2.3, 3.2, 4.1, 4.2, 4.3, 4.4, 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.6, 6.7_
 
-- [ ] 5.2 この単位を確認し、許容リストの項目を消す
+- [x] 5.2 この単位を確認し、許容リストの項目を消す
   - `--emit-allowlist` の出力で、対象のパスの違反が 0 件である
   - 許容リストから、所有者 `comments-tests` で対象のパスの項目を消す
   - `vitest run tests/unit/components tests/unit/support tests/unit/util tests/unit/fixtures` の失敗件数が 0 件で、件数が 1.1 の記録と一致する
