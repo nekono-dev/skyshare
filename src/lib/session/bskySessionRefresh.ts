@@ -1,28 +1,9 @@
 /**
- * bsky セッションの自動再開・トークンローテーション書き戻しミドルウェア。
+ * API リクエストのセッションを再開し、必要なトークン更新を応答 Cookie に反映する。
  *
- * 責務と処理概要:
- * - `/v2/` 配下（`/v2/bsky/session` とその配下を除く）へのリクエストを対象に、
- *   `atp_session` cookie からセッションを再開する。アプリパスワードのセッションは `AtpAgent.resumeSession` で、
- *   OAuth のセッションは `resumeOAuthSession`（期限の近いときだけ更新し、DPoP つきで PDS へ送るエージェント）で再開する。
- * - `resumeSession` は呼ぶたびに必ず `refreshSession`（atproto側のトークンローテーション）を
- *   実行する実装（`@atproto/api`）になっているため、ここで得られる `agent.session` は
- *   常に新しいトークン対になっている。これをレスポンスの `Set-Cookie` として書き戻すことで、
- *   各APIハンドラが個別にローテーションを握りつぶして cookie を失効させてしまう不具合を防ぐ。
- * - OAuth のセッションは毎回は更新しない。更新したときだけセッションの cookie を、PDS の nonce が
- *   変わったときだけ nonce の cookie を書き戻す（古い更新用トークンを並行する応答で書き戻すと、
- *   認可サーバーが再利用とみなしてセッション全体を失効させるため）。
- * - 認証済みハンドラは `context.locals.agent`/`context.locals.session`/`context.locals.service`
- *   を参照するだけでよく、セッションの種類も cookie の復号も意識しない。
- * - `/v2/bsky/session`（GET/POST/PUT）と `/v2/bsky/session/{did}`（DELETE）は、
- *   アカウント追加・切り替え・ログアウトという通常と異なるセッション操作を行うため対象外とする
- *   （各エンドポイントが目的に応じて個別にセッションを取り扱う）。
- *
- * 実装上の制約:
- * - このミドルウェアは全リクエストで読み込まれる。`@atproto/api`（約1.3MB）を静的に importすると、
- *   対象外のリクエスト（entry詳細のキャッシュHITや静的アセットの404など）でも Worker の起動
- *   （cold start）のたびに評価コスト（約70ms）がかかり、無料枠の CPU 上限を圧迫する。
- *   このため `agentFactory` と `oauthSession` は対象パスで認証処理を始める時点で動的に importする。
+ * - OAuth の更新用トークンを並行応答で古い値に戻すと、認可サーバーが再利用とみなしてセッション全体を失効させる。
+ * - 全リクエストで評価されるため、約 1.3 MB の `@atproto/api` は対象パスで動的に読み込み、Free の CPU 上限を守る。
+ * - セッション操作の `/v2/bsky/session` 系パスは対象外。
  */
 import type { MiddlewareHandler } from "astro"
 import {
@@ -53,6 +34,9 @@ export const isManagedByThisMiddleware = (pathname: string): boolean => {
 /**
  * 対象パスのリクエストに対し、bskyセッションを再開し `context.locals` へ供給した上で
  * ハンドラを実行し、レスポンスにローテーション後のセッションを書き戻す。
+ *
+ * - アプリパスワードのセッションは、`resumeSession` が呼ぶたびに必ず `refreshSession`（atproto 側のトークンローテーション）を実行するため、得られる `agent.session` は常に新しいトークン対になる。これを `Set-Cookie` として書き戻し、各 API ハンドラが個別にローテーションを握りつぶして cookie を失効させる不具合を防ぐ。
+ * - 全リクエストで読み込まれるため、`@atproto/api`（約 1.3MB）を静的に import すると、対象外のリクエスト（entry 詳細のキャッシュ HIT や静的アセットの 404 など）でも cold start のたびに約 70ms の評価コストがかかる。
  *
  * Input:
  * - `context`: Astro のリクエストコンテキスト（`request`/`locals` 等）

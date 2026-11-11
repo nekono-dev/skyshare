@@ -1,17 +1,7 @@
 /**
- * アクティブアカウント（アイコン・did）取得の共有キャッシュ。
+ * アクティブアカウント情報を取得し、未認証状態と進行中の要求をタブ内で共有する。
  *
- * 責務と処理概要:
- * - AccountSwitcher(syncAccountAvatar.ts)・Timeline・PostPageが個別に
- *   getSessionを叩いて同じ情報を二重取得していた問題を解消するため、
- *   進行中のリクエストを1本にまとめて共有する。
- * - 呼び出しタイミングが重なった場合は同一のPromiseを返すことで、
- *   取得タイミングを揃えつつネットワークリクエストの重複を防ぐ。
- * - 未ログイン状態（401）はタブ内で頻繁には変化しないため、一度確認できたら
- *   sessionStorageへ記録し、ページ遷移（astro:page-load）のたびに毎回401を
- *   叩き直さないようにする（`?guest`表示時に401が大量発生する問題への対策）。
- *   ログイン成功時（LoginForm/AccountSwitcher）は`clearKnownUnauthenticated`で
- *   このマークを消し、次回から実リクエストを行わせる。
+ * - sessionStorage の未認証記録でゲスト表示中の重複した 401 要求を避け、ログイン成功時に記録を消す。
  */
 import { getSession, type getSessionResponse } from "@/client/openapi/client"
 
@@ -64,6 +54,7 @@ export const clearKnownUnauthenticated = (): void => {
 
 /**
  * `GET /v2/bsky/session` を叩く。同時に複数回呼ばれても実際のリクエストは1回のみ。
+ * AccountSwitcher・Timeline・PostPage が個別に取得して同じ情報を二重に取得するのを避けるため、重なった呼び出しは同一の Promise を返し、取得タイミングを揃える。
  * ステータスコードを含む生のレスポンスが必要な呼び出し元（401判定など）向け。
  * 直近で未ログインと判明済みの場合は、実リクエストを送らず合成の401レスポンスを返す。
  */
