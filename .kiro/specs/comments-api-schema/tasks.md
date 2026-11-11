@@ -83,10 +83,27 @@
   - _Boundary: 検証_
   - _Requirements: 4.1, 4.3, 4.4_
 
-- [ ] 5. 最終統合（comments-* 全体の完了後）
-- [ ] 5.1 e2e を一度だけ実行し、comments-* の単位の外の整形差分を戻す
+- [x] 5. 最終統合（comments-* 全体の完了後）
+- [x] 5.1 e2e を一度だけ実行し、comments-* の単位の外の整形差分を戻す
   - 前提: 冒頭の実行の順序のとおり、comments-* の全 spec の実装が終わっていること（途中では実行しない）。
   - `npm run test:e2e` を一度だけ実行する。実行後、`git status` で整形（prettier など）の差分を探し、comments-* の単位の外の整形差分だけを戻す。他の変更には触れない。
   - 完了した状態: e2e が終了コード 0 で終わり、comments-* の単位の外の整形差分が残っていない。
   - _Boundary: 検証_
   - _Requirements: 4.5_
+
+## Implementation Notes
+
+### 完了の報告（2026-11-11）
+
+- 基準の保存（1.1）: 変更前に `npm run codegen` を実行し、生成物の写しと OpenAPI の JSON（`buildOpenApiDocument()` の出力）を作業用の領域に保存した。再生成は写しと同一だった。他の comments-* より前に行った。
+- 比較（3.1・3.2）: 再生成した生成物は、変更前の写しと比べて、ファイルの増減が無く、コメント以外の差分が無い。OpenAPI の JSON で変わったキーは `summary` と `description` だけ。`src/lib/api/schema` の git 差分に、zod の制約（`.max`・`.min` など）の変更行は無い。変更は 33 ファイル。
+- 説明文の変更: 数値の上限の文章を 2 件取り除いた（`common.ts` の `listUris` の `description`、`v2/feedback/post.ts` の `createFeedback` の `summary` の「one per minute per account」。後者は生成物から消える）。`v2/entry/delete.ts` の `summary` は、実装（source から続く自分の返信投稿も削除する）に合わせて直した。`v2/entry/post.ts` の `summary` は、entry を任意で関連付ける説明に直した。複数行の値は 1 行にした。英語の動詞句の文体は変えていない。
+- 判断に迷って残したもの: `v2/feedback/post.ts` の `requiredText` の `description`（`Non-blank, up to ${max} graphemes`）は、数値の上限を含む。この上限は zod の `.max` ではなく `refine`（書記素の数え方が文字数と違うため）で検査しており、`maxLength` として生成物に出ないため、この説明を取り除くと上限が生成物のどこにも残らない。値は `FEEDBACK_LIMITS` から作る。独立レビューが指摘したが、情報を失うため残した（要件 1.4 の対象外と判断。ユーザーの判断を受ける）。
+- 検証: 許容リストの所有 `comments-api-schema` の 5 件を消した。`npm run test:type`・`test:imports`・`test:unit`（704 件通過・1 件スキップ）・`test:component`（13）・`test:route`（212）・`test:render`（2）が終了コード 0。
+- 5.1: comments-* の全 spec の実装が終わった後に `npm run test:e2e` を一度だけ実行し、終了コード 0。実行後の `git status` に整形の差分は無かった。
+- 許容リストの最終状態: 項目は 1 件だけ（`scripts/agent/kiro-gate.mjs` の `forbidden:kiro`。許容する例外として理由付き。comments-scripts-config）。
+- 委譲: 説明文の監査と書き換え（2.1〜2.6）と独立レビューは Codex に委譲した。基準の保存・比較・許容リストの項目の削除・コミットは直接行った。
+
+### feature 検証（kiro-validate-impl, 2026-11-11）
+
+- 判定は `GO`。タスクは全て `[x]`、`_Blocked:_` は無い。全テストと e2e が終了コード 0。変更は `src/lib/api/schema` のコメントと説明文だけで、API の形と制約は変わらない（OpenAPI の JSON の比較）。
