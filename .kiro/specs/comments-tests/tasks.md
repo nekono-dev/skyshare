@@ -70,7 +70,7 @@
   - _Requirements: 1.1, 2.1, 2.3, 2.4, 3.1, 3.3, 6.6, 7.1, 7.2, 7.3, 8.1, 8.2_
 
 - [ ] 4. tests/unit/scripts の残りの書き換え
-- [ ] 4.1 コメントを書き換える
+- [x] 4.1 コメントを書き換える
   - 対象は `tests/unit/scripts/` の `importRules.test.ts`・`commentRules.test.ts` 以外の全ファイル（`kiroGate.test.ts` などを含む）
   - 先頭ヘッダが無いもの・6 行を超えるもの・箇条書きが 3 件を超えるものを、規則の範囲に収める
   - 要件番号・AC・spec 名（`comment-policy` など）・経緯・`cc-sdd`・`kiro` の語をコメントから取り除く。`kiroGate.test.ts` の `kiro` は、検証する対象のコマンド名であり、コメントでは言い換える

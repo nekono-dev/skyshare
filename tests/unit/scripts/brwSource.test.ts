@@ -1,6 +1,6 @@
 /**
- * BRW の取得元の検査（brw-source.mjs）の単体テスト。
- * HTTPS の GitHub の URL と、ブランチ名の規則を確かめる。欠落は原因が分かる文言で止まる。
+ * Checks BRW source URLs, branch names, and source file errors.
+ * Invalid input reports the file and field that caused the failure.
  */
 import fs from "node:fs"
 import os from "node:os"
@@ -16,8 +16,8 @@ afterAll(() => {
     for (const root of roots) fs.rmSync(root, { recursive: true, force: true })
 })
 
-describe("取得元の検査（sourceProblem）", () => {
-    it("正しい取得元は、問題なし", () => {
+describe("BRW source validation", () => {
+    it("accepts a valid source", () => {
         expect(
             sourceProblem({
                 repository:
@@ -27,7 +27,7 @@ describe("取得元の検査（sourceProblem）", () => {
         ).toBeNull()
     })
 
-    it("HTTPS の GitHub 以外の URL は、問題あり", () => {
+    it("rejects URLs that are not HTTPS GitHub URLs", () => {
         expect(
             sourceProblem({
                 repository: "git@github.com:nekono-dev/x.git",
@@ -48,7 +48,7 @@ describe("取得元の検査（sourceProblem）", () => {
         ).toMatch(/HTTPS/)
     })
 
-    it("不正なブランチ名は、問題あり", () => {
+    it("rejects invalid branch names", () => {
         const repository = "https://github.com/nekono-dev/x.git"
         expect(sourceProblem({ repository, branch: "" })).toMatch(/ブランチ名/)
         expect(sourceProblem({ repository, branch: "-bad" })).toMatch(
@@ -60,8 +60,8 @@ describe("取得元の検査（sourceProblem）", () => {
     })
 })
 
-describe("取得元のファイルの読み取り（readBrwSource）", () => {
-    it("ファイルが無ければ、ファイルが無いと分かる文言で例外", () => {
+describe("Reading the BRW source file", () => {
+    it("reports a clear error when the file is missing", () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brw-source-"))
         roots.push(dir)
         expect(() => readBrwSource(path.join(dir, "missing.json"))).toThrow(
@@ -69,7 +69,7 @@ describe("取得元のファイルの読み取り（readBrwSource）", () => {
         )
     })
 
-    it("正しいファイルは、repository と branch を返す", () => {
+    it("returns the repository and branch from a valid file", () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brw-source-"))
         roots.push(dir)
         const file = path.join(dir, "source.json")
@@ -86,7 +86,7 @@ describe("取得元のファイルの読み取り（readBrwSource）", () => {
         })
     })
 
-    it("不正なファイルは、ファイル名を含む文言で例外", () => {
+    it("includes the filename in errors for invalid files", () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brw-source-"))
         roots.push(dir)
         const file = path.join(dir, "source.json")
@@ -97,7 +97,7 @@ describe("取得元のファイルの読み取り（readBrwSource）", () => {
         expect(() => readBrwSource(file)).toThrow(file)
     })
 
-    it("repository が不正なら、ファイル名と項目名を含む文言で例外", () => {
+    it("includes the filename and field name for an invalid repository", () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brw-source-"))
         roots.push(dir)
         const file = path.join(dir, "source.json")
@@ -110,7 +110,7 @@ describe("取得元のファイルの読み取り（readBrwSource）", () => {
         )
     })
 
-    it("branch が不正なら、ファイル名と項目名を含む文言で例外", () => {
+    it("includes the filename and field name for an invalid branch", () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brw-source-"))
         roots.push(dir)
         const file = path.join(dir, "source.json")
@@ -124,7 +124,7 @@ describe("取得元のファイルの読み取り（readBrwSource）", () => {
         expect(() => readBrwSource(file)).toThrow(new RegExp(`${file}.*branch`))
     })
 
-    it("壊れた JSON は、ファイル名と形式不正を含む文言で例外", () => {
+    it("reports the filename and malformed format for invalid JSON", () => {
         const dir = fs.mkdtempSync(path.join(os.tmpdir(), "brw-source-"))
         roots.push(dir)
         const file = path.join(dir, "source.json")

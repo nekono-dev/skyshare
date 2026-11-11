@@ -1,16 +1,6 @@
 /**
- * kiro ワークフローのゲート（scripts/agent/kiro-gate.mjs）の単体テストと、フックの入口の確認。
- *
- * 責務と処理概要:
- * - スラッシュコマンドの検出、未読の手順書に対する deny、Read の記録、終了の判定を、純粋な関数で確かめる。
- * - roadmap の新規 spec（最後の「Specs (dependency order)」節）と brief.md の判定を、一時ディレクトリで確かめる。
- * - 実際のフックの入口（標準入力の JSON → 標準出力の判定）を子プロセスで確かめる。
- *   手順書（.claude/skills/kiro-discovery/SKILL.md）は cc-sdd の導入物で .gitignore 対象のため、
- *   無い環境（CI など）では手順書を使う確認だけを飛ばす。
- *
- * 実装上の制約:
- * - 一時ファイルは `fs.mkdtempSync` で作り、テストの後に削除する。
- * - 子プロセスの状態は OS の一時ディレクトリに残るため、テストの後に削除する。
+ * Tests command gating, required document reads, completion checks, and the hook entry point.
+ * The optional installed skill may be absent in CI; temporary files and child-process state are removed after each run.
  */
 import fs from "node:fs"
 import os from "node:os"
@@ -46,7 +36,7 @@ const skill = path.join(repoRoot, ".claude/skills/kiro-discovery/SKILL.md")
 const cwd = repoRoot
 
 describe("parseKiroCommand", () => {
-    it("先頭のスラッシュコマンドの名前を返す", () => {
+    it("returns the name of a leading slash command", () => {
         expect(parseKiroCommand("/kiro-discovery 依頼の内容")).toBe(
             "kiro-discovery",
         )
@@ -55,21 +45,21 @@ describe("parseKiroCommand", () => {
         )
     })
 
-    it("先頭に無い、または kiro でない入力は null", () => {
+    it("returns null when the command is not leading or is not a kiro command", () => {
         expect(parseKiroCommand("依頼 /kiro-discovery")).toBeNull()
         expect(parseKiroCommand("/init")).toBeNull()
         expect(parseKiroCommand("")).toBeNull()
     })
 })
 
-describe("手順書が未読の間の deny（decidePreToolUse）", () => {
+describe("Pre-tool-use decisions while the required document is unread", () => {
     const state = startState({
         command: "kiro-discovery",
         skillPath: skill,
         now: 1,
     })
 
-    it("kiro コマンドでないセッションは何も止めない", () => {
+    it("does not block sessions without a kiro command", () => {
         expect(decidePreToolUse(null, "Bash", {}, cwd)).toBeNull()
         expect(
             decidePreToolUse(
@@ -81,7 +71,7 @@ describe("手順書が未読の間の deny（decidePreToolUse）", () => {
         ).toBeNull()
     })
 
-    it("未読の間は Bash・Edit・Glob を deny する", () => {
+    it("denies Bash, Edit, and Glob while the document is unread", () => {
         expect(
             decidePreToolUse(state, "Bash", { command: "ls" }, cwd),
         ).toContain("先に Read")
@@ -89,7 +79,7 @@ describe("手順書が未読の間の deny（decidePreToolUse）", () => {
         expect(decidePreToolUse(state, "Glob", {}, cwd)).toContain("先に Read")
     })
 
-    it("手順書以外の Read は deny する", () => {
+    it("denies reads of files other than the required document", () => {
         expect(
             decidePreToolUse(
                 state,
@@ -100,7 +90,7 @@ describe("手順書が未読の間の deny（decidePreToolUse）", () => {
         ).not.toBeNull()
     })
 
-    it("手順書の Read と ToolSearch は許可する", () => {
+    it("allows reading the required document and using ToolSearch", () => {
         expect(
             decidePreToolUse(state, "Read", { file_path: skill }, cwd),
         ).toBeNull()
@@ -109,14 +99,14 @@ describe("手順書が未読の間の deny（decidePreToolUse）", () => {
         ).toBeNull()
     })
 
-    it("相対パスの手順書の Read も、cwd を基準に解決して許可する", () => {
+    it("resolves a relative document path from cwd and allows the read", () => {
         const rel = path.relative(repoRoot, skill)
         expect(
             decidePreToolUse(state, "Read", { file_path: rel }, repoRoot),
         ).toBeNull()
     })
 
-    it("手順書を読んだ後は止めない", () => {
+    it("does not block tools after the document has been read", () => {
         const read = markRead(state, "Read", { file_path: skill }, cwd)
         expect(unreadRequired(read)).toEqual([])
         expect(
@@ -125,19 +115,19 @@ describe("手順書が未読の間の deny（decidePreToolUse）", () => {
     })
 })
 
-describe("Read の記録（markRead）", () => {
+describe("Read tracking", () => {
     const state = startState({
         command: "kiro-discovery",
         skillPath: skill,
         now: 1,
     })
 
-    it("手順書の Read を記録する", () => {
+    it("records a read of the required document", () => {
         const next = markRead(state, "Read", { file_path: skill }, cwd)
         expect(next.read).toEqual([path.resolve(skill)])
     })
 
-    it("手順書以外の Read、Read 以外のツールは状態を変えない", () => {
+    it("leaves state unchanged for other reads and non-Read tools", () => {
         expect(
             markRead(
                 state,
@@ -149,14 +139,14 @@ describe("Read の記録（markRead）", () => {
         expect(markRead(state, "Bash", { file_path: skill }, cwd)).toBe(state)
     })
 
-    it("同じ手順書を二度読んでも記録は一つ", () => {
+    it("records repeated reads of the same document only once", () => {
         const once = markRead(state, "Read", { file_path: skill }, cwd)
         expect(markRead(once, "Read", { file_path: skill }, cwd)).toBe(once)
     })
 })
 
-describe("roadmap の新規 spec（newestSpecNames）", () => {
-    it("最後の「Specs (dependency order)」節の名前だけを返す", () => {
+describe("Latest roadmap entries", () => {
+    it("returns only names from the last Specs (dependency order) section", () => {
         const text = [
             "# Roadmap",
             "## Specs (dependency order)",
@@ -171,20 +161,20 @@ describe("roadmap の新規 spec（newestSpecNames）", () => {
         expect(newestSpecNames(text)).toEqual(["new-a", "new-b"])
     })
 
-    it("節が無ければ空", () => {
+    it("returns an empty list when the section is absent", () => {
         expect(newestSpecNames("# Roadmap\n- [ ] x -- y")).toEqual([])
     })
 })
 
-describe("brief.md の判定（missingBriefs）", () => {
-    it("brief.md が無い spec の名前だけを返す", () => {
+describe("Brief file checks", () => {
+    it("returns names whose brief.md file is missing", () => {
         const root = makeRoot()
         writeFile(path.join(root, ".kiro/specs/a/brief.md"), "# Brief")
         expect(missingBriefs(root, ["a", "b"])).toEqual(["b"])
     })
 })
 
-describe("終了の判定（decideStop）", () => {
+describe("Stop decisions", () => {
     const state = startState({
         command: "kiro-discovery",
         skillPath: skill,
@@ -194,7 +184,7 @@ describe("終了の判定（decideStop）", () => {
     const roadmapText =
         "## Specs (dependency order)\n- [ ] alpha -- x. Dependencies: none\n"
 
-    it("stop_hook_active が真なら通す", () => {
+    it("allows the stop event when stop_hook_active is true", () => {
         expect(
             decideStop({
                 state,
@@ -206,7 +196,7 @@ describe("終了の判定（decideStop）", () => {
         ).toBeNull()
     })
 
-    it("手順書が未読なら止める", () => {
+    it("blocks the stop event while the required document is unread", () => {
         const reason = decideStop({
             state,
             stopHookActive: false,
@@ -217,7 +207,7 @@ describe("終了の判定（decideStop）", () => {
         expect(reason).toContain("Read していません")
     })
 
-    it("roadmap がセッション中に更新され brief.md が無ければ止める", () => {
+    it("blocks when the roadmap changes during the session and a brief is missing", () => {
         const root = makeRoot()
         const reason = decideStop({
             state: readState,
@@ -229,7 +219,7 @@ describe("終了の判定（decideStop）", () => {
         expect(reason).toContain("alpha")
     })
 
-    it("roadmap がセッション前から変わっていなければ通す", () => {
+    it("allows the stop event when the roadmap has not changed since the session began", () => {
         const root = makeRoot()
         expect(
             decideStop({
@@ -242,7 +232,7 @@ describe("終了の判定（decideStop）", () => {
         ).toBeNull()
     })
 
-    it("brief.md が揃っていれば通す", () => {
+    it("allows the stop event when all brief files exist", () => {
         const root = makeRoot()
         writeFile(path.join(root, ".kiro/specs/alpha/brief.md"), "# Brief")
         expect(
@@ -256,7 +246,7 @@ describe("終了の判定（decideStop）", () => {
         ).toBeNull()
     })
 
-    it("kiro コマンドでないセッションは通す", () => {
+    it("allows the stop event for sessions without a kiro command", () => {
         expect(
             decideStop({
                 state: null,
@@ -269,8 +259,8 @@ describe("終了の判定（decideStop）", () => {
     })
 })
 
-describe("spec の要約（summarizeSpecs）", () => {
-    it("phase と承認の状態を一行ずつ返す", () => {
+describe("Spec summaries", () => {
+    it("returns one line for each phase and approval state", () => {
         const root = makeRoot()
         writeFile(
             path.join(root, ".kiro/specs/alpha/spec.json"),
@@ -289,20 +279,20 @@ describe("spec の要約（summarizeSpecs）", () => {
         ])
     })
 
-    it("spec が無ければその旨を返す", () => {
+    it("reports when no specs are present", () => {
         expect(summarizeSpecs(makeRoot())).toEqual(["（.kiro/specs が無い）"])
     })
 })
 
-describe("手順書の場所（skillPathFor）", () => {
-    it(".claude/skills/<名前>/SKILL.md を返す", () => {
+describe("Skill document path", () => {
+    it("returns the .claude/skills/<name>/SKILL.md path", () => {
         expect(skillPathFor(repoRoot, "kiro-review")).toBe(
             path.join(repoRoot, ".claude/skills/kiro-review/SKILL.md"),
         )
     })
 })
 
-describe("フックの入口（子プロセス）", () => {
+describe("Hook entry point in a child process", () => {
     const entry = path.join(repoRoot, "scripts/agent/kiro-gate.mjs")
     const sessionId = `vitest-${process.pid}-${Date.now()}`
     const run = (event: string, input: object) =>
@@ -326,7 +316,7 @@ describe("フックの入口（子プロセス）", () => {
             fs.rmSync(root, { recursive: true, force: true })
     })
 
-    it("SKILL.md が無いスラッシュコマンドは、プロンプトをブロックし、cc-sdd の導入を促す", () => {
+    it("blocks prompts for missing skills and recommends installing cc-sdd", () => {
         const out = run("user-prompt-submit", {
             prompt: "/kiro-no-such-command",
         })
@@ -340,7 +330,7 @@ describe("フックの入口（子プロセス）", () => {
     })
 
     it.skipIf(!fs.existsSync(skill))(
-        "kiro-discovery で手順書の Read を促し、未読の間の Bash を deny する",
+        "prompts kiro-discovery to read its skill and denies Bash until it is read",
         () => {
             const prompt = run("user-prompt-submit", {
                 prompt: "/kiro-discovery テスト",
@@ -369,7 +359,7 @@ describe("フックの入口（子プロセス）", () => {
         },
     )
 
-    it("不正な入力でも例外で止まらず、終了コード 0 で通す", () => {
+    it("handles invalid input without throwing and exits with code 0", () => {
         const out = spawnSync(process.execPath, [entry, "no-such-event"], {
             input: "{}",
             encoding: "utf8",
