@@ -29,6 +29,12 @@
       "binding": "SCHEDULE_IMAGES",
       "bucket_name": "skyshare-schedule-images",
     },
+    // アンケートの統計ファイル（PoC）。remote: true で、ビルドと dev が実際のバケットを読む
+    {
+      "binding": "SURVEY_RESULTS",
+      "bucket_name": "skyshare-survey-results",
+      "remote": true,
+    },
   ],
   // 不具合の報告と機能の提案の送信の回数の制限（アカウントごとに60秒に1件。期間は10秒か60秒しか選べない）。
   // namespace_id はアカウントの中で制限を区別する任意の数字で、運用者ごとに変えなくてよい

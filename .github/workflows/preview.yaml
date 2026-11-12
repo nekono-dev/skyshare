@@ -93,6 +93,8 @@ jobs:
         if: steps.alias.outputs.valid == 'true'
         env:
           SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           SITE_HOST: ${{ steps.alias.outputs.alias }}.develop.${{ vars.SITE_HOST }}
         run: npm run build
 

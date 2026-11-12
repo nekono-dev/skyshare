@@ -1,0 +1,14 @@
+---
+/**
+ * PoC: ビルド時に R2 のバインディング（SURVEY_RESULTS）から統計ファイルを読み、静的に生成する。
+ * 検証が終わったら削除する。
+ */
+export const prerender = true
+import { env } from "cloudflare:workers"
+const object = await env.SURVEY_RESULTS.get("poc/index.json")
+if (!object) throw new Error("poc/index.json not found")
+const data = (await object.json()) as { surveys: { id: string; visible: boolean }[] }
+const visible = data.surveys.filter(survey => survey.visible)
+---
+
+<html><body><h1>surveys-poc</h1><ul>{visible.map(survey => <li>{survey.id}</li>)}</ul></body></html>
