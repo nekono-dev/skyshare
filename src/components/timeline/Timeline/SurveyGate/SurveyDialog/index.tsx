@@ -158,12 +158,8 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   const declined = action.kind === "decline"
   const description = survey.description
   const actionLabel = declined ? t("survey.close") : t("survey.submit")
-  const hint =
-    action.kind === "decline"
-      ? t("survey.declineHint")
-      : action.kind === "incomplete"
-        ? t("survey.incomplete")
-        : null
+  // 未完了のときは送信ボタンを無効にするだけで、案内の文言は出さない
+  const hint = action.kind === "decline" ? t("survey.declineHint") : null
 
   return (
     <Overlay open onClose={ignoreClose} contentClassName={ui["width-md"]}>
