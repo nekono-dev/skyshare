@@ -71,7 +71,8 @@ export const readConfig = (name, { requireSiteHost = false } = {}) => {
 /**
  * テンプレートから wrangler の設定（オブジェクト）を組み立てる。
  *
- * Input: テンプレートの値、設定、`develop`（true なら develop 用の配備）、`d1Ids`（develop のプレビューに使う D1 の ID）
+ * Input: テンプレートの値、設定、`develop`（true なら develop 用の配備）、`d1Ids`（develop のプレビューに使う D1 の ID）、
+ * `surveyResultsRemote`（true なら統計ファイルの R2 を、ビルドと dev が実際のバケットから読む）
  * Output: wrangler の設定（JSON にできるオブジェクト）
  */
 export const buildWranglerConfig = ({
@@ -79,6 +80,7 @@ export const buildWranglerConfig = ({
   config,
   develop,
   d1Ids = {},
+  surveyResultsRemote = false,
 }) => {
   const out = structuredClone(template)
   out.vars = { ...config.vars }
@@ -116,6 +118,12 @@ export const buildWranglerConfig = ({
       binding: b.binding,
       bucket_name: b.bucket_name,
     }))
+  }
+  // 実際のバケットを読む接続は、認証情報があるときだけ有効にする（無いと dev と E2E が起動できない）
+  if (surveyResultsRemote) {
+    out.r2_buckets = out.r2_buckets.map(b =>
+      b.binding === "SURVEY_RESULTS" ? { ...b, remote: true } : b,
+    )
   }
   return out
 }
@@ -165,7 +173,17 @@ export const renderWranglerFile = ({ name, develop = false }) => {
   })
   const template = parseJsonc(readFileSync(TEMPLATE, "utf8"))
   const d1Ids = develop ? resolveD1Ids(template) : {}
-  const out = buildWranglerConfig({ template, config, develop, d1Ids })
+  // ビルドが R2 を読むための認証情報（CI が渡す）。無ければ接続せず、統計ファイルの機能は無い前提で動く
+  const surveyResultsRemote = Boolean(
+    process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_ACCOUNT_ID,
+  )
+  const out = buildWranglerConfig({
+    template,
+    config,
+    develop,
+    d1Ids,
+    surveyResultsRemote,
+  })
   writeFileSync(OUTPUT, `${JSON.stringify(out, null, 2)}\n`)
   return OUTPUT
 }

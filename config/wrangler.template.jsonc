@@ -29,11 +29,10 @@
       "binding": "SCHEDULE_IMAGES",
       "bucket_name": "skyshare-schedule-images",
     },
-    // アンケートの統計ファイル（PoC）。remote: true で、ビルドと dev が実際のバケットを読む
+    // アンケートの統計ファイル（PoC）。認証情報があるときだけ、生成時に remote: true が付く（render-wrangler）
     {
       "binding": "SURVEY_RESULTS",
       "bucket_name": "skyshare-survey-results",
-      "remote": true,
     },
   ],
   // 不具合の報告と機能の提案の送信の回数の制限（アカウントごとに60秒に1件。期間は10秒か60秒しか選べない）。
