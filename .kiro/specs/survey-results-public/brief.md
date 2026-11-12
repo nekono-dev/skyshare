@@ -60,7 +60,18 @@
 - ログ・エラーに取得した本文を出さない。
 - 結果の反映は再配備に依存する（公開・非公開の切り替えの直後は、配備が終わるまで古い）。
 - プレビュー（`dev/*`）は develop の R2 を読む。既存のプレビューは次の push まで更新されない。
-- 設計で決める: R2 の読み取りの方法（`wrangler r2 object get --remote`・R2 の S3 互換の API など）と必要な認証情報、バケット名の渡し方、ローカルでの扱い（固定のサンプルを使うか、無効にするか）、結果を静的データに変える段階（`build:prepare` か Astro のページ内か）。
+- 設計で決める: 結果を静的データに変える段階（Astro のページ内の `getStaticPaths` か、取得の部品を挟むか）、ローカルでの固定のサンプルの要否。
+
+## PoC の結果（2026-11-12）
+
+`@astrojs/cloudflare` 14.1.4 のバインディングでビルド時に R2 を読む方法を、実際のプレビューで検証した（ブランチ `dev/survey-r2-poc`、プレビュー `https://survey-r2-poc.develop.skyshare.nekono.dev/surveys-poc/`。捨てる前提）。
+
+- **読み方**: R2 のバインディング `SURVEY_RESULTS` を `import { env } from "cloudflare:workers"` で読む。Astro の prerender は workerd の中で動くため、`getStaticPaths` やページの本体で使える。実行時の Worker と同じバインディングを兼用でき、配備（`wrangler preview`）も通った。
+- **バケット名**: `config/wrangler.template.jsonc` の `r2_buckets` に `SURVEY_RESULTS`（`skyshare-survey-results`）を足すだけでよい。develop は `render-wrangler` が `-develop` を付け、プレビューは develop のバケットを使う（D1 と同じ既存の仕組み。変更不要）。develop 用のバケット `skyshare-survey-results-develop` は PoC で作成済み（空）。本番のバケットは未作成。
+- **remote 接続**: ビルドと dev が実際のバケットを読むには、バインディングに `remote: true` が要る。ただし `remote: true` があると、認証情報が無い環境（ローカルの dev・E2E・pre-push）は、アカウントを選べず起動に失敗する（PoC で再現）。このため `scripts/config/render-wrangler.mjs` が、`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` が両方あるときだけ `remote: true` を付ける。無いときは接続せず、結果ページの機能が無い前提で動く（ローカルの E2E・pre-push の全テストは通る）。
+- **CI**: `preview.yaml`・`deploy.yaml` の「Run build」に `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID` を渡す。トークンに R2 の権限があれば足りる（付与済み）。
+- **ページの生成**: 公開が 0 件、またはバインディングが無いときは、`getStaticPaths` が空を返すと `/surveys` は生成されない（ビルドは成功）。オブジェクトが無い・認証が無いときは、ビルドが失敗する。
+
 - 既存の UI 部品・スタイルの規約に従う。色は既存の共通トークンを使う。
 
 ## 画面デザインの合意（必須の工程）
