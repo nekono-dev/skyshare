@@ -259,22 +259,23 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Overview
 
-アンケート機能は **D1 と R2 を前提とする**（R2 バインディングが無い環境ではアンケート機能全体が無効）。アンケートの実施期間が終わったら、Worker が自動で回答を集計して R2 へ統計ファイル（割合だけ）を書き、保存の成功後にだけ D1 の回答を削除する（「終了の 1 か月後」の保持期限は廃止）。集計時は常に非表示で作り、運用者が CLI（`npm run survey`）の `publish` で公開に切り替える。Worker は公開のものだけを `GET /v2/surveys` で返し、`/surveys` ページに実施時期の新しい順で表示する。ページへは login 画面の文中の小リンクからだけ入る。あわせて、CLI のコマンド体系と運用の手順を見直す。
+アンケート機能は **D1 と R2 を前提とする**（R2 バインディングが無い環境ではアンケート機能全体が無効）。アンケートの実施期間が終わったら、Worker が自動で回答を集計して R2 へ統計ファイル（割合だけ）を書き、保存の成功後にだけ D1 の回答を削除する（「終了の 1 か月後」の保持期限は廃止）。集計時は常に非表示で作り、運用者が CLI（`npm run survey`）の `publish` で公開に切り替える。結果ページ `/surveys` は、**ビルド時に R2 から統計ファイルを取得して静的ドキュメントとして生成**し（実行時の API は無い）、公開のものだけを実施時期の新しい順に表示する。`publish`・`unpublish` は、可視フラグの書き換えに続いて `gh workflow run` で再配備を起動する。ページへは login 画面の文中の小リンクからだけ入る。公開済みが 0 件ならページもリンクも出さず、ビルドが R2 の取得・検証に失敗したら配備を止める。あわせて、CLI のコマンド体系と運用の手順を見直す。
 
 ### Approach Decision
 
-- **Chosen**: 集計・保存・削除（`survey-results-aggregation`）、取得・API・画面（`survey-results-public`）、CLI と運用の手順（`survey-operations`）の 3 つに分ける。統計ファイルの形式は共有の部品に置き、`survey-results-aggregation` が所有する。
+- **Chosen**: 集計・保存・削除（`survey-results-aggregation`）、ビルド時の取得・静的な画面（`survey-results-public`）、CLI と運用の手順（`survey-operations`）の 3 つに分ける。統計ファイルの形式は共有の部品に置き、`survey-results-aggregation` が所有する。
 - **Why**: 日次の枠で動く処理、実行時の API と画面、運用者の道具で、変更の時機と検証の方法が違う。Worker が R2 を書くため、手元の CLI での集計はやめた（利用者の決定）。R2 を前提にすることで、「R2 が無い環境の保持期限」という二重の規則をなくした。
 - **Rejected alternatives**:
   - 手元の CLI で集計・保存: 回答の削除までに運用者が実行する必要があり、取りこぼす。
   - R2 が無い環境では従来の保持期限で動かす: 規則が二重になる。利用者の決定で R2 を必須にした。
   - 公開の切り替えを `SURVEY_CONFIG` に置く: 設定から期限切れ項目を除去した後に切り替えられない。
   - 件数の表示・しきい値による伏せ字: 利用者の決定で撤回（割合だけを出す）。
+  - Worker が実行時に R2 を読んで API（`GET /v2/surveys`）で返す案: 空の状態・取得失敗の画面と API・キャッシュの設計が要る。結果は公開の切り替えのときだけ変わるため、静的生成と再配備で足りる（利用者の決定 2026-11-12）。
   - `prune` を D1 の行の確認のまま残す: 回答の削除は Worker の担当になり、意味を失う。
 
 ### Scope
 
-- **In**: 統計ファイルの形式、集計（割合・複数選択は回答者数を分母）、集計後の削除、R2 の必須化（アンケート機能の無効化の判定）、`GET /v2/surveys`、`/surveys` ページと結果のコンポーネント、login のリンク、CLI のコマンド体系（add・status・publish・unpublish・prune・remove。`--env` 必須）、`survey-run` skill と DEVELOP.md の更新、プライバシーポリシーの更新の要否の判断。
+- **In**: 統計ファイルの形式、集計（割合・複数選択は回答者数を分母）、集計後の削除、R2 の必須化（アンケート機能の無効化の判定）、ビルド時の取得、`/surveys` ページ（静的生成）と結果のコンポーネント、login のリンク、CLI のコマンド体系（add・status・publish・unpublish・prune・remove。`--env` 必須。publish・unpublish は再配備を起動する）、`survey-run` skill と DEVELOP.md の更新、プライバシーポリシーの更新の要否の判断。
 - **Out**: R2 バケットの作成、`surveys` の提示・回答の仕様の変更（保持期限と有効・無効の判定を除く）、ダッシュボードからの導線。
 
 ### Constraints
@@ -290,7 +291,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - **Shared seams to watch**:
   1. **統計ファイルの形式**（`survey-results-aggregation` が所有。`survey-results-public` は読み、`survey-operations` は可視フラグを書く）。
   2. **機能の有効・無効の判定**（D1・R2 の両方があるか。`survey-results-aggregation` が所有し、`surveys`・`survey-results-public` が使う）。
-  3. **`/v2/surveys` の名前空間**（既存の認証必須のルートと共存。認証なしの `GET` はコレクション 1 本だけ）。
+  3. **公開の反映**（`survey-operations` の `publish` が可視フラグを書き、再配備を起動する。`survey-results-public` のビルドがそれを読む）。
   4. **削除の契機**（`surveys` の保持期限の規則を、`survey-results-aggregation` の集計後の削除に置き換える）。
 
 ### Existing Spec Updates
@@ -306,7 +307,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 ### Specs (dependency order)
 
 - [ ] survey-results-aggregation -- 統計ファイルの形式と検証スキーマ、日次の枠での集計と保存成功後の削除、保持期限の廃止、R2 必須（アンケート機能の無効化の判定）。Dependencies: surveys
-- [ ] survey-results-public -- R2 からの取得と検証、`GET /v2/surveys`、`/surveys` ページと結果のコンポーネント、login のリンク。Dependencies: survey-results-aggregation, platform-runtime, api-contract, i18n, ui-primitives
-- [ ] survey-operations -- CLI のコマンド体系（add・status・publish・unpublish・prune・remove）、R2 の読み書き、`--env`、`survey-run` skill と DEVELOP.md の手順。Dependencies: survey-results-aggregation
+- [ ] survey-results-public -- ビルド時の R2 の取得と検証、`/surveys` ページ（静的生成）と結果のコンポーネント、login のリンク、読み取りの情報が無いときのオプトアウト。Dependencies: survey-results-aggregation, platform-runtime, i18n, ui-primitives
+- [ ] survey-operations -- CLI のコマンド体系（add・status・publish・unpublish・prune・remove）、R2 の読み書き、`--env`、公開の切り替え後の再配備の起動（`gh workflow run`）、`survey-run` skill と DEVELOP.md の手順。Dependencies: survey-results-aggregation
 
-（画面デザインの主要な項目は合意済み。`/kiro-spec-batch` で 3 件を作れる。）
+（画面デザインは合意済み。空の状態・取得失敗の画面は、静的生成にしたため作らない。`/kiro-spec-batch` で 3 件を作れる。）

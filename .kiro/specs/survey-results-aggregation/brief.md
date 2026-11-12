@@ -27,7 +27,7 @@ Worker の日次の後片付けの枠（既存の `runSurveyRetention` に代わ
 ## Scope
 
 - **In**: 統計ファイルの形式と検証スキーマ（読む側と共有する部品）、集計（質問ごと・選択肢ごとの割合）、集計と削除の手順（保存成功後に削除・失敗時の再試行・冪等）、保持期限の廃止（`retention.ts`・`period.ts` の保持の判定の置き換え）、R2 バインディングが無い環境でのアンケート機能の無効化（実行時の判定とビルド時の旗）、R2 バケットの設定（本番・develop・プレビュー・ローカル）。
-- **Out**: `GET /v2/surveys`・画面（`survey-results-public`）、CLI の体系・運用手順（`survey-operations`）、回答の保存と回答済みの確認（`surveys`。ただし無効化の判定は本 spec が所有し、`surveys` が使う）、R2 バケットの作成（運用者の作業）。
+- **Out**: 結果ページ・ビルド時の取得（`survey-results-public`）、CLI の体系・運用手順（`survey-operations`）、回答の保存と回答済みの確認（`surveys`。ただし無効化の判定は本 spec が所有し、`surveys` が使う）、R2 バケットの作成（運用者の作業）。
 
 ## Boundary Candidates
 
@@ -45,7 +45,7 @@ Worker の日次の後片付けの枠（既存の `runSurveyRetention` に代わ
 ## Upstream / Downstream
 
 - **Upstream**: `surveys`（D1 のテーブル、回答の形、`SURVEY_CONFIG` の形式）、`platform-runtime`（Worker の `scheduled`・バインディングの型）。
-- **Downstream**: `survey-results-public`（統計ファイルの形式を読む。機能の有効・無効の判定を使う）、`survey-operations`（統計ファイルの可視フラグを CLI が書く）。
+- **Downstream**: `survey-results-public`（統計ファイルの形式を、ビルド時に読む）、`survey-operations`（統計ファイルの可視フラグを CLI が書く）。
 
 ## Existing Spec Touchpoints
 
@@ -64,4 +64,5 @@ Worker の日次の後片付けの枠（既存の `runSurveyRetention` に代わ
 - 失敗の記録は例外の種類の名前だけ（回答・本文をログに出さない）。1 件の失敗が他のアンケートの集計を止めない。
 - 回答済みの集合（`survey_respondents`）の削除の時機は、現行の「終了時刻以後」を保つか、回答と同時（集計の保存の成功後）にするかを設計で決める。匿名性の観点では、できるだけ早く消す現行の規則を保つほうが安全で、既定はこちら。
 - ビルド時の旗（`PUBLIC_SURVEY_CONFIG_PRESENT`）は、R2 バインディングの有無も条件にするかを設計で決める。静的な login 画面と提示の入口が、R2 の無い環境でアンケートを出さないようにする。
+- 統計ファイルの読み手は、ビルド時の取得（`survey-results-public`）と CLI（`survey-operations`）。Worker は書くだけで、実行時に読んで返すことはしない。
 - 設計で決める: R2 のオブジェクトの構成（目録 1 つ＋アンケートごと、可視フラグの置き場。CLI が書き換えるため、小さく独立して書き換えられる形にする）、バインディングの名前、環境（本番・develop・プレビュー）ごとのバケット。
