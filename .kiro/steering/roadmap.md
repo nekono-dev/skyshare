@@ -254,3 +254,59 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - [x] codex-mcp-subagent -- Codex の MCP サーバー（`scripts/agent/codex-mcp-server.mjs`）、`.mcp.json`・`.codex/config.toml` の取り込み、CLAUDE.md の方針節、MCP が使えない環境での扱い。Dependencies: ops-agent-setup（改訂後）
 
 （新しい spec は 1 件だけのため、`/kiro-spec-batch` ではなく `/kiro-spec-init codex-mcp-subagent` で作る。）
+
+## Phase 9: アンケート結果の公表（2026-11-12 discovery）
+
+### Overview
+
+アンケート機能は **D1 と R2 を前提とする**（R2 バインディングが無い環境ではアンケート機能全体が無効）。アンケートの実施期間が終わったら、Worker が自動で回答を集計して R2 へ統計ファイル（割合だけ）を書き、保存の成功後にだけ D1 の回答を削除する（「終了の 1 か月後」の保持期限は廃止）。集計時は常に非表示で作り、運用者が CLI（`npm run survey`）の `publish` で公開に切り替える。Worker は公開のものだけを `GET /v2/surveys` で返し、`/surveys` ページに実施時期の新しい順で表示する。ページへは login 画面の文中の小リンクからだけ入る。あわせて、CLI のコマンド体系と運用の手順を見直す。
+
+### Approach Decision
+
+- **Chosen**: 集計・保存・削除（`survey-results-aggregation`）、取得・API・画面（`survey-results-public`）、CLI と運用の手順（`survey-operations`）の 3 つに分ける。統計ファイルの形式は共有の部品に置き、`survey-results-aggregation` が所有する。
+- **Why**: 日次の枠で動く処理、実行時の API と画面、運用者の道具で、変更の時機と検証の方法が違う。Worker が R2 を書くため、手元の CLI での集計はやめた（利用者の決定）。R2 を前提にすることで、「R2 が無い環境の保持期限」という二重の規則をなくした。
+- **Rejected alternatives**:
+  - 手元の CLI で集計・保存: 回答の削除までに運用者が実行する必要があり、取りこぼす。
+  - R2 が無い環境では従来の保持期限で動かす: 規則が二重になる。利用者の決定で R2 を必須にした。
+  - 公開の切り替えを `SURVEY_CONFIG` に置く: 設定から期限切れ項目を除去した後に切り替えられない。
+  - 件数の表示・しきい値による伏せ字: 利用者の決定で撤回（割合だけを出す）。
+  - `prune` を D1 の行の確認のまま残す: 回答の削除は Worker の担当になり、意味を失う。
+
+### Scope
+
+- **In**: 統計ファイルの形式、集計（割合・複数選択は回答者数を分母）、集計後の削除、R2 の必須化（アンケート機能の無効化の判定）、`GET /v2/surveys`、`/surveys` ページと結果のコンポーネント、login のリンク、CLI のコマンド体系（add・status・publish・unpublish・prune・remove。`--env` 必須）、`survey-run` skill と DEVELOP.md の更新、プライバシーポリシーの更新の要否の判断。
+- **Out**: R2 バケットの作成、`surveys` の提示・回答の仕様の変更（保持期限と有効・無効の判定を除く）、ダッシュボードからの導線。
+
+### Constraints
+
+- 件数・回答者数は出さない（割合だけ）。回答が 0 件のアンケートは公表しない。
+- 統計ファイルに個別の回答・回答日・回答者の値を入れない。
+- 保存の成功後にだけ D1 を削除する。失敗したら削除せず、翌日に再試行する。
+- 画面のデザインは利用者と合意済み（`survey-results-public` の brief の「合意の結果」）。最大の選択肢はプライマリ色、そのほかは灰色の共通トークン（`--color-gray-hover` が候補。muted は背景と混ざるため使わない）。色は既存の共通トークン・共通コンポーネントを使う。アンケート全体の題・説明と、複数選択の注記は出さない。
+
+### Boundary Strategy
+
+- **Why this split**: 書き込み（日次の処理）・読み出し（API・画面）・運用の道具（CLI・手順書）で、変更と検証が閉じる。
+- **Shared seams to watch**:
+  1. **統計ファイルの形式**（`survey-results-aggregation` が所有。`survey-results-public` は読み、`survey-operations` は可視フラグを書く）。
+  2. **機能の有効・無効の判定**（D1・R2 の両方があるか。`survey-results-aggregation` が所有し、`surveys`・`survey-results-public` が使う）。
+  3. **`/v2/surveys` の名前空間**（既存の認証必須のルートと共存。認証なしの `GET` はコレクション 1 本だけ）。
+  4. **削除の契機**（`surveys` の保持期限の規則を、`survey-results-aggregation` の集計後の削除に置き換える）。
+
+### Existing Spec Updates
+
+- [ ] surveys -- (1) 保持期限の規則を「集計の保存の成功後の削除」に置き換え、アンケート機能が D1 と R2 を前提とすること（R2 が無ければ無効）を記録する。(2) 設定の形式から、アンケート全体の題（`title`）と説明（`description`）を廃止する（質問ごとの題だけにする。利用者の決定 2026-11-12）。影響: `definition.ts`・回答ダイアログ（`SurveyDialog`）・辞書・`survey-run` の聞き取り・下書きの形式。アンケート機能は本番へ未公開のため破壊的変更を許し、既存の `SURVEY_CONFIG` と D1 は初期状態として扱う（移行は作らない。D1 の構造の変更は `migrations/0001_initial.sql` に直接反映してよい）。運用中のアンケートの題は、質問の題「UIデザインはどちらが好みですか？」に置き換える。フェーズ 1 の brief のみで要件は未作成のため、要件の作成時に記録する。Dependencies: survey-results-aggregation
+- [ ] help-privacy -- アンケート結果を公表すること・公表する範囲をプライバシーポリシーに書くかの判断と追記（`survey-results-public` の設計で判断する）。Dependencies: survey-results-public
+- [ ] develop-docs -- DEVELOP.md の 3.2・main への取り込み前の手順・環境変数の表を、新しい体系に合わせる（`survey-operations` の実装で行う）。Dependencies: survey-operations
+
+### Direct Implementation Candidates
+
+- [x] survey-form-incomplete-message（2026-11-12 実装済み: `dev/survey-results-publishing`） -- 回答ダイアログの「すべての質問に答えると送信できます。」（`survey.incomplete`。`src/lib/i18n/messages/{ja,en}/survey.ts` と `SurveyDialog`）を消す。自明な文言の削除で、spec の境界を変えない（利用者の決定 2026-11-12）。
+
+### Specs (dependency order)
+
+- [ ] survey-results-aggregation -- 統計ファイルの形式と検証スキーマ、日次の枠での集計と保存成功後の削除、保持期限の廃止、R2 必須（アンケート機能の無効化の判定）。Dependencies: surveys
+- [ ] survey-results-public -- R2 からの取得と検証、`GET /v2/surveys`、`/surveys` ページと結果のコンポーネント、login のリンク。Dependencies: survey-results-aggregation, platform-runtime, api-contract, i18n, ui-primitives
+- [ ] survey-operations -- CLI のコマンド体系（add・status・publish・unpublish・prune・remove）、R2 の読み書き、`--env`、`survey-run` skill と DEVELOP.md の手順。Dependencies: survey-results-aggregation
+
+（画面デザインの主要な項目は合意済み。`/kiro-spec-batch` で 3 件を作れる。）
