@@ -1,18 +1,30 @@
 /**
- * SurveyConfig と D1 の回答有無を、手元の gh / wrangler から取得する。
+ * SurveyConfig と R2 の統計ファイルを手元の gh / wrangler で管理する。
  *
- * 責務と処理概要:
- * - SURVEY_CONFIG の取得・設定・削除を固定のエラー分類で行う。
- * - 本番と開発の D1 に SELECT のみを発行し、2 表の行の有無を確認する。
- * - 設定値・外部コマンドのエラー文・認証情報を例外や要約に含めない。
+ * - SURVEY_CONFIG の読み書きと、本番・開発の D1 への SELECT（2 表の行の有無）を行う。
+ * - 目録・結果・可視フラグを共有スキーマで検証して読み、書くのは可視フラグだけにする。
+ * - 設定値・外部コマンドのエラー文・認証情報・読んだ本文を、例外や要約に含めない。
  */
 import { spawnSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { idSchema } from "@/lib/api/contract/surveyPath"
-import type { RowPresence } from "./lifecycle"
+import {
+    INDEX_KEY,
+    isVisible,
+    parseSurveyIndex,
+    parseSurveyResult,
+    parseSurveyVisibility,
+    resultKey,
+    visibilityKey,
+    type SurveyIndex,
+    type SurveyResult,
+} from "@/lib/survey/results/schema"
+import type { RowPresence, VisibilityState } from "./lifecycle"
+import type { SurveyEnv } from "./args"
 
 // 配備スクリプトと同じ Git リモート解析・JSONC 解析を再利用する（宣言されていない jsonc-parser は使わない）。
 // @ts-ignore JavaScript helper has no declaration file.
@@ -23,6 +35,9 @@ import { parseJsonc } from "../../scripts/lib/jsonc.mjs"
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const VARIABLE_NAME = "SURVEY_CONFIG"
 const DATABASE_CONFIG = path.join(ROOT, "config", "wrangler.template.jsonc")
+const SURVEY_RESULTS_BINDING = "SURVEY_RESULTS"
+/** キー不存在判定に使う wrangler 標準エラー。実機の値はタスク 4.2 で確定する。 */
+const R2_KEY_MISSING_PHRASE = "The specified key does not exist"
 
 export type RemoteErrorKind = "auth" | "unavailable" | "parse"
 
@@ -59,11 +74,23 @@ export type SurveyRemote = {
     writeConfigValue(value: string): Promise<void>
     deleteConfigValue(): Promise<void>
     hasRows(surveyId: string): Promise<RowPresence[]>
+    /** 目録。object が無ければ undefined。形式が不正なら RemoteError("parse") */
+    readIndex(env: SurveyEnv): Promise<SurveyIndex | undefined>
+    /** 可視フラグ。無ければ hidden、不正な形式なら invalid を返す。 */
+    readVisibility(env: SurveyEnv, id: string): Promise<VisibilityState>
+    /** 結果。object が無ければ undefined。形式が不正なら RemoteError("parse") */
+    readResult(env: SurveyEnv, id: string): Promise<SurveyResult | undefined>
+    /** 可視フラグだけを書き込む。 */
+    writeVisibility(env: SurveyEnv, id: string, visible: boolean): Promise<void>
+    listReleaseBranches(): Promise<{ name: string; committedAt: string }[]>
+    startDeploy(ref: string): Promise<void>
 }
 
 export type SurveyRemoteOptions = {
     run?: RunCommand
     repo?: string
+    /** バケット名を読むデプロイ設定のテンプレート。省略時は `config/wrangler.template.jsonc` */
+    bucketTemplatePath?: string
 }
 
 const runLocal: RunCommand = (command, args, input, options) => {
@@ -87,6 +114,37 @@ const isAuthFailure = (result: CommandResult): boolean =>
 
 const remoteErrorFor = (result: CommandResult): RemoteError =>
     new RemoteError(isAuthFailure(result) ? "auth" : "unavailable")
+
+const parseSurveyBucket = (
+    env: SurveyEnv,
+    templatePath: string = DATABASE_CONFIG,
+): string => {
+    let bucket: string | undefined
+    try {
+        const config: {
+            r2_buckets?: { binding?: string; bucket_name?: string }[]
+        } = parseJsonc(readFileSync(templatePath, "utf8"))
+        bucket = config.r2_buckets?.find(
+            item =>
+                item.binding === SURVEY_RESULTS_BINDING &&
+                typeof item.bucket_name === "string" &&
+                item.bucket_name.length > 0,
+        )?.bucket_name
+    } catch {
+        throw new RemoteError("parse")
+    }
+    if (!bucket) throw new RemoteError("parse")
+    return env === "develop" ? `${bucket}-develop` : bucket
+}
+
+const parseObject = <T>(
+    body: unknown,
+    parser: (input: unknown) => { ok: true; value: T } | { ok: false },
+): T => {
+    const parsed = parser(body)
+    if (!parsed.ok) throw new RemoteError("parse")
+    return parsed.value
+}
 
 const parseDatabaseNames = (): string[] => {
     const source = readFileSync(DATABASE_CONFIG, "utf8")
@@ -185,6 +243,72 @@ export const createSurveyRemote = (
         return parsedRepo
     }
 
+    const withTempFile = async <T>(
+        operation: (file: string) => Promise<T>,
+    ): Promise<T> => {
+        const directory = mkdtempSync(path.join(os.tmpdir(), "survey-cli-"))
+        const file = path.join(directory, "object.json")
+        try {
+            return await operation(file)
+        } finally {
+            rmSync(directory, { recursive: true, force: true })
+        }
+    }
+
+    const readObject = async (
+        env: SurveyEnv,
+        key: string,
+    ): Promise<unknown | undefined> => {
+        const bucket = parseSurveyBucket(env, options.bucketTemplatePath)
+        return withTempFile(async file => {
+            const result = run("wrangler", [
+                "r2",
+                "object",
+                "get",
+                `${bucket}/${key}`,
+                "--remote",
+                "--file",
+                file,
+            ])
+            if (result.status !== 0) {
+                if (result.stderr.includes(R2_KEY_MISSING_PHRASE)) {
+                    return undefined
+                }
+                throw remoteErrorFor(result)
+            }
+            let body: unknown
+            try {
+                body = JSON.parse(readFileSync(file, "utf8")) as unknown
+            } catch {
+                throw new RemoteError("parse")
+            }
+            return body
+        })
+    }
+
+    const writeObject = async (
+        env: SurveyEnv,
+        key: string,
+        body: unknown,
+    ): Promise<void> => {
+        const bucket = parseSurveyBucket(env, options.bucketTemplatePath)
+        await withTempFile(async file => {
+            writeFileSync(file, JSON.stringify(body), "utf8")
+            const result = run("wrangler", [
+                "r2",
+                "object",
+                "put",
+                `${bucket}/${key}`,
+                "--remote",
+                "--file",
+                file,
+                "--content-type",
+                "application/json",
+            ])
+            if (result.status !== 0) throw remoteErrorFor(result)
+        })
+    }
+
     const gh = (action: "set" | "delete", input?: string): CommandResult =>
         run(
             "gh",
@@ -192,7 +316,7 @@ export const createSurveyRemote = (
             input,
         )
 
-    return {
+    const remote: Omit<SurveyRemote, "listReleaseBranches" | "startDeploy"> = {
         async readConfigValue() {
             const result = run("gh", [
                 "api",
@@ -218,6 +342,46 @@ export const createSurveyRemote = (
                 }
                 throw remoteErrorFor(result)
             }
+        },
+
+        async readIndex(env) {
+            const body = await readObject(env, INDEX_KEY)
+            return body === undefined
+                ? undefined
+                : parseObject(body, parseSurveyIndex)
+        },
+
+        async readVisibility(env, surveyId) {
+            if (!idSchema.safeParse(surveyId).success) return "invalid"
+            try {
+                const body = await readObject(env, visibilityKey(surveyId))
+                if (body === undefined) return "hidden"
+                const visibility = parseSurveyVisibility(body)
+                if (!visibility.ok) return "invalid"
+                return isVisible(visibility.value) ? "visible" : "hidden"
+            } catch (error) {
+                if (error instanceof RemoteError && error.kind === "parse") {
+                    return "invalid"
+                }
+                throw error
+            }
+        },
+
+        async readResult(env, surveyId) {
+            if (!idSchema.safeParse(surveyId).success)
+                throw new RemoteError("parse")
+            const body = await readObject(env, resultKey(surveyId))
+            return body === undefined
+                ? undefined
+                : parseObject(body, parseSurveyResult)
+        },
+
+        async writeVisibility(env, surveyId, visible) {
+            if (!idSchema.safeParse(surveyId).success)
+                throw new RemoteError("parse")
+            const body = { schemaVersion: 1, visible }
+            parseObject(body, parseSurveyVisibility)
+            await writeObject(env, visibilityKey(surveyId), body)
         },
 
         async hasRows(surveyId) {
@@ -251,4 +415,5 @@ export const createSurveyRemote = (
             })
         },
     }
+    return remote as SurveyRemote
 }
