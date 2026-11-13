@@ -7,7 +7,11 @@ import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { parseDotenv } from "../lib/dotenv.mjs"
-import { RenderError, renderWranglerFile } from "../config/render-wrangler.mjs"
+import {
+  hasReadCredentials,
+  RenderError,
+  renderWranglerFile,
+} from "../config/render-wrangler.mjs"
 import { GENERATORS } from "./generators.mjs"
 
 /**
@@ -52,7 +56,10 @@ const main = async () => {
   }
   // wrangler.jsonc は生成物。開発の設定から毎回作り直す（同じプロセスで生成する）
   try {
-    renderWranglerFile({ name: "develop" })
+    renderWranglerFile({
+      name: "develop",
+      remote: hasReadCredentials(process.env),
+    })
   } catch (err) {
     if (!(err instanceof RenderError)) throw err
     console.error(err.message)

@@ -6,7 +6,11 @@
 import { execFileSync } from "node:child_process"
 import { existsSync, writeFileSync } from "node:fs"
 import { join, resolve } from "node:path"
-import { RenderError, renderWranglerFile } from "./render-wrangler.mjs"
+import {
+  hasReadCredentials,
+  RenderError,
+  renderWranglerFile,
+} from "./render-wrangler.mjs"
 
 // 配備の設定に反映する環境変数（config/production.json の vars）
 const CONFIG_VARS = [
@@ -104,7 +108,11 @@ writeFileSync(
 )
 const develop = process.argv.includes("--develop")
 try {
-  renderWranglerFile({ name: "production", develop })
+  renderWranglerFile({
+    name: "production",
+    develop,
+    remote: hasReadCredentials(process.env),
+  })
   console.log(
     `wrangler.jsonc を config/production.json から生成しました${develop ? "（develop 用）" : ""}`,
   )
