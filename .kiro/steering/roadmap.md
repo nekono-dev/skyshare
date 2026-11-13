@@ -320,3 +320,5 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 （2026-11-13: 3 spec の要件・設計・タスクを作成し、横断レビュー（2 回）の指摘を反映した。phase は `tasks-generated`。実装は未着手のため `[ ]` のまま。実装は `/kiro-impl <feature>` で上の実装順に行う。）
 
 （画面デザインは合意済み。空の状態・取得失敗の画面は、静的生成にしたため作らない。`/kiro-spec-batch` で 3 件を作れる。）
+
+（2026-11-13 追補: 実装に着手した。`survey-results-aggregation` のタスク 1.1（結果の保管先をテンプレートとテスト設定に宣言する）が完了。`surveys(a)` と他のタスクは未着手。次は `surveys(a)`、続いて `survey-results-aggregation` の 1.2〜1.4。）
