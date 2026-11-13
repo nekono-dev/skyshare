@@ -390,6 +390,7 @@ export type SurveyResultsProps = { surveys: SurveyResult[] }
 
 - SurveyResults: ページ見出し（`surveyResults.heading`）と、各アンケートのカードを縦に並べる。`useT` で言語に追従する（再マウントしない）。
 - SurveyResultCard: 共通のカードの見た目（`ui["base-card"]`・`ui["base-padding"]`）。実施時期（`text-muted`）と、質問ごとの題・選択肢の並びを表示する。アンケートの題・説明・件数・複数選択の注記を出さない。
+- PercentBar の props（実装時の決定）: `{ label: string; percent: number; highlight: boolean }`。`label` は選択肢の文言、`percent` は 0 以上 100 以下の割合、`highlight` は最大の選択肢か（`topOptionIds` の結果から呼び出し側が決める）。表示言語は `useT` から得る。
 - PercentBar: 1 つの選択肢の行。`role="meter"`、`aria-valuemin=0`、`aria-valuemax=100`、`aria-valuenow`、`aria-label`（選択肢の文言）。棒は `data-top="true"` のとき `--color-bluesky` の下地と `--color-white` の文字、そうでなければ `--color-gray-hover` の下地と `--color-text` の文字。下地は `--color-gray`。棒の幅は割合の％、0 より大きければ最小幅 `3rem`、0 は棒を描かず数字を下地の上に出す。幅 640px 未満では 1 列（文言が棒の上）、以上では左に文言・右に棒（`tokens.css` の切替境界と同じ）。
 - 新しい色・角の丸め・余白の値を定義せず、`tokens.css` の `--color-*`・`--space-*`・`--radius-*` を参照する。
 
