@@ -40,6 +40,7 @@ Always include: absolute paths; spec, task number, requirement numbers and desig
 - Write the test first and make it fail (RED), then implement (GREEN). Put the failing output in the report.
 - End the reply with exactly one `## Status Report` block (same fields as `templates/implementer-prompt.md`; `- STATUS:` is `READY_FOR_REVIEW | BLOCKED | NEEDS_CONTEXT`).
 - If a verification command cannot run because of the sandbox, say so and include the output in `TESTS_RUN`; never claim it passed.
+- Completion criteria must name the comment check, not only the rule text: before reporting, re-read the top block of every new or changed module against `.kiro/steering/comments.md` (at most 3 bullets, ≤ 6 lines, no history or requirement numbers). A missed rule is the one defect an implementer produced in practice (a 4-bullet header), and the conductor's `npm run test:imports` catches it only after the fact.
 
 ## 5. Reviewer prompt skeleton (`read-only`)
 
@@ -51,6 +52,7 @@ Always include: absolute paths; spec, task number, requirement numbers and desig
 - Pass the implementer's `Status Report` fields (especially `RED_PHASE_OUTPUT`); a behavioral task without RED evidence is rejected by `kiro-review`. If the implementer's RED output is thin, reproduce RED yourself (stash the source change, run the test) and put that in the prompt.
 - The review sandbox denies reading `.env*` and `.dev.vars*`, so tracked files such as `_legacy/**/.env.template` or `config/.dev.vars.template` can look modified in its `git status`. Tell the reviewer this is a sandbox artifact and give your own `git status --porcelain`.
 - Have it audit the Boundary: changes belonging to another task must not be mixed in.
+- Pass the decisions already agreed with the user that bear on the task (for example the colour pairing recorded in `brief.md` "合意の結果" and `research.md`). A reviewer that does not know them rejects an agreed design as a defect (task 2.6 was rejected for a 3.66:1 contrast and cost two re-review rounds). If a rejection contradicts an agreed decision, do not re-dispatch the implementer; record the finding and the facts in `research.md` and ask the user to decide.
 
 ## 6. What the conductor does
 
@@ -58,3 +60,13 @@ Always include: absolute paths; spec, task number, requirement numbers and desig
 - Before marking a task done, follow `kiro-verify-completion` and take fresh evidence yourself: rerun every verification command named in the prompt (including those Codex could not run), plus type check, the whole unit run, the import check and prettier. If the task names build or smoke checks, include them.
 - Only the conductor commits, staging explicit files plus `tasks.md` (never `-A` or `.`).
 - In the final report, list who did each piece (Codex, CLI fallback, Claude agent), what the conductor did directly and why, and what is still unverified.
+
+## 7. Resuming after an interrupted session
+
+Sessions can die from connection loss, not only from model failure (a session once ended with `computer_unreachable` while a `codex_exec` call for task 3.1 was pending, with no result returned). Do not assume the interrupted call produced anything.
+
+1. Read `git status --porcelain` and `git log --oneline -10` first. Treat the last commit as the last finished unit; `tasks.md` checkboxes only advance together with a commit.
+2. Look for leftovers of the interrupted task: untracked or zero-byte files (for example an empty test file from a half-finished RED step), and uncommitted edits inside that task's Boundary. Inspect each one before deleting or reusing it; delete only what is provably empty or provably the interrupted task's own scratch work.
+3. Check `research.md` and the latest commit messages for items marked as waiting for the user (for example `利用者の判断待ち`) and bring them to the user instead of deciding them.
+4. Re-run the interrupted task from its start with a fresh implementer; never continue from the unreturned call's partial output. If an external-system write (R2, GitHub, Cloudflare) may have been in flight, read the remote state first and compare it with what the task intended before repeating the write.
+5. Commit after every approved task (explicit paths plus `tasks.md`), so the next interruption loses at most one task.
