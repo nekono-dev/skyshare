@@ -9,6 +9,7 @@ import partytown from "@astrojs/partytown"
 import { checkSiteEnv, siteUrl } from "./src/lib/site/siteEnv.ts"
 import { resolveBuildInfo } from "./src/lib/site/buildEnv.ts"
 import { surveyConfigPresentFlag } from "./src/lib/site/surveyPresence.ts"
+import { surveyResultsReadableFlag } from "./src/lib/site/surveyResultsReadable.ts"
 import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { parseJsonc } from "./scripts/lib/jsonc.mjs"
@@ -73,6 +74,7 @@ const surveyConfigPresent = surveyConfigPresentFlag(
   existsSync(new URL("./public/surveys/index.json", import.meta.url)),
   wrangler,
 )
+const surveyResultsReadable = surveyResultsReadableFlag(wrangler)
 
 export default defineConfig({
   output: "server",
@@ -102,6 +104,9 @@ export default defineConfig({
       ),
       "import.meta.env.PUBLIC_SURVEY_CONFIG_PRESENT":
         JSON.stringify(surveyConfigPresent),
+      "import.meta.env.PUBLIC_SURVEY_RESULTS_READABLE": JSON.stringify(
+        surveyResultsReadable,
+      ),
     },
     // バンドルが大きくなる旨の警告上限を引き上げる
     build: {
