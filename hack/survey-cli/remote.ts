@@ -191,6 +191,23 @@ const parseJsonOutput = (output: string): unknown => {
     return JSON.parse(output.slice(start)) as unknown
 }
 
+const isValidIsoDate = (value: string): boolean => {
+    if (
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+            value,
+        ) ||
+        !Number.isFinite(Date.parse(value))
+    ) {
+        return false
+    }
+    const date = value.slice(0, 10)
+    const parsedDate = new Date(`${date}T00:00:00Z`)
+    return (
+        Number.isFinite(parsedDate.getTime()) &&
+        parsedDate.toISOString().slice(0, 10) === date
+    )
+}
+
 const fieldBoolean = (value: unknown): boolean | null => {
     if (value === true || value === 1 || value === "1") return true
     if (value === false || value === 0 || value === "0") return false
@@ -316,7 +333,7 @@ export const createSurveyRemote = (
             input,
         )
 
-    const remote: Omit<SurveyRemote, "listReleaseBranches" | "startDeploy"> = {
+    const remote: SurveyRemote = {
         async readConfigValue() {
             const result = run("gh", [
                 "api",
@@ -384,6 +401,95 @@ export const createSurveyRemote = (
             await writeObject(env, visibilityKey(surveyId), body)
         },
 
+        async listReleaseBranches() {
+            const repository = resolveRepo()
+            const refsResult = run("gh", [
+                "api",
+                `repos/${repository}/git/matching-refs/heads/release/`,
+            ])
+            if (refsResult.status !== 0) throw remoteErrorFor(refsResult)
+            let refs: unknown
+            try {
+                refs = JSON.parse(refsResult.stdout)
+            } catch {
+                throw new RemoteError("parse")
+            }
+            if (!Array.isArray(refs)) throw new RemoteError("parse")
+
+            const branches: { name: string; committedAt: string }[] = []
+            for (const item of refs) {
+                if (
+                    item === null ||
+                    typeof item !== "object" ||
+                    !("ref" in item) ||
+                    typeof item.ref !== "string" ||
+                    !item.ref.startsWith("refs/heads/release/") ||
+                    !("object" in item) ||
+                    item.object === null ||
+                    typeof item.object !== "object" ||
+                    !("sha" in item.object) ||
+                    typeof item.object.sha !== "string" ||
+                    !/^[0-9a-f]{40}$/i.test(item.object.sha)
+                ) {
+                    throw new RemoteError("parse")
+                }
+                const commitResult = run("gh", [
+                    "api",
+                    `repos/${repository}/commits/${item.object.sha}`,
+                ])
+                if (commitResult.status !== 0)
+                    throw remoteErrorFor(commitResult)
+                let commit: unknown
+                try {
+                    commit = JSON.parse(commitResult.stdout)
+                } catch {
+                    throw new RemoteError("parse")
+                }
+                if (
+                    commit === null ||
+                    typeof commit !== "object" ||
+                    !("commit" in commit) ||
+                    commit.commit === null ||
+                    typeof commit.commit !== "object" ||
+                    !("committer" in commit.commit) ||
+                    commit.commit.committer === null ||
+                    typeof commit.commit.committer !== "object" ||
+                    !("date" in commit.commit.committer) ||
+                    typeof commit.commit.committer.date !== "string" ||
+                    !isValidIsoDate(commit.commit.committer.date)
+                ) {
+                    throw new RemoteError("parse")
+                }
+                branches.push({
+                    name: item.ref.slice("refs/heads/".length),
+                    committedAt: commit.commit.committer.date,
+                })
+            }
+            return branches
+        },
+
+        async startDeploy(ref) {
+            if (
+                !ref ||
+                ref.startsWith("-") ||
+                /[\s\u0000-\u001f\u007f]/.test(ref)
+            ) {
+                throw new RemoteError("parse")
+            }
+            const result = run("gh", [
+                "workflow",
+                "run",
+                "deploy.yaml",
+                "--ref",
+                ref,
+                "-f",
+                "dry_run=false",
+                "-R",
+                resolveRepo(),
+            ])
+            if (result.status !== 0) throw remoteErrorFor(result)
+        },
+
         async hasRows(surveyId) {
             if (!idSchema.safeParse(surveyId).success)
                 return ["unknown", "unknown"]
@@ -415,5 +521,5 @@ export const createSurveyRemote = (
             })
         },
     }
-    return remote as SurveyRemote
+    return remote
 }

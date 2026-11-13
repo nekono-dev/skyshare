@@ -339,3 +339,223 @@ describe("R2 operations", () => {
         expect(existsSync(lastTempDir(calls))).toBe(false)
     })
 })
+
+describe("deployment and release branch operations", () => {
+    it.each([
+        ["option repo", { repo: "owner/repo" }, false],
+        ["resolved repo", {}, true],
+    ] as const)(
+        "starts a real deployment with exact arguments (%s)",
+        async (_name, options, resolvesRepo) => {
+            const calls: { command: string; args: string[] }[] = []
+            const runner: RunCommand = (command, args) => {
+                calls.push({ command, args })
+                return {
+                    status: 0,
+                    stdout: resolvesRepo
+                        ? "https://github.com/owner/repo.git\n"
+                        : "",
+                    stderr: "",
+                }
+            }
+            const remote = createSurveyRemote({ ...options, run: runner })
+            await remote.startDeploy("release/2026-11")
+            expect(calls).toEqual(
+                resolvesRepo
+                    ? [
+                          {
+                              command: "git",
+                              args: ["remote", "get-url", "origin"],
+                          },
+                          {
+                              command: "gh",
+                              args: [
+                                  "workflow",
+                                  "run",
+                                  "deploy.yaml",
+                                  "--ref",
+                                  "release/2026-11",
+                                  "-f",
+                                  "dry_run=false",
+                                  "-R",
+                                  "owner/repo",
+                              ],
+                          },
+                      ]
+                    : [
+                          {
+                              command: "gh",
+                              args: [
+                                  "workflow",
+                                  "run",
+                                  "deploy.yaml",
+                                  "--ref",
+                                  "release/2026-11",
+                                  "-f",
+                                  "dry_run=false",
+                                  "-R",
+                                  "owner/repo",
+                              ],
+                          },
+                      ],
+            )
+        },
+    )
+
+    it.each(["", "bad ref", "-danger", "bad\nref"])(
+        "rejects invalid deployment ref %j before running commands",
+        async ref => {
+            const calls: { command: string; args: string[] }[] = []
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: (command, args) => {
+                    calls.push({ command, args })
+                    return { status: 0, stdout: "", stderr: "" }
+                },
+            })
+            await expect(remote.startDeploy(ref)).rejects.toMatchObject({
+                kind: "parse",
+            })
+            expect(calls).toHaveLength(0)
+        },
+    )
+
+    it("lists refs and maps each head commit date", async () => {
+        const calls: { command: string; args: string[] }[] = []
+        const runner: RunCommand = (command, args) => {
+            calls.push({ command, args })
+            const output = args[1].endsWith("git/matching-refs/heads/release/")
+                ? JSON.stringify([
+                      {
+                          ref: "refs/heads/release/2026-10",
+                          object: { sha: "a".repeat(40) },
+                      },
+                      {
+                          ref: "refs/heads/release/2026-11",
+                          object: { sha: "b".repeat(40) },
+                      },
+                  ])
+                : JSON.stringify({
+                      commit: {
+                          committer: {
+                              date: args[1].includes("a".repeat(40))
+                                  ? "2026-10-01T00:00:00Z"
+                                  : "2026-11-01T00:00:00Z",
+                          },
+                      },
+                  })
+            return { status: 0, stdout: output, stderr: "" }
+        }
+        const remote = createSurveyRemote({ repo: "owner/repo", run: runner })
+        await expect(remote.listReleaseBranches()).resolves.toEqual([
+            { name: "release/2026-10", committedAt: "2026-10-01T00:00:00Z" },
+            { name: "release/2026-11", committedAt: "2026-11-01T00:00:00Z" },
+        ])
+        expect(calls).toEqual([
+            {
+                command: "gh",
+                args: [
+                    "api",
+                    "repos/owner/repo/git/matching-refs/heads/release/",
+                ],
+            },
+            {
+                command: "gh",
+                args: ["api", `repos/owner/repo/commits/${"a".repeat(40)}`],
+            },
+            {
+                command: "gh",
+                args: ["api", `repos/owner/repo/commits/${"b".repeat(40)}`],
+            },
+        ])
+    })
+
+    it("returns an empty branch list and classifies failures without exposing command text", async () => {
+        const empty = createSurveyRemote({
+            repo: "owner/repo",
+            run: () => ({ status: 0, stdout: "[]", stderr: "" }),
+        })
+        await expect(empty.listReleaseBranches()).resolves.toEqual([])
+        for (const [stderr, kind] of [
+            ["authentication required SECRET", "auth"],
+            ["offline SECRET", "unavailable"],
+        ] as const) {
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: () => ({ status: 1, stdout: "OUTPUT-SECRET", stderr }),
+            })
+            for (const operation of [
+                () => remote.startDeploy("develop"),
+                () => remote.listReleaseBranches(),
+            ]) {
+                const error = await operation().catch(value => value)
+                expect(error).toMatchObject({ kind })
+                expect(String(error)).not.toMatch(/SECRET|offline|OUTPUT/)
+            }
+        }
+    })
+
+    it.each([
+        ["配列でない応答", JSON.stringify({ ref: "refs/heads/release/x" })],
+        ["null", "null"],
+    ])("rejects a refs response that is %s as parse", async (_name, stdout) => {
+        const remote = createSurveyRemote({
+            repo: "owner/repo",
+            run: () => ({ status: 0, stdout, stderr: "" }),
+        })
+
+        await expect(remote.listReleaseBranches()).rejects.toMatchObject({
+            kind: "parse",
+        })
+    })
+
+    it.each([
+        ["日付でない", "yesterday"],
+        ["実在しない日付", "2026-02-30T00:00:00Z"],
+        ["時刻帯が無い", "2026-11-01T00:00:00"],
+        ["文字列でない", 20261101],
+    ])("rejects a commit date that is %s as parse", async (_name, date) => {
+        const remote = createSurveyRemote({
+            repo: "owner/repo",
+            run: (_command, args) => ({
+                status: 0,
+                stdout: args[1]!.endsWith("git/matching-refs/heads/release/")
+                    ? JSON.stringify([
+                          {
+                              ref: "refs/heads/release/x",
+                              object: { sha: "a".repeat(40) },
+                          },
+                      ])
+                    : JSON.stringify({ commit: { committer: { date } } }),
+                stderr: "",
+            }),
+        })
+
+        await expect(remote.listReleaseBranches()).rejects.toMatchObject({
+            kind: "parse",
+        })
+    })
+
+    it.each([
+        "not-json",
+        JSON.stringify([
+            { ref: "refs/heads/release/x", object: { sha: "short" } },
+        ]),
+        JSON.stringify([
+            { ref: "refs/heads/other", object: { sha: "a".repeat(40) } },
+        ]),
+    ])("rejects malformed branch data as parse: %s", async stdout => {
+        let calls = 0
+        const remote = createSurveyRemote({
+            repo: "owner/repo",
+            run: () => {
+                calls += 1
+                return { status: 0, stdout, stderr: "BODY-SECRET" }
+            },
+        })
+        await expect(remote.listReleaseBranches()).rejects.toMatchObject({
+            kind: "parse",
+        })
+        expect(calls).toBe(1)
+    })
+})
