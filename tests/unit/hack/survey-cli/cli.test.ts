@@ -156,7 +156,7 @@ describe("survey CLI add", () => {
         expect(createId).not.toHaveBeenCalled()
     })
 
-    it("does not block on aggregated past surveys retained in config", async () => {
+    it("does not block on aggregated past surveys left in config", async () => {
         const remote = makeRemote({
             async readConfigValue() {
                 const past = createValidSurveyConfig()
@@ -840,13 +840,13 @@ describe("survey CLI status and output", () => {
     })
 
     it("prunes only surveys recorded in both indexes and deletes an empty config", async () => {
-        const expired = createValidSurveyConfig()
-        expired.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
-        expired.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const pastSurvey = createValidSurveyConfig()
+        pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
         const calls: string[] = []
         const remote = makeRemote({
             async readConfigValue() {
-                return JSON.stringify(expired)
+                return JSON.stringify(pastSurvey)
             },
             async readIndex() {
                 return index(id)
@@ -867,13 +867,13 @@ describe("survey CLI status and output", () => {
     })
 
     it("keeps a survey missing from one index and adds the guidance suffix", async () => {
-        const expired = createValidSurveyConfig()
-        expired.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
-        expired.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const pastSurvey = createValidSurveyConfig()
+        pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
         const calls: string[] = []
         const remote = makeRemote({
             async readConfigValue() {
-                return JSON.stringify(expired)
+                return JSON.stringify(pastSurvey)
             },
             async readIndex(env) {
                 return env === "production" ? index(id) : undefined
@@ -1050,12 +1050,12 @@ describe("survey CLI status and output", () => {
         expect((await run(["prune"], deps(remote))).lines).toEqual([
             "prune: nothing to remove",
         ])
-        const expired = createValidSurveyConfig()
-        expired.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
-        expired.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const pastSurvey = createValidSurveyConfig()
+        pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
         const dryRemote = makeRemote({
             async readConfigValue() {
-                return JSON.stringify(expired)
+                return JSON.stringify(pastSurvey)
             },
             async readIndex() {
                 return index(id)

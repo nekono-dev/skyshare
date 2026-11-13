@@ -91,7 +91,7 @@
   - _Requirements: 2.3, 6.1, 6.5, 6.7, 6.8, 6.9, 7.1–7.8, 9.5, 9.6, 9.8–9.11, 9.15–9.17_
 
 - [ ] 4. Validation: 全体の確認
-- [ ] 4.1 全体の検査を通し、依存の除去を確かめる
+- [x] 4.1 全体の検査を通し、依存の除去を確かめる
   - 型検査・単体テスト・整形の検査を通す。リポジトリを検索し、CLI に保持期限の判定・回答の保存先への問い合わせ・旧い段階の名前が残っていないことを確かめる
   - 手順書の記述が実装のコマンド・段階・結果の語と一致していることを読み合わせる
   - 完了の状態: 全検査の結果と検索の結果が記録され、`survey-results-aggregation` の保持期限の削除を妨げる参照が無い
@@ -106,3 +106,9 @@
   - 完了の状態: 実機の結果（または未確認の理由）と、作り直した設定の状態が記録され、判定の定数と 2.2 の単体テストの語句が実機の値に更新されている
   - _Depends: 4.1_
   - _Requirements: 3.7, 3.8, 5.1, 5.2, 5.3_
+
+## Implementation Notes
+
+- 4.1 の確認結果（2026-11-13）: 型検査・単体テスト（980 件）・import 検査・整形がすべて通った。リポジトリの検索（`hack/` と CLI のテスト）で、保持期限の判定・回答の保存先（D1）への問い合わせ・旧い段階の名前（`retained`・`expired`）・旧い除去の判定（`RowPresence`・`surveyPhase`・`pruneCandidates`）が残っていないことを確かめた。`survey-results-aggregation` の保持期限の削除（3.5）は完了済みで、これを妨げる参照は無い。
+- 手順書の読み合わせ: `.claude/skills/survey-run/SKILL.md` の 6 つのコマンド（`add`・`status`・`publish`・`unpublish`・`prune`・`remove`）、6 つの段階（`upcoming`・`active`・`closed`・`empty`・`hidden`・`published`）、`!invalid-visibility` の印、固定の拒否文、「集計されていない環境がある場合」の項が、実装（`hack/survey-cli/`）と設計の語と一致している。シェルの例はすべて `bash -n` を通る。`docs/DEVELOP.md` は 3.x のアンケートの使い方、5.1 の再配備、5.4 の除去・取り下げ・`develop` の抜け道、R2 の復旧手順が同じ内容で書かれている。
+- 設計が定めていなかった固定の出力は、実装時に決めて `design.md` の `config.ts`・`cli.ts` の節に記録した（`AddOutcome` の `not-found`・`refused` の形と拒否文、`no-release` の文言、配備を省く dry-run の行）。`prune`・`remove` の dry-run の文言（`[dry-run] ... would remove ...`）は設計に無く、実装の決定として残す。
