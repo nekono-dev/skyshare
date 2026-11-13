@@ -310,6 +310,7 @@ Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` を書かず
 
 1. `.dev.vars` に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を書く（`config/.dev.vars.template` の項目）。
 2. `npm run sync:github` が、値のある名前を GitHub の Secrets へ登録する。値の無い名前は登録しない。GitHub の Secrets に既にある値は消えない。
+3. この 2 つは、プレビューと配備のビルドの工程（`npm run build`）にも渡す。ビルドの間に結果の保管先（R2）から公開済みのアンケート結果を読んで、結果ページを作るためである。2 つがそろわない環境（認証情報の無い手元・E2E など）では保管先へ接続せず、結果ページとログイン画面のリンクは作られない（アンケート機能は動く）。E2E のワークフローには渡さない。
 
 ### 6.4 Worker のシークレット（自動）
 
@@ -344,10 +345,25 @@ for b in skyshare-schedule-images skyshare-schedule-images-develop; do
 done
 ```
 
-| Worker             | ドメイン              | D1・R2                                                 |
-| ------------------ | --------------------- | ------------------------------------------------------ |
-| `skyshare`         | `<SITE_HOST>`         | `skyshare`・`skyshare-schedule-images`                 |
-| `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-develop`・`skyshare-schedule-images-develop` |
+アンケートの結果の保管先（R2）も、配備の前に作る。**本番用 `skyshare-survey-results` を、結果の集計を含むリリースを配備するより先に作成する**（`wrangler.jsonc` に宣言があるため、バケットが無いと配備が失敗する）。develop 用は `skyshare-survey-results-develop` で、プレビューは develop 用を共用する。ライフサイクルは付けない（結果は残す）。
+
+```sh
+for b in skyshare-survey-results skyshare-survey-results-develop; do
+  npx wrangler r2 bucket create "$b"
+done
+```
+
+| Worker             | ドメイン              | D1・R2                                                                                    |
+| ------------------ | --------------------- | ----------------------------------------------------------------------------------------- |
+| `skyshare`         | `<SITE_HOST>`         | `skyshare`・`skyshare-schedule-images`・`skyshare-survey-results`                         |
+| `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-develop`・`skyshare-schedule-images-develop`・`skyshare-survey-results-develop` |
+
+結果ページの確認と更新（アンケートの結果の公表）:
+
+- 結果ページは、ビルドの間に R2 から読んで静的に作る。認証情報（6.3）が無い環境では作らない。配備する運用者は、本番用のバケットを先に作っておく。
+- 手元で実物を確かめるには、`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を、シェルの環境変数として両方渡して `npm run dev` を実行する（`dev` は設定を作り直す `setup:local` を含む）。ビルドで確かめるときは、両方を渡したまま、先に `npm run setup:local` で設定を作り直してから `npm run build` を実行する（`build` だけでは設定を作り直さないため、接続が付かない）。値をファイルや履歴に残さない。手元の接続先は、常に develop 用のバケットである（本番のバケットへはつながらない）。片方だけでは接続しない。
+- 手元の開発サーバーは、取得した結果を記憶している。保管先の内容（公開の切り替えなど）を更新したあとは、開発サーバーを再起動する。
+- 既存のプレビューは、公開の切り替えをしても、次のプッシュ（再配備）まで更新されない。本番・develop の反映には、`publish`・`unpublish` が起動する再配備を使う（5.1）。
 
 ### 6.6 OAuth（予約と Bluesky ログイン）
 
