@@ -25,8 +25,9 @@ Quick reference for running the "hand it to a sub-agent" steps of `/kiro-impl`, 
 
 In the Codex sandbox, listening on localhost and `tsx` inter-process sockets fail with `EPERM`.
 
-- **Codex may run**: `npm run test:type`, and targeted `npx vitest run -c <config> <file>` (unit, component). If it is unclear whether the route layer (workerd) runs, try it before the call or run it yourself.
+- **Codex may run**: `npm run test:type`, and targeted `npx vitest run -c <config> <file>` (unit, component). The route layer (workerd, `npm run test:route`) does NOT run there (`listen EPERM`), so tell the implementer to skip it and run route tests yourself, including the RED step.
 - **The conductor (Claude) always runs itself**: the whole `npm run test:unit`, `npm run test:imports`, `npm run test:route`, `npx prettier --check <changed files>`. Treat Codex's report as unverified; only results you ran count (CLAUDE.md item 8).
+- Reproducing RED yourself: when the change is uncommitted, `git stash push <source file>` and run the new tests, then `git stash pop`. If the stash would remove a whole new function (not a meaningful RED) or a later remediation round needs RED, use a mutation instead (e.g. raise a limit constant) and show the new test fails.
 - When a reviewer needs to run tests, pass `scratch: true`. If tests are slow or need workerd or the network, run them first and put the command and result in the prompt.
 
 ## 4. Implementer prompt skeleton (`workspace-write`)
