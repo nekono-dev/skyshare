@@ -41,7 +41,7 @@ export const privacy = {
     "privacy.purpose.item4": "Investigating bugs and preventing misuse",
     "privacy.purpose.item5": "Answering your inquiries",
     "privacy.purpose.survey":
-        "We aggregate survey responses to understand trends. We use a DID hash to prevent duplicate responses.",
+        "We aggregate survey responses to understand trends. We use a DID hash to prevent duplicate responses. We may publish the aggregated result only as the percentage for each choice; we never publish individual responses or the number of respondents.",
     "privacy.external.title": "Sharing of information",
     "privacy.external.intro":
         "We do not share your information with third parties except in the following cases.",
@@ -69,7 +69,7 @@ export const privacy = {
     "privacy.retention.surveyHash":
         "The server-side hash for duplicate detection is deleted after the survey closes.",
     "privacy.retention.surveyAnswer":
-        "Survey answers are deleted one month after the survey closes.",
+        "Survey answers are deleted as soon as the survey has closed and its aggregated result has been saved.",
     "privacy.retention.surveyDevice":
         "Device records remain until you clear your browser storage.",
     "privacy.security.title": "Security",

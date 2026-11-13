@@ -38,7 +38,7 @@ export const privacy = {
     "privacy.purpose.item4": "不具合の調査と不正利用の防止",
     "privacy.purpose.item5": "お問い合わせへの回答",
     "privacy.purpose.survey":
-        "アンケート回答を集計し、傾向の把握と重複回答の防止に使います。",
+        "アンケート回答を集計し、傾向の把握と重複回答の防止に使います。集計の結果は、選択肢ごとの割合だけを公開することがあります。個別の回答や回答者の数は公開しません。",
     "privacy.external.title": "情報の共有",
     "privacy.external.intro":
         "次の場合を除き、利用者の情報を第三者と共有しません。",
@@ -66,7 +66,7 @@ export const privacy = {
     "privacy.retention.surveyHash":
         "サーバーの重複判定用ハッシュは、アンケート終了後に削除します。",
     "privacy.retention.surveyAnswer":
-        "アンケートの回答は、終了から1か月後に削除します。",
+        "アンケートの回答は、終了後に集計の結果を保存した時点で削除します。",
     "privacy.retention.surveyDevice":
         "端末の記録は、ブラウザの保存データを消すまで残ります。",
     "privacy.security.title": "セキュリティ",
