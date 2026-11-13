@@ -15,5 +15,9 @@
       "binding": "SCHEDULE_IMAGES",
       "bucket_name": "skyshare-schedule-images-test",
     },
+    {
+      "binding": "SURVEY_RESULTS",
+      "bucket_name": "skyshare-survey-results-test",
+    },
   ],
 }

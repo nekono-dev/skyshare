@@ -15,7 +15,7 @@
   "triggers": {
     "crons": ["* * * * *"],
   },
-  // アプリ共通の D1（予約など。ほかの機能も同じ D1 にテーブルを足す）と、予約の添付画像の一時保管（R2）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
+  // アプリ共通の D1（予約・アンケートの回答など。ほかの機能も同じ D1 にテーブルを足す）。D1 は名前で解決する（wrangler deploy が既存の D1 を探してつなぐ）。
   // 名前は Cloudflare アカウントごとのため、運用者が違っても変えなくてよい（develop は末尾に -develop）
   "d1_databases": [
     {
@@ -24,10 +24,16 @@
       "migrations_dir": "migrations",
     },
   ],
+  // R2 は用途ごとにバケットを分ける。予約の添付画像の一時保管と、アンケート結果の公開用の統計ファイル（SURVEY_RESULTS）。
+  // SURVEY_RESULTS のバケットは運用者が事前に作成する（無いと wrangler deploy が失敗する）
   "r2_buckets": [
     {
       "binding": "SCHEDULE_IMAGES",
       "bucket_name": "skyshare-schedule-images",
+    },
+    {
+      "binding": "SURVEY_RESULTS",
+      "bucket_name": "skyshare-survey-results",
     },
   ],
   // 不具合の報告と機能の提案の送信の回数の制限（アカウントごとに60秒に1件。期間は10秒か60秒しか選べない）。

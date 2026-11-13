@@ -32,6 +32,50 @@ describe("parseJsonc", () => {
     })
 })
 
+// 結果の保管先（R2）は用途ごとのバケットとして、本番・develop・プレビューの名前を検査する
+const surveyResultsBinding = (bindings: { binding: string }[] = []) =>
+    bindings.find(b => b.binding === "SURVEY_RESULTS")
+
+describe("survey results bucket declaration", () => {
+    it("declares SURVEY_RESULTS for the production bucket in the template", () => {
+        expect(surveyResultsBinding(template.r2_buckets)).toEqual({
+            binding: "SURVEY_RESULTS",
+            bucket_name: "skyshare-survey-results",
+        })
+    })
+
+    it("gives the develop deployment the -develop bucket and previews the same bucket", () => {
+        const out = buildWranglerConfig({
+            template,
+            config,
+            develop: true,
+            d1Ids: { "skyshare-develop": D1_ID },
+        })
+        expect(surveyResultsBinding(out.r2_buckets)).toEqual({
+            binding: "SURVEY_RESULTS",
+            bucket_name: "skyshare-survey-results-develop",
+        })
+        expect(surveyResultsBinding(out.previews.r2_buckets)).toEqual({
+            binding: "SURVEY_RESULTS",
+            bucket_name: "skyshare-survey-results-develop",
+        })
+    })
+
+    it("declares a test bucket for SURVEY_RESULTS in the route test config without remote access", () => {
+        const routeConfig = parseJsonc(
+            readFileSync(
+                path.resolve(__dirname, "../../../tests/route/wrangler.jsonc"),
+                "utf8",
+            ),
+        )
+        expect(surveyResultsBinding(routeConfig.r2_buckets)).toEqual({
+            binding: "SURVEY_RESULTS",
+            bucket_name: "skyshare-survey-results-test",
+        })
+        expect(JSON.stringify(routeConfig)).not.toContain("remote")
+    })
+})
+
 describe("buildWranglerConfig", () => {
     it("puts the configured vars at the top level and in the previews", () => {
         const out = buildWranglerConfig({ template, config, develop: false })
