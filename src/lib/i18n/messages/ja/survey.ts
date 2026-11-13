@@ -12,4 +12,6 @@ export const survey = {
         "「回答しない」を選んで閉じると、回答は送信されません。後からボタンで開き直せます。",
     "survey.submitFailed":
         "回答を送信できませんでした。もう一度送信してください。",
+    "surveyResults.heading": "アンケートの結果",
+    "surveyResults.period": "{start} 〜 {end}",
 } as const

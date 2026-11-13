@@ -14,4 +14,6 @@ export const survey = {
         'If you select "Prefer not to answer" and close, your answers will not be sent. You can reopen the survey with the button.',
     "survey.submitFailed":
         "Your answers could not be sent. Please try submitting again.",
+    "surveyResults.heading": "Survey results",
+    "surveyResults.period": "{start} – {end}",
 } satisfies Record<keyof typeof jaSurvey, string>
