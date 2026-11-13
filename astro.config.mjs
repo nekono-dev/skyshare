@@ -66,11 +66,12 @@ const build = resolveBuildInfo(env, {
   remoteUrl: readGit("remote", "get-url", "origin"),
 })
 
-// 配信用のアンケート設定の有無。変数が空白でない、または生成物が存在するとき "true"。
+// 配信用のアンケート設定と保存先の宣言が揃うとき "true"。
 // 画面とサーバーは、この旗が "true" のときだけ設定を取得する（`src/lib/survey/loadConfig.ts`）
 const surveyConfigPresent = surveyConfigPresentFlag(
   env,
   existsSync(new URL("./public/surveys/index.json", import.meta.url)),
+  wrangler,
 )
 
 export default defineConfig({
