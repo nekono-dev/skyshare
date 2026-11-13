@@ -4,13 +4,25 @@
 
 import type { D1Database, SurveyResultsBucket } from "@/lib/platform/cfTypes"
 import { isSurveyFeatureEnabled } from "@/lib/survey/feature"
+import type { Survey } from "@/lib/survey/definition"
 import {
     isSurveyConfigPresent,
     readSurveyConfig,
 } from "@/lib/survey/loadConfig"
 import { isClosed } from "@/lib/survey/period"
-import { readIndex } from "@/lib/survey/results/store"
-import { purgeRespondentsBatch } from "@/lib/survey/store"
+import {
+    appendIndexEntry,
+    readIndex,
+    readMatchingResult,
+    putResultOnce,
+} from "@/lib/survey/results/store"
+import { tallySurvey } from "@/lib/survey/results/tally"
+import type { SurveyIndex } from "@/lib/survey/results/schema"
+import {
+    purgeRespondentsBatch,
+    purgeSurveysBatch,
+    readDailyRows,
+} from "@/lib/survey/store"
 
 /** 日次処理に必要な Worker バインディング */
 export type SurveyDailyEnv = {
@@ -29,6 +41,44 @@ const errorClassName = (error: unknown): string =>
 /** 設定読取前の失敗など、識別子のない段階の失敗を記録する */
 const logStageFailure = (stage: string, errorName: string): void => {
     console.error(`runSurveyDaily: ${stage} failed error=${errorName}`)
+}
+
+/** 識別子を含む失敗は段階と例外名だけを記録する */
+const logSurveyFailure = (
+    stage: string,
+    surveyId: string,
+    error: unknown,
+): void => {
+    console.error(
+        `runSurveyDaily: ${stage} failed survey=${surveyId} error=${errorClassName(error)}`,
+    )
+}
+
+const indexEntry = (
+    index: SurveyIndex,
+    surveyId: string,
+): SurveyIndex["surveys"][number] | undefined =>
+    index.surveys.find(entry => entry.id === surveyId)
+
+const confirmsIndexEntry = (
+    index: SurveyIndex,
+    expected: SurveyIndex["surveys"][number],
+): boolean =>
+    index.surveys.some(
+        entry =>
+            entry.id === expected.id &&
+            entry.opensAt === expected.opensAt &&
+            entry.closesAt === expected.closesAt &&
+            entry.outcome === expected.outcome,
+    )
+
+const appendAndConfirm = async (
+    bucket: SurveyResultsBucket,
+    entry: SurveyIndex["surveys"][number],
+): Promise<void> => {
+    await appendIndexEntry(bucket, entry)
+    const snapshot = await readIndex(bucket)
+    if (!confirmsIndexEntry(snapshot.index, entry)) throw new Error()
 }
 
 /**
@@ -81,9 +131,134 @@ export const runSurveyDaily = async (
         }
     }
 
+    let snapshot
     try {
-        await readIndex(bucket)
+        snapshot = await readIndex(bucket)
     } catch (error) {
         logStageFailure("index", errorClassName(error))
+        return
+    }
+
+    const closedSurveys =
+        config?.surveys.filter(survey => isClosed(survey, now)) ?? []
+    const deletions = new Set<string>()
+    const blockedSurveyIds = new Set<string>()
+    const pending: {
+        survey: Survey
+        entry?: SurveyIndex["surveys"][number]
+    }[] = []
+
+    for (const survey of closedSurveys) {
+        const entry = indexEntry(snapshot.index, survey.id)
+        if (entry?.outcome === "empty") {
+            deletions.add(survey.id)
+            continue
+        }
+        const expected = entry ?? {
+            id: survey.id,
+            opensAt: survey.opensAt,
+            closesAt: survey.closesAt,
+            outcome: "result" as const,
+        }
+        try {
+            const result = await readMatchingResult(bucket, expected)
+            if (result) {
+                if (!entry) {
+                    await appendAndConfirm(bucket, {
+                        id: result.id,
+                        opensAt: result.opensAt,
+                        closesAt: result.closesAt,
+                        outcome: "result",
+                    })
+                }
+                deletions.add(survey.id)
+                continue
+            }
+            pending.push({ survey, entry })
+        } catch (error) {
+            blockedSurveyIds.add(survey.id)
+            logSurveyFailure("result read", survey.id, error)
+        }
+    }
+
+    let answerRows: Map<string, string[]>
+    try {
+        const rows = await readDailyRows(db, {
+            answerSurveyIds: pending.map(item => item.survey.id),
+            residualSurveyIds: [],
+        })
+        answerRows = rows.answers
+    } catch (error) {
+        for (const item of pending) {
+            blockedSurveyIds.add(item.survey.id)
+            logSurveyFailure("answers read", item.survey.id, error)
+        }
+        answerRows = new Map()
+        pending.length = 0
+    }
+
+    for (const { survey, entry } of pending) {
+        try {
+            const tallied = tallySurvey(survey, answerRows.get(survey.id) ?? [])
+            // 目録に記録があれば、その期間を本体の期間とする（確認の期待値と一致させる）
+            const result = tallied && {
+                ...tallied,
+                opensAt: entry?.opensAt ?? tallied.opensAt,
+                closesAt: entry?.closesAt ?? tallied.closesAt,
+            }
+            if (!result) {
+                if (entry?.outcome === "result") {
+                    blockedSurveyIds.add(survey.id)
+                    logSurveyFailure("result recovery", survey.id, new Error())
+                    continue
+                }
+                await appendAndConfirm(bucket, {
+                    id: survey.id,
+                    opensAt: survey.opensAt,
+                    closesAt: survey.closesAt,
+                    outcome: "empty",
+                })
+                deletions.add(survey.id)
+                continue
+            }
+
+            await putResultOnce(bucket, result)
+            const confirmed = await readMatchingResult(bucket, result)
+            if (!confirmed) throw new Error()
+            if (!entry) {
+                await appendAndConfirm(bucket, {
+                    id: result.id,
+                    opensAt: result.opensAt,
+                    closesAt: result.closesAt,
+                    outcome: "result",
+                })
+            } else {
+                const current = await readIndex(bucket)
+                if (
+                    !confirmsIndexEntry(current.index, {
+                        id: entry.id,
+                        opensAt: entry.opensAt,
+                        closesAt: entry.closesAt,
+                        outcome: "result",
+                    })
+                )
+                    throw new Error()
+            }
+            deletions.add(survey.id)
+        } catch (error) {
+            blockedSurveyIds.add(survey.id)
+            logSurveyFailure("result save", survey.id, error)
+        }
+    }
+
+    const confirmedSurveyIds = [...deletions].filter(
+        surveyId => !blockedSurveyIds.has(surveyId),
+    )
+    if (confirmedSurveyIds.length > 0) {
+        try {
+            await purgeSurveysBatch(db, confirmedSurveyIds)
+        } catch (error) {
+            logStageFailure("answers purge", errorClassName(error))
+        }
     }
 }
