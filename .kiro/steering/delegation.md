@@ -47,6 +47,8 @@ Always include: absolute paths; spec, task number, requirement numbers and desig
 - Pass the task, the requirement and design sections, the Boundary, the completion state, and `.kiro/steering/comments.md` (e.g. the top-block rule).
 - Pass the verification results you ran (command and result); do not ask it to rerun what cannot run.
 - Reply is exactly one `## Review Verdict` block with `- VERDICT: APPROVED | REJECTED`; a rejection needs an actionable fix. No taste or guesses.
+- Pass the implementer's `Status Report` fields (especially `RED_PHASE_OUTPUT`); a behavioral task without RED evidence is rejected by `kiro-review`. If the implementer's RED output is thin, reproduce RED yourself (stash the source change, run the test) and put that in the prompt.
+- The review sandbox denies reading `.env*` and `.dev.vars*`, so tracked files such as `_legacy/**/.env.template` or `config/.dev.vars.template` can look modified in its `git status`. Tell the reviewer this is a sandbox artifact and give your own `git status --porcelain`.
 - Have it audit the Boundary: changes belonging to another task must not be mixed in.
 
 ## 6. What the conductor does
