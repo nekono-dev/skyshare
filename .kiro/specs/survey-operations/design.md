@@ -418,6 +418,8 @@ export const run: (
   - `remove: removed <id> (surveys A -> B)`。
   - `add` の新規登録拒否: `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。`。この文面はテストで固定する。
   - 開催中の更新で締切を前倒しできない場合: `error: refused: 前倒しできません。自然な終了と集計を待ってください。`。指定締切の前倒し条件を満たさず、かつ開始日時より後で最も早い日本時間 0 時が現在の締切以後ならこの行を返す。この文面もテストで固定する。
+  - 配備先を決められない場合（本番にリリースブランチが無い）: `error: no-release: 本番のリリースブランチがありません`（実装時の決定）。何も書かない。
+  - 配備を省く dry-run: `[dry-run] publish: would publish <id> (<環境>); deploy skipped (--no-deploy)`（実装時の決定。`unpublish` も同じ形）。
   - 失敗: `error: usage|invalid|auth|unavailable|too-large|not-found|refused|no-release|deploy: <固定の文言>`。`refused` は `<id> is <段階>` と理由の固定語（`results would be lost`・`nothing to publish`・`not aggregated: <環境>`）または上記の `add` 専用の固定文言。`deploy` は「可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる」。
 - Postconditions: 識別子・段階・環境・数値・日時以外の入力由来の値を行に含めない。設定の読み込みが不正なら `error: invalid`（位置と理由だけ。現行どおり）。
 

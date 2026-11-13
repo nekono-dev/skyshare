@@ -61,6 +61,12 @@ npm run survey -- status --env develop
 
 目録の取得失敗は、認証・接続・目録形式を直してから同じコマンドを再実行する。
 
+## 公開・非公開の切り替え
+
+集計済みで結果があるアンケートは、`npm run survey -- publish <ID> --env <環境>` で公開し、`npm run survey -- unpublish <ID> --env <環境>` で非公開にする。画面への反映には再配備が必要で、CLI は切り替え後に再配備を起動する。`--no-deploy` は再配備を起動せず、`--dry-run` は書き換えも起動もしない。対象環境には `production` または `develop` を指定する。
+
+CLI が示すのは再配備の起動までで、配備の完了や画面への反映は確認しない。運用者が GitHub Actions で完了を確認する。
+
 ## 設定からの除去
 
 `prune` と `remove` は現在利用できず、`error: refused: このコマンドはまだ使えません` の 1 行を返す。設定を直接書き換えたり、JSON からアンケートを手動削除したりしない。

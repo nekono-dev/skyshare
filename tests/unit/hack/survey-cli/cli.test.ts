@@ -22,6 +22,26 @@ const index = (...ids: string[]) => ({
         outcome: "result" as const,
     })),
 })
+const validResult = (surveyId: string) => ({
+    schemaVersion: 1 as const,
+    id: surveyId,
+    opensAt: "2026-11-01T00:00:00+09:00",
+    closesAt: "2026-12-01T00:00:00+09:00",
+    questions: [
+        {
+            id: "q-purpose",
+            kind: "single" as const,
+            title: { ja: "主な目的は？", en: "Main purpose?" },
+            options: [
+                {
+                    id: "share",
+                    label: { ja: "共有", en: "Share" },
+                    percent: 100,
+                },
+            ],
+        },
+    ],
+})
 
 const makeRemote = (
     overrides: Partial<SurveyRemote> = {},
@@ -458,14 +478,369 @@ describe("survey CLI status and output", () => {
         expect(result.lines.join(" ")).not.toContain("SECRET-DRAFT")
     })
 
-    it("returns the fixed interim refusal for commands implemented by later tasks", async () => {
-        const commands = [
-            ["prune"],
-            ["remove", id],
-            ["publish", id, "--env", "develop"],
-            ["unpublish", id, "--env", "production"],
-        ]
-        for (const command of commands) {
+    it("publishes an indexed result and starts the selected deployment", async () => {
+        const calls: string[] = []
+        const config = createValidSurveyConfig()
+        config.surveys[0]!.closesAt = "2026-11-10T00:00:00+09:00"
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(config)
+            },
+            async readIndex() {
+                calls.push("index")
+                return {
+                    schemaVersion: 1,
+                    surveys: [
+                        {
+                            id,
+                            opensAt: "2026-11-01T00:00:00+09:00",
+                            closesAt: "2026-11-10T00:00:00+09:00",
+                            outcome: "result",
+                        },
+                    ],
+                }
+            },
+            async readVisibility() {
+                calls.push("visibility")
+                return "hidden"
+            },
+            async readResult() {
+                calls.push("result")
+                return {
+                    schemaVersion: 1,
+                    id,
+                    opensAt: "2026-11-01T00:00:00+09:00",
+                    closesAt: "2026-11-10T00:00:00+09:00",
+                    questions: [
+                        {
+                            id: "q-purpose",
+                            kind: "single",
+                            title: { ja: "主な目的は？", en: "Main purpose?" },
+                            options: [
+                                {
+                                    id: "share",
+                                    label: { ja: "共有", en: "Share" },
+                                    percent: 100,
+                                },
+                            ],
+                        },
+                    ],
+                }
+            },
+            async writeVisibility(env, surveyId, visible) {
+                calls.push(`write:${env}:${surveyId}:${visible}`)
+            },
+            async startDeploy(ref) {
+                calls.push(`deploy:${ref}`)
+            },
+        })
+        const result = await run(["publish", id, "--env", "develop"], {
+            ...deps(remote),
+            now: () => new Date("2026-11-15T12:00:00Z"),
+        })
+        expect(result).toEqual({
+            code: 0,
+            lines: [
+                "publish: published survey-2026-a (develop); deploy started (develop)",
+            ],
+        })
+        expect(calls).toEqual([
+            "index",
+            "visibility",
+            "result",
+            "write:develop:survey-2026-a:true",
+            "deploy:develop",
+        ])
+    })
+
+    it.each([
+        [
+            "upcoming",
+            "2026-11-20T00:00:00+09:00",
+            "result",
+            "results would be lost",
+        ],
+        [
+            "active",
+            "2026-11-15T00:00:00+09:00",
+            "result",
+            "results would be lost",
+        ],
+        ["closed", undefined, undefined, "not aggregated: develop"],
+        ["empty", "2026-11-10T00:00:00+09:00", "empty", "nothing to publish"],
+    ] as const)(
+        "refuses a %s survey before writing",
+        async (stage, opensAt, outcome, reason) => {
+            const calls: string[] = []
+            const config = createValidSurveyConfig()
+            if (stage !== "closed") {
+                config.surveys[0]!.opensAt = opensAt!
+                config.surveys[0]!.closesAt = "2026-12-01T00:00:00+09:00"
+            }
+            const remote = makeRemote({
+                async readConfigValue() {
+                    return JSON.stringify(config)
+                },
+                async readIndex() {
+                    return outcome
+                        ? {
+                              schemaVersion: 1,
+                              surveys: [
+                                  {
+                                      id,
+                                      opensAt: "2026-11-01T00:00:00+09:00",
+                                      closesAt: "2026-11-10T00:00:00+09:00",
+                                      outcome,
+                                  },
+                              ],
+                          }
+                        : undefined
+                },
+                async readVisibility() {
+                    return "hidden"
+                },
+                async writeVisibility() {
+                    calls.push("write")
+                },
+                async startDeploy() {
+                    calls.push("deploy")
+                },
+            })
+            const result = await run(["publish", id, "--env", "develop"], {
+                ...deps(remote),
+                now: () =>
+                    new Date(
+                        stage === "upcoming"
+                            ? "2026-11-15T00:00:00Z"
+                            : stage === "active"
+                              ? "2026-11-15T12:00:00Z"
+                              : "2027-01-01T00:00:00Z",
+                    ),
+            })
+            expect(result.lines[0]).toContain(`is ${stage}: ${reason}`)
+            expect(calls).toEqual([])
+        },
+    )
+
+    it("refuses an unknown id and invalid or mismatched results without writing", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "hidden"
+            },
+            async readResult() {
+                return { broken: "SECRET" } as never
+            },
+            async writeVisibility() {
+                calls.push("write")
+            },
+        })
+        const lateDeps = {
+            ...deps(remote),
+            now: () => new Date("2027-01-01T00:00:00Z"),
+        }
+        const missing = await run(
+            ["publish", "survey-2026-b", "--env", "develop"],
+            lateDeps,
+        )
+        expect(missing.lines[0]).toMatch(/^error: not-found:/)
+        const invalid = await run(["publish", id, "--env", "develop"], lateDeps)
+        expect(invalid.lines).toEqual([
+            "error: invalid: 結果が目録と一致しません",
+        ])
+        expect(invalid.lines.join(" ")).not.toContain("SECRET")
+        const mismatchRemote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "hidden"
+            },
+            async readResult() {
+                return validResult("survey-2026-b")
+            },
+            async writeVisibility() {
+                calls.push("write")
+            },
+        })
+        const mismatch = await run(["publish", id, "--env", "develop"], {
+            ...deps(mismatchRemote),
+            now: () => new Date("2027-01-01T00:00:00Z"),
+        })
+        expect(mismatch.lines).toEqual([
+            "error: invalid: 結果が目録と一致しません",
+        ])
+        expect(calls).toEqual([])
+    })
+
+    it("unpublishes despite a broken result body and overwrites invalid visibility", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "invalid"
+            },
+            async readResult() {
+                calls.push("result")
+                throw Object.assign(new Error("SECRET"), { kind: "parse" })
+            },
+            async writeVisibility(env, surveyId, visible) {
+                calls.push(`write:${env}:${surveyId}:${visible}`)
+            },
+        })
+        const result = await run(
+            ["unpublish", id, "--env", "develop", "--no-deploy"],
+            { ...deps(remote), now: () => new Date("2027-01-01T00:00:00Z") },
+        )
+        expect(result.lines).toEqual([
+            "unpublish: hidden survey-2026-a (develop); deploy skipped (--no-deploy)",
+        ])
+        expect(calls).toEqual(["write:develop:survey-2026-a:false"])
+    })
+
+    it("overwrites invalid visibility when publishing instead of treating it as unchanged", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "invalid"
+            },
+            async readResult() {
+                return validResult(id)
+            },
+            async writeVisibility(env, surveyId, visible) {
+                calls.push(`write:${env}:${surveyId}:${visible}`)
+            },
+        })
+        const result = await run(
+            ["publish", id, "--env", "develop", "--no-deploy"],
+            { ...deps(remote), now: () => new Date("2027-01-01T00:00:00Z") },
+        )
+        expect(result.lines).toEqual([
+            "publish: published survey-2026-a (develop); deploy skipped (--no-deploy)",
+        ])
+        expect(calls).toEqual(["write:develop:survey-2026-a:true"])
+    })
+
+    it("starts deployment without rewriting an already desired flag", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "visible"
+            },
+            async readResult() {
+                return validResult(id)
+            },
+            async writeVisibility() {
+                calls.push("write")
+            },
+            async startDeploy(ref) {
+                calls.push(`deploy:${ref}`)
+            },
+        })
+        const result = await run(["publish", id, "--env", "develop"], {
+            ...deps(remote),
+            now: () => new Date("2027-01-01T00:00:00Z"),
+        })
+        expect(result.lines).toEqual([
+            "publish: unchanged survey-2026-a (develop); deploy started (develop)",
+        ])
+        expect(calls).toEqual(["deploy:develop"])
+    })
+
+    it("does not write when production has no release branch", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "hidden"
+            },
+            async readResult() {
+                return validResult(id)
+            },
+            async listReleaseBranches() {
+                return []
+            },
+            async writeVisibility() {
+                calls.push("write")
+            },
+        })
+        const lateDeps = {
+            ...deps(remote),
+            now: () => new Date("2027-01-01T00:00:00Z"),
+        }
+        const result = await run(
+            ["publish", id, "--env", "production"],
+            lateDeps,
+        )
+        expect(result.lines[0]).toMatch(/^error: no-release:/)
+        expect(calls).toEqual([])
+    })
+
+    it("reports deploy failure after saving the flag and supports dry-run without side effects", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex() {
+                return index(id)
+            },
+            async readVisibility() {
+                return "hidden"
+            },
+            async readResult() {
+                return validResult(id)
+            },
+            async listReleaseBranches() {
+                return [
+                    { name: "release/a", committedAt: "2026-01-01T00:00:00Z" },
+                    { name: "release/z", committedAt: "2026-01-01T00:00:00Z" },
+                ]
+            },
+            async writeVisibility() {
+                calls.push("write")
+            },
+            async startDeploy(ref) {
+                calls.push(`deploy:${ref}`)
+                throw new Error("SECRET")
+            },
+        })
+        const lateDeps = {
+            ...deps(remote),
+            now: () => new Date("2027-01-01T00:00:00Z"),
+        }
+        const failed = await run(
+            ["publish", id, "--env", "production"],
+            lateDeps,
+        )
+        expect(failed.lines).toEqual([
+            "error: deploy: 可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる",
+        ])
+        expect(failed.lines.join(" ")).not.toContain("SECRET")
+        expect(calls).toEqual(["write", "deploy:release/z"])
+        calls.length = 0
+        const dryRun = await run(
+            ["publish", id, "--env", "production", "--dry-run"],
+            lateDeps,
+        )
+        expect(dryRun.lines).toEqual([
+            "[dry-run] publish: would publish survey-2026-a (production); would deploy release/z",
+        ])
+        expect(calls).toEqual([])
+    })
+
+    it("keeps prune and remove on the interim refusal", async () => {
+        for (const command of [["prune"], ["remove", id]]) {
             const result = await run(command)
             expect(result.lines).toEqual([
                 "error: refused: このコマンドはまだ使えません",

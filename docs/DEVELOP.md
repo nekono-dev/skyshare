@@ -132,7 +132,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
   ```
 
 - 本番・develop・プレビューのビルドにだけ、リポジトリ変数 `SURVEY_CONFIG` を渡す（検証と E2E のジョブには渡さない）。
-- アンケートの登録・状態確認は専用 CLI だけで行う: `npm run survey -- status --env production` または `npm run survey -- status --env develop`、`npm run survey -- add --file <一時ファイル> [--dry-run]`。状態確認は設定と指定環境の目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外のコマンドは固定の 1 行を返す。
+- アンケートの登録・状態確認・公開切り替えは専用 CLI だけで行う: `npm run survey -- status --env production` または `npm run survey -- status --env develop`、`npm run survey -- add --file <一時ファイル> [--dry-run]`、`npm run survey -- publish <ID> --env <環境> [--no-deploy] [--dry-run]`、`npm run survey -- unpublish <ID> --env <環境> [--no-deploy] [--dry-run]`。状態確認は設定と指定環境の目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外は固定の 1 行を返す。
 - 新規登録の識別子は UUID として CLI が自動発行するため、下書きに手入力しない。アンケート全体の題・説明はなく、質問の題・選択肢と締切日だけを登録する。締切日は実在する `YYYY-MM-DD` で指定し、日本時間 0 時を表す。
 - 次の新規登録は、設定にあるすべての ID が本番・develop 両方の目録に記録されるまで拒否する。開始前のアンケートも対象で、設定に残る集計済みの過去分は対象外。拒否時は `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。` の 1 行だけを返す。記録がない環境には現在の設定を配備して日次集計を待つ。目録の取得失敗は認証・接続・形式の問題を直して再実行する。
 - 既存アンケートは `status` に表示された ID を下書きに入れて更新する。開催中は締切を前倒しし、設定を両環境へ配備して日次集計を待つ。前倒しできない場合は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` を返す。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
@@ -217,6 +217,7 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 | `main`       | 配備しない                              | —                          | 公開の基準。直接の作業をしない         |
 
 - `release/**` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通った場合だけ配備する。手動実行（Actions → deploy → Run workflow）は既定で `dry_run`（ビルドと `wrangler deploy --dry-run` のみ）になる。
+- `publish`・`unpublish` は可視フラグを切り替えた後に画面へ反映するため、再配備を起動する。手動起動は `gh workflow run deploy.yaml --ref <ブランチ> -f dry_run=false`。本番は最新の `release/**` ブランチ、develop は `develop` を指定する。CLI は配備の完了を確認しないため、運用者が完了を確認する。
 - `dev/**` への push で `.github/workflows/preview.yaml` が develop 用の Worker の Preview を作る（`wrangler preview`。XXXX は 46 文字以内。develop が一度配備済みであること）。同じブランチへ再 push しても URL は変わらない。
 - `release/**` はすべて同じ本番の Worker・D1・R2 に配備するため、配備は直列化している。古いリリースへの再 push で本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
 - `wrangler preview` では Cron が動かない。予約の自動投稿は develop 環境（`https://develop.<SITE_HOST>`）で確認する。D1・R2 は本番と別なので、本番の予約には触れない。

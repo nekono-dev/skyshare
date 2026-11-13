@@ -8,7 +8,12 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { parseSurveyConfig, type SurveyConfig } from "@/lib/survey/definition"
-import { parseSurveyIndex, type SurveyIndex } from "@/lib/survey/results/schema"
+import {
+    parseSurveyIndex,
+    parseSurveyResult,
+    resultMatchesIndexEntry,
+    type SurveyIndex,
+} from "@/lib/survey/results/schema"
 import { parseArgs, type Command, type SurveyEnv } from "./args"
 import {
     addSurvey,
@@ -16,7 +21,13 @@ import {
     serializeConfig,
     VARIABLE_LIMIT_BYTES,
 } from "./config"
-import { buildStatusRows, formatJst, type Aggregation } from "./lifecycle"
+import {
+    buildStatusRows,
+    formatJst,
+    latestReleaseBranch,
+    surveyStage,
+    type Aggregation,
+} from "./lifecycle"
 import { createSurveyRemote, RemoteError, type SurveyRemote } from "./remote"
 
 const VARIABLE_LIMIT_KB = VARIABLE_LIMIT_BYTES / 1024
@@ -281,6 +292,109 @@ const runStatus = async (
 
 const notImplemented = (): SurveyCliResult => result(1, NOT_IMPLEMENTED_REFUSAL)
 
+const runVisibilitySwitch = async (
+    command: Extract<Command, { name: "publish" | "unpublish" }>,
+    config: SurveyConfig,
+    remote: SurveyRemote,
+    now: () => Date,
+): Promise<SurveyCliResult> => {
+    const rawIndex = await remote.readIndex(command.env)
+    let index: SurveyIndex | undefined
+    if (rawIndex !== undefined) {
+        const parsed = parseSurveyIndex(rawIndex)
+        if (!parsed.ok) return invalid("目録の形式が正しくありません")
+        index = parsed.value
+    }
+    const entry = index?.surveys.find(item => item.id === command.id)
+    const survey = config.surveys.find(item => item.id === command.id)
+    if (!entry && !survey)
+        return result(1, "error: not-found: 指定したアンケートがありません")
+
+    const visibility =
+        entry?.outcome === "result"
+            ? await remote.readVisibility(command.env, command.id)
+            : "hidden"
+    const aggregation: Aggregation = !entry
+        ? undefined
+        : entry.outcome === "empty"
+          ? { outcome: "empty" }
+          : { outcome: "result", visibility }
+    const period = survey ?? entry!
+    const stage = surveyStage(period, aggregation, now())
+    if (stage !== "hidden" && stage !== "published") {
+        const reason =
+            stage === "empty"
+                ? "nothing to publish"
+                : stage === "closed" && !entry
+                  ? `not aggregated: ${command.env}`
+                  : "results would be lost"
+        return result(1, `error: refused: ${command.id} is ${stage}: ${reason}`)
+    }
+    if (command.name === "publish") {
+        let rawResult: unknown
+        try {
+            rawResult = await remote.readResult(command.env, command.id)
+        } catch (error) {
+            if (!(error instanceof RemoteError) || error.kind !== "parse")
+                throw error
+        }
+        const parsedResult = parseSurveyResult(rawResult)
+        if (
+            !entry ||
+            !parsedResult.ok ||
+            !resultMatchesIndexEntry(entry, parsedResult.value)
+        )
+            return result(1, "error: invalid: 結果が目録と一致しません")
+    }
+
+    let deployRef: string | undefined
+    if (command.deploy) {
+        if (command.env === "develop") deployRef = "develop"
+        else {
+            const branches = await remote.listReleaseBranches()
+            deployRef = latestReleaseBranch(branches)
+            if (!deployRef)
+                return result(
+                    1,
+                    "error: no-release: 本番のリリースブランチがありません",
+                )
+        }
+    }
+    if (command.dryRun) {
+        const action = command.name === "publish" ? "publish" : "unpublish"
+        const deployLine = command.deploy
+            ? `would deploy ${deployRef}`
+            : "deploy skipped (--no-deploy)"
+        return result(
+            0,
+            `[dry-run] ${action}: would ${action} ${command.id} (${command.env}); ${deployLine}`,
+        )
+    }
+
+    const wanted = command.name === "publish"
+    const unchanged = visibility === (wanted ? "visible" : "hidden")
+    if (!unchanged)
+        await remote.writeVisibility(command.env, command.id, wanted)
+    if (command.deploy) {
+        try {
+            await remote.startDeploy(deployRef!)
+        } catch {
+            return result(
+                1,
+                "error: deploy: 可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる",
+            )
+        }
+    }
+    const state = unchanged ? "unchanged" : wanted ? "published" : "hidden"
+    const deployLine = command.deploy
+        ? `deploy started (${deployRef})`
+        : "deploy skipped (--no-deploy)"
+    return result(
+        0,
+        `${command.name}: ${state} ${command.id} (${command.env}); ${deployLine}`,
+    )
+}
+
 /** 引数を解析し、設定と必要な目録を順番に読み取って結果を返す。 */
 export const run = async (
     argv: readonly string[],
@@ -288,12 +402,7 @@ export const run = async (
 ): Promise<SurveyCliResult> => {
     const parsed = parseArgs(argv)
     if (!parsed.ok) return result(1, parsed.usage)
-    if (
-        parsed.command.name === "prune" ||
-        parsed.command.name === "remove" ||
-        parsed.command.name === "publish" ||
-        parsed.command.name === "unpublish"
-    ) {
+    if (parsed.command.name === "prune" || parsed.command.name === "remove") {
         return notImplemented()
     }
     const remote =
@@ -317,6 +426,8 @@ export const run = async (
             )
         if (command.name === "status")
             return await runStatus(command.env, config, remote, now)
+        if (command.name === "publish" || command.name === "unpublish")
+            return await runVisibilitySwitch(command, config, remote, now)
         return notImplemented()
     } catch (error) {
         return failure(error)
