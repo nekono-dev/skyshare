@@ -284,6 +284,9 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - 統計ファイルに個別の回答・回答日・回答者の値を入れない。
 - 保存の成功後にだけ D1 を削除する。失敗したら削除せず、翌日に再試行する。
 - R2 のバケットは用途ごとに分ける（規則は `.kiro/steering/r2-buckets.md`。統計ファイルは `skyshare-survey-results`）。PoC のブランチ `dev/survey-r2-poc` とその worktree は、この作業の完了後に `brw finish` で片付ける。
+- 利用者の決定（2026-11-13）: アンケートの識別子は登録側 CLI が UUID で発行する（月ごとの連番と、新規登録時の任意指定は廃止）。アンケートは同時に 1 つだけで、設定内のすべてのアンケートが本番・develop 両方の目録に記録されるまで、次の新規登録は拒否する（開始前も対象。開始前は `remove`、開催中は締切の前倒し・両環境への配備・集計待ちで取り下げる）。締切は日付だけを入力し、その日の日本時間 0 時とする。集計は現在の日次の枠のままにする。
+- D1 の読み取り・削除はまとめて送り、アンケートの日次処理だけで最大 16 回以内に収める。予約投稿の実装と呼び出し数の管理は変えず、共有の枠は作らない（利用者の決定 2026-11-13）。
+- 既存結果は、本体の形式・識別子・実施期間を検証して使う。回答済みの集合は、正常な設定を読めれば R2 の読み取りより前に削除し、回答は結果の保存確認後だけ削除する。設定なしでも目録に基づく残存回答の掃除は行い、設定が読めないときは何も削除しない。
 - 画面のデザインは利用者と合意済み（`survey-results-public` の brief の「合意の結果」）。最大の選択肢はプライマリ色、そのほかは灰色の共通トークン（`--color-gray-hover` が候補。muted は背景と混ざるため使わない）。色は既存の共通トークン・共通コンポーネントを使う。アンケート全体の題・説明と、複数選択の注記は出さない。
 
 ### Boundary Strategy
@@ -312,7 +315,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - [ ] survey-results-public -- ビルド時の R2 の取得と検証、`/surveys` ページ（静的生成）と結果のコンポーネント、login のリンク、読み取りの情報が無いときのオプトアウト。Dependencies: survey-results-aggregation, platform-runtime, i18n, ui-primitives
 - [ ] survey-operations -- CLI のコマンド体系（add・status・publish・unpublish・prune・remove）、R2 の読み書き、`--env`、公開の切り替え後の再配備の起動（`gh workflow run`）、`survey-run` skill と DEVELOP.md の手順。Dependencies: survey-results-aggregation, surveys(a)
 
-**実装順**: surveys(a) → survey-results-aggregation の 1〜3.4 → survey-operations 全体 → survey-results-aggregation の 3.5・4.1（3.5・4.1 は、`survey-operations` が `hack/survey-cli/lifecycle.ts` から保持期限の判定を除くのを待つ）。`survey-results-public` は aggregation の後に着手する。プライバシーポリシーの文言（`survey-results-public` 2.5）と、本番のバケットの作成（運用者の作業）は、aggregation を本番へ出す前に済ませる。
+**実装順**: surveys(a) → survey-results-aggregation の 1〜3.4 → survey-operations の 3.1 まで → survey-results-aggregation の 3.5・4.1（survey-operations の 3.2 以降は自身の依存に従って進める）（3.5・4.1 は、`survey-operations` が `hack/survey-cli/lifecycle.ts` から保持期限の判定を除くのを待つ）。`survey-results-public` は aggregation の後に着手する。プライバシーポリシーの文言（`survey-results-public` 2.5）と、本番のバケットの作成（運用者の作業）は、aggregation を本番へ出す前に済ませる。
 
 （2026-11-13: 3 spec の要件・設計・タスクを作成し、横断レビュー（2 回）の指摘を反映した。phase は `tasks-generated`。実装は未着手のため `[ ]` のまま。実装は `/kiro-impl <feature>` で上の実装順に行う。）
 

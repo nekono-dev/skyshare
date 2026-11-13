@@ -54,9 +54,9 @@
 - 設定の形式の変更（`SurveyConfigSchema`、下書きの形式）。
 - `deploy.yaml` の入力名（`dry_run`）・起動できるブランチの規則の変更、リリースブランチの命名の方式の確定。
 - 環境の追加（`production`・`develop` 以外）。
-- `survey-results-aggregation` の `resultMatchesIndexEntry`・`isVisible` の契約（引数・判定の規則）の変更。
+- `survey-results-aggregation` の `resultMatchesIndexEntry`・`isVisible` の契約（引数・判定の規則）の変更。上流に識別子の再利用専用規則は設けない。
 - 統計ファイルの目録に「回答の削除の完了」の印が足されたとき（Decision 13 の見直し）。
-- `survey-results-aggregation` の日次の枠の、設定から外れた終了済みアンケートの回答・回答者の集合の行の削除（孤立した回答の掃除。冪等・同じ識別子が未終了で設定に残るときだけ飛ばす）の変更・廃止（Decision 13 の前提）。
+- `survey-results-aggregation` の日次の枠の、設定に無い識別子の回答行と回答済みの集合の行の削除（孤立した回答の掃除。冪等・設定に同じ識別子があれば終了済みでも本流に任せ、設定に無い識別子だけを掃除する）の変更・廃止（Decision 13 の前提）。
 
 ## Architecture
 
@@ -132,6 +132,35 @@ tests/fixtures/survey-operation/drafts/
 
 ## System Flows
 
+### 登録と更新（add）
+
+```mermaid
+flowchart TD
+  A[設定と下書きを検証] --> B{id があるか}
+  B -- ある --> C{設定に同じ id があるか}
+  C -- ない --> X[error: not-found]
+  C -- ある --> D[両環境の目録を取得し共有スキーマで検証]
+  D --> E{終了済みの再開または集計済みの締切変更か}
+  E -- はい --> Y[error: refused]
+  E -- いいえ --> F[開始日時と締切の境界を検証]
+  B -- ない --> G[両環境の目録を取得し共有スキーマで検証]
+  G --> H{設定内の全 id が両環境にあるか}
+  H -- いいえ --> Z[固定の refused 1 行]
+  H -- はい --> I[新規の開始日時と締切を検証]
+  I --> J[UUID v4 を発行し idSchema で検証]
+  F --> K[変更内容を作成]
+  J --> K
+  K --> L{dry-run か}
+  L -- はい --> M[結果だけ返す。書かず UUID を予約しない]
+  L -- いいえ --> N{変更があるか}
+  N -- いいえ --> O[unchanged を返す]
+  N -- はい --> P[設定を書く]
+```
+
+- 目録の取得と形式検証は dry-run でも省かない。キーが無いときは空の目録として扱うが、取得失敗・形式不正は登録を止める。設定が空の場合も両環境を読む。
+- 新規登録の可否は、設定内の全識別子が両方の目録に存在するかだけで決める。開始前のアンケートも対象。設定に残る集計済みの過去分は新規登録を妨げない。
+- 識別子の発行は新規登録の検証と可否確認を通過した後だけ行う。複数の `add` は運用者が直列に実行する。
+
 ### 公開の切り替え（publish / unpublish）
 
 ```mermaid
@@ -198,108 +227,124 @@ flowchart TD
 
 ## Requirements Traceability
 
-| Requirement | Summary                                        | Components                   | Interfaces                                                      | Flows          |
-| ----------- | ---------------------------------------------- | ---------------------------- | --------------------------------------------------------------- | -------------- |
-| 1.1         | 6 コマンドだけ                                 | args                         | `parseArgs`                                                     | -              |
-| 1.2         | 不正な指定は変更せず使い方                     | args, cli                    | `parseArgs`                                                     | -              |
-| 1.3         | status 以外は 1 行                             | cli                          | `SurveyCliResult`                                               | -              |
-| 1.4         | 失敗は `error:`・終了コード                    | cli                          | `SurveyCliResult`                                               | -              |
-| 1.5         | 秘密を出さない                                 | cli, remote                  | `RemoteError`, 結果の組み立て                                   | -              |
-| 1.6         | `--dry-run`                                    | args, cli                    | `Command`                                                       | 公開の切り替え |
-| 1.7         | `--repo`                                       | args, remote                 | `SurveyRemoteOptions`                                           | -              |
-| 1.8         | 手元の認証だけ                                 | remote                       | `RunCommand`                                                    | -              |
-| 1.9         | 認証と利用不可の区別                           | remote, cli                  | `RemoteError`                                                   | -              |
-| 2.1         | 環境の必須                                     | args                         | `Command`                                                       | -              |
-| 2.2         | 不正な環境は何も読み書きしない                 | args                         | `parseArgs`                                                     | -              |
-| 2.3         | prune・remove は両環境                         | cli, lifecycle               | `decidePrune`, `decideRemove`                                   | 除去           |
-| 2.4         | add は環境なし                                 | args                         | `parseArgs`                                                     | -              |
-| 2.5         | 受け付けない `--env` は使い方                  | args                         | `parseArgs`                                                     | -              |
-| 3.1         | 設定と目録を合わせた表                         | cli, lifecycle               | `buildStatusRows`                                               | -              |
-| 3.2         | 行の内容                                       | lifecycle, cli               | `StatusRow`                                                     | -              |
-| 3.3         | upcoming                                       | lifecycle                    | `surveyStage`                                                   | 段階           |
-| 3.4         | active                                         | lifecycle                    | `surveyStage`                                                   | 段階           |
-| 3.5         | closed                                         | lifecycle                    | `surveyStage`                                                   | 段階           |
-| 3.6         | empty                                          | lifecycle                    | `surveyStage`                                                   | 段階           |
-| 3.7         | hidden（不正も含む。判定は `isVisible`）       | lifecycle, remote            | `surveyStage`, `readVisibility`                                 | 段階           |
-| 3.8         | published                                      | lifecycle, remote            | `surveyStage`, `readVisibility`                                 | 段階           |
-| 3.9         | 設定から除去済みも含める                       | lifecycle                    | `buildStatusRows`                                               | -              |
-| 3.10        | 題を持たない                                   | lifecycle                    | `StatusRow`                                                     | -              |
-| 3.11        | 変数の使用量                                   | cli, config                  | `byteLength`                                                    | -              |
-| 3.12        | アンケートが無い                               | cli                          | -                                                               | -              |
-| 3.13        | 目録が読めない                                 | remote, cli                  | `readIndex`                                                     | -              |
-| 3.14        | 書き換えない                                   | cli                          | -                                                               | -              |
-| 3.15        | 不正な可視フラグは hidden に警告の印           | lifecycle, remote, cli       | `readVisibility`, `StatusRow.invalidVisibility`                 | 段階           |
-| 4.1         | publish                                        | cli, remote                  | `writeVisibility`                                               | 公開の切り替え |
-| 4.2         | unpublish                                      | cli, remote                  | `writeVisibility`                                               | 公開の切り替え |
-| 4.3         | 集計前は拒否                                   | cli, lifecycle               | `surveyStage`                                                   | 公開の切り替え |
-| 4.4         | empty は拒否                                   | cli, lifecycle               | `surveyStage`                                                   | 公開の切り替え |
-| 4.5         | 識別子が無い                                   | cli                          | -                                                               | 公開の切り替え |
-| 4.6         | 結果の検証失敗・目録との不一致は公開しない     | cli, remote                  | `readResult`, `resultMatchesIndexEntry`                         | 公開の切り替え |
-| 4.7         | unpublish は壊れた結果でも可                   | cli                          | -                                                               | 公開の切り替え |
-| 4.8         | 既に望む状態                                   | cli                          | -                                                               | 公開の切り替え |
-| 4.9         | 本体・目録・他の環境に触れない                 | remote                       | `writeVisibility`                                               | -              |
-| 4.10        | 設定に無くても切り替えられる                   | cli, lifecycle               | `buildStatusRows`                                               | 公開の切り替え |
-| 4.11        | 不正な可視フラグでも進めて上書き               | cli, remote                  | `readVisibility`, `writeVisibility`                             | 公開の切り替え |
-| 5.1         | dry_run を偽で起動                             | remote                       | `startDeploy`                                                   | 公開の切り替え |
-| 5.2         | develop は develop ブランチ                    | cli                          | `deployRef`                                                     | 公開の切り替え |
-| 5.3         | production は最新のリリース                    | lifecycle, remote            | `latestReleaseBranch`, `listReleaseBranches`                    | 公開の切り替え |
-| 5.4         | 決まらなければ書かない                         | cli                          | `deployRef`                                                     | 公開の切り替え |
-| 5.5         | 起動の失敗は保存済みと再実行を示す             | cli                          | -                                                               | 公開の切り替え |
-| 5.6         | 既に望む状態でも配備                           | cli                          | -                                                               | 公開の切り替え |
-| 5.7         | `--no-deploy`                                  | args, cli                    | `Command`                                                       | 公開の切り替え |
-| 5.8         | dry-run は起動先を示す                         | cli                          | -                                                               | 公開の切り替え |
-| 5.9         | 完了は確かめない                               | cli                          | -                                                               | -              |
-| 6.1         | 両環境で集計済みだけ除去                       | lifecycle, cli               | `decidePrune`                                                   | 除去           |
-| 6.2         | D1 を使わない                                  | remote                       | -                                                               | -              |
-| 6.3         | 公開・非公開に関わらず除去                     | lifecycle                    | `decidePrune`                                                   | 除去           |
-| 6.4         | 未集計は残して環境を示す                       | lifecycle                    | `PruneKept`                                                     | 除去           |
-| 6.5         | 目録が読めなければ何も除去しない               | cli                          | `readIndex`                                                     | 除去           |
-| 6.6         | 開始前・開催中は除去しない                     | lifecycle                    | `decidePrune`                                                   | 除去           |
-| 6.7         | 残らなければ変数を削除                         | cli, remote                  | `deleteConfigValue`                                             | 除去           |
-| 6.8         | 対象が無い                                     | cli                          | -                                                               | 除去           |
-| 6.9         | 除去・残した理由を示し、手順書への案内を添える | cli                          | -                                                               | 除去           |
-| 7.1         | 開始前は除去                                   | lifecycle                    | `decideRemove`                                                  | 除去           |
-| 7.2         | 開催中は拒否                                   | lifecycle                    | `decideRemove`                                                  | 除去           |
-| 7.3         | 終了済みは両方集計済みで除去                   | lifecycle                    | `decideRemove`                                                  | 除去           |
-| 7.4         | 未集計は拒否                                   | lifecycle                    | `decideRemove`                                                  | 除去           |
-| 7.5         | 設定に無い                                     | cli                          | -                                                               | 除去           |
-| 7.6         | 強制の指定なし                                 | args                         | `parseArgs`                                                     | -              |
-| 7.7         | 残らなければ変数を削除                         | cli                          | `deleteConfigValue`                                             | 除去           |
-| 7.8         | 目録が読めなければ変更しない                   | cli                          | `readIndex`                                                     | 除去           |
-| 8.1         | add の検証と反映                               | cli, config                  | `addSurvey`                                                     | -              |
-| 8.2         | 下書きに全体の題・説明なし                     | config                       | `DraftSurvey`                                                   | -              |
-| 8.3         | 旧形式は拒否                                   | config                       | `parseSurveyConfig`                                             | -              |
-| 8.4         | 開始日時を補う                                 | config                       | `addSurvey`                                                     | -              |
-| 8.5         | 更新は開始日時を保つ                           | config                       | `addSurvey`                                                     | -              |
-| 8.6         | 検証・容量の失敗                               | config, cli                  | `AddOutcome`                                                    | -              |
-| 8.7         | 変更が無い                                     | config, cli                  | `AddOutcome`                                                    | -              |
-| 8.8         | 本文を出さない                                 | cli                          | -                                                               | -              |
-| 9.1         | skill が新体系                                 | survey-run skill             | -                                                               | -              |
-| 9.2         | 聞き取りから題・説明を外す                     | survey-run skill             | -                                                               | -              |
-| 9.3         | 運用の規則を保つ                               | survey-run skill             | -                                                               | -              |
-| 9.4         | 段階と再配備の説明                             | survey-run skill             | -                                                               | -              |
-| 9.5         | 開催中の取り下げの手順                         | survey-run skill             | -                                                               | -              |
-| 9.6         | DEVELOP.md 5.4                                 | DEVELOP.md                   | -                                                               | -              |
-| 9.7         | DEVELOP.md 3.2                                 | DEVELOP.md                   | -                                                               | -              |
-| 9.8         | 直接書き換えない                               | survey-run skill, DEVELOP.md | -                                                               | -              |
-| 9.9         | develop 未集計の抜け道                         | survey-run skill, DEVELOP.md | -                                                               | 除去           |
-| 9.10        | 集計済みの終了日時を延ばさない                 | survey-run skill             | -                                                               | -              |
-| 9.11        | DEVELOP.md の直す項を限る                      | DEVELOP.md                   | -                                                               | -              |
-| 10.1        | 保持期限を使わない                             | lifecycle                    | `surveyStage`                                                   | -              |
-| 10.2        | D1 に触れない                                  | remote                       | `SurveyRemote`                                                  | -              |
-| 10.3        | 時刻・期間・目録だけで判定                     | lifecycle                    | `surveyStage`                                                   | 段階           |
-| 10.4        | 共有のスキーマと判定で検証                     | remote, cli                  | `parseSurveyIndex`, `resultMatchesIndexEntry`, `isVisible` ほか | -              |
+| Requirement | Summary                                          | Components                   | Interfaces                                                      | Flows          |
+| ----------- | ------------------------------------------------ | ---------------------------- | --------------------------------------------------------------- | -------------- |
+| 1.1         | 6 コマンドだけ                                   | args                         | `parseArgs`                                                     | -              |
+| 1.2         | 不正な指定は変更せず使い方                       | args, cli                    | `parseArgs`                                                     | -              |
+| 1.3         | status 以外は 1 行                               | cli                          | `SurveyCliResult`                                               | -              |
+| 1.4         | 失敗は `error:`・終了コード                      | cli                          | `SurveyCliResult`                                               | -              |
+| 1.5         | 秘密を出さない                                   | cli, remote                  | `RemoteError`, 結果の組み立て                                   | -              |
+| 1.6         | `--dry-run`                                      | args, cli                    | `Command`                                                       | 公開の切り替え |
+| 1.7         | `--repo`                                         | args, remote                 | `SurveyRemoteOptions`                                           | -              |
+| 1.8         | 手元の認証だけ                                   | remote                       | `RunCommand`                                                    | -              |
+| 1.9         | 認証と利用不可の区別                             | remote, cli                  | `RemoteError`                                                   | -              |
+| 2.1         | 環境の必須                                       | args                         | `Command`                                                       | -              |
+| 2.2         | 不正な環境は何も読み書きしない                   | args                         | `parseArgs`                                                     | -              |
+| 2.3         | prune・remove は両環境                           | cli, lifecycle               | `decidePrune`, `decideRemove`                                   | 除去           |
+| 2.4         | add は環境なし                                   | args                         | `parseArgs`                                                     | -              |
+| 2.5         | 受け付けない `--env` は使い方                    | args                         | `parseArgs`                                                     | -              |
+| 3.1         | 設定と目録を合わせた表                           | cli, lifecycle               | `buildStatusRows`                                               | -              |
+| 3.2         | 行の内容                                         | lifecycle, cli               | `StatusRow`                                                     | -              |
+| 3.3         | upcoming                                         | lifecycle                    | `surveyStage`                                                   | 段階           |
+| 3.4         | active                                           | lifecycle                    | `surveyStage`                                                   | 段階           |
+| 3.5         | closed                                           | lifecycle                    | `surveyStage`                                                   | 段階           |
+| 3.6         | empty                                            | lifecycle                    | `surveyStage`                                                   | 段階           |
+| 3.7         | hidden（不正も含む。判定は `isVisible`）         | lifecycle, remote            | `surveyStage`, `readVisibility`                                 | 段階           |
+| 3.8         | published                                        | lifecycle, remote            | `surveyStage`, `readVisibility`                                 | 段階           |
+| 3.9         | 設定から除去済みも含める                         | lifecycle                    | `buildStatusRows`                                               | -              |
+| 3.10        | 題を持たない                                     | lifecycle                    | `StatusRow`                                                     | -              |
+| 3.11        | 変数の使用量                                     | cli, config                  | `byteLength`                                                    | -              |
+| 3.12        | アンケートが無い                                 | cli                          | -                                                               | -              |
+| 3.13        | 目録が読めない                                   | remote, cli                  | `readIndex`                                                     | -              |
+| 3.14        | 書き換えない                                     | cli                          | -                                                               | -              |
+| 3.15        | 不正な可視フラグは hidden に警告の印             | lifecycle, remote, cli       | `readVisibility`, `StatusRow.invalidVisibility`                 | 段階           |
+| 4.1         | publish                                          | cli, remote                  | `writeVisibility`                                               | 公開の切り替え |
+| 4.2         | unpublish                                        | cli, remote                  | `writeVisibility`                                               | 公開の切り替え |
+| 4.3         | 集計前は拒否                                     | cli, lifecycle               | `surveyStage`                                                   | 公開の切り替え |
+| 4.4         | empty は拒否                                     | cli, lifecycle               | `surveyStage`                                                   | 公開の切り替え |
+| 4.5         | 識別子が無い                                     | cli                          | -                                                               | 公開の切り替え |
+| 4.6         | 結果の検証失敗・目録との不一致は公開しない       | cli, remote                  | `readResult`, `resultMatchesIndexEntry`                         | 公開の切り替え |
+| 4.7         | unpublish は壊れた結果でも可                     | cli                          | -                                                               | 公開の切り替え |
+| 4.8         | 既に望む状態                                     | cli                          | -                                                               | 公開の切り替え |
+| 4.9         | 本体・目録・他の環境に触れない                   | remote                       | `writeVisibility`                                               | -              |
+| 4.10        | 設定に無くても切り替えられる                     | cli, lifecycle               | `buildStatusRows`                                               | 公開の切り替え |
+| 4.11        | 不正な可視フラグでも進めて上書き                 | cli, remote                  | `readVisibility`, `writeVisibility`                             | 公開の切り替え |
+| 5.1         | dry_run を偽で起動                               | remote                       | `startDeploy`                                                   | 公開の切り替え |
+| 5.2         | develop は develop ブランチ                      | cli                          | `deployRef`                                                     | 公開の切り替え |
+| 5.3         | production は最新のリリース                      | lifecycle, remote            | `latestReleaseBranch`, `listReleaseBranches`                    | 公開の切り替え |
+| 5.4         | 決まらなければ書かない                           | cli                          | `deployRef`                                                     | 公開の切り替え |
+| 5.5         | 起動の失敗は保存済みと再実行を示す               | cli                          | -                                                               | 公開の切り替え |
+| 5.6         | 既に望む状態でも配備                             | cli                          | -                                                               | 公開の切り替え |
+| 5.7         | `--no-deploy`                                    | args, cli                    | `Command`                                                       | 公開の切り替え |
+| 5.8         | dry-run は起動先を示す                           | cli                          | -                                                               | 公開の切り替え |
+| 5.9         | 完了は確かめない                                 | cli                          | -                                                               | -              |
+| 6.1         | 両環境で集計済みだけ除去                         | lifecycle, cli               | `decidePrune`                                                   | 除去           |
+| 6.2         | D1 を使わない                                    | remote                       | -                                                               | -              |
+| 6.3         | 公開・非公開に関わらず除去                       | lifecycle                    | `decidePrune`                                                   | 除去           |
+| 6.4         | 未集計は残して環境を示す                         | lifecycle                    | `PruneKept`                                                     | 除去           |
+| 6.5         | 目録が読めなければ何も除去しない                 | cli                          | `readIndex`                                                     | 除去           |
+| 6.6         | 開始前・開催中は除去しない                       | lifecycle                    | `decidePrune`                                                   | 除去           |
+| 6.7         | 残らなければ変数を削除                           | cli, remote                  | `deleteConfigValue`                                             | 除去           |
+| 6.8         | 対象が無い                                       | cli                          | -                                                               | 除去           |
+| 6.9         | 除去・残した理由を示し、手順書への案内を添える   | cli                          | -                                                               | 除去           |
+| 7.1         | 開始前は除去                                     | lifecycle                    | `decideRemove`                                                  | 除去           |
+| 7.2         | 開催中は拒否                                     | lifecycle                    | `decideRemove`                                                  | 除去           |
+| 7.3         | 終了済みは両方集計済みで除去                     | lifecycle                    | `decideRemove`                                                  | 除去           |
+| 7.4         | 未集計は拒否                                     | lifecycle                    | `decideRemove`                                                  | 除去           |
+| 7.5         | 設定に無い                                       | cli                          | -                                                               | 除去           |
+| 7.6         | 強制の指定なし                                   | args                         | `parseArgs`                                                     | -              |
+| 7.7         | 残らなければ変数を削除                           | cli                          | `deleteConfigValue`                                             | 除去           |
+| 7.8         | 目録が読めなければ変更しない                     | cli                          | `readIndex`                                                     | 除去           |
+| 8.1         | add の検証と反映                                 | cli, config                  | `addSurvey`                                                     | -              |
+| 8.2         | 下書きに全体の題・説明なし                       | config                       | `DraftSurvey`                                                   | -              |
+| 8.3         | 旧形式は拒否                                     | config                       | `parseSurveyConfig`                                             | -              |
+| 8.4         | 開始日時を補う                                   | config                       | `addSurvey`                                                     | -              |
+| 8.5         | 更新は開始日時を保つ                             | config                       | `addSurvey`                                                     | -              |
+| 8.6         | 検証・容量の失敗                                 | config, cli                  | `AddOutcome`                                                    | -              |
+| 8.7         | 変更が無い                                       | config, cli                  | `AddOutcome`                                                    | -              |
+| 8.8         | 本文を出さない                                   | cli                          | -                                                               | -              |
+| 8.9         | 新規 ID は UUID v4 とし idSchema で検証          | config                       | `createId`, `idSchema`                                          | 登録           |
+| 8.10        | ID の有無で新規・更新を分ける                    | config                       | `addSurvey`                                                     | 登録           |
+| 8.11        | 不正な ID は invalid、設定に無い ID は not-found | config, cli                  | `addSurvey`                                                     | 登録           |
+| 8.12        | 全設定 ID が両目録にある場合だけ新規可           | cli                          | `readIndex`                                                     | 登録           |
+| 8.13        | 目録取得の扱いは dry-run でも同じ                | cli, remote                  | `readIndex`                                                     | 登録           |
+| 8.14        | 新規拒否は固定の 1 行                            | cli                          | `SurveyCliResult`                                               | 登録           |
+| 8.15        | 締切日付を検証し日本時間 0 時に変換              | config                       | `DraftSurvey`, `addSurvey`                                      | 登録           |
+| 8.16        | 締切境界・再開・集計済み変更を拒否               | config, cli                  | `addSurvey`                                                     | 登録           |
+| 8.17        | 指定した締切日での前倒し判定                     | config                       | `addSurvey`                                                     | 登録           |
+| 8.18        | 検証・登録可否の後に ID を発行                   | config                       | `createId`                                                      | 登録           |
+| 9.1         | skill が新体系                                   | survey-run skill             | -                                                               | -              |
+| 9.2         | 聞き取りから題・説明を外す                       | survey-run skill             | -                                                               | -              |
+| 9.3         | 運用の規則を保つ                                 | survey-run skill             | -                                                               | -              |
+| 9.4         | 段階と再配備の説明                               | survey-run skill             | -                                                               | -              |
+| 9.5         | 開催中の取り下げの手順                           | survey-run skill             | -                                                               | -              |
+| 9.6         | DEVELOP.md 5.4                                   | DEVELOP.md                   | -                                                               | -              |
+| 9.7         | DEVELOP.md 3.2                                   | DEVELOP.md                   | -                                                               | -              |
+| 9.8         | 直接書き換えない                                 | survey-run skill, DEVELOP.md | -                                                               | -              |
+| 9.9         | develop 未集計の抜け道                           | survey-run skill, DEVELOP.md | -                                                               | 除去           |
+| 9.10        | 集計済みの終了日時を延ばさない                   | survey-run skill             | -                                                               | -              |
+| 9.11        | DEVELOP.md の直す項を限る                        | DEVELOP.md                   | -                                                               | -              |
+| 9.12        | skill は status 全体表・他は固定 1 行を報告      | survey-run skill             | -                                                               | -              |
+| 9.13        | 手順書に UUID・日付・開始前の登録制限を書く      | survey-run skill, DEVELOP.md | -                                                               | -              |
+| 9.14        | 固定拒否文と次の手順を案内                       | survey-run skill, DEVELOP.md | -                                                               | 登録           |
+| 9.15        | 開催中の取り下げの順序を案内                     | survey-run skill, DEVELOP.md | -                                                               | 除去           |
+| 9.16        | --env の使い分けを手順書に示す                   | survey-run skill, DEVELOP.md | -                                                               | -              |
+| 9.17        | 集計失敗時の R2 復旧手順                         | DEVELOP.md                   | -                                                               | -              |
+| 10.1        | 保持期限を使わない                               | lifecycle                    | `surveyStage`                                                   | -              |
+| 10.2        | D1 に触れない                                    | remote                       | `SurveyRemote`                                                  | -              |
+| 10.3        | 時刻・期間・目録だけで判定                       | lifecycle                    | `surveyStage`                                                   | 段階           |
+| 10.4        | 共有のスキーマと判定で検証                       | remote, cli                  | `parseSurveyIndex`, `resultMatchesIndexEntry`, `isVisible` ほか | -              |
 
 ## Components and Interfaces
 
-| Component | Domain/Layer | Intent                                     | Req Coverage                                                                                                                 | Key Dependencies (P0/P1)                        | Contracts |
-| --------- | ------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------- |
-| args      | 入口         | 引数の解析と使い方の検証                   | 1.1, 1.2, 1.6, 1.7, 2.1, 2.2, 2.4, 2.5, 5.7, 7.6                                                                             | なし                                            | Service   |
-| cli       | 入口         | 流れと結果の組み立て                       | 1.3, 1.4, 1.5, 1.9, 2.3, 3.1, 3.11, 3.12, 3.13, 3.14, 4.1–4.10, 5.2, 5.4–5.6, 5.8, 5.9, 6.5, 6.7–6.9, 7.5, 7.7, 7.8, 8.6–8.8 | args, config, lifecycle, remote (P0)            | Service   |
-| config    | 変換         | 設定の追加・更新・除去、下書きの形式       | 8.1–8.7                                                                                                                      | `definition.ts` (P0)                            | Service   |
-| lifecycle | 純粋な判定   | 段階・除去・リリースブランチ・表の行       | 2.3, 3.1–3.10, 4.3, 4.4, 4.10, 5.3, 6.1, 6.3, 6.4, 6.6, 7.1–7.4, 10.1, 10.3                                                  | なし                                            | Service   |
-| remote    | 外部         | 変数・R2・配備・ブランチの操作と失敗の分類 | 1.5, 1.7, 1.8, 1.9, 3.7, 3.8, 3.13, 4.1, 4.2, 4.6, 4.9, 5.1, 5.3, 6.2, 6.7, 10.2, 10.4                                       | `gh`・`wrangler` (P0), `results/schema.ts` (P0) | Service   |
-| 手順書    | 文書         | skill と DEVELOP.md                        | 9.1–9.8                                                                                                                      | 上の CLI (P0)                                   | -         |
+| Component | Domain/Layer | Intent                                     | Req Coverage                                                                                                                     | Key Dependencies (P0/P1)                        | Contracts |
+| --------- | ------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | --------- |
+| args      | 入口         | 引数の解析と使い方の検証                   | 1.1, 1.2, 1.6, 1.7, 2.1, 2.2, 2.4, 2.5, 5.7, 7.6                                                                                 | なし                                            | Service   |
+| cli       | 入口         | 流れと結果の組み立て                       | 1.3, 1.4, 1.5, 1.9, 2.3, 3.1, 3.11–3.15, 4.1–4.11, 5.2, 5.4–5.6, 5.8, 5.9, 6.5, 6.7–6.9, 7.5, 7.7, 7.8, 8.6–8.8, 8.11–8.14, 8.16 | args, config, lifecycle, remote (P0)            | Service   |
+| config    | 変換         | 設定の追加・更新・除去、下書きの形式       | 8.1–8.7, 8.9, 8.10, 8.11, 8.15–8.18                                                                                              | `definition.ts`, `idSchema` (P0)                | Service   |
+| lifecycle | 純粋な判定   | 段階・除去・リリースブランチ・表の行       | 2.3, 3.1–3.10, 4.3, 4.4, 4.10, 5.3, 6.1, 6.3, 6.4, 6.6, 7.1–7.4, 10.1, 10.3                                                      | なし                                            | Service   |
+| remote    | 外部         | 変数・R2・配備・ブランチの操作と失敗の分類 | 1.5, 1.7, 1.8, 1.9, 3.7, 3.8, 3.13, 4.1, 4.2, 4.6, 4.9, 5.1, 5.3, 6.2, 6.7, 10.2, 10.4                                           | `gh`・`wrangler` (P0), `results/schema.ts` (P0) | Service   |
+| 手順書    | 文書         | skill と DEVELOP.md                        | 9.1–9.17                                                                                                                         | 上の CLI (P0)                                   | -         |
 
 ### 入口
 
@@ -351,6 +396,7 @@ export const parseArgs = (argv: readonly string[]): ParsedArgs
 ```typescript
 export type SurveyCliDependencies = {
   remote?: SurveyRemote
+  createId?: () => string
   now?: () => Date
   readFile?: (filePath: string) => string
 }
@@ -370,15 +416,21 @@ export const run: (
   - `publish|unpublish: published|hidden|unchanged <id> (<環境>); deploy started (<ref>)|deploy skipped (--no-deploy)`。dry-run は `[dry-run] publish: would publish <id> (<環境>); would deploy <ref>`。
   - `prune: removed <id>, ... (surveys A -> B); kept <id>(not-aggregated: <環境>), ...`、`prune: nothing to remove`、`prune: nothing removed; kept ...`。`kept` を含む行の末尾には ` ; see DEVELOP.md 5.4 / survey-run (not-aggregated)` を付け、手順書の「集計されていない環境がある場合」へ案内する。`remove` の `refused ... not-aggregated: <環境>` の行にも同じ案内を付ける。
   - `remove: removed <id> (surveys A -> B)`。
-  - 失敗: `error: usage|invalid|auth|unavailable|too-large|not-found|refused|no-release|deploy: <固定の文言>`。`refused` は `<id> is <段階>` と理由の固定語（`results would be lost`・`nothing to publish`・`not aggregated: <環境>`）。`deploy` は「可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる」。
+  - `add` の新規登録拒否: `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。`。この文面はテストで固定する。
+  - 開催中の更新で締切を前倒しできない場合: `error: refused: 前倒しできません。自然な終了と集計を待ってください。`。指定締切の前倒し条件を満たさず、かつ開始日時より後で最も早い日本時間 0 時が現在の締切以後ならこの行を返す。この文面もテストで固定する。
+  - 失敗: `error: usage|invalid|auth|unavailable|too-large|not-found|refused|no-release|deploy: <固定の文言>`。`refused` は `<id> is <段階>` と理由の固定語（`results would be lost`・`nothing to publish`・`not aggregated: <環境>`）または上記の `add` 専用の固定文言。`deploy` は「可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる」。
 - Postconditions: 識別子・段階・環境・数値・日時以外の入力由来の値を行に含めない。設定の読み込みが不正なら `error: invalid`（位置と理由だけ。現行どおり）。
 
 ### 変換と判定
 
 #### config.ts
 
-- `DraftSurvey` は `Omit<Survey, "id" | "opensAt"> & { id?: string }`（`Survey` から `title`・`description` が消えるため、型の定義は変えずに済む）。`canonicalSurvey` は `title`・`description` を出力しない。
-- `addSurvey`・`removeSurveys`・`serializeConfig`・`byteLength` の規則は変えない。旧形式の下書き（全体の題・説明あり）は、`SurveyConfigSchema` の strict な検証で `invalid` になる（要件 8.3）。この拒否は `surveys` の変更後の検証に依存し、テストで固定する。
+- 下書きは設定の 1 件から `id` と `opensAt` を省ける形とし、`closesAt` は実在する `YYYY-MM-DD` の日付文字列とする。アンケート全体の題・説明、`opensAt` は下書きに含めない。旧形式の題・説明は strict な検証で拒否する。
+- 契約は `addSurvey(current, draft, registeredAt, newId?)` とする。下書きに `id` が無い場合だけ新規登録し、ある場合は同じ識別子を持つ設定済みアンケートの更新だけを行う。指定 ID が無ければ `not-found` とし、新規追加しない。
+- 新規登録では開始日時を `registeredAt` から作り、締切を日本時間 0 時の ISO 8601 に変換する。`closesAt > registeredAt` が必要。更新では開始日時を元の値に保ち、`closesAt > opensAt` が必要。
+- 更新対象がすでに終了している場合、更新後の締切が現在時刻より後になる再開を拒否する。目録のどちらかに ID があれば集計済みで、締切の変更を拒否する。期間の一致確認はしない。開催中の更新で許す変更は締切だけで、下書きに書かれた日付の日本時間 0 時を指定締切として使う。指定締切が現在の締切より前かつ元の開始日時より後なら受理し、それ以外（現在の締切以後または開始日時以下）は拒否する。「元の開始日時より後で最も早い日本時間 0 時」は skill が提案する運用上の目安で、CLI の受理条件ではない。その最も早い 0 時が現在の締切以後なら、`error: refused: 前倒しできません。自然な終了と集計を待ってください。` の固定の 1 行を返す。
+- `createId?: () => string` を依存として受け、既定値を `node:crypto` の `randomUUID` とする。設定・下書き・登録可否の検証後、新規だけで呼び、戻り値を `idSchema` で検証する。dry-run は識別子を予約しない。
+- 月ごとの連番、月を求める処理、下書きの内容から既存識別子を探す処理は設けない。変更がない場合だけでなく、すべての `add` は直列実行を前提とし、同時実行を制御する仕組みは持たない。
 
 #### lifecycle.ts
 
@@ -509,7 +561,7 @@ export type SurveyRemote = {
 
 ## Data Models
 
-新しいデータの形式は持たない。読むのは `survey-results-aggregation` の `SurveyIndex`・`SurveyResult`・`SurveyVisibility`、書くのは `SurveyVisibility`（`{ schemaVersion, visible }`）だけである。設定は `SurveyConfig`（`surveys`）。下書きは `SurveyConfig` の 1 件から `id`・`opensAt` を省けるもので、アンケート全体の題・説明を持たない。
+読むのは `survey-results-aggregation` の `SurveyIndex`・`SurveyResult`・`SurveyVisibility`、書くのは `SurveyVisibility`（`{ schemaVersion, visible }`）と `SurveyConfig` だけである。下書きは `id` が任意で、アンケート全体の題・説明と `opensAt` を持たず、`closesAt` は `YYYY-MM-DD`。`id` が無ければ新規、あれば既存設定の更新である。日付は実在性を検証して日本時間 0 時の ISO 8601 に直す。
 
 ## Error Handling
 
@@ -534,6 +586,7 @@ export type SurveyRemote = {
 
 ### Unit
 
+- **add/config**: UUID v4 が `idSchema` に通ること、ID なしの下書きは内容が同じでも既存を更新しないこと、不正な指定 ID と設定に無い指定 ID がそれぞれ `invalid`・`not-found` で拒否されることを確認する。開始前・開催中・終了済みの設定と、目録が両方・片方・どちらにも無い場合の可否を確認する。空の設定でも目録取得失敗・形式不正なら登録しない。dry-run でも同じ判定をする。日付の実在性、日本時間 0 時への変換、登録時刻以下・開始日時以下の締切拒否、当日開始と日をまたいだ開始での前倒し、1 日だけのアンケートや当日開始で前倒しできない場合の固定文、終了済み再開と集計済み締切変更の拒否を確認する。新規登録拒否の固定文も完全一致で確かめ、拒否時は固定の 1 行だけで下書き本文を出さない。
 - **args**: 6 コマンドの正しい指定が通る（1.1）、未知のコマンド・足りない・余分・重複・`--force` が使い方の失敗（1.2, 7.6）、`status`・`publish`・`unpublish` の `--env` の欠落と不正値（2.1, 2.2）、`add`・`prune`・`remove` の `--env`（2.4, 2.5）、`--repo` の形式（1.7）、`--dry-run`・`--no-deploy` の受理（1.6, 5.7）。
 - **lifecycle**: 段階の境界（開始ちょうど・終了ちょうど。3.3–3.8）、集計済みでも終了前は時刻が優先（段階の遷移の注記）、`buildStatusRows` で設定に無い目録の行・並び順・題を持たないこと（3.9, 3.10, 4.10）、`decidePrune` の組み合わせ（両方・片方・どちらも無い・開始前・開催中。6.1, 6.3, 6.4, 6.6）、`decideRemove` の 3 通り（7.1–7.4）、`latestReleaseBranch`（1 本・複数・同時刻・空。5.3）、`formatJst`（3.2）。
 - **config**: 新しい下書きの登録・更新・開始日時の保持・変更なし・容量超過（8.1, 8.4–8.7）、旧形式の下書き（`legacy-title.json`）が `invalid`（8.3）、題・説明を含まない出力（8.2）。
@@ -549,7 +602,7 @@ export type SurveyRemote = {
 
 ## Implementation Order Prerequisites
 
-- 実装順: `surveys`（題・説明の廃止）→ `survey-results-aggregation` 1〜3.4 → この spec 全体 → `survey-results-aggregation` 3.5・4.1。この spec の 3.1（`retentionExpired` と D1 の参照の削除）が、集計の 3.5・4.1 を進められるようにする。
+- 実装順: `surveys` の設定形式変更 → `survey-results-aggregation` 1〜3.4 → この spec の 3.1 まで → aggregation 3.5・4.1。この spec の 3.2 以降は自身の依存に従って進める。依存はこの spec の 3.1 完了 → aggregation 3.5 → 同 4.1 の一方向とする。
 - `survey-results-aggregation` の形式の部品（検証スキーマ・キー名）と、テンプレートの `SURVEY_RESULTS` の宣言が先に要る（目録・可視フラグの読み書きとバケット名の読み取りに使う）。
 - `config.ts` の `title`・`description` の除去は、`surveys` の設定の形式の変更の後に行う（先に行うと型が合わない）。
 - 段階の判定の作り直し（`retentionExpired` の参照の除去）は、`survey-results-aggregation` の保持期限の削除より先に終える。
@@ -590,9 +643,11 @@ export type SurveyRemote = {
 - 設定は両環境が読み、集計は環境ごとの Worker が設定を見て行う。一方だけ確かめて外すと、他方の回答が孤立して二度と集計されない。`--env` を取らなければ、取りこぼしが手順に残らない。R2 を書き換えるのは `publish`・`unpublish` だけで、そこでは `--env` を必須にしている。これは、ブリーフの「R2 を扱うコマンドに `--env` 必須」の `prune` の部分の調整であり、ユーザーが 2026-11-13 に確認して決定済みである（理由は上のとおり: 一方の環境だけ確かめると、他方の回答が孤立して二度と集計されないため）。
 - 片方の環境が使えないと、`prune`・`remove` は進まない。結果を失わないことを優先する。
 
-### Decision 7: `remove` に強制の指定を持たない
+### Decision 7: 開催中は締切を前倒しして集計を待つ
 
-- 結果を失う操作を、フラグ 1 つで通せるようにしない。開催中のものを取り下げるときは、`add` で終了日時を更新して終了済みにし、集計を待ってから `remove`（または `prune`）する。skill にこの手順を書く。
+- `remove` は開催中の直接削除を拒否し、強制指定は持たない。開催中は同じ識別子の `add` で締切だけを前倒しする。指定締切は下書きの日付の日本時間 0 時で、現在の締切より前かつ元の開始日時より後なら受理する。「元の開始日時より後で最も早い日本時間 0 時」は skill が提案する目安であり、CLI の受理条件ではない。
+- 設定を更新しただけでは、既に配備された設定を使う受付は止まらない。更新した設定を本番と develop の両方へ配備し、日次集計後に両環境の `status --env` で `empty`・`hidden`・`published` を確認し、`remove` または `prune` する。除去コマンドはその時点でも両方の目録を読み直す。skill と DEVELOP.md に順序を書く。
+- 終了済みのアンケートの再開と、いずれかの目録に識別子があるアンケートの締切変更は拒否する。集計済みの判定は識別子の有無だけで、期間の一致を条件にしない。
 
 ### Decision 8: すべての書き換えのコマンドに `--dry-run` を持たせる
 
@@ -618,7 +673,7 @@ export type SurveyRemote = {
 ### Decision 13: 集計済みの記録と回答の削除の時間差は、集計側の日次の枠が埋める
 
 - Worker は結果と目録を保存した後、同じ実行で回答を削除する。目録の記録は「保存の完了」の印で「回答の削除の完了」の印ではないため、削除に失敗した日に `prune`・`remove` が設定から外すと、その環境の回答が残りうる。
-- この時間差は、上流の `survey-results-aggregation` の変更で埋まる（ユーザーの決定 2026-11-13）。日次の枠が、設定から外れていても目録に載っている終了済みのアンケートの回答と回答者の集合の行を削除する（何度実行しても同じ結果になる。設定に同じ識別子が、まだ終了していないものとして残っているときだけ飛ばす）。したがって、`prune`・`remove` の後に残った回答も、翌日以降の日次の枠が片付ける。もう既知の制約ではない。
+- この時間差は、上流の `survey-results-aggregation` の変更で埋まる（ユーザーの決定 2026-11-13）。日次の枠は、設定に無い識別子だけを対象にし、回答行と回答済みの集合の行の両方を削除する（何度実行しても同じ結果になる）。設定に同じ識別子があれば、終了済みでも掃除を飛ばして本流に任せる。したがって、`prune`・`remove` の後に残った回答も、翌日以降の日次の枠が片付ける。掃除は上限 200 件／日の範囲で片付き、対象は目録に記録があり、終了時刻以後で、設定に無い識別子である。もう既知の制約ではない。
 - 目録に削除の完了の印を足すこと、回答の保存先への問い合わせを復活させること（要件 10.2 に反する）は、引き続き行わない。
 - 補助の案内: 手順書（skill・DEVELOP.md）に、「終了の翌日以降（日次の枠が 1 回以上動いた後）に除去する」「Worker の日次の記録に削除の失敗が出ていないことを確かめる」と書く。これは削除の失敗に早く気づくための補助で、安全性の前提ではない。
 - 上流の依存: この回復は `survey-results-aggregation` の日次の枠の孤立した回答の掃除に頼る（Revalidation Triggers）。

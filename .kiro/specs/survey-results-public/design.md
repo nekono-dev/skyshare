@@ -432,7 +432,7 @@ export const findLinkMismatch: (input: {
 - 辞書（ja を正本、en を型で追随）:
   - `surveyResults.heading`（アンケートの結果）、`surveyResults.period`（`{start} 〜 {end}`）、`pageTitle.surveyResults`（`アンケートの結果 | {service}`）、`page.login.surveyResults`（`ログイン時のアンケートの結果は{link}で公開しています。`）、`page.login.surveyResultsLink`（`こちら`）。
   - `privacy.purpose.survey`: 回答を集計して傾向の把握と重複回答の防止に使う旨に、「集計の結果は、選択肢ごとの割合だけの形で公開することがあります。個別の回答や回答者の数は公開しません。」を足す。
-  - `privacy.retention.surveyAnswer`: 「アンケートの回答は、終了後に集計の結果を保存した時点で削除します。」
+  - `privacy.retention.surveyAnswer`: 「アンケートの回答は、終了後に集計の結果の保存を確認した後に削除します。」結果確定後の削除 batch が失敗すると、回答は翌日以降の再試行まで残る。
 - `preview.yaml`・`deploy.yaml` の「Run build」の `env` に `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID`（`secrets`）を足す。`e2e.yaml` には足さない。
 - `docs/DEVELOP.md`: 認証情報が無い環境では結果ページが無効であること、手元で確かめるときの認証情報の渡し方（develop の設定）、既存のプレビューは次のプッシュまで更新されないこと、本番のバケットを配備の前に作る必要があること（この 1 行は aggregation の配備前に先行してよい）、手元の開発では `getPublishedSurveys` の記憶が更新されないため開発サーバーの再起動が要ること。編集する節は変更ファイルの記述に列挙したものに限り、`survey-operations` の 3.x・5.x の節には触れない。6.5 節は `SURVEY_RESULTS` の行だけ。
 

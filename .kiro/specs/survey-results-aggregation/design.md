@@ -18,7 +18,7 @@
 - 結果ページ・ビルド時の取得（`survey-results-public`）。可視フラグを書き換える操作と再配備の起動（`survey-operations`）。
 - 提示・回答の保存・回答済みの確認の仕様（`surveys`）。
 - R2 バケットの作成、ビルドが実際のバケットを読むための `remote: true` の付与（`survey-results-public` の「ローカル・CI・プレビューでの取得の扱い」）。
-- 孤立した回答（設定から集計前に消されたアンケートの行）の探索と削除。
+- 未集計の孤立回答の探索と削除。
 
 ## Boundary Commitments
 
@@ -51,14 +51,14 @@
 - 機能の有効判定の条件（バインディング名）の変更。
 - `period.ts` の `currentSurvey` の意味の変更、`SurveyConfig` の形式変更（質問の題・選択肢の複写に影響）。
 - 回答の削除の契機の変更（`surveys` の更新）。
-- 設定から外れたアンケートの回答の掃除（目録の走査。識別子の再利用の保護を含む）の規則の変更。
+- 設定から外れた終了済みの記録の掃除、結果本体の検証、アンケート日次処理の D1 呼び出し数の上限の変更。
 
 ## Architecture
 
 ### Existing Architecture Analysis
 
 - Worker（`src/worker.ts`）は `scheduled` で、毎分の予約投稿を `waitUntil` に登録し、日次の枠（`isHousekeepingTime`）で後片付けとアンケートの保持を別々の `waitUntil` に登録する。失敗は互いに伝播させない。この形を保つ。
-- 設定は静的アセットの `/surveys/index.json` から `readSurveyConfig` で読む（ビルドの旗が `"true"` のときだけ）。日次の枠でも同じ経路で読む。
+- 設定は静的アセットの `/surveys/index.json` から `readSurveyConfig` で読む。日次処理は `isSurveyConfigPresent()` で有無を先に判定し、存在するのに `readSurveyConfig` が `undefined` なら読み取り失敗として終了する。
 - 回答の保存は `saveAnswer`（集合と回答を 1 つの `batch`）。D1 の削除は `purgeRespondents`・`purgeAnswers`。
 - R2 の前例は `SCHEDULE_IMAGES`。型は `lib/platform/cfTypes.ts` に構造的に定義し、テストは同じ形のフェイクを使える。
 
@@ -113,11 +113,11 @@ src/lib/survey/
 ### Modified Files
 
 - `src/lib/survey/period.ts` — 保持期限の判定（`RetentionDeadlines`・`retentionDeadlines`・`retentionExpired`・`addOneMonthInJst`）を削除し、`currentSurvey` を残す。終了の判定 `isClosed(survey, now)` を足す。
-- `src/lib/survey/store.ts` — 回答の読み取り `readAnswerRows(db, surveyId)`（`answers` 列の文字列の配列を返す）を足す。`purgeRespondents`・`purgeAnswers` は残す。
+- `src/lib/survey/store.ts` — 必要な回答と掃除対象の残存識別子を batch で読み取り、複数識別子について回答行と回答済みの集合の行の両方を batch で削除する操作を足す。既存の単体削除操作は残す。
 - `src/lib/survey/env.ts` — `SurveyEnv` に `SURVEY_RESULTS?` を足す。
 - `src/lib/survey/request.ts` — 設定を読む前に機能の有効判定を行い、無効なら設定なしと同じ 404 を返す。
 - `src/lib/survey/retention.ts` — 削除（`daily.ts` に置き換え）。
-- `src/lib/platform/cfTypes.ts` — 結果の保管先の構造的な型 `SurveyResultsBucket`（`head`・`get`・`put` の `onlyIf`）を足す。既存の `R2Bucket` は変えない。
+- `src/lib/platform/cfTypes.ts` — D1 `batch()` の戻り値に含まれる各実行結果と読み取り行を扱う構造的な型、および `get`・条件付き `put` のみを持つ `SurveyResultsBucket` を足す。結果保管先の `head` は設けない。既存の `R2Bucket` は変えない。
 - `src/lib/site/surveyPresence.ts` — ビルドの旗に「D1 と `SURVEY_RESULTS` が宣言されている」条件を足す（`declaresSurveyBindings`）。
 - `astro.config.mjs` — 生成済みの `wrangler.jsonc`（既に読み込み済み）から宣言の有無を判定して旗に渡す。
 - `src/worker.ts` — 日次の枠で `runSurveyRetention` の代わりに `runSurveyDaily` を登録する。`env` の型に `SURVEY_RESULTS` を足す。
@@ -132,101 +132,117 @@ src/lib/survey/
 
 ```mermaid
 flowchart TD
-  A[日次の枠] --> B{機能は有効か}
-  B -- いいえ --> Z[何もしない]
-  B -- はい --> C[設定を読む。設定が無ければ空として扱う。有るのに読めなければ記録して終了]
-  C --> D[目録を読む。検証に通らなければ中断して記録]
-  D --> E[設定の各アンケートで: 終了済みか]
-  E -- いいえ --> N[次へ]
-  E -- はい --> F[回答済みの集合を削除]
-  F --> G{目録に記録あり}
-  G -- あり --> H{結果が必要で、結果は在るか}
-  H -- 在る、または不要 --> K[回答を削除]
-  H -- 無い --> I
-  G -- なし --> I[回答を読み集計]
-  I --> J{回答者数 0}
-  J -- はい --> J1[目録に empty を追記] --> K
-  J -- いいえ --> J2[結果を上書き禁止で作成。既存なら成功扱い] --> J3[目録に result を追記] --> K
-  K --> N
-  N --> L[設定の処理の後: 目録を読み直し、各記録を走査]
-  L --> M{終了済みで、設定に未終了の同じ識別子が無い}
-  M -- いいえ --> M1[触れない]
-  M -- はい --> M2[回答と集合を削除。失敗は記録して次へ]
+  A[日次の枠] --> B{D1 と R2 があるか}
+  B -- いいえ --> Z[終了]
+  B -- はい --> C[設定の有無を判定]
+  C -- 無い --> D[空の設定として続行]
+  C -- 存在し読めない --> Z
+  C -- 正常 --> E[終了済み設定内の回答済み集合を batch 削除]
+  D --> E
+  E --> F[目録を読み検証]
+  F -- 失敗 --> Z1[集計と回答削除を中断]
+  F -- 成功 --> G[設定内の終了済みアンケートを処理]
+  G --> H{目録が empty}
+  H -- はい --> I[回答削除対象]
+  H -- いいえ --> J[結果本体を readMatchingResult で読む]
+  J -- 検証失敗 --> K[回答を残す]
+  J -- 有効な本体 --> L{目録に記録があるか}
+  L -- いいえ --> M[本体の値で result を追記・記録確認]
+  M --> I
+  L -- はい --> I
+  J -- 本体なし --> N[回答を batch 読み取り・集計]
+  N --> O{有効回答 0 件か}
+  O -- 目録が result --> K
+  O -- 目録なし --> P[empty を追記・記録確認] --> I
+  O -- 回答あり --> Q[結果を上書き禁止で保存]
+  Q --> R[競合・exists なら本体を読み直し検証]
+  R --> S[result を追記・記録確認] --> I
+  G --> T[保存確認済み回答だけ batch 削除]
+  T --> U[設定に無い終了済み目録記録を掃除]
 ```
 
-- 設定の処理のあとの走査（L〜M2）は、設定から外れたアンケートの削除の取りこぼし（Worker の削除が失敗した日に、設定の整理で設定から消えた場合）を直す経路で、毎日行う。目録は最大 200 件で、1 件あたり削除は 2 回（回答・集合）だけなので、毎回行っても軽い。結果の有無（`empty`・`result`）にかかわらず対象にする。設定に同じ識別子の未終了のアンケートがあるとき（識別子の再利用）は、新しい回答を消さないよう触れない。
-- 各アンケートの処理は独立した try で囲み、失敗は識別子と例外の種類の名前だけを記録して次へ進む。
-- 目録の追記は、読んだ ETag との比較交換（最大 3 回、失敗のたびに読み直す）。目録が無いときは作成のみ許す。比較交換に 3 回失敗したら、そのアンケートは失敗として扱う（回答は消さない）。
-- 目録に記録がある `result` で結果が無い（運用者が消した）場合は、回答が残っていれば作り直す。回答が既に無ければ（0 件の集計になる）作り直さず、不整合として記録するだけにする（空の結果で上書きしない）。
+1. D1 または R2 が無ければ終了する。
+2. 設定の存在を `isSurveyConfigPresent()` で先に確かめる。存在しない場合だけ空の設定として続ける。存在するのに取得・解析・形式検証に失敗した場合は、集合・回答を何も削除せず終了する。
+3. 設定にある終了済みアンケートの回答済み集合を batch で削除する。失敗を記録して続け、R2 はまだ読まない。
+4. 目録を読み検証する。失敗したら集計と回答内容の削除を止めるが、手順 3 は取り消さない。
+5. 設定にある終了済みアンケートを処理する。目録が `empty` なら回答を削除対象にする。その他は `readMatchingResult` で本体を検証する。本体が不正・不一致・読み取り失敗なら回答を残す。本体が有効で目録に記録が無ければ本体の識別子と期間で `result` を追記し、確認後に削除対象にする。本体が無い場合は回答を読み集計する。目録が `result` なのに有効回答が 0 件なら不整合として回答を残す。目録が無く 0 件なら `empty` を記録し、確認後に削除対象にする。有効回答があれば結果を上書き禁止で保存し、競合または `exists` の場合も本体を読み直して検証する。結果と目録を確認できた識別子だけを削除対象にする。
+6. 目録にあり設定に無い終了済み識別子のうち、D1 に残るものを掃除する。`result` は結果本体の検証後、`empty` は目録の検証後に削除する。結果本体が無い・不正・不一致なら回答を残し、再集計しない。設定にある識別子は終了済みでも本流に任せる。設定自体が無い場合も掃除する。
+
+目録の追記は比較交換で最大 3 回試し、失敗時は回答を残す。可視フラグには書かない。失敗の記録は段階・識別子・例外の種類の名前だけとし、本文を含めない。
 
 ## Requirements Traceability
 
-| Requirement | Summary                                            | Components                                                   | Interfaces                           | Flows      |
-| ----------- | -------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------ | ---------- |
-| 1.1         | 両方あれば機能が働く                               | isSurveyFeatureEnabled                                       | `isSurveyFeatureEnabled`             | 日次の枠 B |
-| 1.2         | R2 が無ければ全機能を無効                          | isSurveyFeatureEnabled, resolveSurveyRequest, runSurveyDaily | 同上                                 | B          |
-| 1.3         | 無効時は設定なしと同じ応答                         | resolveSurveyRequest                                         | 404 を返す                           | —          |
-| 1.4         | 無効時は集計も削除もしない                         | runSurveyDaily                                               | 最初の判定                           | B → Z      |
-| 1.5         | ビルドに宣言が無ければ入口を出さない               | declaresSurveyBindings, surveyConfigPresentFlag              | 旗                                   | —          |
-| 2.1         | 終了後・未保存なら集計して保存                     | runSurveyDaily, tallySurvey, resultsStore                    | 手順                                 | E〜K       |
-| 2.2         | 開始前・実施中は触れない                           | isClosed                                                     | 終了の判定                           | E          |
-| 2.3         | 終了時刻の後に限る                                 | isClosed                                                     | `closesAt <= now`                    | E          |
-| 2.4         | 設定に無いものは集計しない                         | runSurveyDaily                                               | 設定の各アンケートだけを走査         | C, E       |
-| 2.5         | 保存済みは再集計しない                             | runSurveyDaily, resultsStore                                 | 目録・結果の有無                     | G, H       |
-| 3.1         | 割合の分母は回答者数                               | tallySurvey                                                  | `SurveyResult`                       | I          |
-| 3.2         | 小数 1 桁                                          | tallySurvey                                                  | 丸め                                 | I          |
-| 3.3         | 複数選択は合計が 100 を超えてよい                  | tallySurvey                                                  | 選択肢ごとに独立                     | I          |
-| 3.4         | 「回答しない」を含めない                           | tallySurvey                                                  | decline を除く                       | I          |
-| 3.5         | 0 件は結果を作らない                               | tallySurvey, runSurveyDaily                                  | `undefined` を返す                   | J          |
-| 3.6         | 伏せ字・丸めをしない                               | tallySurvey                                                  | しきい値を持たない                   | I          |
-| 3.7         | 読めない回答は数えない                             | tallySurvey                                                  | `checkAnswers` の再利用              | I          |
-| 4.1         | 結果の内容                                         | SurveyResultSchema                                           | 結果の形式                           | —          |
-| 4.2         | 持たない情報                                       | SurveyResultSchema                                           | strict                               | —          |
-| 4.3         | 文言を設定から複写                                 | tallySurvey                                                  | 題・文言の複写                       | I          |
-| 4.4         | 目録の内容                                         | SurveyIndexSchema                                            | 目録の形式                           | —          |
-| 4.5         | 形式の版                                           | schema.ts                                                    | `schemaVersion`                      | —          |
-| 4.6         | 共有の検証の規則                                   | schema.ts                                                    | `parse*` の 3 関数                   | —          |
-| 4.7         | 検証に通らない内容は使わない                       | schema.ts, resultsStore                                      | `ok: false` を返す                   | D          |
-| 5.1         | 非表示で作る                                       | runSurveyDaily                                               | 旗を書かない                         | J2         |
-| 5.2         | 旗が無い・不正は非表示                             | SurveyVisibilitySchema, `isVisible`                          | 読み手の規則                         | —          |
-| 5.3         | 旗を単独で書き換えられる                           | `visibilityKey`                                              | 独立したオブジェクト                 | —          |
-| 5.4         | 書き換えで本体・目録は不変                         | resultsStore                                                 | 旗と本体・目録の書き手を分ける       | —          |
-| 5.5         | 集計は旗を書かない                                 | runSurveyDaily                                               | 旗のキーに書かない                   | —          |
-| 5.6         | 資材に含めない                                     | R2 のオブジェクトの構成                                      | リポジトリ・ビルドに置かない         | —          |
-| 6.1         | 保存成功後に同じ処理で削除                         | runSurveyDaily                                               | 順序: 作成→目録→削除                 | J〜K       |
-| 6.2         | 失敗なら削除せず再試行                             | runSurveyDaily                                               | 例外で K に進まない                  | 失敗の扱い |
-| 6.3         | 削除の契機は保存成功後だけ                         | runSurveyDaily, period.ts                                    | 保持期限の削除                       | —          |
-| 6.4         | 0 件でも削除する                                   | runSurveyDaily                                               | empty の記録後に削除                 | J1         |
-| 6.5         | 実施中・開始前は削除しない                         | isClosed                                                     | 終了の判定                           | E          |
-| 6.6         | 集合は終了後に成否と無関係に削除                   | runSurveyDaily                                               | F                                    | F          |
-| 6.7         | 1 か月後の保持期限を持たない                       | period.ts, retention.ts の削除                               | —                                    | —          |
-| 6.8         | 設定から外れた終了済みの記録の回答・集合を毎日掃除 | runSurveyDaily                                               | 目録の走査・冪等な削除               | L, M, M2   |
-| 6.9         | 同じ識別子の未終了が設定にあれば触れない           | runSurveyDaily                                               | 設定の未終了の識別子との照合         | M, M1      |
-| 6.10        | 掃除の失敗は記録して続行・冪等                     | runSurveyDaily                                               | 記録ごとの try、`logFailure`         | M2         |
-| 6.11        | 設定が読めないときは掃除しない                     | runSurveyDaily                                               | 存在するのに読めなければ記録して戻る | C          |
-| 7.1         | 上書きせず削除のみ                                 | resultsStore                                                 | `etagDoesNotMatch: "*"`              | J2         |
-| 7.2         | 繰り返しても同じ状態                               | runSurveyDaily                                               | 冪等な手順                           | G, H       |
-| 7.3         | 同時実行で壊れない                                 | resultsStore                                                 | 条件付き書き込み・比較交換           | 目録の追記 |
-| 7.4         | 1 件の失敗が他を止めない                           | runSurveyDaily                                               | アンケートごとの try                 | E          |
-| 7.5         | 記録は識別子と例外名だけ                           | runSurveyDaily                                               | `logFailure`                         | —          |
-| 7.6         | 目録が不正なら中断                                 | runSurveyDaily, resultsStore                                 | D                                    | D          |
-| 7.7         | 結果ありで目録に無ければ足して削除                 | runSurveyDaily                                               | I〜J2                                | J2         |
-| 8.1         | 専用の保管先                                       | wrangler テンプレート                                        | `SURVEY_RESULTS`                     | —          |
-| 8.2         | 本番・develop・プレビュー                          | render-wrangler（既存）                                      | `-develop` の付与                    | —          |
-| 8.3         | 認証情報が無ければローカルの代用                   | tests/route/wrangler.jsonc、テンプレート                     | `remote` を付けない                  | —          |
-| 8.4         | 保管先の作成はしない                               | 範囲外                                                       | —                                    | —          |
+| Requirement | Summary                                        | Components                                                   | Interfaces                       | Flows      |
+| ----------- | ---------------------------------------------- | ------------------------------------------------------------ | -------------------------------- | ---------- |
+| 1.1         | 両方あれば機能が働く                           | isSurveyFeatureEnabled                                       | `isSurveyFeatureEnabled`         | 日次の枠 B |
+| 1.2         | R2 が無ければ全機能を無効                      | isSurveyFeatureEnabled, resolveSurveyRequest, runSurveyDaily | 同上                             | B          |
+| 1.3         | 無効時は設定なしと同じ応答                     | resolveSurveyRequest                                         | 404 を返す                       | —          |
+| 1.4         | 無効時は集計も削除もしない                     | runSurveyDaily                                               | 最初の判定                       | B → Z      |
+| 1.5         | ビルドに宣言が無ければ入口を出さない           | declaresSurveyBindings, surveyConfigPresentFlag              | 旗                               | —          |
+| 2.1         | 終了後・未保存なら集計して保存                 | runSurveyDaily, tallySurvey, resultsStore                    | 手順                             | E〜K       |
+| 2.2         | 開始前・実施中は触れない                       | isClosed                                                     | 終了の判定                       | E          |
+| 2.3         | 終了時刻の後に限る                             | isClosed                                                     | `closesAt <= now`                | E          |
+| 2.4         | 設定に無いものは集計しない                     | runSurveyDaily                                               | 設定の各アンケートだけを走査     | C, E       |
+| 2.5         | 保存済みは再集計しない                         | runSurveyDaily, resultsStore                                 | 目録・結果の有無                 | G, H       |
+| 3.1         | 割合の分母は回答者数                           | tallySurvey                                                  | `SurveyResult`                   | I          |
+| 3.2         | 小数 1 桁                                      | tallySurvey                                                  | 丸め                             | I          |
+| 3.3         | 複数選択は合計が 100 を超えてよい              | tallySurvey                                                  | 選択肢ごとに独立                 | I          |
+| 3.4         | 「回答しない」を含めない                       | tallySurvey                                                  | decline を除く                   | I          |
+| 3.5         | 0 件は結果を作らない                           | tallySurvey, runSurveyDaily                                  | `undefined` を返す               | J          |
+| 3.6         | 伏せ字・丸めをしない                           | tallySurvey                                                  | しきい値を持たない               | I          |
+| 3.7         | 読めない回答は数えない                         | tallySurvey                                                  | `checkAnswers` の再利用          | I          |
+| 4.1         | 結果の内容                                     | SurveyResultSchema                                           | 結果の形式                       | —          |
+| 4.2         | 持たない情報                                   | SurveyResultSchema                                           | strict                           | —          |
+| 4.3         | 文言を設定から複写                             | tallySurvey                                                  | 題・文言の複写                   | I          |
+| 4.4         | 目録の内容                                     | SurveyIndexSchema                                            | 目録の形式                       | —          |
+| 4.5         | 形式の版                                       | schema.ts                                                    | `schemaVersion`                  | —          |
+| 4.6         | 共有の検証の規則                               | schema.ts                                                    | `parse*` の 3 関数               | —          |
+| 4.7         | 検証に通らない内容は使わない                   | schema.ts, resultsStore                                      | `ok: false` を返す               | D          |
+| 5.1         | 非表示で作る                                   | runSurveyDaily                                               | 旗を書かない                     | J2         |
+| 5.2         | 旗が無い・不正は非表示                         | SurveyVisibilitySchema, `isVisible`                          | 読み手の規則                     | —          |
+| 5.3         | 旗を単独で書き換えられる                       | `visibilityKey`                                              | 独立したオブジェクト             | —          |
+| 5.4         | 書き換えで本体・目録は不変                     | resultsStore                                                 | 旗と本体・目録の書き手を分ける   | —          |
+| 5.5         | 集計は旗を書かない                             | runSurveyDaily                                               | 旗のキーに書かない               | —          |
+| 5.6         | 資材に含めない                                 | R2 のオブジェクトの構成                                      | リポジトリ・ビルドに置かない     | —          |
+| 6.1         | 保存確認後に同じ処理で削除                     | runSurveyDaily                                               | 結果→目録→回答削除               | —          |
+| 6.2         | 失敗なら回答を残し翌日再試行                   | runSurveyDaily                                               | 削除対象に加えない               | —          |
+| 6.3         | 削除の契機は保存確認後だけ                     | runSurveyDaily, period.ts                                    | 保持期限の削除                   | —          |
+| 6.4         | 0 件は empty 記録後に削除                      | runSurveyDaily                                               | 目録記録後                       | —          |
+| 6.5         | 実施中・開始前は削除しない                     | isClosed                                                     | 終了判定                         | —          |
+| 6.6         | 集合を R2 読み取りより先に独立して削除         | runSurveyDaily                                               | batch 削除                       | 3          |
+| 6.7         | 1 か月後の保持期限を持たない                   | period.ts, retention.ts の削除                               | —                                | —          |
+| 6.8         | 設定に無い終了済み目録記録の残存回答だけ掃除   | runSurveyDaily                                               | result 本体または empty 目録検証 | U          |
+| 6.9         | 廃止                                           | —                                                            | 専用の保護なし                   | —          |
+| 6.10        | 削除グループごとに失敗を分離                   | runSurveyDaily                                               | 識別子・例外名を記録し続行       | U          |
+| 6.11        | 設定が存在して読めない場合は何も削除しない     | runSurveyDaily                                               | 例外名だけ記録して終了           | C          |
+| 6.12        | 復旧保存・保存確認失敗なら同一実行で削除しない | runSurveyDaily                                               | 削除候補から除外                 | J〜T       |
+| 6.13        | 廃止                                           | —                                                            | 専用の安全弁なし                 | —          |
+| 6.14        | D1 送信は最大 16 回、実際は最大 13 回          | runSurveyDaily, D1 store                                     | batch 単位で数える               | —          |
+| 6.15        | 既存結果本体を読み形式・識別子・期間を検証     | results/store.ts, runSurveyDaily                             | readMatchingResult               | J〜S       |
+| 7.1         | 上書きせず削除のみ                             | resultsStore                                                 | `etagDoesNotMatch: "*"`          | J2         |
+| 7.2         | 繰り返しても同じ状態                           | runSurveyDaily                                               | 冪等な手順                       | G, H       |
+| 7.3         | 同時実行で壊れない                             | resultsStore                                                 | 条件付き書き込み・比較交換       | 目録の追記 |
+| 7.4         | 1 件の失敗が他を止めない                       | runSurveyDaily                                               | アンケートごとの try             | E          |
+| 7.5         | 記録は識別子と例外名だけ                       | runSurveyDaily                                               | `logFailure`                     | —          |
+| 7.6         | 目録が不正なら中断                             | runSurveyDaily, resultsStore                                 | D                                | D          |
+| 7.7         | 結果ありで目録に無ければ足して削除             | runSurveyDaily                                               | I〜J2                            | J2         |
+| 8.1         | 専用の保管先                                   | wrangler テンプレート                                        | `SURVEY_RESULTS`                 | —          |
+| 8.2         | 本番・develop・プレビュー                      | render-wrangler（既存）                                      | `-develop` の付与                | —          |
+| 8.3         | 認証情報が無ければローカルの代用               | tests/route/wrangler.jsonc、テンプレート                     | `remote` を付けない              | —          |
+| 8.4         | 保管先の作成はしない                           | 範囲外                                                       | —                                | —          |
 
 ## Components and Interfaces
 
-| Component                 | Domain/Layer | Intent                           | Req Coverage                                                 | Key Dependencies (P0/P1)                | Contracts |
-| ------------------------- | ------------ | -------------------------------- | ------------------------------------------------------------ | --------------------------------------- | --------- |
-| results/schema.ts         | 形式（共有） | 統計ファイルの形式・検証・キー名 | 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 5.2, 5.3                       | zod, idSchema (P0)                      | State     |
-| results/tally.ts          | 業務（純粋） | 回答 → 結果                      | 3.1–3.7, 4.3                                                 | `checkAnswers` (P0), schema (P0)        | Service   |
-| results/store.ts          | 保管         | R2 の読み書きと同時実行の防止    | 4.7, 5.4, 7.1, 7.3, 7.6                                      | `SurveyResultsBucket` (P0), schema (P0) | Service   |
-| daily.ts                  | 手順         | 日次の集計・削除                 | 1.2, 1.4, 2.1–2.5, 5.1, 5.5, 6.1–6.6, 6.8–6.11, 7.2, 7.4–7.7 | feature, tally, store, D1 store (P0)    | Batch     |
-| feature.ts                | 判定         | 機能の有効判定                   | 1.1–1.3                                                      | なし                                    | Service   |
-| surveyPresence.ts（変更） | ビルドの旗   | 宣言の有無                       | 1.5                                                          | astro.config (P0)                       | Service   |
-| request.ts（変更）        | API の前処理 | 無効時の 404                     | 1.3                                                          | feature (P0)                            | API       |
+| Component                 | Domain/Layer | Intent                           | Req Coverage                                                              | Key Dependencies (P0/P1)                | Contracts |
+| ------------------------- | ------------ | -------------------------------- | ------------------------------------------------------------------------- | --------------------------------------- | --------- |
+| results/schema.ts         | 形式（共有） | 統計ファイルの形式・検証・キー名 | 4.1, 4.2, 4.4, 4.5, 4.6, 4.7, 5.2, 5.3                                    | zod, idSchema (P0)                      | State     |
+| results/tally.ts          | 業務（純粋） | 回答 → 結果                      | 3.1–3.7, 4.3                                                              | `checkAnswers` (P0), schema (P0)        | Service   |
+| results/store.ts          | 保管         | R2 の読み書きと同時実行の防止    | 4.7, 5.4, 6.15, 7.1, 7.3, 7.6                                             | `SurveyResultsBucket` (P0), schema (P0) | Service   |
+| daily.ts                  | 手順         | 日次の集計・削除                 | 1.2, 1.4, 2.1–2.5, 5.1, 5.5, 6.1–6.8, 6.10–6.12, 6.14, 6.15, 7.2, 7.4–7.7 | feature, tally, store, D1 store (P0)    | Batch     |
+| feature.ts                | 判定         | 機能の有効判定                   | 1.1–1.3                                                                   | なし                                    | Service   |
+| surveyPresence.ts（変更） | ビルドの旗   | 宣言の有無                       | 1.5                                                                       | astro.config (P0)                       | Service   |
+| request.ts（変更）        | API の前処理 | 無効時の 404                     | 1.3                                                                       | feature (P0)                            | API       |
+| store.ts（変更）          | D1 保管      | batch 読み取りと複数削除         | 2.1, 6.10, 6.14                                                           | D1 (P0)                                 | Batch     |
 
 ### 形式
 
@@ -321,7 +337,7 @@ export declare const parseSurveyVisibility: (
 - 不正の報告は「位置: 理由」を作らず、成否だけを返す（読んだ本文を出さないため）。
 - 結果は件数・回答者数・回答日・個別の回答・アンケート全体の題と説明を持たず、`strictObject` が混入を拒む（要件 4.2）。
 - 例（結果）:
-  `{"schemaVersion":1,"id":"survey-2026-a","opensAt":"2026-11-01T00:00:00+09:00","closesAt":"2026-12-01T00:00:00+09:00","questions":[{"id":"q-ui","kind":"single","title":{"ja":"…","en":"…"},"options":[{"id":"v1","label":{"ja":"…","en":"…"},"percent":42.9},{"id":"v2","label":{"ja":"…","en":"…"},"percent":57.1}]}]}`
+  `{"schemaVersion":1,"id":"3f2b9c1e-7a54-4d1e-9b0c-5a6d2e8f4c10","opensAt":"2026-11-01T00:00:00+09:00","closesAt":"2026-12-01T00:00:00+09:00","questions":[{"id":"q-ui","kind":"single","title":{"ja":"…","en":"…"},"options":[{"id":"v1","label":{"ja":"…","en":"…"},"percent":42.9},{"id":"v2","label":{"ja":"…","en":"…"},"percent":57.1}]}]}`
 
 #### results/tally.ts
 
@@ -350,7 +366,7 @@ export const tallySurvey = (
 | Field        | Detail                                           |
 | ------------ | ------------------------------------------------ |
 | Intent       | 統計ファイルの R2 への読み書きと、同時実行の防止 |
-| Requirements | 4.7, 5.4, 7.1, 7.3, 7.6                          |
+| Requirements | 4.7, 5.4, 6.15, 7.1, 7.3, 7.6                    |
 
 ##### Service Interface
 
@@ -360,10 +376,13 @@ export type IndexSnapshot = { index: SurveyIndex; etag: string | undefined }
 /** 目録を読む。無ければ空の目録と etag なし。検証に通らなければ例外 */
 export const readIndex = (bucket: SurveyResultsBucket): Promise<IndexSnapshot>
 
-/** 結果が在るか（head） */
-export const resultExists = (bucket: SurveyResultsBucket, surveyId: string): Promise<boolean>
+/** 本体を読み、JSON・形式・要求した識別子を検証する。無ければ undefined。本文は例外に含めない */
+export const readResult = (bucket: SurveyResultsBucket, surveyId: string): Promise<SurveyResult | undefined>
 
-/** 結果を上書き禁止で作る。既に在れば作らず "exists" を返す（成功扱い） */
+/** 本体を読み、期待する識別子と期間を照合する。不一致・不正・読み取り失敗は例外 */
+export const readMatchingResult = (bucket: SurveyResultsBucket, expected: { id: string; opensAt: string; closesAt: string }): Promise<SurveyResult | undefined>
+
+/** 結果を上書き禁止で作る。既に在れば作らず "exists" を返す（本体を検証するまでは保存確認ではない） */
 export const putResultOnce = (
     bucket: SurveyResultsBucket,
     result: SurveyResult,
@@ -378,13 +397,12 @@ export const appendIndexEntry = (
 
 - Preconditions: 書く内容は検証スキーマで検証済み（`put` の前に `parse` を通す）。
 - Postconditions: 旗（`visibility/`）のキーには書かない。目録に足した項目は識別子で一意。書き込みの `contentType` は `application/json`。
-- 例外の種類: `IndexInvalidError`（目録が検証に通らない）・`IndexConflictError`（比較交換が尽きた）。名前だけを記録に使う。
+- 例外の種類: `IndexInvalidError`（目録が検証に通らない）・`IndexConflictError`（比較交換が尽きた）・`ResultInvalidError`（結果本体が不正）・`ResultMismatchError`（期待する識別子または期間と不一致）。名前だけを記録に使い、本文を含めない。
 
 ##### 構造的な型（`cfTypes.ts`）
 
 ```typescript
 export type SurveyResultsBucket = {
-  head: (key: string) => Promise<{ etag: string } | null>
   get: (
     key: string,
   ) => Promise<{ etag: string; text: () => Promise<string> } | null>
@@ -405,32 +423,34 @@ export type SurveyResultsBucket = {
 
 #### daily.ts（`runSurveyDaily`）
 
-| Field        | Detail                                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| Intent       | 日次の枠で、終了済みのアンケートを集計して保存し、成功後に回答を削除する。設定から外れた終了済みの記録の回答も掃除する   |
-| Requirements | 1.2, 1.4, 2.1, 2.2, 2.3, 2.4, 2.5, 5.1, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.8, 6.9, 6.10, 6.11, 7.2, 7.4, 7.5, 7.6, 7.7 |
+| Field        | Detail                                                                                                           |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Intent       | 日次の枠で設定内アンケートを集計し、保存を確認して回答を削除する。設定から外れた終了済み記録の残存回答も掃除する |
+| Requirements | 1.2, 1.4, 2.1–2.5, 5.1, 5.5, 6.1–6.8, 6.10–6.12, 6.14, 6.15, 7.2, 7.4–7.7                                        |
 
 **Contracts**: Batch [x]
 
 ##### Batch / Job Contract
 
-- Trigger: `scheduled` の日次の枠（`isHousekeepingTime`）。`ctx.waitUntil` に async 関数で包んで登録する（同期の例外を波及させない）。
-- Input / validation: `env`（`DB`・`ASSETS`・`SURVEY_RESULTS?`）、`now`（現在時刻）。機能が無効（`isSurveyFeatureEnabled` が偽）なら即座に戻る。設定が存在しない（ビルドの旗が偽。変数が無い・空）ときは、設定のアンケートの処理を空として扱い、掃除は実行する（最後の 1 件の除去で設定が消えても掃除が動くため）。設定が存在するのに形式が不正などで読めないときは、掃除を含め何もせず、例外の種類の名前だけを記録して戻る（設定に同じ識別子の未終了のアンケートがあるか判定できず、開催中の回答を消す危険があるため）。存在の判定は `isSurveyConfigPresent()`、読めたかは `readSurveyConfig` の結果で行う。
-- Output / destination: R2 の結果・目録、D1 の回答・集合の削除。戻り値は無し。例外を外へ投げない。
-- 各アンケート（設定にあるもので、`isClosed(survey, now)`）の手順:
-  1. 回答済みの集合を削除する（失敗は記録して続行。集計とは独立）。
-  2. 目録に記録があり `outcome: "empty"` なら、回答を削除して終わる。
-  3. 目録に記録があり `outcome: "result"` で結果が在るなら、回答を削除して終わる。
-  4. それ以外は、回答を読み `tallySurvey` する。`undefined`（0 件）なら、`resultExists` で結果の有無を確かめた上で、結果が無いときだけ目録に `empty` を足す（結果が在るのに目録が無いときは `result` を足す。このとき目録に足す期間の項目 `opensAt`・`closesAt` は、今の設定ではなく、既に在る結果のファイルの値を使う）。0 件でなければ `putResultOnce` で結果を作る（`"exists"` は成功）。結果の作成が成功したら目録に `result` を足す（既に同じ識別子があれば何もしない）。
-  5. 4 が成功したときだけ、回答を削除する。
-- 設定から外れた記録の掃除（設定の各アンケートの処理が終わったあとに実行。設定が存在しないときも実行する。設定が存在して読めないときは実行しない）:
-  1. 目録を読み直す（検証に通らなければ、掃除はせず記録して終わる）。
-  2. 各記録について、`closesAt <= now`（`isClosed` と同じ判定）で、かつ、現在の設定に同じ識別子の「まだ終了していない」アンケートが無いときだけ、`DELETE ... WHERE survey_id = ?` を回答・集合の両方の表に行う（`purgeAnswers`・`purgeRespondents` を使う）。設定に同じ識別子の未終了のアンケートがあるときは触れない（識別子の再利用）。
-  3. 記録ごとに独立した try で囲み、失敗は識別子と例外の種類の名前だけを記録して次へ進む。削除は何度行っても同じ状態になる（冪等）。目録には何も書かない（「削除済み」の印は持たない。統計ファイルの形式は変えない）。
-  4. `outcome` が `empty` でも `result` でも対象にする。目録は最大 200 件、1 件あたり削除 2 回。毎回の実行で行う。
-- Idempotency & recovery: 目録を「完了の印」とし、結果→目録→削除の順にする。途中で失敗しても、翌日の実行が続きから直る。結果は上書きされず、目録は識別子で一意に保つ。記録の無い状態で結果だけが在る場合は、再集計の結果を作らず（`"exists"`）、目録に足すだけで回答を削除する（要件 7.7）。
-- 失敗の記録: `console.error("runSurveyDaily: <段階> failed id=<識別子> kind=<例外の name>")` の形で、識別子と例外の種類の名前だけを出す。回答・結果の本文・回答者に関する値を出さない。目録の検証失敗は `IndexInvalidError` として、全体を中断して 1 行記録する（要件 7.6）。
-- 可視フラグには書かない（要件 5.1, 5.5）。
+- Trigger: `scheduled` の日次の枠（`isHousekeepingTime`）。`ctx.waitUntil` に async 関数で包んで登録する。
+- Input / validation: `env`（`DB`・`ASSETS`・`SURVEY_RESULTS?`）、`now`。D1 または R2 が無ければ終了。設定の有無を `isSurveyConfigPresent()` で先に判定する。設定が無ければ空として続行し、存在するのに取得・解析・形式検証に失敗したら、集合・回答を何も削除せず例外名だけ記録して終了する。
+- Output / destination: R2 の結果・目録、D1 の回答・集合。戻り値は無し。例外を外へ投げない。
+
+##### 実行手順
+
+1. 機能が無効なら何にも触れず終了する。設定の存在・読み取りを判定する。
+2. 設定が正常に読めたら、設定にある終了済みアンケートの回答済み集合を削除する。設定が無いときは空集合として扱う。削除は最初の R2 読み取りより前に独立して行い、失敗を記録して続ける。
+3. 目録を読み検証する。取得・検証失敗は集計と回答内容の削除を中断するが、手順 2 は取り消さない。
+4. 設定内の終了済みアンケートを処理する。目録が `empty` なら回答を削除候補にする。それ以外は `readMatchingResult` で本体を読む。期待値は目録の記録があればその識別子と期間、目録が無く設定だけがあれば設定の識別子と期間とする。本体の不正・不一致・読み取り失敗は回答を残す。
+5. 本体が有効で目録に記録が無ければ、本体の値を使って `result` を目録へ追記し、記録を確認してから回答を削除候補にする。本体が無ければ回答を読み集計する。目録が `result` で有効回答が 0 件なら不整合として回答を残す。目録が無く 0 件なら `empty` を追記・確認する。有効回答があれば条件付きで結果を保存する。`exists` や競合時も `readMatchingResult` で本体を読み直して検証する。結果本体と目録を確認できた識別子だけ削除候補にする。
+6. 設定内で削除候補となった回答をまとめて削除する。復旧保存・保存確認失敗の識別子はこの候補にも、後段の掃除にも渡さない。
+7. 目録のうち設定に無く終了済みの識別子を終了時刻の新しい順に最大 200 件選び、その 200 件について D1 に残っているかを読み取り batch で確かめる。残っていない識別子には削除を送らず、空の batch は送らない。残っている識別子は回答行と回答済みの集合の行の両方を掃除する。`result` は結果本体を検証した後、`empty` は検証済み目録を根拠に削除する。設定にある終了済み識別子は本流に任せる。設定自体が無くても掃除する。結果本体が無い・不正・不一致なら回答を残し、再集計しない。未集計回答を探して消す処理は設けない。
+
+- 目録への追記は比較交換で最大 3 回。失敗した識別子は回答を残す。目録更新の確認後にだけ削除候補へ加える。
+- 失敗は段階・識別子・例外の種類の名前だけを記録し、本文を含めない。不正な本体は `ResultInvalidError`、期待値との不一致は `ResultMismatchError` として記録する。
+- D1 の読み取りは、必要な回答と掃除対象の残存識別子をまとめた batch 1 回。削除は設定内集合 1 回、設定内回答 1 回、掃除最大 10 回（1 回に 20 識別子、1 日最大 200 識別子）。空の batch は送らない。失敗した batch は再試行せず、個別実行に切り替えない。最大 13 回、上限 16 回以内。予約投稿との共有枠は設けない。
+- 可視フラグには書かない。
+- 既知の制約: 1 日の候補は終了時刻の新しい順に最大 200 件である。201 件目以降の古い識別子は、同時に 1 つの運用しかない前提では実害が出るまで数年かかる見込みである。
 
 #### feature.ts
 
@@ -454,7 +474,7 @@ export const isSurveyFeatureEnabled = (env: {
 
 ### Logical Data Model
 
-- D1 の 2 表（`survey_respondents`・`survey_answers`）の構造は変えない。読み取りは `SELECT answers FROM survey_answers WHERE survey_id = ?`。
+- D1 の 2 表（`survey_respondents`・`survey_answers`）の構造は変えない。読み取りは ``survey_answers` の回答読み取りと残存識別子の読み取りは日次処理の batch 操作で行う。`。
 - R2 の 3 種のオブジェクトは上記のとおり。目録は小さな JSON（アンケートの数だけ。件数・回答者数は持たない）。
 - 版: `schemaVersion: 1`。互換のない変更は版を上げ、読み手は未知の版を不正として拒否する（`z.literal(1)`）。
 
@@ -469,7 +489,7 @@ export const isSurveyFeatureEnabled = (env: {
 - **R2 の書き込み失敗・比較交換の枯渇**: そのアンケートの回答を削除せず、記録して次へ。翌日に再試行。
 - **目録の検証失敗**: 上書きせず、全体を中断して記録。運用者が目録を確認する。
 - **D1 の読み取り・削除の失敗**: 結果の保存より前なら中断、削除の失敗なら記録（翌日、既に保存済みとして削除だけ再試行）。
-- **設定から外れた記録の掃除での削除の失敗**: その記録だけ識別子と例外名を記録して次へ進む。翌日の掃除が再び試みる。掃除での目録の読み直しの失敗・検証失敗は、掃除だけを記録して終わる（設定の処理の結果には影響しない）。
+- **設定から外れた記録の掃除での削除の失敗**: その記録だけ識別子と例外名を記録して次へ進む。翌日の掃除が再び試みる。目録の取得・検証失敗は集計と回答内容の削除を止めるが、先に行った集合の削除には影響しない。
 - **機能の無効**: エラーにせず、何もしない（API は 404）。
 
 ### Monitoring
@@ -489,9 +509,12 @@ export const isSurveyFeatureEnabled = (env: {
 
 ### Route（workerd。`config/test/vitest.route.config.ts`）
 
-- `runSurveyDaily`（設定から外れた記録の掃除）: 設定に無く終了済みの記録の回答・集合が消える（`empty`・`result` の両方）／設定そのものが無い（旗が偽）状態でも終了済みの記録の回答が消える／設定が存在するのに不正なら何も削除せず記録だけする／設定に同じ識別子の未終了のアンケートがあるとき回答・集合に触れない（識別子の再利用）／削除の失敗（D1 を失敗させるフェイク）が他の記録の処理を止めず、識別子と例外名だけが記録される／繰り返し実行しても同じ（冪等）。
-- `runSurveyDaily`: 終了前は何もしない／終了後は結果と目録ができ回答が消える／結果の保存に失敗（R2 を失敗させるフェイク）すると回答が残る／回答 0 件は `empty` を記録して削除／繰り返し実行しても同じ／結果が既にあれば上書きせず削除だけ／目録が不正なら何も書かず中断／1 件の失敗が他のアンケートを止めない／機能が無効なら R2 にも D1 にも触れない／集合は集計が失敗しても終了後に削除される／ログに本文が出ない。
-- `results/store.ts`: 上書き禁止の作成が 2 回目に `"exists"`、目録の比較交換で 2 つの追記が両方残る、旗のキーに書かない。
+- 日次処理: 終了前は触れない／終了後は集合の削除が最初の R2 読み取りより先に完了／目録の取得失敗・不正でも集合は削除／設定なしでも掃除／設定が存在して読めなければ何も削除しない／機能無効なら D1・R2 に触れない。
+- 保存と削除: 正常保存後だけ削除／0 件は `empty` 記録後に削除／本体だけ既存なら検証後に目録を補う／本体の不正・不一致では回答を残す／`exists` の後も検証／目録が `result` で本体が欠落し復旧保存が失敗しても同じ実行の掃除で回答が消えない／再実行で上書きしない。
+- 掃除: 目録のうち設定に無い終了済み識別子を終了時刻の新しい順に最大 200 件選び、その 200 件の D1 での残存を読み取り batch で確認する。残っていない識別子には削除を送らず空の batch は送らない。残っている識別子は回答行と回答済みの集合の行の両方を削除する。`result` は本体検証後・`empty` は目録検証後に削除／本体欠落では回答を残す／設定にある識別子には触れない／削除グループの失敗後も後続を処理／201 件目以降が古い識別子で滞留する既知の制約があるが、同時に 1 つの運用では実害まで数年の見込み。
+- D1: 読み取りと削除に batch を使い、最大 200 件の掃除・保存・失敗を含め呼び出しは最大 13 回・上限 16 回以内。失敗時に個別実行や同じ実行内の再試行で回数が増えない。
+- R2 保管: 本体の取得・形式検証・照合・上書き禁止・目録の比較交換・可視フラグへ書かない・ログに本文が出ない。
+- `results/store.ts`: 条件付き作成・目録の比較交換・不正本体の拒否と本文を含まない例外を確かめる。
 - `resolveSurveyRequest`: `SURVEY_RESULTS` が無いとき 404（設定なしと同じ）で、D1 に触れない。
 
 ### E2E
@@ -500,7 +523,7 @@ export const isSurveyFeatureEnabled = (env: {
 
 ## Security Considerations
 
-- 統計ファイルは割合だけで、匿名性を保つ。しきい値による伏せ字は設けない（運用者が公開の切り替えで判断する）。回答済みの集合は終了後すぐに削除し、結果の保存の成否に依存させない。
+- 統計ファイルは割合だけで、匿名性を保つ。しきい値による伏せ字は設けない（運用者が公開の切り替えで判断する）。回答済みの集合は、設定が正常に読めた場合に最初の R2 読み取りより前に独立して削除し、目録の成否に依存させない。
 - 可視フラグが無い・不正なときは非表示。出し忘れ側に倒す。
 - ログに回答・本文を出さない。R2 のバインディングは結果専用で、予約の画像と共有しない。
 

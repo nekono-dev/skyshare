@@ -28,7 +28,7 @@
   - `survey-results-aggregation` は、統計ファイルの形式・保管先の構成・「可視フラグが無ければ非表示」の意味を定める。この CLI はその形式に従い、可視フラグだけを書き、結果の本体と目録を書き換えない。
   - `surveys` は、設定の形式からアンケート全体の題・説明を廃止する。この spec の下書き・聞き取りはその後の形式に従う。
   - `survey-results-public` は、再配備のビルドで公開のものだけを読んで表示する。この CLI は公開の切り替えの直後に再配備を起動するが、画面に反映されたことまでは確かめない。
-  - `survey-results-aggregation` は、純粋な判定 `resultMatchesIndexEntry(entry, result)`（結果の識別子・開始日時・終了日時が目録の記録と一致するか）と `isVisible(visibility)`（可視フラグが無い、または `visible` が真でなければ非公開）を `src/lib/survey/results/schema.ts` から公開する。この CLI はそれを使い、独自に判定しない。
+  - `survey-results-aggregation` は、公開時に結果と目録を照合する `resultMatchesIndexEntry(entry, result)` と可視状態を読む `isVisible(visibility)` を公開する。この CLI は公開時の照合に前者を使う。識別子の再利用に備える専用規則や、設定と目録の期間の衝突を防ぐ規則は上流に求めない。
   - 回答の削除は Worker の仕事で、この CLI は回答の保存先（D1）に触れない。
 
 ## Requirements
@@ -162,6 +162,16 @@
 6. If 検証に通らない、または変数の容量の上限を超える, then the 運用 CLI shall 何も書き換えず、失敗を返す。
 7. If 登録の結果が現在の設定と同じである, then the 運用 CLI shall 書き換えず、変更が無かったことを成功として返す。
 8. The 運用 CLI shall 下書きと設定の本文を結果に出さない。
+9. When 新規アンケートを登録する, the 運用 CLI shall UUID v4 の識別子を発行し、`idSchema` で検証する。月ごとの連番と、内容の一致による既存識別子の選択は行わない。
+10. If 下書きに `id` が無い, then the 運用 CLI shall 新規登録として扱い、`id` がある場合は設定内にあるアンケートの更新だけを認める。
+11. If 下書きの `id` の形式が不正である, then the 運用 CLI shall `error: invalid` を返し、何も変更しない。If 下書きに指定された `id` が設定に無い, then the 運用 CLI shall `error: not-found` を返し、何も変更しない。
+12. When 新規登録を行う, the 運用 CLI shall 設定にあるすべてのアンケートの識別子が本番・develop 両方の目録にある場合だけ登録を認める。開始前のアンケートも対象とし、結果あり・回答 0 件のどちらも集計済みとする。設定に残る集計済みの過去のアンケートは新規登録を妨げない。
+13. When `add` を実行する, the 運用 CLI shall dry-run を含め本番・develop 両方の目録を読む。目録が存在しないキーは空として扱い、取得失敗または形式不正の場合は何も変更せず失敗する。新規登録と更新を区別し、12 の制限は新規登録だけに適用する。
+14. If 新規登録を未集計のアンケートが妨げる, then the 運用 CLI shall 次の固定の 1 行を返す。`error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。`
+15. The 下書き shall 実在する日付 `YYYY-MM-DD` の `closesAt` だけを受け付け、運用 CLI はその日の日本時間 0 時に変換して設定へ保存する。
+16. If 新規登録の締切が登録時刻より後でない、更新の締切が元の開始日時より後でない、更新によって終了済みのアンケートを再開する、またはいずれかの環境で集計済みのアンケートの締切を変える, then the 運用 CLI shall 変更を拒否する。集計済みかどうかは目録に識別子があるかだけで判断し、期間の一致は条件にしない。
+17. When 開催中のアンケートを更新する, the 運用 CLI shall 下書きに書かれた締切の日付の日本時間 0 時を指定締切として使い、指定締切が現在の締切より前かつ元の開始日時より後の場合に限り変更を受け付ける。指定締切が現在の締切以後または元の開始日時以下なら拒否する。「元の開始日時より後で最も早い日本時間 0 時」は skill が提案する運用者への目安であり、CLI の受理条件ではない。その最も早い 0 時が現在の締切以後なら、`error: refused: 前倒しできません。自然な終了と集計を待ってください。` の固定の 1 行を返す。
+18. When 新規識別子を発行する, the 運用 CLI shall 下書きの検証と登録可否の確認が通った後にだけ発行する。
 
 ### Requirement 9: 運用手順書
 
@@ -171,15 +181,22 @@
 
 1. The `survey-run` skill shall 新しいコマンド体系（6 つのコマンド、環境の指定、再配備の起動）に沿った手順を示す。
 2. The `survey-run` skill shall 聞き取りと確認表から、アンケート全体の題と説明を外し、質問ごとの題だけにする。
-3. The `survey-run` skill shall 既存の運用の規則（日本語のみの入力、確認前に登録しない、下書きは一時ファイルで成功・失敗のどちらでも削除する、結果の 1 行だけを報告する）を保つ。
+3. The `survey-run` skill shall 既存の運用の規則（日本語のみの入力、確認前に登録しない、下書きは一時ファイルで成功・失敗のどちらでも削除する）を保ち、`status` は表全体を報告し、それ以外は固定の 1 行だけを報告する。
 4. The `survey-run` skill shall 状態確認の説明で 6 つの段階の意味と、公開・非公開の切り替えに再配備が要ることを示す。
-5. The `survey-run` skill shall 開催中のアンケートを取り下げるときの手順（終了日時を更新して集計を待ち、除去する）を示す。
+5. The `survey-run` skill shall 開催中のアンケートを取り下げるとき、同じ識別子の `add` で締切を前倒しし、設定を本番・develop の両方へ配備し、日次集計を待ち、両環境の `status --env` で `empty`・`hidden`・`published` のいずれかを確認してから `remove` または `prune` する手順を示す。設定を更新しただけでは、配備済みの受付は止まらないことも示す。
 6. The `docs/DEVELOP.md` shall main への取り込み前の除去の手順を、新しい `prune` の規則（両環境で集計済みのものだけを除去する）に合わせ、終了の翌日以降（日次の枠が 1 回以上動いた後）に除去し、Worker の日次の記録に削除の失敗が出ていないか確かめることを補助の案内として示す（除去の後に残った回答は集計側の日次の枠が削除するため、安全性の前提ではない）。
 7. The `docs/DEVELOP.md` shall アンケートの設定の項で、新しいコマンド体系と結果の保管先の関係を示す。
 8. The 手順書 shall 設定の変数や公開状態を、専用の CLI 以外で直接書き換えないことを示す。
 9. The `survey-run` skill and `docs/DEVELOP.md` shall `prune`・`remove` が、`develop` の目録に記録が無い（`develop` で一度も集計されていない）ために残した・拒否したときの手順として、「`gh workflow run deploy.yaml --ref develop -f dry_run=false` で `develop` を再配備し、翌日の日次の枠を待つ」を示す。
 10. The `survey-run` skill shall すでに集計済みのアンケートの終了日時を延ばさず、続けたいときは新しい識別子で登録することを示す。
 11. The `docs/DEVELOP.md` shall この spec が直す項を、「3.x アンケート」「5.x の main への取り込み前の手順」「6.x の `SURVEY_CONFIG` の行」に限る。
+12. `survey-run` skill は、状態確認の節とコマンド出力・失敗時の扱いの節の両方で、`status` は表全体を報告し、それ以外は固定の 1 行だけを報告する。
+13. `survey-run` skill と `docs/DEVELOP.md` は、新規識別子が UUID として自動発行され、締切の日付が日本時間 0 時を表し、開始前のアンケートも次の登録を止めることを説明する。
+14. `survey-run` skill と `docs/DEVELOP.md` は、新規登録の固定拒否文と次の手順を示す。記録が無い環境には現在の設定を配備して日次集計を待ち、目録の取得失敗は認証・接続・形式の問題を解消してから再実行する。
+15. `survey-run` skill と `docs/DEVELOP.md` は、開催中の取り下げについて、締切の前倒し、両環境への配備、日次集計の待機、両環境の目録確認、`remove` または `prune` の順を案内する。
+16. `survey-run` skill と `docs/DEVELOP.md` は、`status`・`publish`・`unpublish` が `--env` 必須で、`prune`・`remove` は指定なしで両環境を確認することを示す。
+
+17. The `docs/DEVELOP.md` shall 集計が繰り返し失敗した場合の R2 復旧手順として、結果本体と目録を運用者が直接確認・修正する手順を示し、develop 用バケットが先に作成されている前提を明記する。
 
 ### Requirement 10: 保持期限と回答行への依存の廃止
 
