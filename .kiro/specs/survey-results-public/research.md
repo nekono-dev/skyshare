@@ -69,6 +69,15 @@
 - 2 回の取得の間の更新で内容が食い違う（件数は同じ）— 残余のリスクとして design.md に明記する。
 - 過去のプレビューは次のプッシュまで古い — 手順書に書く。
 
+### 結果ページの経路の確認（タスク 1.4、2026-11-13）
+
+- **方法**: 使い捨ての最小のページ `src/pages/surveys/[...slug].astro`（`prerender = true`、`getStaticPaths` が固定の値を返す）を置き、`SURVEY_CONFIG` を設定したまま `npm run build:v2`（`survey:render` を含む）を実行して、`dist/client/surveys/` を調べた。確かめたあと、ページとビルドの出力は消した（リポジトリに残っていない）。
+- **確認 1（固定の 1 件で作られる）**: `getStaticPaths` が `[{ params: { slug: undefined } }]` のとき、`dist/client/surveys/index.html` ができた。できた。
+- **確認 2（設定の配信物と衝突しない）**: 同じビルドで、設定の配信物 `public/surveys/index.json` が `dist/client/surveys/index.json` として、結果ページと並んで残った。内容は設定のまま（`cmp` で一致）。衝突しない。
+- **確認 3（固定の 0 件では作られない）**: `getStaticPaths` が `[]` のとき、`dist/client/surveys/` には `index.json` だけが残り、`index.html` はできなかった。作られない。
+- **注意（ビルドの確認の方法）**: ページの生成は workerd の中で動くため、シェルの環境変数（`process.env`）はページから見えない。0 件と 1 件の切り替えを環境変数で試すと、常に 1 件の経路になり、確認として無効になる。切り替えはコードで行う。
+- **結論**: 設計の経路（`getStaticPaths` が空なら作らない）は成り立つ。後続のタスクへ進める。
+
 ## References
 
 - `.kiro/specs/survey-results-public/brief.md` — 合意した画面と PoC の結果。
