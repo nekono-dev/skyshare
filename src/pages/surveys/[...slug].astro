@@ -1,0 +1,32 @@
+---
+/**
+ * 公開済みアンケートがあるビルドだけに、ログイン不要の結果ページを生成する。
+ */
+export const prerender = true
+
+import SurveyResults from "@/components/survey/SurveyResults"
+import Baselayout from "@/components/layout/Baselayout/index.astro"
+import StandaloneFooter from "@/components/layout/StandaloneFooter/index.astro"
+import { getPublishedSurveys } from "@/lib/survey/publicResults/buildData"
+import { createSurveyResultStaticPaths } from "@/lib/survey/publicResults/staticPaths"
+import ui from "@/styles/ui.module.css"
+
+export const getStaticPaths = async () => {
+    const surveys = await getPublishedSurveys()
+    return createSurveyResultStaticPaths(surveys)
+}
+
+const robots = ["index", "follow", "noarchive", "noimageindex"]
+const { surveys } = Astro.props
+---
+
+<Baselayout cardPath={`/materials/ogp_main.png`} pageTitleKey="pageTitle.surveyResults" robots={robots}>
+    <div class={ui.center}>
+        <div class=`${ui.page} ${ui["width-lg"]} ${ui.center} `>
+            <div class={ui["width-lg"]}>
+                <SurveyResults surveys={surveys} client:load />
+            </div>
+            <StandaloneFooter />
+        </div>
+    </div>
+</Baselayout>
