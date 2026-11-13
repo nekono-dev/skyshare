@@ -29,6 +29,12 @@
 - **Findings**: `etagMatches`・`etagDoesNotMatch` を受け、`*`（wildcard）を認める。条件に合わないときの `put` は `null` を返す。
 - **Implications**: 結果の作成は `etagDoesNotMatch: "*"`、目録の更新は読んだ ETag との `etagMatches`（目録が無いときは `etagDoesNotMatch: "*"`）。実際の R2 でも同じ意味であることは、route テストの実行（workerd）で確かめる。
 
+#### 検証用（develop）の実バケットでの確認（タスク 2.6、2026-11-13）
+
+- **結果**: 未確認。実行した環境（クラウドセッション）に、Cloudflare の API トークンとアカウント識別子、および R2 の認証情報が無く、検証用のバケット（`skyshare-survey-results-develop`）へ接続できなかった。外部のシステムへの書き込みは、認証情報なしには行えない。
+- **確認済みの範囲**: ローカルの miniflare（workerd のテスト）で、上書き禁止の作成（`etagDoesNotMatch: "*"`）と、読んだ版との比較交換（`etagMatches`）の条件に合わない書き込みが書かれず `null` を返すこと。`tests/route/survey/resultsStore.test.ts` で確かめている。
+- **残すこと**: 実際の R2 でも同じ結果になるかは、運用者が認証情報のある環境で、試験用のオブジェクトを作って確かめる（確認後に削除する）。タスク 4.1 の完了条件に残す。後続のタスクの着手は止めない。
+
 ### 可視フラグの置き場の比較
 
 - **Context**: CLI が小さく独立して書き換えられ、かつ集計の処理と競合しない置き場を選ぶ。
