@@ -39,6 +39,17 @@ export const currentSurvey = (
 }
 
 /**
+ * アンケートが終了しているかを判定する。
+ *
+ * Input: アンケート、判定する時刻
+ * Output: `now >= closesAt` なら true
+ * 例: 終了時刻ちょうどは true、1 ミリ秒前は false
+ */
+export const isClosed = (survey: Survey, now: Date): boolean => {
+    return now.getTime() >= Date.parse(survey.closesAt)
+}
+
+/**
  * 日本標準時の暦で 1 か月後の時刻を返す。同じ日が無ければ月末にする。
  *
  * Input: 基準の時刻（ミリ秒）
