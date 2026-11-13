@@ -1,0 +1,15 @@
+{
+  "id": "survey-2026-a",
+  "closesAt": "2026-11-25",
+  "questions": [
+    {
+      "id": "q-purpose",
+      "kind": "single",
+      "title": { "ja": "主な目的は？", "en": "Main purpose?" },
+      "options": [
+        { "id": "share", "label": { "ja": "共有", "en": "Share" } },
+        { "id": "save", "label": { "ja": "保存", "en": "Save" } }
+      ]
+    }
+  ]
+}

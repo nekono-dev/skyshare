@@ -4,6 +4,7 @@
     ".astro/types.d.ts",
     "src/**/*",
     "tests/**/*",
+    "hack/**/*",
     "scripts/**/*",
     "./worker-configuration.d.ts",
     "./config/orval.config.ts",

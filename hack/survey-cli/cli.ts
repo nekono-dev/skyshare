@@ -19,6 +19,7 @@ const VARIABLE_LIMIT_KB = 48
 
 export type SurveyCliDependencies = {
     remote?: SurveyRemote
+    createId?: () => string
     now?: () => Date
     readFile?: (filePath: string) => string
 }
@@ -155,6 +156,12 @@ const outcomeError = (
     if (outcome.status === "invalid") return invalidConfig(outcome.issues)
     if (outcome.status === "too-large")
         return { code: 1, line: `error: too-large: ${outcome.bytes} bytes` }
+    if (outcome.status === "not-found")
+        return {
+            code: 1,
+            line: "error: not-found: 指定したアンケートがありません",
+        }
+    if (outcome.status === "refused") return { code: 1, line: outcome.line }
     return undefined
 }
 
@@ -188,10 +195,15 @@ export const run = async (
                     line: "error: invalid: 下書きを読み取れません",
                 }
             }
-            const result = addSurvey(loaded.config, draft, now())
+            const result = addSurvey(
+                loaded.config,
+                draft,
+                now(),
+                dependencies.createId,
+            )
             const problem = outcomeError(result)
             if (problem) return problem
-            if (result.status === "invalid" || result.status === "too-large")
+            if (!("config" in result))
                 return {
                     code: 1,
                     line: "error: invalid: 下書きを検証できません",
