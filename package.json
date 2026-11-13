@@ -13,7 +13,7 @@
     "survey:render": "tsx ./scripts/survey/render-survey-config.ts",
     "build:prepare": "npm run codegen && npm run survey:render",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
-    "build:v2": "npm run survey:render && PUBLIC_VERSION=$npm_package_version astro build",
+    "build:v2": "npm run survey:render && PUBLIC_VERSION=$npm_package_version astro build && node scripts/build/checkSurveyResultsLinks.mjs",
     "build": "npm run build:prepare && npm run build:v2 && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
     "dev": "npm run build:prepare && npm run setup:local && PUBLIC_VERSION=$npm_package_version astro dev",
     "dev:build": "npm run setup:local && npm run build && wrangler dev --ip 0.0.0.0",
