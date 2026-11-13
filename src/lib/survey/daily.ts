@@ -81,6 +81,39 @@ const appendAndConfirm = async (
     if (!confirmsIndexEntry(snapshot.index, entry)) throw new Error()
 }
 
+const residualCandidates = (
+    index: SurveyIndex,
+    configuredSurveyIds: Set<string>,
+    now: Date,
+): SurveyIndex["surveys"] =>
+    index.surveys
+        .filter(
+            entry =>
+                !configuredSurveyIds.has(entry.id) &&
+                Date.parse(entry.closesAt) <= now.getTime(),
+        )
+        .sort(
+            (left, right) =>
+                Date.parse(right.closesAt) - Date.parse(left.closesAt),
+        )
+        .slice(0, 200)
+
+const purgeResidualSurveys = async (
+    db: D1Database,
+    surveyIds: string[],
+): Promise<void> => {
+    for (let offset = 0; offset < surveyIds.length; offset += 20) {
+        const group = surveyIds.slice(offset, offset + 20)
+        try {
+            await purgeSurveysBatch(db, group)
+        } catch (error) {
+            console.error(
+                `runSurveyDaily: residual purge failed ids=${group.join(",")} error=${errorClassName(error)}`,
+            )
+        }
+    }
+}
+
 /**
  * 日次アンケート処理を実行する。
  *
@@ -141,6 +174,14 @@ export const runSurveyDaily = async (
 
     const closedSurveys =
         config?.surveys.filter(survey => isClosed(survey, now)) ?? []
+    const configuredSurveyIds = new Set<string>(
+        config?.surveys.map(survey => survey.id) ?? [],
+    )
+    const candidates = residualCandidates(
+        snapshot.index,
+        configuredSurveyIds,
+        now,
+    )
     const deletions = new Set<string>()
     const blockedSurveyIds = new Set<string>()
     const pending: {
@@ -182,12 +223,14 @@ export const runSurveyDaily = async (
     }
 
     let answerRows: Map<string, string[]>
+    let residualIds = new Set<string>()
     try {
         const rows = await readDailyRows(db, {
             answerSurveyIds: pending.map(item => item.survey.id),
-            residualSurveyIds: [],
+            residualSurveyIds: candidates.map(entry => entry.id),
         })
         answerRows = rows.answers
+        residualIds = rows.residual
     } catch (error) {
         for (const item of pending) {
             blockedSurveyIds.add(item.survey.id)
@@ -195,6 +238,9 @@ export const runSurveyDaily = async (
         }
         answerRows = new Map()
         pending.length = 0
+        for (const candidate of candidates) {
+            logSurveyFailure("residual read", candidate.id, error)
+        }
     }
 
     for (const { survey, entry } of pending) {
@@ -261,4 +307,25 @@ export const runSurveyDaily = async (
             logStageFailure("answers purge", errorClassName(error))
         }
     }
+
+    const residualDeletions: string[] = []
+    for (const candidate of candidates) {
+        if (
+            !residualIds.has(candidate.id) ||
+            blockedSurveyIds.has(candidate.id)
+        )
+            continue
+        if (candidate.outcome === "result") {
+            try {
+                const result = await readMatchingResult(bucket, candidate)
+                if (!result) throw new Error()
+                residualDeletions.push(candidate.id)
+            } catch (error) {
+                logSurveyFailure("residual result read", candidate.id, error)
+            }
+        } else {
+            residualDeletions.push(candidate.id)
+        }
+    }
+    await purgeResidualSurveys(db, residualDeletions)
 }
