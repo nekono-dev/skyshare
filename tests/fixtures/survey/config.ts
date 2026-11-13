@@ -8,8 +8,6 @@ export const createValidSurveyConfig = () => ({
             id: "survey-2026-a",
             opensAt: "2026-11-01T00:00:00+09:00",
             closesAt: "2026-12-01T00:00:00+09:00",
-            title: { ja: "使い方アンケート", en: "Usage survey" },
-            description: { ja: "ご協力ください", en: "Please help us" },
             questions: [
                 {
                     id: "q-purpose",

@@ -119,9 +119,7 @@ describe("survey daily failure isolation", () => {
     it("continues after one result save fails and records no private data", async () => {
         vi.stubEnv("PUBLIC_SURVEY_CONFIG_PRESENT", "true")
         const [surveyA, surveyB] = twoClosedSurveys()
-        const configTextMarker = "private-config-marker"
         const resultTextMarker = "private-result-text-marker"
-        surveyA!.description!.ja = configTextMarker
         surveyA!.questions[0]!.title.ja = resultTextMarker
         await insertRows(surveyA!.id, '{"q-purpose":"share"}')
         await insertRows(surveyB!.id, '{"q-purpose":"share"}')
@@ -159,7 +157,6 @@ describe("survey daily failure isolation", () => {
         for (const privateValue of [
             "q-purpose",
             "share",
-            configTextMarker,
             resultTextMarker,
             "private result failure",
             DID_HASH,

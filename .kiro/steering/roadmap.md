@@ -300,7 +300,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Existing Spec Updates
 
-- [ ] surveys(a) 設定の形式の変更 -- アンケート全体の題（`title`）と説明（`description`）を設定の形式から廃止する（質問ごとの題だけにする。利用者の決定 2026-11-12）。影響: `definition.ts`・回答ダイアログ（`SurveyDialog`）・辞書・テストの設定の例（`tests/fixtures/survey/`）。アンケート機能は本番へ未公開のため破壊的変更を許し、既存の `SURVEY_CONFIG` と D1 は初期状態として扱う（移行は作らない。D1 の構造の変更は `migrations/0001_initial.sql` に直接反映してよい）。運用中の設定の作り直し（質問の題を「UIデザインはどちらが好みですか？」にする）は `survey-operations` のタスク 4.2（運用者の作業）が担当する。フェーズ 1 の brief のみで要件は未作成のため、要件の作成時にも記録する。Dependencies: none（`survey-operations` の 2.1 の前提。他の 2 つの spec と並行または先行してよい）
+- [x] surveys(a)（2026-11-13 実装済み: `dev/survey-results-publishing`。回答ダイアログの見出しは入口と同じ固定の文言 `survey.entry` にした） 設定の形式の変更 -- アンケート全体の題（`title`）と説明（`description`）を設定の形式から廃止する（質問ごとの題だけにする。利用者の決定 2026-11-12）。影響: `definition.ts`・回答ダイアログ（`SurveyDialog`）・辞書・テストの設定の例（`tests/fixtures/survey/`）。アンケート機能は本番へ未公開のため破壊的変更を許し、既存の `SURVEY_CONFIG` と D1 は初期状態として扱う（移行は作らない。D1 の構造の変更は `migrations/0001_initial.sql` に直接反映してよい）。運用中の設定の作り直し（質問の題を「UIデザインはどちらが好みですか？」にする）は `survey-operations` のタスク 4.2（運用者の作業）が担当する。フェーズ 1 の brief のみで要件は未作成のため、要件の作成時にも記録する。Dependencies: none（`survey-operations` の 2.1 の前提。他の 2 つの spec と並行または先行してよい）
 - [ ] surveys(b) 保持期限の規則の記録 -- 保持期限の規則を「集計の保存の成功後の削除」に置き換え、アンケート機能が D1 と R2 を前提とすること（R2 が無ければ無効）を要件に記録する。Dependencies: survey-results-aggregation
 - [ ] help-privacy -- アンケート結果を公表すること・公表する範囲をプライバシーポリシーに書くかの判断と追記（`survey-results-public` の設計で判断する）。Dependencies: survey-results-public
 - [ ] develop-docs -- DEVELOP.md の 3.x・main への取り込み前の手順（5.x）・環境変数の表（6.x）を、新しい体系に合わせる（`survey-operations` の実装で行う）。`survey-results-public` も、CI の認証情報・R2・プレビューの更新・本番バケットの先行作成の節と、6.5 の `SURVEY_RESULTS` の行を編集する（節の見出しで分担し、競合を避ける）。Dependencies: survey-operations, survey-results-public

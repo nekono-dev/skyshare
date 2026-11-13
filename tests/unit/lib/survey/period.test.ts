@@ -9,7 +9,6 @@ const survey = {
     id: "survey-period-test",
     opensAt: "2026-11-01T00:00:00Z",
     closesAt: "2026-12-01T00:00:00Z",
-    title: { ja: "テスト", en: "Test" },
     questions: [
         {
             id: "question",

@@ -1,5 +1,5 @@
 /**
- * アンケートの選択状態を管理し、回答・辞退の操作をダイアログとして表示する。
+ * アンケートの選択状態を管理し、固定の見出しと質問、回答・辞退の操作をダイアログとして表示する。
  * 言語を切り替えても選択を保ち、背景クリックと Esc では閉じない。
  */
 import React, { useId, useState } from "react"
@@ -156,7 +156,6 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   onAction,
 }) => {
   const declined = action.kind === "decline"
-  const description = survey.description
   const actionLabel = declined ? t("survey.close") : t("survey.submit")
   // 未完了のときは送信ボタンを無効にするだけで、案内の文言は出さない
   const hint = action.kind === "decline" ? t("survey.declineHint") : null
@@ -172,11 +171,8 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
       >
         <div className={styles["scroll"]}>
           <h2 id={titleId} className={styles["title"]}>
-            {localize(survey.title, locale)}
+            {t("survey.entry")}
           </h2>
-          {description ? (
-            <p className={ui.text}>{localize(description, locale)}</p>
-          ) : null}
           {survey.questions.map(question => (
             <ChoiceQuestion
               key={question.id}

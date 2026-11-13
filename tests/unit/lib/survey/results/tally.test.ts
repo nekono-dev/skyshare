@@ -12,8 +12,6 @@ const survey: Survey = {
     id: "3f2b9c1e-7a54-4d1e-9b0c-5a6d2e8f4c10",
     opensAt: "2026-11-01T00:00:00+09:00",
     closesAt: "2026-12-01T00:00:00+09:00",
-    title: { ja: "全体の題", en: "Survey title" },
-    description: { ja: "説明", en: "Description" },
     questions: [
         {
             id: "single",

@@ -26,15 +26,6 @@ const canonicalSurvey = (survey: Survey): Survey => ({
     id: survey.id,
     opensAt: survey.opensAt,
     closesAt: survey.closesAt,
-    title: { ja: survey.title.ja, en: survey.title.en },
-    ...(survey.description === undefined
-        ? {}
-        : {
-              description: {
-                  ja: survey.description.ja,
-                  en: survey.description.en,
-              },
-          }),
     questions: survey.questions.map(question => ({
         id: question.id,
         kind: question.kind,
