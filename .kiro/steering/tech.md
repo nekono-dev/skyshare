@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページと React の島（`client:load`）で作り、利用者向けの API は `src/pages/v2/` の Astro エンドポイント（`APIRoute`）として実装する。Workers の定期実行（`scheduled`）は `src/worker.ts` で受け、予約投稿とアンケートの保持期限の後片付けを行う。
+Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページと React の島（`client:load`）で作り、利用者向けの API は `src/pages/v2/` の Astro エンドポイント（`APIRoute`）として実装する。Workers の定期実行（`scheduled`）は `src/worker.ts` で受け、予約投稿とアンケートの日次集計を行う。日次処理は結果と目録の記録を確認した後に回答を削除する。
 
 - 永続化: D1（`migrations/` の SQL。予約の 3 表・アンケートの 2 表）と R2（予約の添付画像）
 - 外部: Bluesky の PDS・AppView・認可サーバー、OGP 抽出サービス、旧バックエンド（pageDB）、GitHub API（Issue 作成）

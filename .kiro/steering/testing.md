@@ -36,20 +36,20 @@
 
 ## Priority（P0 は必ず契約テストを置く）
 
-- **P0**（要件 2.1 の九つの振る舞い）: セッション（Cookie・トークン更新・書き戻し）、予約の実行（冪等性・失敗の分類・後片付け・暗号化）、アンケートの匿名性（鍵付きハッシュ・保持期限）、投稿の原子的な作成、Entry 削除の範囲、フィードバック送信（本文の無害化・間隔制限）、旧投稿削除の OAuth 拒否、表示言語の判定、共有の文字数と URL の規則。
+- **P0**（要件 2.1 の九つの振る舞い）: セッション（Cookie・トークン更新・書き戻し）、予約の実行（冪等性・失敗の分類・後片付け・暗号化）、アンケートの匿名性（鍵付きハッシュ・結果と目録の記録を確認した後に回答を削除）、投稿の原子的な作成、Entry 削除の範囲、フィードバック送信（本文の無害化・間隔制限）、旧投稿削除の OAuth 拒否、表示言語の判定、共有の文字数と URL の規則。
 - **P1**: 投稿フォームの状態遷移、タイムラインのスレッド化、設定の保存。
 - **P2**: 静的ページの描画。
 - **未分類**: 優先度のない振る舞いは、テストを書く前に機能の spec で優先度を定める（例: アンケートの `survey/loadConfig.ts` など）。
 - **対象外**: `scripts/`（運用ツール）、`_legacy/`、外部サービスの内部。
 
-### P0 のモジュール（23 ファイル。閾値とテストの対応）
+### P0 のモジュール（24 ファイル。閾値とテストの対応）
 
 - unit（11）: `src/lib/session/cookies/`（フォルダ。分岐のカバレッジはファイルごとに 80%）、`src/lib/schedule/credentialCrypto.ts`、`src/lib/survey/respondentHash.ts`、`src/lib/entry/createBskyThread.ts`、`src/lib/timeline/resolveEntryDeleteScope.ts`、`src/lib/entry/resolveDeleteTargets.ts`、`src/lib/feedback/issueContent.ts`、`src/lib/feedback/githubIssue.ts`、`src/lib/i18n/locale.ts`、`src/lib/share/shareBody.ts`、`src/lib/share/counterReserve.ts`
-- route（12）: `src/lib/session/oauthSession.ts`、`src/lib/session/bskySessionRefresh.ts`、`src/lib/session/oauthLogin.ts`、`src/lib/schedule/executor.ts`、`src/lib/schedule/runner.ts`、`src/lib/schedule/stageSchedule.ts`、`src/lib/schedule/imageStaging.ts`、`src/lib/survey/store.ts`、`src/lib/survey/retention.ts`、`src/lib/survey/request.ts`、`src/pages/v1/page.ts`、`src/pages/v2/feedback.ts`
+- route（13）: `src/lib/session/oauthSession.ts`、`src/lib/session/bskySessionRefresh.ts`、`src/lib/session/oauthLogin.ts`、`src/lib/schedule/executor.ts`、`src/lib/schedule/runner.ts`、`src/lib/schedule/stageSchedule.ts`、`src/lib/schedule/imageStaging.ts`、`src/lib/survey/store.ts`、`src/lib/survey/daily.ts`、`src/lib/survey/results/store.ts`、`src/lib/survey/request.ts`、`src/pages/v1/page.ts`、`src/pages/v2/feedback.ts`
 
 ## Coverage（P0 だけ、ファイル単位の分岐 80%）
 
-- 閾値は上の 23 ファイルのパスに置く（glob は使わない）。判定は該当ファイルごとに行い、下回ると層の実行が非ゼロで終わる。
+- 閾値は上の 24 ファイルのパスに置く（glob は使わない）。判定は該当ファイルごとに行い、下回ると層の実行が非ゼロで終わる。
 - 計測は istanbul を使う（workerd では v8 が使えない。route 層でも計測できることを確認済み）。
 - `src/` 全体の率と、P1・P2 の下限は置かない。
 - **失敗の発生点**（P0 モジュールの `throw`、失敗の戻り値、エラー応答）は、すべて失敗の種類を検証するテストを持つ。発生点の一覧は `.kiro/specs/test-foundation/research.md` の「発生点の一覧」に記録する。
