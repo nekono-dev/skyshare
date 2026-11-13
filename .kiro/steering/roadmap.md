@@ -322,3 +322,5 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 （画面デザインは合意済み。空の状態・取得失敗の画面は、静的生成にしたため作らない。`/kiro-spec-batch` で 3 件を作れる。）
 
 （2026-11-13 追補: 実装に着手した。`survey-results-aggregation` のタスク 1.1（結果の保管先をテンプレートとテスト設定に宣言する）が完了。`surveys(a)` と他のタスクは未着手。次は `surveys(a)`、続いて `survey-results-aggregation` の 1.2〜1.4。）
+
+（2026-11-13 追補 2: 実装の進捗。`surveys(a)` は完了。`survey-results-aggregation` は 1〜3.6 がすべて完了し、残りは 4.1 だけ（`npm run test:all` は通過済み。完了にしない理由は、2.6 の実バケットでの条件付き書き込みの確認が認証情報の不足で未実施であること。運用者が確かめる）。`survey-operations` は 1.1〜4.1 が完了し、残りは 4.2（実機の確認と運用中の設定の作り直し。運用者の作業。利用者の確認が要る）。`survey-results-public` は未着手。なお、回答ダイアログの見出しは、全体の題を廃止した結果、入口と同じ固定の文言 `survey.entry` にした（実装時の決定。利用者の確認待ち）。）
