@@ -40,6 +40,7 @@
 
 - `lib/survey/results/schema.ts` の `parseSurveyIndex`・`parseSurveyResult`・`parseSurveyVisibility`・`INDEX_KEY`・`resultKey`・`visibilityKey`・型 `SurveyResult`・`resultMatchesIndexEntry(entry, result)`（結果の識別子・開始・終了が目録の項目と同じかを返す）・`isVisible(visibility)`（可視フラグが無い、または公開でなければ偽を返す）（読むだけ。再定義しない。不一致の判定と公開の判定を、この部品の中に独自に持たない）。
 - `lib/i18n` の型 `Locale` のみ（`lib/survey` の許可された依存。`lib/site` には依存しない。旗は `import.meta.env` から直接読む）。部品（`components/`）は辞書（`useT`）・UI の共通部品・`src/styles/`（トークン・`ui.module.css`）を使う。
+- `lib/platform` の型 `SurveyResultsBucket`（`cfTypes`。型のみ。`buildData.ts` が保管先の読み取りの型に使う）。
 - `cloudflare:workers` は `lib/survey/publicResults/buildData.ts` の動的 import だけで使う。
 
 ### Revalidation Triggers
@@ -112,7 +113,7 @@ graph TB
 | 可視フラグが不正なとき                       | ビルドを失敗させる（無い場合は非表示）                                                                                                                                                                                                                                                                                                                                                                                                                                | 上流の「読み手が通らないことを知らせる」責務。公開したはずが黙って出ない事故を防ぐ                                                                                                   |
 | 取得の上限                                   | 全体 30 秒、目録 64 KiB、結果 256 KiB、可視フラグ 1 KiB、目録の項目 200 件                                                                                                                                                                                                                                                                                                                                                                                            | 統計ファイルは割合だけの小さな JSON。上限を超えた異常をビルドで止める                                                                                                                |
 | 実施時期の表記                               | 開始日は `YYYY/MM/DD`。終了日は「終了時刻の 1 ミリ秒前」の日付（終了時刻は期間に含まれないため）を、保存されているオフセットの日付のまま `MM/DD`（開始と同じ年）または `YYYY/MM/DD`（年が違う）で表す。区切りは日本語「〜」・英語「–」                                                                                                                                                                                                                                | 合意した画面の `2026/09/01 〜 09/30` に合わせる。時刻の変換でずれない                                                                                                                |
-| 棒の最小幅                                   | 割合が 0 より大きい棒は、数字が入る最小幅（`3rem`）を確保する。0% は棒を描かず、数字は下地の上に `--color-text` で出す                                                                                                                                                                                                                                                                                                                                                | 数字を棒の中に置く合意と、小さな割合の可読性の両立。数字が正確な値を示す                                                                                                             |
+| 棒の最小幅                                   | 割合が 0 より大きい棒は、数字が入る最小幅（`4.5rem`。最大の棒の数字を太字 `1.25rem` にしたため）を確保する。0% は棒を描かず、数字は下地の上に `--color-text` で出す                                                                                                                                                                                                                                                                                                   | 数字を棒の中に置く合意と、小さな割合の可読性の両立。数字が正確な値を示す                                                                                                             |
 | プライバシーポリシー                         | 更新する。`privacy.purpose.survey`・`privacy.retention.surveyAnswer` を書き換える（日英）                                                                                                                                                                                                                                                                                                                                                                             | 回答の削除時期は上流の実装で変わる。公表することと範囲（割合だけ）を書く                                                                                                             |
 | 結果ページの部品の置き場                     | 新しい領域 `components/survey/SurveyResults/`（利用元が `pages/` のため領域の直下）                                                                                                                                                                                                                                                                                                                                                                                   | `structure-components.md` の置き方の規則                                                                                                                                             |
 
@@ -129,6 +130,7 @@ src/
 │       └── publicResults/
 │           ├── loadPublished.ts          # 取得・検証・絞り込み・並べ替え・失敗（保管先の読み取りを引数に受ける）
 │           ├── buildData.ts              # バインディングを取得し、結果を 1 回だけ取り込んで記憶する
+│           ├── staticPaths.ts            # 公開結果の件数から結果ページの静的経路を決める
 │           └── presentation.ts           # 実施時期・割合の表記、最大の選択肢の判定
 ├── components/
 │   └── survey/
@@ -391,7 +393,7 @@ export type SurveyResultsProps = { surveys: SurveyResult[] }
 - SurveyResults: ページ見出し（`surveyResults.heading`）と、各アンケートのカードを縦に並べる。`useT` で言語に追従する（再マウントしない）。
 - SurveyResultCard: 共通のカードの見た目（`ui["base-card"]`・`ui["base-padding"]`）。実施時期（`text-muted`）と、質問ごとの題・選択肢の並びを表示する。アンケートの題・説明・件数・複数選択の注記を出さない。
 - PercentBar の props（実装時の決定）: `{ label: string; percent: number; highlight: boolean }`。`label` は選択肢の文言、`percent` は 0 以上 100 以下の割合、`highlight` は最大の選択肢か（`topOptionIds` の結果から呼び出し側が決める）。表示言語は `useT` から得る。
-- PercentBar: 1 つの選択肢の行。`role="meter"`、`aria-valuemin=0`、`aria-valuemax=100`、`aria-valuenow`、`aria-label`（選択肢の文言）。棒は `data-top="true"` のとき `--color-bluesky` の下地と `--color-white` の文字、そうでなければ `--color-gray-hover` の下地と `--color-text` の文字。下地は `--color-gray`。棒の幅は割合の％、0 より大きければ最小幅 `3rem`、0 は棒を描かず数字を下地の上に出す。幅 640px 未満では 1 列（文言が棒の上）、以上では左に文言・右に棒（`tokens.css` の切替境界と同じ）。
+- PercentBar: 1 つの選択肢の行。`role="meter"`、`aria-valuemin=0`、`aria-valuemax=100`、`aria-valuenow`、`aria-label`（選択肢の文言）。棒は `data-top="true"` のとき `--color-bluesky` の下地と `--color-white` の太字・`1.25rem` の文字（利用者の決定。research.md）、そうでなければ `--color-gray-hover` の下地と `--color-text` の文字。下地は `--color-gray`。棒の幅は割合の％、0 より大きければ最小幅 `4.5rem`、0 は棒を描かず数字を下地の上に出す。幅 640px 未満では 1 列（文言が棒の上）、以上では左に文言・右に棒（`tokens.css` の切替境界と同じ）。
 - 新しい色・角の丸め・余白の値を定義せず、`tokens.css` の `--color-*`・`--space-*`・`--radius-*` を参照する。
 
 #### pages: surveys

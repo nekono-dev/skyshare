@@ -21,7 +21,7 @@
 
 ### 依存規則との整合
 
-- **Findings**: `src/pages/` は `cloudflare:workers` を直接 import しない規約（`pagesThin` の検査対象は一部の API だけだが、方針は同じ）。`lib/*/env.ts` が動的 import で包む前例がある。結果の読み取りは `lib/survey`（業務の層）に置き、`lib/i18n`・`lib/site`（基盤の層）だけに依存する。
+- **Findings**: `src/pages/` は `cloudflare:workers` を直接 import しない規約（`pagesThin` の検査対象は一部の API だけだが、方針は同じ）。`lib/*/env.ts` が動的 import で包む前例がある。結果の読み取りは `lib/survey`（業務の層）に置き、基盤の層は `lib/i18n`・`lib/platform` の型だけに依存する（`lib/site` には依存しない）。
 - **Implications**: 新しい領域は作らず `lib/survey/publicResults/` に置く。部品は新しい領域 `components/survey/` を作る（利用元が `pages/` のため、親の子にできない）。
 
 ### ログイン画面のリンクの色・グラフの色
