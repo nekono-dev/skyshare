@@ -115,7 +115,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 - 設定の生成（`config/<名前>.json` → `wrangler.jsonc`）は `scripts/config/render-wrangler.mjs` が行う。生成の入口は `renderWranglerFile`（同じプロセスで呼べる）。
 - 秘密の準備（`.dev.vars` の空の値を埋める）は `scripts/secrets/prepare-local-env.mjs`、GitHub と Worker への登録は `scripts/secrets/sync-github-variables.mjs` と `scripts/secrets/ensure-worker-secrets.mjs` が行う。
 - 自動化に使う資材は `scripts/` に置く（npm スクリプト・CI・hooks・設定ファイルから呼ばれるもの）。`scripts/` の領域は `agent`・`config`・`secrets`・`survey`（アンケートの設定の生成）・`e2e`・`dev`・`build`・`git`・`lib`。
-- `hack/` は手作業のための便利ツール置き場。無くても自動化は動く。現在は `hack/survey-cli/`（`npm run survey`。アンケートの登録・状態確認・除去の CLI）だけ。
+- `hack/` は手作業のための便利ツール置き場。無くても自動化は動く。現在は `hack/survey-cli/`（`npm run survey`。アンケートの登録・状態確認・除去の CLI）だけ。状態確認は指定環境の設定と目録を合わせた表全体を返し、それ以外は固定の 1 行を返す。
 
 ### 3.2 アンケート（ログイン時）
 
@@ -132,7 +132,10 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
   ```
 
 - 本番・develop・プレビューのビルドにだけ、リポジトリ変数 `SURVEY_CONFIG` を渡す（検証と E2E のジョブには渡さない）。
-- アンケートの登録・状態確認・期限切れの除去は専用 CLI だけで行う: `npm run survey -- status`・`npm run survey -- add --file <一時ファイル> [--dry-run]`・`npm run survey -- prune [--dry-run]`。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
+- アンケートの登録・状態確認は専用 CLI だけで行う: `npm run survey -- status --env production` または `npm run survey -- status --env develop`、`npm run survey -- add --file <一時ファイル> [--dry-run]`。状態確認は設定と指定環境の目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外のコマンドは固定の 1 行を返す。
+- 新規登録の識別子は UUID として CLI が自動発行するため、下書きに手入力しない。アンケート全体の題・説明はなく、質問の題・選択肢と締切日だけを登録する。締切日は実在する `YYYY-MM-DD` で指定し、日本時間 0 時を表す。
+- 次の新規登録は、設定にあるすべての ID が本番・develop 両方の目録に記録されるまで拒否する。開始前のアンケートも対象で、設定に残る集計済みの過去分は対象外。拒否時は `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。` の 1 行だけを返す。記録がない環境には現在の設定を配備して日次集計を待つ。目録の取得失敗は認証・接続・形式の問題を直して再実行する。
+- 既存アンケートは `status` に表示された ID を下書きに入れて更新する。開催中は締切を前倒しし、設定を両環境へ配備して日次集計を待つ。前倒しできない場合は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` を返す。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
 
 ## 4. 品質
 
@@ -295,7 +298,7 @@ $EDITOR config/production.json
 | `PUBLIC_PRIVACY_ENACTED_AT`      | 必須 | プライバシーポリシーの制定日（`YYYY-MM-DD`）                                     |
 | `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | 最終改定日（`YYYY-MM-DD`）。本文を改定したら更新する                             |
 | `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さない             |
-| `SURVEY_CONFIG`                  | 任意 | アンケートの JSON（3.2）。`npm run survey` が管理する                            |
+| `SURVEY_CONFIG`                  | 任意 | 題・説明のないアンケートの JSON（3.2）。`npm run survey` が管理する              |
 
 Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` を書かず名前で解決する。プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は実装に合わせて書いてあるため、実装を変えたら本文も見直す。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう変えない。
 

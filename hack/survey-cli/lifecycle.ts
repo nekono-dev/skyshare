@@ -1,10 +1,8 @@
 /**
  * アンケートの状態表示・除去・配備先の純粋な判定を行う。
- * 既存の CLI 向けに、回答行と保持期限による判定も提供する。
  */
 import type { Survey, SurveyConfig } from "@/lib/survey/definition"
 import type { SurveyEnv } from "./args"
-import { retentionExpired } from "@/lib/survey/period"
 
 /**
  * 状態表示に使う 6 段階。
@@ -164,83 +162,28 @@ export const buildStatusRows = (
     })
 }
 
-export type SurveyPhase = "upcoming" | "active" | "retained" | "expired"
-export type RowPresence = "none" | "present" | "unknown"
-
-export type PruneDecision = {
-    remove: string[]
-    kept: { id: string; reason: "rows" | "unknown" }[]
-}
-
-/** 指定時刻でのアンケートの段階を返す。 */
-export const surveyPhase = (survey: Survey, now: Date): SurveyPhase => {
-    const time = now.getTime()
-    if (time < Date.parse(survey.opensAt)) return "upcoming"
-    if (time < Date.parse(survey.closesAt)) return "active"
-    return retentionExpired(survey, now).answers ? "expired" : "retained"
-}
-
-/** 回答の保持期限を過ぎたアンケートだけを返す。 */
-export const pruneCandidates = (config: SurveyConfig, now: Date): Survey[] =>
-    config.surveys.filter(survey => surveyPhase(survey, now) === "expired")
-
 /**
- * 除去の判定を行う。旧形式は回答行、新形式は設定・両環境の集計状態を使う。
+ * 終了済みの設定から、両環境で集計済みのものを選ぶ。
  *
- * Input: 旧形式では候補と回答行の有無、新形式では設定・集計済み ID・時刻
- * Output: 除去 ID と、旧形式では理由、新形式では未集計環境を含む保留 ID
- * 例: 新形式で両環境に ID がある終了済みアンケートは `remove` に入る
+ * Input: 設定、環境ごとの集計済み ID の集合、判定時刻
+ * Output: 除去する ID と、未集計の環境つきで残す ID（環境は production、develop の順）
+ * 例: 両環境に ID がある終了済みアンケートは `remove` に入る。開催中・開始前は対象外
  */
-export function decidePrune(
-    candidates: readonly Survey[],
-    presence: Readonly<Record<string, readonly RowPresence[]>>,
-): PruneDecision
-export function decidePrune(
+export const decidePrune = (
     config: SurveyConfig,
     aggregated: AggregatedByEnv,
     now: Date,
-): { remove: string[]; kept: PruneKept[] }
-export function decidePrune(
-    input: readonly Survey[] | SurveyConfig,
-    presenceOrAggregated:
-        Readonly<Record<string, readonly RowPresence[]>> | AggregatedByEnv,
-    now?: Date,
-): PruneDecision | { remove: string[]; kept: PruneKept[] } {
-    if (!Array.isArray(input)) {
-        const config = input as SurveyConfig
-        const aggregated = presenceOrAggregated as AggregatedByEnv
-        const remove: string[] = []
-        const kept: PruneKept[] = []
-        for (const survey of config.surveys) {
-            if (now!.getTime() < Date.parse(survey.closesAt)) continue
-            const pending = environments.filter(
-                env => !aggregated[env].has(survey.id),
-            )
-            if (pending.length === 0) remove.push(survey.id)
-            else kept.push({ id: survey.id, pending: [...pending] })
-        }
-        return { remove, kept }
-    }
-    const candidates = input as readonly Survey[]
-    const presence = presenceOrAggregated as Readonly<
-        Record<string, readonly RowPresence[]>
-    >
+): { remove: string[]; kept: PruneKept[] } => {
     const remove: string[] = []
-    const kept: PruneDecision["kept"] = []
-
-    for (const survey of candidates) {
-        const checks = presence[survey.id]
-        if (checks?.length && checks.every(result => result === "none")) {
-            remove.push(survey.id)
-            continue
-        }
-
-        kept.push({
-            id: survey.id,
-            reason: checks?.includes("present") ? "rows" : "unknown",
-        })
+    const kept: PruneKept[] = []
+    for (const survey of config.surveys) {
+        if (now.getTime() < Date.parse(survey.closesAt)) continue
+        const pending = environments.filter(
+            env => !aggregated[env].has(survey.id),
+        )
+        if (pending.length === 0) remove.push(survey.id)
+        else kept.push({ id: survey.id, pending: [...pending] })
     }
-
     return { remove, kept }
 }
 

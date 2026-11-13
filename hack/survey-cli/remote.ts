@@ -1,7 +1,7 @@
 /**
  * SurveyConfig と R2 の統計ファイルを手元の gh / wrangler で管理する。
  *
- * - SURVEY_CONFIG の読み書きと、本番・開発の D1 への SELECT（2 表の行の有無）を行う。
+ * - SURVEY_CONFIG と R2 の目録・結果・可視フラグを読み書きする。
  * - 目録・結果・可視フラグを共有スキーマで検証して読み、書くのは可視フラグだけにする。
  * - 設定値・外部コマンドのエラー文・認証情報・読んだ本文を、例外や要約に含めない。
  */
@@ -23,7 +23,7 @@ import {
     type SurveyIndex,
     type SurveyResult,
 } from "@/lib/survey/results/schema"
-import type { RowPresence, VisibilityState } from "./lifecycle"
+import type { VisibilityState } from "./lifecycle"
 import type { SurveyEnv } from "./args"
 
 // 配備スクリプトと同じ Git リモート解析・JSONC 解析を再利用する（宣言されていない jsonc-parser は使わない）。
@@ -73,7 +73,6 @@ export type SurveyRemote = {
     readConfigValue(): Promise<string | undefined>
     writeConfigValue(value: string): Promise<void>
     deleteConfigValue(): Promise<void>
-    hasRows(surveyId: string): Promise<RowPresence[]>
     /** 目録。object が無ければ undefined。形式が不正なら RemoteError("parse") */
     readIndex(env: SurveyEnv): Promise<SurveyIndex | undefined>
     /** 可視フラグ。無ければ hidden、不正な形式なら invalid を返す。 */
@@ -146,26 +145,6 @@ const parseObject = <T>(
     return parsed.value
 }
 
-const parseDatabaseNames = (): string[] => {
-    const source = readFileSync(DATABASE_CONFIG, "utf8")
-    let config: {
-        d1_databases?: { binding?: string; database_name?: string }[]
-    }
-    try {
-        config = parseJsonc(source)
-    } catch {
-        throw new RemoteError("parse")
-    }
-    if (!Array.isArray(config.d1_databases)) {
-        throw new RemoteError("parse")
-    }
-    const database = config.d1_databases.find(
-        item => item.binding === "DB" && typeof item.database_name === "string",
-    )
-    if (!database?.database_name) throw new RemoteError("parse")
-    return [database.database_name, `${database.database_name}-develop`]
-}
-
 const parseVariableValue = (output: string): string => {
     try {
         const parsed: unknown = JSON.parse(output)
@@ -181,14 +160,6 @@ const parseVariableValue = (output: string): string => {
         // API 応答に含まれる値や解析例外をエラーへ含めない。
     }
     throw new RemoteError("parse")
-}
-
-const sqlLiteral = (value: string): string => `'${value.replaceAll("'", "''")}'`
-
-const parseJsonOutput = (output: string): unknown => {
-    const start = output.indexOf("[")
-    if (start < 0) throw new Error("parse")
-    return JSON.parse(output.slice(start)) as unknown
 }
 
 const isValidIsoDate = (value: string): boolean => {
@@ -208,40 +179,7 @@ const isValidIsoDate = (value: string): boolean => {
     )
 }
 
-const fieldBoolean = (value: unknown): boolean | null => {
-    if (value === true || value === 1 || value === "1") return true
-    if (value === false || value === 0 || value === "0") return false
-    return null
-}
-
-const rowPresence = (output: string): RowPresence => {
-    const parsed = parseJsonOutput(output)
-    if (
-        parsed === null ||
-        typeof parsed !== "object" ||
-        !("0" in parsed) ||
-        !Array.isArray(parsed)
-    ) {
-        throw new Error("parse")
-    }
-    const first = parsed[0] as { results?: unknown }
-    if (!Array.isArray(first?.results) || first.results.length !== 1) {
-        throw new Error("parse")
-    }
-    const row = first.results[0] as Record<string, unknown> | null
-    if (row === null || typeof row !== "object") throw new Error("parse")
-    const respondent = row.respondent_exists ?? row.r
-    const answer = row.answer_exists ?? row.a
-    if (respondent === undefined || answer === undefined)
-        throw new Error("parse")
-    const respondentExists = fieldBoolean(respondent)
-    const answerExists = fieldBoolean(answer)
-    if (respondentExists === null || answerExists === null)
-        throw new Error("parse")
-    return respondentExists || answerExists ? "present" : "none"
-}
-
-/** Local の認証済みコマンドで設定を管理し、回答の有無だけを読み取る。 */
+/** Local の認証済みコマンドで設定と結果の保管先を管理する。 */
 export const createSurveyRemote = (
     options: SurveyRemoteOptions = {},
 ): SurveyRemote => {
@@ -488,37 +426,6 @@ export const createSurveyRemote = (
                 resolveRepo(),
             ])
             if (result.status !== 0) throw remoteErrorFor(result)
-        },
-
-        async hasRows(surveyId) {
-            if (!idSchema.safeParse(surveyId).success)
-                return ["unknown", "unknown"]
-            let databaseNames: string[]
-            try {
-                databaseNames = parseDatabaseNames()
-            } catch {
-                return ["unknown", "unknown"]
-            }
-            const quotedId = sqlLiteral(surveyId)
-            const sql = `SELECT EXISTS(SELECT 1 FROM survey_respondents WHERE survey_id = ${quotedId}) AS respondent_exists, EXISTS(SELECT 1 FROM survey_answers WHERE survey_id = ${quotedId}) AS answer_exists`
-            return databaseNames.map(databaseName => {
-                try {
-                    const result = run("wrangler", [
-                        "d1",
-                        "execute",
-                        databaseName,
-                        "--remote",
-                        "--json",
-                        "--command",
-                        sql,
-                    ])
-                    if (result.status !== 0) return "unknown"
-                    return rowPresence(result.stdout)
-                } catch {
-                    // 不明は除去候補のまま残す。
-                    return "unknown"
-                }
-            })
         },
     }
     return remote
