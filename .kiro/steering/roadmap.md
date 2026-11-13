@@ -283,6 +283,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - 件数・回答者数は出さない（割合だけ）。回答が 0 件のアンケートは公表しない。
 - 統計ファイルに個別の回答・回答日・回答者の値を入れない。
 - 保存の成功後にだけ D1 を削除する。失敗したら削除せず、翌日に再試行する。
+- R2 のバケットは用途ごとに分ける（規則は `.kiro/steering/r2-buckets.md`。統計ファイルは `skyshare-survey-results`）。PoC のブランチ `dev/survey-r2-poc` とその worktree は、この作業の完了後に `brw finish` で片付ける。
 - 画面のデザインは利用者と合意済み（`survey-results-public` の brief の「合意の結果」）。最大の選択肢はプライマリ色、そのほかは灰色の共通トークン（`--color-gray-hover` が候補。muted は背景と混ざるため使わない）。色は既存の共通トークン・共通コンポーネントを使う。アンケート全体の題・説明と、複数選択の注記は出さない。
 
 ### Boundary Strategy
