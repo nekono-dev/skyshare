@@ -52,7 +52,7 @@
   - _Boundary: results/tally.ts_
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 4.3_
 
-- [ ] 2.3 結果の保管と既存本体の検証を実装する
+- [x] 2.3 結果の保管と既存本体の検証を実装する
   - `readResult(bucket, surveyId)` は本体を読み、JSON・形式・要求した識別子を検証する。無ければ `undefined`、不正や読み取り失敗は本文を含めず例外にする
   - `readMatchingResult(bucket, expected: {id, opensAt, closesAt})` は読み取った結果を期待値と照合し、不一致は `ResultMismatchError` にする。照合規則は既存の `resultMatchesIndexEntry` と同じ
   - `putResultOnce` の `exists` は保存確認とせず、必ず `readMatchingResult` で確認してから先へ進む。目録の比較交換は最大 3 回
