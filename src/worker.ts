@@ -2,7 +2,7 @@
  * Astro の HTTP ハンドラと Cloudflare Cron Trigger の処理を束ねる Worker。
  *
  * - `scheduled` はプラットフォームが Cron ごとに実行し、HTTP からは呼ばれない。
- * - 予約投稿を先に登録し、日次枠では後片付けとアンケート削除を独立して登録する。
+ * - 予約投稿を先に登録し、日次枠では後片付けとアンケート集計を独立して登録する。
  * - `waitUntil` を分け、一方の日次処理の失敗が他方へ伝播しないようにする。
  */
 import { handle } from "@astrojs/cloudflare/handler"
@@ -12,16 +12,13 @@ import {
     runHousekeeping,
     runScheduledPosts,
 } from "@/lib/schedule/runner"
-import {
-    runSurveyRetention,
-    type SurveyRetentionEnv,
-} from "@/lib/survey/retention"
+import { runSurveyDaily, type SurveyDailyEnv } from "@/lib/survey/daily"
 
 export default {
     fetch: handle,
     async scheduled(
         event: { scheduledTime: number },
-        env: ScheduleEnv & Pick<SurveyRetentionEnv, "ASSETS">,
+        env: ScheduleEnv & Pick<SurveyDailyEnv, "ASSETS" | "SURVEY_RESULTS">,
         ctx: { waitUntil: (promise: Promise<unknown>) => void },
     ) {
         const now = Math.floor(Date.now() / 1000)
@@ -30,7 +27,7 @@ export default {
             ctx.waitUntil(runHousekeeping(env, now))
             // 同期的な例外も他方へ波及させないよう、async 関数で包む
             ctx.waitUntil(
-                (async () => runSurveyRetention(env, new Date(now * 1000)))(),
+                (async () => runSurveyDaily(env, new Date(now * 1000)))(),
             )
         }
     },
