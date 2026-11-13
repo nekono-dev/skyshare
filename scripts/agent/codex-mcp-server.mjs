@@ -61,6 +61,33 @@ export const codexExecTool = {
         description:
           "Absolute path inside the repository to run in. Omitted means the repository root.",
       },
+      network: {
+        type: "boolean",
+        default: false,
+        description: "Allow external network access. Disabled by default.",
+      },
+      scratch: {
+        type: "boolean",
+        default: false,
+        description:
+          "Allow a per-run temporary directory and Vitest cache writes. Use this to run tests during a read-only run.",
+      },
+      read_paths: {
+        type: "array",
+        minItems: 1,
+        maxItems: 64,
+        items: { type: "string", minLength: 1 },
+        description:
+          "Repository-relative paths Codex may read. Only available for read-only runs; omitted means the whole system is readable by default.",
+      },
+      deny_read: {
+        type: "array",
+        minItems: 1,
+        maxItems: 64,
+        items: { type: "string", minLength: 1, maxLength: 512 },
+        description:
+          "Additional glob patterns whose matching files Codex may not read.",
+      },
     },
     required: ["prompt"],
   },
@@ -158,6 +185,7 @@ export const createCodexExecCaller = ({
   runner = runCodex,
   log = writeStderrLog,
 }) => {
+  const codexPackageRoot = resolveCodexPackageRoot(command)
   // 呼び出しの列は、この関数の呼び出しの全体で 1 つ共有する
   const queue = createExecQueue({
     maxConcurrent: MAX_CONCURRENT,
@@ -196,13 +224,21 @@ export const createCodexExecCaller = ({
       const waitMs = clock.now() - waitStart
       let result
       try {
-        result = await runner(buildCodexArgs(value, OUTPUT_PLACEHOLDER), {
-          command,
-          cwd: value.cwd,
-          prompt: value.prompt,
-          timeoutMs,
-          killGraceMs,
-        })
+        result = await runner(
+          scratchDir =>
+            buildCodexArgs(value, OUTPUT_PLACEHOLDER, {
+              codexPackageRoot,
+              scratchDir,
+            }),
+          {
+            command,
+            cwd: value.cwd,
+            prompt: value.prompt,
+            scratch: value.scratch,
+            timeoutMs,
+            killGraceMs,
+          },
+        )
       } finally {
         // 実行の成否によらず、必ず許可を解放する
         admission.release()
@@ -219,6 +255,24 @@ export const createCodexExecCaller = ({
       )
     }
   }
+}
+
+/** 実行ファイルの実体から Codex パッケージのディレクトリを求める。 */
+const resolveCodexPackageRoot = command => {
+  const candidates =
+    path.isAbsolute(command) || command.includes(path.sep)
+      ? [command]
+      : String(process.env.PATH ?? "")
+          .split(path.delimiter)
+          .map(directory => path.join(directory, command))
+  for (const candidate of candidates) {
+    try {
+      return path.dirname(path.dirname(fs.realpathSync(candidate)))
+    } catch {
+      // PATH の候補が見つからないときは次を調べる
+    }
+  }
+  return null
 }
 
 /**
