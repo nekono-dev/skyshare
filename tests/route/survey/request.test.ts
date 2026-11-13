@@ -1,27 +1,32 @@
 /**
  * Verifies survey request authentication and eligibility.
  */
-import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const state = vi.hoisted(() => ({
     hashKey: "fixture-hash-key" as string | undefined,
+    resultsBucket: true,
+    readSurveyConfig: vi.fn(),
+    db: { prepare: vi.fn(), batch: vi.fn() },
 }))
 vi.mock("@/lib/survey/env", () => ({
     getSurveyEnv: async () => ({
-        DB: env.DB,
-        ASSETS: {
-            fetch: async () =>
-                new Response(JSON.stringify(createValidSurveyConfig()), {
-                    status: 200,
-                    headers: { "content-type": "application/json" },
-                }),
-        },
+        DB: state.db,
+        SURVEY_RESULTS: state.resultsBucket ? {} : undefined,
+        ASSETS: { fetch: vi.fn() },
         SURVEY_HASH_KEY: state.hashKey,
     }),
 }))
+vi.mock("@/lib/survey/loadConfig", () => ({
+    readSurveyConfig: state.readSurveyConfig,
+}))
 
 import { resolveSurveyRequest } from "@/lib/survey/request"
+import { POST } from "@/pages/v2/surveys/[surveyId]/answers"
+import {
+    GET as answeredCheck,
+    PUT as respondentPresentation,
+} from "@/pages/v2/surveys/[surveyId]/respondent"
 import { createValidSurveyConfig } from "../../fixtures/survey/config"
 import { TEST_DID } from "../../fixtures/identities"
 
@@ -34,6 +39,11 @@ describe("resolveSurveyRequest (entry gate)", () => {
         // 設定は配信用に存在する（ビルド時の値を、テストで与える）
         vi.stubEnv("PUBLIC_SURVEY_CONFIG_PRESENT", "true")
         state.hashKey = "fixture-hash-key"
+        state.resultsBucket = true
+        state.db.prepare.mockClear()
+        state.db.batch.mockClear()
+        state.readSurveyConfig.mockReset()
+        state.readSurveyConfig.mockResolvedValue(createValidSurveyConfig())
     })
 
     afterEach(() => {
@@ -97,4 +107,36 @@ describe("resolveSurveyRequest (entry gate)", () => {
         expect(result.context.hashKey).toBe("fixture-hash-key")
         expect(result.context.survey.id).toBe("survey-2026-a")
     })
+
+    it.each([
+        ["提示", respondentPresentation, "PUT"],
+        ["回答", POST, "POST"],
+        ["回答済み確認", answeredCheck, "GET"],
+    ])(
+        "%s returns the no-config 404 before loading config when disabled",
+        async (_name, handler, method) => {
+            state.readSurveyConfig.mockResolvedValue(undefined)
+            const noConfig = await resolveSurveyRequest({
+                request: request(),
+                params: { surveyId: "survey-2026-a" },
+                locals: { session: { did: TEST_DID } },
+                now: DURING,
+            })
+            if (noConfig.ok) throw new Error("expected a failure")
+
+            state.resultsBucket = false
+            state.readSurveyConfig.mockClear()
+            const response = await handler({
+                request: new Request(request().url, { method }),
+                params: { surveyId: "survey-2026-a" },
+                locals: { session: { did: TEST_DID } },
+            } as unknown as Parameters<typeof handler>[0])
+
+            expect(response.status).toBe(noConfig.response.status)
+            expect(await response.text()).toBe(await noConfig.response.text())
+            expect(state.readSurveyConfig).not.toHaveBeenCalled()
+            expect(state.db.prepare).not.toHaveBeenCalled()
+            expect(state.db.batch).not.toHaveBeenCalled()
+        },
+    )
 })
