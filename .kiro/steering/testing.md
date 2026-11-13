@@ -114,5 +114,9 @@ tests/
 
 ---
 
+## `hack/` の CLI テスト
+
+`hack/` の CLI のテストは `tests/unit/hack/survey-cli/` に置く。P0 ではなく、被覆率の閾値は設けない。
+
 _Testing policy is project-wide. Each spec's design `Testing Strategy` chooses layers for its acceptance criteria within this policy._
 _updated_at: 2026-11-10_
