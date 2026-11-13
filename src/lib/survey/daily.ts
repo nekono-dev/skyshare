@@ -304,7 +304,9 @@ export const runSurveyDaily = async (
         try {
             await purgeSurveysBatch(db, confirmedSurveyIds)
         } catch (error) {
-            logStageFailure("answers purge", errorClassName(error))
+            console.error(
+                `runSurveyDaily: answers purge failed ids=${confirmedSurveyIds.join(",")} error=${errorClassName(error)}`,
+            )
         }
     }
 
