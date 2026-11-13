@@ -69,7 +69,40 @@ CLI が示すのは再配備の起動までで、配備の完了や画面への�
 
 ## 設定からの除去
 
-`prune` と `remove` は現在利用できず、`error: refused: このコマンドはまだ使えません` の 1 行を返す。設定を直接書き換えたり、JSON からアンケートを手動削除したりしない。
+個別の除去には `remove <ID>`、終了済みアンケートの一括除去には `prune` を使う。どちらも本番と develop の目録を読み直す。開始前の `remove` は除去できる。開催中は拒否され、終了済みは両方の目録に記録がある場合だけ除去できる。まず dry-run の結果を確認する。
+
+```sh
+survey_id='対象のID'   # `status` で確認した ID を書く
+npm run survey -- remove "$survey_id" --dry-run
+npm run survey -- prune --dry-run
+```
+
+対象を確認してから実際に除去する。除去後にアンケートが残らない場合、設定変数そのものが削除される。
+
+除去は、終了の翌日以降（日次の枠が 1 回以上動いた後）に行う。除去の前に、Worker の日次の記録（Cloudflare のログ）に、アンケートの回答の削除の失敗が出ていないことを確かめる。これは削除の失敗に早く気づくための補助で、除去の安全性の前提ではない（設定から外れた終了済みの識別子の残存回答は、翌日以降の日次の枠が片付ける）。
+
+```sh
+npm run survey -- remove "$survey_id"
+npm run survey -- prune
+```
+
+結果の意味:
+
+- `removed <id>`: 設定から除去したアンケート。
+- `kept <id>(not-aggregated: <環境>)`: その環境の目録に記録が無く、保持したアンケート。
+- `nothing to remove` または `nothing removed`: 除去対象が無い、またはすべて保持した。
+- `error: refused: <id> is active`: 開催中のため拒否した。
+- `error: refused: <id> is closed ... not aggregated: <環境>`: 終了済みだが、両環境の集計がそろわないため拒否した。
+
+開催中のアンケートを取り下げる場合は、同じ ID で締切を前倒しして更新し、更新した設定を本番と develop の両方へ配備する。設定を更新しただけでは、配備済みの Worker は回答の受付を止めない。日次集計を待ち、両環境で `status --env` を実行して `empty`・`hidden`・`published` のいずれかになったことを確認してから `remove` または `prune` を実行する。除去時にも両方の目録を読み直す。
+
+すでに集計済みのアンケートの終了日時は延ばさない。続ける場合は、新しい ID で登録する。
+
+### 集計されていない環境がある場合
+
+`kept` や `not aggregated` は、その環境の目録に記録が無いことを示す。期間の不一致を示すものではない。現在の設定をその環境へ配備し、日次集計を待ってから除去を再実行する。`develop` の記録が無い場合は、`gh workflow run deploy.yaml --ref develop -f dry_run=false` で `develop` を再配備し、翌日の日次の枠を待つ。
+
+目録の取得そのものに失敗した場合は、認証・接続・応答形式を直して再実行する。失敗時は設定を変更しない。`gh variable set` などで `SURVEY_CONFIG` を直接変更せず、JSON からアンケートを手動削除しない。
 
 ## コマンド出力と失敗時の扱い
 

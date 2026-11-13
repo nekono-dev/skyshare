@@ -839,12 +839,246 @@ describe("survey CLI status and output", () => {
         expect(calls).toEqual([])
     })
 
-    it("keeps prune and remove on the interim refusal", async () => {
-        for (const command of [["prune"], ["remove", id]]) {
-            const result = await run(command)
-            expect(result.lines).toEqual([
-                "error: refused: このコマンドはまだ使えません",
-            ])
-        }
+    it("prunes only surveys recorded in both indexes and deletes an empty config", async () => {
+        const expired = createValidSurveyConfig()
+        expired.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        expired.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(expired)
+            },
+            async readIndex() {
+                return index(id)
+            },
+            async writeConfigValue() {
+                calls.push("write")
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const result = await run(["prune"], deps(remote))
+        expect(result).toEqual({
+            code: 0,
+            lines: ["prune: removed survey-2026-a (surveys 1 -> 0)"],
+        })
+        expect(calls).toEqual(["delete"])
+    })
+
+    it("keeps a survey missing from one index and adds the guidance suffix", async () => {
+        const expired = createValidSurveyConfig()
+        expired.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        expired.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(expired)
+            },
+            async readIndex(env) {
+                return env === "production" ? index(id) : undefined
+            },
+            async writeConfigValue() {
+                calls.push("write")
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const result = await run(["prune"], deps(remote))
+        expect(result.lines[0]).toContain(
+            "kept survey-2026-a(not-aggregated: develop)",
+        )
+        expect(result.lines[0]).toMatch(
+            / ; see DEVELOP\.md 5\.4 \/ survey-run \(not-aggregated\)$/,
+        )
+        expect(calls).toEqual([])
+    })
+
+    it("removes aggregated surveys, writes remaining config, and reports kept ids", async () => {
+        const config = createValidSurveyConfig()
+        config.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        config.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        config.surveys.push({
+            ...config.surveys[0]!,
+            id: "survey-2026-b",
+            opensAt: "2026-08-01T00:00:00Z",
+            closesAt: "2026-09-01T00:00:00Z",
+        })
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(config)
+            },
+            async readIndex(env) {
+                return env === "production"
+                    ? index(id, "survey-2026-b")
+                    : index(id)
+            },
+            async writeConfigValue(value) {
+                calls.push(
+                    `write:${JSON.parse(value)
+                        .surveys.map((item: { id: string }) => item.id)
+                        .join(",")}`,
+                )
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const result = await run(["prune"], deps(remote))
+        expect(result.lines[0]).toBe(
+            "prune: removed survey-2026-a (surveys 2 -> 1); kept survey-2026-b(not-aggregated: develop) ; see DEVELOP.md 5.4 / survey-run (not-aggregated)",
+        )
+        expect(calls).toEqual(["write:survey-2026-b"])
+    })
+
+    it.each(["auth", "unavailable", "parse"] as const)(
+        "does not modify config when the %s index read fails for prune or remove",
+        async kind => {
+            const calls: string[] = []
+            const remote = makeRemote({
+                async readIndex(env) {
+                    if (env === "develop")
+                        throw Object.assign(new Error("SECRET"), { kind })
+                    return index(id)
+                },
+                async writeConfigValue() {
+                    calls.push("write")
+                },
+                async deleteConfigValue() {
+                    calls.push("delete")
+                },
+            })
+            const prune = await run(["prune"], deps(remote))
+            const remove = await run(["remove", id], deps(remote))
+            expect(prune.code).toBe(1)
+            expect(remove.code).toBe(1)
+            expect(`${prune.lines} ${remove.lines}`).not.toContain("SECRET")
+            expect(calls).toEqual([])
+        },
+    )
+
+    it("removes a configured survey before its start without requiring aggregation", async () => {
+        const config = createValidSurveyConfig()
+        config.surveys[0]!.opensAt = "2026-11-20T00:00:00Z"
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(config)
+            },
+            async writeConfigValue(value) {
+                calls.push(`write:${JSON.parse(value).surveys.length}`)
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const result = await run(["remove", id], deps(remote))
+        expect(result).toEqual({
+            code: 0,
+            lines: ["remove: removed survey-2026-a (surveys 1 -> 0)"],
+        })
+        expect(calls).toEqual(["delete"])
+    })
+
+    it("refuses active removal and refuses closed removal with the missing environment", async () => {
+        const active = await run(["remove", id], deps(makeRemote()))
+        expect(active.lines[0]).toContain(
+            "error: refused: survey-2026-a is active",
+        )
+        const config = createValidSurveyConfig()
+        config.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        config.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const closedRemote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(config)
+            },
+            async readIndex(env) {
+                return env === "production" ? index(id) : undefined
+            },
+        })
+        const closed = await run(["remove", id], deps(closedRemote))
+        expect(closed.lines[0]).toContain("not aggregated: develop")
+        expect(closed.lines[0]).toMatch(
+            / ; see DEVELOP\.md 5\.4 \/ survey-run \(not-aggregated\)$/,
+        )
+    })
+
+    it("removes a closed and aggregated survey through deleteConfigValue", async () => {
+        const config = createValidSurveyConfig()
+        config.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        config.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(config)
+            },
+            async readIndex() {
+                return index(id)
+            },
+            async writeConfigValue() {
+                calls.push("write")
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const result = await run(["remove", id], deps(remote))
+        expect(result.lines[0]).toBe(
+            "remove: removed survey-2026-a (surveys 1 -> 0)",
+        )
+        expect(calls).toEqual(["delete"])
+    })
+
+    it("reports missing ids and supports dry-run without writing or deleting", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify({ surveys: [] })
+            },
+            async writeConfigValue() {
+                calls.push("write")
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        expect((await run(["remove", id], deps(remote))).lines[0]).toMatch(
+            /^error: not-found:/,
+        )
+        expect((await run(["prune"], deps(remote))).lines).toEqual([
+            "prune: nothing to remove",
+        ])
+        const expired = createValidSurveyConfig()
+        expired.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        expired.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const dryRemote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(expired)
+            },
+            async readIndex() {
+                return index(id)
+            },
+            async writeConfigValue() {
+                calls.push("write")
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const dryRemove = await run(
+            ["remove", id, "--dry-run"],
+            deps(dryRemote),
+        )
+        expect(dryRemove.lines[0]).toContain(
+            "[dry-run] remove: would remove survey-2026-a",
+        )
+        const dryPrune = await run(["prune", "--dry-run"], deps(dryRemote))
+        expect(dryPrune.code).toBe(0)
+        expect(dryPrune.lines[0]).toBe(
+            "[dry-run] prune: would remove survey-2026-a (surveys 1 -> 0)",
+        )
+        expect(calls).toEqual([])
     })
 })

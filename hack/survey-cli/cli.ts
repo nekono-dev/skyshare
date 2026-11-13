@@ -18,11 +18,14 @@ import { parseArgs, type Command, type SurveyEnv } from "./args"
 import {
     addSurvey,
     byteLength,
+    removeSurveys,
     serializeConfig,
     VARIABLE_LIMIT_BYTES,
 } from "./config"
 import {
     buildStatusRows,
+    decidePrune,
+    decideRemove,
     formatJst,
     latestReleaseBranch,
     surveyStage,
@@ -33,7 +36,8 @@ import { createSurveyRemote, RemoteError, type SurveyRemote } from "./remote"
 const VARIABLE_LIMIT_KB = VARIABLE_LIMIT_BYTES / 1024
 const NEW_REGISTRATION_REFUSAL =
     "error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。"
-const NOT_IMPLEMENTED_REFUSAL = "error: refused: このコマンドはまだ使えません"
+const NOT_AGGREGATED_GUIDANCE =
+    " ; see DEVELOP.md 5.4 / survey-run (not-aggregated)"
 
 /** 設定にある識別子と重ならない、dry-run 用の仮の UUID を返す（実際には登録しない）。 */
 const dryRunId = (config: SurveyConfig): string => {
@@ -104,14 +108,22 @@ const readIndexes = async (
         production: undefined,
         develop: undefined,
     }
+    let failed: SurveyCliResult | undefined
     for (const env of ["production", "develop"] as const) {
-        const index = await remote.readIndex(env)
-        if (index === undefined) continue
-        const parsed = parseSurveyIndex(index)
-        if (!parsed.ok) return invalid("目録の形式が正しくありません")
-        indexes[env] = parsed.value
+        try {
+            const index = await remote.readIndex(env)
+            if (index === undefined) continue
+            const parsed = parseSurveyIndex(index)
+            if (!parsed.ok) {
+                failed ??= invalid("目録の形式が正しくありません")
+                continue
+            }
+            indexes[env] = parsed.value
+        } catch (error) {
+            failed ??= failure(error)
+        }
     }
-    return indexes
+    return failed ?? indexes
 }
 
 const isFailure = (value: unknown): value is SurveyCliResult =>
@@ -290,8 +302,6 @@ const runStatus = async (
     }
 }
 
-const notImplemented = (): SurveyCliResult => result(1, NOT_IMPLEMENTED_REFUSAL)
-
 const runVisibilitySwitch = async (
     command: Extract<Command, { name: "publish" | "unpublish" }>,
     config: SurveyConfig,
@@ -395,6 +405,81 @@ const runVisibilitySwitch = async (
     )
 }
 
+const runPruneOrRemove = async (
+    command: Extract<Command, { name: "prune" | "remove" }>,
+    config: SurveyConfig,
+    remote: SurveyRemote,
+    now: () => Date,
+): Promise<SurveyCliResult> => {
+    if (
+        command.name === "remove" &&
+        !config.surveys.some(s => s.id === command.id)
+    ) {
+        return result(1, "error: not-found: 指定したアンケートがありません")
+    }
+    const indexes = await readIndexes(remote)
+    if (isFailure(indexes)) return indexes
+    const aggregated = {
+        production: indexIds(indexes.production),
+        develop: indexIds(indexes.develop),
+    }
+    const before = config.surveys.length
+    if (command.name === "prune") {
+        const decision = decidePrune(config, aggregated, now())
+        const kept = decision.kept.map(
+            item =>
+                `kept ${item.id}(not-aggregated: ${item.pending.join(",")})`,
+        )
+        const next = removeSurveys(config, decision.remove)
+        const dryPrefix = command.dryRun ? "[dry-run] " : ""
+        let line: string
+        if (decision.remove.length === 0 && kept.length === 0) {
+            line = `${dryPrefix}prune: nothing to remove`
+        } else if (decision.remove.length === 0) {
+            line = `${dryPrefix}prune: nothing removed; ${kept.join(", ")}${NOT_AGGREGATED_GUIDANCE}`
+        } else {
+            const action = command.dryRun ? "would remove" : "removed"
+            const head = `${dryPrefix}prune: ${action} ${decision.remove.join(", ")} (surveys ${before} -> ${next.surveys.length})`
+            line =
+                kept.length > 0
+                    ? `${head}; ${kept.join(", ")}${NOT_AGGREGATED_GUIDANCE}`
+                    : head
+        }
+        if (!command.dryRun && decision.remove.length > 0) {
+            if (next.surveys.length === 0) await remote.deleteConfigValue()
+            else await remote.writeConfigValue(serializeConfig(next))
+        }
+        return result(0, line)
+    }
+
+    const survey = config.surveys.find(item => item.id === command.id)!
+    const decision = decideRemove(survey, aggregated, now())
+    if (decision.kind === "refused") {
+        const stage = decision.reason === "active" ? "active" : "closed"
+        const reason =
+            decision.reason === "active"
+                ? "results would be lost"
+                : `results would be lost; not aggregated: ${decision.pending.join(",")}`
+        const guidance =
+            decision.reason === "not-aggregated" ? NOT_AGGREGATED_GUIDANCE : ""
+        return result(
+            1,
+            `error: refused: ${command.id} is ${stage} (${reason})${guidance}`,
+        )
+    }
+    const next = removeSurveys(config, [command.id])
+    const action = command.dryRun ? "would remove" : "removed"
+    const prefix = command.dryRun ? "[dry-run] " : ""
+    if (!command.dryRun) {
+        if (next.surveys.length === 0) await remote.deleteConfigValue()
+        else await remote.writeConfigValue(serializeConfig(next))
+    }
+    return result(
+        0,
+        `${prefix}remove: ${action} ${command.id} (surveys ${before} -> ${next.surveys.length})`,
+    )
+}
+
 /** 引数を解析し、設定と必要な目録を順番に読み取って結果を返す。 */
 export const run = async (
     argv: readonly string[],
@@ -402,9 +487,6 @@ export const run = async (
 ): Promise<SurveyCliResult> => {
     const parsed = parseArgs(argv)
     if (!parsed.ok) return result(1, parsed.usage)
-    if (parsed.command.name === "prune" || parsed.command.name === "remove") {
-        return notImplemented()
-    }
     const remote =
         dependencies.remote ?? createSurveyRemote({ repo: parsed.repo })
     const now = dependencies.now ?? (() => new Date())
@@ -428,7 +510,9 @@ export const run = async (
             return await runStatus(command.env, config, remote, now)
         if (command.name === "publish" || command.name === "unpublish")
             return await runVisibilitySwitch(command, config, remote, now)
-        return notImplemented()
+        if (command.name === "prune" || command.name === "remove")
+            return await runPruneOrRemove(command, config, remote, now)
+        return result(1, "error: invalid: コマンドを処理できません")
     } catch (error) {
         return failure(error)
     }
