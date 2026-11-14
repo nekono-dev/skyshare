@@ -12,6 +12,7 @@ export const nav = {
     "pageTitle.entries": "Entry一覧 | {service}",
     "pageTitle.accounts": "アカウント切り替え | {service}",
     "pageTitle.settings": "設定 | {service}",
+    "pageTitle.surveyResults": "アンケートの結果 | {service}",
     "pageTitle.help": "ヘルプ | {service}",
     "pageTitle.privacy": "プライバシーポリシー | {service}",
     "pageTitle.feedback": "不具合の報告・機能の提案 | {service}",

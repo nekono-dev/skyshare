@@ -263,6 +263,24 @@ describe("codex_exec tool definition", () => {
         expect(schema.properties.cwd.type).toBe("string")
         expect(schema.required).not.toContain("cwd")
     })
+
+    it("documents optional network, scratch, read path, and deny glob inputs", () => {
+        expect(schema.properties.network).toMatchObject({
+            type: "boolean",
+            default: false,
+        })
+        expect(schema.properties.network.description).toContain(
+            "Disabled by default",
+        )
+        expect(schema.properties.scratch.description).toContain("read-only")
+        expect(schema.properties.read_paths.type).toBe("array")
+        expect(schema.properties.read_paths.description).toContain(
+            "Only available for read-only runs",
+        )
+        expect(schema.properties.deny_read.type).toBe("array")
+        for (const key of ["network", "scratch", "read_paths", "deny_read"])
+            expect(schema.required).not.toContain(key)
+    })
 })
 
 /** 偽の codex を使う tools/call の試験の道具一式を作る。body は偽の codex の末尾に続く処理。 */
@@ -357,6 +375,57 @@ describe("tools/call with a fake codex", () => {
         expect(harness.runCount()).toBe(0)
     })
 
+    it("rejects invalid permission inputs without starting codex", async () => {
+        const harness = createHarness("exit 0")
+        const result = await harness.caller({ prompt: "hello", network: "yes" })
+        expect(result.isError).toBe(true)
+        expect(harness.runCount()).toBe(0)
+    })
+
+    it("builds a scoped read-only profile with scratch and requested network access", async () => {
+        const harness = createHarness(`printf 'ok' > "$OUT"\nexit 0`)
+        const result = await harness.caller({
+            prompt: "test",
+            sandbox: "read-only",
+            network: true,
+            scratch: true,
+            read_paths: ["."],
+            deny_read: ["private/**"],
+        })
+        expect(result.isError).toBe(false)
+        const argv = fs
+            .readFileSync(path.join(harness.dir, "argv.txt"), "utf8")
+            .split("\n")
+            .filter(Boolean)
+        const filesystem =
+            argv.find(arg =>
+                arg.startsWith("permissions.claude.filesystem="),
+            ) ?? ""
+        expect(filesystem).toContain('"."="read"')
+        expect(filesystem).toContain('"private/**"="none"')
+        expect(filesystem).toContain('"node_modules/.vite-temp"="write"')
+        expect(filesystem).toContain("codex-scratch-")
+        expect(argv).toContain("permissions.claude.network.enabled=true")
+    })
+
+    it("keeps workspace-write in the write queue and grants repository writes", async () => {
+        const harness = createHarness(`printf 'ok' > "$OUT"\nexit 0`)
+        const result = await harness.caller({
+            prompt: "write",
+            sandbox: "workspace-write",
+        })
+        expect(result.isError).toBe(false)
+        const argv = fs
+            .readFileSync(path.join(harness.dir, "argv.txt"), "utf8")
+            .split("\n")
+            .filter(Boolean)
+        const filesystem =
+            argv.find(arg =>
+                arg.startsWith("permissions.claude.filesystem="),
+            ) ?? ""
+        expect(filesystem).toContain('"."="write"')
+    })
+
     it("rejects a whitespace-only prompt without starting codex", async () => {
         const harness = createHarness("exit 0")
         const result = await harness.caller({ prompt: "   \n\t " })
@@ -390,23 +459,29 @@ describe("tools/call with a fake codex", () => {
             .readFileSync(path.join(harness.dir, "argv.txt"), "utf8")
             .split("\n")
             .filter(line => line !== "")
-        expect(argv.slice(0, 10)).toEqual([
+        expect(argv.slice(0, 9)).toEqual([
             "--ask-for-approval",
             "never",
             "exec",
             "--model",
             "gpt-6.1-sol",
-            "--config",
+            "-c",
             'model_reasoning_effort="medium"',
-            "--sandbox",
-            "read-only",
-            "--cd",
+            "-c",
+            'default_permissions="claude"',
         ])
-        expect(argv[10]).toBe(fs.realpathSync(harness.repoRoot))
-        expect(argv[11]).toBe("--output-last-message")
-        expect(argv[12]).toMatch(/last-message\.txt$/)
-        expect(argv[13]).toBe("-")
-        expect(argv).toHaveLength(14)
+        expect(argv[9]).toBe("-c")
+        expect(argv[10]).toContain('"**/.dev.vars"="none"')
+        expect(argv[10]).toContain('"**/.env.*"="none"')
+        expect(argv[11]).toBe("-c")
+        expect(argv[12]).toBe("permissions.claude.network.enabled=false")
+        expect(argv[13]).toBe("--cd")
+        expect(argv[14]).toBe(fs.realpathSync(harness.repoRoot))
+        expect(argv[15]).toBe("--output-last-message")
+        expect(argv[16]).toMatch(/last-message\.txt$/)
+        expect(argv[17]).toBe("-")
+        expect(argv).toHaveLength(18)
+        expect(argv).not.toContain("--sandbox")
 
         // 依頼文は標準入力で渡り、ログには依頼文も結果の本文も出ない
         expect(

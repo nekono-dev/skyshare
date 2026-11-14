@@ -1,9 +1,6 @@
 /**
  * 予約投稿の登録状態を初期表示に使う cookie ヒントへ変換する。
- *
- * - ヒントは権限を与えず、サーバーは予約の作成・置き換え時に認証情報を再検証するため署名せず JavaScript から読める。
- * - ログイン・アカウント切替・削除・認可完了・予約投稿の無効化の応答で失効させ、次の表示で状態を再取得する。
- * - サーバーとクライアントの両方で使うため `@atproto/*` に依存しない。
+ * ヒントは権限を与えず、作成・置き換え時にサーバーが認証情報を再検証する。
  */
 
 export const SCHEDULE_HINT_COOKIE_NAME = "skyshare_schedule"
@@ -13,15 +10,14 @@ export const SCHEDULE_HINT_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 
 export type ScheduleHint = {
     registered: boolean
-    reauthRequired: boolean
-    /** 許可の有効期限の目安（ISO 8601）。無い・再度の許可が必要なときは無い */
+    /** 許可の有効期限の目安（ISO 8601） */
     expiresAt?: string
 }
 
 /**
  * ヒントを cookie の値にする。
  *
- * Example: `{ registered: true, reauthRequired: false }` → `%7B%22registered%22%3Atrue...`
+ * Example: `{ registered: true }` → `%7B%22registered%22%3Atrue...`
  */
 export const serializeScheduleHint = (hint: ScheduleHint): string =>
     encodeURIComponent(JSON.stringify(hint))
@@ -29,7 +25,7 @@ export const serializeScheduleHint = (hint: ScheduleHint): string =>
 /**
  * cookie の値をヒントに戻す。壊れた値・形が違う値は undefined にする。
  *
- * 想定する入力形状: `{ registered: boolean, reauthRequired: boolean, expiresAt?: string }` を
+ * 想定する入力形状: `{ registered: boolean, expiresAt?: string }` を
  * JSON にして URI エンコードした文字列
  *
  * Input: `value` — cookie の値（デコード前）
@@ -42,18 +38,13 @@ export const parseScheduleHint = (
     try {
         const raw: unknown = JSON.parse(decodeURIComponent(value))
         if (typeof raw !== "object" || raw === null) return undefined
-        const { registered, reauthRequired, expiresAt } = raw as Record<
-            string,
-            unknown
-        >
+        const { registered, expiresAt } = raw as Record<string, unknown>
         if (typeof registered !== "boolean") return undefined
-        if (typeof reauthRequired !== "boolean") return undefined
         if (expiresAt !== undefined && typeof expiresAt !== "string") {
             return undefined
         }
         return {
             registered,
-            reauthRequired,
             ...(expiresAt === undefined ? {} : { expiresAt }),
         }
     } catch {

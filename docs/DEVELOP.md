@@ -45,7 +45,6 @@ Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だ
        "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
        "PUBLIC_OPERATOR_NAME": "運営者の名前",
        "PUBLIC_OPERATOR_EMAIL": "運営者のメールアドレス",
-       "PUBLIC_PRIVACY_ENACTED_AT": "2000-01-01",
        "PUBLIC_PRIVACY_REVISED_AT": "2000-01-01"
      }
    }
@@ -115,7 +114,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 - 設定の生成（`config/<名前>.json` → `wrangler.jsonc`）は `scripts/config/render-wrangler.mjs` が行う。生成の入口は `renderWranglerFile`（同じプロセスで呼べる）。
 - 秘密の準備（`.dev.vars` の空の値を埋める）は `scripts/secrets/prepare-local-env.mjs`、GitHub と Worker への登録は `scripts/secrets/sync-github-variables.mjs` と `scripts/secrets/ensure-worker-secrets.mjs` が行う。
 - 自動化に使う資材は `scripts/` に置く（npm スクリプト・CI・hooks・設定ファイルから呼ばれるもの）。`scripts/` の領域は `agent`・`config`・`secrets`・`survey`（アンケートの設定の生成）・`e2e`・`dev`・`build`・`git`・`lib`。
-- `hack/` は手作業のための便利ツール置き場。無くても自動化は動く。現在は `hack/survey-cli/`（`npm run survey`。アンケートの登録・状態確認・除去の CLI）だけ。
+- `hack/` は手作業のための便利ツール置き場。無くても自動化は動く。現在は `hack/survey-cli/`（`npm run survey`。アンケートの登録・状態確認・除去の CLI）だけ。状態確認は指定環境の設定と目録を合わせた表全体を返し、それ以外は固定の 1 行を返す。
 
 ### 3.2 アンケート（ログイン時）
 
@@ -132,7 +131,11 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
   ```
 
 - 本番・develop・プレビューのビルドにだけ、リポジトリ変数 `SURVEY_CONFIG` を渡す（検証と E2E のジョブには渡さない）。
-- アンケートの登録・状態確認・期限切れの除去は専用 CLI だけで行う: `npm run survey -- status`・`npm run survey -- add --file <一時ファイル> [--dry-run]`・`npm run survey -- prune [--dry-run]`。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
+- アンケートの登録・状態確認・公開切り替えは専用 CLI だけで行う: `npm run survey -- status --env production` または `npm run survey -- status --env develop`、`npm run survey -- add --file <一時ファイル> [--dry-run]`、`npm run survey -- publish <ID> --env <環境> [--no-deploy] [--dry-run]`、`npm run survey -- unpublish <ID> --env <環境> [--no-deploy] [--dry-run]`。状態確認は設定と指定環境の目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外は固定の 1 行を返す。
+- 新規登録の識別子は UUID として CLI が自動発行するため、下書きに手入力しない。アンケート全体の題・説明はなく、質問の題・選択肢と締切日だけを登録する。締切日は実在する `YYYY-MM-DD` で指定し、日本時間 0 時を表す。
+- 次の新規登録は、設定にあるすべての ID が本番・develop 両方の目録に記録されるまで拒否する。開始前のアンケートも対象で、設定に残る集計済みの過去分は対象外。拒否時は `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。` の 1 行だけを返す。記録がない環境には現在の設定を配備して日次集計を待つ。目録の取得失敗は認証・接続・形式の問題を直して再実行する。
+- 既存アンケートは `status` に表示された ID を下書きに入れて更新する。開催中は締切を前倒しし、設定を両環境へ配備して日次集計を待つ。前倒しできない場合は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` を返す。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
+- 日次集計が繰り返し失敗した場合、develop 用 R2 バケット `skyshare-survey-results-develop` が先に作成済みであることを確認する。運用者は R2 の結果本体と目録を退避してから直接調査・修正する。本体の形式不正、目録との内容不一致、目録が `result` を示すのに本体が無い状態を確認する。修正後は共有スキーマ（`src/lib/survey/results/schema.ts`）で検証し、本体と目録が一致することを確かめてから集計を再実行する。最後に `status --env production` と `status --env develop` で復旧を確認する。強制して処理を進める CLI 指定はない。
 
 ## 4. 品質
 
@@ -202,7 +205,7 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 - `config/production.json` と `.dev.vars` の値を登録する。値の無い Secret は登録しない（既存の値は消えない）。
 - 書き込み権限が無いときは、登録はスキップされる（エラーにはならない）。
 
-- プライバシーポリシーの制定日・改定日（`PUBLIC_PRIVACY_ENACTED_AT`・`PUBLIC_PRIVACY_REVISED_AT`）は、main へのリリース時に同じ日付で登録する。公開前の本文の変更は改定として扱わない。公開後に本文を変えたら、改定日だけを更新する。
+- プライバシーポリシーの最終改定日（`PUBLIC_PRIVACY_REVISED_AT`）は、main へのリリース時に登録する。制定日は持たない。公開前の本文の変更は改定として扱わない。公開後に本文を変えたら、最終改定日を更新する。
 
 ### 5.1 ブランチと配備
 
@@ -214,6 +217,7 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 | `main`       | 配備しない                              | —                          | 公開の基準。直接の作業をしない         |
 
 - `release/**` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通った場合だけ配備する。手動実行（Actions → deploy → Run workflow）は既定で `dry_run`（ビルドと `wrangler deploy --dry-run` のみ）になる。
+- `publish`・`unpublish` は可視フラグを切り替えた後に画面へ反映するため、再配備を起動する。手動起動は `gh workflow run deploy.yaml --ref <ブランチ> -f dry_run=false`。本番は最新の `release/**` ブランチ、develop は `develop` を指定する。CLI は配備の完了を確認しないため、運用者が完了を確認する。
 - `dev/**` への push で `.github/workflows/preview.yaml` が develop 用の Worker の Preview を作る（`wrangler preview`。XXXX は 46 文字以内。develop が一度配備済みであること）。同じブランチへ再 push しても URL は変わらない。
 - `release/**` はすべて同じ本番の Worker・D1・R2 に配備するため、配備は直列化している。古いリリースへの再 push で本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
 - `wrangler preview` では Cron が動かない。予約の自動投稿は develop 環境（`https://develop.<SITE_HOST>`）で確認する。D1・R2 は本番と別なので、本番の予約には触れない。
@@ -226,7 +230,7 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 4. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。
 5. ビルドと配備。
 
-ローカルでマイグレーションを試すには `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run setup:local` が作る）。未リリースのため、最終の構造は `migrations/0001_initial.sql` に統合している。本番の D1 は未作成で、初回の `release/*` は空の DB へ `0001_initial.sql` を適用する。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
+ローカルでマイグレーションを試すには `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run setup:local` が作る）。マイグレーションは、`release/**` 以外のブランチ（develop・main・dev/*）では `migrations/0001_initial.sql` だけにする。develop と main は運用の追加を考慮せず、始めの状態から構築できるようにしておく。構造を変えるときは `0001` を直接編集し、develop の D1（とプレビューが使う同じ D1）を作り直す。`0002` 以降を積んでよいのは `release/**` だけで、develop・main へは持ち込まない（`scripts/git/check-migrations.mjs`、`npm run test:migrations` が、コミット前・`test:all`・CI の `e2e` で検査する）。本番の D1 は未作成で、初回の `release/*` は空の DB へ `0001` を適用する。過去の分割マイグレーションや編集前の `0001` を適用した DB は、新規 DB に作り直してから適用する。
 
 ### 5.3 ブランチ宣言と BRW（branch-release-workflow）
 
@@ -240,9 +244,11 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 
 ### 5.4 main への取り込み前のアンケート除去
 
-main へのマージまたは取り込み（PR の作成を含む）を依頼されたら、マージ前にローカルで `npm run survey -- prune` を実行し、結果の 1 行を報告する（手順は `.claude/skills/survey-run/SKILL.md`）。
+main へのマージまたは取り込み（PR の作成を含む）を依頼されたら、マージ前にローカルで `npm run survey -- prune --dry-run` を実行して対象を確認し、`npm run survey -- prune` で除去して結果の 1 行を報告する（手順は `.claude/skills/survey-run/SKILL.md`）。`prune` は、本番と develop の目録を読み直し、両方で集計済みの終了済みアンケートだけを設定から除く。片方に記録がない項目は保持する。`remove <ID>` は個別の除去で、開始前のアンケートは集計の有無に関わらず除去でき、開催中は拒否され、終了済みは両方で集計済みのときだけ除去できる。除去は、終了の翌日以降（日次の枠が 1 回以上動いた後）に行う。除去の前に、Worker の日次の記録（Cloudflare のログ）に、アンケートの回答の削除の失敗が出ていないことを確かめる。これは削除の失敗に早く気づくための補助で、除去の安全性の前提ではない（設定から外れた終了済みの識別子の残存回答は、翌日以降の日次の枠が片付ける）。除去後に設定が空なら `SURVEY_CONFIG` 変数そのものを削除する。
 
-本番のビルドは `SURVEY_CONFIG` を読むため、除去で変数が更新された場合は、その更新が本番の配備より先に反映されるようにする。除去と回答データの確認には運営者のローカル認証済みの CLI を使う。CI に変数の書き込み権限は与えない。除去に失敗したとき、または対象を確認できず保持したときは、その結果を利用者に伝える。
+開催中のアンケートを取り下げる場合は、同じ ID で締切を前倒しして更新し、更新後の設定を本番と develop の両方へ配備する。設定の更新だけでは受付は止まらない。日次集計を待ち、両環境の `status --env` で `empty`・`hidden`・`published` を確認してから `remove` または `prune` を行う。除去時にも両環境の目録を読み直す。
+
+`develop` の目録に記録がなく `kept` または拒否になった場合は、記録された期間の違いではなく、develop で未集計である。`gh workflow run deploy.yaml --ref develop -f dry_run=false` で `develop` を再配備し、翌日の日次の枠を待つ。目録の取得失敗は認証・接続・形式を直して再実行する。本番のビルドは `SURVEY_CONFIG` を読むため、除去で変数が更新された場合は、その更新が本番の配備より先に反映されるようにする。除去には運営者のローカル認証済み CLI を使い、CI に変数の書き込み権限は与えない。除去に失敗したとき、または対象を確認できず保持したときは、その結果を利用者に伝える。
 
 ### 5.5 本番の CPU 時間・エラーの確認
 
@@ -292,10 +298,9 @@ $EDITOR config/production.json
 | `PUBLIC_OPERATOR_NAME`           | 必須 | 運営者の名称（個人なら活動名でよい）。プライバシーポリシーに載る                 |
 | `PUBLIC_OPERATOR_EMAIL`          | 必須 | 個人情報の問い合わせ窓口のメールアドレス                                         |
 | `PUBLIC_OPERATOR_BLUESKY_HANDLE` | 任意 | 窓口の Bluesky ハンドル（`@` なし）                                              |
-| `PUBLIC_PRIVACY_ENACTED_AT`      | 必須 | プライバシーポリシーの制定日（`YYYY-MM-DD`）                                     |
 | `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | 最終改定日（`YYYY-MM-DD`）。本文を改定したら更新する                             |
 | `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さない             |
-| `SURVEY_CONFIG`                  | 任意 | アンケートの JSON（3.2）。`npm run survey` が管理する                            |
+| `SURVEY_CONFIG`                  | 任意 | 題・説明のないアンケートの JSON（3.2）。`npm run survey` が管理する              |
 
 Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` を書かず名前で解決する。プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は実装に合わせて書いてあるため、実装を変えたら本文も見直す。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう変えない。
 
@@ -303,6 +308,7 @@ Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` を書かず
 
 1. `.dev.vars` に `CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を書く（`config/.dev.vars.template` の項目）。
 2. `npm run sync:github` が、値のある名前を GitHub の Secrets へ登録する。値の無い名前は登録しない。GitHub の Secrets に既にある値は消えない。
+3. この 2 つは、プレビューと配備のビルドの工程（`npm run build`）にも渡す。ビルドの間に結果の保管先（R2）から公開済みのアンケート結果を読んで、結果ページを作るためである。2 つがそろわない環境（認証情報の無い手元・E2E など）では保管先へ接続せず、結果ページとログイン画面のリンクは作られない（アンケート機能は動く）。E2E のワークフローには渡さない。
 
 ### 6.4 Worker のシークレット（自動）
 
@@ -337,10 +343,25 @@ for b in skyshare-schedule-images skyshare-schedule-images-develop; do
 done
 ```
 
-| Worker             | ドメイン              | D1・R2                                                 |
-| ------------------ | --------------------- | ------------------------------------------------------ |
-| `skyshare`         | `<SITE_HOST>`         | `skyshare`・`skyshare-schedule-images`                 |
-| `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-develop`・`skyshare-schedule-images-develop` |
+アンケートの結果の保管先（R2）も、配備の前に作る。**本番用 `skyshare-survey-results` を、結果の集計を含むリリースを配備するより先に作成する**（`wrangler.jsonc` に宣言があるため、バケットが無いと配備が失敗する）。develop 用は `skyshare-survey-results-develop` で、プレビューは develop 用を共用する。ライフサイクルは付けない（結果は残す）。
+
+```sh
+for b in skyshare-survey-results skyshare-survey-results-develop; do
+  npx wrangler r2 bucket create "$b"
+done
+```
+
+| Worker             | ドメイン              | D1・R2                                                                                    |
+| ------------------ | --------------------- | ----------------------------------------------------------------------------------------- |
+| `skyshare`         | `<SITE_HOST>`         | `skyshare`・`skyshare-schedule-images`・`skyshare-survey-results`                         |
+| `skyshare-develop` | `develop.<SITE_HOST>` | `skyshare-develop`・`skyshare-schedule-images-develop`・`skyshare-survey-results-develop` |
+
+結果ページの確認と更新（アンケートの結果の公表）:
+
+- 結果ページは、ビルドの間に R2 から読んで静的に作る。認証情報（6.3）が無い環境では作らない。配備する運用者は、本番用のバケットを先に作っておく。
+- 手元で実物を確かめるには、`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` を、シェルの環境変数として両方渡して `npm run dev` を実行する（`dev` は設定を作り直す `setup:local` を含む）。ビルドで確かめるときは、両方を渡したまま、先に `npm run setup:local` で設定を作り直してから `npm run build` を実行する（`build` だけでは設定を作り直さないため、接続が付かない）。値をファイルや履歴に残さない。手元の接続先は、常に develop 用のバケットである（本番のバケットへはつながらない）。片方だけでは接続しない。
+- 手元の開発サーバーは、取得した結果を記憶している。保管先の内容（公開の切り替えなど）を更新したあとは、開発サーバーを再起動する。
+- 既存のプレビューは、公開の切り替えをしても、次のプッシュ（再配備）まで更新されない。本番・develop の反映には、`publish`・`unpublish` が起動する再配備を使う（5.1）。
 
 ### 6.6 OAuth（予約と Bluesky ログイン）
 

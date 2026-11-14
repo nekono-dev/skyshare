@@ -1,7 +1,4 @@
-/**
- * Verifies scheduled image and credential API responses.
- */
-// 現行の応答（状態コード・本文の形・content-type・cache-control・Set-Cookie の値）を固定する。振る舞いを変えるためのテストではない。
+/** 予約用画像と認証情報 API の応答を確認する。 */
 import { env } from "cloudflare:test"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { insertSchedule } from "@/lib/schedule/store"
@@ -182,10 +179,9 @@ describe("GET /v2/schedules/credential", () => {
         expect(res.headers.get("cache-control")).toBe("no-store")
         expect(await res.json()).toEqual({
             registered: false,
-            reauthRequired: false,
         })
         expect(res.headers.getSetCookie()).toEqual([
-            "skyshare_schedule=%7B%22registered%22%3Afalse%2C%22reauthRequired%22%3Afalse%7D; Path=/; Max-Age=604800; SameSite=Lax",
+            "skyshare_schedule=%7B%22registered%22%3Afalse%7D; Path=/; Max-Age=604800; SameSite=Lax",
         ])
     })
 
@@ -198,38 +194,16 @@ describe("GET /v2/schedules/credential", () => {
         const body = (await res.json()) as Record<string, unknown>
         expect(Object.keys(body).sort()).toEqual([
             "expiresAt",
-            "reauthRequired",
             "registered",
             "updatedAt",
         ])
         expect(body).toEqual({
             registered: true,
-            reauthRequired: false,
             updatedAt: new Date(NOW * 1000).toISOString(),
             expiresAt: IDLE_EXPIRY_ISO,
         })
         expect(res.headers.getSetCookie()).toEqual([
-            "skyshare_schedule=%7B%22registered%22%3Atrue%2C%22reauthRequired%22%3Afalse%2C%22expiresAt%22%3A%222027-02-14T08%3A00%3A00.000Z%22%7D; Path=/; Max-Age=604800; SameSite=Lax",
-        ])
-    })
-
-    it("omits expiresAt and sets reauthRequired true when the credential needs authorization again", async () => {
-        await seedCredential()
-        await env.DB.prepare(
-            "UPDATE schedule_credentials SET reauth_required = 1 WHERE did = ?",
-        )
-            .bind(TEST_DID)
-            .run()
-        const res = await getCredential()
-        expect(res.status).toBe(200)
-        const body = (await res.json()) as Record<string, unknown>
-        expect(body).toEqual({
-            registered: true,
-            reauthRequired: true,
-            updatedAt: new Date(NOW * 1000).toISOString(),
-        })
-        expect(res.headers.getSetCookie()).toEqual([
-            "skyshare_schedule=%7B%22registered%22%3Atrue%2C%22reauthRequired%22%3Atrue%7D; Path=/; Max-Age=604800; SameSite=Lax",
+            "skyshare_schedule=%7B%22registered%22%3Atrue%2C%22expiresAt%22%3A%222027-02-14T08%3A00%3A00.000Z%22%7D; Path=/; Max-Age=604800; SameSite=Lax",
         ])
     })
 

@@ -145,3 +145,20 @@ Claude が作業の主体のまま、思考を要する作業を Codex に委譲
 5. The 設定 shall 信頼を自動で書き込まない。信頼は利用者が Codex 側で行う
 6. If `codex` の実行ファイルが無いとき, then the 設定 shall 信頼の確認で作業を止めない（Requirement 7.1 に従う）
 7. If 信頼の確認の判定に失敗したとき（設定ファイルの読み取りや解析の失敗など）, then the 設定 shall 作業を止めず、理由を標準エラーに出す
+
+### 追補（権限の制御）
+
+#### Acceptance Criteria
+
+1. The `codex_exec` shall `sandbox` を `read-only` または `workspace-write` に限り、リポジトリを読み取り専用にするか書き込み可能にするかを選ぶ。`sandbox` を含む新しい入力を省略したときは、従来の既定値と列（`read-only` は読み取り列、`workspace-write` は書き込み列）を保つ
+2. If `network` が省略されたとき, then the `codex_exec` shall 外部ネットワークを無効にする。指定されたときは boolean のみ受け付ける
+3. If `scratch` が省略されたとき, then the `codex_exec` shall スクラッチ書き込みを許可しない。`true` のときは依頼ごとにリポジトリ外の一時ディレクトリを作り、その領域と vitest の必要最小限のキャッシュ領域だけを追加で書き込み可能にし、`TMPDIR`・`TMP`・`TEMP` を向け、成功・失敗・打ち切りの後に削除する
+4. If `read_paths` が指定されたとき, then the `codex_exec` shall 実在するリポジトリ相対パスだけを受け付け、symlink 解決後もリポジトリ内のパスだけを読み取り可能にする。省略時は `"/"="read"` によりシステム全体を読み取り可能にする
+5. When `read_paths` is specified, the `codex_exec` shall 読み取りルートを `:minimal`、Codex パッケージ実体、`process.execPath` の実体パスから 2 つ上の Node 導入先、scratch 時の一時ディレクトリ、指定された `read_paths` に限る。`read_paths` は `read-only` のときだけ指定できる
+6. The `codex_exec` shall `:project_roots` の下で `.git` を常に `read` にし、ホームの `.ssh`、`.aws`、`.config/gh`、`.git-credentials`、`.codex/auth.json` を絶対パスの `none` にする。既定の秘密ファイル拒否と `deny_read` の追加拒否も保つ
+7. The `codex_exec` shall `**/.dev.vars`、`**/.dev.vars.*`、`**/.env`、`**/.env.*` の読み取りを拒否する
+8. If 権限入力の型・内容・件数が不正なとき, then the `codex_exec` shall 実行せず、入力ごとの検証エラーを返す。`workspace-write` と `read_paths` の併用は `read_paths_on_workspace_write` で拒否する
+9. The `codex_exec` shall MCP ツール定義に `network`・`scratch`・`read_paths`・`deny_read` を任意入力として示し、`read_paths` は read-only のときだけ指定できることを英語で説明する
+10. The `codex_exec` shall パスと glob を TOML 文字列として安全にエスケープし、依頼入力が別の権限設定項目を作れないようにする
+11. The `codex_exec` shall 固定の読み取り拒否をリポジトリ内の `**/.dev.vars`・`**/.dev.vars.*`・`**/.env`・`**/.env.*` とホームの認証情報（`~/.ssh`・`~/.aws`・`~/.config/gh`・`~/.git-credentials`・`~/.codex/auth.json`）に適用する。リポジトリ外の任意の `.env` 等は対象外とし、読み取り範囲を絞る場合は `read_paths` により read-only の範囲を指定する
+12. The `codex_exec` shall 拒否を許可より常に優先し、scratch の書き込み許可や `deny_read` との競合によって拒否を解除しない。`__proto__` 等の特殊なキー名も設定出力に保持する

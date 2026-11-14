@@ -15,8 +15,6 @@ export type SiteConfig = {
         blueskyHandle: string | null
     }
     privacy: {
-        /** 制定日（YYYY-MM-DD） */
-        enactedAt: string
         /** 最終改定日（YYYY-MM-DD） */
         revisedAt: string
     }
@@ -31,7 +29,6 @@ const REQUIRED = [
     "SITE_HOST",
     "PUBLIC_OPERATOR_NAME",
     "PUBLIC_OPERATOR_EMAIL",
-    "PUBLIC_PRIVACY_ENACTED_AT",
     "PUBLIC_PRIVACY_REVISED_AT",
 ] as const
 
@@ -44,7 +41,6 @@ const ANALYTICS_ID = /^G-[A-Z0-9]+$/
 const DEV_DEFAULTS = {
     PUBLIC_OPERATOR_NAME: "example-operator",
     PUBLIC_OPERATOR_EMAIL: "operator@example.com",
-    PUBLIC_PRIVACY_ENACTED_AT: "2000-01-01",
     PUBLIC_PRIVACY_REVISED_AT: "2000-01-01",
 } as const
 
@@ -74,7 +70,6 @@ export const checkSiteEnv = (env: Env): string[] => {
         ["SITE_HOST", HOST, "ドメイン名だけ（例: example.com）"],
         ["PUBLIC_OPERATOR_EMAIL", EMAIL, "メールアドレス"],
         ["PUBLIC_OPERATOR_BLUESKY_HANDLE", HANDLE, "ハンドル（@ なし）"],
-        ["PUBLIC_PRIVACY_ENACTED_AT", DATE, "YYYY-MM-DD"],
         ["PUBLIC_PRIVACY_REVISED_AT", DATE, "YYYY-MM-DD"],
         ["PUBLIC_GA_MEASUREMENT_ID", ANALYTICS_ID, "G-XXXX"],
     ]
@@ -111,7 +106,6 @@ export const resolveSiteConfig = (env: Env, dev: boolean): SiteConfig => {
             blueskyHandle: optional("PUBLIC_OPERATOR_BLUESKY_HANDLE", HANDLE),
         },
         privacy: {
-            enactedAt: get("PUBLIC_PRIVACY_ENACTED_AT"),
             revisedAt: get("PUBLIC_PRIVACY_REVISED_AT"),
         },
         analyticsId: optional("PUBLIC_GA_MEASUREMENT_ID", ANALYTICS_ID),

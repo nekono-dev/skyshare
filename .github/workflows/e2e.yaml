@@ -28,6 +28,9 @@ jobs:
           # Cloudflare Workers が扱える Node.js のバージョンを指定する。
           node-version: 22.16.0
           cache: npm
+      # release/** 以外（と main・develop 向けの PR）は、マイグレーションが 0001 だけであること。
+      - name: Check migration rule
+        run: node scripts/git/check-migrations.mjs
       - run: npm ci
 
       # OS パッケージ（日本語・国旗フォント、動画素材用 ffmpeg、Playwright の依存）は deb をキャッシュし、以後 Ubuntu ミラーからの取得を避ける。

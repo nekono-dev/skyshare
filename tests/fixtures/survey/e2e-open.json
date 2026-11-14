@@ -4,14 +4,6 @@
       "id": "e2e-open",
       "opensAt": "2020-01-01T00:00:00Z",
       "closesAt": "9999-12-01T00:00:00Z",
-      "title": {
-        "ja": "Skyshare の利用について",
-        "en": "Using Skyshare"
-      },
-      "description": {
-        "ja": "今後の改善のため、利用状況を教えてください。",
-        "en": "Tell us how you use Skyshare to help us improve it."
-      },
       "questions": [
         {
           "id": "frequency",

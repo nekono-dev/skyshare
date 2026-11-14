@@ -254,3 +254,73 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - [x] codex-mcp-subagent -- Codex の MCP サーバー（`scripts/agent/codex-mcp-server.mjs`）、`.mcp.json`・`.codex/config.toml` の取り込み、CLAUDE.md の方針節、MCP が使えない環境での扱い。Dependencies: ops-agent-setup（改訂後）
 
 （新しい spec は 1 件だけのため、`/kiro-spec-batch` ではなく `/kiro-spec-init codex-mcp-subagent` で作る。）
+
+## Phase 9: アンケート結果の公表（2026-11-12 discovery）
+
+### Overview
+
+アンケート機能は **D1 と R2 を前提とする**（R2 バインディングが無い環境ではアンケート機能全体が無効）。アンケートの実施期間が終わったら、Worker が自動で回答を集計して R2 へ統計ファイル（割合だけ）を書き、保存の成功後にだけ D1 の回答を削除する（「終了の 1 か月後」の保持期限は廃止）。集計時は常に非表示で作り、運用者が CLI（`npm run survey`）の `publish` で公開に切り替える。結果ページ `/surveys` は、**ビルド時に R2 から統計ファイルを取得して静的ドキュメントとして生成**し（実行時の API は無い）、公開のものだけを実施時期の新しい順に表示する。`publish`・`unpublish` は、可視フラグの書き換えに続いて `gh workflow run` で再配備を起動する。ページへは login 画面の文中の小リンクからだけ入る。公開済みが 0 件ならページもリンクも出さず、ビルドが R2 の取得・検証に失敗したら配備を止める。あわせて、CLI のコマンド体系と運用の手順を見直す。
+
+### Approach Decision
+
+- **Chosen**: 集計・保存・削除（`survey-results-aggregation`）、ビルド時の取得・静的な画面（`survey-results-public`）、CLI と運用の手順（`survey-operations`）の 3 つに分ける。統計ファイルの形式は共有の部品に置き、`survey-results-aggregation` が所有する。
+- **Why**: 日次の枠で動く処理、実行時の API と画面、運用者の道具で、変更の時機と検証の方法が違う。Worker が R2 を書くため、手元の CLI での集計はやめた（利用者の決定）。R2 を前提にすることで、「R2 が無い環境の保持期限」という二重の規則をなくした。
+- **Rejected alternatives**:
+  - 手元の CLI で集計・保存: 回答の削除までに運用者が実行する必要があり、取りこぼす。
+  - R2 が無い環境では従来の保持期限で動かす: 規則が二重になる。利用者の決定で R2 を必須にした。
+  - 公開の切り替えを `SURVEY_CONFIG` に置く: 設定から期限切れ項目を除去した後に切り替えられない。
+  - 件数の表示・しきい値による伏せ字: 利用者の決定で撤回（割合だけを出す）。
+  - Worker が実行時に R2 を読んで API（`GET /v2/surveys`）で返す案: 空の状態・取得失敗の画面と API・キャッシュの設計が要る。結果は公開の切り替えのときだけ変わるため、静的生成と再配備で足りる（利用者の決定 2026-11-12）。
+  - `prune` を D1 の行の確認のまま残す: 回答の削除は Worker の担当になり、意味を失う。
+
+### Scope
+
+- **In**: 統計ファイルの形式、集計（割合・複数選択は回答者数を分母）、集計後の削除、R2 の必須化（アンケート機能の無効化の判定）、ビルド時の取得、`/surveys` ページ（静的生成）と結果のコンポーネント、login のリンク、CLI のコマンド体系（add・status・publish・unpublish・prune・remove。`--env` は status・publish・unpublish で必須。prune・remove は設定の変数が両環境で共有されるため `--env` を取らず、両環境の目録を確認する（利用者の決定 2026-11-13）。publish・unpublish は再配備を起動する）、`survey-run` skill と DEVELOP.md の更新、プライバシーポリシーの更新の要否の判断。
+- **Out**: R2 バケットの作成、`surveys` の提示・回答の仕様の変更（保持期限と有効・無効の判定を除く）、ダッシュボードからの導線。
+
+### Constraints
+
+- 件数・回答者数は出さない（割合だけ）。回答が 0 件のアンケートは公表しない。
+- 統計ファイルに個別の回答・回答日・回答者の値を入れない。
+- 保存の成功後にだけ D1 を削除する。失敗したら削除せず、翌日に再試行する。
+- R2 のバケットは用途ごとに分ける（規則は `.kiro/steering/r2-buckets.md`。統計ファイルは `skyshare-survey-results`）。PoC のブランチ `dev/survey-r2-poc` とその worktree は、この作業の完了後に `brw finish` で片付ける。
+- 利用者の決定（2026-11-13）: アンケートの識別子は登録側 CLI が UUID で発行する（月ごとの連番と、新規登録時の任意指定は廃止）。アンケートは同時に 1 つだけで、設定内のすべてのアンケートが本番・develop 両方の目録に記録されるまで、次の新規登録は拒否する（開始前も対象。開始前は `remove`、開催中は締切の前倒し・両環境への配備・集計待ちで取り下げる）。締切は日付だけを入力し、その日の日本時間 0 時とする。集計は現在の日次の枠のままにする。
+- D1 の読み取り・削除はまとめて送り、アンケートの日次処理だけで最大 16 回以内に収める。予約投稿の実装と呼び出し数の管理は変えず、共有の枠は作らない（利用者の決定 2026-11-13）。
+- 既存結果は、本体の形式・識別子・実施期間を検証して使う。回答済みの集合は、正常な設定を読めれば R2 の読み取りより前に削除し、回答は結果の保存確認後だけ削除する。設定なしでも目録に基づく残存回答の掃除は行い、設定が読めないときは何も削除しない。
+- 画面のデザインは利用者と合意済み（`survey-results-public` の brief の「合意の結果」）。最大の選択肢はプライマリ色、そのほかは灰色の共通トークン（`--color-gray-hover` が候補。muted は背景と混ざるため使わない）。色は既存の共通トークン・共通コンポーネントを使う。アンケート全体の題・説明と、複数選択の注記は出さない。
+
+### Boundary Strategy
+
+- **Why this split**: 書き込み（日次の処理）・読み出し（API・画面）・運用の道具（CLI・手順書）で、変更と検証が閉じる。
+- **Shared seams to watch**:
+  1. **統計ファイルの形式**（`survey-results-aggregation` が所有。`survey-results-public` は読み、`survey-operations` は可視フラグを書く）。
+  2. **機能の有効・無効の判定**（D1・R2 の両方があるか。`survey-results-aggregation` が所有し、`surveys`・`survey-results-public` が使う）。
+  3. **公開の反映**（`survey-operations` の `publish` が可視フラグを書き、再配備を起動する。`survey-results-public` のビルドがそれを読む）。
+  4. **削除の契機**（`surveys` の保持期限の規則を、`survey-results-aggregation` の集計後の削除に置き換える）。
+
+### Existing Spec Updates
+
+- [x] surveys(a)（2026-11-13 実装済み: `dev/survey-results-publishing`。回答ダイアログの見出しは入口と同じ固定の文言 `survey.entry` にした） 設定の形式の変更 -- アンケート全体の題（`title`）と説明（`description`）を設定の形式から廃止する（質問ごとの題だけにする。利用者の決定 2026-11-12）。影響: `definition.ts`・回答ダイアログ（`SurveyDialog`）・辞書・テストの設定の例（`tests/fixtures/survey/`）。アンケート機能は本番へ未公開のため破壊的変更を許し、既存の `SURVEY_CONFIG` と D1 は初期状態として扱う（移行は作らない。D1 の構造の変更は `migrations/0001_initial.sql` に直接反映してよい）。運用中の設定の作り直し（質問の題を「UIデザインはどちらが好みですか？」にする）は `survey-operations` のタスク 4.2（運用者の作業）が担当する。フェーズ 1 の brief のみで要件は未作成のため、要件の作成時にも記録する。Dependencies: none（`survey-operations` の 2.1 の前提。他の 2 つの spec と並行または先行してよい）
+- [ ] surveys(b) 保持期限の規則の記録 -- 保持期限の規則を「集計の保存の成功後の削除」に置き換え、アンケート機能が D1 と R2 を前提とすること（R2 が無ければ無効）を要件に記録する。Dependencies: survey-results-aggregation
+- [ ] help-privacy -- アンケート結果を公表すること・公表する範囲をプライバシーポリシーに書くかの判断と追記（`survey-results-public` の設計で判断する）。Dependencies: survey-results-public
+- [ ] develop-docs -- DEVELOP.md の 3.x・main への取り込み前の手順（5.x）・環境変数の表（6.x）を、新しい体系に合わせる（`survey-operations` の実装で行う）。`survey-results-public` も、CI の認証情報・R2・プレビューの更新・本番バケットの先行作成の節と、6.5 の `SURVEY_RESULTS` の行を編集する（節の見出しで分担し、競合を避ける）。Dependencies: survey-operations, survey-results-public
+
+### Direct Implementation Candidates
+
+- [x] survey-form-incomplete-message（2026-11-12 実装済み: `dev/survey-results-publishing`） -- 回答ダイアログの「すべての質問に答えると送信できます。」（`survey.incomplete`。`src/lib/i18n/messages/{ja,en}/survey.ts` と `SurveyDialog`）を消す。自明な文言の削除で、spec の境界を変えない（利用者の決定 2026-11-12）。
+
+### Specs (dependency order)
+
+- [ ] survey-results-aggregation -- 統計ファイルの形式と検証スキーマ、日次の枠での集計と保存成功後の削除、保持期限の廃止、R2 必須（アンケート機能の無効化の判定）。Dependencies: surveys
+- [ ] survey-results-public -- ビルド時の R2 の取得と検証、`/surveys` ページ（静的生成）と結果のコンポーネント、login のリンク、読み取りの情報が無いときのオプトアウト。Dependencies: survey-results-aggregation, platform-runtime, i18n, ui-primitives
+- [ ] survey-operations -- CLI のコマンド体系（add・status・publish・unpublish・prune・remove）、R2 の読み書き、`--env`、公開の切り替え後の再配備の起動（`gh workflow run`）、`survey-run` skill と DEVELOP.md の手順。Dependencies: survey-results-aggregation, surveys(a)
+
+**実装順**: surveys(a) → survey-results-aggregation の 1〜3.4 → survey-operations の 3.1 まで → survey-results-aggregation の 3.5・4.1（survey-operations の 3.2 以降は自身の依存に従って進める）（3.5・4.1 は、`survey-operations` が `hack/survey-cli/lifecycle.ts` から保持期限の判定を除くのを待つ）。`survey-results-public` は aggregation の後に着手する。プライバシーポリシーの文言（`survey-results-public` 2.5）と、本番のバケットの作成（運用者の作業）は、aggregation を本番へ出す前に済ませる。
+
+（2026-11-13: 3 spec の要件・設計・タスクを作成し、横断レビュー（2 回）の指摘を反映した。phase は `tasks-generated`。実装は未着手のため `[ ]` のまま。実装は `/kiro-impl <feature>` で上の実装順に行う。）
+
+（画面デザインは合意済み。空の状態・取得失敗の画面は、静的生成にしたため作らない。`/kiro-spec-batch` で 3 件を作れる。）
+
+（2026-11-13 追補: 実装に着手した。`survey-results-aggregation` のタスク 1.1（結果の保管先をテンプレートとテスト設定に宣言する）が完了。`surveys(a)` と他のタスクは未着手。次は `surveys(a)`、続いて `survey-results-aggregation` の 1.2〜1.4。）
+
+（2026-11-13 追補 2: 実装の進捗。`surveys(a)` は完了。`survey-results-aggregation` は 1〜3.6 がすべて完了し、残りは 4.1 だけ（`npm run test:all` は通過済み。完了にしない理由は、2.6 の実バケットでの条件付き書き込みの確認が認証情報の不足で未実施であること。運用者が確かめる）。`survey-operations` は 1.1〜4.1 が完了し、残りは 4.2（実機の確認と運用中の設定の作り直し。運用者の作業。利用者の確認が要る）。`survey-results-public` は未着手。なお、回答ダイアログの見出しは、全体の題を廃止した結果、入口と同じ固定の文言 `survey.entry` にした（実装時の決定。利用者の確認待ち）。）

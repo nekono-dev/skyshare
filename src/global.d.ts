@@ -1,5 +1,10 @@
 /// <reference types="astro/client" />
 
+interface ImportMetaEnv {
+    readonly PUBLIC_SURVEY_CONFIG_PRESENT: "true" | "false"
+    readonly PUBLIC_SURVEY_RESULTS_READABLE: "true" | "false"
+}
+
 // `src/lib/session/bskySessionRefresh.ts` が `/v2/` 配下のリクエストに供給する、
 // 認証済み bsky セッションの型。ミドルウェア対象外パス（`/v2/bsky/session` 系や
 // 静的ページ等）では未設定のため、各ハンドラは undefined チェックを行う。

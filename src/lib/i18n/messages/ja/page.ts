@@ -24,6 +24,9 @@ export const page = {
     "page.login.oldUi": "旧UIはこちら {link}",
     "page.login.guest": "ゲストとして{link}（ログイン中は見れません）",
     "page.login.guestLink": "画面を確認できます",
+    "page.login.surveyResults":
+        "ログイン時のアンケートの結果は{link}で公開しています。",
+    "page.login.surveyResultsLink": "こちら",
     "page.login.v2Notice": "★ Skyshare v2を開発中です。以下の違いがあります",
     "page.login.persist.title": "Skyshare生成コンテンツの永続化",
     "page.login.persist.item1":

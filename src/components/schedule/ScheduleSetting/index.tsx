@@ -2,7 +2,7 @@
  * 設定画面で予約投稿の認可状態と有効・無効を操作する。
  *
  * - 資格情報はサーバー側で管理し、実行中の予約がある場合は削除 API の拒否を表示して有効状態を保つ。
- * - 認可失効後も登録済みとして扱い、再認可を案内する。取得前・失敗時やゲスト表示中は操作できない。
+ * - 取得前・失敗時やゲスト表示中は操作できない。
  */
 import { useState } from "react"
 import chronoskyLogo from "@/images/chronosky.svg"
@@ -30,10 +30,7 @@ export const Component = () => {
   const translator = useT()
   const { t, raw } = translator
   const guestMode = isGuestModeRequested()
-  const { registered, reauthRequired } = useScheduleAvailability(
-    !guestMode,
-    true,
-  )
+  const { registered } = useScheduleAvailability(!guestMode, true)
   const [credentialOpen, setCredentialOpen] = useState(false)
   const [disableCount, setDisableCount] = useState<{
     pending: number
@@ -158,22 +155,6 @@ export const Component = () => {
           },
         ]}
       />
-      {registered === true && reauthRequired && (
-        <div className={styles.reauth} data-testid="schedule-reauth">
-          <p role="status">{t("schedule.setting.reauthRequired")}</p>
-          <button
-            type="button"
-            className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]} ${ui["compact-button"]}`}
-            disabled={busy}
-            onClick={() => {
-              setStatus(null)
-              setCredentialOpen(true)
-            }}
-          >
-            {t("schedule.setting.reauthButton")}
-          </button>
-        </div>
-      )}
       <p className={styles.chronosky} data-testid="schedule-chronosky">
         {renderSlots(raw("schedule.setting.chronoskyLead"), {
           video: (

@@ -1,0 +1,29 @@
+/**
+ * 結果カード内の時期・質問・選択肢を配置する。
+ */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.period {
+  margin: 0;
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.question h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

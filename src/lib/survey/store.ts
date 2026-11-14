@@ -5,7 +5,147 @@
  * - 集合の一意性違反だけを `duplicate` とし、他の失敗は投げる。SQL はバインド変数を使う。
  */
 
-import type { D1Database } from "@/lib/platform/cfTypes"
+import type { D1Database, D1Statement } from "@/lib/platform/cfTypes"
+
+type AnswerRow = { survey_id: string; answers: string }
+type SurveyIdRow = { survey_id: string }
+
+/** D1 の 1 文あたりのバインド変数は 100 個まで。 */
+const IDS_PER_STATEMENT = 100
+/** 残存確認は各 ID を 2 回使うため、1 文 50 件まで。 */
+const RESIDUAL_IDS_PER_STATEMENT = 50
+
+/** 識別子を SQL 文の上限に合わせて分割する。 */
+const chunkIds = (ids: string[], size: number): string[][] => {
+    const chunks: string[][] = []
+    for (let index = 0; index < ids.length; index += size) {
+        chunks.push(ids.slice(index, index + size))
+    }
+    return chunks
+}
+
+/**
+ * 複数アンケートの回答本文と残存識別子を batch で読む。
+ *
+ * Input: D1、回答本文を読む識別子と残存を調べる識別子
+ * Output: 識別子ごとの回答本文（該当なしは空配列）と残存識別子の集合
+ * 例: readDailyRows(db, { answerSurveyIds: ["s1"], residualSurveyIds: [] })
+ */
+export const readDailyRows = async (
+    db: D1Database,
+    query: { answerSurveyIds: string[]; residualSurveyIds: string[] },
+): Promise<{ answers: Map<string, string[]>; residual: Set<string> }> => {
+    const answers = new Map(
+        query.answerSurveyIds.map(id => [id, [] as string[]]),
+    )
+    const residual = new Set<string>()
+    if (
+        query.answerSurveyIds.length === 0 &&
+        query.residualSurveyIds.length === 0
+    ) {
+        return { answers, residual }
+    }
+
+    const statements: D1Statement[] = []
+    const answerChunks = chunkIds(query.answerSurveyIds, IDS_PER_STATEMENT)
+    for (const ids of answerChunks) {
+        const placeholders = ids.map(() => "?").join(", ")
+        statements.push(
+            db
+                .prepare(
+                    `SELECT survey_id, answers FROM survey_answers WHERE survey_id IN (${placeholders})`,
+                )
+                .bind(...ids),
+        )
+    }
+    const residualChunks = chunkIds(
+        query.residualSurveyIds,
+        RESIDUAL_IDS_PER_STATEMENT,
+    )
+    for (const ids of residualChunks) {
+        const placeholders = ids.map(() => "?").join(", ")
+        statements.push(
+            db
+                .prepare(
+                    `SELECT survey_id FROM survey_answers WHERE survey_id IN (${placeholders}) UNION SELECT survey_id FROM survey_respondents WHERE survey_id IN (${placeholders})`,
+                )
+                .bind(...ids, ...ids),
+        )
+    }
+    const results = await db.batch(statements)
+    let resultIndex = 0
+    for (const _ids of answerChunks) {
+        for (const row of (results[resultIndex++]?.results ??
+            []) as AnswerRow[]) {
+            answers.get(row.survey_id)?.push(row.answers)
+        }
+    }
+    for (const _ids of residualChunks) {
+        for (const row of (results[resultIndex++]?.results ??
+            []) as SurveyIdRow[]) {
+            residual.add(row.survey_id)
+        }
+    }
+    return { answers, residual }
+}
+
+/**
+ * 複数アンケートの回答済み集合を batch で削除する。
+ *
+ * Input: D1、アンケート識別子の配列
+ * Output: なし。失敗はそのまま呼び出し元へ返す
+ * 例: purgeRespondentsBatch(db, ["s1", "s2"])
+ */
+export const purgeRespondentsBatch = async (
+    db: D1Database,
+    surveyIds: string[],
+): Promise<void> => {
+    if (surveyIds.length === 0) return
+    const statements = chunkIds(surveyIds, IDS_PER_STATEMENT).map(ids => {
+        const placeholders = ids.map(() => "?").join(", ")
+        return db
+            .prepare(
+                `DELETE FROM survey_respondents WHERE survey_id IN (${placeholders})`,
+            )
+            .bind(...ids)
+    })
+    await db.batch(statements)
+}
+
+/**
+ * 複数アンケートの回答と回答済み集合を同じ batch で削除する。
+ *
+ * Input: D1、アンケート識別子の配列
+ * Output: なし。失敗はそのまま呼び出し元へ返す
+ * 例: purgeSurveysBatch(db, ["s1", "s2"])
+ */
+export const purgeSurveysBatch = async (
+    db: D1Database,
+    surveyIds: string[],
+): Promise<void> => {
+    if (surveyIds.length === 0) return
+    const answersStatements = chunkIds(surveyIds, IDS_PER_STATEMENT).map(
+        ids => {
+            const placeholders = ids.map(() => "?").join(", ")
+            return db
+                .prepare(
+                    `DELETE FROM survey_answers WHERE survey_id IN (${placeholders})`,
+                )
+                .bind(...ids)
+        },
+    )
+    const respondentStatements = chunkIds(surveyIds, IDS_PER_STATEMENT).map(
+        ids => {
+            const placeholders = ids.map(() => "?").join(", ")
+            return db
+                .prepare(
+                    `DELETE FROM survey_respondents WHERE survey_id IN (${placeholders})`,
+                )
+                .bind(...ids)
+        },
+    )
+    await db.batch([...answersStatements, ...respondentStatements])
+}
 
 /** 保存の結果 */
 export type SaveAnswerResult = "saved" | "duplicate"

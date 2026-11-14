@@ -747,3 +747,14 @@ CLAUDE.md の「## Codex as a Child Agent (MCP)」節。
 7. **信頼されていないリポジトリでは、codex がある限り入力が止まる**: 意図した動作（要件 10.1）。ただし `codex` が入っている開発機で、リポジトリを信頼していないと、kiro の作業も含めてすべての入力が止まる。信頼の手順は止めた理由に書く。親のリポジトリを一度信頼すれば、brw の worktree でも止まらない（利用者の決定）。
    7a. **信頼のキーの保存形（解消。2026-11-10）**: codex-cli 0.167.0 は、シンボリックリンク経由で開いても、キーを実体のパスで保存する（research.md 第 32.1 節）。候補パスを実体と非実体の両方で照合する設計は、そのまま保つ。
 8. **信頼は利用者のマシンごとの設定**: `~/.codex/config.toml` は共有されない。別のマシンでは、信頼の手順を改めて行う。クラウドセッションに `codex` が無ければ、この停止は起きない（要件 10.6）。
+
+## 追補（権限の制御）
+
+- `codex_exec` は省略可能な `network`（既定 `false`）、`scratch`（既定 `false`）、`read_paths`（最大 64 件）、`deny_read`（最大 64 件）を受ける。`read_paths` は `read-only` 専用で、`workspace-write` との併用は `read_paths_on_workspace_write` で拒否する。
+- `codex-exec-request.mjs` が `default_permissions="claude"` と `permissions.claude.filesystem`・`permissions.claude.network.enabled` を `-c` で作る。TOML のキーと文字列値は JSON 文字列エスケープを使う。`read_paths` 省略時は `"/"="read"` とし、システム全体を読み取り可能にする。指定時は `:minimal`、Codex パッケージ実体、`process.execPath` の実体パスから 2 つ上の Node 導入先、scratch 時の一時領域、指定されたリポジトリ相対パスだけを読み取り可能にする。`:project_roots` では `.git` を常に `read` にする。workspace-write は `.` を `write` にし、リポジトリ全体を読める。
+- ホームの `.ssh`、`.aws`、`.config/gh`、`.git-credentials`、`.codex/auth.json` は絶対パスで `none` にする。既定拒否 glob に `deny_read` を追加する。存在しない拒否パスも設定できる。
+- `scratch=true` では runner が `os.tmpdir()` 以下に依頼ごとのディレクトリを作り、3 つの一時領域環境変数を設定し、`finally` で出力用ディレクトリとともに消す。Vitest/Vite のコードが `node_modules/.vite-temp` を使うため、このパスだけをリポジトリ内の追加書き込み領域にする。
+- 実機確認は親が入れ子でない環境の `codex sandbox` で実施した。`/="read"` の後に `:project_roots` の read/write 制限と `/tmp/<dir>="write"` を足し、TMPDIR/TMP/TEMP を一時領域に向けると、リポジトリを書けない状態で指定の Vitest コマンドが 7 件成功し、`.dev.vars` は読めなかった。`:minimal` と Codex 実体だけの許可では Node が見えず `npx` が動かなかった。`:project_roots` で `.git="read"` にすると書き込みは Read-only file system で拒否され、読み取り系 git コマンドは動いた。絶対パスでホームの各認証情報を `none` にすると読めず、存在しない `.aws` でも設定は動いた。`codex exec` は `--sandbox` を付けず、権限プロファイルだけで動作した。
+- TOML のエスケープの単体テストは維持する。入れ子環境での実機確認はしない。
+- 固定の読み取り拒否は、リポジトリ内の `**/.dev.vars`・`**/.dev.vars.*`・`**/.env`・`**/.env.*` とホームの認証情報（`~/.ssh`・`~/.aws`・`~/.config/gh`・`~/.git-credentials`・`~/.codex/auth.json`）に適用する。リポジトリ外にある任意の `.env` 等は拒否対象に含めない。読み取り範囲を絞る場合は `read_paths`（read-only 専用）で指定する。
+- 拒否は許可より常に優先する。scratch の書き込み許可や `deny_read` が競合しても拒否を解除しない。設定キーに `__proto__` 等の特殊な名前が指定されても、設定出力にキーと値が残る。

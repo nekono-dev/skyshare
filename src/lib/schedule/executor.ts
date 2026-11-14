@@ -17,9 +17,8 @@ import { type DpopSession } from "@/lib/oauth/dpop"
 import { refreshTokens } from "./oauth/flow"
 import { nextTid } from "./tid"
 import {
-    getCredentialStatus,
-    markCredentialReauth,
     completeSchedule,
+    deleteCredential,
     failSchedule,
     loadCredential,
     releaseSchedule,
@@ -137,13 +136,7 @@ export const executeSchedule = async (
             throw fail("CredentialInvalid")
         }
         if (!stored) {
-            // 許可の失効が分かった後の予約は、再度の許可が要ることを示して失敗にする
-            const status = await getCredentialStatus(env.DB, row.did)
-            throw fail(
-                status.registered && status.reauthRequired
-                    ? "CredentialExpired"
-                    : "CredentialMissing",
-            )
+            throw fail("CredentialMissing")
         }
         const credential = parseCredential(stored.token)
         // アプリパスワード形式の認証情報は使えない
@@ -345,10 +338,9 @@ export const executeSchedule = async (
         if (action.type === "abandon") return "released"
         if (action.type === "fail") {
             await failSchedule(env.DB, row.id, action.code, now)
-            // 認証の失効が分かった認証情報は使えないため消し、再度の許可が必要である印を残す
-            // （設定のスイッチはオフに戻さず、再度の許可を案内する）
+            // 認証の失効が分かった認証情報を削除し、設定のスイッチをオフに戻す
             if (action.code === "CredentialExpired") {
-                await markCredentialReauth(env.DB, row.did)
+                await deleteCredential(env.DB, row.did)
             }
             return "failed"
         }

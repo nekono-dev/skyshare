@@ -32,11 +32,8 @@ export {
     getCredentialStatus,
     touchCredential,
     deleteCredential,
-    markCredentialReauth,
     purgeIdleCredentials,
-    purgeReauthMarkers,
     CREDENTIAL_IDLE_SECONDS,
-    REAUTH_MARKER_KEEP_SECONDS,
 } from "./credentials"
 export type { CredentialStatus } from "./credentials"
 

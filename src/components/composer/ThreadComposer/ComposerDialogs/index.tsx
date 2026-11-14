@@ -11,7 +11,6 @@ import TabButtons, {
   tabId,
 } from "@/components/common/section/TabButtons"
 import ChoiceDialog from "@/components/common/dialog/ChoiceDialog"
-import CredentialDialog from "@/components/schedule/CredentialDialog"
 import DraftSaveConfirmDialog from "@/components/composer/ThreadComposer/DraftSaveConfirmDialog"
 import DraftListPanel from "@/components/composer/ThreadComposer/DraftListPanel"
 import ScheduleList from "@/components/composer/ThreadComposer/ScheduleList"
@@ -53,8 +52,6 @@ type Props = Pick<
     | "scheduleLoading"
     | "setupGuideOpen"
     | "setSetupGuideOpen"
-    | "reauthOpen"
-    | "setReauthOpen"
   > & {
     entryFormId: string
     draftTab: "drafts" | "schedules"
@@ -94,8 +91,6 @@ const ComposerDialogs = (props: Props) => {
     scheduleLoading,
     setupGuideOpen,
     setSetupGuideOpen,
-    reauthOpen,
-    setReauthOpen,
     entryFormId,
     draftTab,
     setDraftTab,
@@ -252,16 +247,6 @@ const ComposerDialogs = (props: Props) => {
             onClick: () => setSetupGuideOpen(false),
           },
         ]}
-      />
-
-      <CredentialDialog
-        open={reauthOpen}
-        onClose={() => setReauthOpen(false)}
-        navigate={url => {
-          // 認可の画面へ移る前に、作成中の内容の扱いを確かめる
-          setReauthOpen(false)
-          requestNavigation(url)
-        }}
       />
 
       <DraftSaveConfirmDialog

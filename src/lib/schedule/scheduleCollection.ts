@@ -1,6 +1,7 @@
 /** 予約の作成と一覧取得のドメイン判断を行う。 */
 import type { Outcome } from "@/types/outcome"
 import { getScheduleEnv } from "@/lib/schedule/env"
+import { firstImageIndex } from "@/lib/schedule/firstImageIndex"
 import { removeImages } from "@/lib/schedule/imageStaging"
 import { toIso } from "@/lib/schedule/scheduleResponse"
 import { parseScheduleBody, stageSchedule } from "@/lib/schedule/stageSchedule"
@@ -25,6 +26,7 @@ export type ScheduleSummaryDto = {
     postCount: number
     preview: string
     lastError: string | null
+    thumbnailIndex: number | null
 }
 
 /** 予約の一覧の応答の本体。続きがあるときだけ cursor を持つ */
@@ -45,7 +47,7 @@ export type ScheduleListDto = {
  *
  * Output:
  * - 成功: `{ ok: true, value: { id, runAt } }`（`runAt` は ISO 文字列）
- * - 失敗: 400（入力の不正）・409（認証情報の未登録・再認可）・429（待機中の上限）・500（保管・保存の失敗）。
+ * - 失敗: 400（入力の不正）・409（認証情報の未登録）・429（待機中の上限）・500（保管・保存の失敗）。
  *   `code` は現行の応答の `error` に入る値
  *
  * Example: `const result = await createSchedule({ did: session.did, request })`
@@ -129,6 +131,7 @@ export const listScheduleSummaries = async (input: {
                     PREVIEW_LENGTH,
                 ),
                 lastError: row.lastError,
+                thumbnailIndex: firstImageIndex(payload),
             }
         }),
         ...(cursor ? { cursor } : {}),

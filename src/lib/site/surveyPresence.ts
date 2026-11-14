@@ -1,8 +1,8 @@
 /**
- * 配信用アンケート設定がビルドに含まれるかを判定し、公開用の値に変換する。
+ * 配信用アンケート設定と保管先の宣言を判定し、公開用の値に変換する。
  *
- * - 環境変数に値があるか、生成物 `public/surveys/index.json` が存在すれば設定ありとする。
- * - `astro.config.mjs`（Node）から使うため、環境値とファイル存在の判定結果を引数で受け取る。
+ * - 設定と D1・R2 の宣言が揃う場合だけ、ビルド定数を有効にする。
+ * - `astro.config.mjs`（Node）から使うため、環境値・ファイル存在の判定結果・読み込み済みの Wrangler 設定を引数で受け取る。
  */
 
 type Env = Record<string, string | boolean | undefined>
@@ -32,14 +32,43 @@ export const isSurveyConfigPresentAtBuild = (
 }
 
 /**
+ * 生成済みの設定にアンケートの保存先が宣言されているかを判定する。
+ *
+ * Input: `wrangler`: 生成済みの Wrangler 設定
+ * Output: `DB` と `SURVEY_RESULTS` の両方が宣言されていれば true
+ * 例: `{ d1_databases: [{ binding: "DB" }], r2_buckets: [{ binding: "SURVEY_RESULTS" }] }` → true
+ */
+export const declaresSurveyBindings = (wrangler: unknown): boolean => {
+    if (typeof wrangler !== "object" || wrangler === null) return false
+    const config = wrangler as Record<string, unknown>
+    const hasBinding = (value: unknown, binding: string): boolean =>
+        Array.isArray(value) &&
+        value.some(
+            entry =>
+                typeof entry === "object" &&
+                entry !== null &&
+                "binding" in entry &&
+                entry.binding === binding,
+        )
+    return (
+        hasBinding(config.d1_databases, "DB") &&
+        hasBinding(config.r2_buckets, "SURVEY_RESULTS")
+    )
+}
+
+/**
  * ビルド定数 `PUBLIC_SURVEY_CONFIG_PRESENT` の値（文字列）を決める。
  *
- * Input: `isSurveyConfigPresentAtBuild` と同じ
- * Output: "true" または "false"
- * 例: `({}, false)` → "false"
+ * Input: `isSurveyConfigPresentAtBuild` の 2 引数と、生成済みの Wrangler 設定
+ * Output: 設定があり、かつ `DB` と `SURVEY_RESULTS` の宣言が揃うときだけ "true"。それ以外は "false"
+ * 例: `({ SURVEY_CONFIG: "{}" }, false, { d1_databases: [{ binding: "DB" }], r2_buckets: [{ binding: "SURVEY_RESULTS" }] })` → "true"
  */
 export const surveyConfigPresentFlag = (
     env: Env,
     fileExists: boolean,
+    wrangler: unknown,
 ): "true" | "false" =>
-    isSurveyConfigPresentAtBuild(env, fileExists) ? "true" : "false"
+    isSurveyConfigPresentAtBuild(env, fileExists) &&
+    declaresSurveyBindings(wrangler)
+        ? "true"
+        : "false"

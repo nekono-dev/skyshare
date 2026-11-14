@@ -14,6 +14,7 @@ export const nav = {
     "pageTitle.entries": "Entries | {service}",
     "pageTitle.accounts": "Switch account | {service}",
     "pageTitle.settings": "Settings | {service}",
+    "pageTitle.surveyResults": "Survey results | {service}",
     "pageTitle.help": "Help | {service}",
     "pageTitle.privacy": "Privacy Policy | {service}",
     "pageTitle.feedback": "Report a bug / Request a feature | {service}",

@@ -1,0 +1,95 @@
+# Brief: survey-results-public
+
+## Problem
+
+アンケートに答えた利用者や興味のある人が、結果を見られない。結果は運用者が公開を決めたものだけを、OSS 本体には持たず、運用者の R2 から拾って出したい。結果を使えない運用者（フォークを含む）には、機能ごと無効にできる必要がある。
+
+## Current State
+
+- アンケートの結果を見せる画面は無い。
+- ログイン前の画面は `src/pages/login.astro`（`prerender = true`、静的出力）。ダッシュボード（`/` など）はログイン後の画面。
+- Astro は `output: "server"` で、多くの画面が `prerender = true` の静的ドキュメントとして生成される。
+- アンケート設定の有無でビルドの動きを切り替える前例がある（`PUBLIC_SURVEY_CONFIG_PRESENT`、`src/lib/site/surveyPresence.ts`）。
+
+## Desired Outcome
+
+- **ビルド時に R2 から統計ファイルを取得し、`/surveys` を静的ドキュメントとして生成する**（ユーザーの決定 2026-11-12）。実行時の API（`GET /v2/surveys`）は作らない。
+- 公開に切り替えられたアンケートだけを、実施時期の新しい順に、`/surveys` に表示する。非表示のアンケートは載せない（ファイルには残る）。
+- 結果の塊（コンポーネント）は、実施時期・質問の題・選択肢・割合のグラフからなる。アンケート全体の題・説明は出さない。数字（件数・回答者数）は出さず、割合だけを出す。
+- login 画面（静的出力）から `/surveys` へ、文中の小リンクで行ける。ダッシュボードには出さない。
+- 公開済みが 0 件なら、`/surveys` を生成せず（404）、login 画面にリンクを出さない。空の状態の画面は作らない。
+- R2 の読み取りの情報（ビルドが R2 を読むための認証情報・バケット名）が無いビルドでは、機能ごと無効になる（オプトアウト。ページもリンクも無い）。ローカルの `npm run dev` も、情報が無ければ無効。
+- 読み取りの情報があるのに、取得または統計ファイルの形式の検証に失敗したら、ビルドを失敗させる（配備を止める。黙って結果ページが消えるのを防ぐ）。
+
+## Approach
+
+ビルドの前段（`build:prepare` と同じ段階）で、R2 の目録と各統計ファイルを取得し、`survey-results-aggregation` が定める共有のスキーマで検証し、公開のものだけを新しい順に並べた静的なデータとして `/surveys` のページとリンクの出し分けに渡す。CI のビルドは `CLOUDFLARE_API_TOKEN` を既に持つ。公開・非公開の切り替えは再配備で反映される（`survey-operations` の `publish`・`unpublish` が配備を起動する）。画面は日本語・英語に対応し、既存の UI 部品を使う。
+
+## Scope
+
+- **In**: ビルド時の R2 の取得・検証・並べ替え・失敗の扱い、オプトアウトの判定（読み取りの情報の有無。ビルド時の旗）、`/surveys` ページ（静的生成）と結果のコンポーネント（グラフを含む）、login 画面のリンク、辞書（ja・en）、プライバシーポリシーの記述の更新の要否の判断（`help-privacy` への追補）、ローカル・CI・プレビューでの取得の扱い。
+- **Out**: 集計・統計ファイルの作成・公開の切り替え・再配備の起動（`survey-results-aggregation`・`survey-operations`）、アンケートの回答・保存（`surveys`）、ダッシュボードからの導線、実行時の API。
+
+## Boundary Candidates
+
+- ビルド時の取得と検証（R2 の読み取り・スキーマ検証・可視と並びの適用・失敗でビルドを止める）
+- 画面（`/surveys` の静的生成、結果のコンポーネント、割合のグラフ）
+- オプトアウトとリンクの出し分け（ビルド時の旗）
+
+## Out of Boundary
+
+- 統計の集計・公開の切り替え・R2 への書き込み・再配備の起動
+- 質問の定義・回答の保存・保持期限
+- ログイン処理・セッション
+
+## Upstream / Downstream
+
+- **Upstream**: `survey-results-aggregation`（統計ファイルの形式・R2 のオブジェクトの構成）、`i18n`、`ui-primitives`、`platform-runtime`（ビルド時のサイト設定）。
+- **Downstream**: なし。
+
+## Existing Spec Touchpoints
+
+- **Extends**: `help-privacy`（結果を公開することと範囲をプライバシーポリシーに書くか、設計で判断する）。
+- **Adjacent**: `surveys`（アンケート機能の有効・無効の判定とは別に、結果ページ用のビルド時の読み取りの情報を持つ）、`session-accounts`（login 画面の所有）、`ops-config-secrets`（ビルドに渡す認証情報）、`develop-docs`。
+
+## Constraints
+
+- 実行時の機能（回答の保存・集計）は R2 バインディングが前提（`survey-results-aggregation`）。結果ページは、それとは別に、ビルドが R2 を読む情報の有無で有効・無効が決まる。
+- 並び順は、実施時期の新しい順（開始時刻の降順、同じなら終了時刻の降順）。ビルド時に並べる。
+- 取得に上限（タイムアウト・応答の大きさ）を置く。検証に通らないデータは使わず、ビルドを失敗させる。
+- ログ・エラーに取得した本文を出さない。
+- 結果の反映は再配備に依存する（公開・非公開の切り替えの直後は、配備が終わるまで古い）。
+- プレビュー（`dev/*`）は develop の R2 を読む。既存のプレビューは次の push まで更新されない。
+- 設計で決める: 結果を静的データに変える段階（Astro のページ内の `getStaticPaths` か、取得の部品を挟むか）、ローカルでの固定のサンプルの要否。
+
+## PoC の結果（2026-11-12）
+
+`@astrojs/cloudflare` 14.1.4 のバインディングでビルド時に R2 を読む方法を、実際のプレビューで検証した（ブランチ `dev/survey-r2-poc`、プレビュー `https://survey-r2-poc.develop.skyshare.nekono.dev/surveys-poc/`。捨てる前提）。
+
+- **読み方**: R2 のバインディング `SURVEY_RESULTS` を `import { env } from "cloudflare:workers"` で読む。Astro の prerender は workerd の中で動くため、`getStaticPaths` やページの本体で使える。実行時の Worker と同じバインディングを兼用でき、配備（`wrangler preview`）も通った。
+- **バケット名**: `config/wrangler.template.jsonc` の `r2_buckets` に `SURVEY_RESULTS`（`skyshare-survey-results`）を足すだけでよい。develop は `render-wrangler` が `-develop` を付け、プレビューは develop のバケットを使う（D1 と同じ既存の仕組み。変更不要）。develop 用のバケット `skyshare-survey-results-develop` は PoC で作成済み（空）。本番のバケットは未作成。
+- **remote 接続**: ビルドと dev が実際のバケットを読むには、バインディングに `remote: true` が要る。ただし `remote: true` があると、認証情報が無い環境（ローカルの dev・E2E・pre-push）は、アカウントを選べず起動に失敗する（PoC で再現）。このため `scripts/config/render-wrangler.mjs` が、`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` が両方あるときだけ `remote: true` を付ける。無いときは接続せず、結果ページの機能が無い前提で動く（ローカルの E2E・pre-push の全テストは通る）。
+- **CI**: `preview.yaml`・`deploy.yaml` の「Run build」に `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID` を渡す。トークンに R2 の権限があれば足りる（付与済み）。
+- **ページの生成**: 公開が 0 件、またはバインディングが無いときは、`getStaticPaths` が空を返すと `/surveys` は生成されない（ビルドは成功）。オブジェクトが無い・認証が無いときは、ビルドが失敗する。
+
+- 既存の UI 部品・スタイルの規約に従う。色は既存の共通トークンを使う。
+
+## 画面デザインの合意（必須の工程）
+
+画面のデザインは、アーティファクトで選択肢を見せながら利用者と合意した（2026-11-12）。
+
+デザイン案（古い案）: https://claude.ai/artifact/XvR5BLKHV7woYkuCCKRRfj
+合意した画面イメージ: https://claude.ai/artifact/TdpnNtVXFCxp2sEiAC4v9d （login 画面・`/surveys` 一覧・スマホ幅）
+
+### 合意の結果
+
+利用者の決定（2026-11-12）:
+
+- **グラフ**: 左側に選択肢の題（ラベル）、右側に割合付きのグラフ（割合は棒の中に表示）。割合の数字だけを出し、件数は出さない。
+- **カード**: 枠付きカード。実施時期と、質問ごとの題・選択肢・グラフで構成する。アンケート全体の題・説明は出さない。
+- **login のリンク**: 文中の小リンク（ボタン風にしない）。
+- **色**: 色のトークンは、既存の共通のスタイルトークン（`src/styles/tokens.css`）と共通コンポーネントを使い、新しい色を定義しない。最も割合の大きい選択肢だけをプライマリ色（ブランドの色。既存のトークンのうち対応するものを設計で選ぶ）、そのほかの選択肢は、背景と混ざらない灰色の共通トークン（候補: `--color-gray-hover`。棒の下地は `--color-gray`。`--color-muted` は背景と混ざるため使わない）にする。複数の選択肢が同率で最大なら、いずれもプライマリ色にする（設計で確認）。
+- **複数選択の注記は出さない**（「合計は 100% を超えることがあります」の文言は不要）。
+- **スマホ幅**: 1 列。選択肢の題を棒の上に置く。
+- **時期の表記**: 画面案のとおり（`2026/09/01 〜 09/30`）。
+- **空の状態・取得失敗の画面は作らない**: 公開済みが 0 件ならページとリンクを出さない。取得の失敗はビルドの失敗として扱う。

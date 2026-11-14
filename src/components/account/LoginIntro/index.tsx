@@ -10,13 +10,17 @@ import { renderSlots } from "@/components/i18n/renderSlots"
 import type { PlainMessageKey } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 
+export interface LoginIntroProps {
+  showSurveyResults: boolean
+}
+
 /**
  * ログインページの案内カードを描画する。
  *
  * Output:
  * - 旧UIリンク・ゲスト表示リンク・v2の変更点を含むカード
  */
-export const Component = () => {
+export const Component = ({ showSurveyResults }: LoginIntroProps) => {
   const { t, raw } = useT()
   const item = `${ui["list-item"]} ${ui["text-muted"]}`
   const bold = (key: PlainMessageKey) => <b>{t(key)}</b>
@@ -40,6 +44,13 @@ export const Component = () => {
         })}
       </div>
       <div style={{ marginTop: "1rem" }}>{t("page.login.v2Notice")}</div>
+      {showSurveyResults && (
+        <div className={ui["text"]}>
+          {renderSlots(raw("page.login.surveyResults"), {
+            link: <a href="/surveys/">{t("page.login.surveyResultsLink")}</a>,
+          })}
+        </div>
+      )}
 
       <h3>{t("page.login.persist.title")}</h3>
       <ul className={ui.list}>

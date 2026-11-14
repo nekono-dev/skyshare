@@ -2,8 +2,7 @@
 
 import { jsonResponse } from "@/util/http"
 
-export type ScheduleErrorCode =
-    "ScheduleCredentialRequired" | "ScheduleReauthRequired" | "ScheduleRunning"
+export type ScheduleErrorCode = "ScheduleCredentialRequired" | "ScheduleRunning"
 
 export const codeErrorResponse = (
     status: number,

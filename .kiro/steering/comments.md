@@ -60,7 +60,7 @@
 
 - `tests/unit/scripts/commentRules.test.ts` が、次を検査する: 先頭ヘッダの有無・行数・箇条書きの数、禁止パターン、コメント中の日付。
 - 検査の本体は `scripts/architecture/comment-rules.ts`（文字列の判定だけを行う）。
-- 既存の違反は `config/comments/allowlist.json` に、所有 spec（`comments-*`）と理由を付けて記録する。
+- 許容リスト `config/comments/allowlist.json` には、基準の例外を、所有 spec（`comments-*`）と理由を付けて記録する。既存の違反は全て解消済みで、残るのは言い換えると意味が伝わらない語を含む例外（`scripts/agent/kiro-gate.mjs` の起動例のパス）だけである。
   - 新しいコードは違反を増やさない。テストが新しい違反を失敗にする。
   - 違反を直したら、許容リストから項目を消す。解消済みの項目が残っていると、テストが失敗する。
   - 許容リストを機械的に作り直す（`npx tsx scripts/architecture/comment-rules.ts --emit-allowlist`）のは、規則を追加したときだけ。作り直すと、新しい違反も黙って許容されるため、通常の修正では使わない。
@@ -90,4 +90,4 @@ if (event.nativeEvent.isComposing) return
 
 ---
 
-_updated_at: 2026-11-10_
+_updated_at: 2026-11-11（Phase 7 の完了で、許容リストを例外だけにした）_

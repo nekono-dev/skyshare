@@ -40,8 +40,6 @@ export type Survey = {
     id: string
     opensAt: string // UTC からのオフセット付き ISO 8601
     closesAt: string // 同上。この時刻を含まない
-    title: LocalizedText
-    description?: LocalizedText
     questions: SurveyQuestion[]
 }
 
@@ -180,8 +178,6 @@ const surveySchema = z
         id: idSchema,
         opensAt: dateTimeSchema,
         closesAt: dateTimeSchema,
-        title: localizedTextSchema,
-        description: localizedTextSchema.optional(),
         questions: z
             .array(questionSchema)
             .min(1)

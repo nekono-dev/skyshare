@@ -46,6 +46,29 @@
   border-color: var(--color-bluesky);
 }
 
+:local(.item-content-with-thumbnail) {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3, 12px);
+  min-width: 0;
+}
+
+:local(.thumbnail) {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+:local(.item-content) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+  min-width: 0;
+}
+
 :local(.meta) {
   display: flex;
   flex-wrap: wrap;

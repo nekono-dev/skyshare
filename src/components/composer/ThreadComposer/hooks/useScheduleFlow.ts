@@ -58,8 +58,6 @@ export const useScheduleFlow = ({
 
     // 予約投稿が無効のときにカレンダーのボタンを押した際の、設定への案内
     const [setupGuideOpen, setSetupGuideOpen] = useState(false)
-    // 許可が無効になったときにカレンダーのボタンを押した際の、再度の許可のダイアログ
-    const [reauthOpen, setReauthOpen] = useState(false)
 
     /**
      * 失敗した予約から書き戻した入力の送信に成功したとき、元の失敗の履歴をバックグラウンドで削除する。
@@ -113,8 +111,6 @@ export const useScheduleFlow = ({
         setRestoredFailedId,
         setupGuideOpen,
         setSetupGuideOpen,
-        reauthOpen,
-        setReauthOpen,
         deleteRestoredFailedSilently,
         handleRunAtChange,
     }

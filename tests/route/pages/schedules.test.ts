@@ -232,7 +232,26 @@ describe("GET /v2/schedules", () => {
             postCount: 2,
             preview: "先頭の本文",
             lastError: null,
+            thumbnailIndex: null,
         })
+    })
+
+    it("returns the first attachment image index, or null when there is no image", async () => {
+        await seedRow("get-image", {
+            payload: { posts: [{}, { images: [3, 4] }] },
+        })
+        await seedRow("get-no-image", {
+            runAt: NOW + 7200,
+            payload: { posts: [{ ogImage: 8 }] },
+        })
+
+        const body = (await (await get("")).json()) as {
+            items: { id: string; thumbnailIndex: number | null }[]
+        }
+        expect(body.items.map(item => [item.id, item.thumbnailIndex])).toEqual([
+            ["get-image", 3],
+            ["get-no-image", null],
+        ])
     })
 
     it("cuts the preview at 100 characters", async () => {

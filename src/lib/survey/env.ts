@@ -3,11 +3,12 @@
  *
  * - `cloudflare:workers` は動的 import で取得する。
  */
-import type { D1Database } from "@/lib/platform/cfTypes"
+import type { D1Database, SurveyResultsBucket } from "@/lib/platform/cfTypes"
 
 /** アンケートの API が使うバインディング */
 export type SurveyEnv = {
     DB: D1Database
+    SURVEY_RESULTS?: SurveyResultsBucket
     ASSETS: { fetch(input: Request | string): Promise<Response> }
     /** 回答者の一方向の値を求める秘密の鍵。未設定のことがある */
     SURVEY_HASH_KEY?: string

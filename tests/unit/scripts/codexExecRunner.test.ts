@@ -6,7 +6,7 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { runCodex } from "../../../scripts/agent/codex-exec-runner.mjs"
 
 const PLACEHOLDER = "__OUTPUT_FILE__"
@@ -33,6 +33,7 @@ const outIndex = args.indexOf("--output-last-message")
 const outputFile = outIndex >= 0 ? args[outIndex + 1] : null
 fs.writeFileSync(path.join(dir, "argv.json"), JSON.stringify(args))
 fs.writeFileSync(path.join(dir, "pid"), String(process.pid))
+fs.writeFileSync(path.join(dir, "env.json"), JSON.stringify({ TMPDIR: process.env.TMPDIR, TMP: process.env.TMP, TEMP: process.env.TEMP }))
 if (control.ignoreTerm) process.on("SIGTERM", () => {})
 const chunks = []
 process.stdin.on("data", (chunk) => chunks.push(chunk))
@@ -94,6 +95,9 @@ const readArgv = (): string[] =>
 /** 偽の codex が記録した出力先の一覧（ファイル名 → 内容）を読む。 */
 const readListing = (): Record<string, string> =>
     JSON.parse(fs.readFileSync(path.join(fakeDir, "listing.json"), "utf8"))
+
+const readChildEnv = (): Record<string, string> =>
+    JSON.parse(fs.readFileSync(path.join(fakeDir, "env.json"), "utf8"))
 
 /** 偽の codex が記録した出力先のパスを引数から取り出す。 */
 const outputPathOf = (argv: string[]): string =>
@@ -224,6 +228,87 @@ describe("runCodex", () => {
         expect(path.basename(outputDir).startsWith("codex-exec-")).toBe(true)
         // 出力先は実行の後に削除されている
         expect(fs.existsSync(outputDir)).toBe(false)
+    })
+
+    it("creates and removes a per-run scratch directory and points temp variables to it", async () => {
+        setControl({ exitCode: 0, lastMessage: "ok" })
+
+        await runCodex(makeArgs(fakeDir), {
+            command: fakeCodexPath,
+            cwd: fakeDir,
+            prompt: PROMPT,
+            scratch: true,
+            timeoutMs: 10000,
+            killGraceMs: 5000,
+        })
+
+        const childEnv = readChildEnv()
+        expect(childEnv.TMPDIR).toMatch(/codex-scratch-/)
+        expect(childEnv.TMP).toBe(childEnv.TMPDIR)
+        expect(childEnv.TEMP).toBe(childEnv.TMPDIR)
+        expect(fs.existsSync(childEnv.TMPDIR)).toBe(false)
+    })
+
+    it("removes the scratch directory after a timed out run", async () => {
+        setControl({ ignoreTerm: true, sleepMs: 10000 })
+
+        const result = await runCodex(makeArgs(fakeDir), {
+            command: fakeCodexPath,
+            cwd: fakeDir,
+            prompt: PROMPT,
+            scratch: true,
+            timeoutMs: 100,
+            killGraceMs: 100,
+        })
+
+        const childEnv = readChildEnv()
+        expect(result.kind).toBe("timeout")
+        expect(fs.existsSync(childEnv.TMPDIR)).toBe(false)
+    })
+
+    it("preserves the run result and removes output when scratch cleanup fails", async () => {
+        setControl({ exitCode: 0, lastMessage: "ok" })
+        const originalRmSync = fs.rmSync
+        const attempts: string[] = []
+        const rmSync = vi.spyOn(fs, "rmSync").mockImplementation(((
+            target,
+            options,
+        ) => {
+            attempts.push(String(target))
+            if (String(target).includes("codex-scratch-")) {
+                throw new Error("scratch cleanup failed")
+            }
+            return originalRmSync(target as fs.PathLike, options)
+        }) as typeof fs.rmSync)
+        const stderrWrite = vi
+            .spyOn(process.stderr, "write")
+            .mockImplementation(() => true)
+
+        try {
+            const result = await runCodex(makeArgs(fakeDir), {
+                command: fakeCodexPath,
+                cwd: fakeDir,
+                prompt: PROMPT,
+                scratch: true,
+                timeoutMs: 10000,
+                killGraceMs: 5000,
+            })
+
+            expect(result).toMatchObject({
+                kind: "completed",
+                lastMessage: "ok",
+            })
+            expect(attempts).toHaveLength(2)
+            expect(attempts[0]).toContain("codex-scratch-")
+            expect(attempts[1]).toContain("codex-exec-")
+            expect(fs.existsSync(attempts[1])).toBe(false)
+            expect(stderrWrite).toHaveBeenCalledWith(
+                expect.stringContaining("scratch cleanup failed"),
+            )
+        } finally {
+            rmSync.mockRestore()
+            stderrWrite.mockRestore()
+        }
     })
 
     it("never writes the prompt into any file in the output directory", async () => {

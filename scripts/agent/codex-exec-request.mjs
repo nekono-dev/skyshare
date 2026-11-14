@@ -3,11 +3,21 @@
  * プロセスやファイルシステムには触れない。実在と symlink の解決は呼び出し側が注入する。
  */
 import path from "node:path"
+import fs from "node:fs"
+import os from "node:os"
 
 const SANDBOXES = ["read-only", "workspace-write"]
 const DEFAULT_SANDBOX = "workspace-write"
 const EFFORTS = ["medium", "high"]
 const DEFAULT_EFFORT = "medium"
+const DEFAULT_DENY_READ = [
+  "**/.dev.vars",
+  "**/.dev.vars.*",
+  "**/.env",
+  "**/.env.*",
+]
+const MAX_PATHS = 64
+const MAX_GLOBS = 64
 
 /**
  * 依頼の種類（sandbox）ごとのモデル。読み取りだけの依頼（レビュー・調査）は Sol、
@@ -51,8 +61,50 @@ export const validateExecInput = (raw, env) => {
   }
 
   const realRepoRoot = env.realpath(env.repoRoot)
+  const network = input.network === undefined ? false : input.network
+  if (typeof network !== "boolean") {
+    return fail("invalid_network", "network は boolean で指定してください")
+  }
+  const scratch = input.scratch === undefined ? false : input.scratch
+  if (typeof scratch !== "boolean") {
+    return fail("invalid_scratch", "scratch は boolean で指定してください")
+  }
+
+  const readPaths = validateReadPaths(input.read_paths, realRepoRoot, env)
+  if (readPaths === false) {
+    return fail(
+      "invalid_read_paths",
+      "read_paths はリポジトリ内の実在する相対パスを配列で指定してください",
+    )
+  }
+  if (sandbox === "workspace-write" && readPaths !== null) {
+    return fail(
+      "read_paths_on_workspace_write",
+      "read_paths は sandbox が read-only のときだけ指定できます",
+    )
+  }
+  const denyRead = validateDenyRead(input.deny_read)
+  if (denyRead === null) {
+    return fail(
+      "invalid_deny_read",
+      "deny_read は空でない glob の配列で指定してください",
+    )
+  }
+
   if (input.cwd === undefined) {
-    return { ok: true, value: { prompt, sandbox, effort, cwd: realRepoRoot } }
+    return {
+      ok: true,
+      value: {
+        prompt,
+        sandbox,
+        effort,
+        cwd: realRepoRoot,
+        network,
+        scratch,
+        readPaths,
+        denyRead: [...DEFAULT_DENY_READ, ...denyRead],
+      },
+    }
   }
 
   const cwd = resolveCwd(input.cwd, env)
@@ -65,33 +117,113 @@ export const validateExecInput = (raw, env) => {
       `cwd がリポジトリの外を指しています: ${cwd}`,
     )
   }
-  return { ok: true, value: { prompt, sandbox, effort, cwd } }
+  return {
+    ok: true,
+    value: {
+      prompt,
+      sandbox,
+      effort,
+      cwd,
+      network,
+      scratch,
+      readPaths,
+      denyRead: [...DEFAULT_DENY_READ, ...denyRead],
+    },
+  }
 }
 
 /**
  * codex exec の引数を作る。承認の指定は exec より前に置き、標準入力は末尾の `-` で渡す。
  * 引数には依頼文（prompt）を入れない。依頼文は標準入力で渡すため、ここでは型として受け取るだけである。
  * モデルは sandbox で決め（`MODEL_BY_SANDBOX`）、推論の強さは `effort`（省略時は medium）で指定する。
- * @param {{ prompt: string, sandbox: string, effort?: string, cwd: string }} exec validateExecInput が返した検証済みの依頼
+ * @param {{ prompt: string, sandbox: string, effort?: string, cwd: string, network?: boolean, scratch?: boolean, readPaths?: string[] | null, denyRead?: string[] }} exec validateExecInput が返した検証済みの依頼
  * @param {string} outputFile 最後のメッセージの出力先のパス
+ * @param {{ codexPackageRoot: string, scratchDir?: string, homeDir?: string, nodeExecPath?: string, realpath?: (path: string) => string }} options Codex 本体と一時領域のパス
  * @returns {string[]} codex exec の引数
  */
-export const buildCodexArgs = ({ sandbox, effort, cwd }, outputFile) => [
-  "--ask-for-approval",
-  "never",
-  "exec",
-  "--model",
-  MODEL_BY_SANDBOX[sandbox],
-  "--config",
-  `model_reasoning_effort="${effort ?? DEFAULT_EFFORT}"`,
-  "--sandbox",
-  sandbox,
-  "--cd",
-  cwd,
-  "--output-last-message",
+export const buildCodexArgs = (
+  {
+    sandbox,
+    effort,
+    cwd,
+    network = false,
+    scratch = false,
+    readPaths = null,
+    denyRead = DEFAULT_DENY_READ,
+  },
   outputFile,
-  "-",
-]
+  {
+    codexPackageRoot,
+    scratchDir,
+    homeDir = os.homedir(),
+    nodeExecPath = process.execPath,
+    realpath = fs.realpathSync,
+  } = {},
+) => {
+  const projectPermissions = Object.create(null)
+  if (sandbox === "workspace-write") projectPermissions["."] = "write"
+  else {
+    for (const entry of readPaths ?? ["."]) {
+      projectPermissions[entry] = "read"
+    }
+  }
+  projectPermissions[".git"] = "read"
+  if (scratch) projectPermissions["node_modules/.vite-temp"] = "write"
+  for (const glob of denyRead) projectPermissions[glob] = "none"
+
+  const filesystem = Object.assign(Object.create(null), {
+    ":project_roots": projectPermissions,
+  })
+  if (sandbox === "read-only" && readPaths === null) filesystem["/"] = "read"
+  else {
+    filesystem[":minimal"] = "read"
+    if (codexPackageRoot) filesystem[codexPackageRoot] = "read"
+    try {
+      filesystem[path.resolve(realpath(nodeExecPath), "..", "..")] = "read"
+    } catch {
+      // Node の実体パスを解決できない場合は、他の明示ルートを使う。
+    }
+    if (scratch && scratchDir) filesystem[scratchDir] = "read"
+  }
+  if (scratch && scratchDir) filesystem[scratchDir] = "write"
+  for (const credentialPath of [
+    ".ssh",
+    ".aws",
+    ".config/gh",
+    ".git-credentials",
+    ".codex/auth.json",
+  ])
+    filesystem[path.resolve(homeDir, credentialPath)] = "none"
+  const config = value => JSON.stringify(value)
+  return [
+    "--ask-for-approval",
+    "never",
+    "exec",
+    "--model",
+    MODEL_BY_SANDBOX[sandbox],
+    "-c",
+    `model_reasoning_effort=${config(effort ?? DEFAULT_EFFORT)}`,
+    "-c",
+    'default_permissions="claude"',
+    "-c",
+    `permissions.claude.filesystem=${toToml(filesystem)}`,
+    "-c",
+    `permissions.claude.network.enabled=${network}`,
+    "--cd",
+    cwd,
+    "--output-last-message",
+    outputFile,
+    "-",
+  ]
+}
+
+/** TOML の文字列キーと値を JSON の文字列エスケープで組み立てる。 */
+const toToml = value => {
+  if (typeof value === "string") return JSON.stringify(value)
+  return `{${Object.entries(value)
+    .map(([key, item]) => `${JSON.stringify(key)}=${toToml(item)}`)
+    .join(",")}}`
+}
 
 /** 失敗の文面を作る。標準エラーは末尾の一部だけを残す。 */
 export const formatFailure = ({
@@ -121,6 +253,62 @@ const resolveCwd = (cwd, env) => {
   } catch {
     return null
   }
+}
+
+/** read_paths を実体に解決し、リポジトリ相対の安全なパスだけを返す。 */
+const validateReadPaths = (value, realRepoRoot, env) => {
+  if (value === undefined) return null
+  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_PATHS) {
+    return false
+  }
+  const resolved = []
+  for (const item of value) {
+    if (
+      typeof item !== "string" ||
+      item.trim() === "" ||
+      item.includes('"') ||
+      /[\u0000-\u001f\u007f]/.test(item) ||
+      /^[A-Za-z]:[\\/]/.test(item) ||
+      item.startsWith("\\\\") ||
+      path.isAbsolute(item) ||
+      item.split(/[\\/]/).includes("..")
+    ) {
+      return false
+    }
+    let realPath
+    try {
+      realPath = env.realpath(path.resolve(realRepoRoot, item))
+    } catch {
+      return false
+    }
+    if (!isInside(realRepoRoot, realPath)) return false
+    const relative = path
+      .relative(realRepoRoot, realPath)
+      .split(path.sep)
+      .join("/")
+    resolved.push(relative || ".")
+  }
+  return [...new Set(resolved)]
+}
+
+/** 追加の読み取り禁止 glob を検証する。 */
+const validateDenyRead = value => {
+  if (value === undefined) return []
+  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_GLOBS) {
+    return null
+  }
+  if (
+    value.some(
+      item =>
+        typeof item !== "string" ||
+        item.trim() === "" ||
+        item.length > 512 ||
+        /[\u0000-\u001f\u007f]/.test(item),
+    )
+  ) {
+    return null
+  }
+  return [...new Set(value)]
 }
 
 /** 実体のパス child が、実体のパス parent と同じか、その下にあるかを判定する。 */

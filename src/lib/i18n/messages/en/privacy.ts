@@ -1,6 +1,6 @@
 /**
  * Privacy policy text (English). A courtesy translation: the Japanese text is authoritative.
- * `{enactedAt}`/`{revisedAt}` are filled from `lib/site/siteConfig.ts`.
+ * `{revisedAt}` is filled from `lib/site/siteConfig.ts`.
  */
 import type { MessageEntries } from "../../messageEntries"
 
@@ -14,22 +14,18 @@ export const privacy = {
     "privacy.operator.bluesky": "Bluesky",
     "privacy.collected.title": "Information we collect",
     "privacy.collected.intro": "The Service handles the following information.",
-    "privacy.collected.login":
-        "Your handle or email address and password when you log in (the password is not stored)",
+    "privacy.collected.login": "Credentials for your Bluesky account",
     "privacy.collected.schedule":
-        "If you use scheduled posts: the post content, images, and run time, plus the account identifier and Bluesky authorization needed to run them",
+        "When scheduled posts are enabled: the post content, including attached images, and credentials for your Bluesky account",
     "privacy.collected.traffic":
-        "Your IP address and browser information when you access the Service (handled by Cloudflare, which delivers the Service, to process traffic)",
-    "privacy.collected.analytics":
-        "Usage data collected by Google Analytics (pages viewed, device and browser type, approximate region)",
+        "Your IP address and browser information collected by the hosting provider",
+    "privacy.collected.analytics": "Usage data collected by Google Analytics",
     "privacy.collected.inquiry":
         "Your email address or Bluesky account and the content of your inquiry when you contact us",
     "privacy.collected.feedback":
-        "When you report a bug or request a feature: what you enter, your Bluesky handle and DID, and your device and Skyshare version",
+        "When you use the bug report and feature request form: the information you enter, account identification information, your device information, and information about the Service",
     "privacy.collected.survey":
-        "For surveys, we process your selected answer. We hash your DID to prevent duplicate responses. The hash is not linked to your answer. We store an answered flag and account identifier in localStorage on your device.",
-    "privacy.collected.note":
-        "Regular posts and drafts are saved in your own Bluesky account and are not stored by the Service.",
+        "When you answer a survey: your answers and an identifier used to prevent duplicate responses",
     "privacy.purpose.title": "How we use information",
     "privacy.purpose.intro":
         "We use the information only for the following purposes.",
@@ -40,47 +36,35 @@ export const privacy = {
         "Understanding how the Service is used and improving it",
     "privacy.purpose.item4": "Investigating bugs and preventing misuse",
     "privacy.purpose.item5": "Answering your inquiries",
-    "privacy.purpose.survey":
-        "We aggregate survey responses to understand trends. We use a DID hash to prevent duplicate responses.",
     "privacy.external.title": "Sharing of information",
     "privacy.external.intro":
         "We do not share your information with third parties except in the following cases.",
     "privacy.external.item1":
         "Posting to Bluesky or sharing to other social networks on your instruction",
     "privacy.external.item2":
-        "Handling by Cloudflare, which we use to deliver the Service and store its data",
+        "Handling by the hosting provider, which we use to deliver the Service and store its data",
     "privacy.external.item3": "Sending data to Google for analytics",
-    "privacy.external.github":
-        "Publishing bug reports and feature requests as public GitHub issues",
+    "privacy.external.github": "Publishing bug reports or feature requests",
     "privacy.external.item4": "When required by law",
+    "privacy.external.surveyResults": "Publication of survey results",
     "privacy.retention.title": "Data retention",
     "privacy.retention.item1":
         "Login information is kept in your browser for 7 days and deleted when you log out.",
     "privacy.retention.item2":
         "Scheduled posts and their images are deleted when the post succeeds or is canceled. Failed posts are deleted after 7 days, and leftover images within 15 days.",
     "privacy.retention.item3":
-        "Authorization for scheduled posts is deleted after 30 days of no use with nothing scheduled. After the permission becomes invalid, we keep the account identifier and that fact for 180 days so we can ask you to grant it again.",
+        "When scheduled posts are enabled, credentials are deleted if they become invalid or the feature goes unused for 30 days.",
     "privacy.retention.item4":
-        "Traffic information is kept only for the period set by Cloudflare.",
+        "Traffic information is kept only for the period set by the hosting provider.",
     "privacy.retention.item5":
         "Analytics data is kept according to the Google Analytics retention setting.",
     "privacy.retention.feedback":
         "Bug reports and feature requests remain as GitHub issues. Contact us if you want one deleted.",
-    "privacy.retention.surveyHash":
-        "The server-side hash for duplicate detection is deleted after the survey closes.",
     "privacy.retention.surveyAnswer":
-        "Survey answers are deleted one month after the survey closes.",
-    "privacy.retention.surveyDevice":
-        "Device records remain until you clear your browser storage.",
+        "Survey answers are deleted as soon as the survey has closed and its aggregated result has been saved.",
     "privacy.security.title": "Security",
-    "privacy.security.intro":
-        "We take the following measures to protect your information.",
-    "privacy.security.item1": "Communication is encrypted.",
-    "privacy.security.item2":
-        "Authorization for scheduled posts is stored encrypted.",
-    "privacy.security.item3": "Only the Operator handles the information.",
-    "privacy.security.item4":
-        "The permission for scheduled posts is limited to what is needed to run them. You never need to give your password to the Service.",
+    "privacy.security.body":
+        "To protect your information, communication is encrypted, and credentials saved in the Service are stored encrypted.",
     "privacy.cookies.title": "Cookies and analytics",
     "privacy.cookies.titleBasic": "Cookies",
     "privacy.cookies.item1":
@@ -95,13 +79,12 @@ export const privacy = {
     "privacy.rights.intro":
         "You may ask us to disclose, correct, or delete your information. Please use the contact details above.",
     "privacy.rights.self":
-        "You can change, cancel, or delete scheduled posts from “Drafts & scheduled” in the post form. Turning off scheduled posts in Settings deletes all scheduled posts and authorization, and also revokes the permission on Bluesky.",
+        "You can change, cancel, or delete scheduled posts from “Drafts & scheduled” in the post form. If you turn off scheduled posts, the scheduled post contents and credentials for your Bluesky account are deleted.",
     "privacy.rights.survey":
         "You cannot withdraw survey answers after submitting them.",
     "privacy.revision.title": "Changes to this policy",
     "privacy.revision.body":
         "We may change this policy as needed. Changes apply from when they are posted on this page.",
-    "privacy.revision.dates":
-        "Enacted: {enactedAt} / Last revised: {revisedAt}",
+    "privacy.revision.dates": "Last revised: {revisedAt}",
     "privacy.link": "Privacy Policy",
 } satisfies MessageEntries

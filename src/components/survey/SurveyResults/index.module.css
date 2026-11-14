@@ -1,0 +1,18 @@
+/**
+ * 結果一覧の縦並びと余白を整える。
+ */
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.root h1 {
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

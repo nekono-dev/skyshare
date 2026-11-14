@@ -1,265 +1,518 @@
 /**
- * アンケート設定の追加・状態確認・期限切れ項目の除去を束ねる。
- *
- * 責務と処理概要:
- * - 引数を検証し、設定の取得・検証・変換・比較・反映を行う。
- * - 状態は設定だけを読み、除去は期限切れ候補に限って D1 の行を確認する。
- * - 呼び出し元には秘密や設定本文を含まない 1 行の結果を返す。
+ * アンケート CLI の引数・設定・目録をまとめて固定行を返す。
+ * `status` は表全体、それ以外は 1 行を返す。
  */
+import { randomUUID } from "node:crypto"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { parseSurveyConfig, type SurveyConfig } from "@/lib/survey/definition"
-import { byteLength, addSurvey, removeSurveys, serializeConfig } from "./config"
-import { decidePrune, pruneCandidates, surveyPhase } from "./lifecycle"
+import {
+    parseSurveyIndex,
+    parseSurveyResult,
+    resultMatchesIndexEntry,
+    type SurveyIndex,
+} from "@/lib/survey/results/schema"
+import { parseArgs, type Command, type SurveyEnv } from "./args"
+import {
+    addSurvey,
+    byteLength,
+    removeSurveys,
+    serializeConfig,
+    VARIABLE_LIMIT_BYTES,
+} from "./config"
+import {
+    buildStatusRows,
+    decidePrune,
+    decideRemove,
+    formatJst,
+    latestReleaseBranch,
+    surveyStage,
+    type Aggregation,
+} from "./lifecycle"
 import { createSurveyRemote, RemoteError, type SurveyRemote } from "./remote"
 
-const VARIABLE_LIMIT_KB = 48
+const VARIABLE_LIMIT_KB = VARIABLE_LIMIT_BYTES / 1024
+const NEW_REGISTRATION_REFUSAL =
+    "error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。"
+const NOT_AGGREGATED_GUIDANCE =
+    " ; see DEVELOP.md 5.4 / survey-run (not-aggregated)"
+
+/** 設定にある識別子と重ならない、dry-run 用の仮の UUID を返す（実際には登録しない）。 */
+const dryRunId = (config: SurveyConfig): string => {
+    const used = new Set(config.surveys.map(survey => survey.id))
+    for (let counter = 0; ; counter += 1) {
+        const candidate = `123e4567-e89b-42d3-a456-${counter
+            .toString(16)
+            .padStart(12, "0")}`
+        if (!used.has(candidate)) return candidate
+    }
+}
 
 export type SurveyCliDependencies = {
     remote?: SurveyRemote
+    createId?: () => string
     now?: () => Date
     readFile?: (filePath: string) => string
 }
 
-export type SurveyCliResult = { code: 0 | 1; line: string }
+export type SurveyCliResult = { code: 0 | 1; lines: string[] }
 
-type Command =
-    | { name: "add"; file: string; dryRun: boolean }
-    | { name: "status" }
-    | { name: "prune"; dryRun: boolean }
-
-const oneLine = (value: string): string => value.replace(/[\r\n]+/g, " ")
-
-const usageError = (message: string): SurveyCliResult => ({
-    code: 1,
-    line: `error: usage: ${message}`,
+const result = (code: 0 | 1, line: string): SurveyCliResult => ({
+    code,
+    lines: [line],
 })
 
-const parseCommand = (
-    argv: readonly string[],
-): { command?: Command; repo?: string; error?: SurveyCliResult } => {
-    const args: string[] = []
-    let repo: string | undefined
-    for (let index = 0; index < argv.length; index += 1) {
-        const arg = argv[index]
-        if (arg === "--repo") {
-            const value = argv[index + 1]
-            if (!value || value.startsWith("--"))
-                return {
-                    error: usageError(
-                        "--repo に owner/repo を指定してください",
-                    ),
-                }
-            repo = value
-            index += 1
-        } else {
-            args.push(arg!)
-        }
-    }
-    if (repo && !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo))
-        return {
-            error: usageError("--repo は owner/repo の形式で指定してください"),
-        }
-
-    const [name, ...options] = args
-    if (name === "add") {
-        let file: string | undefined
-        let dryRun = false
-        for (let index = 0; index < options.length; index += 1) {
-            const option = options[index]
-            if (option === "--file") {
-                if (
-                    file ||
-                    !options[index + 1] ||
-                    options[index + 1]!.startsWith("--")
-                )
-                    return {
-                        error: usageError("add --file <パス> [--dry-run]"),
-                    }
-                file = options[index + 1]
-                index += 1
-            } else if (option === "--dry-run" && !dryRun) {
-                dryRun = true
-            } else {
-                return { error: usageError("add --file <パス> [--dry-run]") }
-            }
-        }
-        if (!file) return { error: usageError("add --file <パス> [--dry-run]") }
-        return { command: { name, file, dryRun }, repo }
-    }
-    if (name === "status" && options.length === 0)
-        return { command: { name }, repo }
-    if (name === "prune") {
-        if (options.length === 0)
-            return { command: { name, dryRun: false }, repo }
-        if (options.length === 1 && options[0] === "--dry-run")
-            return { command: { name, dryRun: true }, repo }
-    }
-    return {
-        error: usageError(
-            "add --file <パス> [--dry-run] | status | prune [--dry-run]",
-        ),
-    }
-}
-
-const invalidConfig = (issues?: readonly string[]): SurveyCliResult => {
-    if (!issues?.length)
-        return { code: 1, line: "error: invalid: 設定を読み取れません" }
-    const first = oneLine(issues[0]!).slice(0, 160)
-    const remainder = issues.length > 1 ? ` (+${issues.length - 1} more)` : ""
-    return { code: 1, line: `error: invalid: ${first}${remainder}` }
-}
+const invalid = (message = "設定を読み取れません"): SurveyCliResult =>
+    result(1, `error: invalid: ${message}`)
 
 const failure = (error: unknown): SurveyCliResult => {
-    if (error instanceof RemoteError) {
-        if (error.kind === "auth")
-            return {
-                code: 1,
-                line: "error: auth: gh または wrangler の認証が必要",
-            }
-        if (error.kind === "parse")
-            return {
-                code: 1,
-                line: "error: invalid: 外部サービスの応答を読み取れません",
-            }
-        return {
-            code: 1,
-            line: "error: unavailable: 外部サービスを利用できません",
-        }
+    if (
+        error instanceof RemoteError ||
+        (error && typeof error === "object" && "kind" in error)
+    ) {
+        const kind = (error as { kind?: unknown }).kind
+        if (kind === "auth")
+            return result(1, "error: auth: gh または wrangler の認証が必要")
+        if (kind === "parse")
+            return result(
+                1,
+                "error: invalid: 外部サービスの応答を読み取れません",
+            )
+        if (kind === "unavailable")
+            return result(1, "error: unavailable: 外部サービスを利用できません")
     }
-    return { code: 1, line: "error: unavailable: 操作を完了できません" }
+    return result(1, "error: unavailable: 操作を完了できません")
 }
 
 const readConfig = async (
     remote: SurveyRemote,
-): Promise<{ config: SurveyConfig } | SurveyCliResult> => {
+): Promise<SurveyConfig | SurveyCliResult> => {
     const value = await remote.readConfigValue()
-    if (value === undefined) return { config: { surveys: [] } }
+    if (value === undefined) return { surveys: [] }
     let parsed: unknown
     try {
         parsed = JSON.parse(value)
     } catch {
-        return invalidConfig()
+        return invalid()
     }
-    const result = parseSurveyConfig(parsed)
-    return result.ok ? { config: result.config } : invalidConfig(result.issues)
+    const config = parseSurveyConfig(parsed)
+    return config.ok ? config.config : invalid("設定の形式が正しくありません")
 }
+
+const readIndexes = async (
+    remote: SurveyRemote,
+): Promise<Record<SurveyEnv, SurveyIndex | undefined> | SurveyCliResult> => {
+    const indexes: Record<SurveyEnv, SurveyIndex | undefined> = {
+        production: undefined,
+        develop: undefined,
+    }
+    let failed: SurveyCliResult | undefined
+    for (const env of ["production", "develop"] as const) {
+        try {
+            const index = await remote.readIndex(env)
+            if (index === undefined) continue
+            const parsed = parseSurveyIndex(index)
+            if (!parsed.ok) {
+                failed ??= invalid("目録の形式が正しくありません")
+                continue
+            }
+            indexes[env] = parsed.value
+        } catch (error) {
+            failed ??= failure(error)
+        }
+    }
+    return failed ?? indexes
+}
+
+const isFailure = (value: unknown): value is SurveyCliResult =>
+    value !== null && typeof value === "object" && "code" in value
+
+const indexIds = (index: SurveyIndex | undefined): Set<string> =>
+    new Set(index?.surveys.map(entry => entry.id) ?? [])
 
 const formatKilobytes = (bytes: number): string => (bytes / 1024).toFixed(1)
 
-const outcomeError = (
-    outcome: ReturnType<typeof addSurvey>,
-): SurveyCliResult | undefined => {
-    if (outcome.status === "invalid") return invalidConfig(outcome.issues)
-    if (outcome.status === "too-large")
-        return { code: 1, line: `error: too-large: ${outcome.bytes} bytes` }
-    return undefined
+const formatAddResult = (
+    status: "created" | "updated" | "unchanged",
+    id: string,
+    config: SurveyConfig,
+    dryRun: boolean,
+): string => {
+    const value = serializeConfig(config)
+    const prefix = dryRun ? "[dry-run] " : ""
+    return `${prefix}add: ${status} ${id} (surveys ${config.surveys.length}, ${formatKilobytes(byteLength(value))}/${VARIABLE_LIMIT_KB} KB)`
 }
 
-/** CLI の処理本体。標準出力には書かず、固定された 1 行の結果を返す。 */
+const addFailure = (
+    outcome: ReturnType<typeof addSurvey>,
+): SurveyCliResult | undefined => {
+    switch (outcome.status) {
+        case "invalid":
+            return invalid(
+                outcome.issues[0] ?? "下書きの形式が正しくありません",
+            )
+        case "too-large":
+            return result(1, `error: too-large: ${outcome.bytes} bytes`)
+        case "not-found":
+            return result(1, "error: not-found: 指定したアンケートがありません")
+        case "refused":
+            return result(1, outcome.line.replace(/[\r\n]+/g, " "))
+        default:
+            return undefined
+    }
+}
+
+const runAdd = async (
+    command: Extract<Command, { name: "add" }>,
+    config: SurveyConfig,
+    remote: SurveyRemote,
+    dependencies: SurveyCliDependencies,
+    now: () => Date,
+    readFile: (filePath: string) => string,
+): Promise<SurveyCliResult> => {
+    let draft: unknown
+    try {
+        draft = JSON.parse(readFile(command.file))
+    } catch {
+        return invalid("下書きを読み取れません")
+    }
+
+    const hasId =
+        draft !== null &&
+        typeof draft === "object" &&
+        "id" in draft &&
+        typeof (draft as { id?: unknown }).id === "string"
+    const preflight = addSurvey(
+        hasId ? config : { surveys: [] },
+        draft,
+        now(),
+        () => dryRunId(config),
+    )
+    const preflightError = addFailure(preflight)
+    if (preflightError) return preflightError
+
+    const indexes = await readIndexes(remote)
+    if (isFailure(indexes)) return indexes
+    const productionIds = indexIds(indexes.production)
+    const developIds = indexIds(indexes.develop)
+
+    const requestedId =
+        draft !== null && typeof draft === "object" && "id" in draft
+            ? (draft as { id?: unknown }).id
+            : undefined
+    const existing =
+        typeof requestedId === "string"
+            ? config.surveys.find(survey => survey.id === requestedId)
+            : undefined
+    if (requestedId === undefined) {
+        const allRecorded = config.surveys.every(
+            survey => productionIds.has(survey.id) && developIds.has(survey.id),
+        )
+        if (!allRecorded) return result(1, NEW_REGISTRATION_REFUSAL)
+    } else if (
+        existing &&
+        (productionIds.has(existing.id) || developIds.has(existing.id))
+    ) {
+        const candidate =
+            preflight.status === "created" ||
+            preflight.status === "updated" ||
+            preflight.status === "unchanged"
+                ? preflight.config.surveys.find(
+                      survey => survey.id === existing.id,
+                  )
+                : undefined
+        if (
+            candidate &&
+            Date.parse(candidate.closesAt) !== Date.parse(existing.closesAt)
+        )
+            return result(
+                1,
+                "error: refused: 集計済みのアンケートの締切は変更できません",
+            )
+    }
+
+    const createId = dependencies.createId ?? randomUUID
+    const outcome = addSurvey(
+        config,
+        draft,
+        now(),
+        command.dryRun ? () => dryRunId(config) : createId,
+    )
+    const outcomeError = addFailure(outcome)
+    if (outcomeError) return outcomeError
+    if (!("config" in outcome)) return invalid("下書きを検証できません")
+
+    if (!command.dryRun && outcome.status !== "unchanged")
+        await remote.writeConfigValue(outcome.value)
+    return result(
+        0,
+        formatAddResult(
+            outcome.status,
+            outcome.id,
+            outcome.config,
+            command.dryRun,
+        ),
+    )
+}
+
+const runStatus = async (
+    env: SurveyEnv,
+    config: SurveyConfig,
+    remote: SurveyRemote,
+    now: () => Date,
+): Promise<SurveyCliResult> => {
+    const rawIndex = await remote.readIndex(env)
+    let index: SurveyIndex | undefined
+    if (rawIndex !== undefined) {
+        const parsed = parseSurveyIndex(rawIndex)
+        if (!parsed.ok) return invalid("目録の形式が正しくありません")
+        index = parsed.value
+    }
+    const indexed = new Map<
+        string,
+        {
+            period: { opensAt: string; closesAt: string }
+            aggregation: Aggregation
+        }
+    >()
+    for (const entry of index?.surveys ?? []) {
+        let aggregation: Aggregation
+        if (entry.outcome === "empty") aggregation = { outcome: "empty" }
+        else {
+            const visibility = await remote.readVisibility(env, entry.id)
+            aggregation = { outcome: "result", visibility }
+        }
+        indexed.set(entry.id, { period: entry, aggregation })
+    }
+    const rows = buildStatusRows(config, indexed, now())
+    const bytes = byteLength(serializeConfig(config))
+    if (rows.length === 0)
+        return { code: 0, lines: [`status: env=${env} no surveys`] }
+    return {
+        code: 0,
+        lines: [
+            `status: env=${env} surveys ${rows.length}, config ${formatKilobytes(bytes)}/${VARIABLE_LIMIT_KB} KB`,
+            ...rows.map(
+                row =>
+                    `  ${row.id}  ${row.stage}  closes ${formatJst(row.closesAt)} JST  ${row.inConfig ? "config" : "r2-only"}${row.invalidVisibility ? " !invalid-visibility" : ""}`,
+            ),
+        ],
+    }
+}
+
+const runVisibilitySwitch = async (
+    command: Extract<Command, { name: "publish" | "unpublish" }>,
+    config: SurveyConfig,
+    remote: SurveyRemote,
+    now: () => Date,
+): Promise<SurveyCliResult> => {
+    const rawIndex = await remote.readIndex(command.env)
+    let index: SurveyIndex | undefined
+    if (rawIndex !== undefined) {
+        const parsed = parseSurveyIndex(rawIndex)
+        if (!parsed.ok) return invalid("目録の形式が正しくありません")
+        index = parsed.value
+    }
+    const entry = index?.surveys.find(item => item.id === command.id)
+    const survey = config.surveys.find(item => item.id === command.id)
+    if (!entry && !survey)
+        return result(1, "error: not-found: 指定したアンケートがありません")
+
+    const visibility =
+        entry?.outcome === "result"
+            ? await remote.readVisibility(command.env, command.id)
+            : "hidden"
+    const aggregation: Aggregation = !entry
+        ? undefined
+        : entry.outcome === "empty"
+          ? { outcome: "empty" }
+          : { outcome: "result", visibility }
+    const period = survey ?? entry!
+    const stage = surveyStage(period, aggregation, now())
+    if (stage !== "hidden" && stage !== "published") {
+        const reason =
+            stage === "empty"
+                ? "nothing to publish"
+                : stage === "closed" && !entry
+                  ? `not aggregated: ${command.env}`
+                  : "results would be lost"
+        return result(1, `error: refused: ${command.id} is ${stage}: ${reason}`)
+    }
+    if (command.name === "publish") {
+        let rawResult: unknown
+        try {
+            rawResult = await remote.readResult(command.env, command.id)
+        } catch (error) {
+            if (!(error instanceof RemoteError) || error.kind !== "parse")
+                throw error
+        }
+        const parsedResult = parseSurveyResult(rawResult)
+        if (
+            !entry ||
+            !parsedResult.ok ||
+            !resultMatchesIndexEntry(entry, parsedResult.value)
+        )
+            return result(1, "error: invalid: 結果が目録と一致しません")
+    }
+
+    let deployRef: string | undefined
+    if (command.deploy) {
+        if (command.env === "develop") deployRef = "develop"
+        else {
+            const branches = await remote.listReleaseBranches()
+            deployRef = latestReleaseBranch(branches)
+            if (!deployRef)
+                return result(
+                    1,
+                    "error: no-release: 本番のリリースブランチがありません",
+                )
+        }
+    }
+    if (command.dryRun) {
+        const action = command.name === "publish" ? "publish" : "unpublish"
+        const deployLine = command.deploy
+            ? `would deploy ${deployRef}`
+            : "deploy skipped (--no-deploy)"
+        return result(
+            0,
+            `[dry-run] ${action}: would ${action} ${command.id} (${command.env}); ${deployLine}`,
+        )
+    }
+
+    const wanted = command.name === "publish"
+    const unchanged = visibility === (wanted ? "visible" : "hidden")
+    if (!unchanged)
+        await remote.writeVisibility(command.env, command.id, wanted)
+    if (command.deploy) {
+        try {
+            await remote.startDeploy(deployRef!)
+        } catch {
+            return result(
+                1,
+                "error: deploy: 可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる",
+            )
+        }
+    }
+    const state = unchanged ? "unchanged" : wanted ? "published" : "hidden"
+    const deployLine = command.deploy
+        ? `deploy started (${deployRef})`
+        : "deploy skipped (--no-deploy)"
+    return result(
+        0,
+        `${command.name}: ${state} ${command.id} (${command.env}); ${deployLine}`,
+    )
+}
+
+const runPruneOrRemove = async (
+    command: Extract<Command, { name: "prune" | "remove" }>,
+    config: SurveyConfig,
+    remote: SurveyRemote,
+    now: () => Date,
+): Promise<SurveyCliResult> => {
+    if (
+        command.name === "remove" &&
+        !config.surveys.some(s => s.id === command.id)
+    ) {
+        return result(1, "error: not-found: 指定したアンケートがありません")
+    }
+    const indexes = await readIndexes(remote)
+    if (isFailure(indexes)) return indexes
+    const aggregated = {
+        production: indexIds(indexes.production),
+        develop: indexIds(indexes.develop),
+    }
+    const before = config.surveys.length
+    if (command.name === "prune") {
+        const decision = decidePrune(config, aggregated, now())
+        const kept = decision.kept.map(
+            item =>
+                `kept ${item.id}(not-aggregated: ${item.pending.join(",")})`,
+        )
+        const next = removeSurveys(config, decision.remove)
+        const dryPrefix = command.dryRun ? "[dry-run] " : ""
+        let line: string
+        if (decision.remove.length === 0 && kept.length === 0) {
+            line = `${dryPrefix}prune: nothing to remove`
+        } else if (decision.remove.length === 0) {
+            line = `${dryPrefix}prune: nothing removed; ${kept.join(", ")}${NOT_AGGREGATED_GUIDANCE}`
+        } else {
+            const action = command.dryRun ? "would remove" : "removed"
+            const head = `${dryPrefix}prune: ${action} ${decision.remove.join(", ")} (surveys ${before} -> ${next.surveys.length})`
+            line =
+                kept.length > 0
+                    ? `${head}; ${kept.join(", ")}${NOT_AGGREGATED_GUIDANCE}`
+                    : head
+        }
+        if (!command.dryRun && decision.remove.length > 0) {
+            if (next.surveys.length === 0) await remote.deleteConfigValue()
+            else await remote.writeConfigValue(serializeConfig(next))
+        }
+        return result(0, line)
+    }
+
+    const survey = config.surveys.find(item => item.id === command.id)!
+    const decision = decideRemove(survey, aggregated, now())
+    if (decision.kind === "refused") {
+        const stage = decision.reason === "active" ? "active" : "closed"
+        const reason =
+            decision.reason === "active"
+                ? "results would be lost"
+                : `results would be lost; not aggregated: ${decision.pending.join(",")}`
+        const guidance =
+            decision.reason === "not-aggregated" ? NOT_AGGREGATED_GUIDANCE : ""
+        return result(
+            1,
+            `error: refused: ${command.id} is ${stage} (${reason})${guidance}`,
+        )
+    }
+    const next = removeSurveys(config, [command.id])
+    const action = command.dryRun ? "would remove" : "removed"
+    const prefix = command.dryRun ? "[dry-run] " : ""
+    if (!command.dryRun) {
+        if (next.surveys.length === 0) await remote.deleteConfigValue()
+        else await remote.writeConfigValue(serializeConfig(next))
+    }
+    return result(
+        0,
+        `${prefix}remove: ${action} ${command.id} (surveys ${before} -> ${next.surveys.length})`,
+    )
+}
+
+/** 引数を解析し、設定と必要な目録を順番に読み取って結果を返す。 */
 export const run = async (
     argv: readonly string[],
     dependencies: SurveyCliDependencies = {},
 ): Promise<SurveyCliResult> => {
-    const parsed = parseCommand(argv)
-    if (parsed.error) return parsed.error
-    const command = parsed.command
-    if (!command) return usageError("コマンドを指定してください")
-
+    const parsed = parseArgs(argv)
+    if (!parsed.ok) return result(1, parsed.usage)
     const remote =
         dependencies.remote ?? createSurveyRemote({ repo: parsed.repo })
     const now = dependencies.now ?? (() => new Date())
     const readFile =
         dependencies.readFile ??
         ((filePath: string) => readFileSync(filePath, "utf8"))
-
     try {
-        const loaded = await readConfig(remote)
-        if ("code" in loaded) return loaded
-        if (command.name === "add") {
-            let draft: unknown
-            try {
-                draft = JSON.parse(readFile(command.file))
-            } catch {
-                return {
-                    code: 1,
-                    line: "error: invalid: 下書きを読み取れません",
-                }
-            }
-            const result = addSurvey(loaded.config, draft, now())
-            const problem = outcomeError(result)
-            if (problem) return problem
-            if (result.status === "invalid" || result.status === "too-large")
-                return {
-                    code: 1,
-                    line: "error: invalid: 下書きを検証できません",
-                }
-
-            const prefix = command.dryRun ? "[dry-run] " : ""
-            if (!command.dryRun && result.status !== "unchanged")
-                await remote.writeConfigValue(result.value)
-            const size = formatKilobytes(byteLength(result.value))
-            return {
-                code: 0,
-                line: `${prefix}add: ${result.status} ${result.id} (surveys ${result.config.surveys.length}, ${size}/${VARIABLE_LIMIT_KB} KB)`,
-            }
-        }
-
-        if (command.name === "status") {
-            const currentTime = now()
-            if (loaded.config.surveys.length === 0)
-                return { code: 0, line: "status: no surveys" }
-            const items = loaded.config.surveys.map(
-                survey => `${survey.id} ${surveyPhase(survey, currentTime)}`,
+        const config = await readConfig(remote)
+        if (isFailure(config)) return config
+        const command = parsed.command
+        if (command.name === "add")
+            return await runAdd(
+                command,
+                config,
+                remote,
+                dependencies,
+                now,
+                readFile,
             )
-            const bytes = byteLength(serializeConfig(loaded.config))
-            return {
-                code: 0,
-                line: `status: surveys ${items.length} [${items.join(", ")}] ${formatKilobytes(bytes)}/${VARIABLE_LIMIT_KB} KB`,
-            }
-        }
-
-        const currentTime = now()
-        const candidates = pruneCandidates(loaded.config, currentTime)
-        if (candidates.length === 0)
-            return {
-                code: 0,
-                line: `${command.dryRun ? "[dry-run] " : ""}prune: nothing to remove`,
-            }
-
-        const presence: Record<
-            string,
-            Awaited<ReturnType<SurveyRemote["hasRows"]>>
-        > = {}
-        for (const survey of candidates)
-            presence[survey.id] = await remote.hasRows(survey.id)
-        const decision = decidePrune(candidates, presence)
-        const removed = decision.remove
-        if (removed.length === 0) {
-            const kept = decision.kept
-                .map(item => `${item.id}(${item.reason})`)
-                .join(", ")
-            return {
-                code: 0,
-                line: `${command.dryRun ? "[dry-run] " : ""}prune: nothing removed; kept ${kept}`,
-            }
-        }
-
-        const next = removeSurveys(loaded.config, removed)
-        if (!command.dryRun) {
-            if (next.surveys.length === 0) await remote.deleteConfigValue()
-            else await remote.writeConfigValue(serializeConfig(next))
-        }
-        const action = command.dryRun ? "would remove" : "removed"
-        const kept = decision.kept.length
-            ? `; kept ${decision.kept.map(item => `${item.id}(${item.reason})`).join(", ")}`
-            : ""
-        return {
-            code: 0,
-            line: `${command.dryRun ? "[dry-run] " : ""}prune: ${action} ${removed.join(", ")} (surveys ${loaded.config.surveys.length} -> ${next.surveys.length})${kept}`,
-        }
+        if (command.name === "status")
+            return await runStatus(command.env, config, remote, now)
+        if (command.name === "publish" || command.name === "unpublish")
+            return await runVisibilitySwitch(command, config, remote, now)
+        if (command.name === "prune" || command.name === "remove")
+            return await runPruneOrRemove(command, config, remote, now)
+        return result(1, "error: invalid: コマンドを処理できません")
     } catch (error) {
         return failure(error)
     }
@@ -272,7 +525,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === currentFile) {
             result.code === 0
                 ? process.stdout.write.bind(process.stdout)
                 : process.stderr.write.bind(process.stderr)
-        write(`${result.line}\n`)
+        for (const line of result.lines) write(`${line}\n`)
         process.exitCode = result.code
     })
 }

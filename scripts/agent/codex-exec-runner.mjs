@@ -27,6 +27,8 @@ export const runCodex = async (args, options = {}) => {
     command = "codex",
     cwd,
     prompt,
+    scratch = false,
+    env,
     timeoutMs = DEFAULT_TIMEOUT_MS,
     killGraceMs = DEFAULT_KILL_GRACE_MS,
   } = options
@@ -34,11 +36,26 @@ export const runCodex = async (args, options = {}) => {
   // 最後のメッセージだけを置く専用ディレクトリ（依頼文は置かない）
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "codex-exec-"))
   const outputFile = path.join(outputDir, "last-message.txt")
+  let scratchDir = null
   try {
-    const argv = replaceOutputPlaceholder(args, outputFile)
+    scratchDir = scratch
+      ? fs.mkdtempSync(path.join(os.tmpdir(), "codex-scratch-"))
+      : null
+    const argv = replaceOutputPlaceholder(
+      typeof args === "function" ? args(scratchDir) : args,
+      outputFile,
+    )
     const outcome = await execute(command, argv, {
       cwd,
       prompt,
+      env: scratchDir
+        ? {
+            ...(env ?? process.env),
+            TMPDIR: scratchDir,
+            TMP: scratchDir,
+            TEMP: scratchDir,
+          }
+        : env,
       timeoutMs,
       killGraceMs,
     })
@@ -48,7 +65,16 @@ export const runCodex = async (args, options = {}) => {
     const lastMessage = readLastMessage(outputFile)
     return toRunResult(outcome, lastMessage)
   } finally {
-    fs.rmSync(outputDir, { recursive: true, force: true })
+    for (const directory of [scratchDir, outputDir]) {
+      if (!directory) continue
+      try {
+        fs.rmSync(directory, { recursive: true, force: true })
+      } catch (error) {
+        process.stderr.write(
+          `[codex-exec-runner] 一時ディレクトリを削除できませんでした: ${directory}: ${error instanceof Error ? error.message : String(error)}\n`,
+        )
+      }
+    }
   }
 }
 
@@ -68,13 +94,14 @@ const replaceOutputPlaceholder = (args, outputFile) =>
  * その後はグループに SIGKILL を送って標準入出力を閉じ、終了コードの結果を返す。
  * 結果の確定は一度だけ行い、すべてのタイマーを解除する。
  */
-const execute = (command, argv, { cwd, prompt, timeoutMs, killGraceMs }) =>
+const execute = (command, argv, { cwd, prompt, env, timeoutMs, killGraceMs }) =>
   new Promise(resolve => {
     let child
     try {
       // detached で、子が自分のプロセスグループの先頭になる（グループ単位で信号を送るため）
       child = spawn(command, argv, {
         cwd,
+        env,
         detached: true,
         stdio: ["pipe", "ignore", "pipe"],
       })

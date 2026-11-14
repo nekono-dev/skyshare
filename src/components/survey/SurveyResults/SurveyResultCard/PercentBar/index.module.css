@@ -1,0 +1,55 @@
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.label {
+  min-width: 0;
+}
+
+.track {
+  display: flex;
+  min-width: 0;
+  min-height: 2rem;
+  align-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-gray);
+}
+
+.fill {
+  display: flex;
+  box-sizing: border-box;
+  /* 最大の棒の太字 1.25rem で「100%」「16.7%」が欠けずに入る幅 */
+  min-width: 4.5rem;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-gray-hover);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.fill[data-top="true"] {
+  background: var(--color-bluesky);
+  color: var(--color-white);
+  /* 白と青のコントラストは約 3.7:1。大きな太字（約 18.7px 以上）の基準（3:1）を満たすため、数字を太く大きくする */
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.zeroPercent {
+  padding-inline: var(--space-2);
+  color: var(--color-text);
+}
+
+@media (max-width: 639px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}

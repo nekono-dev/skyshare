@@ -6,7 +6,7 @@
 **Purpose**: 1 部品 1 フォルダ。`index.tsx`（または `index.astro`）を置く。スタイルを持つ部品だけ `index.module.css` を置く（スタイルのない部品にファイルを増やさない）。
 **Example**: `src/components/common/input/Checkbox/index.tsx` と `index.module.css`
 
-- 領域は機能の単位で分ける: `composer`（投稿フォーム・下書き・予約の入力）、`timeline`（タイムラインと投稿の表示）、`share`（他 SNS への共有）、`entry`（Entry の一覧・操作）、`account`・`settings`・`feedback`・`schedule`・`image`・`help`・`privacy`。アンケート（`survey`）と動画（`video`）の部品は、利用する親の子に置く（下の「利用元の内側に置く」）。
+- 領域は機能の単位で分ける: `composer`（投稿フォーム・下書き・予約の入力）、`timeline`（タイムラインと投稿の表示）、`share`（他 SNS への共有）、`entry`（Entry の一覧・操作）、`account`・`settings`・`feedback`・`schedule`・`image`・`help`・`privacy`・`survey`（アンケートの結果ページの部品。結果の一覧とカード、棒グラフ）。アンケートの回答ダイアログ（`SurveyGate` など）と動画（`video`）の部品は、利用する親の子に置く（下の「利用元の内側に置く」）。
 - 画面全体で共有する部品は `common`（UI 部品）、`layout`（骨格）。骨格は `components/layout/Baselayout/` に置く（`layout/` の部品フォルダの一つ）。`src/layout/` を置かない（骨格は `components/layout/` の一箇所だけに置く）。`common/` には汎用の部品だけを置く（呼び出し側の文言と状態を受け取り、業務を持たない。例: `ChoiceQuestion`・`FloatingBox`・`NavigationBar`・`ThemeModeSelect`・`Loading`）。一つの業務に固有の部品（例: 投稿言語の一覧を持つ `LanguageSelect`）は、`common/` に置かず、その業務の親の子にする。
 - `common/` の部品は、役割で分類フォルダに分ける。`dialog/`（重ねて表示する）・`select/`（選ぶ）・`input/`（値を入力・切り替える）・`list/`（一覧）・`media/`（画像・人の表示）・`section/`（開閉・切り替えるまとまり）。分類フォルダは部品を直接置かず、部品フォルダを置く。根には `Loading`・`InlineIcon`（複数の分類から使われる基盤）だけを置く。
 - 翻訳の入口（表示言語のフック `useTranslation.ts`・リッチな文言の描画 `renderSlots.tsx`）は `i18n`。判断は `lib/i18n` に残し、React の入口だけを `components/i18n` に置く。
@@ -22,7 +22,7 @@
 
 部品の領域（`components/<領域>` の形で書く）:
 
-- `components/account`・`components/common`・`components/composer`・`components/entry`・`components/feedback`・`components/help`・`components/i18n`・`components/image`・`components/layout`・`components/privacy`・`components/schedule`・`components/settings`・`components/share`・`components/timeline`
+- `components/account`・`components/common`・`components/composer`・`components/entry`・`components/feedback`・`components/help`・`components/i18n`・`components/image`・`components/layout`・`components/privacy`・`components/schedule`・`components/settings`・`components/share`・`components/survey`・`components/timeline`
 
 領域を追加・削除したときは、この一覧を更新する（`tests/unit/scripts/steeringRegions.test.ts` が、実装と一覧の差を報告する）。
 

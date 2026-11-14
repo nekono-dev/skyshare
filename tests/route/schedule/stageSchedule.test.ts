@@ -1,9 +1,7 @@
-/**
- * Verifies schedule validation and staging behavior.
- */
+/** 予約の入力検証と待機状態への保存を確認する。 */
 import { env } from "cloudflare:test"
 import { beforeEach, describe, expect, it } from "vitest"
-import { insertSchedule, markCredentialReauth } from "@/lib/schedule/store"
+import { insertSchedule } from "@/lib/schedule/store"
 import { parseScheduleBody, stageSchedule } from "@/lib/schedule/stageSchedule"
 import { MAX_PENDING_PER_ACCOUNT } from "@/lib/schedule/scheduleLimits"
 import { TEST_DID } from "../../fixtures/identities"
@@ -51,24 +49,6 @@ describe("stageSchedule (acceptance)", () => {
             ok: false,
             status: 409,
             error: "ScheduleCredentialRequired",
-        })
-    })
-
-    it("asks for re-authorization (409 ScheduleReauthRequired) once the credential is marked for it", async () => {
-        await seedCredential()
-        await markCredentialReauth(env.DB, TEST_DID)
-        const result = await stageSchedule(
-            scheduleEnv(),
-            TEST_DID,
-            "st-reauth",
-            body(3600),
-            NOW,
-            { countPending: true },
-        )
-        expect(result).toEqual({
-            ok: false,
-            status: 409,
-            error: "ScheduleReauthRequired",
         })
     })
 
@@ -187,6 +167,55 @@ describe("stageSchedule (images and failures)", () => {
             { countPending: true },
         )
         expect(result).toEqual({ ok: false, status: 500 })
+    })
+})
+
+describe("stageSchedule (credential removed while staging)", () => {
+    it("refuses with 409 and removes the staged images when the credential is deleted after the registration check", async () => {
+        await resetScheduleTables()
+        await seedCredential()
+        const stored: string[] = []
+        const racingBucket = {
+            put: async (key: string) => {
+                stored.push(key)
+                await env.DB.prepare(
+                    "DELETE FROM schedule_credentials WHERE did = ?",
+                )
+                    .bind(TEST_DID)
+                    .run()
+            },
+            delete: async (keys: string[]) => {
+                for (const key of keys) {
+                    stored.splice(stored.indexOf(key), 1)
+                }
+            },
+        }
+        const result = await stageSchedule(
+            { ...scheduleEnv(), SCHEDULE_IMAGES: racingBucket as never },
+            TEST_DID,
+            "st-race",
+            {
+                posts: [
+                    {
+                        text: "x",
+                        images: [
+                            new Blob([new Uint8Array([1])], {
+                                type: "image/png",
+                            }),
+                        ],
+                    },
+                ],
+                runAt: new Date((NOW + 3600) * 1000).toISOString(),
+            } as never,
+            NOW,
+            { countPending: true },
+        )
+        expect(result).toEqual({
+            ok: false,
+            status: 409,
+            error: "ScheduleCredentialRequired",
+        })
+        expect(stored).toEqual([])
     })
 })
 

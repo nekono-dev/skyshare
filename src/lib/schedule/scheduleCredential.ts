@@ -18,10 +18,9 @@ import {
 
 /** 認証情報の状態の応答の本体（GET の応答と同じ形） */
 export type CredentialStateDto =
-    | { registered: false; reauthRequired: false }
+    | { registered: false }
     | {
           registered: true
-          reauthRequired: boolean
           updatedAt: string
           expiresAt?: string
       }
@@ -32,7 +31,7 @@ export type CredentialStateDto =
  * Input: `did`（要求したアカウント）
  * Output: 応答の本体と、登録状態のヒント（ページが cookie にする値）
  *
- * Example: `await getCredentialState({ did })` → `{ body: { registered: false, reauthRequired: false }, hint: { registered: false, reauthRequired: false } }`
+ * Example: `await getCredentialState({ did })` → `{ body: { registered: false }, hint: { registered: false } }`
  */
 export const getCredentialState = async (input: {
     did: string
@@ -41,24 +40,20 @@ export const getCredentialState = async (input: {
     const status = await getCredentialStatus(env.DB, input.did)
     if (!status.registered) {
         return {
-            body: { registered: false, reauthRequired: false },
-            hint: { registered: false, reauthRequired: false },
+            body: { registered: false },
+            hint: { registered: false },
         }
     }
-    const expiresAt = status.reauthRequired
-        ? undefined
-        : toIso(estimateCredentialExpiry(status))
+    const expiresAt = toIso(estimateCredentialExpiry(status))
     return {
         body: {
             registered: true,
-            reauthRequired: status.reauthRequired,
             updatedAt: toIso(status.updatedAt),
-            ...(expiresAt === undefined ? {} : { expiresAt }),
+            expiresAt,
         },
         hint: {
             registered: true,
-            reauthRequired: status.reauthRequired,
-            ...(expiresAt === undefined ? {} : { expiresAt }),
+            expiresAt,
         },
     }
 }
