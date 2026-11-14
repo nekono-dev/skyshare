@@ -27,9 +27,7 @@ export const privacy = {
     "privacy.collected.feedback":
         "When you report a bug or request a feature: what you enter, your Bluesky handle and DID, and your device and Skyshare version",
     "privacy.collected.survey":
-        "For surveys, we process your selected answer. We hash your DID to prevent duplicate responses. The hash is not linked to your answer. We store an answered flag and account identifier in localStorage on your device.",
-    "privacy.collected.note":
-        "Regular posts and drafts are saved in your own Bluesky account and are not stored by the Service.",
+        "Survey answers are saved without being linked to the account that submitted them.",
     "privacy.purpose.title": "How we use information",
     "privacy.purpose.intro":
         "We use the information only for the following purposes.",
@@ -41,7 +39,7 @@ export const privacy = {
     "privacy.purpose.item4": "Investigating bugs and preventing misuse",
     "privacy.purpose.item5": "Answering your inquiries",
     "privacy.purpose.survey":
-        "We aggregate survey responses to understand trends. We use a DID hash to prevent duplicate responses. We may publish the aggregated result only as the percentage for each choice; we never publish individual responses or the number of respondents.",
+        "We aggregate survey responses to improve the quality of the Service. We may publish the aggregated result only as the percentage for each choice; we never publish individual responses or the number of respondents.",
     "privacy.external.title": "Sharing of information",
     "privacy.external.intro":
         "We do not share your information with third parties except in the following cases.",
@@ -50,8 +48,7 @@ export const privacy = {
     "privacy.external.item2":
         "Handling by Cloudflare, which we use to deliver the Service and store its data",
     "privacy.external.item3": "Sending data to Google for analytics",
-    "privacy.external.github":
-        "Publishing bug reports and feature requests as public GitHub issues",
+    "privacy.external.github": "Publishing bug reports or feature requests",
     "privacy.external.item4": "When required by law",
     "privacy.retention.title": "Data retention",
     "privacy.retention.item1":
@@ -59,15 +56,13 @@ export const privacy = {
     "privacy.retention.item2":
         "Scheduled posts and their images are deleted when the post succeeds or is canceled. Failed posts are deleted after 7 days, and leftover images within 15 days.",
     "privacy.retention.item3":
-        "Authorization for scheduled posts is deleted after 30 days of no use with nothing scheduled. After the permission becomes invalid, we keep the account identifier and that fact for 180 days so we can ask you to grant it again.",
+        "Authorization for scheduled posts is deleted after 30 days of no use with nothing scheduled. When the permission becomes invalid (for example, because you revoked it on Bluesky), the authorization itself is also deleted. In either case, so that we can ask you to grant it again, we keep the account identifier and information such as the fact that the permission is invalid, and delete them once 180 days have passed since you last used it.",
     "privacy.retention.item4":
         "Traffic information is kept only for the period set by Cloudflare.",
     "privacy.retention.item5":
         "Analytics data is kept according to the Google Analytics retention setting.",
     "privacy.retention.feedback":
         "Bug reports and feature requests remain as GitHub issues. Contact us if you want one deleted.",
-    "privacy.retention.surveyHash":
-        "The server-side hash for duplicate detection is deleted after the survey closes.",
     "privacy.retention.surveyAnswer":
         "Survey answers are deleted as soon as the survey has closed and its aggregated result has been saved.",
     "privacy.retention.surveyDevice":
@@ -79,8 +74,6 @@ export const privacy = {
     "privacy.security.item2":
         "Authorization for scheduled posts is stored encrypted.",
     "privacy.security.item3": "Only the Operator handles the information.",
-    "privacy.security.item4":
-        "The permission for scheduled posts is limited to what is needed to run them. You never need to give your password to the Service.",
     "privacy.cookies.title": "Cookies and analytics",
     "privacy.cookies.titleBasic": "Cookies",
     "privacy.cookies.item1":

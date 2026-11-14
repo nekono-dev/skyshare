@@ -159,7 +159,8 @@ scripts/
 - `src/pages/login.astro` — `getPublishedSurveys` の件数から、`LoginIntro` へリンクの有無を渡す。
 - `src/components/account/LoginIntro/index.tsx` — リンクの有無の引数と、文中の小リンクを足す。
 - `src/lib/i18n/messages/ja/survey.ts`・`en/survey.ts`、`ja/page.ts`・`en/page.ts`、`ja/nav.ts`・`en/nav.ts` — 結果ページの見出し・時期の区切り・ログインの文・ページの題。
-- `src/lib/i18n/messages/ja/privacy.ts`・`en/privacy.ts` — 公表と回答の削除時期の記述。
+- `src/lib/i18n/messages/ja/privacy.ts`・`en/privacy.ts`、`src/lib/site/policySections.ts` — 公表と回答の削除時期の記述、回答の扱いの簡潔化、重複する節の削除、許可が無効になった後の保持の説明（2026-11-14 の利用者の指示。「辞書・プライバシー・CI・手順書」の節を参照）。
+- `src/components/timeline/Timeline/SurveyGate/SurveyDialog/index.tsx`・`ja/survey.ts`・`en/survey.ts` — 回答の画面の注意書きの「プライバシーポリシー」をリンクにする（`survey.irreversible` の `{link}`）。
 - `package.json` — `build:v2` の `astro build` の後に検査を呼ぶ。
 - `.github/workflows/preview.yaml`・`deploy.yaml` — 「Run build」に認証情報を渡す。
 - `docs/DEVELOP.md` — この機能が編集する節は、「CI/CD の認証情報」（認証情報の渡し方）、「R2 の節」（配備する運用者は結果の保管先が必要で、無効にできるのは認証情報の無い環境（ローカル・テスト）だけであること）、「ローカルの確認」（手元の開発は develop のバケットを読む。手元の開発では `getPublishedSurveys` の記憶が更新されないため、保管先の内容を更新したあとに見直すには開発サーバーを再起動する）、「プレビューの更新」（既存のプレビューは次のプッシュまで更新されない）、「本番バケットの先行作成」（配備の前に本番のバケットを作る必要がある旨の 1 行。この 1 行だけは、上流 `survey-results-aggregation` のリリースが必要とするため、aggregation の配備前に先行してよい）。`survey-operations` が編集する節（3.x・5.x）には手を入れない。6.5 節（D1・R2 の表）は、この機能では `SURVEY_RESULTS` の行だけを編集する。
@@ -246,6 +247,10 @@ flowchart TD
 | 9.1         | 公表の記述                         | 辞書（`privacy.purpose.survey`）                         | —                                       | —       |
 | 9.2         | 回答の削除時期の記述               | 辞書（`privacy.retention.surveyAnswer`）                 | —                                       | —       |
 | 9.3         | 日英の両方                         | 辞書                                                     | ja・en                                  | —       |
+| 9.4         | 回答の扱いの簡潔な記述             | 辞書（`privacy.collected.survey`）                       | —                                       | —       |
+| 9.5         | 重複する記述を持たない             | 辞書・`policySections`                                   | —                                       | —       |
+| 9.6         | 無効後の保持の説明                 | 辞書（`privacy.retention.item3`）                        | —                                       | —       |
+| 9.7         | 注意書きのポリシーへのリンク       | SurveyDialog・辞書（`survey.irreversible`）              | `{link}` と `renderSlots`               | —       |
 
 ## Components and Interfaces
 
@@ -434,8 +439,15 @@ export const findLinkMismatch: (input: {
 
 - 辞書（ja を正本、en を型で追随）:
   - `surveyResults.heading`（アンケートの結果）、`surveyResults.period`（`{start} 〜 {end}`）、`pageTitle.surveyResults`（`アンケートの結果 | {service}`）、`page.login.surveyResults`（`ログイン時のアンケートの結果は{link}で公開しています。`）、`page.login.surveyResultsLink`（`こちら`）。
-  - `privacy.purpose.survey`: 回答を集計して傾向の把握と重複回答の防止に使う旨に、「集計の結果は、選択肢ごとの割合だけの形で公開することがあります。個別の回答や回答者の数は公開しません。」を足す。
+  - `privacy.purpose.survey`: 「アンケート回答を集計し、サービス品質の向上及び改善に使います。」に、「集計の結果は、選択肢ごとの割合だけを公開することがあります。個別の回答や回答者の数は公開しません。」を続ける（重複回答の防止という実装の目的は書かない）。
   - `privacy.retention.surveyAnswer`: 「アンケートの回答は、終了後に集計の結果の保存を確認した後に削除します。」結果確定後の削除 batch が失敗すると、回答は翌日以降の再試行まで残る。
+  - **文面の整理（利用者の指示、2026-11-14。要件 9.4〜9.7）**:
+    - `privacy.collected.survey`: 「アンケートの回答内容は、回答したアカウントとは結びつけず保存します。」だけにする（ハッシュ・localStorage などの技術の説明は書かない）。
+    - 削除: `privacy.collected.note`（通常の投稿の保管の注記）、`privacy.retention.surveyHash`（重複判定用ハッシュの削除。`surveyAnswer` の一文で足りる）、`privacy.security.item4`（予約の許可の範囲。認可の説明で足りる）。
+    - `privacy.external.github`: 「バグ報告または機能提案内容の公開」に短くする（掲載先と残り方は `privacy.retention.feedback` が書く）。
+    - `privacy.retention.item3`: 認可の情報は、30 日の未使用のときと、許可が無効になったときの両方で削除する。いずれの場合も、再度の許可を案内するために、アカウントの識別子と「許可が無効である」旨などの情報を残し、最後に使ってから 180 日を過ぎた後に削除する、と区別して書く（実装は `markCredentialReauth`・`purgeIdleCredentials` が認可の情報（`token_enc`）だけを空にして行を残す。行には `service`・`updated_at`・`authorized_at` も残る。`purgeReauthMarkers` が日次処理で、最後の使用から 180 日を過ぎた行を、待機中・実行中の予約がないときだけ削除する。そのため「識別子と旨だけ」「180 日ちょうどの上限」とは書かない）。
+    - 残す: `privacy.retention.surveyDevice`（端末の記録の保持）。`collected.survey` から端末の説明を外したため参照先が薄くなる。扱いは利用者の判断待ち（`research.md` に記録）。
+  - 回答の画面の注意書き `survey.irreversible` は `{link}` を持ち、`SurveyDialog` が `renderSlots` で `/privacy/` へのリンク（別のタブで開く）に差し替える。
 - `preview.yaml`・`deploy.yaml` の「Run build」の `env` に `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID`（`secrets`）を足す。`e2e.yaml` には足さない。
 - `docs/DEVELOP.md`: 認証情報が無い環境では結果ページが無効であること、手元で確かめるときの認証情報の渡し方（develop の設定）、既存のプレビューは次のプッシュまで更新されないこと、本番のバケットを配備の前に作る必要があること（この 1 行は aggregation の配備前に先行してよい）、手元の開発では `getPublishedSurveys` の記憶が更新されないため開発サーバーの再起動が要ること。編集する節は変更ファイルの記述に列挙したものに限り、`survey-operations` の 3.x・5.x の節には触れない。6.5 節は `SURVEY_RESULTS` の行だけ。
 

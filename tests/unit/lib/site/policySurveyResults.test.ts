@@ -1,5 +1,5 @@
 /**
- * プライバシーポリシーの組み立て結果に、アンケート結果の公表と回答の削除時期が書かれていることを確かめる。
+ * プライバシーポリシーの組み立て結果に、アンケートの扱い・公表・削除時期と、整理した記述が過不足なく書かれていることを確かめる。
  */
 import { describe, expect, it } from "vitest"
 import { createTranslator } from "@/lib/i18n/translate"
@@ -61,5 +61,80 @@ describe("プライバシーポリシーのアンケート結果の記述", () =
             .filter(line => /survey answers/i.test(line))
         expect(answerLine.length).toBeGreaterThan(0)
         expect(answerLine.join("\n")).not.toMatch(/month|days/i)
+    })
+})
+
+describe("プライバシーポリシーの簡潔な記述", () => {
+    it("日本語: 回答内容は回答したアカウントと結びつけず保存すると書き、実装の詳細を書かない", () => {
+        const text = policyText("ja")
+
+        expect(text).toContain(
+            "アンケートの回答内容は、回答したアカウントとは結びつけず保存します。",
+        )
+        expect(text).not.toContain("ハッシュ")
+        expect(text).not.toContain("localStorage")
+    })
+
+    it("英語: 回答はアカウントと結びつけず保存すると書き、実装の詳細を書かない", () => {
+        const text = policyText("en")
+
+        expect(text).toContain(
+            "Survey answers are saved without being linked to the account that submitted them.",
+        )
+        expect(text).not.toMatch(/hash|localStorage/i)
+    })
+
+    it("日本語: 冗長な記述（通常の投稿の保管・重複判定用ハッシュの削除・パスワードの預け入れ）を持たない", () => {
+        const text = policyText("ja")
+
+        expect(text).not.toContain("通常の投稿や下書きは")
+        expect(text).not.toContain("重複判定用")
+        expect(text).not.toContain("パスワードを本サービスに預ける必要")
+    })
+
+    it("英語: 冗長な記述を持たない", () => {
+        const text = policyText("en")
+
+        expect(text).not.toContain("Regular posts and drafts")
+        expect(text).not.toMatch(/duplicate detection/i)
+        expect(text).not.toContain("give your password")
+    })
+
+    it("日本語: 目的は「サービス品質の向上及び改善」で、公表の範囲を保つ", () => {
+        const text = policyText("ja")
+
+        expect(text).toContain(
+            "アンケート回答を集計し、サービス品質の向上及び改善に使います。",
+        )
+        expect(text).not.toContain("重複回答の防止")
+    })
+
+    it("日本語: 不具合の報告・機能の提案は「バグ報告または機能提案内容」とし、掲載先を重ねて書かない", () => {
+        const text = policyText("ja")
+
+        expect(text).toContain("バグ報告または機能提案内容")
+        expect(text).not.toContain("公開の Issue として掲載すること")
+    })
+
+    it("日本語: 許可が無効になった後に何が残るかを、認可の情報との違いで説明する", () => {
+        const text = policyText("ja")
+
+        expect(text).toContain(
+            "許可が無効になったとき（Bluesky で許可を取り消した場合など）も、認可の情報は削除します。",
+        )
+        expect(text).toContain(
+            "アカウントの識別子と「許可が無効である」旨などの情報を残し、最後に使ってから180日を過ぎた後に削除します。",
+        )
+    })
+
+    it("英語: 許可が無効になった後に何が残るかを、認可の情報との違いで説明する", () => {
+        const text = policyText("en")
+
+        expect(text).toContain(
+            "When the permission becomes invalid (for example, because you revoked it on Bluesky), the authorization itself is also deleted.",
+        )
+        expect(text).toContain(
+            "the account identifier and information such as the fact that the permission is invalid, and delete them once 180 days have passed since you last used it",
+        )
     })
 })

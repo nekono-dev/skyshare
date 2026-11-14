@@ -80,7 +80,6 @@ export const buildPrivacyPolicy = (
                     t("privacy.collected.feedback"),
                     t("privacy.collected.survey"),
                 ),
-                text(t("privacy.collected.note")),
             ],
         },
         {
@@ -123,7 +122,6 @@ export const buildPrivacyPolicy = (
                     t("privacy.retention.item4"),
                     ...only(analytics, t("privacy.retention.item5")),
                     t("privacy.retention.feedback"),
-                    t("privacy.retention.surveyHash"),
                     t("privacy.retention.surveyAnswer"),
                     t("privacy.retention.surveyDevice"),
                 ),
@@ -138,7 +136,6 @@ export const buildPrivacyPolicy = (
                     t("privacy.security.item1"),
                     t("privacy.security.item2"),
                     t("privacy.security.item3"),
-                    t("privacy.security.item4"),
                 ),
             ],
         },

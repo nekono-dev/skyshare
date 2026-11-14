@@ -27,9 +27,7 @@ export const privacy = {
     "privacy.collected.feedback":
         "不具合の報告・機能の提案の際の、入力した内容と Bluesky のハンドルと DID、端末と Skyshare の版の情報",
     "privacy.collected.survey":
-        "アンケート回答の選択肢と、重複を防ぐため DID から作るハッシュを扱います。ハッシュは回答と結びつけません。端末には回答済みの印とアカウントの識別子を localStorage に保存します。",
-    "privacy.collected.note":
-        "通常の投稿や下書きは利用者の Bluesky に保存され、本サービスでは保管しません。",
+        "アンケートの回答内容は、回答したアカウントとは結びつけず保存します。",
     "privacy.purpose.title": "利用目的",
     "privacy.purpose.intro": "収集した情報は、次の目的にだけ利用します。",
     "privacy.purpose.item1": "Bluesky への投稿など、本サービスの機能の提供",
@@ -38,7 +36,7 @@ export const privacy = {
     "privacy.purpose.item4": "不具合の調査と不正利用の防止",
     "privacy.purpose.item5": "お問い合わせへの回答",
     "privacy.purpose.survey":
-        "アンケート回答を集計し、傾向の把握と重複回答の防止に使います。集計の結果は、選択肢ごとの割合だけを公開することがあります。個別の回答や回答者の数は公開しません。",
+        "アンケート回答を集計し、サービス品質の向上及び改善に使います。集計の結果は、選択肢ごとの割合だけを公開することがあります。個別の回答や回答者の数は公開しません。",
     "privacy.external.title": "情報の共有",
     "privacy.external.intro":
         "次の場合を除き、利用者の情報を第三者と共有しません。",
@@ -47,8 +45,7 @@ export const privacy = {
     "privacy.external.item2":
         "本サービスの配信とデータの保管を委託する Cloudflare での取り扱い",
     "privacy.external.item3": "アクセス解析のための Google への送信",
-    "privacy.external.github":
-        "不具合の報告・機能の提案の内容を、GitHub の公開の Issue として掲載すること",
+    "privacy.external.github": "バグ報告または機能提案内容の公開",
     "privacy.external.item4": "法令に基づく要請がある場合",
     "privacy.retention.title": "保持期間",
     "privacy.retention.item1":
@@ -56,15 +53,13 @@ export const privacy = {
     "privacy.retention.item2":
         "予約の内容と画像は、投稿に成功するか取り消した時点で削除します。失敗した予約は7日後に、残った画像も15日以内に削除します。",
     "privacy.retention.item3":
-        "予約用の認可の情報は、予約がないまま30日使われないときに削除します。許可が無効になった後は、再度の許可をご案内するため、アカウントの識別子と無効になった旨を180日まで保持します。",
+        "予約用の認可の情報は、予約がないまま30日使われないときに削除します。許可が無効になったとき（Bluesky で許可を取り消した場合など）も、認可の情報は削除します。いずれの場合も、再度の許可をご案内するため、アカウントの識別子と「許可が無効である」旨などの情報を残し、最後に使ってから180日を過ぎた後に削除します。",
     "privacy.retention.item4":
         "通信の情報は、Cloudflare が定める期間に限り保持されます。",
     "privacy.retention.item5":
         "アクセス解析の情報は、Google アナリティクスの保持期間の設定に従います。",
     "privacy.retention.feedback":
         "不具合の報告・機能の提案は、GitHub の Issue として残ります。削除をご希望の場合は連絡先までご連絡ください。",
-    "privacy.retention.surveyHash":
-        "サーバーの重複判定用ハッシュは、アンケート終了後に削除します。",
     "privacy.retention.surveyAnswer":
         "アンケートの回答は、終了後に集計の結果を保存した時点で削除します。",
     "privacy.retention.surveyDevice":
@@ -75,8 +70,6 @@ export const privacy = {
     "privacy.security.item1": "通信は暗号化しています。",
     "privacy.security.item2": "予約用の認可の情報は、暗号化して保管します。",
     "privacy.security.item3": "情報を扱うのは運営者に限ります。",
-    "privacy.security.item4":
-        "予約のための許可は、予約の実行に必要な操作に限ります。パスワードを本サービスに預ける必要はありません。",
     "privacy.cookies.title": "Cookie とアクセス解析",
     "privacy.cookies.titleBasic": "Cookie",
     "privacy.cookies.item1":
