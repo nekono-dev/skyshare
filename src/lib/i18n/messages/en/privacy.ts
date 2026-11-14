@@ -56,7 +56,7 @@ export const privacy = {
     "privacy.retention.item2":
         "Scheduled posts and their images are deleted when the post succeeds or is canceled. Failed posts are deleted after 7 days, and leftover images within 15 days.",
     "privacy.retention.item3":
-        "Authorization for scheduled posts is deleted when the permission becomes invalid, or after 30 days of no use with nothing scheduled. So that we can ask you to grant it again, the account identifier and related data are deleted after 180 days have passed since you last used it.",
+        "Authorization for scheduled posts is deleted when the permission becomes invalid, or after 30 days of no use with nothing scheduled.",
     "privacy.retention.item4":
         "Traffic information is kept only for the period set by Cloudflare.",
     "privacy.retention.item5":

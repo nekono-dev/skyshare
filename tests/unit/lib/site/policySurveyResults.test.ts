@@ -118,25 +118,23 @@ describe("プライバシーポリシーの簡潔な記述", () => {
         expect(text).not.toContain("公開の Issue として掲載すること")
     })
 
-    it("日本語: 許可が無効になった後に何が残るかを、認可の情報との違いで説明する", () => {
+    it("日本語: 認可の情報は無効になったとき・30日の未使用のときに削除し、識別子を残す記述を持たない", () => {
         const text = policyText("ja")
 
         expect(text).toContain(
             "予約用の認可の情報は、許可が無効になったとき、または予約がないまま30日使われないときに削除します。",
         )
-        expect(text).toContain(
-            "再度の許可をご案内するため、アカウントの識別子などは、最後に使ってから180日を過ぎた後に削除します。",
-        )
+        expect(text).not.toContain("180日")
+        expect(text).not.toContain("再度の許可をご案内")
     })
 
-    it("英語: 許可が無効になった後に何が残るかを、認可の情報との違いで説明する", () => {
+    it("英語: 認可の情報は無効になったとき・30日の未使用のときに削除し、識別子を残す記述を持たない", () => {
         const text = policyText("en")
 
         expect(text).toContain(
             "Authorization for scheduled posts is deleted when the permission becomes invalid, or after 30 days of no use with nothing scheduled.",
         )
-        expect(text).toContain(
-            "So that we can ask you to grant it again, the account identifier and related data are deleted after 180 days have passed since you last used it.",
-        )
+        expect(text).not.toContain("180 days")
+        expect(text).not.toContain("grant it again")
     })
 })
