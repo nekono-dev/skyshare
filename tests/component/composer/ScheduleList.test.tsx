@@ -84,4 +84,30 @@ describe("ScheduleList thumbnails", () => {
       ["failed", "/v2/schedules/failed-image/images/5", ""],
     ])
   })
+
+  it("サムネイルは内容の右に置く（内容の後ろ）", async () => {
+    const { container } = render(<ScheduleList active onSelect={() => {}} />)
+    const image = await vi.waitFor(() => {
+      const found = container.querySelector("img")
+      expect(found).not.toBeNull()
+      return found as HTMLImageElement
+    })
+    expect(image.nextElementSibling).toBeNull()
+    expect(image.previousElementSibling?.textContent).toContain("本文")
+  })
+
+  it("待機中の行には状態の表示を出さず、失敗の行には出す", async () => {
+    const { container } = render(<ScheduleList active onSelect={() => {}} />)
+    await vi.waitFor(() => {
+      expect(
+        container.querySelectorAll('li[data-status="pending"]'),
+      ).toHaveLength(2)
+    })
+    for (const row of container.querySelectorAll('li[data-status="pending"]')) {
+      expect(row.querySelector("strong")).toBeNull()
+    }
+    for (const row of container.querySelectorAll('li[data-status="failed"]')) {
+      expect(row.querySelector("strong")).not.toBeNull()
+    }
+  })
 })

@@ -2,7 +2,7 @@
  * 下書き・予約画面の予約タブに、待機中の予約と実行履歴を表示する。
  * - 成功した予約は履歴に含めない。
  * - 予約機能が無効な場合は一覧の空表示を出さず、設定への案内を表示する。
- * - 待機中と失敗の行は、先頭の添付画像があれば縮小表示を左に添える。
+ * - 待機中と失敗の行は、先頭の添付画像があれば縮小表示を右に添える。
  */
 import { useCallback, useEffect, useState } from "react"
 import { deleteSchedule, listSchedules } from "@/client/openapi/client"
@@ -94,11 +94,13 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
   const pending = items.filter(item => item.status === "pending")
   const history = items.filter(item => item.status !== "pending")
 
-  /** 1行の状態・実行時刻・件数・本文の冒頭 */
+  /** 1行の状態・実行時刻・件数・本文の冒頭。待機中は見出しが状態を示すため、状態は出さない */
   const summary = (item: Item) => (
     <>
       <span className={styles.meta}>
-        <strong>{t(`schedule.status.${item.status}`)}</strong>
+        {item.status !== "pending" && (
+          <strong>{t(`schedule.status.${item.status}`)}</strong>
+        )}
         <time dateTime={item.runAt}>{formatDateTime(item.runAt, locale)}</time>
         <span>{t("schedule.list.postCount", { count: item.postCount })}</span>
       </span>
@@ -106,11 +108,12 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
     </>
   )
 
-  /** 縮小画像（先頭の添付画像）があれば左に置き、右に 1 行の内容を並べる。実行中は画像を取得できないため出さない */
+  /** 縮小画像（先頭の添付画像）があれば右に置き、左に 1 行の内容を並べる。実行中は画像を取得できないため出さない */
   const withThumbnail = (item: Item) =>
     item.thumbnailIndex !== null &&
     (item.status === "pending" || item.status === "failed") ? (
       <span className={styles["item-content-with-thumbnail"]}>
+        <span className={styles["item-content"]}>{summary(item)}</span>
         <img
           className={styles.thumbnail}
           src={`/v2/schedules/${item.id}/images/${item.thumbnailIndex}`}
@@ -118,7 +121,6 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
           loading="lazy"
           decoding="async"
         />
-        <span className={styles["item-content"]}>{summary(item)}</span>
       </span>
     ) : (
       summary(item)
