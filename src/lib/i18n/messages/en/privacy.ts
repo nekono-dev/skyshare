@@ -14,20 +14,18 @@ export const privacy = {
     "privacy.operator.bluesky": "Bluesky",
     "privacy.collected.title": "Information we collect",
     "privacy.collected.intro": "The Service handles the following information.",
-    "privacy.collected.login":
-        "Your handle or email address and password when you log in (the password is not stored)",
+    "privacy.collected.login": "Credentials for your Bluesky account",
     "privacy.collected.schedule":
-        "If you use scheduled posts: the post content, images, and run time, plus the account identifier and Bluesky authorization needed to run them",
+        "When scheduled posts are enabled: the post content, including attached images, and credentials for your Bluesky account",
     "privacy.collected.traffic":
-        "Your IP address and browser information when you access the Service (handled by Cloudflare, which delivers the Service, to process traffic)",
-    "privacy.collected.analytics":
-        "Usage data collected by Google Analytics (pages viewed, device and browser type, approximate region)",
+        "Your IP address and browser information collected by the hosting provider",
+    "privacy.collected.analytics": "Usage data collected by Google Analytics",
     "privacy.collected.inquiry":
         "Your email address or Bluesky account and the content of your inquiry when you contact us",
     "privacy.collected.feedback":
-        "When you report a bug or request a feature: what you enter, your Bluesky handle and DID, and your device and Skyshare version",
+        "When you use the bug report and feature request form: the information you enter, account identification information, your device information, and information about this application",
     "privacy.collected.survey":
-        "Survey answers are saved without being linked to the account that submitted them.",
+        "When you answer a survey: your answers and an identifier used to prevent duplicate responses",
     "privacy.purpose.title": "How we use information",
     "privacy.purpose.intro":
         "We use the information only for the following purposes.",
@@ -38,10 +36,6 @@ export const privacy = {
         "Understanding how the Service is used and improving it",
     "privacy.purpose.item4": "Investigating bugs and preventing misuse",
     "privacy.purpose.item5": "Answering your inquiries",
-    "privacy.purpose.survey":
-        "We aggregate survey results and use them to improve the quality of the Service.",
-    "privacy.purpose.surveyPublish":
-        "We may publish survey results as the percentage of answers.",
     "privacy.external.title": "Sharing of information",
     "privacy.external.intro":
         "We do not share your information with third parties except in the following cases.",
@@ -52,15 +46,16 @@ export const privacy = {
     "privacy.external.item3": "Sending data to Google for analytics",
     "privacy.external.github": "Publishing bug reports or feature requests",
     "privacy.external.item4": "When required by law",
+    "privacy.external.surveyResults": "Publication of survey results",
     "privacy.retention.title": "Data retention",
     "privacy.retention.item1":
         "Login information is kept in your browser for 7 days and deleted when you log out.",
     "privacy.retention.item2":
         "Scheduled posts and their images are deleted when the post succeeds or is canceled. Failed posts are deleted after 7 days, and leftover images within 15 days.",
     "privacy.retention.item3":
-        "Authorization for scheduled posts is deleted when the permission becomes invalid, or after 30 days of no use with nothing scheduled.",
+        "When scheduled posts are enabled, credentials are deleted if they become invalid or the feature goes unused for 30 days.",
     "privacy.retention.item4":
-        "Traffic information is kept only for the period set by Cloudflare.",
+        "Traffic information is kept only for the period set by the hosting provider.",
     "privacy.retention.item5":
         "Analytics data is kept according to the Google Analytics retention setting.",
     "privacy.retention.feedback":
@@ -88,7 +83,7 @@ export const privacy = {
     "privacy.rights.intro":
         "You may ask us to disclose, correct, or delete your information. Please use the contact details above.",
     "privacy.rights.self":
-        "You can change, cancel, or delete scheduled posts from “Drafts & scheduled” in the post form. Turning off scheduled posts in Settings deletes all scheduled posts and authorization, and also revokes the permission on Bluesky.",
+        "You can change, cancel, or delete scheduled posts from “Drafts & scheduled” in the post form. If you turn off scheduled posts, the scheduled post contents and credentials for your Bluesky account are deleted.",
     "privacy.rights.survey":
         "You cannot withdraw survey answers after submitting them.",
     "privacy.revision.title": "Changes to this policy",

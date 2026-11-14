@@ -114,7 +114,7 @@ graph TB
 | 取得の上限                                   | 全体 30 秒、目録 64 KiB、結果 256 KiB、可視フラグ 1 KiB、目録の項目 200 件                                                                                                                                                                                                                                                                                                                                                                                            | 統計ファイルは割合だけの小さな JSON。上限を超えた異常をビルドで止める                                                                                                                |
 | 実施時期の表記                               | 開始日は `YYYY/MM/DD`。終了日は「終了時刻の 1 ミリ秒前」の日付（終了時刻は期間に含まれないため）を、保存されているオフセットの日付のまま `MM/DD`（開始と同じ年）または `YYYY/MM/DD`（年が違う）で表す。区切りは日本語「〜」・英語「–」                                                                                                                                                                                                                                | 合意した画面の `2026/09/01 〜 09/30` に合わせる。時刻の変換でずれない                                                                                                                |
 | 棒の最小幅                                   | 割合が 0 より大きい棒は、数字が入る最小幅（`4.5rem`。最大の棒の数字を太字 `1.25rem` にしたため）を確保する。0% は棒を描かず、数字は下地の上に `--color-text` で出す                                                                                                                                                                                                                                                                                                   | 数字を棒の中に置く合意と、小さな割合の可読性の両立。数字が正確な値を示す                                                                                                             |
-| プライバシーポリシー                         | 更新する。`privacy.purpose.survey`・`privacy.purpose.surveyPublish`・`privacy.retention.surveyAnswer` を書き換える・足す（日英）                                                                                                                                                                                                                                                                                                                                      | 回答の削除時期は上流の実装で変わる。公表することと範囲（割合だけ）を書く                                                                                                             |
+| プライバシーポリシー                         | 更新する。`privacy.external.surveyResults`（結果公表だけを書く。割合や匿名の説明は書かない）・`privacy.retention.surveyAnswer` などを書き換える・足す（日英）                                                                                                                                                                                                                                                                                                         | 回答の削除時期は上流の実装で変わる。公表することと範囲（割合だけ）を書く                                                                                                             |
 | 結果ページの部品の置き場                     | 新しい領域 `components/survey/SurveyResults/`（利用元が `pages/` のため領域の直下）                                                                                                                                                                                                                                                                                                                                                                                   | `structure-components.md` の置き方の規則                                                                                                                                             |
 
 ## File Structure Plan
@@ -193,64 +193,64 @@ flowchart TD
 
 ## Requirements Traceability
 
-| Requirement | Summary                            | Components                                                        | Interfaces                              | Flows   |
-| ----------- | ---------------------------------- | ----------------------------------------------------------------- | --------------------------------------- | ------- |
-| 1.1         | 情報があれば有効                   | surveyResultsReadable, render-wrangler, astro.config              | `surveyResultsReadableFlag`             | B       |
-| 1.2         | 情報が無ければ作らず接続しない     | surveyResultsReadable, getPublishedSurveys                        | 旗が偽なら空を返す                      | B → Z   |
-| 1.3         | ローカルの dev も同じ規則          | prepare-local-env, render-wrangler, astro.config                  | 同じ生成設定                            | B       |
-| 1.4         | 無効でもビルドは失敗しない         | getPublishedSurveys                                               | 空の結果                                | Z       |
-| 1.5         | アンケート機能の判定と独立         | surveyResultsReadable                                             | 別の旗                                  | B       |
-| 2.1         | 目録と公開済みの結果だけ取得       | loadPublishedSurveys                                              | `loadPublishedSurveys`                  | D, E, F |
-| 2.2         | 共有の検証の規則                   | loadPublishedSurveys                                              | `parse*`                                | D, E, F |
-| 2.3         | 旗が無ければ非表示                 | loadPublishedSurveys                                              | 旗の取得の `null`                       | E       |
-| 2.4         | 目録が無ければ 0 件                | loadPublishedSurveys                                              | 目録の `null`                           | D       |
-| 2.5         | 取得の失敗でビルド失敗             | loadPublishedSurveys, SurveyResultsLoadError                      | `read`・`missing`・`timeout`            | X       |
-| 2.6         | 検証に通らなければ失敗             | loadPublishedSurveys, SurveyResultsLoadError                      | `invalid`                               | X       |
-| 2.7         | 上限の超過で失敗                   | loadPublishedSurveys                                              | `limit`                                 | X       |
-| 2.8         | 識別子・期間の不一致で失敗         | loadPublishedSurveys                                              | `mismatch`                              | X       |
-| 2.9         | 失敗に本文を含めない               | SurveyResultsLoadError                                            | 種類と識別子だけ                        | X       |
-| 2.10        | 結果の無い項目は対象外             | loadPublishedSurveys                                              | `outcome: "empty"` を飛ばす             | E       |
-| 3.1         | 公開済みだけ載せる                 | loadPublishedSurveys                                              | 可視の絞り込み                          | F       |
-| 3.2         | 開始時刻の新しい順                 | loadPublishedSurveys                                              | 並べ替えの規則                          | G       |
-| 3.3         | 同じなら終了時刻、識別子           | loadPublishedSurveys                                              | 並べ替えの規則                          | G       |
-| 3.4         | 反映は次の配備                     | surveys page                                                      | 静的生成                                | I       |
-| 4.1         | 0 件ならページを作らない           | surveys page                                                      | `getStaticPaths` が空                   | H → Z   |
-| 4.2         | 0 件ならリンクを出さない           | login page, LoginIntro                                            | 件数からの引数                          | H → Z   |
-| 4.3         | 空・失敗の画面を作らない           | surveys page                                                      | 空の画面の分岐を持たない                | —       |
-| 4.4         | ページとリンクの整合               | getPublishedSurveys, checkSurveyResultsLinks                      | 共通の判定と検査                        | I       |
-| 5.1         | 1 件 1 カード                      | SurveyResults, SurveyResultCard                                   | —                                       | I       |
-| 5.2         | 実施時期の表記                     | presentation                                                      | `formatSurveyPeriod`                    | I       |
-| 5.3         | 質問・選択肢・割合を設定順で       | SurveyResultCard, PercentBar                                      | 結果の順                                | I       |
-| 5.4         | 割合だけを表示                     | SurveyResultCard                                                  | 割合以外を表示しない                    | I       |
-| 5.5         | 複数選択の注記を出さない           | SurveyResultCard                                                  | 質問の種類で分岐しない                  | I       |
-| 5.6         | 言語の切り替えに追従               | SurveyResults（島）                                               | `useT`・`useLocale`                     | I       |
-| 5.7         | ログイン不要                       | surveys page                                                      | 認証を要求しない                        | I       |
-| 5.8         | 検索に公開                         | surveys page                                                      | robots の指定                           | I       |
-| 6.1         | 左に文言、右に棒、数字は棒の中     | PercentBar                                                        | 行の配置                                | I       |
-| 6.2         | 最大だけプライマリ色               | presentation, PercentBar                                          | `topOptionIds`                          | I       |
-| 6.3         | 同率はすべてプライマリ色           | presentation                                                      | `topOptionIds`                          | I       |
-| 6.4         | すべて 0 なら強調しない            | presentation                                                      | `topOptionIds`                          | I       |
-| 6.5         | スマホ幅は 1 列                    | PercentBar                                                        | 幅の切り替え                            | I       |
-| 6.6         | 既存トークンだけ、ライト・ダーク   | PercentBar                                                        | トークンの参照                          | I       |
-| 6.7         | 読み上げに伝わる                   | PercentBar                                                        | `role="meter"` と値の属性               | I       |
-| 6.8         | 小さな割合の可読性                 | PercentBar                                                        | 棒の最小幅                              | I       |
-| 7.1         | リンクを文中に出す                 | LoginIntro                                                        | `showSurveyResults`                     | I       |
-| 7.2         | ボタン風にしない                   | LoginIntro                                                        | 文中の `<a>`                            | I       |
-| 7.3         | ほかの画面に出さない               | LoginIntro                                                        | 設置はログインの島だけ                  | —       |
-| 7.4         | 存在しなければ文ごと出さない       | LoginIntro                                                        | 条件の描画                              | H → Z   |
-| 7.5         | 日英で表示                         | 辞書                                                              | `page.login.surveyResults`              | I       |
-| 8.1         | 配備のビルドが認証情報を受け取る   | preview.yaml, deploy.yaml                                         | 「Run build」の環境変数                 | —       |
-| 8.2         | 情報が無い環境は従来どおり         | render-wrangler                                                   | `remote` の既定は偽（E2E は変更しない） | B → Z   |
-| 8.3         | 接続は情報が揃うときだけ           | render-wrangler, render-deploy-config, prepare-local-env          | 条件 `hasReadCredentials`               | —       |
-| 8.4         | プレビューは develop の保管先      | render-wrangler（既存の `-develop`）                              | 既存の仕組み                            | —       |
-| 8.5         | 既存プレビューの更新は次のプッシュ | docs/DEVELOP.md                                                   | 手順書                                  | —       |
-| 9.1         | 公表の記述                         | 辞書（`privacy.purpose.survey`・`privacy.purpose.surveyPublish`） | —                                       | —       |
-| 9.2         | 回答の削除時期の記述               | 辞書（`privacy.retention.surveyAnswer`）                          | —                                       | —       |
-| 9.3         | 日英の両方                         | 辞書                                                              | ja・en                                  | —       |
-| 9.4         | 回答の扱いの簡潔な記述             | 辞書（`privacy.collected.survey`）                                | —                                       | —       |
-| 9.5         | 重複する記述を持たない             | 辞書・`policySections`                                            | —                                       | —       |
-| 9.6         | 無効後の保持の説明                 | 辞書（`privacy.retention.item3`）                                 | —                                       | —       |
-| 9.7         | 注意書きのポリシーへのリンク       | SurveyDialog・辞書（`survey.irreversible`）                       | `{link}` と `renderSlots`               | —       |
+| Requirement | Summary                            | Components                                               | Interfaces                              | Flows   |
+| ----------- | ---------------------------------- | -------------------------------------------------------- | --------------------------------------- | ------- |
+| 1.1         | 情報があれば有効                   | surveyResultsReadable, render-wrangler, astro.config     | `surveyResultsReadableFlag`             | B       |
+| 1.2         | 情報が無ければ作らず接続しない     | surveyResultsReadable, getPublishedSurveys               | 旗が偽なら空を返す                      | B → Z   |
+| 1.3         | ローカルの dev も同じ規則          | prepare-local-env, render-wrangler, astro.config         | 同じ生成設定                            | B       |
+| 1.4         | 無効でもビルドは失敗しない         | getPublishedSurveys                                      | 空の結果                                | Z       |
+| 1.5         | アンケート機能の判定と独立         | surveyResultsReadable                                    | 別の旗                                  | B       |
+| 2.1         | 目録と公開済みの結果だけ取得       | loadPublishedSurveys                                     | `loadPublishedSurveys`                  | D, E, F |
+| 2.2         | 共有の検証の規則                   | loadPublishedSurveys                                     | `parse*`                                | D, E, F |
+| 2.3         | 旗が無ければ非表示                 | loadPublishedSurveys                                     | 旗の取得の `null`                       | E       |
+| 2.4         | 目録が無ければ 0 件                | loadPublishedSurveys                                     | 目録の `null`                           | D       |
+| 2.5         | 取得の失敗でビルド失敗             | loadPublishedSurveys, SurveyResultsLoadError             | `read`・`missing`・`timeout`            | X       |
+| 2.6         | 検証に通らなければ失敗             | loadPublishedSurveys, SurveyResultsLoadError             | `invalid`                               | X       |
+| 2.7         | 上限の超過で失敗                   | loadPublishedSurveys                                     | `limit`                                 | X       |
+| 2.8         | 識別子・期間の不一致で失敗         | loadPublishedSurveys                                     | `mismatch`                              | X       |
+| 2.9         | 失敗に本文を含めない               | SurveyResultsLoadError                                   | 種類と識別子だけ                        | X       |
+| 2.10        | 結果の無い項目は対象外             | loadPublishedSurveys                                     | `outcome: "empty"` を飛ばす             | E       |
+| 3.1         | 公開済みだけ載せる                 | loadPublishedSurveys                                     | 可視の絞り込み                          | F       |
+| 3.2         | 開始時刻の新しい順                 | loadPublishedSurveys                                     | 並べ替えの規則                          | G       |
+| 3.3         | 同じなら終了時刻、識別子           | loadPublishedSurveys                                     | 並べ替えの規則                          | G       |
+| 3.4         | 反映は次の配備                     | surveys page                                             | 静的生成                                | I       |
+| 4.1         | 0 件ならページを作らない           | surveys page                                             | `getStaticPaths` が空                   | H → Z   |
+| 4.2         | 0 件ならリンクを出さない           | login page, LoginIntro                                   | 件数からの引数                          | H → Z   |
+| 4.3         | 空・失敗の画面を作らない           | surveys page                                             | 空の画面の分岐を持たない                | —       |
+| 4.4         | ページとリンクの整合               | getPublishedSurveys, checkSurveyResultsLinks             | 共通の判定と検査                        | I       |
+| 5.1         | 1 件 1 カード                      | SurveyResults, SurveyResultCard                          | —                                       | I       |
+| 5.2         | 実施時期の表記                     | presentation                                             | `formatSurveyPeriod`                    | I       |
+| 5.3         | 質問・選択肢・割合を設定順で       | SurveyResultCard, PercentBar                             | 結果の順                                | I       |
+| 5.4         | 割合だけを表示                     | SurveyResultCard                                         | 割合以外を表示しない                    | I       |
+| 5.5         | 複数選択の注記を出さない           | SurveyResultCard                                         | 質問の種類で分岐しない                  | I       |
+| 5.6         | 言語の切り替えに追従               | SurveyResults（島）                                      | `useT`・`useLocale`                     | I       |
+| 5.7         | ログイン不要                       | surveys page                                             | 認証を要求しない                        | I       |
+| 5.8         | 検索に公開                         | surveys page                                             | robots の指定                           | I       |
+| 6.1         | 左に文言、右に棒、数字は棒の中     | PercentBar                                               | 行の配置                                | I       |
+| 6.2         | 最大だけプライマリ色               | presentation, PercentBar                                 | `topOptionIds`                          | I       |
+| 6.3         | 同率はすべてプライマリ色           | presentation                                             | `topOptionIds`                          | I       |
+| 6.4         | すべて 0 なら強調しない            | presentation                                             | `topOptionIds`                          | I       |
+| 6.5         | スマホ幅は 1 列                    | PercentBar                                               | 幅の切り替え                            | I       |
+| 6.6         | 既存トークンだけ、ライト・ダーク   | PercentBar                                               | トークンの参照                          | I       |
+| 6.7         | 読み上げに伝わる                   | PercentBar                                               | `role="meter"` と値の属性               | I       |
+| 6.8         | 小さな割合の可読性                 | PercentBar                                               | 棒の最小幅                              | I       |
+| 7.1         | リンクを文中に出す                 | LoginIntro                                               | `showSurveyResults`                     | I       |
+| 7.2         | ボタン風にしない                   | LoginIntro                                               | 文中の `<a>`                            | I       |
+| 7.3         | ほかの画面に出さない               | LoginIntro                                               | 設置はログインの島だけ                  | —       |
+| 7.4         | 存在しなければ文ごと出さない       | LoginIntro                                               | 条件の描画                              | H → Z   |
+| 7.5         | 日英で表示                         | 辞書                                                     | `page.login.surveyResults`              | I       |
+| 8.1         | 配備のビルドが認証情報を受け取る   | preview.yaml, deploy.yaml                                | 「Run build」の環境変数                 | —       |
+| 8.2         | 情報が無い環境は従来どおり         | render-wrangler                                          | `remote` の既定は偽（E2E は変更しない） | B → Z   |
+| 8.3         | 接続は情報が揃うときだけ           | render-wrangler, render-deploy-config, prepare-local-env | 条件 `hasReadCredentials`               | —       |
+| 8.4         | プレビューは develop の保管先      | render-wrangler（既存の `-develop`）                     | 既存の仕組み                            | —       |
+| 8.5         | 既存プレビューの更新は次のプッシュ | docs/DEVELOP.md                                          | 手順書                                  | —       |
+| 9.1         | 結果公表の記述                     | 辞書（`privacy.external.surveyResults`）                 | —                                       | —       |
+| 9.2         | 回答の削除時期の記述               | 辞書（`privacy.retention.surveyAnswer`）                 | —                                       | —       |
+| 9.3         | 日英の両方                         | 辞書                                                     | ja・en                                  | —       |
+| 9.4         | 回答の扱いの簡潔な記述             | 辞書（`privacy.collected.survey`）                       | —                                       | —       |
+| 9.5         | 重複する記述を持たない             | 辞書・`policySections`                                   | —                                       | —       |
+| 9.6         | 無効後の保持の説明                 | 辞書（`privacy.retention.item3`）                        | —                                       | —       |
+| 9.7         | 注意書きのポリシーへのリンク       | SurveyDialog・辞書（`survey.irreversible`）              | `{link}` と `renderSlots`               | —       |
 
 ## Components and Interfaces
 
@@ -439,14 +439,15 @@ export const findLinkMismatch: (input: {
 
 - 辞書（ja を正本、en を型で追随）:
   - `surveyResults.heading`（アンケートの結果）、`surveyResults.period`（`{start} 〜 {end}`）、`pageTitle.surveyResults`（`アンケートの結果 | {service}`）、`page.login.surveyResults`（`ログイン時のアンケートの結果は{link}で公開しています。`）、`page.login.surveyResultsLink`（`こちら`）。
-  - `privacy.purpose.survey`・`privacy.purpose.surveyPublish`: 利用目的の 2 つの項目にする。「アンケート結果は集計し、サービス品質の向上及び改善に使います。」と「アンケート結果は回答の割合を公開することがあります。」（利用者の決定、2026-11-14。個別の回答や回答者の数を公開しない旨と、重複回答の防止という実装の目的は書かない）。
+  - `privacy.external.surveyResults`: 情報の共有の最後の項目「アンケートの結果公表」にする（利用者の決定、2026-11-14）。利用目的のアンケートの 2 項目（`privacy.purpose.survey`・`privacy.purpose.surveyPublish`）は削除した（利用状況の把握と本サービスの改善に含まれる）。割合だけを公開する旨や、個別の回答・回答者の数を公開しない旨は書かない。
   - `privacy.retention.surveyAnswer`: 「アンケートの回答は、終了後に集計の結果の保存を確認した後に削除します。」結果確定後の削除 batch が失敗すると、回答は翌日以降の再試行まで残る。
   - **文面の整理（利用者の指示、2026-11-14。要件 9.4〜9.7）**:
-    - `privacy.collected.survey`: 「アンケートの回答内容は、回答したアカウントとは結びつけず保存します。」だけにする（ハッシュ・localStorage などの技術の説明は書かない）。
+    - `privacy.collected.survey`: 「アンケート回答時は、アンケート回答内容と重複回答防止の為の識別子」にする（利用者の指示、2026-11-14。匿名であることは、回答の画面の説明とこの項目で伝わるため、無理に説明しない）。
     - 削除: `privacy.collected.note`（通常の投稿の保管の注記）、`privacy.retention.surveyHash`（重複判定用ハッシュの削除。`surveyAnswer` の一文で足りる）、`privacy.security.item4`（予約の許可の範囲。認可の説明で足りる）。
     - `privacy.external.github`: 「バグ報告または機能提案内容の公開」に短くする（掲載先と残り方は `privacy.retention.feedback` が書く）。
-    - `privacy.retention.item3`: 「予約用の認可の情報は、許可が無効になったとき、または予約がないまま 30 日使われないときに削除します。」の 1 文にする。利用者の決定（2026-11-14）で、許可が無効になった後に識別子を含む印の行を残す仕組みを廃止したため、識別子の保持の記述は持たない（予約の機能の変更。下の「予約の許可の印の廃止」を参照）。
+    - `privacy.retention.item3`: 「予約投稿機能有効化時は、認証情報が無効になった、または機能が30日使われていない場合に削除されます。」の 1 文にする（利用者の決定、2026-11-14。識別子を残す記述は持たない。予約の機能の変更は下の「予約の許可の印の廃止」を参照）。
     - 削除: `privacy.retention.surveyDevice`（端末の記録の保持。`collected.survey` から端末の説明を外したため、参照先が無くなる。利用者の決定）。
+  - **全体の文面の整理（利用者の指示、2026-11-14。要件 9.5）**: 収集する情報・共有・保持・権利を、次のとおり短くした。ログイン `Blueskyアカウントに関する認証情報`／予約 `予約投稿機能有効化時は、添付画像を含む投稿内容およびBlueskyアカウントに関する認証情報`／通信 `ホスティングプロバイダが収集するIPアドレスやブラウザ情報`（保持も「ホスティングプロバイダが定める期間」）／解析 `Google アナリティクスによる利用状況`／不具合の報告 `不具合の報告・機能の提案フォーム利用時は、入力情報及びアカウント識別情報、利用者端末情報および本アプリケーションに関する情報`／予約の操作と無効化 `予約投稿の変更・取消・削除は…予約機能を無効化した場合、予約内容およびBlueskyアカウントに関する認証情報は削除されます。`。英語は同じ内容で訳した。
   - **予約の許可の印の廃止（利用者の決定、2026-11-14。要件 9.6）**: 許可が無効になったとき（`executor` が失効を知ったとき）と、予約がないまま 30 日使われないとき（`purgeIdleCredentials`）は、認可の情報の行ごと削除する。`schedule_credentials.reauth_required`、`markCredentialReauth`、`purgeReauthMarkers`、`REAUTH_MARKER_KEEP_SECONDS`、認証情報の状態の応答の `reauthRequired`、`ScheduleReauthRequired`（409）、設定の再許可の案内、投稿フォームの再許可のダイアログは廃止した（列は `0001_initial.sql` から直接外した。D1 は初期状態から作り直す運用のため、移行は積まない。develop の D1 は作り直す）。設定のスイッチは静かにオフに戻り、予約の失敗は失敗の記録（`schedule.failure.CredentialExpired`・`CredentialMissing` が「設定で予約投稿を有効にし直してください」と案内する）で利用者が分かる。この変更は予約の機能の範囲で、`survey-results-public` の境界の外だが、ポリシーの簡潔化（要件 9.5・9.6）のために利用者が決定した。予約の機能に専用の spec は無い。
   - 回答の画面の注意書き `survey.irreversible` は `{link}` を持ち、`SurveyDialog` が `renderSlots` で `/privacy/` へのリンク（別のタブで開く）に差し替える。
 - `preview.yaml`・`deploy.yaml` の「Run build」の `env` に `CLOUDFLARE_API_TOKEN`・`CLOUDFLARE_ACCOUNT_ID`（`secrets`）を足す。`e2e.yaml` には足さない。
