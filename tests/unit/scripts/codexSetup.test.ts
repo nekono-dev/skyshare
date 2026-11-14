@@ -405,6 +405,7 @@ describe("user prompt hooks", () => {
         ])
         expect(commandsOf("PreToolUse")).toEqual([
             'node "$CLAUDE_PROJECT_DIR/scripts/agent/kiro-gate.mjs" pre-tool-use',
+            'node "$CLAUDE_PROJECT_DIR/scripts/agent/migration-gate.mjs" pre-tool-use',
         ])
         expect(commandsOf("PostToolUse")).toEqual([
             'node "$CLAUDE_PROJECT_DIR/scripts/agent/kiro-gate.mjs" post-tool-use',

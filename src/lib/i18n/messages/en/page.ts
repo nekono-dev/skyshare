@@ -27,6 +27,9 @@ export const page = {
     "page.login.guest":
         "You can {link} as a guest (not available while logged in).",
     "page.login.guestLink": "preview the screens",
+    "page.login.surveyResults":
+        "Results of the login survey are published {link}.",
+    "page.login.surveyResultsLink": "here",
     "page.login.v2Notice":
         "★ Skyshare v2 is under development. Here are the differences.",
     "page.login.persist.title": "Persistent Skyshare-generated content",

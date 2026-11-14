@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページと React の島（`client:load`）で作り、利用者向けの API は `src/pages/v2/` の Astro エンドポイント（`APIRoute`）として実装する。Workers の定期実行（`scheduled`）は `src/worker.ts` で受け、予約投稿とアンケートの保持期限の後片付けを行う。
+Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページと React の島（`client:load`）で作り、利用者向けの API は `src/pages/v2/` の Astro エンドポイント（`APIRoute`）として実装する。Workers の定期実行（`scheduled`）は `src/worker.ts` で受け、予約投稿とアンケートの日次集計を行う。日次処理は結果と目録の記録を確認した後に回答を削除する。
 
 - 永続化: D1（`migrations/` の SQL。予約の 3 表・アンケートの 2 表）と R2（予約の添付画像）
 - 外部: Bluesky の PDS・AppView・認可サーバー、OGP 抽出サービス、旧バックエンド（pageDB）、GitHub API（Issue 作成）
@@ -72,6 +72,7 @@ npm run build
 
 - **Cloudflare Workers への載せ方**: 画面と API は Astro のアダプタに任せ、`scheduled` だけ自前のエントリで受ける（`src/worker.ts`）。
 - **セッションの保持**: セッションのトークンは HttpOnly の Cookie にだけ置き、JSON やクライアントのストレージに出さない（`src/lib/session/cookies/`。Cookie の処理をフォルダに分けた）。複数アカウントは `atp_account_0`〜`_3` のプールで持つ。
+- **D1 のマイグレーション**: `release/**` 以外のブランチ（develop・main・dev/*）では、`migrations/` は `0001_initial.sql` だけにする。develop と main は、運用の追加を考慮せず、始めの状態から構築できるようにしておく。構造を変えるときは `0001` を直接編集し、develop の D1 を作り直す（作り直しは利用者の作業。配備は空の DB に `0001` を適用する）。`0002` 以降を積んでよいのは `release/**` だけで、develop・main へは持ち込まない。`scripts/git/check-migrations.mjs`（`npm run test:migrations`。コミット前・`test:all`・CI の `e2e`）と、Claude のフック `scripts/agent/migration-gate.mjs`（`0002` 以降の作成・書き込みを拒否）が守る。
 - **予約の認可**: 予約用の更新トークンと DPoP の鍵は AES-GCM で暗号化して D1 に置き、DID を追加認証データにする（`src/lib/schedule/credentialCrypto.ts`）。
 - **アンケートの匿名性**: 回答者は `HMAC-SHA256(鍵, surveyId + did)` の値だけで表し、回答の行には識別子を持たせない（`src/lib/survey/respondentHash.ts`）。
 

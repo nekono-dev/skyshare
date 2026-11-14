@@ -271,7 +271,7 @@ export const useDraftFlow = ({
      * 下書き保存の確認）を挟んでから移り、作成中の内容を不意に失わないようにする。
      *
      * Input:
-     * - `to`: 移る先の URL またはパス（再度の許可では Bluesky の認可の画面）
+     * - `to`: 移る先の URL またはパス
      */
     const requestNavigation = (to: string) => {
         const action = cancelAction(

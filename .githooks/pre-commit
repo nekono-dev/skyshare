@@ -1,9 +1,12 @@
 #!/bin/sh
-# コミットの前に、リポジトリ全体を prettier で整形する。
+# コミットの前に、マイグレーションの運用規則を検査し、リポジトリ全体を prettier で整形する。
 # 整形で変わったファイルのうち、コミットに含める予定だったもの（ステージ済み）は、整形後の内容でステージし直す。
 # ステージしていないファイルの整形結果は作業ツリーに残る。一部だけをステージしたファイルは、全体がステージされる。
 set -eu
 cd "$(git rev-parse --show-toplevel)"
+
+# release/** 以外では、マイグレーションは 0001 だけにする（0002 以降を含むコミットを止める）
+node scripts/git/check-migrations.mjs --index
 
 if [ ! -x node_modules/.bin/prettier ]; then
   echo "pre-commit: prettier が無いため整形を省いた（npm ci を実行する）" >&2

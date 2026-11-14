@@ -10,6 +10,7 @@ import { PathParamsSchema } from "@/lib/api/contract/surveyPath"
 import type { D1Database } from "@/lib/platform/cfTypes"
 import type { Survey } from "@/lib/survey/definition"
 import { getSurveyEnv } from "@/lib/survey/env"
+import { isSurveyFeatureEnabled } from "@/lib/survey/feature"
 import { readSurveyConfig } from "@/lib/survey/loadConfig"
 import { currentSurvey } from "@/lib/survey/period"
 
@@ -67,6 +68,8 @@ export const resolveSurveyRequest = async (args: {
     if (!path.success) return fail(400)
 
     const env = await getSurveyEnv()
+    if (!isSurveyFeatureEnabled(env)) return fail(404)
+
     const now = args.now ?? new Date()
     const config = await readSurveyConfig(
         env.ASSETS,

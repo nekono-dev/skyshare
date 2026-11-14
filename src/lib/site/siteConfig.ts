@@ -16,7 +16,6 @@ export const siteConfig: SiteConfig = resolveSiteConfig(
         PUBLIC_OPERATOR_EMAIL: import.meta.env.PUBLIC_OPERATOR_EMAIL,
         PUBLIC_OPERATOR_BLUESKY_HANDLE: import.meta.env
             .PUBLIC_OPERATOR_BLUESKY_HANDLE,
-        PUBLIC_PRIVACY_ENACTED_AT: import.meta.env.PUBLIC_PRIVACY_ENACTED_AT,
         PUBLIC_PRIVACY_REVISED_AT: import.meta.env.PUBLIC_PRIVACY_REVISED_AT,
         PUBLIC_GA_MEASUREMENT_ID: import.meta.env.PUBLIC_GA_MEASUREMENT_ID,
     },

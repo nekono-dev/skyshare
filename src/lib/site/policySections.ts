@@ -80,7 +80,6 @@ export const buildPrivacyPolicy = (
                     t("privacy.collected.feedback"),
                     t("privacy.collected.survey"),
                 ),
-                text(t("privacy.collected.note")),
             ],
         },
         {
@@ -94,7 +93,6 @@ export const buildPrivacyPolicy = (
                     t("privacy.purpose.item3"),
                     t("privacy.purpose.item4"),
                     t("privacy.purpose.item5"),
-                    t("privacy.purpose.survey"),
                 ),
             ],
         },
@@ -109,6 +107,7 @@ export const buildPrivacyPolicy = (
                     ...only(analytics, t("privacy.external.item3")),
                     t("privacy.external.github"),
                     t("privacy.external.item4"),
+                    t("privacy.external.surveyResults"),
                 ),
             ],
         },
@@ -123,24 +122,14 @@ export const buildPrivacyPolicy = (
                     t("privacy.retention.item4"),
                     ...only(analytics, t("privacy.retention.item5")),
                     t("privacy.retention.feedback"),
-                    t("privacy.retention.surveyHash"),
                     t("privacy.retention.surveyAnswer"),
-                    t("privacy.retention.surveyDevice"),
                 ),
             ],
         },
         {
             id: "security",
             title: t("privacy.security.title"),
-            blocks: [
-                text(t("privacy.security.intro")),
-                list(
-                    t("privacy.security.item1"),
-                    t("privacy.security.item2"),
-                    t("privacy.security.item3"),
-                    t("privacy.security.item4"),
-                ),
-            ],
+            blocks: [text(t("privacy.security.body"))],
         },
         {
             id: "cookies",
@@ -176,7 +165,6 @@ export const buildPrivacyPolicy = (
                 text(t("privacy.revision.body")),
                 text(
                     t("privacy.revision.dates", {
-                        enactedAt: privacy.enactedAt,
                         revisedAt: privacy.revisedAt,
                     }),
                 ),

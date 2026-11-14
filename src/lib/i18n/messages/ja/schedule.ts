@@ -4,8 +4,6 @@ export const schedule = {
     "schedule.submitAll": "すべて予約",
     "schedule.unavailableVideo": "動画を含む投稿は予約できません。",
     "schedule.unavailableDisabled": "予約投稿は、設定で有効にすると使えます。",
-    "schedule.unavailableReauth":
-        "Bluesky での許可が無効になりました。押すと、もう一度許可できます。",
     "schedule.unavailableLimits": "予約の制限値を取得できませんでした。",
     "schedule.sending": "予約しています…",
     "schedule.created": "予約しました。",
@@ -29,8 +27,7 @@ export const schedule = {
     "schedule.picker.slotsRemaining": "残り{remaining}件（{max}件まで）",
     "schedule.picker.slotsFull":
         "待機中の予約が上限に達しています。不要な予約を取り消すと予約できます。",
-    "schedule.picker.expiresAt":
-        "許可の有効期限の目安: {date}（予約するたびに延びます）",
+    "schedule.picker.expiresAt": "認証情報の有効期限: {date}",
     "schedule.range.tooSoon":
         "現在から{minutes}分後以降の日時を指定してください。",
     "schedule.range.tooLate":
@@ -60,9 +57,6 @@ export const schedule = {
         "Bluesky での予約投稿の許可を取り消し、保管した認可の情報を削除します。よろしいですか。",
     "schedule.setting.disableConfirm": "無効にする",
     "schedule.setting.disabled": "予約投稿を無効にしました。",
-    "schedule.setting.reauthRequired":
-        "Bluesky での許可が無効になっています。予約するには、もう一度許可してください。",
-    "schedule.setting.reauthButton": "もう一度許可する",
     "schedule.setting.disabledWithDelete":
         "予約投稿を無効にし、{count}件の予約を削除しました。",
     "schedule.credential.title": "予約投稿を有効にする",
@@ -109,14 +103,12 @@ export const schedule = {
         "予約が見つかりませんでした。すでに実行されたか、取り消された可能性があります。",
     "schedule.error.credentialRequired":
         "予約投稿が無効です。設定で予約投稿を有効にしてください。",
-    "schedule.error.reauthRequired":
-        "Bluesky での許可が無効になっています。もう一度許可してください。",
     "schedule.error.running": "実行中のため操作できません。",
     "schedule.error.tooMany":
         "予約の件数が上限に達しています。先に不要な予約を取り消してください。",
     "schedule.error.server": "予約の処理に失敗しました。",
     "schedule.failure.CredentialMissing":
-        "予約投稿が無効になっていたため、投稿できませんでした。",
+        "予約投稿が無効になっていたため、投稿できませんでした。設定で予約投稿を有効にしてください。",
     "schedule.failure.CredentialInvalid":
         "予約用の認可の情報を読み出せませんでした。設定で予約投稿を有効にし直してください。",
     "schedule.failure.CredentialExpired":

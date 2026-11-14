@@ -41,7 +41,6 @@ env:
   PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
   PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
   PUBLIC_OPERATOR_BLUESKY_HANDLE: ${{ vars.PUBLIC_OPERATOR_BLUESKY_HANDLE }}
-  PUBLIC_PRIVACY_ENACTED_AT: ${{ vars.PUBLIC_PRIVACY_ENACTED_AT }}
   PUBLIC_PRIVACY_REVISED_AT: ${{ vars.PUBLIC_PRIVACY_REVISED_AT }}
   PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
 
@@ -119,9 +118,13 @@ jobs:
         run: node scripts/config/render-deploy-config.mjs $TARGET_FLAG
       # SURVEY_CONFIG は設定生成に使うビルドだけに渡し、生成失敗時はデプロイを止める。
       # サイト URL（共有リンクなど）は生成した wrangler.jsonc の設定から決まる。
+      # 結果ページは、ビルドの間に結果の保管先（R2）から公開済みの統計を読んで生成する。
+      # 読むための認証情報は、このビルドの工程にだけ渡す（無い環境では結果ページを作らない）。
       - name: Run build
         env:
           SURVEY_CONFIG: ${{ vars.SURVEY_CONFIG }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npm run build
       - name: Dry run cloudflare deploy
         run: npx wrangler deploy --dry-run

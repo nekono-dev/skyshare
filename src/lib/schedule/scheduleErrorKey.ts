@@ -14,9 +14,6 @@ export const scheduleErrorKey = (
             if (code === "ScheduleCredentialRequired") {
                 return "schedule.error.credentialRequired"
             }
-            if (code === "ScheduleReauthRequired") {
-                return "schedule.error.reauthRequired"
-            }
             if (code === "ScheduleRunning") return "schedule.error.running"
             return "error.conflict"
         case 429:

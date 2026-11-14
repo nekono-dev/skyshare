@@ -1,9 +1,7 @@
-/**
- * Verifies the scheduled posting runner and its time boundaries.
- */
+/** 予約投稿の定期実行と後片付けを確認する。 */
 import { env } from "cloudflare:test"
 import { beforeEach, describe, expect, it } from "vitest"
-import { insertSchedule } from "@/lib/schedule/store"
+import { CREDENTIAL_IDLE_SECONDS, insertSchedule } from "@/lib/schedule/store"
 import {
     HOUSEKEEPING_MINUTE_OF_DAY_UTC,
     isHousekeepingTime,
@@ -23,11 +21,11 @@ import {
 const queue = async (
     id: string,
     runAt: number,
-    opts: { status?: string; updatedAt?: number } = {},
+    opts: { did?: string; status?: string; updatedAt?: number } = {},
 ) => {
     await insertSchedule(env.DB, {
         id,
-        did: "did:plc:testfixturealice0000000000",
+        did: opts.did ?? "did:plc:testfixturealice0000000000",
         runAt,
         payload: JSON.stringify({ posts: [{ text: id }] }),
         imageKeys: [],
@@ -110,6 +108,38 @@ describe("runScheduledPosts: budget and housekeeping", () => {
 })
 
 describe("runHousekeeping", () => {
+    it("deletes idle credentials but keeps credentials with pending schedules", async () => {
+        await resetScheduleTables()
+        const old = NOW - CREDENTIAL_IDLE_SECONDS - 1
+        await seedCredential("did:plc:testfixturealice0000000000")
+        await seedCredential("did:plc:testfixturebob0000000000")
+        await env.DB.prepare(
+            "UPDATE schedule_credentials SET updated_at = ? WHERE did IN (?, ?)",
+        )
+            .bind(
+                old,
+                "did:plc:testfixturealice0000000000",
+                "did:plc:testfixturebob0000000000",
+            )
+            .run()
+        await queue("h-active-credential", NOW + 3600, {
+            did: "did:plc:testfixturebob0000000000",
+        })
+        await runHousekeeping(scheduleEnv(), NOW)
+        const idle = await env.DB.prepare(
+            "SELECT did FROM schedule_credentials WHERE did = ?",
+        )
+            .bind("did:plc:testfixturealice0000000000")
+            .first()
+        const active = await env.DB.prepare(
+            "SELECT did FROM schedule_credentials WHERE did = ?",
+        )
+            .bind("did:plc:testfixturebob0000000000")
+            .first()
+        expect(idle).toBeNull()
+        expect(active).not.toBeNull()
+    })
+
     it("removes finished schedules past retention together with their staged images", async () => {
         const key = "schedules/did/old/gen/0"
         await env.SCHEDULE_IMAGES.put(key, new Uint8Array([1]))

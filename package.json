@@ -13,7 +13,7 @@
     "survey:render": "tsx ./scripts/survey/render-survey-config.ts",
     "build:prepare": "npm run codegen && npm run survey:render",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
-    "build:v2": "npm run survey:render && PUBLIC_VERSION=$npm_package_version astro build",
+    "build:v2": "npm run survey:render && PUBLIC_VERSION=$npm_package_version astro build && node scripts/build/checkSurveyResultsLinks.mjs",
     "build": "npm run build:prepare && npm run build:v2 && npm run build:legacy && cp -r _legacy/frontend/dist/legacy dist/client/legacy",
     "dev": "npm run build:prepare && npm run setup:local && PUBLIC_VERSION=$npm_package_version astro dev",
     "dev:build": "npm run setup:local && npm run build && wrangler dev --ip 0.0.0.0",
@@ -26,6 +26,7 @@
     "test:render": "vitest run -c config/test/vitest.astro.config.ts",
     "test:lexicon": "./scripts/build/lint-lexicon.sh",
     "test:imports": "tsx ./scripts/architecture/check-imports.ts",
+    "test:migrations": "node ./scripts/git/check-migrations.mjs",
     "test:component": "vitest run -c config/test/vitest.component.config.ts",
     "test:route": "vitest run -c config/test/vitest.route.config.ts",
     "test:mutation": "stryker run config/test/stryker.config.mjs",
@@ -33,7 +34,7 @@
     "test:e2e": "node scripts/e2e/run-e2e.mjs",
     "test:live": "vitest run -c config/test/vitest.live.config.ts",
     "sync:github": "node scripts/secrets/sync-github-variables.mjs",
-    "test:all": "npm run codegen && npm run test:type && npm run test:lexicon && npm run test:imports && npm run test:unit && npm run test:component && npm run test:route && npm run test:render && npm run test:e2e",
+    "test:all": "npm run codegen && npm run test:type && npm run test:lexicon && npm run test:imports && npm run test:migrations && npm run test:unit && npm run test:component && npm run test:route && npm run test:render && npm run test:e2e",
     "test": "npm run test:all"
   },
   "dependencies": {

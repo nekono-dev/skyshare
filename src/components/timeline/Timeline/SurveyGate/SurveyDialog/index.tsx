@@ -1,10 +1,11 @@
 /**
- * アンケートの選択状態を管理し、回答・辞退の操作をダイアログとして表示する。
+ * アンケートの選択状態を管理し、固定の見出しと質問、回答・辞退の操作をダイアログとして表示する。
  * 言語を切り替えても選択を保ち、背景クリックと Esc では閉じない。
  */
 import React, { useId, useState } from "react"
 import ChoiceQuestion from "@/components/common/select/ChoiceQuestion"
 import Overlay from "@/components/common/dialog/Overlay"
+import { renderSlots } from "@/components/i18n/renderSlots"
 import { useLocale, useT } from "@/components/i18n/useTranslation"
 import type { Locale } from "@/lib/i18n/locale"
 import type { Translator } from "@/lib/i18n/translate"
@@ -116,6 +117,8 @@ export type SurveyDialogBodyProps = {
   locale: Locale
   /** 固定の文言の翻訳関数 */
   t: Translator["t"]
+  /** プレースホルダ未置換の文言（リンクを文中に差し込む文言に使う） */
+  raw: Translator["raw"]
   /** タイトルの要素の識別子（ダイアログの名前に使う） */
   titleId: string
   /** 送信中。質問と操作を押せなくする */
@@ -148,6 +151,7 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   draft,
   locale,
   t,
+  raw,
   titleId,
   busy,
   failed,
@@ -156,14 +160,9 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   onAction,
 }) => {
   const declined = action.kind === "decline"
-  const description = survey.description
   const actionLabel = declined ? t("survey.close") : t("survey.submit")
-  const hint =
-    action.kind === "decline"
-      ? t("survey.declineHint")
-      : action.kind === "incomplete"
-        ? t("survey.incomplete")
-        : null
+  // 未完了のときは送信ボタンを無効にするだけで、案内の文言は出さない
+  const hint = action.kind === "decline" ? t("survey.declineHint") : null
 
   return (
     <Overlay open onClose={ignoreClose} contentClassName={ui["width-md"]}>
@@ -176,11 +175,8 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
       >
         <div className={styles["scroll"]}>
           <h2 id={titleId} className={styles["title"]}>
-            {localize(survey.title, locale)}
+            {t("survey.entry")}
           </h2>
-          {description ? (
-            <p className={ui.text}>{localize(description, locale)}</p>
-          ) : null}
           {survey.questions.map(question => (
             <ChoiceQuestion
               key={question.id}
@@ -204,7 +200,15 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
           ))}
         </div>
         <div className={styles["footer"]}>
-          <p className={ui.text}>{t("survey.irreversible")}</p>
+          <p className={ui.text}>
+            {renderSlots(raw("survey.irreversible"), {
+              link: (
+                <a href="/privacy/" target="_blank" rel="noreferrer">
+                  {t("privacy.link")}
+                </a>
+              ),
+            })}
+          </p>
           {hint ? <p className={ui.text}>{hint}</p> : null}
           {failed ? (
             <p role="alert" className={styles["error"]}>
@@ -255,7 +259,7 @@ export const SurveyDialog: React.FC<SurveyDialogProps> = ({
   onDecline,
 }) => {
   const locale = useLocale()
-  const { t } = useT()
+  const { t, raw } = useT()
   const titleId = useId()
   const [draft, setDraft] = useState<SurveyDraft>(() => emptyDraft(survey))
   const action = resolveSubmitAction(survey, draft)
@@ -274,6 +278,7 @@ export const SurveyDialog: React.FC<SurveyDialogProps> = ({
       draft={draft}
       locale={locale}
       t={t}
+      raw={raw}
       titleId={titleId}
       busy={busy}
       failed={failed}

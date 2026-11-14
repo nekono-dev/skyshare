@@ -16,8 +16,6 @@ import {
     parseKeys,
     purgeFinished,
     purgeIdleCredentials,
-    purgeReauthMarkers,
-    REAUTH_MARKER_KEEP_SECONDS,
     purgeOAuthStates,
     releaseSchedule,
     requeueStale,
@@ -80,7 +78,7 @@ export const isHousekeepingTime = (now: number): boolean =>
     Math.floor(now / 60) % (24 * 60) === HOUSEKEEPING_MINUTE_OF_DAY_UTC
 
 /**
- * 終了した予約と不要な認証情報・認可の途中の状態を削除する（1日1回）。
+ * 終了した予約と未使用の認証情報を削除する（1日1回）。
  * 1件の失敗で止めず、失敗は記録だけする。
  */
 export const runHousekeeping = async (
@@ -100,7 +98,6 @@ export const runHousekeeping = async (
             ).catch(() => {})
         }
         await purgeIdleCredentials(env.DB, now, CREDENTIAL_IDLE_SECONDS)
-        await purgeReauthMarkers(env.DB, now, REAUTH_MARKER_KEEP_SECONDS)
         await purgeOAuthStates(env.DB, now)
     } catch {
         console.error("runHousekeeping: purge failed")

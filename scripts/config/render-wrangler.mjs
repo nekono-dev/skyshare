@@ -23,6 +23,13 @@ const REQUIRED_VARS = [
   "PUBLIC_PLC_DIRECTORY_BASE_URL",
 ]
 
+export const REMOTE_R2_BINDINGS = ["SURVEY_RESULTS"]
+
+export const hasReadCredentials = env =>
+  ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"].every(
+    name => typeof env[name] === "string" && env[name].trim() !== "",
+  )
+
 /** 設定の不足・不正など、利用者が直せる失敗。CLI は表示して終了し、呼び出し元は扱いを決める */
 export class RenderError extends Error {}
 
@@ -79,6 +86,8 @@ export const buildWranglerConfig = ({
   config,
   develop,
   d1Ids = {},
+  remote = false,
+  remoteDevelop = develop,
 }) => {
   const out = structuredClone(template)
   out.vars = { ...config.vars }
@@ -105,6 +114,9 @@ export const buildWranglerConfig = ({
     out.r2_buckets = template.r2_buckets.map(b => ({
       ...b,
       bucket_name: `${b.bucket_name}-develop`,
+      ...(remote && REMOTE_R2_BINDINGS.includes(b.binding)
+        ? { remote: true }
+        : {}),
     }))
     // プレビューは database_id のない D1 を使えないため、名前から引いた ID を入れる
     out.previews.d1_databases = out.d1_databases.map(db => ({
@@ -117,8 +129,32 @@ export const buildWranglerConfig = ({
       bucket_name: b.bucket_name,
     }))
   }
+  if (!develop && remote) {
+    // 本番以外の設定（手元の開発など）が実バケットへつなぐときは、develop 用の名前にそろえる
+    out.r2_buckets = out.r2_buckets.map(b =>
+      REMOTE_R2_BINDINGS.includes(b.binding)
+        ? {
+            ...b,
+            ...(remoteDevelop
+              ? { bucket_name: `${b.bucket_name}-develop` }
+              : {}),
+            remote: true,
+          }
+        : b,
+    )
+  }
   return out
 }
+
+/**
+ * 実バケットへつなぐときに develop 用のバケット名を使うかを判定する。
+ *
+ * Input: 設定の名前と develop の指定
+ * Output: develop の配備、または本番以外の設定（手元の開発・E2E）なら true
+ * 例: `{ name: "develop", develop: false }` → true（手元の開発が本番のバケットへつながらない）
+ */
+export const usesDevelopBucket = ({ name, develop = false }) =>
+  develop || name !== "production"
 
 /**
  * develop の配備で使う D1 の ID を、名前（`<database_name>-develop`）から引く。
@@ -159,13 +195,24 @@ export const resolveD1Ids = template => {
  * Output: 書いたファイルの絶対パス
  * 失敗: RenderError を投げる（process.exit は呼ばない）
  */
-export const renderWranglerFile = ({ name, develop = false }) => {
+export const renderWranglerFile = ({
+  name,
+  develop = false,
+  remote = false,
+}) => {
   const config = readConfig(name, {
     requireSiteHost: develop || name === "production",
   })
   const template = parseJsonc(readFileSync(TEMPLATE, "utf8"))
   const d1Ids = develop ? resolveD1Ids(template) : {}
-  const out = buildWranglerConfig({ template, config, develop, d1Ids })
+  const out = buildWranglerConfig({
+    template,
+    config,
+    develop,
+    d1Ids,
+    remote,
+    remoteDevelop: usesDevelopBucket({ name, develop }),
+  })
   writeFileSync(OUTPUT, `${JSON.stringify(out, null, 2)}\n`)
   return OUTPUT
 }

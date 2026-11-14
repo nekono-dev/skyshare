@@ -5,6 +5,16 @@ import { expect, test } from "@playwright/test"
 import { fakeRequestPaths, hasSessionCookie } from "./support"
 
 test.describe("login flow", () => {
+    test("does not link to unavailable public survey results", async ({
+        page,
+    }) => {
+        await page.goto("/login/")
+        await expect(page.locator('a[href="/surveys/"]')).toHaveCount(0)
+
+        const response = await page.goto("/surveys/")
+        expect(response?.status()).toBe(404)
+    })
+
     test("logs in with an app password through the login form", async ({
         page,
         context,
