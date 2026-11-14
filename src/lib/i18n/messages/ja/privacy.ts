@@ -23,7 +23,7 @@ export const privacy = {
     "privacy.collected.inquiry":
         "お問い合わせの際のメールアドレスまたは Bluesky のアカウントと、お問い合わせの内容",
     "privacy.collected.feedback":
-        "不具合の報告・機能の提案フォーム利用時は、入力情報及びアカウント識別情報、利用者端末情報および本アプリケーションに関する情報",
+        "不具合の報告・機能の提案フォーム利用時は、入力情報及びアカウント識別情報、利用者端末情報および本サービスに関する情報",
     "privacy.collected.survey":
         "アンケート回答時は、アンケート回答内容と重複回答防止の為の識別子",
     "privacy.purpose.title": "利用目的",
@@ -39,7 +39,7 @@ export const privacy = {
     "privacy.external.item1":
         "利用者の操作に基づく、Bluesky への投稿や他の SNS への共有",
     "privacy.external.item2":
-        "本サービスの配信とデータの保管を委託する Cloudflare での取り扱い",
+        "本サービスの配信とデータの保管を委託するホスティングプロバイダでの取り扱い",
     "privacy.external.item3": "アクセス解析のための Google への送信",
     "privacy.external.github": "バグ報告または機能提案内容の公開",
     "privacy.external.item4": "法令に基づく要請がある場合",
@@ -63,7 +63,7 @@ export const privacy = {
     "privacy.security.intro":
         "利用者の情報を守るため、次の対策をとっています。",
     "privacy.security.item1": "通信は暗号化しています。",
-    "privacy.security.item2": "予約用の認可の情報は、暗号化して保管します。",
+    "privacy.security.item2": "予約用の認証情報は、暗号化して保管します。",
     "privacy.security.item3": "情報を扱うのは運営者に限ります。",
     "privacy.cookies.title": "Cookie とアクセス解析",
     "privacy.cookies.titleBasic": "Cookie",

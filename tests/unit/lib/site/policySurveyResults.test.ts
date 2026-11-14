@@ -64,7 +64,7 @@ describe("収集する情報の記述", () => {
         )
         expect(items).toContain("Google アナリティクスによる利用状況")
         expect(items).toContain(
-            "不具合の報告・機能の提案フォーム利用時は、入力情報及びアカウント識別情報、利用者端末情報および本アプリケーションに関する情報",
+            "不具合の報告・機能の提案フォーム利用時は、入力情報及びアカウント識別情報、利用者端末情報および本サービスに関する情報",
         )
         expect(items).toContain(
             "アンケート回答時は、アンケート回答内容と重複回答防止の為の識別子",
@@ -83,11 +83,39 @@ describe("収集する情報の記述", () => {
         )
         expect(items).toContain("Usage data collected by Google Analytics")
         expect(items).toContain(
-            "When you use the bug report and feature request form: the information you enter, account identification information, your device information, and information about this application",
+            "When you use the bug report and feature request form: the information you enter, account identification information, your device information, and information about the Service",
         )
         expect(items).toContain(
             "When you answer a survey: your answers and an identifier used to prevent duplicate responses",
         )
+    })
+
+    it("日本語: 共有・セキュリティの用語を「ホスティングプロバイダ」「本サービス」「認証情報」に揃える", () => {
+        const text = policyText("ja")
+
+        expect(policyItems("ja", "external")).toContain(
+            "本サービスの配信とデータの保管を委託するホスティングプロバイダでの取り扱い",
+        )
+        expect(policyItems("ja", "security")).toContain(
+            "予約用の認証情報は、暗号化して保管します。",
+        )
+        expect(text).not.toContain("Cloudflare")
+        expect(text).not.toContain("本アプリケーション")
+        expect(text).not.toContain("認可の情報")
+    })
+
+    it("英語: 共有・セキュリティの用語を揃える", () => {
+        const text = policyText("en")
+
+        expect(policyItems("en", "external")).toContain(
+            "Handling by the hosting provider, which we use to deliver the Service and store its data",
+        )
+        expect(policyItems("en", "security")).toContain(
+            "Credentials for scheduled posts are stored encrypted.",
+        )
+        expect(text).not.toContain("Cloudflare")
+        expect(text).not.toContain("this application")
+        expect(text).not.toMatch(/authorization for scheduled/i)
     })
 
     it("日本語: 旧文面の細かい説明を残さない", () => {

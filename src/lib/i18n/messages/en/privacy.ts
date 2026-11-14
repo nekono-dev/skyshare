@@ -23,7 +23,7 @@ export const privacy = {
     "privacy.collected.inquiry":
         "Your email address or Bluesky account and the content of your inquiry when you contact us",
     "privacy.collected.feedback":
-        "When you use the bug report and feature request form: the information you enter, account identification information, your device information, and information about this application",
+        "When you use the bug report and feature request form: the information you enter, account identification information, your device information, and information about the Service",
     "privacy.collected.survey":
         "When you answer a survey: your answers and an identifier used to prevent duplicate responses",
     "privacy.purpose.title": "How we use information",
@@ -42,7 +42,7 @@ export const privacy = {
     "privacy.external.item1":
         "Posting to Bluesky or sharing to other social networks on your instruction",
     "privacy.external.item2":
-        "Handling by Cloudflare, which we use to deliver the Service and store its data",
+        "Handling by the hosting provider, which we use to deliver the Service and store its data",
     "privacy.external.item3": "Sending data to Google for analytics",
     "privacy.external.github": "Publishing bug reports or feature requests",
     "privacy.external.item4": "When required by law",
@@ -67,7 +67,7 @@ export const privacy = {
         "We take the following measures to protect your information.",
     "privacy.security.item1": "Communication is encrypted.",
     "privacy.security.item2":
-        "Authorization for scheduled posts is stored encrypted.",
+        "Credentials for scheduled posts are stored encrypted.",
     "privacy.security.item3": "Only the Operator handles the information.",
     "privacy.cookies.title": "Cookies and analytics",
     "privacy.cookies.titleBasic": "Cookies",
