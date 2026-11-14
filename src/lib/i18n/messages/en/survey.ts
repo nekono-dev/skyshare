@@ -9,7 +9,7 @@ export const survey = {
     "survey.submit": "Submit",
     "survey.close": "Close",
     "survey.irreversible":
-        "Your answers are saved anonymously. Once submitted, they cannot be withdrawn or changed. Aggregate results are handled according to our privacy policy.",
+        "Your answers are saved anonymously. Once submitted, they cannot be withdrawn or changed. Aggregate results are handled according to our {link}.",
     "survey.declineHint":
         'If you select "Prefer not to answer" and close, your answers will not be sent. You can reopen the survey with the button.',
     "survey.submitFailed":

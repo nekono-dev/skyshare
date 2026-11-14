@@ -39,6 +39,7 @@ describe("SurveyDialogBody", () => {
           draft={{}}
           locale={locale}
           t={translator.t}
+          raw={translator.raw}
           titleId="survey-title"
           busy={false}
           failed={false}
@@ -55,6 +56,37 @@ describe("SurveyDialogBody", () => {
       ).toBeNull()
       expect(screen.queryByText("ご協力ください")).toBeNull()
       expect(screen.queryByText("Please help us")).toBeNull()
+    },
+  )
+
+  it.each([
+    ["ja", "プライバシーポリシー"],
+    ["en", "Privacy Policy"],
+  ] as const)(
+    "links the privacy policy text in the irreversible notice in %s",
+    (locale, linkText) => {
+      const translator = createTranslator(locale)
+      render(
+        <SurveyDialogBody
+          survey={survey}
+          draft={{}}
+          locale={locale}
+          t={translator.t}
+          raw={translator.raw}
+          titleId="survey-title"
+          busy={false}
+          failed={false}
+          action={{ kind: "incomplete" }}
+          onSelect={() => {}}
+          onAction={() => {}}
+        />,
+      )
+
+      const link = screen.getByRole("link", { name: linkText })
+      expect(link.getAttribute("href")).toBe("/privacy/")
+      expect(link.getAttribute("target")).toBe("_blank")
+      expect(link.getAttribute("rel")).toBe("noreferrer")
+      expect(link.closest("p")?.textContent).toContain(linkText)
     },
   )
 })
