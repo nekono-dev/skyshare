@@ -1,8 +1,8 @@
 /**
  * 下書き・予約画面の予約タブに、待機中の予約と実行履歴を表示する。
- *
  * - 成功した予約は履歴に含めない。
  * - 予約機能が無効な場合は一覧の空表示を出さず、設定への案内を表示する。
+ * - 待機中と失敗の行は、先頭の添付画像があれば縮小表示を左に添える。
  */
 import { useCallback, useEffect, useState } from "react"
 import { deleteSchedule, listSchedules } from "@/client/openapi/client"
@@ -106,6 +106,24 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
     </>
   )
 
+  /** 縮小画像（先頭の添付画像）があれば左に置き、右に 1 行の内容を並べる。実行中は画像を取得できないため出さない */
+  const withThumbnail = (item: Item) =>
+    item.thumbnailIndex !== null &&
+    (item.status === "pending" || item.status === "failed") ? (
+      <span className={styles["item-content-with-thumbnail"]}>
+        <img
+          className={styles.thumbnail}
+          src={`/v2/schedules/${item.id}/images/${item.thumbnailIndex}`}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+        <span className={styles["item-content"]}>{summary(item)}</span>
+      </span>
+    ) : (
+      summary(item)
+    )
+
   return (
     <div data-testid="schedule-list">
       {onOpenSettings && (
@@ -156,7 +174,7 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
                   aria-label={`${t("schedule.list.edit")}: ${item.preview}`}
                   onClick={() => onSelect(item.id)}
                 >
-                  {summary(item)}
+                  {withThumbnail(item)}
                 </button>
               </li>
             ))}
@@ -176,7 +194,7 @@ export const Component = ({ active, onSelect, onOpenSettings }: Props) => {
                 className={`${ui["base-card"]} ${styles.item}`}
                 data-status={item.status}
               >
-                {summary(item)}
+                {withThumbnail(item)}
                 {item.status === "failed" && (
                   <div className={styles.error}>
                     {t(failureMessageKey(item.lastError))}

@@ -23,6 +23,7 @@ export const ScheduleListItemSchema = z
         postCount: z.number().int(),
         preview: z.string(),
         lastError: z.string().nullable(),
+        thumbnailIndex: z.number().int().nullable(),
     })
     .strict()
 export type ScheduleListItemType = z.infer<typeof ScheduleListItemSchema>
