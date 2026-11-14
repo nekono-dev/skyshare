@@ -129,14 +129,7 @@ export const buildPrivacyPolicy = (
         {
             id: "security",
             title: t("privacy.security.title"),
-            blocks: [
-                text(t("privacy.security.intro")),
-                list(
-                    t("privacy.security.item1"),
-                    t("privacy.security.item2"),
-                    t("privacy.security.item3"),
-                ),
-            ],
+            blocks: [text(t("privacy.security.body"))],
         },
         {
             id: "cookies",
@@ -172,7 +165,6 @@ export const buildPrivacyPolicy = (
                 text(t("privacy.revision.body")),
                 text(
                     t("privacy.revision.dates", {
-                        enactedAt: privacy.enactedAt,
                         revisedAt: privacy.revisedAt,
                     }),
                 ),

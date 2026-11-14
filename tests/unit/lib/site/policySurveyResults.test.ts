@@ -35,6 +35,12 @@ const policyItems = (locale: Locale, sectionId: string): string[] =>
                 : [],
         )
 
+/** 指定した節のブロック（種類と本文）を返す */
+const policyBlocks = (locale: Locale, sectionId: string) =>
+    buildPrivacyPolicy(createTranslator(locale).t, siteConfig)
+        .filter(section => section.id === sectionId)
+        .flatMap(section => section.blocks)
+
 /** アクセス解析を使う設定の組み立て結果（解析の項目の記載を確かめる） */
 const itemsWithAnalytics = (locale: Locale, sectionId: string): string[] =>
     buildPrivacyPolicy(createTranslator(locale).t, {
@@ -96,9 +102,6 @@ describe("収集する情報の記述", () => {
         expect(policyItems("ja", "external")).toContain(
             "本サービスの配信とデータの保管を委託するホスティングプロバイダでの取り扱い",
         )
-        expect(policyItems("ja", "security")).toContain(
-            "予約用の認証情報は、暗号化して保管します。",
-        )
         expect(text).not.toContain("Cloudflare")
         expect(text).not.toContain("本アプリケーション")
         expect(text).not.toContain("認可の情報")
@@ -109,9 +112,6 @@ describe("収集する情報の記述", () => {
 
         expect(policyItems("en", "external")).toContain(
             "Handling by the hosting provider, which we use to deliver the Service and store its data",
-        )
-        expect(policyItems("en", "security")).toContain(
-            "Credentials for scheduled posts are stored encrypted.",
         )
         expect(text).not.toContain("Cloudflare")
         expect(text).not.toContain("this application")
@@ -141,6 +141,28 @@ describe("収集する情報の記述", () => {
         expect(text).not.toContain("pages viewed, device and browser type")
         expect(text).not.toContain("without being linked to the account")
         expect(text).not.toMatch(/hash|localStorage/i)
+    })
+})
+
+describe("セキュリティの記述", () => {
+    it("日本語: 箇条書きにせず、1 つの文で書く", () => {
+        expect(policyBlocks("ja", "security")).toEqual([
+            {
+                kind: "text",
+                text: "利用者の情報を守るため、通信は暗号化され、本サービスへ保存される認証情報は暗号化して保管されます。",
+            },
+        ])
+        expect(policyText("ja")).not.toContain("情報を扱うのは運営者に限ります")
+    })
+
+    it("英語: 箇条書きにせず、1 つの文で書く", () => {
+        expect(policyBlocks("en", "security")).toEqual([
+            {
+                kind: "text",
+                text: "To protect your information, communication is encrypted, and credentials saved in the Service are stored encrypted.",
+            },
+        ])
+        expect(policyText("en")).not.toContain("Only the Operator handles")
     })
 })
 

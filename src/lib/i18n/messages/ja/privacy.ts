@@ -2,7 +2,7 @@
  * プライバシーポリシーの文言（日本語。正本）。
  * 一般的なプライバシーポリシーの構成に沿い、本サービスが扱う情報に絞って簡潔に書く。
  * 扱う情報・保持期間・委託先などの事実は実装に合わせ、変えたときは同じ変更で更新する。
- * `{enactedAt}`/`{revisedAt}` は `lib/site/siteConfig.ts` の値が入る。
+ * `{revisedAt}` は `lib/site/siteConfig.ts` の値が入る。
  */
 export const privacy = {
     "privacy.heading": "プライバシーポリシー",
@@ -60,11 +60,8 @@ export const privacy = {
     "privacy.retention.surveyAnswer":
         "アンケートの回答は、終了後に集計の結果を保存した時点で削除します。",
     "privacy.security.title": "セキュリティ",
-    "privacy.security.intro":
-        "利用者の情報を守るため、次の対策をとっています。",
-    "privacy.security.item1": "通信は暗号化しています。",
-    "privacy.security.item2": "予約用の認証情報は、暗号化して保管します。",
-    "privacy.security.item3": "情報を扱うのは運営者に限ります。",
+    "privacy.security.body":
+        "利用者の情報を守るため、通信は暗号化され、本サービスへ保存される認証情報は暗号化して保管されます。",
     "privacy.cookies.title": "Cookie とアクセス解析",
     "privacy.cookies.titleBasic": "Cookie",
     "privacy.cookies.item1":
@@ -84,6 +81,6 @@ export const privacy = {
     "privacy.revision.title": "このポリシーの変更",
     "privacy.revision.body":
         "このポリシーは、必要に応じて変更することがあります。変更後の内容は、このページに掲載した時点から適用します。",
-    "privacy.revision.dates": "制定日: {enactedAt}／最終改定日: {revisedAt}",
+    "privacy.revision.dates": "最終改定日: {revisedAt}",
     "privacy.link": "プライバシーポリシー",
 } as const

@@ -1,6 +1,6 @@
 /**
  * Privacy policy text (English). A courtesy translation: the Japanese text is authoritative.
- * `{enactedAt}`/`{revisedAt}` are filled from `lib/site/siteConfig.ts`.
+ * `{revisedAt}` is filled from `lib/site/siteConfig.ts`.
  */
 import type { MessageEntries } from "../../messageEntries"
 
@@ -63,12 +63,8 @@ export const privacy = {
     "privacy.retention.surveyAnswer":
         "Survey answers are deleted as soon as the survey has closed and its aggregated result has been saved.",
     "privacy.security.title": "Security",
-    "privacy.security.intro":
-        "We take the following measures to protect your information.",
-    "privacy.security.item1": "Communication is encrypted.",
-    "privacy.security.item2":
-        "Credentials for scheduled posts are stored encrypted.",
-    "privacy.security.item3": "Only the Operator handles the information.",
+    "privacy.security.body":
+        "To protect your information, communication is encrypted, and credentials saved in the Service are stored encrypted.",
     "privacy.cookies.title": "Cookies and analytics",
     "privacy.cookies.titleBasic": "Cookies",
     "privacy.cookies.item1":
@@ -89,7 +85,6 @@ export const privacy = {
     "privacy.revision.title": "Changes to this policy",
     "privacy.revision.body":
         "We may change this policy as needed. Changes apply from when they are posted on this page.",
-    "privacy.revision.dates":
-        "Enacted: {enactedAt} / Last revised: {revisedAt}",
+    "privacy.revision.dates": "Last revised: {revisedAt}",
     "privacy.link": "Privacy Policy",
 } satisfies MessageEntries

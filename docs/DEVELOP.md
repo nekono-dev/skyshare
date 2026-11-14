@@ -45,7 +45,6 @@ Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だ
        "PUBLIC_PLC_DIRECTORY_BASE_URL": "https://plc.directory",
        "PUBLIC_OPERATOR_NAME": "運営者の名前",
        "PUBLIC_OPERATOR_EMAIL": "運営者のメールアドレス",
-       "PUBLIC_PRIVACY_ENACTED_AT": "2000-01-01",
        "PUBLIC_PRIVACY_REVISED_AT": "2000-01-01"
      }
    }
@@ -206,7 +205,7 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 - `config/production.json` と `.dev.vars` の値を登録する。値の無い Secret は登録しない（既存の値は消えない）。
 - 書き込み権限が無いときは、登録はスキップされる（エラーにはならない）。
 
-- プライバシーポリシーの制定日・改定日（`PUBLIC_PRIVACY_ENACTED_AT`・`PUBLIC_PRIVACY_REVISED_AT`）は、main へのリリース時に同じ日付で登録する。公開前の本文の変更は改定として扱わない。公開後に本文を変えたら、改定日だけを更新する。
+- プライバシーポリシーの最終改定日（`PUBLIC_PRIVACY_REVISED_AT`）は、main へのリリース時に登録する。制定日は持たない。公開前の本文の変更は改定として扱わない。公開後に本文を変えたら、最終改定日を更新する。
 
 ### 5.1 ブランチと配備
 
@@ -299,7 +298,6 @@ $EDITOR config/production.json
 | `PUBLIC_OPERATOR_NAME`           | 必須 | 運営者の名称（個人なら活動名でよい）。プライバシーポリシーに載る                 |
 | `PUBLIC_OPERATOR_EMAIL`          | 必須 | 個人情報の問い合わせ窓口のメールアドレス                                         |
 | `PUBLIC_OPERATOR_BLUESKY_HANDLE` | 任意 | 窓口の Bluesky ハンドル（`@` なし）                                              |
-| `PUBLIC_PRIVACY_ENACTED_AT`      | 必須 | プライバシーポリシーの制定日（`YYYY-MM-DD`）                                     |
 | `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | 最終改定日（`YYYY-MM-DD`）。本文を改定したら更新する                             |
 | `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さない             |
 | `SURVEY_CONFIG`                  | 任意 | 題・説明のないアンケートの JSON（3.2）。`npm run survey` が管理する              |
