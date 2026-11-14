@@ -1,0 +1,23 @@
+# マイグレーションの運用規則（release/** 以外は初期状態の SQL だけ）を、main・develop への push で検査する。
+# PR の検査は `e2e.yaml` が行う。main への push は e2e を起動しないため、この workflow が受ける。
+name: migration-rule
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-rule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+      - name: Check migration rule
+        run: node scripts/git/check-migrations.mjs

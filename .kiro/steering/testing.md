@@ -96,7 +96,7 @@ tests/
 - **CI（PR）**: E2E（`e2e.yaml`）だけを必須にする。`npm run test:e2e` を実行する。unit・component・route・render は必須にしない。live は実行しない。
 - **push の前（ローカル）**: `npm run test:all` を実行する。E2E を含むすべての層が対象。`.githooks/pre-push` が失敗時に push を止める。
 - **強制**: `prepare`（npm install・npm ci の後）と `session-start.sh` で `core.hooksPath` を `.githooks` に設定する。人間とエージェントは同じ hook を使う。
-- **`test:all` の順序**: codegen → 型検査 → lexicon → imports（依存規則） → unit → component → route → render → e2e。いずれかが失敗すれば全体を失敗にする。
+- **`test:all` の順序**: codegen → 型検査 → lexicon → imports（依存規則） → migrations（マイグレーションの運用規則） → unit → component → route → render → e2e。いずれかが失敗すれば全体を失敗にする。
 
 ## route 層の互換日付の差（要件 11.2）
 

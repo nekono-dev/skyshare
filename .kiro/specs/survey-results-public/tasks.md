@@ -147,8 +147,8 @@
   - _Requirements: 9.7_
 
 - [x] 5.3 予約の許可の印を廃止する（予約の機能の変更。利用者の決定）
-  - 許可が無効になったとき・予約がないまま 30 日使われないときは、認可の情報の行ごと削除する。`reauth_required` の列（移行 `0002_drop_reauth_required.sql`。旧実装が残した印の行は先に削除する）、`markCredentialReauth`・`purgeReauthMarkers`・`REAUTH_MARKER_KEEP_SECONDS`、応答の `reauthRequired`、409 `ScheduleReauthRequired`、設定の再許可の案内、投稿フォームの再許可のダイアログ、不要な辞書の文言を廃止する。失効の後に残った別の予約は `CredentialMissing` で失敗し、失敗の記録が有効にし直す導線になる
-  - 完了の状態: route テストで、失効で行が削除され、別の待機中の予約が `CredentialMissing` で失敗し、未使用の行だけが削除されることが確かめられ、移行が旧形式の印の行を削除して有効な行を残すことが単体テストで確かめられ、全層のテストが通る。作成と削除の競合（画像の保管の最中に認証情報が消える）で、認証情報のない予約を受け付けず 409 を返すことも route テストで確かめられている
+  - 許可が無効になったとき・予約がないまま 30 日使われないときは、認可の情報の行ごと削除する。`reauth_required` の列（`0001_initial.sql` から直接外す。D1 は初期状態から作り直す運用で、`0002` 以降は `release/**` にだけ積む）、`markCredentialReauth`・`purgeReauthMarkers`・`REAUTH_MARKER_KEEP_SECONDS`、応答の `reauthRequired`、409 `ScheduleReauthRequired`、設定の再許可の案内、投稿フォームの再許可のダイアログ、不要な辞書の文言を廃止する。失効の後に残った別の予約は `CredentialMissing` で失敗し、失敗の記録が有効にし直す導線になる
+  - 完了の状態: route テストで、失効で行が削除され、別の待機中の予約が `CredentialMissing` で失敗し、未使用の行だけが削除されることが確かめられ、`migrations/` が `0001` だけであり、全層のテストが通る。作成と削除の競合（画像の保管の最中に認証情報が消える）で、認証情報のない予約を受け付けず 409 を返すことも route テストで確かめられている
   - _Depends: 5.1_
   - _Boundary: 予約（store・executor・runner・API・UI・辞書）。`survey-results-public` の境界の外で、ポリシーの簡潔化のために利用者が決定した_
   - _Requirements: 9.6_

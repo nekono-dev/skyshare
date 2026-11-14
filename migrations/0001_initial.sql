@@ -24,8 +24,7 @@ CREATE TABLE schedule_credentials (
   service TEXT NOT NULL,
   token_enc TEXT NOT NULL,
   updated_at INTEGER NOT NULL,
-  authorized_at INTEGER NOT NULL DEFAULT 0,
-  reauth_required INTEGER NOT NULL DEFAULT 0
+  authorized_at INTEGER NOT NULL DEFAULT 0
 );
 
 -- OAuth の認可途中の状態（暗号化して保管する）
