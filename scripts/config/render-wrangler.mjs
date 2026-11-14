@@ -78,7 +78,7 @@ export const readConfig = (name, { requireSiteHost = false } = {}) => {
 /**
  * テンプレートから wrangler の設定（オブジェクト）を組み立てる。
  *
- * Input: テンプレートの値、設定、`develop`（true なら develop 用の配備）、`d1Ids`（develop のプレビューに使う D1 の ID）
+ * Input: テンプレートの値、設定、`develop`（true なら develop 用の配備）、`d1Ids`（develop の配備とプレビューに使う D1 の ID）
  * Output: wrangler の設定（JSON にできるオブジェクト）
  */
 export const buildWranglerConfig = ({
@@ -107,10 +107,11 @@ export const buildWranglerConfig = ({
   }
   if (develop) {
     out.name = `${template.name}-develop`
-    out.d1_databases = template.d1_databases.map(db => ({
-      ...db,
-      database_name: `${db.database_name}-develop`,
-    }))
+    // 配備の D1 にも ID を入れる。入れないと、D1 を作り直したとき、デプロイ済みの Worker が持つ古い ID を引き継いで配備に失敗する
+    out.d1_databases = template.d1_databases.map(db => {
+      const name = `${db.database_name}-develop`
+      return { ...db, database_name: name, database_id: d1Ids[name] }
+    })
     out.r2_buckets = template.r2_buckets.map(b => ({
       ...b,
       bucket_name: `${b.bucket_name}-develop`,

@@ -302,7 +302,7 @@ $EDITOR config/production.json
 | `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さない             |
 | `SURVEY_CONFIG`                  | 任意 | 題・説明のないアンケートの JSON（3.2）。`npm run survey` が管理する              |
 
-Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` を書かず名前で解決する。プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は実装に合わせて書いてあるため、実装を変えたら本文も見直す。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう変えない。
+Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` をリポジトリに書かず名前で解決する（develop の配備は、生成する設定に名前から引いた ID を入れる。D1 を作り直しても、古い ID を引き継がない）。プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は実装に合わせて書いてあるため、実装を変えたら本文も見直す。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう変えない。
 
 ### 6.3 Secrets（CI が配備に使う）
 
