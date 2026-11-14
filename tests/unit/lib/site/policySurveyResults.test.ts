@@ -90,6 +90,7 @@ describe("プライバシーポリシーの簡潔な記述", () => {
         expect(text).not.toContain("通常の投稿や下書きは")
         expect(text).not.toContain("重複判定用")
         expect(text).not.toContain("パスワードを本サービスに預ける必要")
+        expect(text).not.toContain("端末の記録")
     })
 
     it("英語: 冗長な記述を持たない", () => {
@@ -98,6 +99,7 @@ describe("プライバシーポリシーの簡潔な記述", () => {
         expect(text).not.toContain("Regular posts and drafts")
         expect(text).not.toMatch(/duplicate detection/i)
         expect(text).not.toContain("give your password")
+        expect(text).not.toContain("Device records")
     })
 
     it("日本語: 目的は「サービス品質の向上及び改善」で、公表の範囲を保つ", () => {
@@ -120,10 +122,10 @@ describe("プライバシーポリシーの簡潔な記述", () => {
         const text = policyText("ja")
 
         expect(text).toContain(
-            "許可が無効になったとき（Bluesky で許可を取り消した場合など）も、認可の情報は削除します。",
+            "予約用の認可の情報は、許可が無効になったとき、または予約がないまま30日使われないときに削除します。",
         )
         expect(text).toContain(
-            "アカウントの識別子と「許可が無効である」旨などの情報を残し、最後に使ってから180日を過ぎた後に削除します。",
+            "再度の許可をご案内するため、アカウントの識別子などは、最後に使ってから180日を過ぎた後に削除します。",
         )
     })
 
@@ -131,10 +133,10 @@ describe("プライバシーポリシーの簡潔な記述", () => {
         const text = policyText("en")
 
         expect(text).toContain(
-            "When the permission becomes invalid (for example, because you revoked it on Bluesky), the authorization itself is also deleted.",
+            "Authorization for scheduled posts is deleted when the permission becomes invalid, or after 30 days of no use with nothing scheduled.",
         )
         expect(text).toContain(
-            "the account identifier and information such as the fact that the permission is invalid, and delete them once 180 days have passed since you last used it",
+            "So that we can ask you to grant it again, the account identifier and related data are deleted after 180 days have passed since you last used it.",
         )
     })
 })

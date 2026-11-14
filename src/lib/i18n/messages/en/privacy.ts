@@ -56,7 +56,7 @@ export const privacy = {
     "privacy.retention.item2":
         "Scheduled posts and their images are deleted when the post succeeds or is canceled. Failed posts are deleted after 7 days, and leftover images within 15 days.",
     "privacy.retention.item3":
-        "Authorization for scheduled posts is deleted after 30 days of no use with nothing scheduled. When the permission becomes invalid (for example, because you revoked it on Bluesky), the authorization itself is also deleted. In either case, so that we can ask you to grant it again, we keep the account identifier and information such as the fact that the permission is invalid, and delete them once 180 days have passed since you last used it.",
+        "Authorization for scheduled posts is deleted when the permission becomes invalid, or after 30 days of no use with nothing scheduled. So that we can ask you to grant it again, the account identifier and related data are deleted after 180 days have passed since you last used it.",
     "privacy.retention.item4":
         "Traffic information is kept only for the period set by Cloudflare.",
     "privacy.retention.item5":
@@ -65,8 +65,6 @@ export const privacy = {
         "Bug reports and feature requests remain as GitHub issues. Contact us if you want one deleted.",
     "privacy.retention.surveyAnswer":
         "Survey answers are deleted as soon as the survey has closed and its aggregated result has been saved.",
-    "privacy.retention.surveyDevice":
-        "Device records remain until you clear your browser storage.",
     "privacy.security.title": "Security",
     "privacy.security.intro":
         "We take the following measures to protect your information.",

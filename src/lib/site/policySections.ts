@@ -123,7 +123,6 @@ export const buildPrivacyPolicy = (
                     ...only(analytics, t("privacy.retention.item5")),
                     t("privacy.retention.feedback"),
                     t("privacy.retention.surveyAnswer"),
-                    t("privacy.retention.surveyDevice"),
                 ),
             ],
         },
