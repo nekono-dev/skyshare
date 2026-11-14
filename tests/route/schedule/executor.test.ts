@@ -1,11 +1,14 @@
-/**
- * Verifies scheduled posting, retries, and cleanup behavior.
- */
+/** 予約投稿の実行、再試行、認証情報の削除を確認する。 */
 import { env } from "cloudflare:test"
 import type { D1Database } from "@/lib/platform/cfTypes"
 import { beforeEach, describe, expect, it } from "vitest"
 import { executeSchedule, MAX_ATTEMPTS } from "@/lib/schedule/executor"
-import { saveCredential } from "@/lib/schedule/store"
+import {
+    claimDueSchedules,
+    getCredentialStatus,
+    insertSchedule,
+    saveCredential,
+} from "@/lib/schedule/store"
 import { TEST_KEY_BASE64 } from "../../fixtures/identities"
 import { createBudget } from "@/lib/schedule/xrpcClient"
 import { TEST_DID } from "../../fixtures/identities"
@@ -122,7 +125,7 @@ describe("executeSchedule: failure classification", () => {
         )
     })
 
-    it("fails with CredentialExpired and asks for re-authorization when the refresh token is rejected", async () => {
+    it("fails with CredentialExpired and deletes the credential when the refresh token is rejected", async () => {
         await seedCredential()
         const row = await seedRunningSchedule({
             id: "s-expired",
@@ -138,12 +141,41 @@ describe("executeSchedule: failure classification", () => {
         expect((await scheduleState("s-expired"))?.last_error).toBe(
             "CredentialExpired",
         )
-        const reauth = await env.DB.prepare(
-            "SELECT reauth_required FROM schedule_credentials WHERE did = ?",
+        expect(await getCredentialStatus(env.DB, TEST_DID)).toEqual({
+            registered: false,
+        })
+    })
+
+    it("fails another pending schedule with CredentialMissing after the credential is deleted", async () => {
+        await resetScheduleTables()
+        await seedCredential()
+        const first = await seedRunningSchedule({
+            id: "s-expired-first",
+            payload: { posts: [{ text: "x" }] },
+        })
+        await insertSchedule(env.DB, {
+            id: "s-expired-next",
+            did: TEST_DID,
+            runAt: NOW - 30,
+            payload: JSON.stringify({ posts: [{ text: "y" }] }),
+            imageKeys: [],
+            now: NOW,
+        })
+        const { fetchImpl } = fakePds({
+            "https://bsky.social/oauth/token": () =>
+                new Response(JSON.stringify({ error: "invalid_grant" }), {
+                    status: 400,
+                }),
+        })
+        expect(await run(first, fetchImpl)).toBe("failed")
+        const [next] = await claimDueSchedules(env.DB, NOW, 1)
+        expect(next?.id).toBe("s-expired-next")
+        if (!next)
+            throw new Error("expected the pending schedule to be claimed")
+        expect(await run(next, fetchImpl)).toBe("failed")
+        expect((await scheduleState("s-expired-next"))?.last_error).toBe(
+            "CredentialMissing",
         )
-            .bind(TEST_DID)
-            .first<{ reauth_required: number }>()
-        expect(reauth?.reauth_required).toBe(1)
     })
 
     it("fails with ImageMissing when a referenced image is not in storage", async () => {
@@ -232,6 +264,17 @@ describe("executeSchedule: credential storage", () => {
             .first<{ token_enc: string }>()
         expect(stored?.token_enc).toBeTruthy()
         expect(stored?.token_enc).not.toContain("refresh-rotated-fixture")
+    })
+
+    it("returns registration and credential timestamps without a re-authorization state", async () => {
+        await resetScheduleTables()
+        await seedCredential()
+        await expect(getCredentialStatus(env.DB, TEST_DID)).resolves.toEqual({
+            registered: true,
+            updatedAt: NOW,
+            authorizedAt: NOW,
+            latestRunAt: null,
+        })
     })
 })
 

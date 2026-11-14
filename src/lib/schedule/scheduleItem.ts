@@ -124,7 +124,7 @@ export const getScheduleDetail = async (input: {
  *
  * Output:
  * - 成功: `{ ok: true, value: { id, runAt } }`（`runAt` は ISO 文字列）
- * - 失敗: 400（入力の不正）・404（対象外の状態）・409（実行中・認証情報の未登録・再認可。`code` は現行の応答の `error`）・500（画像の保管）
+ * - 失敗: 400（入力の不正）・404（対象外の状態）・409（実行中・認証情報の未登録。`code` は現行の応答の `error`）・500（画像の保管）
  * - 保存の失敗は例外として呼び出し側へ投げる（保管した新しい画像は削除する）
  *
  * Example: `const result = await replaceSchedule({ did, id, request })`

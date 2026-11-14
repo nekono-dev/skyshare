@@ -45,7 +45,7 @@ export type ScheduleListDto = {
  *
  * Output:
  * - 成功: `{ ok: true, value: { id, runAt } }`（`runAt` は ISO 文字列）
- * - 失敗: 400（入力の不正）・409（認証情報の未登録・再認可）・429（待機中の上限）・500（保管・保存の失敗）。
+ * - 失敗: 400（入力の不正）・409（認証情報の未登録）・429（待機中の上限）・500（保管・保存の失敗）。
  *   `code` は現行の応答の `error` に入る値
  *
  * Example: `const result = await createSchedule({ did: session.did, request })`

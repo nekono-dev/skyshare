@@ -47,7 +47,6 @@ import TabButtons, {
   tabId,
 } from "@/components/common/section/TabButtons"
 import RunAtPicker from "@/components/composer/ThreadComposer/RunAtPicker"
-import CredentialDialog from "@/components/schedule/CredentialDialog"
 import ScheduleList from "@/components/composer/ThreadComposer/ScheduleList"
 import { formatRunAtLabel } from "@/lib/schedule/runAtInput"
 import {
@@ -236,7 +235,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     const locale = useLocale()
     const {
       registered: scheduleRegistered,
-      reauthRequired: scheduleReauthRequired,
       expiresAt: scheduleExpiresAt,
       limits: scheduleLimits,
       reload: reloadScheduleAvailability,
@@ -261,8 +259,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
       setRestoredFailedId,
       setupGuideOpen,
       setSetupGuideOpen,
-      reauthOpen,
-      setReauthOpen,
       deleteRestoredFailedSilently,
       handleRunAtChange,
     } = useScheduleFlow({
@@ -404,10 +400,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
     // 予約の日時の設定中は動画のボタンを無効にする）
     const hasVideo = hasVideoSegment(segments)
     const scheduleAvailable =
-      !guestMode &&
-      scheduleRegistered === true &&
-      !scheduleReauthRequired &&
-      scheduleLimits !== null
+      !guestMode && scheduleRegistered === true && scheduleLimits !== null
     // カレンダーのボタンを押せない理由。押せるときは undefined
     const scheduleUnavailableReason = guestMode
       ? t("post.guestUnavailable")
@@ -415,11 +408,9 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
         ? t("schedule.unavailableVideo")
         : scheduleRegistered !== true
           ? t("schedule.unavailableDisabled")
-          : scheduleReauthRequired
-            ? t("schedule.unavailableReauth")
-            : scheduleLimits === null
-              ? t("schedule.unavailableLimits")
-              : undefined
+          : scheduleLimits === null
+            ? t("schedule.unavailableLimits")
+            : undefined
     const target = submitTarget(scheduleMode)
     const scheduledRunAt = runAtOf(scheduleMode)
     // 予約として送信するときは、動画を含む投稿を送れない
@@ -472,8 +463,6 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
           scheduleLoading={scheduleLoading}
           setupGuideOpen={setupGuideOpen}
           setSetupGuideOpen={setSetupGuideOpen}
-          reauthOpen={reauthOpen}
-          setReauthOpen={setReauthOpen}
           entryFormId={entryFormId}
           draftTab={draftTab}
           setDraftTab={setDraftTab}
@@ -599,16 +588,12 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                       }
                       disabledReason={scheduleUnavailableReason}
                       onUnavailable={
-                        // 予約投稿が無効（未登録）のときは設定への案内を、許可が無効になった
-                        // ときはこの画面のまま再度の許可のダイアログを出す
+                        // 予約投稿が無効のときは設定への案内を表示する
                         guestMode
                           ? undefined
                           : scheduleRegistered === false
                             ? () => setSetupGuideOpen(true)
-                            : scheduleRegistered === true &&
-                                scheduleReauthRequired
-                              ? () => setReauthOpen(true)
-                              : undefined
+                            : undefined
                       }
                       open={runAtPickerOpen}
                       onOpenChange={setRunAtPickerOpen}
@@ -640,12 +625,7 @@ export const Component = forwardRef<ThreadComposerHandle, Props>(
                   className={`${ui["base-button"]} ${ui["text-button"]} ${ui["white-button"]}`}
                   data-testid="schedule-run-at-label"
                   disabled={isSubmitting}
-                  onClick={() =>
-                    // 許可が無効になっているときは、日時の指定の代わりに再度の許可を案内する
-                    scheduleReauthRequired
-                      ? setReauthOpen(true)
-                      : setRunAtPickerOpen(true)
-                  }
+                  onClick={() => setRunAtPickerOpen(true)}
                 >
                   {t("schedule.runAtLabel", {
                     date: formatRunAtLabel(scheduledRunAt, locale),

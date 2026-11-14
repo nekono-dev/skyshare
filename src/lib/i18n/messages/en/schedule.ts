@@ -7,8 +7,6 @@ export const schedule = {
     "schedule.unavailableVideo": "Posts with a video cannot be scheduled.",
     "schedule.unavailableDisabled":
         "Turn on scheduled posts in Settings to use scheduling.",
-    "schedule.unavailableReauth":
-        "Your permission on Bluesky is no longer valid. Press to grant it again.",
     "schedule.unavailableLimits": "Could not load the scheduling limits.",
     "schedule.sending": "Scheduling…",
     "schedule.created": "Scheduled.",
@@ -62,9 +60,6 @@ export const schedule = {
         "This revokes the permission for scheduled posts on Bluesky and deletes the stored authorization. Continue?",
     "schedule.setting.disableConfirm": "Turn off",
     "schedule.setting.disabled": "Scheduled posts were turned off.",
-    "schedule.setting.reauthRequired":
-        "Your permission on Bluesky is no longer valid. Grant it again to schedule posts.",
-    "schedule.setting.reauthButton": "Grant again",
     "schedule.setting.disabledWithDelete":
         "Scheduled posts were turned off and {count} scheduled posts were deleted.",
     "schedule.credential.title": "Turn on scheduled posts",
@@ -111,14 +106,12 @@ export const schedule = {
         "The scheduled post was not found. It may have already run or been cancelled.",
     "schedule.error.credentialRequired":
         "Scheduled posts are turned off. Turn them on in Settings.",
-    "schedule.error.reauthRequired":
-        "Your permission on Bluesky is no longer valid. Grant it again.",
     "schedule.error.running": "It is running and cannot be changed now.",
     "schedule.error.tooMany":
         "You have reached the limit of scheduled posts. Cancel ones you no longer need first.",
     "schedule.error.server": "Failed to process the scheduled post.",
     "schedule.failure.CredentialMissing":
-        "Scheduled posts were turned off, so the post was not made.",
+        "Scheduled posts were turned off, so the post was not made. Turn on scheduled posts in Settings.",
     "schedule.failure.CredentialInvalid":
         "The stored authorization for scheduled posts could not be read. Turn on scheduled posts again in Settings.",
     "schedule.failure.CredentialExpired":

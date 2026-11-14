@@ -6,7 +6,7 @@ import { validateImageMetadata } from "@/lib/atproto/embed"
 import { isReplyRefOwnedBySelf } from "@/lib/atproto/post"
 import * as PostSchema from "@/lib/api/schema/v2/schedules/post"
 import type { ScheduleEnv } from "@/lib/platform/cfTypes"
-import { newImageGeneration, putImages } from "./imageStaging"
+import { newImageGeneration, putImages, removeImages } from "./imageStaging"
 import type { ScheduleErrorCode } from "./scheduleResponse"
 import { MAX_PENDING_PER_ACCOUNT } from "./scheduleLimits"
 import { countPending, getCredentialStatus, touchCredential } from "./store"
@@ -88,7 +88,7 @@ export type StageResult =
  * Output:
  * - 成功: `{ ok: true, runAt, payload, imageKeys }`。保存に失敗したら呼び出し側が画像を消す
  * - 失敗: 範囲外・容量超過は 400、未登録は 409（ScheduleCredentialRequired）、
- *   再度の許可が必要なら 409（ScheduleReauthRequired）、上限は 429、保管の失敗は 500
+ *   上限は 429、保管の失敗は 500
  *
  * 実行時刻・認証情報・件数・画像の順に確認し、画像の保管後に認証情報の使用時刻を更新する。
  *
@@ -108,9 +108,6 @@ export const stageSchedule = async (
     const credential = await getCredentialStatus(env.DB, did)
     if (!credential.registered) {
         return { ok: false, status: 409, error: "ScheduleCredentialRequired" }
-    }
-    if (credential.reauthRequired) {
-        return { ok: false, status: 409, error: "ScheduleReauthRequired" }
     }
     // 件数は予約の行数で数える（スレッドも1件）
     if (
@@ -137,8 +134,12 @@ export const stageSchedule = async (
         console.error(`stageSchedule: putImages failed id=${id}`, err)
         return { ok: false, status: 500 }
     }
-    // 予約の作成と置き換えを「認証情報の使用」とみなし、未使用の削除から外す
-    await touchCredential(env.DB, did, nowSeconds)
+    // 予約の作成と置き換えを「認証情報の使用」とみなし、未使用の削除から外す。
+    // 登録の確認の後に認証情報が消えていたら、認証情報のない予約を作らず、保管した画像も消す
+    if (!(await touchCredential(env.DB, did, nowSeconds))) {
+        await removeImages(env.SCHEDULE_IMAGES, imageKeys).catch(() => {})
+        return { ok: false, status: 409, error: "ScheduleCredentialRequired" }
+    }
     return {
         ok: true,
         runAt: runAt.epoch,

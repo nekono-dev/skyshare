@@ -34,9 +34,7 @@ export const notifyScheduleCredentialChange = (): void => {
  *
  * Output:
  * - `registered`: 登録済みなら true。取得前・取得の失敗・ゲストは null。
- *   再度の許可が必要なときも true（設定のスイッチをオフに戻さない）
- * - `reauthRequired`: 許可が無効になり、再度の許可が必要なら true
- * - `expiresAt`: 許可の有効期限の目安。無い・再度の許可が必要なときは null
+ * - `expiresAt`: 許可の有効期限の目安。無いときは null
  * - `limits`: 制限値。取得前と取得の失敗は null
  * - `reload`: cookie を使わずに登録状態を取得し直す（予約の UI を開くときに呼ぶ）
  *
@@ -47,13 +45,11 @@ export const useScheduleAvailability = (
     revalidate = false,
 ): {
     registered: boolean | null
-    reauthRequired: boolean
     expiresAt: Date | null
     limits: ScheduleLimits | null
     reload: () => void
 } => {
     const [registered, setRegistered] = useState<boolean | null>(null)
-    const [reauthRequired, setReauthRequired] = useState(false)
     const [expiresAt, setExpiresAt] = useState<Date | null>(null)
     const [limits, setLimits] = useState<ScheduleLimits | null>(null)
     const [version, setVersion] = useState(0)
@@ -79,7 +75,6 @@ export const useScheduleAvailability = (
         const hint = force ? undefined : readScheduleHint(document.cookie)
         if (hint) {
             setRegistered(hint.registered)
-            setReauthRequired(hint.reauthRequired)
             setExpiresAt(hint.expiresAt ? new Date(hint.expiresAt) : null)
             return
         }
@@ -93,7 +88,6 @@ export const useScheduleAvailability = (
                     return
                 }
                 setRegistered(res.data.registered)
-                setReauthRequired(res.data.reauthRequired)
                 setExpiresAt(
                     res.data.expiresAt ? new Date(res.data.expiresAt) : null,
                 )
@@ -134,5 +128,5 @@ export const useScheduleAvailability = (
         }
     }, [enabled, reload, refresh])
 
-    return { registered, reauthRequired, expiresAt, limits, reload }
+    return { registered, expiresAt, limits, reload }
 }

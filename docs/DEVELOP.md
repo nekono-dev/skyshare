@@ -231,7 +231,7 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 4. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。
 5. ビルドと配備。
 
-ローカルでマイグレーションを試すには `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run setup:local` が作る）。未リリースのため、最終の構造は `migrations/0001_initial.sql` に統合している。本番の D1 は未作成で、初回の `release/*` は空の DB へ `0001_initial.sql` を適用する。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
+ローカルでマイグレーションを試すには `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run setup:local` が作る）。未リリースのため、構造は `migrations/0001_initial.sql` と、その後に足した `0002_drop_reauth_required.sql`（予約の「再度の許可が必要である印」の廃止。旧実装の印の行を削除して列を消す）の順に適用する。本番の D1 は未作成で、初回の `release/*` は空の DB へ `0001`・`0002` を順に適用する。過去の分割マイグレーションを適用した DB は、新規 DB に作り直してから適用する。
 
 ### 5.3 ブランチ宣言と BRW（branch-release-workflow）
 
