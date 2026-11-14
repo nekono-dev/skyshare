@@ -27,8 +27,7 @@ export const schedule = {
     "schedule.picker.slotsRemaining": "残り{remaining}件（{max}件まで）",
     "schedule.picker.slotsFull":
         "待機中の予約が上限に達しています。不要な予約を取り消すと予約できます。",
-    "schedule.picker.expiresAt":
-        "許可の有効期限の目安: {date}（予約するたびに延びます）",
+    "schedule.picker.expiresAt": "認証情報の有効期限: {date}",
     "schedule.range.tooSoon":
         "現在から{minutes}分後以降の日時を指定してください。",
     "schedule.range.tooLate":

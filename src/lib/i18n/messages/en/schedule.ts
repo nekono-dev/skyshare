@@ -30,8 +30,7 @@ export const schedule = {
     "schedule.picker.slotsRemaining": "{remaining} left (up to {max})",
     "schedule.picker.slotsFull":
         "You have reached the limit of pending scheduled posts. Cancel one to schedule another.",
-    "schedule.picker.expiresAt":
-        "Permission valid until about {date} (extended each time you schedule a post)",
+    "schedule.picker.expiresAt": "Credential expiry: {date}",
     "schedule.range.tooSoon":
         "Choose a time at least {minutes} minutes from now.",
     "schedule.range.tooLate": "Choose a time within {days} days from now.",
