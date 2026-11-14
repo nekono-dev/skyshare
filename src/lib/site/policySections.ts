@@ -94,6 +94,7 @@ export const buildPrivacyPolicy = (
                     t("privacy.purpose.item4"),
                     t("privacy.purpose.item5"),
                     t("privacy.purpose.survey"),
+                    t("privacy.purpose.surveyPublish"),
                 ),
             ],
         },

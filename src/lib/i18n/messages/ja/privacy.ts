@@ -36,7 +36,9 @@ export const privacy = {
     "privacy.purpose.item4": "不具合の調査と不正利用の防止",
     "privacy.purpose.item5": "お問い合わせへの回答",
     "privacy.purpose.survey":
-        "アンケート回答を集計し、サービス品質の向上及び改善に使います。集計の結果は、選択肢ごとの割合だけを公開することがあります。個別の回答や回答者の数は公開しません。",
+        "アンケート結果は集計し、サービス品質の向上及び改善に使います。",
+    "privacy.purpose.surveyPublish":
+        "アンケート結果は回答の割合を公開することがあります。",
     "privacy.external.title": "情報の共有",
     "privacy.external.intro":
         "次の場合を除き、利用者の情報を第三者と共有しません。",

@@ -39,7 +39,9 @@ export const privacy = {
     "privacy.purpose.item4": "Investigating bugs and preventing misuse",
     "privacy.purpose.item5": "Answering your inquiries",
     "privacy.purpose.survey":
-        "We aggregate survey responses to improve the quality of the Service. We may publish the aggregated result only as the percentage for each choice; we never publish individual responses or the number of respondents.",
+        "We aggregate survey results and use them to improve the quality of the Service.",
+    "privacy.purpose.surveyPublish":
+        "We may publish survey results as the percentage of answers.",
     "privacy.external.title": "Sharing of information",
     "privacy.external.intro":
         "We do not share your information with third parties except in the following cases.",

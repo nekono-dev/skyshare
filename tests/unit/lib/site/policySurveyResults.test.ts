@@ -22,12 +22,29 @@ const policyText = (locale: Locale): string =>
         )
         .join("\n")
 
-describe("プライバシーポリシーのアンケート結果の記述", () => {
-    it("日本語: 割合だけの公表と、個別の回答・回答者の数を公開しないことを書く", () => {
-        const text = policyText("ja")
+/** 指定した節の箇条書きの項目（文字列だけ）を返す */
+const policyItems = (locale: Locale, sectionId: string): string[] =>
+    buildPrivacyPolicy(createTranslator(locale).t, siteConfig)
+        .filter(section => section.id === sectionId)
+        .flatMap(section => section.blocks)
+        .flatMap(block =>
+            block.kind === "list"
+                ? block.items.filter(
+                      (item): item is string => typeof item === "string",
+                  )
+                : [],
+        )
 
-        expect(text).toContain("選択肢ごとの割合だけを公開することがあります")
-        expect(text).toContain("個別の回答や回答者の数は公開しません")
+describe("プライバシーポリシーのアンケート結果の記述", () => {
+    it("日本語: 利用目的の 2 項目で、集計して改善に使うことと、回答の割合を公開することがあることを書く", () => {
+        const items = policyItems("ja", "purpose")
+
+        expect(items).toContain(
+            "アンケート結果は集計し、サービス品質の向上及び改善に使います。",
+        )
+        expect(items).toContain(
+            "アンケート結果は回答の割合を公開することがあります。",
+        )
     })
 
     it("日本語: 回答は集計の結果を保存した時点で削除し、1 か月後の記述を残さない", () => {
@@ -42,12 +59,14 @@ describe("プライバシーポリシーのアンケート結果の記述", () =
         expect(text).not.toContain("終了から1か月後")
     })
 
-    it("英語: 割合だけの公表と、個別の回答・回答者の数を公開しないことを書く", () => {
-        const text = policyText("en")
+    it("英語: 利用目的の 2 項目で、集計して改善に使うことと、回答の割合を公開することがあることを書く", () => {
+        const items = policyItems("en", "purpose")
 
-        expect(text).toContain("only as the percentage for each choice")
-        expect(text).toContain(
-            "never publish individual responses or the number of respondents",
+        expect(items).toContain(
+            "We aggregate survey results and use them to improve the quality of the Service.",
+        )
+        expect(items).toContain(
+            "We may publish survey results as the percentage of answers.",
         )
     })
 
@@ -102,13 +121,18 @@ describe("プライバシーポリシーの簡潔な記述", () => {
         expect(text).not.toContain("Device records")
     })
 
-    it("日本語: 目的は「サービス品質の向上及び改善」で、公表の範囲を保つ", () => {
+    it("日本語: 目的に重複回答の防止や、公開しない旨の長い文を残さない", () => {
         const text = policyText("ja")
 
-        expect(text).toContain(
-            "アンケート回答を集計し、サービス品質の向上及び改善に使います。",
-        )
         expect(text).not.toContain("重複回答の防止")
+        expect(text).not.toContain("回答者の数は公開しません")
+    })
+
+    it("英語: 目的に、公開しない旨の長い文を残さない", () => {
+        const text = policyText("en")
+
+        expect(text).not.toContain("only as the percentage for each choice")
+        expect(text).not.toMatch(/number of respondents/i)
     })
 
     it("日本語: 不具合の報告・機能の提案は「バグ報告または機能提案内容」とし、掲載先を重ねて書かない", () => {
