@@ -132,6 +132,33 @@ describe("buildWranglerConfig", () => {
     })
 })
 
+describe("develop deployment binds the database by id", () => {
+    it("puts the resolved database id on the deployed binding, so a recreated database is not looked up by a stale id", () => {
+        const out = buildWranglerConfig({
+            template,
+            config,
+            develop: true,
+            d1Ids: { "skyshare-develop": D1_ID },
+        })
+        expect(out.d1_databases).toEqual([
+            expect.objectContaining({
+                binding: "DB",
+                database_name: "skyshare-develop",
+                database_id: D1_ID,
+            }),
+        ])
+    })
+
+    it("leaves the production binding without an id", () => {
+        const production = buildWranglerConfig({
+            template,
+            config,
+            develop: false,
+        })
+        expect(production.d1_databases[0]).not.toHaveProperty("database_id")
+    })
+})
+
 describe("survey results remote connection", () => {
     it.each([
         [
