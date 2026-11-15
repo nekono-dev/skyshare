@@ -324,3 +324,19 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 （2026-11-13 追補: 実装に着手した。`survey-results-aggregation` のタスク 1.1（結果の保管先をテンプレートとテスト設定に宣言する）が完了。`surveys(a)` と他のタスクは未着手。次は `surveys(a)`、続いて `survey-results-aggregation` の 1.2〜1.4。）
 
 （2026-11-13 追補 2: 実装の進捗。`surveys(a)` は完了。`survey-results-aggregation` は 1〜3.6 がすべて完了し、残りは 4.1 だけ（`npm run test:all` は通過済み。完了にしない理由は、2.6 の実バケットでの条件付き書き込みの確認が認証情報の不足で未実施であること。運用者が確かめる）。`survey-operations` は 1.1〜4.1 が完了し、残りは 4.2（実機の確認と運用中の設定の作り直し。運用者の作業。利用者の確認が要る）。`survey-results-public` は未着手。なお、回答ダイアログの見出しは、全体の題を廃止した結果、入口と同じ固定の文言 `survey.entry` にした（実装時の決定。利用者の確認待ち）。）
+
+## Phase 10: アンケート回答ダイアログの調整（2026-11-15 discovery）
+
+### Overview
+
+`surveys` の領域内の修正で、新しい spec は作らない（Path A。`surveys` は brief のみで要件が未作成のため、要件の作成時にも次の決定を記録する）。作業ブランチは `dev/survey-dialog-polish`（develop の 101d98fb から作成。#133・#134 の取り込み後に、`dev/survey-results-publishing`・`dev/fix-develop-d1-id`・`dev/survey-r2-poc`（worktree を含む）を片付けた）。
+
+### 決定（利用者との合意 2026-11-15）
+
+- **画面構成**: 余白の取り方（全体・「回答しない」を選んだときの `survey.declineHint` の段落）がアンバランスなため、HTML のモックを共有しながら利用者と合意してから実装する。期限の表示を含めた構成で調整する。
+- **外枠・Esc で閉じる**: 外枠（背景）のクリックと Esc でダイアログを閉じる。閉じたときの回答内容は「回答しない」の扱い（`onDecline`: 送信せず、タブに辞退の印だけ残す）にする。送信中は閉じない。従来の「背景・Esc では閉じない」（`SurveyDialog` の `ignoreClose`・テスト）を改める。
+- **期限の表示**: ダイアログに回答期限を載せる。表記は結果ページの `formatSurveyPeriod`（`src/lib/survey/publicResults/presentation.ts`）と同じ「最終日」の規則（締切が 12/01 0:00 なら「11/30 まで」）。辞書は ja・en の両方。
+
+### Direct Implementation Candidates
+
+- [ ] survey-dialog-polish -- 上の 3 点の実装（`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、関連テスト）。Dependencies: 画面構成のモックの合意

@@ -1,6 +1,6 @@
 /**
  * アンケートの選択状態を管理し、固定の見出しと質問、回答・辞退の操作をダイアログとして表示する。
- * 言語を切り替えても選択を保ち、背景クリックと Esc では閉じない。
+ * 言語を切り替えても選択を保つ。背景クリックと Esc は「回答しない」として閉じる（送信中を除く）。
  */
 import React, { useId, useState } from "react"
 import ChoiceQuestion from "@/components/common/select/ChoiceQuestion"
@@ -19,6 +19,7 @@ import {
   type SurveyDraft,
 } from "@/lib/survey/answerDraft"
 import { localize, type Survey } from "@/lib/survey/definition"
+import { formatSurveyDeadline } from "@/lib/survey/publicResults/presentation"
 import ui from "@/styles/ui.module.css"
 import styles from "./index.module.css"
 
@@ -131,17 +132,16 @@ export type SurveyDialogBodyProps = {
   onSelect: (questionId: string, next: string[]) => void
   /** 送信の操作を押したときの通知（判定結果に応じて閉じる・送信する） */
   onAction: () => void
+  /** 背景のクリックまたは Esc で閉じようとしたときの通知（「回答しない」として扱う） */
+  onDismiss: () => void
 }
-
-/** 背景・Esc で閉じないための Overlay の閉じる処理。何もしない。 */
-const ignoreClose = () => {}
 
 /**
  * アンケートダイアログの見た目を描画する（選択状態は持たない）。
  *
  * Input: `SurveyDialogBodyProps`
- * Output: 背景（閉じない）の上にタイトル付きのカードを描画する。送信の操作は末尾に置き、
- *   取り消せない旨と案内は送信の操作の直前に示す。
+ * Output: 背景の上にタイトルと回答期限つきのカードを描画する。送信の操作は末尾に置き、
+ *   個人情報の取り扱いの案内と「回答しない」の案内は送信の操作の直前に示す。
  *
  * 例: `action.kind === "decline"` のときは「閉じる」の操作になり、`onAction` を呼ぶ。
  */
@@ -158,14 +158,14 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   action,
   onSelect,
   onAction,
+  onDismiss,
 }) => {
   const declined = action.kind === "decline"
   const actionLabel = declined ? t("survey.close") : t("survey.submit")
   // 未完了のときは送信ボタンを無効にするだけで、案内の文言は出さない
-  const hint = action.kind === "decline" ? t("survey.declineHint") : null
 
   return (
-    <Overlay open onClose={ignoreClose} contentClassName={ui["width-md"]}>
+    <Overlay open onClose={onDismiss} contentClassName={ui["width-md"]}>
       <div
         className={`${ui["base-card"]} ${ui["dialog-card"]} ${styles["card"]}`}
         role="dialog"
@@ -173,10 +173,17 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
         aria-labelledby={titleId}
         tabIndex={-1}
       >
-        <div className={styles["scroll"]}>
+        <div className={styles["head"]}>
           <h2 id={titleId} className={styles["title"]}>
-            {t("survey.entry")}
+            {t("survey.title")}
           </h2>
+          <div className={styles["deadline"]}>
+            {t("survey.deadline", {
+              date: formatSurveyDeadline(survey.closesAt, locale),
+            })}
+          </div>
+        </div>
+        <div className={styles["scroll"]}>
           {survey.questions.map(question => (
             <ChoiceQuestion
               key={question.id}
@@ -200,22 +207,36 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
           ))}
         </div>
         <div className={styles["footer"]}>
-          <p className={ui.text}>
-            {renderSlots(raw("survey.irreversible"), {
-              link: (
-                <a href="/privacy/" target="_blank" rel="noreferrer">
-                  {t("privacy.link")}
-                </a>
-              ),
-            })}
-          </p>
-          {hint ? <p className={ui.text}>{hint}</p> : null}
+          {/* 2 つの説明を同じ位置に重ね、高い方の高さを確保する。切り替えてもボタンが動かない。 */}
+          <div className={styles["notes"]}>
+            <p
+              className={`${styles["note"]} ${declined ? styles["inactive"] : ""}`}
+              aria-hidden={declined}
+            >
+              {/* flex の箱の直下に文と a を置くと別々の列になり折り返しが崩れるため、1 つの span にまとめる */}
+              <span>
+                {renderSlots(raw("survey.privacy"), {
+                  link: (
+                    <a href="/privacy/" target="_blank" rel="noreferrer">
+                      {t("privacy.link")}
+                    </a>
+                  ),
+                })}
+              </span>
+            </p>
+            <div
+              className={`${styles["hint"]} ${declined ? "" : styles["inactive"]}`}
+              aria-hidden={!declined}
+            >
+              {t("survey.declineHint")}
+            </div>
+          </div>
           {failed ? (
             <p role="alert" className={styles["error"]}>
               {t("survey.submitFailed")}
             </p>
           ) : null}
-          <div className={ui["dialog-actions"]}>
+          <div className={`${ui["dialog-actions"]} ${styles["actions"]}`}>
             <button
               type="button"
               className={`${ui["base-button"]} ${ui["text-button"]} ${declined ? ui["gray-button"] : ui["blue-button"]}`}
@@ -272,6 +293,11 @@ export const SurveyDialog: React.FC<SurveyDialogProps> = ({
     dispatchSubmitAction(action, busy, { onSubmit, onDecline })
   }
 
+  // 背景・Esc で閉じる操作は「回答しない」と同じ（送信せず閉じる）。送信中は閉じない。
+  const handleDismiss = () => {
+    if (!busy) onDecline()
+  }
+
   return (
     <SurveyDialogBody
       survey={survey}
@@ -285,6 +311,7 @@ export const SurveyDialog: React.FC<SurveyDialogProps> = ({
       action={action}
       onSelect={handleSelect}
       onAction={handleAction}
+      onDismiss={handleDismiss}
     />
   )
 }
