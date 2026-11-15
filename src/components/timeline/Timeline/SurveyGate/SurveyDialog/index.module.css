@@ -84,16 +84,12 @@
   margin: 0;
 }
 
-/* 個人情報の取り扱いの説明。本文より淡く小さくする。 */
-.note {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-/* 「回答しない」を選んだときの案内。個人情報の説明の位置に出す灰色の囲み。 */
+/* 個人情報の取り扱いの説明と「回答しない」の案内。同じ灰色の囲みで、重ねた領域いっぱいに広げる。 */
+.note,
 .hint {
-  align-self: start;
+  display: flex;
+  align-items: center;
+  margin: 0;
   border-radius: var(--radius-md);
   background: var(--color-gray);
   padding: var(--space-3);
