@@ -1,10 +1,10 @@
-# マイグレーションの運用規則（release/** 以外は初期状態の SQL だけ）を、main・develop への push で検査する。
-# PR の検査は `e2e.yaml` が行う。main への push は e2e を起動しないため、この workflow が受ける。
+# マイグレーションの運用規則（release/** 以外は初期状態の SQL だけ）を、main への push で検査する。
+# PR の検査は `e2e.yaml`、develop・release の push は `deploy.yaml` が呼ぶ e2e が行う。main への push は e2e を起動しないため、この workflow が受ける。
 name: migration-rule
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

@@ -47,40 +47,7 @@ env:
 jobs:
   # テストと型検査。失敗した場合はデプロイしない。
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          # lexicons/com/atproto/repo/strongRef.json は atproto サブモジュールへのシンボリックリンク。
-          submodules: true
-      - uses: actions/setup-node@v4
-        with:
-          # Cloudflare Workers が扱える Node.js のバージョンを指定する。
-          node-version: 22.16.0
-          cache: npm
-      - run: npm ci
-      # 型検査とテストが使う src/client の atproto / openapi 生成コードを作る。
-      - run: npm run codegen
-      - run: npm run test:type
-      # unit・component・route・render を実行する。E2E は呼び出した e2e ジョブが担う。
-      - run: npm run test:unit
-      - run: npm run test:component
-      - run: npm run test:route
-      - run: npm run test:render
-      # 層の向き・循環・領域をまたぐ import を検査し、許容リストに無い違反で失敗する。
-      - run: npm run test:imports
-      # lexicon の lint。導入前に配布物のチェックサムを検証する。
-      - name: Run goat lint
-        env:
-          GOAT_VERSION: 0.2.5
-        run: |
-          curl -fsSLO "https://github.com/bluesky-social/goat/releases/download/v${GOAT_VERSION}/goat_Linux_x86_64.tar.gz"
-          curl -fsSLO "https://github.com/bluesky-social/goat/releases/download/v${GOAT_VERSION}/goat_${GOAT_VERSION}_checksums.txt"
-          grep ' goat_Linux_x86_64.tar.gz$' "goat_${GOAT_VERSION}_checksums.txt" | sha256sum -c -
-          sudo tar -xf goat_Linux_x86_64.tar.gz -C /usr/local/bin goat
-          goat --version
-      - run: npm run test:lexicon
+    uses: ./.github/workflows/verify.yaml
 
   # E2E（複数ブラウザ。実アカウントの live 層は含まない）。失敗した場合はデプロイしない。
   e2e:
