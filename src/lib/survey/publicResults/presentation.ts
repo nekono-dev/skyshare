@@ -91,6 +91,28 @@ export const formatSurveyPeriod = (
 }
 
 /**
+ * 回答ダイアログに載せる回答期限を、表示言語ごとに表記する。
+ *
+ * Input: 保存されたオフセットを含む終了 ISO 日時と表示言語
+ * Output: 日本語は期間に含まれる最後の日（`MM/DD`。年が変わるときだけ `YYYY/MM/DD`）。
+ *   英語は終了時刻そのもの（`YYYY/MM/DD H:mm (JST)`。`+09:00` は JST、`Z` は UTC、他は `UTC+hh:mm`）。
+ * 例: `formatSurveyDeadline("2026-12-01T00:00:00+09:00", "ja")` → `"11/30"`、`"en"` → `"2026/12/01 0:00 (JST)"`
+ */
+export const formatSurveyDeadline = (
+    closesAt: string,
+    locale: Locale,
+): string => {
+    if (locale === "ja") return formatSurveyPeriod(closesAt, closesAt).end
+    const match = ISO_DATE_TIME.exec(closesAt)
+    if (!match) throw new RangeError("Invalid ISO date-time")
+    const date = paddedDate(calendarParts(closesAt))
+    const offset = /(Z|[+-]\d{2}:\d{2})$/.exec(closesAt)?.[1] ?? "Z"
+    const zone =
+        offset === "+09:00" ? "JST" : offset === "Z" ? "UTC" : `UTC${offset}`
+    return `${date} ${Number(match[4])}:${match[5]} (${zone})`
+}
+
+/**
  * 割合を表示言語の数値書式で小数点以下 1 桁まで表記する。
  *
  * Input: 0 以上 100 以下の割合と表示言語

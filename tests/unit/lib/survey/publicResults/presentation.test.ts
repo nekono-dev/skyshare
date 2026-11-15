@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest"
 import {
     formatPercent,
+    formatSurveyDeadline,
     formatSurveyPeriod,
     topOptionIds,
 } from "@/lib/survey/publicResults/presentation"
@@ -151,6 +152,26 @@ describe("topOptionIds", () => {
     it("supports a single option", () => {
         expect(topOptionIds([{ id: "only", percent: 100 }])).toEqual(
             new Set(["only"]),
+        )
+    })
+})
+
+describe("formatSurveyDeadline", () => {
+    it("shows the last included day in Japanese", () => {
+        expect(formatSurveyDeadline("2026-12-01T00:00:00+09:00", "ja")).toBe(
+            "11/30",
+        )
+    })
+
+    it("shows the closing time with its zone in English", () => {
+        expect(formatSurveyDeadline("2026-12-01T00:00:00+09:00", "en")).toBe(
+            "2026/12/01 0:00 (JST)",
+        )
+        expect(formatSurveyDeadline("2026-12-01T00:00:00Z", "en")).toBe(
+            "2026/12/01 0:00 (UTC)",
+        )
+        expect(formatSurveyDeadline("2026-12-01T13:05:00-05:00", "en")).toBe(
+            "2026/12/01 13:05 (UTC-05:00)",
         )
     })
 })

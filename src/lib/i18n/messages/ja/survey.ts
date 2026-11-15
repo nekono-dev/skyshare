@@ -6,8 +6,9 @@ export const survey = {
     "survey.entry": "アンケートにご協力ください",
     "survey.submit": "送信する",
     "survey.close": "閉じる",
-    "survey.irreversible":
-        "回答は匿名で保存されます。送信後に取り消し・訂正はできません。集計結果は{link}に従って取り扱います。",
+    "survey.title": "アンケートへのご協力ありがとうございます",
+    "survey.deadline": "回答期限: {date} まで",
+    "survey.privacy": "回答内容については{link}に従って取り扱います。",
     "survey.declineHint":
         "「回答しない」を選んで閉じると、回答は送信されません。後からボタンで開き直せます。",
     "survey.submitFailed":

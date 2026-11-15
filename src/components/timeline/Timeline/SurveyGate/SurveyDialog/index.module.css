@@ -8,28 +8,42 @@
  * - カードの見た目（枠・背景・ボタン）は ui の共通クラスに委譲する。
  */
 
-/* カードを画面の高さ以内に収める。内側のスクロール領域が縮められるよう縦積みにする。 */
+/* カードを画面の高さ以内に収める。内側のスクロール領域が縮められるよう縦積みにする。
+   外周の余白は上下左右で同じにする。 */
 .card {
   display: flex;
   flex-direction: column;
-  padding-inline: var(--space-2);
+  padding: var(--space-5);
   max-height: calc(100dvh - 96px);
   min-height: 0;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
-/* 見出しは本文と同じ強さにし、本文とボタンの左右端をそろえる。 */
+/* 見出しと回答期限のまとまり。縮まないようにする。 */
+.head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .title {
   margin: 0;
-  font-size: var(--font-size-md);
-  font-weight: 400;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+/* 回答期限。見出しの下に淡く 1 行で示す。 */
+.deadline {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 /* 質問の並びのスクロール領域。はみ出た分だけ縦にスクロールする。 */
 .scroll {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
   min-height: 0;
   width: 100%;
   overflow-y: auto;
@@ -42,15 +56,48 @@
   flex-shrink: 0;
 }
 
-/* 取り消せない旨・案内・送信の操作の固定の領域。縮まないようにする。 */
+/* 個人情報の取り扱い・案内・送信の操作の固定の領域。縮まないようにする。区切り線は置かない。 */
 .footer {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
   flex-shrink: 0;
   width: 100%;
-  border-top: 1px solid var(--color-border);
-  padding-top: var(--space-2);
+}
+
+/* 2 つの説明を同じ位置に重ねる領域。高さは高い方に合わせ、切り替えても動かない。 */
+.notes {
+  display: grid;
+}
+
+.notes > * {
+  grid-area: 1 / 1;
+}
+
+/* 重ねた側の非表示。領域は確保したまま見えなくし、読み上げからも外す。 */
+.inactive {
+  visibility: hidden;
+}
+
+/* 操作の領域。共通の外側の余白は使わず、footer の gap で間隔をそろえる。 */
+.actions {
+  margin: 0;
+}
+
+/* 個人情報の取り扱いの説明。本文より淡く小さくする。 */
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* 「回答しない」を選んだときの案内。個人情報の説明の位置に出す灰色の囲み。 */
+.hint {
+  align-self: start;
+  border-radius: var(--radius-md);
+  background: var(--color-gray);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
 }
 
 /* 送信の失敗の文言。警告の色で示す。 */
