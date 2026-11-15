@@ -213,13 +213,16 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
               className={`${styles["note"]} ${declined ? styles["inactive"] : ""}`}
               aria-hidden={declined}
             >
-              {renderSlots(raw("survey.privacy"), {
-                link: (
-                  <a href="/privacy/" target="_blank" rel="noreferrer">
-                    {t("privacy.link")}
-                  </a>
-                ),
-              })}
+              {/* flex の箱の直下に文と a を置くと別々の列になり折り返しが崩れるため、1 つの span にまとめる */}
+              <span>
+                {renderSlots(raw("survey.privacy"), {
+                  link: (
+                    <a href="/privacy/" target="_blank" rel="noreferrer">
+                      {t("privacy.link")}
+                    </a>
+                  ),
+                })}
+              </span>
             </p>
             <div
               className={`${styles["hint"]} ${declined ? "" : styles["inactive"]}`}

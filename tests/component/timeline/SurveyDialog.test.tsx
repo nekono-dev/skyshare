@@ -87,6 +87,8 @@ describe("SurveyDialogBody", () => {
       expect(link.getAttribute("target")).toBe("_blank")
       expect(link.getAttribute("rel")).toBe("noreferrer")
       expect(link.closest("p")?.textContent).toContain(linkText)
+      // flex の箱の直下に文と a を並べると別々の列になるため、1 つの要素にまとめる
+      expect(link.closest("p")?.children).toHaveLength(1)
     },
   )
 
