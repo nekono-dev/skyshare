@@ -28,7 +28,7 @@
   - 運用 CLI（`add`・`status`・`publish`・`unpublish`・`prune`・`remove`）の環境の指定と、除去・登録の判断を指定した環境の目録だけで行うこと。
   - 環境の設定の読み書きと、環境が未作成・設定が未登録のときの扱い。
   - 共有の設定から環境の設定への移行の手順（現在の設定を `production` へ移し、共有の設定を取り除く）。
-  - 運用手順書（`survey-run` skill・`docs/DEVELOP.md`）の更新と、`survey-operations` の要件のうち共有の設定を前提にした記述の置き換え。
+  - 運用手順書（`survey-run` skill・`docs/DEVELOP.md`）の更新（`survey-run` skill は Claude 用の `.claude/skills/` と Codex 用の `.agents/skills/` の 2 つの複製を同じ内容にする。利用者の決定 2026-11-16）と、`survey-operations` の要件のうち共有の設定を前提にした記述の置き換え。
 - **Out of scope**:
   - 設定の JSON の形式・質問の内容（`surveys`）。
   - 統計ファイルの形式・集計・結果ページ（`survey-results-aggregation`・`survey-results-public`）。

@@ -55,13 +55,26 @@
 
 - **Context**: 既存の設定は、識別子・開始日時が決まった完成した JSON で、`add --file` の下書き（1 件ずつ・識別子は自動採番）では移せない。
 - **Findings**: 退避した本文を環境の変数へそのまま書く直接の操作が要る。専用 CLI 以外で直接書き換えない原則（`survey-operations`）の例外にする（要件 7.6 が許す）。書いた後は `status --env production` が、環境の設定を CLI の検証で読むことで確認になる。
-- **Implications**: 手順（退避・作成・登録・共有の削除・確認）を DEVELOP.md の 6.10 に置く。共有の削除は登録の後。
+- **Implications**: 手順（退避・作成・登録・共有の削除・確認）を DEVELOP.md の 6.2 の小節 6.2.1 に置く（下の「DEVELOP.md の置き場所」）。共有の削除は登録の後。
 
 ### 影響しない仕組み
 
 - `scripts/survey/render-survey-config.ts`: 環境変数 `SURVEY_CONFIG` の値だけを読む。変更なし。
 - `scripts/secrets/sync-github-variables.mjs`: `SURVEY_CONFIG` を `MANAGED_ELSEWHERE` に持ち、リポジトリ変数の一覧だけを見る。環境の変数は見ない。変更なし。
 - `scripts/e2e/survey-e2e-harness.mjs` とローカルの `npm run dev`: 環境変数を直接渡す。変更なし。
+
+### survey-run skill の 2 つの複製（`.claude` と `.agents`）
+
+- **Context**: `survey-run` skill は `.claude/skills/survey-run/SKILL.md` と `.agents/skills/survey-run/SKILL.md` の 2 つにある。アンケートは Codex でも作られ、Codex は `.agents` の複製を読む。
+- **Sources Consulted**: 両ファイルの内容（2026-11-16 時点）。`docs/DEVELOP.md` 3.2（`.agents/skills/survey-run/` を Codex 用に挙げる記述）。
+- **Findings**:
+  - `.agents` の複製は既に `--env` を持たない古い版で、古いステージ名・タイトルと説明のまま残っている。
+  - このまま残すと、Codex で作ったアンケートが、この spec の規則（6 コマンドの `--env` 必須、環境ごとの独立、1 環境の目録だけで決まる登録・除去）に沿わない手順で操作される。CLI の `--env` 必須（args.ts）は使い方の失敗として止めるため、取り違えの書き込みは起きないが、手順が古いままになる。
+- **Decision（2026-11-16、利用者の決定）**: `.agents/skills/survey-run/SKILL.md` をこの spec の対象に含める。古い内容を個別に直さず、`.claude` の複製を更新した後、そのファイル全体で `.agents` の複製を置き換え、2 つを byte 単位で同一にする。
+  - 同一性は、新規のテスト `tests/unit/scripts/surveyRunSkillCopies.test.ts`（両ファイルを読み、内容が一致することを検査）で守る。複製が再び食い違わないようにするため。
+  - `docs/DEVELOP.md` 3.2 の `.agents/skills/survey-run/` の記述（Codex 用）は、この複製が同じ内容になるため、そのまま正しい。
+- **Rejected alternative**: 「`.agents` の複製は `ops-agent-setup` の brief が決めるため、この spec では変えず後続作業にする」。却下の理由: `ops-agent-setup` の扱いが未定のまま、Codex が古い手順でアンケートを作る状態が続く。また、この spec の完了後も 2 つの複製が食い違ったままになり、環境の規則が Codex の操作に届かない。`.agents` だけを後で直す案も、同じ食い違いを生むため採らない。
+- **Implications**: Boundary Commitments の This Spec Owns に複製の同一性を入れ、Out of Boundary から `.agents` を外す。Open Questions / Risks で複製の扱いを後に回していた項目は削除する（その項目は最後だったため、残りの項目の番号は変わらない）。
 
 ## Architecture Pattern Evaluation
 
@@ -91,7 +104,7 @@
 - **Alternatives Considered**:
   1. 既存の `unavailable` に混ぜる — 原因が分からず、運用者が環境を作る手がかりを失う。
   2. 専用の種類 `no-environment`（採用）。
-- **Selected Approach**: 2。固定の 1 行に DEVELOP.md 6.10 への案内を添える。
+- **Selected Approach**: 2。固定の 1 行に DEVELOP.md 6.2.1 への案内を添える。
 - **Trade-offs**: `RemoteErrorKind` が増え、`failure` の分岐が 1 つ増える。
 
 ### Decision: 除去の判断を `ReadonlySet<string>` に単純化する
@@ -100,6 +113,14 @@
 - **Alternatives Considered**: 環境つきの `Record` を残して 1 要素だけ使う — 不要な型が残り、取り違えの余地が残る。
 - **Selected Approach**: 集合 1 つを渡す。`pending` を持つ型を削除する。
 - **Trade-offs**: 結果の行の `not-aggregated: <env>` は、cli が指定した環境の名前を使って作る。
+
+### Decision: DEVELOP.md の置き場所は 6.2 の小節 6.2.1
+
+- **Context**: 環境の作成・移行の手順を、`docs/DEVELOP.md` のどこに書くか。
+- **Alternatives Considered**:
+  1. 節の末尾（6.9 の後ろ）に新しい節として足す — 6.9「push では登録しない（決定 2026-10-31）」が節の締めの決定の記録のため、その後ろに手順を置くと場違いになる。
+  2. 6.2 の小節 6.2.1（採用）。6.2 は「運営者の値（GitHub の Variables）」で、`SURVEY_CONFIG` の行が既にあるため、環境の変数の説明が同じ場所に集まる。
+- **Selected Approach**: 2。6.2 の表の `SURVEY_CONFIG` 行を環境の変数として書き、6.2.1 に環境の作成・管理・移行・警告を書く。固定の文言（`no-environment`）と design.md の参照はすべて 6.2.1 を指す。
 
 ### Decision: ワークフローの検査は文字列の照合にする
 
@@ -115,7 +136,6 @@
 - 読みの 404 と書きの 403 の扱い — 環境が無い 404 と権限不足 403 の応答は未確認（項目 2・3）。権限不足が 404 で隠れると、読みが空に見え「アンケートが無い」と誤認しうる。緩和として、手順書の認証の確認に `gh auth status` を含め、書き込みの失敗の文言に権限の確認を含める。
 - 飛ばされたジョブ（`if:` で実行されない）が `environment:` を解決するかは未確認（項目 7）。解決しても配備の記録が残るだけで、ビルドには影響しない。
 - `preview.yaml` の `environment: develop` はジョブ単位のため、ブランチ名が不正でステップが飛ばされても環境が解決されて記録が残る。ブランチの制限に合わないとジョブ全体が拒否されるかは未確認（項目 8）。
-- `.agents/skills/survey-run/SKILL.md` の古い複製と `docs/DEVELOP.md` 3.2 の記述は、この spec では変えない。後続作業として記録する（項目 9）。
 - 環境の変数の上限は同じ 48 KB と仮定する（項目 6）。
 - `gh variable set` の 404 の標準エラーが想定と違う — 書き込みは行われず失敗するだけ。環境の事前確認に切り替える。
 - 環境を作る前にワークフローが先に取り込まれる — 環境が自動で作られ制限が無い状態になりうる。環境の作成を先にする。
