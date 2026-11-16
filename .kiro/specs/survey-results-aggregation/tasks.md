@@ -161,5 +161,5 @@
 ## Implementation Notes
 
 - 4.1 の確認結果（2026-11-13、完了にはしない）: `npm run test:all`（型検査・lexicon・import・unit・component・route・render・e2e）が最後まで通った。件数は unit 980、component 15、route 265（被覆率の閾値を満たす。`daily.ts` の分岐 86.6%、`results/store.ts` の分岐 93.8%）、render 2、e2e 10（アンケートの流れを含む）。保管先のバインディングは、ローカルの代用（miniflare）で宣言した状態で動いている。
-- 完了にしない理由: (1) 2.6 の実バケット（`skyshare-survey-results-develop`）での条件付き書き込みの確認が、認証情報が無く未実施（`research.md` に理由を記録済み）。運用者が認証情報のある環境で確かめる。(2) 本番の `skyshare-survey-results` の作成（運用者の作業）の確認は、本番へのリリース前の確認に含める。3.5 は完了しており、これを待つ項目は無い。
+- 完了にしない理由: (1) 2.6 の実バケットでの条件付き書き込みの確認は、2026-11-16 に実施済み（`research.md` に記録。結果は workerd と同じ）。(2) 本番の `skyshare-survey-results` の作成（運用者の作業）の確認は、本番へのリリース前の確認に含める。3.5 は完了しており、これを待つ項目は無い。
 - 3.6 の D1 送信回数（最大 13 回、上限 16 回）は `tests/route/survey/dailyCallBudget.test.ts` で確認し、内訳を `research.md` に記録した。

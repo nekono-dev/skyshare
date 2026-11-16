@@ -340,3 +340,22 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 ### Direct Implementation Candidates
 
 - [ ] survey-dialog-polish -- 上の 3 点の実装（`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、関連テスト）。Dependencies: 画面構成のモックの合意
+
+## Phase 11: アンケート設定の環境分離（2026-11-16 discovery）
+
+### Overview
+
+`SURVEY_CONFIG`（リポジトリ変数 1 つ）が本番と develop で共有されているため、develop だけで試験用のアンケートを使えない。GitHub Environments（`production`・`develop`）に分け、CLI の `add`・`prune`・`remove` も `--env` 必須にする。設定の JSON の作り方（`add --file`）は変えない。`survey-operations` を拡張する新しい spec 1 件（Path C）。
+
+### 決定（利用者との合意 2026-11-16）
+
+- **分け方**: GitHub Environments（変数を 2 つに分ける案は採らない）。
+- **CLI**: `add`・`prune`・`remove` も `--env` 必須。除去は自分の環境の目録だけで判断する（両環境の突き合わせをやめる。2026-11-13 の「prune・remove は `--env` を取らない」を改める）。
+- **spec の置き場**: 新しい小さな spec `survey-env-config`。
+- **試験**: develop に試験用のアンケートを作り、`survey-operations` 4.2 の実機の確認（`publish`・`unpublish`・配備の起動）に使う。現在作成済みのアンケートは退避済み（運用者の手元に JSON を保存）で、本番へ適用する前に作り直す。
+
+### Specs (dependency order)
+
+- [ ] survey-env-config -- 環境ごとのアンケート設定（GitHub Environments）、CLI の `add`・`prune`・`remove` の `--env` 必須化、ワークフローの環境の選択、手順書の更新。Dependencies: survey-operations, survey-results-aggregation
+
+（`survey-operations` の 4.2 は、本 spec の実装後に、develop の試験用のアンケートで進める。）
