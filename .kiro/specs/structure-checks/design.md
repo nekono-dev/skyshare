@@ -78,7 +78,7 @@
 
 ```mermaid
 graph TD
-    graph[importGraph: ModuleGraph]
+    modGraph[importGraph: ModuleGraph]
     rules[rules.ts: RULE_IDS・RuleId・RULE_BASIS・evaluateImportRules]
     util[util-sharing.ts: findUtilSharingViolations]
     cycles[cycles.ts: findCycleViolations]
@@ -87,9 +87,9 @@ graph TD
     layoutTest[layoutSingle.test.ts]
     rulesTest[steeringRules.test.ts]
     completeTest[allowlistCompletion.test.ts]
-    graph --> rules
-    graph --> util
-    graph --> cycles
+    modGraph --> rules
+    modGraph --> util
+    modGraph --> cycles
     rules --> util
     rules --> allow
     util --> cli

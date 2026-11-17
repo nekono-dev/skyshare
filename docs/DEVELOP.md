@@ -97,6 +97,8 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 
 `.githooks/pre-commit` は、コミットの前にリポジトリ全体を prettier で整形し、ステージ済みのファイルを整形後の内容でステージし直す。ステージしていないファイルの整形結果は作業ツリーに残る。一部だけをステージしたファイル（`git add -p`）は、全体がステージされる。
 
+あわせて、ステージ済みの Markdown に書かれた mermaid の図を構文として解析し（`scripts/git/check-mermaid.mjs`）、直せないものがあればコミットを止める。ラベルに `()`・`/`・`**` などの記号があって失敗するものは、記号を含むラベルを二重引用符で囲んで自動で直し、直した結果が通るときだけ書き戻す。手元で全体を調べるのは `npm run test:mermaid`、直すのは `npm run fix:mermaid`（CI の `e2e` と `test:all` も同じ検査をする）。
+
 `.githooks/pre-push` は `npm run test:all`（全層のテスト。E2E を含む）だけを実行する。GitHub の Variables・Secrets への登録は push では行わない（登録は手動。「5.0 デプロイ前の準備」）。
 
 ## 3. 設定と生成物

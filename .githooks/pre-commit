@@ -1,5 +1,5 @@
 #!/bin/sh
-# コミットの前に、マイグレーションの運用規則を検査し、リポジトリ全体を prettier で整形する。
+# コミットの前に、マイグレーションの運用規則を検査し、リポジトリ全体を prettier で整形し、Markdown 内の mermaid を検査する。
 # 整形で変わったファイルのうち、コミットに含める予定だったもの（ステージ済み）は、整形後の内容でステージし直す。
 # ステージしていないファイルの整形結果は作業ツリーに残る。一部だけをステージしたファイルは、全体がステージされる。
 set -eu
@@ -18,6 +18,13 @@ trap 'rm -f "$staged"' EXIT
 git diff --cached --name-only --diff-filter=ACMR -z > "$staged"
 
 node_modules/.bin/prettier --write . --log-level warn
+
+# Markdown 内の mermaid を検査する。機械的に直せるもの（ラベルの記号の引用符）は直し、直せないものはコミットを止める。
+# 直したファイルのうちステージ済みのものは、直した内容でステージし直す。
+node scripts/git/check-mermaid.mjs --index --fix || {
+  echo "pre-commit: mermaid の構文エラーがある。上の「ファイル:行」を直す" >&2
+  exit 1
+}
 
 if [ -s "$staged" ]; then
   xargs -0 git add -- < "$staged"

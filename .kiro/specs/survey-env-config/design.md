@@ -3,7 +3,9 @@
 ## Overview
 
 **Purpose**: アンケートの設定（`SURVEY_CONFIG`）を、本番（`production`）と検証用（`develop`）で別々に持てるようにする。GitHub の Environments（環境ごとに変数や配備の制限を持てる GitHub の仕組み）に環境ごとの変数を置き、ビルドは自分の環境の値だけを読む。運用 CLI は 6 つのコマンドすべてで `--env` を必須にし、登録・除去の判断を指定した環境の目録（集計済みアンケートの一覧）だけで行う。
+
 **Users**: 手元で認証済みの `gh` と `wrangler` を使うアンケートの運用者と、手順を案内する `survey-run` skill。
+
 **Impact**: 今は `deploy.yaml`・`preview.yaml` が同じリポジトリ変数を読み、CLI の `prune`・`remove`・`add` が両環境の目録を突き合わせている。これを「環境ごとの変数」と「1 環境の目録だけで判断する CLI」に置き換える。両環境を突き合わせるための型・分岐・固定文は削除する（v2 は未公開のため、互換の層は作らない）。
 
 ### Goals
@@ -352,7 +354,9 @@ const readConfig = async (
 - `run` は `parsed.command.env` で設定を読む。`runAdd` に渡す前の読み取りも同じ環境。
 - `loadIndex` は現行の `readIndexes` の 1 環境版。両環境を読み切ってから失敗を返す必要がなくなるため、例外はそのまま `run` の `catch`（`failure`）へ流す。目録の形式が不正なら `invalid("目録の形式が正しくありません")`。`runStatus`・`runVisibilitySwitch` にある同じ検証の重複も `loadIndex` に置き換える（二重の検証を 1 つにする）。
 - `add`: `ids = indexIds(index)` を作り、新規なら `config.surveys.every(s => ids.has(s.id))` のときだけ進める。満たさなければ次の固定の 1 行（要件 4.4 の文言そのまま）。既存の更新の締切の規則は、`ids.has(existing.id)` で適用する（要件 4.5。文言 `error: refused: 集計済みのアンケートの締切は変更できません` は変えない）。
+
   `error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。`
+
 - `prune`: `decidePrune(config, ids, now)`。残したものの行は `kept <id>(not-aggregated: <env>)` （環境名は指定した環境の 1 つ）。除去後に残りが 0 件なら `deleteConfigValue(env)`、それ以外は `writeConfigValue(env, …)`。結果の行の形（`removed`・`nothing to remove`・`nothing removed`・`(surveys N -> M)`）は変えない。
 - `remove`: `decideRemove(survey, ids, now)`。拒否は `error: refused: <id> is active (results would be lost)`、または `error: refused: <id> is closed (results would be lost; not aggregated: <env>)` に、案内を添える。
 - 案内の `NOT_AGGREGATED_GUIDANCE`（` ; see DEVELOP.md 5.4 / survey-run (not-aggregated)`）は文言を変えない。指す先の DEVELOP.md 5.4 と skill の該当の項は、この spec で「その環境の目録に記録がない」ことの手順に書き換える（要件 5.11）。

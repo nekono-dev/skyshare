@@ -32,6 +32,9 @@ jobs:
       - name: Check migration rule
         run: node scripts/git/check-migrations.mjs
       - run: npm ci
+      # Markdown 内の mermaid が構文として解析できること（追跡している全 .md が対象）。
+      - name: Check mermaid syntax
+        run: node scripts/git/check-mermaid.mjs
 
       # OS パッケージ（日本語・国旗フォント、動画素材用 ffmpeg、Playwright の依存）は deb をキャッシュし、以後 Ubuntu ミラーからの取得を避ける。
       # ミラーの遅延だけで 60 分の上限に達しうるため。ランナーイメージと Playwright の版をキーに含め、必要な依存の違いを分ける。
