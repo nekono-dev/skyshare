@@ -6,7 +6,7 @@
 
 **Users**: 手元で認証済みの `gh` と `wrangler` を使うアンケートの運用者と、手順を案内する `survey-run` skill。
 
-**Impact**: 今は `deploy.yaml`・`preview.yaml` が同じリポジトリ変数を読み、CLI の `prune`・`remove`・`add` が両環境の目録を突き合わせている。これを「環境ごとの変数」と「1 環境の目録だけで判断する CLI」に置き換える。両環境を突き合わせるための型・分岐・固定文は削除する（v2 は未公開のため、互換の層は作らない）。
+**Impact**: 変更前の `deploy.yaml`・`preview.yaml` は同じリポジトリ変数を参照し、CLI の `prune`・`remove`・`add` は両環境の目録を突き合わせる。これを「環境ごとの変数」と「1 環境の目録だけで判断する CLI」に置き換える。2026-11-18 に共有の設定の削除と develop の設定なしでの再配備まで実施済みであり、新しいワークフローと CLI はこれから取り込む。両環境を突き合わせるための型・分岐・固定文は削除する（v2 は未公開のため、互換の層は作らない）。
 
 ### Goals
 
@@ -34,7 +34,7 @@
 - `survey-operations` と `roadmap.md` の、共有の設定・両環境の目録を前提にした記述への追補。
 - `deploy.yaml`・`preview.yaml` の環境なしの門番による、共有の設定が存在する場合のビルドと配備の停止、およびその静的な検査。
 - 移行時の develop の設定・目録・結果・可視フラグの削除手順。運用者が `gh`・`wrangler` で行い、専用 CLI の機能は増やさない。
-- 実装時の `.claude/settings` への、`gh variable set/delete --env` と `gh api repos/.../environments/...` の実行許可の追加。実際の設定ファイルで既存の許可の書式に合わせる。brief.md と対象範囲が異なる点は、この design.md と利用者の決定（2026-11-18）を正とする。
+- 実装時に、共有の `.claude/settings.json` の実行許可へ `Bash(npm run survey:*)` だけを追加する。CLI が `gh` を内部で呼ぶため、`gh` の直接実行の許可は追加しない。brief.md と対象範囲が異なる点は、この design.md と利用者の決定（2026-11-18）を正とする。
 - 後続の `ops-agent-setup` が `.agents/skills/survey-run/` を削除するときは、`tests/unit/scripts/surveyRunSkillCopies.test.ts` も同時に削除し、存在しない複製を読む検査を残さない。
 
 ### Out of Boundary
@@ -135,7 +135,7 @@ tests/unit/scripts/
 
 - `.github/workflows/deploy.yaml` — `deploy` ジョブに `environment: ${{ github.ref_name == 'develop' && 'develop' || 'production' }}` を足す。環境なしの `survey-config-guard` ジョブを追加し、`deploy.needs` の既存の `verify`・`e2e` に加える。門番のジョブ条件は `deploy` と同じにし、`permissions: {}` とする。共有の設定はステップの `if:` だけで判定し、固定文を出して失敗する。先頭コメントに環境の変数と門番を説明する。
 - `.github/workflows/preview.yaml` — `preview` ジョブに `environment: develop` と `needs: [survey-config-guard]` を足す。環境なしの門番を同じ方式で追加する。現在の `preview` にジョブの `if:` は無いため、門番にも付けず、既存の起動条件を保つ。
-- `.claude/settings` の実際の設定ファイル — `gh variable set/delete --env` と `gh api repos/.../environments/...` の実行許可を既存の書式に合わせて足す。CI の権限は増やさない。
+- `.claude/settings.json` — 共有の設定ファイルの実行許可へ `Bash(npm run survey:*)` だけを足す。CLI が `gh` を内部で呼ぶため、`gh` の直接実行の許可は追加しない。CI の権限は増やさない。
 - `tests/unit/scripts/surveyWorkflowEnvironment.test.ts` — 環境の選択に加え、両ワークフローの門番、環境指定の不在、待ち合わせ、ジョブ条件、空の権限、共有の設定の判定と固定文を検査する。
 - `hack/survey-cli/args.ts` — `Command` の `add`・`prune`・`remove` に `env: SurveyEnv` を足し、`--env` の検証を 6 コマンド共通にする。「`--env` を使えません」の拒否を削除する。
 - `hack/survey-cli/config.ts` — `VARIABLE_LIMIT_BYTES` を `48 * 1024` から `48000` に直す（環境の変数の実際の上限）。ほかは変更しない。
@@ -143,8 +143,8 @@ tests/unit/scripts/
 - `hack/survey-cli/lifecycle.ts` — `AggregatedByEnv`・`environments` を削除。`PruneKept`・`RemoveDecision` から `pending` を外し、`decidePrune`・`decideRemove` は 1 環境の集計済みの識別子の集合だけを受ける。
 - `hack/survey-cli/remote.ts` — `SurveyRemote` の設定の 3 メソッドに `env` を足し、環境の変数のパス・コマンドへ変える。`RemoteErrorKind` に環境未作成を足す。ファイル先頭のコメントを環境の変数に合わせる。`R2_KEY_MISSING_PHRASE` のコメントを、develop で 2026-11-16 に実機の標準エラーとの一致を確認済みである旨へ直す。定数の値は変えない。
 - `tests/unit/hack/survey-cli/{args,lifecycle,cli,remote,config}.test.ts` — Testing Strategy に列挙した項目を直す。`config.test.ts` は上限の定数の期待値を `48000` に直す。
-- `docs/DEVELOP.md` — 3.2（変数の説明・コマンドの列挙・新規登録の拒否文・環境ごとの独立）、5.1（`deploy.yaml` が環境を選ぶこと）、5.4（`prune --env`、取り込み前の除去、develop の除去は本番と独立）、6.2 の変数の表の `SURVEY_CONFIG` 行（環境の変数。6.2.1 を参照）と、6.2 の中の新しい小節 `#### 6.2.1 アンケートの設定（環境ごとの変数）` を足す。6.9 の決定の後ろには置かない（6.9 は節の締めの決定の記録のため）。6.2.1 の内容は、(1) 2 つの GitHub の環境と配備ブランチの制限の作成、(2) `SURVEY_CONFIG` は環境ごとの変数で、`npm run survey -- ... --env` だけで管理すること、(3) リポジトリ変数からの移行の手順 (a)〜(e)（(d) の前提を含む）、(4) リポジトリ変数が残るときの警告（環境の変数が無い環境では同名のリポジトリ変数の値が使われる）。重ならないよう、`survey-results-public` が編集する CI/CD の認証情報・R2・6.5 の `SURVEY_RESULTS` には触れない。6.2.1 には、移行の (d) の前提（Migration Strategy の「(d) の前提」と同じ内容）、(e) の develop の再配備の確認、手順の認証の確認に `gh auth status` を含めることを書く。
-- `.claude/skills/survey-run/SKILL.md` と `.agents/skills/survey-run/SKILL.md`（2 つの複製。この spec で両方を変える）— `.claude` の複製は、6 コマンドすべてで `--env` 必須、環境ごとの独立、1 環境の目録だけで決まる登録・除去、develop の試験の流れ、移行の手順への案内（(d) の前提と (e) の再配備の確認を含む）を書く。`.agents` の複製は古い内容を直さず、`.claude` の複製を更新した後に全体を置き換え、2 つを byte 単位で同一にする（Codex がアンケートを作るときも同じ手順になる）。`docs/DEVELOP.md` 3.2 の `.agents/skills/survey-run/` の記述（Codex 用）は、この複製が同じ内容になるため、そのまま正しい。
+- `docs/DEVELOP.md` — 3.2（変数の説明・6 コマンドの環境指定・新規登録の拒否文・環境ごとの独立）、5.1（`deploy.yaml` の環境選択）、5.2（プレビューが develop の環境を使うこと）、5.4（`prune --env production`、取り込み前の除去、develop の除去は本番と独立）、6.2 の変数の表の `SURVEY_CONFIG` 行を更新する。6.2 の中に `#### 6.2.1 アンケートの設定（環境ごとの変数）` を足し、6.9 の後ろには置かない。6.2.1 の内容は、(1) 2 つの環境と配備ブランチの制限、(2) 環境ごとの `SURVEY_CONFIG` を `npm run survey -- ... --env` だけで管理すること、(3) Migration Strategy と同じ手順記号 (a)〜(e)・前提・実施済みの記録、(4) リポジトリまたは組織の同名変数が残ると門番が固定の `shared-config` 文言でビルドと配備を停止し、共有の変数を削除する必要があること、とする。認証の確認に `gh auth status` を含め、旧ワークフローによる develop の再配備と R2 の確認は (d) の実施済み作業として記す。(e) の両環境の `status` と退避ファイルの削除を終えた後、develop の試験用アンケートを `add --file` で登録して `survey-operations` 4.2 の確認に使う手順も示す。設定の値は秘密ではなく、`Run build` の `env:` 見出しで通常のビルドログに出ること、門番自身は値を出力しないことを書く。`survey-results-public` が編集する CI/CD の認証情報・R2・6.5 の `SURVEY_RESULTS` には触れない。
+- `.claude/skills/survey-run/SKILL.md` と `.agents/skills/survey-run/SKILL.md`（2 つの複製。この spec で両方を変える）— `.claude` の複製に、6 コマンドすべてで `--env` 必須、環境ごとの独立、1 環境の目録だけで決まる登録・除去、develop の試験の流れを書く。移行の案内は Migration Strategy と同じ (a)〜(e) とし、(d) の前提、共有の設定の削除後に行った旧ワークフローでの再配備と R2 の確認、(e) の両環境の `status` と退避ファイルの削除を記す。develop の試験用アンケートは、新しいワークフローと CLI の取り込み後、(e) の確認を済ませてから `add --file` で登録する。`.agents` の複製は `.claude` の更新後の全文で置き換え、2 つを byte 単位で同一にする。`docs/DEVELOP.md` 3.2 の Codex 用の複製への案内は維持する。
 - `.kiro/specs/survey-operations/{requirements,design,tasks}.md` と `.kiro/steering/roadmap.md` — 追補（Migration Strategy の後ろの「既存の記述への追補」に一覧）。既存の記述は消さない。
 
 ## System Flows
@@ -194,62 +194,62 @@ flowchart TD
 
 ## Requirements Traceability
 
-| Requirement | Summary                                              | Components                                                   | Interfaces                                                         | Flows              |
-| ----------- | ---------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------ |
-| 1.1         | release/\*\* は production の設定                    | deploy.yaml                                                  | ジョブの `environment:` の式                                       | 環境の選択         |
-| 1.2         | develop ブランチは develop の設定                    | deploy.yaml                                                  | ジョブの `environment:` の式                                       | 環境の選択         |
-| 1.3         | dev/\*\* のプレビューは develop の設定               | preview.yaml                                                 | `environment: develop`                                             | 環境の選択         |
-| 1.4         | 対象外の環境・共有の設定を渡さない                   | deploy.yaml, preview.yaml                                    | 環境の変数、環境なしの `survey-config-guard`（注 1）               | 環境の選択         |
-| 1.5         | 設定が無ければ機能なしで完了                         | render-survey-config.ts（変更なし）                          | 既存の「未設定なら作らない」（注 1）                               | 環境の選択         |
-| 1.6         | 対象ブランチ・配備の可否を変えない                   | deploy.yaml, preview.yaml                                    | 既存の `on:`・`if:` を保つ                                         | 環境の選択         |
-| 1.7         | verify・E2E に渡さない                               | verify.yaml, e2e.yaml（変更なし）                            | `environment:` を付けない                                          | 環境の選択         |
-| 1.8         | 共有の設定があれば設定を読む前に失敗し配備しない     | deploy.yaml, preview.yaml, surveyWorkflowEnvironment.test.ts | `survey-config-guard`、`needs:`、固定の `shared-config` 文言       | 環境の選択         |
-| 2.1         | 6 コマンドで `--env` 必須                            | args.ts                                                      | `Command`、`parseEnv`                                              | 判断               |
-| 2.2         | 不正な env は何も読まず使い方の失敗                  | args.ts, cli.ts                                              | `parseArgs` が先に失敗                                             | 判断               |
-| 2.3         | 指定した環境だけに触れる                             | cli.ts, remote.ts                                            | `SurveyRemote` の env つきメソッド                                 | 判断               |
-| 2.4         | dry-run・no-deploy・repo・出力の規則を保つ           | args.ts, cli.ts                                              | 既存の検証を保つ                                                   | 判断               |
-| 2.5         | JSON の作り方を変えない                              | config.ts（上限の 1 行だけ変更）                             | 既存の下書きの検証と `addSurvey`                                   | —                  |
-| 3.1         | 環境の設定だけを読む                                 | remote.ts                                                    | `readConfigValue(env)`                                             | 環境の選択         |
-| 3.2         | 環境の設定だけに書く・削除                           | remote.ts                                                    | `writeConfigValue(env, …)`、`deleteConfigValue(env)`               | 判断               |
-| 3.3         | 未登録は空の設定                                     | remote.ts, cli.ts                                            | `readConfigValue` の 404 は `undefined`                            | 判断               |
-| 3.4         | 環境が未作成での書き込みは固定の文言で失敗           | remote.ts, cli.ts                                            | `RemoteError("no-environment")`、`failure`                         | 判断               |
-| 3.5         | 環境が未作成での読み取りは空                         | remote.ts                                                    | 404 は `undefined`                                                 | 判断               |
-| 3.6         | 残らなければ環境の変数を削除                         | cli.ts, remote.ts                                            | `deleteConfigValue(env)`、404 は済みとする                         | 判断               |
-| 3.7         | 48 KB 上限を環境ごとに適用、status は指定環境        | cli.ts, config.ts                                            | `VARIABLE_LIMIT_BYTES`（48000）、`addSurvey`、`runStatus` の見出し | —                  |
-| 3.8         | 読めない・利用不可は区別できる固定文言               | remote.ts, cli.ts                                            | `remoteErrorFor`、`failure`                                        | 判断               |
-| 4.1         | 新規登録は全 id が指定環境の目録にあるときだけ       | cli.ts                                                       | `loadIndex`、`runAdd`                                              | 判断               |
-| 4.2         | add は dry-run でも指定環境の目録だけを読む          | cli.ts                                                       | `loadIndex(remote, env)`                                           | 判断               |
-| 4.3         | 目録が無ければ空、失敗・不正は何も変えず失敗         | cli.ts, remote.ts                                            | `readIndex(env)`                                                   | 判断               |
-| 4.4         | 固定の拒否文（この環境の文言）                       | cli.ts                                                       | `NEW_REGISTRATION_REFUSAL`                                         | 判断               |
-| 4.5         | 締切の規則を指定環境の目録で適用                     | cli.ts                                                       | `runAdd` の既存の更新の分岐                                        | 判断               |
-| 4.6         | 同じ下書きを別々の環境へ独立して登録                 | cli.ts, remote.ts                                            | 環境ごとの設定・採番                                               | —                  |
-| 4.7         | 検証・開始日時・識別子・変更なしの規則を保つ         | config.ts（上限の 1 行だけ変更）                             | 既存の `addSurvey` の変換と検証                                    | —                  |
-| 5.1         | prune は指定環境の記録があるものだけ除去             | lifecycle.ts, cli.ts                                         | `decidePrune(config, ids, now)`                                    | 判断               |
-| 5.2         | もう一方の目録を読まない                             | cli.ts                                                       | `loadIndex(remote, env)` の 1 回                                   | 判断               |
-| 5.3         | 記録の無い終了済みは残し「この環境で未集計」         | lifecycle.ts, cli.ts                                         | `kept <id>(not-aggregated: <env>)`                                 | 判断               |
-| 5.4         | 目録を読めない・形式不正は何も除去しない             | cli.ts                                                       | `loadIndex` の失敗                                                 | 判断               |
-| 5.5         | 開始前・開催中は prune で除去しない                  | lifecycle.ts                                                 | `decidePrune`                                                      | 判断               |
-| 5.6         | 開始前の remove は除去                               | lifecycle.ts                                                 | `decideRemove`                                                     | 判断               |
-| 5.7         | 終了済みは指定環境の記録があるときだけ除去           | lifecycle.ts                                                 | `decideRemove`                                                     | 判断               |
-| 5.8         | 未記録の終了済み・開催中は拒否                       | lifecycle.ts, cli.ts                                         | `RemoveDecision`、拒否の 1 行                                      | 判断               |
-| 5.9         | 設定に無い識別子は not-found                         | cli.ts                                                       | 既存の `not-found` の行                                            | 判断               |
-| 5.10        | 強制の指定を持たない                                 | args.ts                                                      | `--force` の拒否を保つ                                             | —                  |
-| 5.11        | 除去・残した識別子と案内を結果に示す                 | cli.ts                                                       | `NOT_AGGREGATED_GUIDANCE`                                          | 判断               |
-| 6.1         | 移行の順序 (a)〜(e)                                  | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 手順の記述                                                         | Migration Strategy |
-| 6.2         | (d) を (c) の後に置く理由                            | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 手順の記述                                                         | Migration Strategy |
-| 6.3         | 移行後の status の確認                               | DEVELOP.md 6.2.1, cli.ts                                     | `status --env production` / `develop`                              | Migration Strategy |
-| 6.4         | 退避の本文をリポジトリ・出力に残さない               | DEVELOP.md 6.2.1                                             | 退避先・削除の手順                                                 | Migration Strategy |
-| 6.5         | 運用者の作業・手元の認証済み gh                      | DEVELOP.md 6.2.1                                             | 手順の記述                                                         | Migration Strategy |
-| 6.6         | 共有の設定が残る場合の停止と削除の案内               | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 門番による停止と共有の設定の削除手順                               | Migration Strategy |
-| 6.7         | develop の設定・目録・結果・可視フラグを移行時に削除 | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 運用者による `gh`・`wrangler` の削除手順                           | Migration Strategy |
-| 7.1         | skill に 6 コマンドの `--env`・独立・判断を示す      | survey-run SKILL.md（2 つの複製）                            | 手順の記述                                                         | —                  |
-| 7.2         | skill に develop の試験の流れを示す                  | survey-run SKILL.md（2 つの複製）                            | 手順の記述                                                         | —                  |
-| 7.3         | DEVELOP.md の 3.x・5.x・6.x を環境ごとに             | DEVELOP.md                                                   | Modified Files に列挙した見出し                                    | —                  |
-| 7.4         | prune --env production と develop の独立             | DEVELOP.md 5.4                                               | 手順の記述                                                         | —                  |
-| 7.5         | 環境の作成・登録・移行の順序を示す                   | DEVELOP.md 6.2.1                                             | 手順の記述                                                         | Migration Strategy |
-| 7.6         | 直接の書き換えをしない（移行は例外と明記）           | DEVELOP.md, survey-run（2 つの複製）                         | 手順の記述                                                         | Migration Strategy |
-| 7.7         | roadmap と survey-operations への追補                | 追補の一覧                                                   | 既存の記述を残し置き換えを示す                                     | —                  |
-| 7.8         | リリースブランチの選び方・再配備を変えない           | cli.ts（`runVisibilitySwitch`）                              | 既存の分岐を保つ                                                   | —                  |
+| Requirement | Summary                                                        | Components                                                   | Interfaces                                                                                            | Flows              |
+| ----------- | -------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | ------------------ |
+| 1.1         | release/\*\* は production の設定                              | deploy.yaml                                                  | ジョブの `environment:` の式                                                                          | 環境の選択         |
+| 1.2         | develop ブランチは develop の設定                              | deploy.yaml                                                  | ジョブの `environment:` の式                                                                          | 環境の選択         |
+| 1.3         | dev/\*\* のプレビューは develop の設定                         | preview.yaml                                                 | `environment: develop`                                                                                | 環境の選択         |
+| 1.4         | 対象外の環境・共有の設定を渡さない                             | deploy.yaml, preview.yaml                                    | 環境の変数、環境なしの `survey-config-guard`（注 1）                                                  | 環境の選択         |
+| 1.5         | 設定が無ければ機能なしで完了                                   | render-survey-config.ts（変更なし）                          | 既存の「未設定なら作らない」（注 1）                                                                  | 環境の選択         |
+| 1.6         | 対象ブランチ・配備の可否を変えない                             | deploy.yaml, preview.yaml                                    | 既存の `on:`・`if:` を保つ                                                                            | 環境の選択         |
+| 1.7         | verify・E2E に渡さない                                         | verify.yaml, e2e.yaml（変更なし）                            | `environment:` を付けない                                                                             | 環境の選択         |
+| 1.8         | 共有の設定があれば設定を読む前に失敗し配備しない               | deploy.yaml, preview.yaml, surveyWorkflowEnvironment.test.ts | `survey-config-guard`、`needs:`、固定の `shared-config` 文言                                          | 環境の選択         |
+| 2.1         | 6 コマンドで `--env` 必須                                      | args.ts                                                      | `Command`、`parseEnv`                                                                                 | 判断               |
+| 2.2         | 不正な env は何も読まず使い方の失敗                            | args.ts, cli.ts                                              | `parseArgs` が先に失敗                                                                                | 判断               |
+| 2.3         | 指定した環境だけに触れる                                       | cli.ts, remote.ts                                            | `SurveyRemote` の env つきメソッド                                                                    | 判断               |
+| 2.4         | dry-run・no-deploy・repo・出力の規則を保つ                     | args.ts, cli.ts                                              | 既存の検証を保つ                                                                                      | 判断               |
+| 2.5         | JSON の作り方を変えない                                        | config.ts（上限の 1 行だけ変更）                             | 既存の下書きの検証と `addSurvey`                                                                      | —                  |
+| 3.1         | 環境の設定だけを読む                                           | remote.ts                                                    | `readConfigValue(env)`                                                                                | 環境の選択         |
+| 3.2         | 環境の設定だけに書く・削除                                     | remote.ts                                                    | `writeConfigValue(env, …)`、`deleteConfigValue(env)`                                                  | 判断               |
+| 3.3         | 未登録は空の設定                                               | remote.ts, cli.ts                                            | `readConfigValue` の 404 は `undefined`                                                               | 判断               |
+| 3.4         | 環境が未作成での書き込みは固定の文言で失敗                     | remote.ts, cli.ts                                            | `RemoteError("no-environment")`、`failure`                                                            | 判断               |
+| 3.5         | 環境が未作成での読み取りは空                                   | remote.ts                                                    | 404 は `undefined`                                                                                    | 判断               |
+| 3.6         | 残らなければ環境の変数を削除                                   | cli.ts, remote.ts                                            | `deleteConfigValue(env)`、404 は済みとする                                                            | 判断               |
+| 3.7         | 48 KB 上限を環境ごとに適用、status は指定環境                  | cli.ts, config.ts                                            | `VARIABLE_LIMIT_BYTES`（48000）、`addSurvey`、`runStatus` の見出し                                    | —                  |
+| 3.8         | 読めない・利用不可は区別できる固定文言                         | remote.ts, cli.ts                                            | `remoteErrorFor`、`failure`                                                                           | 判断               |
+| 4.1         | 新規登録は全 id が指定環境の目録にあるときだけ                 | cli.ts                                                       | `loadIndex`、`runAdd`                                                                                 | 判断               |
+| 4.2         | add は dry-run でも指定環境の目録だけを読む                    | cli.ts                                                       | `loadIndex(remote, env)`                                                                              | 判断               |
+| 4.3         | 目録が無ければ空、失敗・不正は何も変えず失敗                   | cli.ts, remote.ts                                            | `readIndex(env)`                                                                                      | 判断               |
+| 4.4         | 固定の拒否文（この環境の文言）                                 | cli.ts                                                       | `NEW_REGISTRATION_REFUSAL`                                                                            | 判断               |
+| 4.5         | 締切の規則を指定環境の目録で適用                               | cli.ts                                                       | `runAdd` の既存の更新の分岐                                                                           | 判断               |
+| 4.6         | 同じ下書きを別々の環境へ独立して登録                           | cli.ts, remote.ts                                            | 環境ごとの設定・採番                                                                                  | —                  |
+| 4.7         | 検証・開始日時・識別子・変更なしの規則を保つ                   | config.ts（上限の 1 行だけ変更）                             | 既存の `addSurvey` の変換と検証                                                                       | —                  |
+| 5.1         | prune は指定環境の記録があるものだけ除去                       | lifecycle.ts, cli.ts                                         | `decidePrune(config, ids, now)`                                                                       | 判断               |
+| 5.2         | もう一方の目録を読まない                                       | cli.ts                                                       | `loadIndex(remote, env)` の 1 回                                                                      | 判断               |
+| 5.3         | 記録の無い終了済みは残し「この環境で未集計」                   | lifecycle.ts, cli.ts                                         | `kept <id>(not-aggregated: <env>)`                                                                    | 判断               |
+| 5.4         | 目録を読めない・形式不正は何も除去しない                       | cli.ts                                                       | `loadIndex` の失敗                                                                                    | 判断               |
+| 5.5         | 開始前・開催中は prune で除去しない                            | lifecycle.ts                                                 | `decidePrune`                                                                                         | 判断               |
+| 5.6         | 開始前の remove は除去                                         | lifecycle.ts                                                 | `decideRemove`                                                                                        | 判断               |
+| 5.7         | 終了済みは指定環境の記録があるときだけ除去                     | lifecycle.ts                                                 | `decideRemove`                                                                                        | 判断               |
+| 5.8         | 未記録の終了済み・開催中は拒否                                 | lifecycle.ts, cli.ts                                         | `RemoveDecision`、拒否の 1 行                                                                         | 判断               |
+| 5.9         | 設定に無い識別子は not-found                                   | cli.ts                                                       | 既存の `not-found` の行                                                                               | 判断               |
+| 5.10        | 強制の指定を持たない                                           | args.ts                                                      | `--force` の拒否を保つ                                                                                | —                  |
+| 5.11        | 除去・残した識別子と案内を結果に示す                           | cli.ts                                                       | `NOT_AGGREGATED_GUIDANCE`                                                                             | 判断               |
+| 6.1         | 移行の順序 (a)〜(e)                                            | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 手順の記述                                                                                            | Migration Strategy |
+| 6.2         | 共有の設定の削除・再配備・旧データの確認を取り込み前に行う理由 | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 実施順序と前提の記述                                                                                  | Migration Strategy |
+| 6.3         | 移行後の status の確認                                         | DEVELOP.md 6.2.1, cli.ts                                     | `status --env production` / `develop`                                                                 | Migration Strategy |
+| 6.4         | 退避の本文をリポジトリ・出力に残さない                         | DEVELOP.md 6.2.1                                             | 退避先・削除の手順                                                                                    | Migration Strategy |
+| 6.5         | 運用者の作業・手元の認証済み gh                                | DEVELOP.md 6.2.1                                             | 手順の記述                                                                                            | Migration Strategy |
+| 6.6         | 共有の設定が残る場合の停止と削除の案内                         | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 門番による停止と共有の設定の削除手順                                                                  | Migration Strategy |
+| 6.7         | develop の設定・目録・結果・可視フラグを移行時に削除           | DEVELOP.md 6.2.1, survey-run（2 つの複製）                   | 再配備後に目録と設定の識別子からキーを導き、運用者が確認・削除する手順。取りこぼしは dashboard で確認 | Migration Strategy |
+| 7.1         | skill に 6 コマンドの `--env`・独立・判断を示す                | survey-run SKILL.md（2 つの複製）                            | 手順の記述                                                                                            | —                  |
+| 7.2         | skill に develop の試験の流れを示す                            | survey-run SKILL.md（2 つの複製）                            | 手順の記述                                                                                            | —                  |
+| 7.3         | DEVELOP.md の 3.x・5.x・6.x を環境ごとに                       | DEVELOP.md                                                   | Modified Files に列挙した見出し                                                                       | —                  |
+| 7.4         | prune --env production と develop の独立                       | DEVELOP.md 5.4                                               | 手順の記述                                                                                            | —                  |
+| 7.5         | 環境の作成・登録・移行の順序を示す                             | DEVELOP.md 6.2.1                                             | 手順の記述                                                                                            | Migration Strategy |
+| 7.6         | 直接の書き換えをしない（移行は例外と明記）                     | DEVELOP.md, survey-run（2 つの複製）                         | 手順の記述                                                                                            | Migration Strategy |
+| 7.7         | roadmap と survey-operations への追補                          | 追補の一覧                                                   | 既存の記述を残し置き換えを示す                                                                        | —                  |
+| 7.8         | リリースブランチの選び方・再配備を変えない                     | cli.ts（`runVisibilitySwitch`）                              | 既存の分岐を保つ                                                                                      | —                  |
 
 注 1（1.4・1.5・1.8）: GitHub は、環境の変数が無い場合に同名のリポジトリ変数へ代わる。新しいワークフローは、環境なしの `survey-config-guard` で `vars.SURVEY_CONFIG != ''` を判定し、リポジトリまたは組織の共有の設定があれば固定文で失敗する。`deploy`・`preview` は `needs:` で門番の成功を待つため、共有の設定をビルドへ渡さない。環境なしのジョブには環境の変数が見えず、リポジトリ・組織の変数だけが見えることは実機で確認済みである。共有の設定が無く、対象環境にも設定が無い場合は、既存の生成処理がアンケート機能なしで完了する。
 
@@ -281,7 +281,7 @@ flowchart TD
 - `deploy.yaml` の `deploy` ジョブにだけ `environment:` を付ける。`verify`・`e2e`（呼び出しの再利用ワークフロー）には付けない。そのため両ジョブは環境の変数を読めず、`SURVEY_CONFIG` は渡らない（1.7）。
 - `preview.yaml` の `preview` ジョブに `environment: develop` を付ける。
 
-両ワークフローに `survey-config-guard` を追加する。門番には `environment:` を付けず、権限を `permissions: {}` にする。値をシェルへ渡さず、ステップの `if:` で空でないことだけを判定する。拒否時は次の固定の 1 行を出して `exit 1` とする。
+両ワークフローに `survey-config-guard` を追加する。門番には `environment:` を付けず、`permissions: {}` と `timeout-minutes: 5` を指定する。値をシェルへ渡さず、ステップの `if:` で空でないことだけを判定する。拒否時は次の固定の 1 行を出して `exit 1` とする。
 
 `error: shared-config: リポジトリ（または組織）の変数 SURVEY_CONFIG が残っています。削除してください（DEVELOP.md 6.2.1）`
 
@@ -290,6 +290,7 @@ flowchart TD
 survey-config-guard:
   if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
   runs-on: ubuntu-latest
+  timeout-minutes: 5
   permissions: {}
   steps:
     - name: Reject shared survey config
@@ -309,6 +310,7 @@ deploy:
 # preview.yaml の jobs 内
 survey-config-guard:
   runs-on: ubuntu-latest
+  timeout-minutes: 5
   permissions: {}
   steps:
     - name: Reject shared survey config
@@ -502,7 +504,7 @@ export type SurveyRemote = {
 
 ### Monitoring
 
-なし（CLI の 1 行の結果と、GitHub Actions の実行ログだけ。ワークフローには `SURVEY_CONFIG` の値を出力しない現行の規則を保つ）。
+追加の監視は設けず、CLI の結果と GitHub Actions の実行ログを使う。設定の値は秘密ではなく、`Run build` の `env:` 見出しで通常のビルドログに出る（現状と同じ）。門番自身は値を出力せず、拒否時の固定文だけを出す。CLI の結果や例外に設定の本文や外部コマンドの出力を含めない規則は保つ。
 
 ## Testing Strategy
 
@@ -526,7 +528,7 @@ export type SurveyRemote = {
 
 - `deploy.yaml` の `deploy` ジョブに、`github.ref_name == 'develop'` で `develop` を、それ以外で `production` を選ぶ `environment:` があること。`preview.yaml` のジョブに `environment: develop` があること（1.1, 1.2, 1.3）。
 - コメントを除き、`vars.SURVEY_CONFIG` の参照が、環境なしの門番の拒否ステップの `if:` と、ビルドするジョブの `Run build` の `env:` にだけあること。ワークフロー直下の `env:`、門番の `env:`・`run:` へ値を渡していないこと、`verify.yaml`・`e2e.yaml` に参照が無いことを確かめる。固定のエラー文に含まれる変数名は値の参照と区別する（1.4, 1.7, 1.8）。
-- 両ワークフローに `survey-config-guard` があり、門番のジョブに `environment:` が無く、`permissions: {}` があること。`deploy`・`preview` の `needs:` に門番が含まれ、`deploy` の既存の `verify`・`e2e` も保たれることを確かめる。
+- 両ワークフローに `survey-config-guard` があり、門番のジョブに `environment:` が無く、`permissions: {}` と `timeout-minutes: 5` があること。`deploy`・`preview` の `needs:` に門番が含まれ、`deploy` の既存の `verify`・`e2e` も保たれることを確かめる。
 - 門番のジョブ条件が待つ側と同じであること（`deploy` は既存の式と一致、`preview` は両方ともジョブの `if:` が無い）。拒否ステップの条件が `vars.SURVEY_CONFIG != ''` で、CI の節の固定文と完全一致する 1 行の出力、および `exit 1` があることを確かめる（1.6, 1.8）。
 - `deploy.yaml` の `on:` の対象と `if:` の式、`preview.yaml` の `on:` の対象が、変更前と同じ文字列であること（1.6）。構造の検査は文字列の照合であり、GitHub 側の環境の実在・ブランチの制限は検査できない。
 
@@ -536,57 +538,63 @@ export type SurveyRemote = {
 
 ### 人が行う確認（自動化しない）
 
-- 移行の手順の残りを実行し、production が移した設定を表示し、develop が `no surveys` を表示すること、develop の再配備に本番のアンケートが載らないことを確認する（6.1〜6.7）。develop の設定だけでなく、目録・結果・可視フラグの削除も確認する。
+- 2026-11-18 に実施済みの環境作成・共有の設定の削除・旧ワークフローでの develop の再配備・R2 の確認を記録と照合する。R2 は目録が無く、退避した設定の識別子に対応する結果・可視フラグも無いため、削除対象は無かった。新しいワークフローと CLI の取り込み後、production が移した設定を表示し、develop が `no surveys` を表示することを確認してから退避ファイルを削除する（6.1〜6.7）。
 - 2026-11-17 に確認済みの項目 1・2・4・6・7・8 と `dev/**` の一致は再調査の前提にしない。既存の環境への変数の上書きと、環境なしの門番から見える変数の範囲も確認済みである。リリース時の積み残しは項目 3 と項目 5 の 2 つだけとする。
 - 実装の最初に、空の本番バケットに対する `status --env production` が目録なしを空として扱うことを確認する（項目 10）。
-- `docs/DEVELOP.md` の 3.2・5.1・5.4・6.2・6.2.1 と skill の両方を読み、環境の独立、`prune --env production`、develop の除去の独立、環境の作成と移行の順序、直接操作の原則と移行時の例外を要件 7.3〜7.6 と照合する。下の追補一覧を実際の `survey-operations` と roadmap に照合し、要件 7.7 の追補漏れと存在しない番号が無いことを確認する。
+- `docs/DEVELOP.md` の 3.2・5.1・5.2・5.4・6.2・6.2.1 と skill の両方を読み、環境の独立、`prune --env production`、develop の除去の独立、環境の作成と移行の順序、直接操作の原則と移行時の例外を要件 7.3〜7.6 と照合する。6.2.1 の項目 (4) が共有の設定による門番の停止を説明し、手順記号 (a)〜(e) が要件 6.1・6.2 と Migration Strategy に一致することも確認する。下の追補一覧を実際の `survey-operations` と roadmap に照合し、要件 7.7 の追補漏れと存在しない番号が無いこと、8.17 を変更なしと明記したことを確認する。
 - 移行後、develop の試験用アンケートで `add`・`status`・`publish`・`unpublish`・`remove` の流れを確認する（7.2。`survey-operations` 4.2 を兼ねる）。
 
 ## Security Considerations
 
-- ワークフロー全体と既存のビルドするジョブの権限は従来どおりとし、門番だけを `permissions: {}` にする。環境の変数への書き込みは手元で認証済みの `gh` だけが行う。実装時に追加する `.claude/settings` の実行許可は手元の操作用であり、CI に書き込み権限を与えない。
-- 環境の変数は平文の設定で、秘密ではない（現行のリポジトリ変数と同じ扱い）。ログに値を出さない規則を保つ。移行で退避した本文は、リポジトリの外の一時ファイルに権限を絞って置き、移行の確認後に削除する。本文を端末へ出力しない（要件 6.4）。
-- 環境のデプロイブランチの制限で、`production` の変数が `release/**` 以外のブランチのジョブへ渡らないようにする（`develop` の環境は `develop` と `dev/**`）。制限が使えない場合の弱まりは、リスクとして Migration Strategy に記す。
-- 共有の設定の排除（注 1 と同じ）: 環境なしの門番がリポジトリ・組織の `SURVEY_CONFIG` を検出し、固定の `shared-config` 文言で失敗する。ビルドするジョブが門番の成功を待つため、共有の設定が残っていてもビルドへ渡らない。値は条件判定だけに使い、ログやシェルの引数へ渡さない。門番の不在・環境の付与・待ち合わせの欠落は静的な検査で検出する。
+- ワークフロー全体と既存のビルドするジョブの権限は従来どおりとし、門番だけを `permissions: {}` にする。環境の変数への書き込みは手元で認証済みの `gh` が行う。共有の `.claude/settings.json` に追加する実行許可は `Bash(npm run survey:*)` だけとし、CLI が `gh` を内部で呼ぶ。CI に書き込み権限を与えない。
+- 環境の変数は平文の設定で、秘密ではない。値は `Run build` の `env:` 見出しで通常のビルドログに出る（現状と同じ）。門番自身は値を出力しない。CLI の結果や例外に本文を含めない規則は保つ。移行で退避した本文は、リポジトリの外の一時ファイルに権限を絞って置き、移行の確認後に削除する。退避作業で本文を端末や結果の出力へ表示しない（要件 6.4）。
+- 環境のデプロイブランチの制限で、`production` の変数が `release/**` 以外のブランチのジョブへ渡らないようにする（`develop` の環境は `develop` と `dev/**`）。制限が使えない場合の対応は Open Questions / Risks の項目 5 に従う。
+- 共有の設定の排除（注 1 と同じ）: 環境なしの門番がリポジトリ・組織の `SURVEY_CONFIG` を検出し、固定の `shared-config` 文言で失敗する。ビルドするジョブが門番の成功を待つため、共有の設定が残っていてもビルドへ渡らない。門番は値をステップの条件判定だけに使い、ログやシェルへ渡さない。門番の不在・環境の付与・待ち合わせの欠落は静的な検査で検出する。
 
 ## Migration Strategy
 
-共有の設定（リポジトリ変数）から環境の設定への移行の手順。運用者（または許可を得た作業者）が手元の認証済み `gh` で行い、`docs/DEVELOP.md` の 6.2 の小節 6.2.1 に同じ順序で書く。
+共有の設定から環境の設定への移行手順を、`docs/DEVELOP.md` 6.2.1 と skill の両方に同じ手順記号 (a)〜(e) で記す。運用者が手元の認証済み `gh`・`wrangler` で行う。2026-11-18 に、新しいワークフローと CLI の取り込み前の移行作業は実施済みである。最初の push で新しい `preview.yaml` が走るため、環境の作成と共有の設定の削除は実装前に済ませる。
 
 ```mermaid
 flowchart TD
-  A["(a) 設定の退避 実施済み"] --> B["(b) production 作成と制限 実施済み"]
+  A["(a) 設定の退避 実施済み"] --> B["(b) production 作成と release/** の制限 実施済み"]
   B --> C["(c) production 登録と一致確認 実施済み"]
-  C --> Dev["develop 環境作成と develop・dev/** の制限"]
-  Dev --> Clear["develop の設定・目録・結果・可視フラグを削除"]
-  Clear --> D["(d) リポジトリの共有設定を削除 組織の同名変数もないことを確認"]
-  D --> Merge["門番付きワークフローと CLI を develop へ取り込む"]
+  C --> Dev["develop 作成と develop・dev/** の制限 実施済み"]
+  Dev --> D["(d) リポジトリの共有設定を削除 組織の同名変数なしを確認 実施済み"]
+  D --> Redeploy["旧ワークフローで develop を手動再配備 設定なしで成功 実施済み"]
+  Redeploy --> Clear["R2 の確認と削除 目録と設定の ID からキーを導き dashboard で取りこぼしを確認 実施済み・削除対象なし"]
+  Clear --> Merge["門番付きワークフローと CLI を develop へ取り込む"]
   Merge --> E["(e) 両環境の status を確認"]
-  E -- "production に移した設定 develop は no surveys" --> Done["develop を再配備して表示を確認 退避ファイルを削除"]
+  E -- "production に移した設定 develop は no surveys" --> Done["退避ファイルを削除"]
   E -- "食い違う" --> Fix["環境の設定と develop の削除対象を確認"]
+  Done --> Sample["develop に add --file で試験用アンケートを登録し survey-operations 4.2 を確認"]
 ```
 
-1. (a) 現在の設定を、権限を絞ったリポジトリ外の一時ファイルへ退避する。本文を端末・リポジトリ・結果の出力に残さない。production への移行分は 2026-11-18 に実施済みである。
-2. (b) `production` を作成し、配備ブランチを `release/**` に制限する。production 分は 2026-11-18 に実施済みであり、作り直さない。残りとして `develop` 環境を作り、配備ブランチを `develop`・`dev/**` に制限する。両環境と制限の作成は、新しいワークフローの取り込みより前に済ませる。
-3. (c) 退避した本文を `gh variable set SURVEY_CONFIG --env production -R <repo> < <退避ファイル>` でそのまま登録し、リポジトリ変数との一致をハッシュで確認する。production 分は 2026-11-18 に実施済みである。本文やハッシュの実値は文書やログに残さない。production の環境の設定はリリースまで使われず、最初のリリースから使う。
-4. (d) の前に、運用者が develop の旧データを削除する。develop の環境の設定を `gh variable delete SURVEY_CONFIG --env develop -R <repo>` で削除し、未登録ならそのままとする。続いて `skyshare-survey-results-develop` の目録・結果・可視フラグを削除する。削除前に、対象バケットが本番の `skyshare-survey-results` と別であることを確認し、開発用バケットの対象キーを列挙する。運用者が `wrangler r2 object delete <bucket>/<key> --remote` で各キーを削除し、対象キーが残っていないことを確認する。キーは既存の `INDEX_KEY`・`resultKey`・`visibilityKey` の形式に従う。本番の設定・バケット・オブジェクトには触れない。この削除は利用者が許可した移行時の例外であり、CLI の機能は増やさない。
-5. (d) リポジトリ変数を `gh variable delete SURVEY_CONFIG -R <repo>` で削除し、このリポジトリから参照できる組織の同名変数も無いことを確認する。**(d) の前提**は、production への登録と一致確認、develop の環境と制限の作成、develop の旧データの削除が済んでいることである。本番にはアンケート機能をまだ配備していない。共有の設定を消してから、門番付きのワークフローと CLI を develop に取り込む。先に取り込むと門番が共有の設定を検出して停止するため、この順序にする。
-6. (e) 本番の結果バケット `skyshare-survey-results` は 2026-11-18 に作成済みで、空であることを前提とする。実装の最初に項目 10 の目録なしの扱いを確認する。取り込み後、`npm run survey -- status --env production` が移した設定のアンケートを示し、`npm run survey -- status --env develop` が `no surveys` を示すことを確認する。続けて develop を再配備し、本番のアンケートが載らないことを確認してから退避ファイルを削除する。
+1. (a) 現在の設定を、権限を絞ったリポジトリ外の一時ファイルへ退避する。2026-11-18 に実施済みである。退避作業で本文を端末・リポジトリ・結果の出力に残さない。
+2. (b) `production` 環境を作成し、配備ブランチを `release/**` に制限する。2026-11-18 に実施済みであり、作り直さない。
+3. (c) 退避した本文を `gh variable set SURVEY_CONFIG --env production -R <repo> < <退避ファイル>` で登録し、削除前のリポジトリ変数との一致をハッシュで確認する。2026-11-18 に実施済みである。本文やハッシュの実値は文書や結果の出力に残さない。続いて `develop` 環境を作成し、配備ブランチを `develop`・`dev/**` に制限した。この作業も同日に実施済みである。production の設定は最初のリリースから使う。本番にはアンケート機能をまだ配備していない。
+4. (d) **共有の設定の削除の前提**は、production への登録と一致確認、develop の環境と制限の作成が済んでいることである。リポジトリ変数を `gh variable delete SURVEY_CONFIG -R <repo>` で削除し、このリポジトリから参照できる組織の同名変数も無いことを確認する。2026-11-18 に実施済みである。続いて旧ワークフローで develop を手動再配備し、設定なしで成功した。
+   - 再配備後、develop の環境の設定が未登録であることと、`skyshare-survey-results-develop` の旧データを確認する。環境の設定があれば運用者が `gh variable delete SURVEY_CONFIG --env develop -R <repo>` で削除する。R2 の対象は目録・結果・可視フラグとし、本番の `skyshare-survey-results` と重ならないことを確認する。
+   - wrangler には一覧機能が無いため、目録を取得し、目録と退避した設定にある識別子の和集合から `resultKey(id)`・`visibilityKey(id)` を導く。目録自体は `INDEX_KEY` を使う。目録が無い場合も退避した設定の識別子を確認する。存在する対象を運用者が `wrangler r2 object delete <bucket>/<key> --remote` で削除し、目録にない対象などの取りこぼしは dashboard で確認する。目録は識別子を確認してから削除する。
+   - 2026-11-18 の確認では、目録が無く、退避した設定の識別子に対応する結果・可視フラグも無いため、削除対象は無かった。移行時のこの確認・削除は直接操作の例外であり、CLI の機能は増やさない。本番の設定・バケット・オブジェクトには触れない。
+   - ここまでを済ませてから、門番付きワークフローと CLI を develop に取り込む。この取り込みは未実施である。共有の設定を先に削除することで、最初の push から門番が停止する事態を避ける。
+5. (e) 本番の結果バケット `skyshare-survey-results` は 2026-11-18 に作成済みで、空であることを前提とする。実装の最初に、項目 10 の目録なしの扱いを確認する。新しいワークフローと CLI の取り込み後、`npm run survey -- status --env production` が移した設定のアンケートを示し、`npm run survey -- status --env develop` が `no surveys` を示すことを確認してから退避ファイルを削除する。この状態を移行の完了とする。
+6. 移行の完了後、develop に試験用のサンプルのアンケートを `npm run survey -- add --file <下書きファイル> --env develop` で登録し、`survey-operations` 4.2 の実機の確認に使う。要件 6.3 の `no surveys` の確認より先には登録しない。
 
-- 共有の設定の削除から新しいワークフローの取り込みまでの間、develop の配備にアンケート機能が載らないことは許容する。
-- 存在しない環境を参照するジョブが環境を制限なしで自動作成することは確認済みである。これを避けるため、環境と制限を取り込みより先に作る。
+- 共有の設定の削除から取り込みまで、develop の配備にアンケート機能が載らないことは許容する。旧ワークフローによる設定なしの再配備は実施済みである。
+- 未作成の環境を参照するジョブは環境を制限なしで自動作成することが確認済みである。両環境と制限は取り込み前に作成済みである。
 - 確認で食い違う場合は、環境の設定と develop の削除対象を確認する。production の設定の復旧が必要なら退避から production に再登録する。共有の設定を作り直すと門番が停止するため、共有の設定への復旧は行わない。
 - `dev/**` の実ブランチとの一致は確認済みである。実際の `release/**` との一致は項目 5 に従い初回リリースで確認する。
-- `docs/DEVELOP.md` 6.2.1 と skill の両方に、実施済みの (a)〜(c) の production 分、残りの develop の作業、旧データの削除、(d) を取り込みより前に行う順序、(e) の前提と確認を同じ内容で記す。
 
 ### 既存の記述への追補（要件 7.7）
 
-既存の記述は削除せず、置き換えを示す注記（`（2026-11-16 追補: survey-env-config が置き換え）`）を足す。
+既存の記述は削除せず、置き換えを示す注記（`（2026-11-18 追補: survey-env-config が置き換え）`）を足す。変更しない規則も下記のとおり明示する。
 
 - `survey-operations/requirements.md`:
   - Introduction の環境の定義（設定を両環境で共有する記述）、Introduction・Boundary Context の CI の設定・`deploy.yaml` の変更を対象外とする記述。
   - 2.1・2.3〜2.5 の環境指定と共有の設定、要件 6・7 の両環境による除去の判断・未集計の案内を、6 コマンドの環境指定と指定環境だけの判断へ置き換える。
   - 8.12〜8.14 の両環境による新規登録の判断と旧拒否文、および 8.16 の「いずれかの環境で集計済み」を、指定環境の目録による判断へ置き換える。
+  - 8.17 は変更なし。開催中の更新に対する締切の日付の受理条件と、前倒し不能時の固定文を維持する。集計済みの判定に用いる環境の変更は 8.16 の追補で扱う。
   - 9.5・9.15 の開催中の取り下げを、指定環境への配備・日次集計・同じ環境の状態確認・除去へ置き換える。
   - 9.6 の main への取り込み前の除去を `prune --env production` とし、develop の除去は独立とする。
   - 9.8 の直接操作の禁止には、移行時の production 登録、develop の旧データの削除、共有の設定の削除を例外として追補する。
