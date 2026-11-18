@@ -37,10 +37,7 @@ const aggregation = (
     outcome: "result",
     visibility,
 })
-const both = (production: string[] = [], develop: string[] = []) => ({
-    production: new Set(production),
-    develop: new Set(develop),
-})
+const aggregated = (...ids: string[]) => new Set(ids)
 
 describe("surveyStage", () => {
     it("開始時刻ちょうどから active、終了時刻ちょうどから集計結果の段階にする", () => {
@@ -135,57 +132,68 @@ describe("buildStatusRows", () => {
 })
 
 describe("decidePrune", () => {
-    it("終了済みの両環境集計済みだけを除去し不足環境を順に示す", () => {
-        const surveys = [
-            survey("both"),
-            survey("production"),
-            survey("none"),
-            survey("upcoming", "2026-11-20T00:00:00Z", "2026-11-22T00:00:00Z"),
-            survey("active", "2026-11-11T00:00:00Z", "2026-11-14T00:00:00Z"),
-        ]
+    it("終了時刻ちょうどで指定環境に記録があれば除去する", () => {
         expect(
             decidePrune(
-                config(...surveys),
-                both(["both", "production"], ["both"]),
+                config(survey("finished")),
+                aggregated("finished"),
+                now(period.closesAt),
+            ),
+        ).toEqual({ remove: ["finished"], kept: [] })
+    })
+
+    it("終了済みでも指定環境の記録が無ければ残す", () => {
+        expect(
+            decidePrune(
+                config(survey("unfinished")),
+                aggregated(),
                 now("2026-11-13T00:00:00Z"),
             ),
-        ).toEqual({
-            remove: ["both"],
-            kept: [
-                { id: "production", pending: ["develop"] },
-                { id: "none", pending: ["production", "develop"] },
-            ],
-        })
+        ).toEqual({ remove: [], kept: [{ id: "unfinished" }] })
+    })
+
+    it("開始前と開催中は指定環境に記録があっても対象にしない", () => {
+        expect(
+            decidePrune(
+                config(
+                    survey(
+                        "upcoming",
+                        "2026-11-20T00:00:00Z",
+                        "2026-11-22T00:00:00Z",
+                    ),
+                    survey(
+                        "active",
+                        "2026-11-11T00:00:00Z",
+                        "2026-11-14T00:00:00Z",
+                    ),
+                ),
+                aggregated("upcoming", "active"),
+                now("2026-11-13T00:00:00Z"),
+            ),
+        ).toEqual({ remove: [], kept: [] })
     })
 })
 
 describe("decideRemove", () => {
     it("開始前は集計状況によらず除去する", () => {
         expect(
-            decideRemove(survey("s"), both(), now("2026-11-09T23:59:59Z")),
+            decideRemove(
+                survey("s"),
+                aggregated(),
+                now("2026-11-09T23:59:59Z"),
+            ),
         ).toEqual({ kind: "remove" })
     })
 
     it("開催中は集計済みでも拒否する", () => {
         expect(
-            decideRemove(survey("s"), both(["s"], ["s"]), now(period.opensAt)),
+            decideRemove(survey("s"), aggregated("s"), now(period.opensAt)),
         ).toEqual({ kind: "refused", reason: "active" })
     })
 
     it.each([
-        [both(["s"], ["s"]), { kind: "remove" }],
-        [
-            both(["s"], []),
-            { kind: "refused", reason: "not-aggregated", pending: ["develop"] },
-        ],
-        [
-            both([], []),
-            {
-                kind: "refused",
-                reason: "not-aggregated",
-                pending: ["production", "develop"],
-            },
-        ],
+        [aggregated("s"), { kind: "remove" }],
+        [aggregated(), { kind: "refused", reason: "not-aggregated" }],
     ] as const)(
         "終了後の集計状態から除去可否を決める",
         (aggregated, expected) => {
