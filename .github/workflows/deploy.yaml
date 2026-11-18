@@ -4,7 +4,8 @@
 # - develop: develop 用の別の Worker（skyshare-develop、develop.<SITE_HOST>）。Cron が動く確認用の環境で、
 #   D1・R2 も develop 専用。dev/* のプレビュー（preview.yaml）はこの Worker に作られる
 #
-# verify と e2e の両ジョブが成功した場合だけデプロイする。verify は unit・component・route・render と型検査を実行し、E2E は e2e ジョブで実行する。
+# 環境ごとの SURVEY_CONFIG を使い、共有設定が残っていれば環境なしの門番で配備を止める。
+# verify・e2e と門番のすべてが成功した場合だけデプロイする。verify は unit・component・route・render と型検査を実行し、E2E は e2e ジョブで実行する。
 # 必要な設定は docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
 # - Secrets:   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
 # - Variables: PUBLIC_LEGACY_BACKEND_ENDPOINT / PUBLIC_DEFAULT_ATP_SERVICE / PUBLIC_NODE_ENV /
@@ -54,10 +55,23 @@ jobs:
     uses: ./.github/workflows/e2e.yaml
     secrets: inherit
 
+  survey-config-guard:
+    if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Reject shared survey config
+        if: ${{ vars.SURVEY_CONFIG != '' }}
+        run: |
+          echo 'error: shared-config: リポジトリ（または組織）の変数 SURVEY_CONFIG が残っています。削除してください（DEVELOP.md 6.2.1）'
+          exit 1
+
   deploy:
-    needs: [verify, e2e]
+    needs: [verify, e2e, survey-config-guard]
     # 手動実行で別のブランチが選ばれても、本番や develop 環境へ配備しない。
     if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
+    environment: ${{ github.ref_name == 'develop' && 'develop' || 'production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
