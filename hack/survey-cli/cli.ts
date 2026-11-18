@@ -33,7 +33,7 @@ import {
 } from "./lifecycle"
 import { createSurveyRemote, RemoteError, type SurveyRemote } from "./remote"
 
-const VARIABLE_LIMIT_KB = VARIABLE_LIMIT_BYTES / 1024
+const VARIABLE_LIMIT_KB = VARIABLE_LIMIT_BYTES / 1000
 const NEW_REGISTRATION_REFUSAL =
     "error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。"
 const NOT_AGGREGATED_GUIDANCE =
@@ -82,14 +82,20 @@ const failure = (error: unknown): SurveyCliResult => {
             )
         if (kind === "unavailable")
             return result(1, "error: unavailable: 外部サービスを利用できません")
+        if (kind === "no-environment")
+            return result(
+                1,
+                "error: no-environment: GitHub の環境が未作成か、権限が足りません。DEVELOP.md 6.2.1 の手順で環境を作り、gh auth status で権限を確かめてください",
+            )
     }
     return result(1, "error: unavailable: 操作を完了できません")
 }
 
 const readConfig = async (
     remote: SurveyRemote,
+    env: SurveyEnv,
 ): Promise<SurveyConfig | SurveyCliResult> => {
-    const value = await remote.readConfigValue()
+    const value = await remote.readConfigValue(env)
     if (value === undefined) return { surveys: [] }
     let parsed: unknown
     try {
@@ -126,13 +132,24 @@ const readIndexes = async (
     return failed ?? indexes
 }
 
+/** 指定環境の目録を一つ読み、形式を検証する。 */
+const loadIndex = async (
+    remote: SurveyRemote,
+    env: SurveyEnv,
+): Promise<SurveyIndex | undefined | SurveyCliResult> => {
+    const index = await remote.readIndex(env)
+    if (index === undefined) return undefined
+    const parsed = parseSurveyIndex(index)
+    return parsed.ok ? parsed.value : invalid("目録の形式が正しくありません")
+}
+
 const isFailure = (value: unknown): value is SurveyCliResult =>
     value !== null && typeof value === "object" && "code" in value
 
 const indexIds = (index: SurveyIndex | undefined): Set<string> =>
     new Set(index?.surveys.map(entry => entry.id) ?? [])
 
-const formatKilobytes = (bytes: number): string => (bytes / 1024).toFixed(1)
+const formatKilobytes = (bytes: number): string => (bytes / 1000).toFixed(1)
 
 const formatAddResult = (
     status: "created" | "updated" | "unchanged",
@@ -245,7 +262,7 @@ const runAdd = async (
     if (!("config" in outcome)) return invalid("下書きを検証できません")
 
     if (!command.dryRun && outcome.status !== "unchanged")
-        await remote.writeConfigValue(outcome.value)
+        await remote.writeConfigValue(command.env, outcome.value)
     return result(
         0,
         formatAddResult(
@@ -263,13 +280,8 @@ const runStatus = async (
     remote: SurveyRemote,
     now: () => Date,
 ): Promise<SurveyCliResult> => {
-    const rawIndex = await remote.readIndex(env)
-    let index: SurveyIndex | undefined
-    if (rawIndex !== undefined) {
-        const parsed = parseSurveyIndex(rawIndex)
-        if (!parsed.ok) return invalid("目録の形式が正しくありません")
-        index = parsed.value
-    }
+    const index = await loadIndex(remote, env)
+    if (isFailure(index)) return index
     const indexed = new Map<
         string,
         {
@@ -308,13 +320,8 @@ const runVisibilitySwitch = async (
     remote: SurveyRemote,
     now: () => Date,
 ): Promise<SurveyCliResult> => {
-    const rawIndex = await remote.readIndex(command.env)
-    let index: SurveyIndex | undefined
-    if (rawIndex !== undefined) {
-        const parsed = parseSurveyIndex(rawIndex)
-        if (!parsed.ok) return invalid("目録の形式が正しくありません")
-        index = parsed.value
-    }
+    const index = await loadIndex(remote, command.env)
+    if (isFailure(index)) return index
     const entry = index?.surveys.find(item => item.id === command.id)
     const survey = config.surveys.find(item => item.id === command.id)
     if (!entry && !survey)
@@ -446,8 +453,13 @@ const runPruneOrRemove = async (
                     : head
         }
         if (!command.dryRun && decision.remove.length > 0) {
-            if (next.surveys.length === 0) await remote.deleteConfigValue()
-            else await remote.writeConfigValue(serializeConfig(next))
+            if (next.surveys.length === 0)
+                await remote.deleteConfigValue(command.env)
+            else
+                await remote.writeConfigValue(
+                    command.env,
+                    serializeConfig(next),
+                )
         }
         return result(0, line)
     }
@@ -471,8 +483,9 @@ const runPruneOrRemove = async (
     const action = command.dryRun ? "would remove" : "removed"
     const prefix = command.dryRun ? "[dry-run] " : ""
     if (!command.dryRun) {
-        if (next.surveys.length === 0) await remote.deleteConfigValue()
-        else await remote.writeConfigValue(serializeConfig(next))
+        if (next.surveys.length === 0)
+            await remote.deleteConfigValue(command.env)
+        else await remote.writeConfigValue(command.env, serializeConfig(next))
     }
     return result(
         0,
@@ -494,7 +507,7 @@ export const run = async (
         dependencies.readFile ??
         ((filePath: string) => readFileSync(filePath, "utf8"))
     try {
-        const config = await readConfig(remote)
+        const config = await readConfig(remote, parsed.command.env)
         if (isFailure(config)) return config
         const command = parsed.command
         if (command.name === "add")
