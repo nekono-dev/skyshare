@@ -9,7 +9,7 @@ import {
 } from "@/lib/survey/definition"
 
 /** 変数の容量の上限（GitHub の変数は 48KB まで） */
-export const VARIABLE_LIMIT_BYTES = 48 * 1024
+export const VARIABLE_LIMIT_BYTES = 48000
 
 /** 下書きは識別子と開始日時を省け、締切は日本時間の日付で指定する。 */
 export type DraftSurvey = Omit<Survey, "id" | "opensAt" | "closesAt"> & {
