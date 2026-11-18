@@ -6,7 +6,7 @@ import { idSchema } from "@/lib/api/contract/surveyPath"
 export type SurveyEnv = "production" | "develop"
 
 export type Command =
-    | { name: "add"; file: string; dryRun: boolean }
+    | { name: "add"; file: string; env: SurveyEnv; dryRun: boolean }
     | { name: "status"; env: SurveyEnv }
     | {
           name: "publish" | "unpublish"
@@ -15,8 +15,8 @@ export type Command =
           deploy: boolean
           dryRun: boolean
       }
-    | { name: "prune"; dryRun: boolean }
-    | { name: "remove"; id: string; dryRun: boolean }
+    | { name: "prune"; env: SurveyEnv; dryRun: boolean }
+    | { name: "remove"; id: string; env: SurveyEnv; dryRun: boolean }
 
 export type ParsedArgs =
     { ok: true; command: Command; repo?: string } | { ok: false; usage: string }
@@ -102,8 +102,9 @@ export const parseArgs = (argv: readonly string[]): ParsedArgs => {
     ) {
         return failure("余分な引数があります")
     }
+    if (env !== "production" && env !== "develop")
+        return failure("--env に production または develop を指定してください")
     if (name === "add") {
-        if (env !== undefined) return failure("add では --env を使えません")
         if (noDeploy)
             return failure("このコマンドでは --no-deploy を使えません")
         if (positionals.length) return failure("余分な引数があります")
@@ -111,21 +112,20 @@ export const parseArgs = (argv: readonly string[]): ParsedArgs => {
             return failure("add --file <パス> を指定してください")
         return {
             ok: true,
-            command: { name, file, dryRun },
+            command: { name, file, env, dryRun },
             ...(repo ? { repo } : {}),
         }
     }
     if (file !== undefined)
         return failure("このコマンドでは --file を使えません")
     if (name === "prune" || name === "remove") {
-        if (env !== undefined) return failure(`${name} では --env を使えません`)
         if (noDeploy)
             return failure("このコマンドでは --no-deploy を使えません")
         if (name === "prune") {
             if (positionals.length) return failure("余分な引数があります")
             return {
                 ok: true,
-                command: { name, dryRun },
+                command: { name, env, dryRun },
                 ...(repo ? { repo } : {}),
             }
         }
@@ -135,7 +135,7 @@ export const parseArgs = (argv: readonly string[]): ParsedArgs => {
             return failure("識別子の形式が正しくありません")
         return {
             ok: true,
-            command: { name, id, dryRun },
+            command: { name, id, env, dryRun },
             ...(repo ? { repo } : {}),
         }
     }
@@ -143,8 +143,6 @@ export const parseArgs = (argv: readonly string[]): ParsedArgs => {
         return failure("status では --dry-run を使えません")
     if (noDeploy && name === "status")
         return failure("status では --no-deploy を使えません")
-    if (env !== "production" && env !== "develop")
-        return failure("--env に production または develop を指定してください")
     if (name === "status") {
         if (positionals.length) return failure("余分な引数があります")
         return { ok: true, command: { name, env }, ...(repo ? { repo } : {}) }
