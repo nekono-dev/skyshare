@@ -35,7 +35,7 @@ import { createSurveyRemote, RemoteError, type SurveyRemote } from "./remote"
 
 const VARIABLE_LIMIT_KB = VARIABLE_LIMIT_BYTES / 1000
 const NEW_REGISTRATION_REFUSAL =
-    "error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。"
+    "error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。"
 const NOT_AGGREGATED_GUIDANCE =
     " ; see DEVELOP.md 5.4 / survey-run (not-aggregated)"
 
@@ -210,10 +210,9 @@ const runAdd = async (
     const preflightError = addFailure(preflight)
     if (preflightError) return preflightError
 
-    const indexes = await readIndexes(remote)
-    if (isFailure(indexes)) return indexes
-    const productionIds = indexIds(indexes.production)
-    const developIds = indexIds(indexes.develop)
+    const index = await loadIndex(remote, command.env)
+    if (isFailure(index)) return index
+    const aggregatedIds = indexIds(index)
 
     const requestedId =
         draft !== null && typeof draft === "object" && "id" in draft
@@ -224,14 +223,11 @@ const runAdd = async (
             ? config.surveys.find(survey => survey.id === requestedId)
             : undefined
     if (requestedId === undefined) {
-        const allRecorded = config.surveys.every(
-            survey => productionIds.has(survey.id) && developIds.has(survey.id),
+        const allRecorded = config.surveys.every(survey =>
+            aggregatedIds.has(survey.id),
         )
         if (!allRecorded) return result(1, NEW_REGISTRATION_REFUSAL)
-    } else if (
-        existing &&
-        (productionIds.has(existing.id) || developIds.has(existing.id))
-    ) {
+    } else if (existing && aggregatedIds.has(existing.id)) {
         const candidate =
             preflight.status === "created" ||
             preflight.status === "updated" ||
