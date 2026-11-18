@@ -107,31 +107,6 @@ const readConfig = async (
     return config.ok ? config.config : invalid("設定の形式が正しくありません")
 }
 
-const readIndexes = async (
-    remote: SurveyRemote,
-): Promise<Record<SurveyEnv, SurveyIndex | undefined> | SurveyCliResult> => {
-    const indexes: Record<SurveyEnv, SurveyIndex | undefined> = {
-        production: undefined,
-        develop: undefined,
-    }
-    let failed: SurveyCliResult | undefined
-    for (const env of ["production", "develop"] as const) {
-        try {
-            const index = await remote.readIndex(env)
-            if (index === undefined) continue
-            const parsed = parseSurveyIndex(index)
-            if (!parsed.ok) {
-                failed ??= invalid("目録の形式が正しくありません")
-                continue
-            }
-            indexes[env] = parsed.value
-        } catch (error) {
-            failed ??= failure(error)
-        }
-    }
-    return failed ?? indexes
-}
-
 /** 指定環境の目録を一つ読み、形式を検証する。 */
 const loadIndex = async (
     remote: SurveyRemote,
@@ -420,18 +395,14 @@ const runPruneOrRemove = async (
     ) {
         return result(1, "error: not-found: 指定したアンケートがありません")
     }
-    const indexes = await readIndexes(remote)
-    if (isFailure(indexes)) return indexes
-    const aggregated = {
-        production: indexIds(indexes.production),
-        develop: indexIds(indexes.develop),
-    }
+    const index = await loadIndex(remote, command.env)
+    if (isFailure(index)) return index
+    const aggregated = indexIds(index)
     const before = config.surveys.length
     if (command.name === "prune") {
         const decision = decidePrune(config, aggregated, now())
         const kept = decision.kept.map(
-            item =>
-                `kept ${item.id}(not-aggregated: ${item.pending.join(",")})`,
+            item => `kept ${item.id}(not-aggregated: ${command.env})`,
         )
         const next = removeSurveys(config, decision.remove)
         const dryPrefix = command.dryRun ? "[dry-run] " : ""
@@ -467,7 +438,7 @@ const runPruneOrRemove = async (
         const reason =
             decision.reason === "active"
                 ? "results would be lost"
-                : `results would be lost; not aggregated: ${decision.pending.join(",")}`
+                : `results would be lost; not aggregated: ${command.env}`
         const guidance =
             decision.reason === "not-aggregated" ? NOT_AGGREGATED_GUIDANCE : ""
         return result(
