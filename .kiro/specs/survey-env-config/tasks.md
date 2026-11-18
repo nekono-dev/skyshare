@@ -190,7 +190,7 @@
   - _Boundary: 既存仕様への追補（survey-operations の設計・タスク）_
   - _Requirements: 7.7_
 
-- [ ] 7.3 brief・research に当時の記録を追補する
+- [x] 7.3 brief・research に当時の記録を追補する
   - brief・research は当時の記録を残し、共有設定・両環境による判断・環境指定なしの決定が現在は置き換わったことを追補する。
   - 完了の状態: 当時の記録を保ったまま現在の規則への追補がある。
   - _Boundary: 既存記録への追補（brief・research）_

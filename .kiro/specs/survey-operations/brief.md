@@ -8,6 +8,7 @@
 
 - CLI: `hack/survey-cli/{cli,config,lifecycle,remote}.ts`。コマンドは `add --file <パス> [--dry-run]`・`status`・`prune [--dry-run]`。`--repo owner/repo` を取る。出力は固定の 1 行。
 - 設定の置き場: GitHub のリポジトリ変数 `SURVEY_CONFIG`（`gh variable`）。CI が配備の前に静的ファイル `public/surveys/index.json` を生成する（`npm run survey:render`）。CI に変数の書き込み権限は与えない。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は `SURVEY_CONFIG` を GitHub Environments の `production`・`develop` の環境ごとの変数に置き、六つのコマンドすべてで `--env` を必須とする。リポジトリ変数の共有設定は門番が拒否する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 - 段階: `upcoming`・`active`・`retained`・`expired`（`lifecycle.ts`）。除去は `expired` かつ D1 の本番・develop の 2 表に行が無いものだけ（`remote.ts` が wrangler で SELECT）。
 - 手順: `.claude/skills/survey-run/SKILL.md`（聞き取り・翻訳・確認・登録・状態・除去）。`docs/DEVELOP.md` の 3.2 と main への取り込み前の `prune` の手順（243 行付近）。
 
@@ -21,8 +22,11 @@
 - 配備の起動: `--env develop` は `deploy.yaml` を `develop` ブランチで、`--env production` は最新の `release/*` ブランチで起動し、`dry_run` を偽にして渡す。起動は運用者のローカル認証の `gh` で行い、CI に追加の権限を与えない。対象の `release/*` の決め方（最新の判定）と、配備を起動しない指定（`--no-deploy`）の要否は設計で決める。
 - `status` は、可視フラグの状態に加えて、公開の反映が配備待ちかを示せるか設計で決める。
 - `prune` は、終了済みで本番・develop 両方の目録に識別子があるアンケートだけを `SURVEY_CONFIG` から除去する。D1 の行は確認しない。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は `prune --env <環境>` が指定環境の設定と目録だけで除去を判断し、指定環境の設定だけを更新する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 - `remove <id>` は開始前の取り下げに使う。開催中は拒否し、強制指定は持たない。終了済みは両環境の目録に識別子があるときだけ除去する。開催中の取り下げは締切の前倒し、両環境への配備、日次集計、両環境での状態確認の後に行う。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は `remove <id> --env <環境>` が指定環境の設定と目録だけで除去を判断し、指定環境の設定だけを更新する。開催中は指定環境で締切を前倒しして配備し、日次集計後に同じ環境の状態を確認してから除去する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 - `status`・`publish`・`unpublish` は `--env production|develop` を必須にする（プレビューは develop と共用）。`prune`・`remove` は `--env` を取らず両環境の目録を読む。`add` は環境を分けない。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は六つのコマンドすべてで `--env production` または `--env develop` が必須で、設定・登録可否・除去判断は指定環境だけで完結する。共有設定は門番が拒否する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 - `survey-run` skill と `docs/DEVELOP.md` の手順を新しい体系に合わせる。
 
 ## Approach
@@ -63,11 +67,14 @@
 - CI に変数の書き込み権限を与えない。変更はすべて運用者のローカルの認証済みの CLI で行う。
 - 公開の切り替えは本番を意図せず操作しないよう、`--env` を省略させない。
 - `prune`・`remove` は `--env` を取らず、常に本番と develop の両方の目録を読む。`status`・`publish`・`unpublish` は `--env` 必須のままとする。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は六つのコマンドすべてで `--env production` または `--env develop` が必須で、`prune`・`remove` も指定環境の設定と目録だけで除去を判断する（両方の目録を読まない）。現在の規則は `.kiro/specs/survey-env-config/requirements.md`（2.x・5.x）に従う。
 - 新規登録の識別子は CLI が `node:crypto` の `randomUUID()` で UUID v4 を発行する。月ごとの連番、運用者が指定する新規識別子、内容が同じ下書きから既存識別子を探す方法は使わない。下書きに識別子があれば、設定にあるアンケートの更新だけに使い、無ければ `error: not-found` で何も変更しない。
 - 同時に開催できるアンケートは 1 つだけ。新規登録は、設定にあるすべての識別子が本番・develop 両方の目録に記録されるまで拒否する。開始前のものも対象だが、設定に残る集計済みの過去分は妨げない。D1 には問い合わせない。目録の無いキーは空として扱い、取得失敗・形式不正は dry-run を含め登録を失敗させる。
 - 拒否時は `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。` の 1 行だけを返す。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は登録可否を指定環境の目録だけで判断し、拒否文は `.kiro/specs/survey-env-config/requirements.md` の要件 4.4 に従う。
 - 締切は実在する `YYYY-MM-DD` の日付だけを受け付け、日本時間の 0 時を示す ISO 8601 に変換して保存する。新規は登録時刻より後、更新は元の開始日時より後でなければならない。集計は日次のままとする。
 - 開催中の `remove` は拒否し、強制指定は設けない。開催中は同じ識別子の `add` 更新で締切だけを前倒しする。前倒し先は元の開始日時より後で最も早い日本時間 0 時とし、その日時が現在の締切以後で前倒しにならない場合（1 日だけのアンケートや当日開始など）は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` と固定の 1 行で拒否する。更新設定を両環境へ配備し、日次集計を待ち、両環境の `status --env` で `empty`・`hidden`・`published` のいずれかを確認してから `remove` または `prune` する。除去時にも両方の目録を読み直す。設定更新だけでは配備済みの受付は止まらない。終了済みの再開と、いずれかの環境で集計済みのアンケートの締切変更は拒否する。集計済みは識別子の有無だけで判定し、期間の一致を条件にしない。
+  > 2026-11-18 追補: survey-env-config が置き換え。締切の日付の受理条件と前倒し不能時の固定文は維持する。締切前倒し後の配備・集計・状態確認・除去は指定環境だけで行い、集計済みの判定も指定環境の目録だけを使う。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 - 既存の `survey-run` の運用の規則（日本語のみの入力・確認前に登録しない・一時ファイルの削除）を保つ。ただし、アンケート全体の題・説明は設定の形式から廃止される（`surveys` の更新）ため、聞き取りと確認表から「タイトル・説明」を外し、質問ごとの題だけにする。
 - `status` の表示は、題が無くなるため ID を主にする（必要なら最初の質問の題を補う。設計で決める）。
 - アンケート機能は本番へ未公開のため、破壊的変更を許す（利用者の決定 2026-11-12）。運用中の `SURVEY_CONFIG` と D1 は初期状態として扱い、移行の手順は作らない。下書きの形式（`tests/fixtures/survey-operation/drafts/`）を新しい形式に直し、運用中の設定は作り直す（現在の設定の題「Skyshare v1 と v2 どちらの UI が好みか」は、質問の題「UIデザインはどちらが好みですか？」に置き換える。設定の更新は、設定の形式の変更の実装後に CLI で行う）。
@@ -76,3 +83,4 @@
 ## 設計での調整（2026-11-13）
 
 - `prune`・`remove` は `--env` を取らず、常に両方の環境の目録を確認する（`design.md` の Decision 6）。`status`・`publish`・`unpublish` は `--env` 必須のまま。新規識別子は UUID v4、同時開催は 1 件、締切は日付だけの日本時間 0 時指定とし、開催中は締切を前倒しして集計を待つ。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は六つのコマンドすべてで `--env` を必須とし、指定環境の設定と目録だけで登録・除去を判断する。締切の規則は維持する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
