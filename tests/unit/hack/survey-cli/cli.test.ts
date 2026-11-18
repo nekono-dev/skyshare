@@ -1445,3 +1445,216 @@ describe("survey CLI status and output", () => {
         expect(calls).toEqual([])
     })
 })
+
+describe("survey CLI environment boundary", () => {
+    it.each(["production", "develop"] as const)(
+        "records the complete operation scope for every command in %s",
+        async env => {
+            const past = createValidSurveyConfig()
+            past.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+            past.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+            const pastValue = JSON.stringify(past)
+            const calls: string[] = []
+            let activeCommand = ""
+            const remote = makeRemote({
+                async readConfigValue(selected) {
+                    calls.push(`config:read:${selected}`)
+                    return activeCommand === "add"
+                        ? JSON.stringify({ surveys: [] })
+                        : pastValue
+                },
+                async writeConfigValue(selected) {
+                    calls.push(`config:write:${selected}`)
+                },
+                async deleteConfigValue(selected) {
+                    calls.push(`config:delete:${selected}`)
+                },
+                async readIndex(selected) {
+                    calls.push(`index:read:${selected}`)
+                    return index(id)
+                },
+                async readVisibility(selected, surveyId) {
+                    calls.push(`visibility:read:${selected}:${surveyId}`)
+                    return activeCommand === "unpublish" ? "visible" : "hidden"
+                },
+                async readResult(selected, surveyId) {
+                    calls.push(`result:read:${selected}:${surveyId}`)
+                    return validResult(surveyId)
+                },
+                async writeVisibility(selected, surveyId, visible) {
+                    calls.push(
+                        `visibility:write:${selected}:${surveyId}:${visible}`,
+                    )
+                },
+                async listReleaseBranches() {
+                    calls.push("branches:read")
+                    return [
+                        {
+                            name: "release/current",
+                            committedAt: "2026-11-01T00:00:00Z",
+                        },
+                    ]
+                },
+                async startDeploy(ref) {
+                    calls.push(`deploy:${ref}`)
+                },
+            })
+            const commandCases = [
+                {
+                    name: "add",
+                    argv: ["add", "--file", "draft.json", "--env", env],
+                    file: JSON.stringify(newDraft),
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `config:write:${env}`,
+                    ],
+                },
+                {
+                    name: "status",
+                    argv: ["status", "--env", env, "--repo", "owner/repo"],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `visibility:read:${env}:${id}`,
+                    ],
+                },
+                {
+                    name: "publish",
+                    argv: ["publish", id, "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `visibility:read:${env}:${id}`,
+                        `result:read:${env}:${id}`,
+                        ...(env === "production" ? ["branches:read"] : []),
+                        `visibility:write:${env}:${id}:true`,
+                        env === "production"
+                            ? "deploy:release/current"
+                            : "deploy:develop",
+                    ],
+                },
+                {
+                    name: "unpublish",
+                    argv: ["unpublish", id, "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `visibility:read:${env}:${id}`,
+                        ...(env === "production" ? ["branches:read"] : []),
+                        `visibility:write:${env}:${id}:false`,
+                        env === "production"
+                            ? "deploy:release/current"
+                            : "deploy:develop",
+                    ],
+                },
+                {
+                    name: "prune",
+                    argv: ["prune", "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `config:delete:${env}`,
+                    ],
+                },
+                {
+                    name: "remove",
+                    argv: ["remove", id, "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `config:delete:${env}`,
+                    ],
+                },
+            ] as const
+
+            for (const command of commandCases) {
+                calls.length = 0
+                activeCommand = command.name
+                const result = await run(command.argv, {
+                    ...deps(remote),
+                    ...(command.name === "add"
+                        ? { readFile: () => command.file }
+                        : {}),
+                    now: () =>
+                        new Date(
+                            command.name === "add"
+                                ? current
+                                : "2027-01-01T00:00:00Z",
+                        ),
+                })
+
+                expect(result.code, `${command.name}: ${result.lines}`).toBe(0)
+                if (command.name === "status")
+                    expect(result.lines[0]).toMatch(
+                        /^status: env=(production|develop) surveys 1,/,
+                    )
+                else expect(result.lines, command.name).toHaveLength(1)
+                expect(calls, command.name).toEqual(command.expected)
+            }
+        },
+    )
+
+    it.each([
+        ["add", ["add", "--file", "draft.json"]],
+        ["status", ["status"]],
+        ["publish", ["publish", id]],
+        ["unpublish", ["unpublish", id]],
+        ["prune", ["prune"]],
+        ["remove", ["remove", id]],
+    ] as const)(
+        "rejects missing or invalid environment for %s before remote access",
+        async (_name, args) => {
+            for (const argv of [
+                args,
+                [...args, "--env", "staging"],
+                [...args, "--env", "production", "--env", "develop"],
+            ]) {
+                const calls: string[] = []
+                const remote = makeRemote({
+                    async readConfigValue(env) {
+                        calls.push(`config:read:${env}`)
+                        return "SECRET-CONFIG"
+                    },
+                    async writeConfigValue(env) {
+                        calls.push(`config:write:${env}`)
+                    },
+                    async deleteConfigValue(env) {
+                        calls.push(`config:delete:${env}`)
+                    },
+                    async readIndex(env) {
+                        calls.push(`index:read:${env}`)
+                        return undefined
+                    },
+                    async readVisibility(env, surveyId) {
+                        calls.push(`visibility:read:${env}:${surveyId}`)
+                        return "hidden"
+                    },
+                    async writeVisibility(env, surveyId, visible) {
+                        calls.push(
+                            `visibility:write:${env}:${surveyId}:${visible}`,
+                        )
+                    },
+                    async readResult(env, surveyId) {
+                        calls.push(`result:read:${env}:${surveyId}`)
+                        return undefined
+                    },
+                    async listReleaseBranches() {
+                        calls.push("branches:read")
+                        return []
+                    },
+                    async startDeploy(ref) {
+                        calls.push(`deploy:${ref}`)
+                    },
+                })
+                const result = await run(argv, deps(remote))
+
+                expect(result.code).toBe(1)
+                expect(result.lines).toHaveLength(1)
+                expect(result.lines[0]).toMatch(/^error: usage:/)
+                expect(result.lines.join(" ")).not.toContain("SECRET")
+                expect(calls).toEqual([])
+            }
+        },
+    )
+})
