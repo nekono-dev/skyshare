@@ -4,7 +4,10 @@
 // @vitest-environment happy-dom
 import { fireEvent, render, screen } from "@testing-library/react"
 import { describe, expect, it, vi } from "vitest"
-import { SurveyDialogBody } from "@/components/timeline/Timeline/SurveyGate/SurveyDialog"
+import {
+  SurveyDialog,
+  SurveyDialogBody,
+} from "@/components/timeline/Timeline/SurveyGate/SurveyDialog"
 import { createTranslator } from "@/lib/i18n/translate"
 import type { Survey } from "@/lib/survey/definition"
 
@@ -150,4 +153,104 @@ describe("SurveyDialogBody", () => {
     fireEvent.keyDown(document, { key: "Escape" })
     expect(onDismiss).toHaveBeenCalledTimes(2)
   })
+
+  it("offers a decline button that uses dismissal and keeps submit labeled consistently", () => {
+    const translator = createTranslator("ja")
+    const onDismiss = vi.fn()
+    const onAction = vi.fn()
+    render(
+      <SurveyDialogBody
+        survey={survey}
+        draft={{}}
+        locale="ja"
+        t={translator.t}
+        raw={translator.raw}
+        titleId="survey-title"
+        busy={false}
+        failed={false}
+        action={{ kind: "incomplete" }}
+        onSelect={() => {}}
+        onAction={onAction}
+        onDismiss={onDismiss}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "送信する" })).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "回答しない" }))
+    expect(onDismiss).toHaveBeenCalledOnce()
+    expect(onAction).not.toHaveBeenCalled()
+  })
+
+  it("disables the decline button while busy", () => {
+    const translator = createTranslator("ja")
+    render(
+      <SurveyDialogBody
+        survey={survey}
+        draft={{ question: ["yes"] }}
+        locale="ja"
+        t={translator.t}
+        raw={translator.raw}
+        titleId="survey-title"
+        busy
+        failed={false}
+        action={{ kind: "submit", answers: { question: "yes" } }}
+        onSelect={() => {}}
+        onAction={() => {}}
+        onDismiss={() => {}}
+      />,
+    )
+
+    expect(
+      screen
+        .getByRole("button", { name: "回答しない" })
+        .hasAttribute("disabled"),
+    ).toBe(true)
+    expect(screen.getByRole("button", { name: "送信する" }).textContent).toBe(
+      "送信する",
+    )
+  })
+})
+
+describe("SurveyDialog", () => {
+  it.each([true, false])(
+    "handles backdrop, Escape, and decline according to busy=%s",
+    busy => {
+      const onDecline = vi.fn()
+      const renderDialog = () =>
+        render(
+          <SurveyDialog
+            survey={survey}
+            busy={busy}
+            failed={false}
+            onSubmit={() => {}}
+            onDecline={onDecline}
+          />,
+        )
+
+      const trigger = (action: "backdrop" | "escape" | "button") => {
+        const view = renderDialog()
+        if (action === "backdrop") {
+          const backdrop = screen.getByRole("presentation")
+          fireEvent.mouseDown(backdrop)
+          fireEvent.mouseUp(backdrop)
+        } else if (action === "escape") {
+          fireEvent.keyDown(document, { key: "Escape" })
+        } else {
+          // 表示言語は環境で決まるため、どちらの言語の名前でも探す
+          fireEvent.click(
+            screen.getByRole("button", {
+              name: /^(回答しない|Prefer not to answer)$/,
+            }),
+          )
+        }
+        expect(onDecline).toHaveBeenCalledTimes(busy ? 0 : 1)
+        view.unmount()
+        onDecline.mockClear()
+      }
+
+      trigger("backdrop")
+      trigger("escape")
+      trigger("button")
+    },
+  )
 })

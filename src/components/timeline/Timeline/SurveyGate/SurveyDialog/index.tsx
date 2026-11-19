@@ -1,6 +1,6 @@
 /**
- * アンケートの選択状態を管理し、固定の見出しと質問、回答・辞退の操作をダイアログとして表示する。
- * 言語を切り替えても選択を保つ。背景クリックと Esc は「回答しない」として閉じる（送信中を除く）。
+ * アンケートの選択状態を管理し、質問と回答・辞退の操作をダイアログとして表示する。
+ * 言語を切り替えても選択を保ち、背景クリック・Esc・ボタンで辞退できる。
  */
 import React, { useId, useState } from "react"
 import ChoiceQuestion from "@/components/common/select/ChoiceQuestion"
@@ -10,11 +10,8 @@ import { useLocale, useT } from "@/components/i18n/useTranslation"
 import type { Locale } from "@/lib/i18n/locale"
 import type { Translator } from "@/lib/i18n/translate"
 import {
-  changeSelection,
-  draftHasDecline,
   emptyDraft,
   isDraftComplete,
-  questionHasDecline,
   toAnswers,
   type SurveyDraft,
 } from "@/lib/survey/answerDraft"
@@ -27,13 +24,11 @@ import styles from "./index.module.css"
 export type SurveySubmitAction =
   /** 未完了。送信の操作は押せない */
   | { kind: "incomplete" }
-  /** 「回答しない」を含む。送信せず閉じる */
-  | { kind: "decline" }
   /** 完了。送信の回答を通知する */
   | { kind: "submit"; answers: Record<string, string | string[]> }
 
 /**
- * 1 問の選択を、質問の規則で補正した新しい選択状態を返す。
+ * 1 問の選択を反映した新しい選択状態を返す。
  *
  * Input:
  * - `survey`: 検証済みのアンケート
@@ -42,9 +37,9 @@ export type SurveySubmitAction =
  * - `next`: 部品から受けた次の選択
  *
  * Output:
- * - 補正後の新しい選択状態。質問が見つからないときは `draft` をそのまま返す。
+ * - 反映後の新しい選択状態。質問が見つからないときは `draft` をそのまま返す。
  *
- * 例: 複数選択で `[x]` の状態に「回答しない」を新たに選ぶと、その 1 件だけの `[none]` になる。
+ * 例: 複数選択で `[x]` の状態から `[x,y]` を選ぶと、その選択を反映する。
  */
 export const applySelectionChange = (
   survey: Survey,
@@ -56,7 +51,7 @@ export const applySelectionChange = (
   if (!question) return draft
   return {
     ...draft,
-    [questionId]: changeSelection(question, draft[questionId] ?? [], next),
+    [questionId]: [...next],
   }
 }
 
@@ -68,16 +63,14 @@ export const applySelectionChange = (
  * - `draft`: 現在の選択状態
  *
  * Output:
- * - 「回答しない」を含めば `decline`（未完了でも閉じられる）。
- *   それ以外で完了していれば `submit`（送信本文つき）。未完了なら `incomplete`。
+ * - すべて回答済みなら `submit`（送信本文つき）。未完了なら `incomplete`。
  *
- * 例: 1 問目で「回答しない」を選んだ後は、2 問目が空でも `decline` になる。
+ * 例: 1 問目だけ選択済みで2問目が空なら `incomplete` になる。
  */
 export const resolveSubmitAction = (
   survey: Survey,
   draft: SurveyDraft,
 ): SurveySubmitAction => {
-  if (draftHasDecline(survey, draft)) return { kind: "decline" }
   if (!isDraftComplete(survey, draft)) return { kind: "incomplete" }
   return { kind: "submit", answers: toAnswers(survey, draft) }
 }
@@ -88,25 +81,23 @@ export const resolveSubmitAction = (
  * Input:
  * - `action`: 送信の操作の判定結果
  * - `busy`: 送信中か。真のときは何も通知しない
- * - `handlers`: 送信（回答を渡す）と辞退（閉じる）の通知
+ * - `handlers`: 送信（回答を渡す）の通知
  *
  * Output:
- * - `decline` なら `onDecline` を 1 回。`submit` なら `onSubmit` を回答つきで 1 回。
+ * - `submit` なら `onSubmit` を回答つきで 1 回。
  *   `incomplete` と送信中は何も呼ばない。
  *
- * 例: `dispatchSubmitAction({ kind: "decline" }, false, handlers)` は `onDecline` だけを呼ぶ。
+ * 例: 完了した回答の操作は `onSubmit` を 1 回呼ぶ。
  */
 export const dispatchSubmitAction = (
   action: SurveySubmitAction,
   busy: boolean,
   handlers: {
     onSubmit: (answers: Record<string, string | string[]>) => void
-    onDecline: () => void
   },
 ): void => {
   if (busy) return
-  if (action.kind === "decline") handlers.onDecline()
-  else if (action.kind === "submit") handlers.onSubmit(action.answers)
+  if (action.kind === "submit") handlers.onSubmit(action.answers)
 }
 
 /** 本体へ渡す値。選択状態と送信の判定は呼び出し側（`SurveyDialog`）が持つ。 */
@@ -130,9 +121,9 @@ export type SurveyDialogBodyProps = {
   action: SurveySubmitAction
   /** 質問の選択が変わったときの通知 */
   onSelect: (questionId: string, next: string[]) => void
-  /** 送信の操作を押したときの通知（判定結果に応じて閉じる・送信する） */
+  /** 有効な回答を送信する操作の通知 */
   onAction: () => void
-  /** 背景のクリックまたは Esc で閉じようとしたときの通知（「回答しない」として扱う） */
+  /** 背景のクリック、Esc、辞退ボタンで閉じようとしたときの通知 */
   onDismiss: () => void
 }
 
@@ -141,9 +132,9 @@ export type SurveyDialogBodyProps = {
  *
  * Input: `SurveyDialogBodyProps`
  * Output: 背景の上にタイトルと回答期限つきのカードを描画する。送信の操作は末尾に置き、
- *   個人情報の取り扱いの案内と「回答しない」の案内は送信の操作の直前に示す。
+ *   個人情報の取り扱いの案内の後に送信と辞退の操作を示す。
  *
- * 例: `action.kind === "decline"` のときは「閉じる」の操作になり、`onAction` を呼ぶ。
+ * 例: 辞退ボタンは `onDismiss` を呼び、送信操作は `onAction` を呼ぶ。
  */
 // 選択状態を持たないため、ブラウザ API に依存せず Node 環境でも描画を検証できる。
 export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
@@ -160,10 +151,6 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
   onAction,
   onDismiss,
 }) => {
-  const declined = action.kind === "decline"
-  const actionLabel = declined ? t("survey.close") : t("survey.submit")
-  // 未完了のときは送信ボタンを無効にするだけで、案内の文言は出さない
-
   return (
     <Overlay open onClose={onDismiss} contentClassName={ui["width-md"]}>
       <div
@@ -195,10 +182,7 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
               }))}
               selectedIds={draft[question.id] ?? []}
               maxSelect={
-                question.kind === "multiple" &&
-                !questionHasDecline(question, draft)
-                  ? question.maxSelect
-                  : undefined
+                question.kind === "multiple" ? question.maxSelect : undefined
               }
               disabled={busy}
               onChange={next => onSelect(question.id, next)}
@@ -207,12 +191,8 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
           ))}
         </div>
         <div className={styles["footer"]}>
-          {/* 2 つの説明を同じ位置に重ね、高い方の高さを確保する。切り替えてもボタンが動かない。 */}
           <div className={styles["notes"]}>
-            <p
-              className={`${styles["note"]} ${declined ? styles["inactive"] : ""}`}
-              aria-hidden={declined}
-            >
+            <p className={styles["note"]}>
               {/* flex の箱の直下に文と a を置くと別々の列になり折り返しが崩れるため、1 つの span にまとめる */}
               <span>
                 {renderSlots(raw("survey.privacy"), {
@@ -224,12 +204,6 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
                 })}
               </span>
             </p>
-            <div
-              className={`${styles["hint"]} ${declined ? "" : styles["inactive"]}`}
-              aria-hidden={!declined}
-            >
-              {t("survey.declineHint")}
-            </div>
           </div>
           {failed ? (
             <p role="alert" className={styles["error"]}>
@@ -239,13 +213,21 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
           <div className={`${ui["dialog-actions"]} ${styles["actions"]}`}>
             <button
               type="button"
-              className={`${ui["base-button"]} ${ui["text-button"]} ${declined ? ui["gray-button"] : ui["blue-button"]}`}
+              className={`${ui["base-button"]} ${ui["text-button"]} ${ui["blue-button"]}`}
               disabled={busy || action.kind === "incomplete"}
               onClick={onAction}
             >
-              {actionLabel}
+              {t("survey.submit")}
             </button>
           </div>
+          <button
+            type="button"
+            className={styles["decline"]}
+            disabled={busy}
+            onClick={onDismiss}
+          >
+            {t("survey.decline")}
+          </button>
         </div>
       </div>
     </Overlay>
@@ -260,12 +242,12 @@ export type SurveyDialogProps = {
   failed: boolean
   /** 完了した回答を通知する（送信本文は単一が文字列、複数が配列） */
   onSubmit: (answers: Record<string, string | string[]>) => void
-  /** 「回答しない」を含む状態の閉じる操作 */
+  /** 回答せずにダイアログを閉じる操作 */
   onDecline: () => void
 }
 
 /**
- * 回答必須のアンケートダイアログ。選択状態を持ち、送信・辞退を通知する。
+ * アンケートダイアログ。選択状態を持ち、送信・辞退を通知する。
  *
  * Input: `SurveyDialogProps`（検証済みのアンケート・送信中・失敗・通知の関数）
  * Output: `SurveyDialogBody` に選択状態と通知を結びつけて描画する
@@ -290,10 +272,10 @@ export const SurveyDialog: React.FC<SurveyDialogProps> = ({
   }
 
   const handleAction = () => {
-    dispatchSubmitAction(action, busy, { onSubmit, onDecline })
+    dispatchSubmitAction(action, busy, { onSubmit })
   }
 
-  // 背景・Esc で閉じる操作は「回答しない」と同じ（送信せず閉じる）。送信中は閉じない。
+  // 背景・Esc・辞退ボタンは共通の通知を使い、送信中は閉じない。
   const handleDismiss = () => {
     if (!busy) onDecline()
   }

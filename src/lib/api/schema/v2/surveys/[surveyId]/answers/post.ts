@@ -53,14 +53,6 @@ export const operation: ZodOpenApiOperationObject = {
     },
     responses: {
         "201": { description: "Created" },
-        ...Common.errorResponses([
-            "400",
-            "401",
-            "404",
-            "409",
-            "422",
-            "500",
-            "503",
-        ]),
+        ...Common.errorResponses(["400", "401", "404", "409", "500", "503"]),
     },
 }

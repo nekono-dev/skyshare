@@ -59,27 +59,25 @@ export const tallySurvey = (
             id: question.id,
             kind: question.kind,
             title: question.title,
-            options: question.options
-                .filter(option => option.decline !== true)
-                .map(option => {
-                    const selected = validAnswers.reduce((count, answers) => {
-                        const answer = answers[question.id]
-                        return (
-                            count +
-                            (Array.isArray(answer)
-                                ? Number(answer.includes(option.id))
-                                : Number(answer === option.id))
-                        )
-                    }, 0)
-                    const tenths = Math.floor(
-                        (selected * 1000 + denominator / 2) / denominator,
+            options: question.options.map(option => {
+                const selected = validAnswers.reduce((count, answers) => {
+                    const answer = answers[question.id]
+                    return (
+                        count +
+                        (Array.isArray(answer)
+                            ? Number(answer.includes(option.id))
+                            : Number(answer === option.id))
                     )
-                    return {
-                        id: option.id,
-                        label: option.label,
-                        percent: tenths / 10,
-                    }
-                }),
+                }, 0)
+                const tenths = Math.floor(
+                    (selected * 1000 + denominator / 2) / denominator,
+                )
+                return {
+                    id: option.id,
+                    label: option.label,
+                    percent: tenths / 10,
+                }
+            }),
         })),
     }
 }

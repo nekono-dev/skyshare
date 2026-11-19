@@ -1,7 +1,6 @@
 /**
  * アンケート回答を検証・正規化し、日本標準時の回答日を求める。
- *
- * - 構造不正は `invalid` を優先し、妥当でも辞退を含む回答は `declined` とする。
+ * - 構造不正・設定にない回答は `invalid` とする。
  * - 保存順は設定の質問順・選択肢順とし、選択順は残さない。
  * - 回答日は日本標準時の日付で、時刻は含めない。
  */
@@ -15,8 +14,7 @@ export type AnswerInput = Record<string, string | string[]>
 export type NormalizedAnswers = Record<string, string | string[]>
 
 export type AnswerCheck =
-    | { ok: true; answers: NormalizedAnswers }
-    | { ok: false; reason: "invalid" | "declined" }
+    { ok: true; answers: NormalizedAnswers } | { ok: false; reason: "invalid" }
 
 /** 日本標準時の UTC からの差（ミリ秒） */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000
@@ -31,7 +29,6 @@ const JST_OFFSET_MS = 9 * 60 * 60 * 1000
  * Output:
  * - 妥当: `{ ok: true, answers }`（全質問を設定の順に含み、複数選択は選択肢の順）
  * - 不正: `{ ok: false, reason: "invalid" }`
- * - 妥当だが「回答しない」を含む: `{ ok: false, reason: "declined" }`
  *
  * 例:
  * - 単一 q1(a,b)・複数 q2(x,y,z, 上限 2) に `{ q2: ["z","x"], q1: "a" }`
@@ -55,22 +52,14 @@ export const checkAnswers = (
     }
 
     const answers: NormalizedAnswers = {}
-    let declined = false
-
     for (const question of survey.questions) {
         const value = input[question.id]
         const optionIds = new Set(question.options.map(option => option.id))
-        const declineIds = new Set(
-            question.options
-                .filter(option => option.decline === true)
-                .map(option => option.id),
-        )
 
         if (question.kind === "single") {
             if (typeof value !== "string" || !optionIds.has(value)) {
                 return { ok: false, reason: "invalid" }
             }
-            if (declineIds.has(value)) declined = true
             answers[question.id] = value
             continue
         }
@@ -92,14 +81,12 @@ export const checkAnswers = (
         ) {
             return { ok: false, reason: "invalid" }
         }
-        if (value.some(id => declineIds.has(id))) declined = true
         // 選択の順番を残さず、設定の選択肢の順に並べる
         answers[question.id] = question.options
             .map(option => option.id)
             .filter(id => selected.has(id))
     }
 
-    if (declined) return { ok: false, reason: "declined" }
     return { ok: true, answers }
 }
 

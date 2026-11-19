@@ -41,9 +41,6 @@ const canonicalSurvey = (survey: Survey): Survey => ({
         options: question.options.map(option => ({
             id: option.id,
             label: { ja: option.label.ja, en: option.label.en },
-            ...(option.decline === undefined
-                ? {}
-                : { decline: option.decline }),
         })),
         ...(question.kind === "multiple" && question.maxSelect !== undefined
             ? { maxSelect: question.maxSelect }

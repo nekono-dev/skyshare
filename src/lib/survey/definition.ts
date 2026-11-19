@@ -16,8 +16,6 @@ export type LocalizedText = Record<Locale, string>
 export type SurveyOption = {
     id: string
     label: LocalizedText
-    /** 選ぶと回答を完了として扱わない（「回答しない」） */
-    decline?: boolean
 }
 
 export type SurveyQuestion =
@@ -32,7 +30,7 @@ export type SurveyQuestion =
           kind: "multiple"
           title: LocalizedText
           options: SurveyOption[]
-          /** 選べる数の上限。1 以上かつ decline を除く選択肢の数以下 */
+          /** 選べる数の上限。1 以上かつ選択肢の数以下 */
           maxSelect?: number
       }
 
@@ -100,23 +98,16 @@ const localizedTextSchema = z.strictObject({
 const optionSchema = z.strictObject({
     id: idSchema,
     label: localizedTextSchema,
-    decline: z.boolean().optional(),
 })
 
 /**
- * 選択肢の配列の規則（2 つ以上、識別子の一意、「回答しない」は 1 つまで）。
+ * 選択肢の配列の規則（2 つ以上、識別子の一意）。
  */
 const optionsSchema = z
     .array(optionSchema)
     .min(2)
     .superRefine((options, ctx) => {
         addDuplicateIdIssues(options, ctx, "選択肢の識別子が重複している")
-        if (options.filter(option => option.decline === true).length > 1) {
-            ctx.addIssue({
-                code: "custom",
-                message: "「回答しない」の選択肢が 2 つ以上ある",
-            })
-        }
     })
 
 const singleQuestionSchema = z.strictObject({
@@ -136,14 +127,12 @@ const multipleQuestionSchema = z
     })
     .superRefine((question, ctx) => {
         if (question.maxSelect === undefined) return
-        const selectable = question.options.filter(
-            option => option.decline !== true,
-        ).length
+        const selectable = question.options.length
         if (question.maxSelect > selectable) {
             ctx.addIssue({
                 code: "custom",
                 path: ["maxSelect"],
-                message: "上限が「回答しない」を除く選択肢の数を超えている",
+                message: "上限が選択肢の数を超えている",
             })
         }
     })
