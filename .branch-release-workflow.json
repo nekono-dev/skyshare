@@ -4,9 +4,32 @@
   "baseBranch": "develop",
   "namePattern": "^dev/[a-z0-9]+(-[a-z0-9]+)*$",
   "maxNameLength": 54,
+  "deploy": {
+    "provider": "cloudflare-workers",
+    "template": "config/wrangler.template.jsonc",
+    "output": "wrangler.jsonc",
+    "renderHook": "node scripts/config/render-deploy-config.mjs",
+    "brwSource": {
+      "repository": "https://github.com/nekono-dev/branch-release-workflow.git",
+      "ref": "main"
+    },
+    "targets": {
+      "production": {
+        "branches": ["release/**"],
+        "worker": "skyshare",
+        "customDomain": "${SITE_HOST}"
+      },
+      "develop": {
+        "branches": ["develop"],
+        "worker": "skyshare-develop",
+        "customDomain": "develop.${SITE_HOST}"
+      }
+    }
+  },
   "preview": {
     "provider": "cloudflare-previews",
-    "urlTemplate": "https://{alias}.develop.skyshare.nekono.dev",
+    "target": "develop",
+    "urlTemplate": "https://{alias}.develop.${SITE_HOST}",
     "aliasStripPrefix": "dev/"
   }
 }

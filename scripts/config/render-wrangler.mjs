@@ -76,22 +76,15 @@ export const readConfig = (name, { requireSiteHost = false } = {}) => {
 }
 
 /**
- * テンプレートから wrangler の設定（オブジェクト）を組み立てる。
+ * テンプレートから wrangler の設定（オブジェクト）を組み立てる（手元の開発・E2E で使う）。
+ * 配備（CI）では Worker 名と独自ドメインを branch-release-workflow の render-wrangler が決め、
+ * この後の applyRuntimeConfig だけを scripts/config/render-deploy-config.mjs（renderHook）が行う。
  *
  * Input: テンプレートの値、設定、`develop`（true なら develop 用の配備）、`d1Ids`（develop の配備とプレビューに使う D1 の ID）
  * Output: wrangler の設定（JSON にできるオブジェクト）
  */
-export const buildWranglerConfig = ({
-  template,
-  config,
-  develop,
-  d1Ids = {},
-  remote = false,
-  remoteDevelop = develop,
-}) => {
+export const buildWranglerConfig = ({ template, config, develop, ...rest }) => {
   const out = structuredClone(template)
-  out.vars = { ...config.vars }
-  out.previews = { ...out.previews, vars: { ...config.vars } }
   if (config.siteHost) {
     out.routes = [
       {
@@ -105,8 +98,33 @@ export const buildWranglerConfig = ({
     // 独自ドメインが無い（開発・E2E）場合は routes を付けない
     delete out.routes
   }
+  if (develop) out.name = `${template.name}-develop`
+  return applyRuntimeConfig(out, { template, config, develop, ...rest })
+}
+
+/**
+ * 組み立て済みの wrangler の設定に、skyshare 固有の実行時の設定（vars、develop 用の D1・R2 の名前と ID、実バケットへの接続）を加える。
+ * Worker 名・routes・workers_dev・preview_urls は変えない。
+ *
+ * Input: `base`（組み立て済みの設定）、テンプレートの値、設定、`develop`、`d1Ids`、`remote`、`remoteDevelop`
+ * Output: 新しい wrangler の設定（base は変えない）
+ * 例: develop なら D1 の database_name が "skyshare-develop" になり、previews にも同じ D1 が ID 付きで入る
+ */
+export const applyRuntimeConfig = (
+  base,
+  {
+    template,
+    config,
+    develop,
+    d1Ids = {},
+    remote = false,
+    remoteDevelop = develop,
+  },
+) => {
+  const out = structuredClone(base)
+  out.vars = { ...config.vars }
+  out.previews = { ...out.previews, vars: { ...config.vars } }
   if (develop) {
-    out.name = `${template.name}-develop`
     // 配備の D1 にも ID を入れる。入れないと、D1 を作り直したとき、デプロイ済みの Worker が持つ古い ID を引き継いで配備に失敗する
     out.d1_databases = template.d1_databases.map(db => {
       const name = `${db.database_name}-develop`
@@ -146,6 +164,9 @@ export const buildWranglerConfig = ({
   }
   return out
 }
+
+/** テンプレート（config/wrangler.template.jsonc）を読む */
+export const readTemplate = () => parseJsonc(readFileSync(TEMPLATE, "utf8"))
 
 /**
  * 実バケットへつなぐときに develop 用のバケット名を使うかを判定する。
@@ -204,7 +225,7 @@ export const renderWranglerFile = ({
   const config = readConfig(name, {
     requireSiteHost: develop || name === "production",
   })
-  const template = parseJsonc(readFileSync(TEMPLATE, "utf8"))
+  const template = readTemplate()
   const d1Ids = develop ? resolveD1Ids(template) : {}
   const out = buildWranglerConfig({
     template,

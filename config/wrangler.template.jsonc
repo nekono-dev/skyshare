@@ -1,6 +1,7 @@
 {
-  // routes の pattern（SITE_HOST）は scripts/config/render-deploy-config.mjs が環境変数で置き換える。
-  // `--develop` では Worker・D1・R2 の名前の末尾に -develop を付ける
+  // 配備（CI）では branch-release-workflow の render-wrangler が、name・独自ドメインの routes・workers_dev / preview_urls を
+  // 宣言（.branch-release-workflow.json の deploy）どおりに書き換え、renderHook（scripts/config/render-deploy-config.mjs）が
+  // vars と develop 用の D1・R2（名前の末尾に -develop）を加える。手元では scripts/config/render-wrangler.mjs が同じ形を作る
   "name": "skyshare",
   // 画面と API は Astro のアダプタに任せ、定期実行（scheduled）を加えた自前のエントリを使う
   "main": "src/worker.ts",

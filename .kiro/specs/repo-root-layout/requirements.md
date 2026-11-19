@@ -18,7 +18,7 @@
 
 #### Acceptance Criteria
 
-1. The リポジトリのルート shall 次のファイルとディレクトリだけを直下に持つ: `package.json`・`package-lock.json`・`tsconfig.json`・`astro.config.mjs`・`.gitignore`・`.gitmodules`・`.prettierrc`・`.prettierignore`・`README.md`・`LICENSE`・`CLAUDE.md`・`AGENTS.md`・`.branch-release-workflow.json`・`.branch-release-workflow-source.json`・`wrangler.jsonc`・`.dev.vars`・`src/`・`public/`・`tests/`・`scripts/`・`config/`・`docs/`・`lexicons/`・`migrations/`・`atproto/`・`_legacy/`・`hack/`・`.memo`、および隠しディレクトリとツールが決めた生成物（`node_modules/`・`.astro/`・`dist/`・`.wrangler/`）
+1. The リポジトリのルート shall 次のファイルとディレクトリだけを直下に持つ: `package.json`・`package-lock.json`・`tsconfig.json`・`astro.config.mjs`・`.gitignore`・`.gitmodules`・`.prettierrc`・`.prettierignore`・`README.md`・`LICENSE`・`CLAUDE.md`・`AGENTS.md`・`.branch-release-workflow.json`・`wrangler.jsonc`・`.dev.vars`・`src/`・`public/`・`tests/`・`scripts/`・`config/`・`docs/`・`lexicons/`・`migrations/`・`atproto/`・`_legacy/`・`hack/`・`.memo`、および隠しディレクトリとツールが決めた生成物（`node_modules/`・`.astro/`・`dist/`・`.wrangler/`）
 2. When 文書（`DEVELOP.md`・`README-jp.md`・`promotion/`・`openapi/README.md`）が移動したとき, the リポジトリ shall それらを `docs/` の直下に持つ（`README.md` と `LICENSE*` は根に残す）
 3. The リポジトリのルート shall `coverage/`・`test-results/`・`playwright/` を直下に持たない
 
