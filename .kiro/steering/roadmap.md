@@ -392,4 +392,4 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Direct Implementation Candidates
 
-- [ ] survey-decline-button -- 上の決定の実装（`src/lib/survey/`、`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、`hack/survey-cli/`、`survey-run` の両複製、関連テストと設定の例）。Dependencies: なし（画面構成は合意済み）
+- [x] survey-decline-button（2026-11-19 実装: `dev/survey-decline-button`。production の 1 件は `decline` を含むため、取り込み後・リリース前に CLI で作り直す） -- 上の決定の実装（`src/lib/survey/`、`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、`hack/survey-cli/`、`survey-run` の両複製、関連テストと設定の例）。Dependencies: なし（画面構成は合意済み）
