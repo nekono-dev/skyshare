@@ -388,8 +388,8 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 - **出し方**: 「回答しない」は質問の選択肢ではなく、ダイアログ全体のボタン 1 つにする。押すと現在の辞退と同じ扱い（`onDecline`: 送信せず、タブに辞退の印だけ残す。外枠のクリック・Esc で閉じるのと同じ）。送信中は押せない。
 - **設定の形式**: 選択肢の `decline` を形式から削除し、指定があれば不正として拒否する（互換は持たない。v2 は未公開）。影響: `definition.ts`・回答の検証（`answers.ts` の `declined`）・下書きの部品（`answerDraft.ts` の辞退の判定）・集計（`results/tally.ts` の除外）・CLI（`hack/survey-cli/config.ts`）・`survey-run` の聞き取り項目（両複製）・テストの設定の例。production に登録済みの 1 件は `decline` を使っているため、実装の取り込み後に CLI で作り直す（本番にはアンケート機能を未配備）。
 - **文言**: ボタンは ja「回答しない」、en「Prefer not to answer」（辞書に置く）。
-- **画面**: 複数の HTML のモックを利用者と共有し、意識合わせしてから構成を決める（ボタンの位置・並び・送信ボタンとの関係、`survey.declineHint` の扱い）。
+- **画面（2026-11-19 合意。4 案のモックから案 C を採用）**: 「送信する」（青・全幅）はそのまま、その下に「回答しない」を控えめな下線つきの文字のボタンとして中央に置く。足元はプライバシーの一文・「送信する」・「回答しない」の順。送信ボタンはすべての質問に答えるまで押せない（従来どおり）。「回答しない」を選んだときの説明文 `survey.declineHint` と、辞退時の「閉じる」の文言 `survey.close` は削除する（選択肢が無くなり、押した時点で閉じるため）。
 
 ### Direct Implementation Candidates
 
-- [ ] survey-decline-button -- 上の決定の実装（`src/lib/survey/`、`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、`hack/survey-cli/`、`survey-run` の両複製、関連テストと設定の例）。Dependencies: 画面構成のモックの合意
+- [ ] survey-decline-button -- 上の決定の実装（`src/lib/survey/`、`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、`hack/survey-cli/`、`survey-run` の両複製、関連テストと設定の例）。Dependencies: なし（画面構成は合意済み）
