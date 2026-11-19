@@ -97,7 +97,7 @@ jobs:
       - name: Fetch branch-release-workflow
         run: |
           git init -q "$RUNNER_TEMP/brw"
-          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 'https://github.com/nekono-dev/branch-release-workflow.git' 'dev/deploy-targets'
+          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 'https://github.com/nekono-dev/branch-release-workflow.git' 'main'
           git -C "$RUNNER_TEMP/brw" checkout -q --detach FETCH_HEAD
           echo "BRW_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
 
