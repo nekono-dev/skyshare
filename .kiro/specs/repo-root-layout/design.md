@@ -101,7 +101,7 @@ graph LR
 ├── package.json, package-lock.json, tsconfig.json, astro.config.mjs
 ├── .gitignore, .gitmodules, .prettierrc, .prettierignore
 ├── README.md, LICENSE, CLAUDE.md, AGENTS.md
-├── .branch-release-workflow.json, .branch-release-workflow-source.json
+├── .branch-release-workflow.json
 ├── wrangler.jsonc（生成）, .dev.vars（秘密情報・Git 管理外）
 ├── src/, public/, scripts/, hack/, tests/, lexicons/, migrations/, atproto/, _legacy/
 ├── config/

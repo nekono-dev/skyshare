@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import {
+    applyRuntimeConfig,
     buildWranglerConfig,
     hasReadCredentials,
     usesDevelopBucket,
@@ -129,6 +130,57 @@ describe("buildWranglerConfig", () => {
                 database_id: D1_ID,
             },
         ])
+    })
+})
+
+// 配備（CI）では branch-release-workflow が Worker 名・routes・workers_dev / preview_urls を書き、renderHook が実行時の設定だけを加える
+describe("applyRuntimeConfig", () => {
+    // branch-release-workflow の render-wrangler が develop 用に書いた設定を模したもの
+    const brwDevelop = {
+        ...template,
+        name: "skyshare-develop",
+        routes: [
+            {
+                pattern: "develop.skyshare.example.com",
+                custom_domain: true,
+                previews_enabled: true,
+            },
+        ],
+        workers_dev: false,
+        preview_urls: false,
+    }
+
+    it("keeps the worker name, routes and workers.dev keys written by branch-release-workflow", () => {
+        const out = applyRuntimeConfig(brwDevelop, {
+            template,
+            config,
+            develop: true,
+            d1Ids: { "skyshare-develop": D1_ID },
+        })
+        expect(out.name).toBe("skyshare-develop")
+        expect(out.routes).toEqual(brwDevelop.routes)
+        expect([out.workers_dev, out.preview_urls]).toEqual([false, false])
+    })
+
+    it("adds the vars and the develop database and buckets, as buildWranglerConfig does", () => {
+        const args = {
+            template,
+            config,
+            develop: true,
+            d1Ids: { "skyshare-develop": D1_ID },
+        }
+        const out = applyRuntimeConfig(brwDevelop, args)
+        const local = buildWranglerConfig(args)
+        expect(out.vars).toEqual(config.vars)
+        expect(out.d1_databases).toEqual(local.d1_databases)
+        expect(out.r2_buckets).toEqual(local.r2_buckets)
+        expect(out.previews).toEqual(local.previews)
+    })
+
+    it("does not change the base object", () => {
+        const before = structuredClone(brwDevelop)
+        applyRuntimeConfig(brwDevelop, { template, config, develop: true })
+        expect(brwDevelop).toEqual(before)
     })
 })
 
