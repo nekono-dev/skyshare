@@ -10,7 +10,7 @@ Astro（SSR）を Cloudflare Workers で動かす。画面は Astro のページ
 - アクセス解析（任意）: 測定 ID（`PUBLIC_GA_MEASUREMENT_ID`）を設定したときだけ Google Analytics のタグを出す。タグは Partytown で Web Worker 上で動かし、画面の処理を妨げない（`src/components/layout/AnalyticsTag/`）
 - 設定と秘密: 運用者ごとの非秘密の値は `config/<名前>.json`（`develop`・`production`・`e2e`。雛形は `*.example.json`）に置き、`scripts/config/render-wrangler.mjs` が `config/wrangler.template.jsonc` から `wrangler.jsonc` を生成する（生成物・`config/*.json` とも gitignore 対象。手で編集しない）。秘密は `.dev.vars` と Worker のシークレットに置き、`scripts/secrets/` が生成・登録する。dotenv・JSONC の解析は `scripts/lib/` の共通関数を使う
 - 配備: GitHub Actions（`.github/workflows/` の deploy・preview・verify・e2e・migration-rule）が、`scripts/config/render-deploy-config.mjs` で配備用の設定を作ってビルドと `wrangler deploy` を行う。必須の値が欠けると配備を止める。develop の Worker・D1・R2 は名前の末尾に `-develop` を付ける（手順は `docs/DEVELOP.md`）
-- アンケート結果の公開: 日次処理が集計を R2 に書き、ビルド時に `src/pages/surveys/[...slug].astro` が静的ページにする（`src/lib/survey/publicResults/`）。ログインページのリンクと結果ページの有無はビルド後に `scripts/build/checkSurveyResultsLinks.mjs` が照合する
+- アンケート結果の公開: 日次処理が集計を R2 に書き、ビルド時に `src/pages/surveys/[...slug].astro` が静的ページにする（`src/lib/survey/publicResults/`）。ログインページのリンクと結果ページの有無はビルド後に `scripts/build/check-survey-results-links.mjs` が照合する
 - 生成物: `scripts/build/build-openapi-document.ts` が OpenAPI を作り、`orval` が `src/client/openapi/` のクライアントを作る（手で編集しない）
 
 ## Core Technologies

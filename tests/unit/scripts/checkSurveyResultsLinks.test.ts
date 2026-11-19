@@ -2,7 +2,7 @@
  * ビルド後のアンケート結果ページとログインページのリンク整合を検査する。
  */
 import { describe, expect, it } from "vitest"
-import { findLinkMismatch } from "../../../scripts/build/checkSurveyResultsLinks.mjs"
+import { findLinkMismatch } from "../../../scripts/build/check-survey-results-links.mjs"
 
 describe("findLinkMismatch", () => {
     it("accepts a link when the surveys page exists", () => {

@@ -32,6 +32,7 @@
 ## Naming Conventions
 
 - **Files**: コンポーネントは PascalCase のフォルダ、`lib` と `util` は camelCase（`oauthLogin.ts`、`postImageLimits.ts`）。
+- **Scripts**: `scripts/` のファイル名は kebab-case（`render-wrangler.mjs`、`check-survey-results-links.mjs`）。対応する単体テストは `tests/unit/scripts/` に camelCase の名前で置く（`renderWrangler.test.ts`）。
 - **Routes**: ディレクトリは小文字（`bsky`、`schedules`）。Astro のルーティングに合わせて、複数語も `credential/authorization` のように区切る。
 - **Functions**: 純粋関数の名前は動詞で始める（`build...`、`resolve...`、`parse...`、`validate...`）。接頭辞（`create`・`build`・`resolve`・`load`）の規則は別の spec（roadmap の `naming-rule`）で定める。現状は領域ごとにばらつきがある。
 - **Types**: 型名は PascalCase。API の型は `RequestBodyType` のように接尾辞で区別する（生成側の命名）。
@@ -74,4 +75,4 @@ import styles from "./index.module.css" // 同じフォルダ
 ---
 
 _Document patterns, not file trees. New files following these patterns shouldn't require updates._
-_updated_at: 2026-11-11_
+_updated_at: 2026-11-19（scripts の命名規則を追記）_
