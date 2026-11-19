@@ -46,6 +46,8 @@ const step = (source: string, name: string): string => {
 
 describe("deploy workflow survey environment", () => {
     const code = stripComments(deploy)
+    const resolveJob = job(code, "resolve")
+    const resolveStep = step(resolveJob, "Resolve target")
     const guard = job(code, "survey-config-guard")
     const deployJob = job(code, "deploy")
 
@@ -68,6 +70,20 @@ describe("deploy workflow survey environment", () => {
         )
         expect(job(code, "verify")).not.toContain("environment:")
         expect(job(code, "e2e")).not.toContain("environment:")
+    })
+
+    it("maps release and develop branches to their deployment targets", () => {
+        expect(resolveStep).toContain(
+            "grep -Eq '^release/.*$'; then target=production",
+        )
+        expect(resolveStep).toContain(
+            "grep -Eq '^develop$'; then target=develop",
+        )
+        expect(resolveStep).toContain('          target=""')
+    })
+
+    it("makes the guard depend on resolve", () => {
+        expect(guard).toContain("needs: [resolve]")
     })
 
     it("rejects shared config in an environment-free, permission-free guard", () => {

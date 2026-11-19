@@ -229,11 +229,14 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 
 ### 5.2 CI の流れ（deploy.yaml）
 
-1. 宣言の `deploy.brwSource`（`nekono-dev/branch-release-workflow` の `main`）から BRW を取得する。
-2. `brw render-wrangler --target <配備先> --write` が、`config/wrangler.template.jsonc` から `wrangler.jsonc` を作る。BRW は宣言どおりに Worker 名（`skyshare` / `skyshare-develop`）・独自ドメイン（`<SITE_HOST>` / `develop.<SITE_HOST>`。develop はプレビュー用に `previews_enabled`）・`workers_dev` / `preview_urls` を書く。続けて renderHook の `scripts/config/render-deploy-config.mjs` が、GitHub の Variables から `config/production.json` と vars・develop 用の D1・R2（名前と ID）・`_legacy/frontend/.env.production` を加える。必須の値が無ければ異常終了する（誤配備の防止）。
-3. D1 のマイグレーション（`migrations/`）を、その D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。
-4. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。
-5. ビルドと配備。ビルドには対象の GitHub Environment の `SURVEY_CONFIG` だけを渡す（`release/**` は `production`、`develop` と `dev/**` のプレビューは `develop`）。`dev/**` のプレビューは `develop` の環境の設定を使う。リポジトリ（または組織）の変数に `SURVEY_CONFIG` が残っていれば、環境なしの門番ジョブが失敗してビルド・配備へ進まない。
+1. 先に配備先を決める `resolve`、テストと型検査の `verify`、E2E の `e2e`、共有設定を調べる `survey-config-guard` が動く。`resolve` は `release/**` を `production`、`develop` を `develop` とし、それ以外は配備先なしにする。門番は環境の設定を使わず、リポジトリまたは組織の変数に `SURVEY_CONFIG` が残っていれば失敗する。これらがすべて成功し、配備先がある場合だけ、同じ名前の GitHub Environment を使う `deploy` に進む。
+2. 宣言の `deploy.brwSource`（`nekono-dev/branch-release-workflow` の `main`）から BRW を取得する。
+3. `brw render-wrangler --target <配備先> --write` が、`config/wrangler.template.jsonc` から `wrangler.jsonc` を作る。BRW は宣言どおりに Worker 名（`skyshare` / `skyshare-develop`）・独自ドメイン（`<SITE_HOST>` / `develop.<SITE_HOST>`。develop はプレビュー用に `previews_enabled`）・`workers_dev` / `preview_urls` を書く。続けて renderHook の `scripts/config/render-deploy-config.mjs` が、GitHub の Variables から `config/production.json` と vars・develop 用の D1・R2（名前と ID）・`_legacy/frontend/.env.production` を加える。必須の値が無ければ異常終了する（誤配備の防止）。
+4. ビルドする。対象の GitHub Environment の `SURVEY_CONFIG` だけをビルドに渡す（`release/**` は `production`、`develop` は `develop`）。ビルドには設定生成と、結果ページ用に R2 から公開済みの統計を読む処理も含む。
+5. `npx wrangler deploy --dry-run` で Cloudflare への配備を検証する。手動実行で `dry_run` が `true` の場合は、ここまでで終了し、D1 マイグレーション・Worker の配備・シークレット登録は行わない。
+6. D1 のマイグレーション（`migrations/`）を、その D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。手動実行では `dry_run` が `false` のときだけ適用する。
+7. Worker を配備する。push では実行し、手動実行では `dry_run` が `false` のときだけ実行する。
+8. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。push と `dry_run` が `false` の手動実行で動き、登録済みの値は上書きしない。
 
 ローカルでマイグレーションを試すには `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run setup:local` が作る）。マイグレーションは、`release/**` 以外のブランチ（develop・main・dev/*）では `migrations/0001_initial.sql` だけにする。develop と main は運用の追加を考慮せず、始めの状態から構築できるようにしておく。構造を変えるときは `0001` を直接編集し、develop の D1（とプレビューが使う同じ D1）を作り直す。`0002` 以降を積んでよいのは `release/**` だけで、develop・main へは持ち込まない（`scripts/git/check-migrations.mjs`、`npm run test:migrations` が、コミット前・`test:all`・CI の `e2e` で検査する）。本番の D1 は未作成で、初回の `release/*` は空の DB へ `0001` を適用する。過去の分割マイグレーションや編集前の `0001` を適用した DB は、新規 DB に作り直してから適用する。
 
