@@ -374,3 +374,22 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 環境の挙動、既存値の上書き、変数の上限、`dev/**` の一致は確認済みの事項として扱い、未確認事項には戻さない。
 
 （`survey-operations` の 4.2 は、本 spec の実装後に、develop の試験用のアンケートで進める。）
+
+（2026-11-19 追補: #137 で develop に取り込み、タスク 9.1〜9.3 の移行（両環境の状態確認・退避ファイルの削除・記録）を完了した。残りは 9.4（develop の試験用サンプルの登録）で、Phase 12 の形式の変更の後に行う。production の 1 件は Phase 12 の取り込み後に作り直す。）
+
+## Phase 12: 「回答しない」をすべてのアンケートで選べるようにする（2026-11-19 discovery）
+
+### Overview
+
+`surveys` の領域内の修正で、新しい spec は作らない（Path A。`surveys` は brief のみで要件が未作成のため、要件の作成時にも次の決定を記録する）。現在は設定の選択肢ごとの `decline: true` で、質問ごとに「回答しない」を付けるかを選べる（付けない質問は、その質問の中で辞退できない）。これをやめ、すべてのアンケートで回答者が辞退できるようにする。作業ブランチは `dev/survey-decline-button`。
+
+### 決定（利用者との合意 2026-11-19）
+
+- **出し方**: 「回答しない」は質問の選択肢ではなく、ダイアログ全体のボタン 1 つにする。押すと現在の辞退と同じ扱い（`onDecline`: 送信せず、タブに辞退の印だけ残す。外枠のクリック・Esc で閉じるのと同じ）。送信中は押せない。
+- **設定の形式**: 選択肢の `decline` を形式から削除し、指定があれば不正として拒否する（互換は持たない。v2 は未公開）。影響: `definition.ts`・回答の検証（`answers.ts` の `declined`）・下書きの部品（`answerDraft.ts` の辞退の判定）・集計（`results/tally.ts` の除外）・CLI（`hack/survey-cli/config.ts`）・`survey-run` の聞き取り項目（両複製）・テストの設定の例。production に登録済みの 1 件は `decline` を使っているため、実装の取り込み後に CLI で作り直す（本番にはアンケート機能を未配備）。
+- **文言**: ボタンは ja「回答しない」、en「Prefer not to answer」（辞書に置く）。
+- **画面**: 複数の HTML のモックを利用者と共有し、意識合わせしてから構成を決める（ボタンの位置・並び・送信ボタンとの関係、`survey.declineHint` の扱い）。
+
+### Direct Implementation Candidates
+
+- [ ] survey-decline-button -- 上の決定の実装（`src/lib/survey/`、`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、`hack/survey-cli/`、`survey-run` の両複製、関連テストと設定の例）。Dependencies: 画面構成のモックの合意
