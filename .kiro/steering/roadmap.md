@@ -356,7 +356,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Specs (dependency order)
 
-- [ ] survey-env-config -- 環境ごとのアンケート設定（GitHub Environments）、CLI の `add`・`prune`・`remove` の `--env` 必須化、ワークフローの環境の選択、手順書の更新。Dependencies: survey-operations, survey-results-aggregation
+- [x] survey-env-config（2026-11-19 完了: #137・#138 と移行の記録） -- 環境ごとのアンケート設定（GitHub Environments）、CLI の `add`・`prune`・`remove` の `--env` 必須化、ワークフローの環境の選択、手順書の更新。Dependencies: survey-operations, survey-results-aggregation
 
 ### 現在の実装・移行状況（2026-11-18 追補）
 
@@ -376,6 +376,8 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 （`survey-operations` の 4.2 は、本 spec の実装後に、develop の試験用のアンケートで進める。）
 
 （2026-11-19 追補: #137 で develop に取り込み、タスク 9.1〜9.3 の移行（両環境の状態確認・退避ファイルの削除・記録）を完了した。残りは 9.4（develop の試験用サンプルの登録）で、Phase 12 の形式の変更の後に行う。production の 1 件は Phase 12 の取り込み後に作り直す。）
+
+（2026-11-19 追補 2: Phase 12 を #138 で取り込んだ後、9.4 を完了した（develop に試験用のアンケートを登録し、再配備した）。`survey-env-config` は全タスクが完了した。production の 1 件は、利用者の指示により環境の変数を直接修正し、「回答しない」の選択肢だけを外した（識別子・期間・質問の文言は変えていない）。`survey-operations` 4.2 は、試験用アンケートの締切（2026-11-21 0:00 JST）後の日次集計（18:00 UTC）で結果ができてから、`publish`・`unpublish` と再配備の起動を確かめる。結果を作るには、締切までに develop で 1 件以上の回答が要る。）
 
 ## Phase 12: 「回答しない」をすべてのアンケートで選べるようにする（2026-11-19 discovery）
 

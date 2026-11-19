@@ -122,3 +122,4 @@
 - 設計が定めていなかった固定の出力は、実装時に決めて `design.md` の `config.ts`・`cli.ts` の節に記録した（`AddOutcome` の `not-found`・`refused` の形と拒否文、`no-release` の文言、配備を省く dry-run の行）。`prune`・`remove` の dry-run の文言（`[dry-run] ... would remove ...`）は設計に無く、実装の決定として残す。
 - 4.2 の実機の確認（2026-11-16、完了にはしない）: 検証用（develop）で、`status` が実際のバケットと設定に対して通った（アンケート 1 件・開催中）。存在しないキーの wrangler の標準エラーは `The specified key does not exist.` で、`remote.ts` の固定の語（`The specified key does not exist`）と一致するため、定数と 2.2 の単体テストの更新は要らない。`publish 2026-12-1 --dry-run` は、開催中で結果が無いため `refused: ... results would be lost` と正しく拒否した。
   - 未確認: 検証用バケットに集計済みの結果が無く、`publish`・`unpublish` の実際の書き込みと配備の起動は確かめていない。運用中の設定の作り直しは利用者の確認が要る。本番のリリースブランチの選択は、実在のブランチが現れてから確かめる。
+- 4.2 の続き（2026-11-19、完了にはしない）: `survey-env-config` の移行の後、develop に試験用のアンケート（締切 2026-11-21 0:00 JST）を登録して配備した。運用中の設定の作り直しは、利用者の指示により production の環境の変数から「回答しない」の選択肢だけを外す修正とした（質問の題の作り直しは行っていない）。`publish`・`unpublish` と配備の起動は、締切後の日次集計で結果ができてから確かめる（締切までに develop で 1 件以上の回答が要る）。
