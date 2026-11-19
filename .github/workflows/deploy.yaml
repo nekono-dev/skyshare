@@ -1,11 +1,13 @@
-# release/* と develop の push で Cloudflare Workers へデプロイする。`e2e.yaml` を `workflow_call` で呼び出す。
+# release/* と develop の push で Cloudflare Workers へ配備する。`e2e.yaml` を `workflow_call` で呼び出す。
+# branch-release-workflow（BRW）の `brw gen-workflow deploy` の雛形を土台に、skyshare 固有の手順（テスト・マイグレーション・シークレット）を加えたもの。
 #
-# - release/*: 本番の Worker（skyshare、SITE_HOST のドメイン）
-# - develop: develop 用の別の Worker（skyshare-develop、develop.<SITE_HOST>）。Cron が動く確認用の環境で、
+# 配備先とブランチの対応は .branch-release-workflow.json の deploy.targets が正本:
+# - production: release/** → 本番の Worker（skyshare、SITE_HOST のドメイン）
+# - develop: develop → develop 用の別の Worker（skyshare-develop、develop.<SITE_HOST>）。Cron が動く確認用の環境で、
 #   D1・R2 も develop 専用。dev/* のプレビュー（preview.yaml）はこの Worker に作られる
 #
-# 環境ごとの SURVEY_CONFIG を使い、共有設定が残っていれば環境なしの門番で配備を止める。
-# verify・e2e と門番のすべてが成功した場合だけデプロイする。verify は unit・component・route・render と型検査を実行し、E2E は e2e ジョブで実行する。
+# 配備先と同じ名前の GitHub Environment の SURVEY_CONFIG を使い、共有設定が残っていれば環境なしの門番で配備を止める。
+# verify・e2e と門番のすべてが成功した場合だけ配備する。verify は unit・component・route・render と型検査を実行し、E2E は e2e ジョブで実行する。
 # 必要な設定は docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
 # - Secrets:   CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
 # - Variables: PUBLIC_LEGACY_BACKEND_ENDPOINT / PUBLIC_DEFAULT_ATP_SERVICE / PUBLIC_NODE_ENV /
@@ -23,11 +25,6 @@ on:
         type: boolean
         default: true
 
-# 同じ配備先へのデプロイを直列化し、別の release ブランチが本番を同時更新しないようにする。
-concurrency:
-  group: deploy-${{ github.ref_name == 'develop' && 'develop' || 'production' }}
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
@@ -37,7 +34,7 @@ env:
   PUBLIC_NODE_ENV: ${{ vars.PUBLIC_NODE_ENV }}
   PUBLIC_OGP_EXTRACTOR_API: ${{ vars.PUBLIC_OGP_EXTRACTOR_API }}
   PUBLIC_PLC_DIRECTORY_BASE_URL: ${{ vars.PUBLIC_PLC_DIRECTORY_BASE_URL }}
-  # 運用者ごとの設定（docs/DEVELOP.md の「運用者ごとの設定」）
+  # 運用者ごとの設定（docs/DEVELOP.md の「運用者ごとの設定」）。SITE_HOST は BRW の宣言の ${SITE_HOST} にも使われる
   SITE_HOST: ${{ vars.SITE_HOST }}
   PUBLIC_OPERATOR_NAME: ${{ vars.PUBLIC_OPERATOR_NAME }}
   PUBLIC_OPERATOR_EMAIL: ${{ vars.PUBLIC_OPERATOR_EMAIL }}
@@ -46,6 +43,24 @@ env:
   PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
 
 jobs:
+  # push されたブランチから配備先を決める（BRW の雛形のまま）。手動実行で別のブランチが選ばれたときは配備先が無く、配備しない
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.target.outputs.name }}
+    steps:
+      - name: Resolve target
+        id: target
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          target=""
+          if printf '%s' "$BRANCH_NAME" | grep -Eq '^release/.*$'; then target=production
+          elif printf '%s' "$BRANCH_NAME" | grep -Eq '^develop$'; then target=develop
+          fi
+          echo "name=$target" >> "$GITHUB_OUTPUT"
+          echo "配備先: ${target:-(なし)}"
+
   # テストと型検査。失敗した場合はデプロイしない。
   verify:
     uses: ./.github/workflows/verify.yaml
@@ -56,7 +71,8 @@ jobs:
     secrets: inherit
 
   survey-config-guard:
-    if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
+    needs: [resolve]
+    if: needs.resolve.outputs.target != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -68,35 +84,50 @@ jobs:
           exit 1
 
   deploy:
-    needs: [verify, e2e, survey-config-guard]
-    # 手動実行で別のブランチが選ばれても、本番や develop 環境へ配備しない。
-    if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
-    environment: ${{ github.ref_name == 'develop' && 'develop' || 'production' }}
+    needs: [resolve, verify, e2e, survey-config-guard]
+    if: needs.resolve.outputs.target != ''
+    # 配備先（production / develop）と同じ名前の GitHub Environment の設定を使う
+    environment: ${{ needs.resolve.outputs.target }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # 同じ配備先への配備を直列化し、別の release ブランチが本番を同時更新しないようにする。実行中の配備は中断しない
+    concurrency:
+      group: deploy-${{ needs.resolve.outputs.target }}
+      cancel-in-progress: false
+    env:
+      # ensure-worker-secrets.mjs の配備先の指定（develop ではプレビューの基本設定も対象にする）
+      TARGET_FLAG: ${{ needs.resolve.outputs.target == 'develop' && '--develop' || '' }}
     steps:
       - uses: actions/checkout@v4
         with:
+          # lexicons/com/atproto/repo/strongRef.json は atproto サブモジュールへのシンボリックリンク。
           submodules: true
       - uses: actions/setup-node@v4
         with:
+          # Cloudflare Workers が扱える Node.js のバージョンを指定する。
           node-version: 22.16.0
           cache: npm
       - run: npm ci
-      # scripts/config/render-deploy-config.mjs が使う外部 branch-release-workflow プラグインを取得する。
-      # 秘密情報を扱うため、取得元（.branch-release-workflow-source.json）で指定されたブランチの最新コミットを使う。
+
+      # 宣言の deploy.brwSource から branch-release-workflow を取得する（設定の生成に使う）
       - name: Fetch branch-release-workflow
         run: |
-          brw_dir="$(node scripts/agent/setup-brw.mjs)"
-          echo "BRW_PLUGIN_DIR=$brw_dir" >> "$GITHUB_ENV"
-      # Git 管理外の wrangler.jsonc と _legacy/frontend/.env.production を Variables から生成する。
-      # develop では専用 Worker を使い、D1 の ID を名前から解決するため Cloudflare 認証情報を渡す。
-      - name: Configure build setting
+          git init -q "$RUNNER_TEMP/brw"
+          git -C "$RUNNER_TEMP/brw" fetch -q --depth 1 'https://github.com/nekono-dev/branch-release-workflow.git' 'main'
+          git -C "$RUNNER_TEMP/brw" checkout -q --detach FETCH_HEAD
+          echo "BRW_DIR=$RUNNER_TEMP/brw" >> "$GITHUB_ENV"
+
+      # テンプレート（config/wrangler.template.jsonc）から配備先の wrangler.jsonc を生成する。
+      # BRW が Worker 名・独自ドメイン・workers_dev / preview_urls を宣言どおりに書き、続けて renderHook
+      # （scripts/config/render-deploy-config.mjs）が vars・develop 用の D1・R2 と _legacy/frontend/.env.production を加える。
+      # develop では D1 の ID を名前から解決するため Cloudflare の認証情報を渡す。
+      - name: Render wrangler config
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TARGET_FLAG: ${{ github.ref_name == 'develop' && '--develop' || '' }}
-        run: node scripts/config/render-deploy-config.mjs $TARGET_FLAG
+          BRW_TARGET_NAME: ${{ needs.resolve.outputs.target }}
+        run: node "$BRW_DIR/scripts/brw.mjs" render-wrangler --target "$BRW_TARGET_NAME" --write
+
       # SURVEY_CONFIG は設定生成に使うビルドだけに渡し、生成失敗時はデプロイを止める。
       # サイト URL（共有リンクなど）は生成した wrangler.jsonc の設定から決まる。
       # 結果ページは、ビルドの間に結果の保管先（R2）から公開済みの統計を読んで生成する。
@@ -116,7 +147,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Deploy cloudflare worker
+      - name: Deploy worker
         if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
         run: npx wrangler deploy
         env:
@@ -130,4 +161,3 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          TARGET_FLAG: ${{ github.ref_name == 'develop' && '--develop' || '' }}

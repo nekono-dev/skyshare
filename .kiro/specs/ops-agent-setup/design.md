@@ -222,3 +222,10 @@ graph TD
 1. **Codex の取り消し**: Codex 向けの cc-sdd 導入・BRW の Codex 側・`.codex/hooks.json`・AGENTS.md・`.codex/agents/` を取り消す（利用者の決定）。
 2. **BRW の有効化の方式を変更**: 起動のたびに `marketplace remove`・`add` する方式（`setup-brw --install`）をやめ、プロジェクトの設定で `nekono-dev/claude-plugins` を宣言する方式にする（利用者の決定。設計レビューの重大な問題 1・3 への対応）。2026-10-31 の決定（`extraKnownMarketplaces` を外す）は、この改訂で逆になる。
 3. 旧 Req 2.2（導入の結果を `.kiro/settings/` としてコミットに含める）は、`.gitignore` と CLAUDE.md の定め（導入物はコミットしない）と食い違っていたため、gitignore の定めに合わせた。
+
+## 改訂の記録（2026-11-19）
+
+1. **CI の BRW の取得を宣言へ移す**: BRW 1.3.0 の配備先の宣言（`.branch-release-workflow.json` の `deploy`）に合わせ、CI 用の取得元を宣言の `deploy.brwSource`（`nekono-dev/branch-release-workflow` の `main`）へ移した。`.branch-release-workflow-source.json`・`scripts/agent/setup-brw.mjs`・`scripts/agent/brw-source.mjs`・`tests/unit/scripts/brwSource.test.ts` と、`BRW_PLUGIN_DIR` は廃止した。この文書の Req 3（取得元のファイルと `setup-brw.mjs`）は、この改訂で置き換わる。開発機への導入（`ensure-brw-plugin.mjs`）は変えない。
+2. **wrangler 設定の生成の分担**: CI では `brw render-wrangler --target <production|develop> --write` が Worker 名・独自ドメイン（`${SITE_HOST}` を GitHub の Variables で解決）・`workers_dev` / `preview_urls` を書き、renderHook の `scripts/config/render-deploy-config.mjs` が vars・develop 用の D1・R2・`_legacy/frontend/.env.production` を加える（`applyRuntimeConfig`）。手元の開発・E2E の `render-wrangler.mjs` は従来のまま。生成結果は、route の既定値のキー（`enabled: true`・本番の `previews_enabled: false`）が省かれる点を除き、従来と同じであることを確かめた。
+3. **workflow の作り直し**: `deploy.yaml`・`preview.yaml` を BRW の雛形（`brw gen-workflow deploy` / `preview`）を土台に作り直し、skyshare 固有の手順（verify・E2E、手動実行の dry run、マイグレーション、シークレット）を加えた。プレビューの対象のブランチ名は、宣言の `maxNameLength`（54 文字）に合わせた（独自ドメインのプレビューのホスト名は Preview 名だけで 1 つのラベルになるため、Worker 名の分を差し引く必要が無い）。
+4. **プレビュー URL の雛形**: 宣言の `preview.urlTemplate` から運用者のドメインの直書きを外し、`https://{alias}.develop.${SITE_HOST}` にした。

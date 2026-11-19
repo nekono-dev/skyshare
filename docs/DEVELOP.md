@@ -60,7 +60,7 @@ Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だ
 
 Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`・`.dev.vars`）は含まれない。上の 1〜3 を行う。`wrangler.jsonc` は作業元からコピーせず、`npm run setup:local` で作る。
 
-配備の設定（`scripts/config/render-deploy-config.mjs`）だけが環境変数 `BRW_PLUGIN_DIR` を使う。手元の開発・テストでは不要。
+配備の設定は CI が BRW（branch-release-workflow）で生成する（5.2）。手元の開発・テストでは BRW の取得は不要。
 
 ## 2. 日常の開発
 
@@ -221,15 +221,16 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 - `release/**` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通った場合だけ配備する。手動実行（Actions → deploy → Run workflow）は既定で `dry_run`（ビルドと `wrangler deploy --dry-run` のみ）になる。
 - `release/**` の配備は `production`、`develop` ブランチの配備は `develop` の環境の設定を使う。
 - `publish`・`unpublish` は可視フラグを切り替えた後に画面へ反映するため、再配備を起動する。手動起動は `gh workflow run deploy.yaml --ref <ブランチ> -f dry_run=false`。本番は最新の `release/**` ブランチ、develop は `develop` を指定する。CLI は配備の完了を確認しないため、運用者が完了を確認する。
-- `dev/**` への push で `.github/workflows/preview.yaml` が develop 用の Worker の Preview を作る（`wrangler preview`。XXXX は 46 文字以内。develop が一度配備済みであること）。同じブランチへ再 push しても URL は変わらない。
+- `dev/**` への push で `.github/workflows/preview.yaml` が develop 用の Worker の Preview を作る（`wrangler preview`。ブランチ名は 54 文字以内で、XXXX は 50 文字以内。develop が一度配備済みであること）。同じブランチへ再 push しても URL は変わらない。
 - `dev/**` のプレビューは `develop` の環境の設定を使う。
+- ブランチと配備先の Worker・ドメインの対応の正本は `.branch-release-workflow.json` の `deploy.targets` と `preview`（5.3）。この表はその写しで、変えるときは宣言を先に直す。
 - `release/**` はすべて同じ本番の Worker・D1・R2 に配備するため、配備は直列化している。古いリリースへの再 push で本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
 - `wrangler preview` では Cron が動かない。予約の自動投稿は develop 環境（`https://develop.<SITE_HOST>`）で確認する。D1・R2 は本番と別なので、本番の予約には触れない。
 
 ### 5.2 CI の流れ（deploy.yaml）
 
-1. `scripts/agent/setup-brw.mjs` で BRW を取得し、`BRW_PLUGIN_DIR` を設定する。
-2. `scripts/config/render-deploy-config.mjs`（`--develop` は develop 用）が、GitHub の Variables から `config/production.json`・`wrangler.jsonc`・`_legacy/frontend/.env.production` を作る。必須の値が無ければ異常終了する（誤配備の防止）。
+1. 宣言の `deploy.brwSource`（`nekono-dev/branch-release-workflow` の `main`）から BRW を取得する。
+2. `brw render-wrangler --target <配備先> --write` が、`config/wrangler.template.jsonc` から `wrangler.jsonc` を作る。BRW は宣言どおりに Worker 名（`skyshare` / `skyshare-develop`）・独自ドメイン（`<SITE_HOST>` / `develop.<SITE_HOST>`。develop はプレビュー用に `previews_enabled`）・`workers_dev` / `preview_urls` を書く。続けて renderHook の `scripts/config/render-deploy-config.mjs` が、GitHub の Variables から `config/production.json` と vars・develop 用の D1・R2（名前と ID）・`_legacy/frontend/.env.production` を加える。必須の値が無ければ異常終了する（誤配備の防止）。
 3. D1 のマイグレーション（`migrations/`）を、その D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。
 4. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。
 5. ビルドと配備。ビルドには対象の GitHub Environment の `SURVEY_CONFIG` だけを渡す（`release/**` は `production`、`develop` と `dev/**` のプレビューは `develop`）。`dev/**` のプレビューは `develop` の環境の設定を使う。リポジトリ（または組織）の変数に `SURVEY_CONFIG` が残っていれば、環境なしの門番ジョブが失敗してビルド・配備へ進まない。
@@ -240,7 +241,9 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 
 - 導入は Claude Code だけが対象で、セッションの開始時に自動で行う（1 の 4）。`.claude/settings.json` の宣言（`extraKnownMarketplaces` の `nekono-dev`、`enabledPlugins` の `branch-release-workflow@nekono-dev`）に従い、無いものだけをプロジェクトのスコープで導入する。端末に BRW の clone は置かない。既存の登録やプラグインを外す操作はしない。
 - 宣言の正本は `.branch-release-workflow.json`（リポジトリのルート）。`.claude/branch-release-workflow.json` は正本へのシンボリックリンク（旧パスを読む利用者向け）。内容を二重に持たない。
-- 取得元は `.branch-release-workflow-source.json`（`repository`・`branch`）。CI は `node scripts/agent/setup-brw.mjs`（引数なし）で同じブランチの最新コミットを取得し、clone のパスを得る。
+- 宣言の `deploy` が、配備先ごとのブランチ・Worker 名・独自ドメインを決める。ドメインは `${SITE_HOST}`（GitHub の Variables）で参照し、宣言に運用者のドメインを書かない。`preview.target` が develop なので、Preview は develop の Worker に作られ、URL は `preview.urlTemplate`（`https://{alias}.develop.${SITE_HOST}`）になる。手元の `brw url` は GitHub の Variables から `SITE_HOST` を読む（`gh` のログインが要る）。
+- CI 用の BRW の取得元は宣言の `deploy.brwSource`（リポジトリと `ref`）。CI は実行のたびに、その `ref` の最新コミットを取得する。
+- `deploy.yaml`・`preview.yaml` は、BRW の雛形（`brw gen-workflow deploy` / `preview`）を土台に、skyshare 固有の手順を加えたもの。宣言を変えたら `brw check` で workflow との食い違いを確かめる。
 - 共有 skill を更新したら、取得元（`nekono-dev/claude-plugins`）へ反映する。次のセッションの開始時に、プラグインの更新が試される。
 - 作業ブランチの作成・続き・片付けは skill `branch-release-workflow` に従う（作業ブランチへの push は許可を求めない。worktree はマージか PR の後に片付ける）。
 

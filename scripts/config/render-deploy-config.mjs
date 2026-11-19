@@ -1,15 +1,19 @@
-/** GitHub Actions の環境変数から配備用設定を生成する。
- * 必須値が欠けると設定漏れの配備を防ぐため異常終了する。
- * 使い方: BRW_PLUGIN_DIR=<branch-release-workflow の clone> node scripts/config/render-deploy-config.mjs [--develop]
+/** branch-release-workflow（BRW）の renderHook。BRW が生成した wrangler 設定に、GitHub Actions の環境変数から skyshare 固有の設定を加える。
+ * BRW の `render-wrangler --target <配備先> --write` が、Worker 名・独自ドメイン・workers_dev / preview_urls・previews を宣言
+ * （.branch-release-workflow.json の deploy）どおりに書いた後で呼ぶ。ここでは vars、develop 用の D1・R2 の名前と ID、
+ * _legacy/frontend/.env.production を扱う。必須値が欠けると設定漏れの配備を防ぐため異常終了する。
+ * 使い方: BRW が環境変数 BRW_TARGET（production / develop）と BRW_OUTPUT（生成先の絶対パス）を渡して呼ぶ。
  * 必要な環境変数: docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照。
  */
-import { execFileSync } from "node:child_process"
-import { existsSync, writeFileSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { readFileSync, writeFileSync } from "node:fs"
+import { parseJsonc } from "../lib/jsonc.mjs"
 import {
+  applyRuntimeConfig,
   hasReadCredentials,
+  readConfig,
+  readTemplate,
   RenderError,
-  renderWranglerFile,
+  resolveD1Ids,
 } from "./render-wrangler.mjs"
 
 // 配備の設定に反映する環境変数（config/production.json の vars）
@@ -35,26 +39,8 @@ const LEGACY_VARS = [
   "PUBLIC_OGP_EXTRACTOR_API",
 ]
 
-/**
- * branch-release-workflow プラグインの所在（clone したディレクトリ）を環境変数 BRW_PLUGIN_DIR から得る。
- *
- * 処理の趣旨:
- * - プラグインはリポジトリに同梱しないため、CI では clone した場所を渡す（.github/workflows の各 workflow）
- * - 未設定や brw.mjs が見つからない場合は、wrangler-config を省いた誤った設定で配備しないよう異常終了する
- *
- * Output: プラグインのルートの絶対パス
- */
-const resolveBrwPluginDir = () => {
-  const dir = process.env.BRW_PLUGIN_DIR?.trim()
-  if (!dir || !existsSync(join(dir, "scripts", "brw.mjs"))) {
-    console.error(
-      "環境変数 BRW_PLUGIN_DIR に branch-release-workflow の clone を指定してください" +
-        "（例: git clone --depth 1 https://github.com/nekono-dev/branch-release-workflow.git /tmp/brw）",
-    )
-    process.exit(1)
-  }
-  return resolve(dir)
-}
+// BRW の宣言（deploy.targets）の配備先の名前
+const TARGETS = ["production", "develop"]
 
 /**
  * 必須の環境変数を取得する。未設定・空文字・改行/引用符を含む値は異常終了とする。
@@ -80,7 +66,14 @@ const requireEnv = name => {
   return value
 }
 
-const brwPluginDir = resolveBrwPluginDir()
+const target = process.env.BRW_TARGET ?? ""
+const output = process.env.BRW_OUTPUT ?? ""
+if (!TARGETS.includes(target) || output === "") {
+  console.error(
+    "branch-release-workflow の render-wrangler から呼んでください（BRW_TARGET は production / develop、BRW_OUTPUT は生成先）",
+  )
+  process.exit(1)
+}
 
 // 公開するドメインの形式（スキームやパスを含めない）は render-wrangler.mjs が検査する
 const siteHost = requireEnv("SITE_HOST")
@@ -100,38 +93,30 @@ for (const name of OPTIONAL_CONFIG_VARS) {
   }
 }
 
-// 配備の設定（config/production.json）を作る。配備の種類（--develop）は render-wrangler が決める
+// 配備の設定（config/production.json）を作る。develop の配備も同じ値を使い、違いは BRW の宣言と applyRuntimeConfig が決める
 writeFileSync(
   "config/production.json",
   `${JSON.stringify({ siteHost, vars }, null, 2)}\n`,
 )
-const develop = process.argv.includes("--develop")
+const develop = target === "develop"
 try {
-  renderWranglerFile({
-    name: "production",
+  const template = readTemplate()
+  const out = applyRuntimeConfig(parseJsonc(readFileSync(output, "utf8")), {
+    template,
+    config: readConfig("production", { requireSiteHost: true }),
     develop,
+    d1Ids: develop ? resolveD1Ids(template) : {},
     remote: hasReadCredentials(process.env),
   })
+  writeFileSync(output, `${JSON.stringify(out, null, 2)}\n`)
   console.log(
-    `wrangler.jsonc を config/production.json から生成しました${develop ? "（develop 用）" : ""}`,
+    `${output} に config/production.json の設定を加えました（配備先: ${target}）`,
   )
 } catch (err) {
   if (!(err instanceof RenderError)) throw err
   console.error(err.message)
   process.exit(1)
 }
-
-// 独自ドメインの有効状況に合わせて workers_dev / preview_urls を設定する
-execFileSync(
-  "node",
-  [
-    join(brwPluginDir, "scripts", "brw.mjs"),
-    "wrangler-config",
-    "wrangler.jsonc",
-    "--write",
-  ],
-  { stdio: "inherit" },
-)
 
 const legacyEnv = LEGACY_VARS.map(name => `${name}="${vars[name]}"`).join("\n")
 writeFileSync("_legacy/frontend/.env.production", `${legacyEnv}\n`)

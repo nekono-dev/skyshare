@@ -133,7 +133,7 @@ tests/unit/scripts/
 
 ### Modified Files
 
-- `.github/workflows/deploy.yaml` — `deploy` ジョブに `environment: ${{ github.ref_name == 'develop' && 'develop' || 'production' }}` を足す。環境なしの `survey-config-guard` ジョブを追加し、`deploy.needs` の既存の `verify`・`e2e` に加える。門番のジョブ条件は `deploy` と同じにし、`permissions: {}` とする。共有の設定はステップの `if:` だけで判定し、固定文を出して失敗する。先頭コメントに環境の変数と門番を説明する。
+- `.github/workflows/deploy.yaml` — `deploy` ジョブに `environment: ${{ needs.resolve.outputs.target }}` を足す（配備先 `production`・`develop` をそのまま環境の名前に使う）。環境なしの `survey-config-guard` ジョブを追加し、`deploy.needs` の既存の `verify`・`e2e` に加える。門番のジョブ条件は `deploy` と同じにし、`permissions: {}` とする。共有の設定はステップの `if:` だけで判定し、固定文を出して失敗する。先頭コメントに環境の変数と門番を説明する。
 - `.github/workflows/preview.yaml` — `preview` ジョブに `environment: develop` と `needs: [survey-config-guard]` を足す。環境なしの門番を同じ方式で追加する。現在の `preview` にジョブの `if:` は無いため、門番にも付けず、既存の起動条件を保つ。
 - `.claude/settings.json` — 共有の設定ファイルの実行許可へ `Bash(npm run survey:*)` だけを足す。CLI が `gh` を内部で呼ぶため、`gh` の直接実行の許可は追加しない。CI の権限は増やさない。
 - `tests/unit/scripts/surveyWorkflowEnvironment.test.ts` — 環境の選択に加え、両ワークフローの門番、環境指定の不在、待ち合わせ、ジョブ条件、空の権限、共有の設定の判定と固定文を検査する。
@@ -165,8 +165,8 @@ flowchart TD
   Value --> Build["設定があれば生成し なければ機能なしで完了"]
 ```
 
-- ブランチの選択式は、既存の `concurrency.group` と `TARGET_FLAG` と同じ式（`github.ref_name == 'develop'`）にそろえる。`release/**` かどうかの判断は `if:` が先に行うため、式は「develop か、それ以外（= release）」の 2 択でよい。
-- 手動起動（`workflow_dispatch`）で `release/**`・`develop` 以外が選ばれたときは、既存の `deploy.if` と同じ条件により門番も `deploy` も実行されない。飛ばされたジョブは環境を作らず、配備の記録も残さないことを 2026-11-17 に実機で確認済みである（項目 7）。`release/**` の手動起動の `dry_run` も門番を通り、`production` の環境の設定でビルドと検証だけを行う。
+- 環境の選択は、配備先を決める既存の `resolve` ジョブの出力（`needs.resolve.outputs.target`。`production` か `develop`）をそのまま使い、`concurrency.group` と `TARGET_FLAG` と同じ値にそろえる（2026-11-19 追補: #136 で `resolve` ジョブが入ったため、当初の `github.ref_name == 'develop'` の 2 択の式から置き換えた。判断の内容は変わらない）。
+- 手動起動（`workflow_dispatch`）で `release/**`・`develop` 以外が選ばれたときは、配備先が空になり、既存の `deploy.if` と同じ条件により門番も `deploy` も実行されない。飛ばされたジョブは環境を作らず、配備の記録も残さないことを 2026-11-17 に実機で確認済みである（項目 7）。`release/**` の手動起動の `dry_run` も門番を通り、`production` の環境の設定でビルドと検証だけを行う。
 - 環境の変数が無い場合、同名のリポジトリ変数へ代わる挙動は実機で確認済みである。新しいワークフローは環境なしの門番でリポジトリ・組織の共有の設定を先に検出し、存在すればビルドと配備を停止する。CLI は共有の設定を読まない（要件 3.1）。共有の設定が無い場合だけ対象環境の設定を読み、未登録なら機能なしで完了する（注 1）。
 
 ### add・prune・remove の判断（指定した環境だけ）
@@ -288,7 +288,8 @@ flowchart TD
 ```yaml
 # deploy.yaml の jobs 内
 survey-config-guard:
-  if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
+  needs: [resolve]
+  if: needs.resolve.outputs.target != ''
   runs-on: ubuntu-latest
   timeout-minutes: 5
   permissions: {}
@@ -300,9 +301,9 @@ survey-config-guard:
         exit 1
 
 deploy:
-  needs: [verify, e2e, survey-config-guard]
-  if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'
-  environment: ${{ github.ref_name == 'develop' && 'develop' || 'production' }}
+  needs: [resolve, verify, e2e, survey-config-guard]
+  if: needs.resolve.outputs.target != ''
+  environment: ${{ needs.resolve.outputs.target }}
   # 残りの既存の設定とステップを保つ。
 ```
 
@@ -526,7 +527,7 @@ export type SurveyRemote = {
 
 ### 静的な検査（`tests/unit/scripts/surveyWorkflowEnvironment.test.ts`。ファイルの文字列を読む）
 
-- `deploy.yaml` の `deploy` ジョブに、`github.ref_name == 'develop'` で `develop` を、それ以外で `production` を選ぶ `environment:` があること。`preview.yaml` のジョブに `environment: develop` があること（1.1, 1.2, 1.3）。
+- `deploy.yaml` の `deploy` ジョブに、配備先（`resolve` の出力。`develop` か `production`）を選ぶ `environment:` があること。`preview.yaml` のジョブに `environment: develop` があること（1.1, 1.2, 1.3）。
 - コメントを除き、`vars.SURVEY_CONFIG` の参照が、環境なしの門番の拒否ステップの `if:` と、ビルドするジョブの `Run build` の `env:` にだけあること。ワークフロー直下の `env:`、門番の `env:`・`run:` へ値を渡していないこと、`verify.yaml`・`e2e.yaml` に参照が無いことを確かめる。固定のエラー文に含まれる変数名は値の参照と区別する（1.4, 1.7, 1.8）。
 - 両ワークフローに `survey-config-guard` があり、門番のジョブに `environment:` が無く、`permissions: {}` と `timeout-minutes: 5` があること。`deploy`・`preview` の `needs:` に門番が含まれ、`deploy` の既存の `verify`・`e2e` も保たれることを確かめる。
 - 門番のジョブ条件が待つ側と同じであること（`deploy` は既存の式と一致、`preview` は両方ともジョブの `if:` が無い）。拒否ステップの条件が `vars.SURVEY_CONFIG != ''` で、CI の節の固定文と完全一致する 1 行の出力、および `exit 1` があることを確かめる（1.6, 1.8）。
@@ -682,9 +683,9 @@ GitHub 側の挙動の確認結果と、残る確認事項を記録する。2026
 
 - 目録の読み取りと検証が `readIndexes`・`runStatus`・`runVisibilitySwitch` で重複していたため、1 環境版の 1 関数にまとめ、環境の取り違えが起きる場所を減らす。
 
-### Decision 5: ワークフローの環境の選択は、既存と同じ式で行う
+### Decision 5: ワークフローの環境の選択は、配備先と同じ値で行う
 
-- `concurrency.group`・`TARGET_FLAG` が `github.ref_name == 'develop'` で develop を選んでいるため、同じ式にそろえ、環境と配備先がずれない。`if:` が先に `release/**` と `develop` 以外を止める。
+- `concurrency.group`・`TARGET_FLAG` が `resolve` の出力（配備先）で develop を選んでいるため、同じ値にそろえ、環境と配備先がずれない。配備先が空（`release/**` と `develop` 以外）なら `if:` が先に止める（2026-11-19 追補: #136 の `resolve` ジョブに合わせた）。
 
 ## Supporting References
 

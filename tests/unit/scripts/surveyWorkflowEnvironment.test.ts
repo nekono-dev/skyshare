@@ -52,28 +52,26 @@ describe("deploy workflow survey environment", () => {
     it("keeps the existing deployment triggers, concurrency and workflow permissions", () => {
         expect(code).toContain('branches: ["release/**", develop]')
         expect(code).toContain(
-            "group: deploy-${{ github.ref_name == 'develop' && 'develop' || 'production' }}",
+            "group: deploy-${{ needs.resolve.outputs.target }}",
         )
         expect(code).toContain("cancel-in-progress: false")
         expect(code).toContain("permissions:\n  contents: read")
-        expect(deployJob).toContain(
-            "if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'",
-        )
+        expect(deployJob).toContain("if: needs.resolve.outputs.target != ''")
     })
 
     it("selects the matching environment and waits for verify, E2E and the guard", () => {
-        expect(deployJob).toContain("needs: [verify, e2e, survey-config-guard]")
         expect(deployJob).toContain(
-            "environment: ${{ github.ref_name == 'develop' && 'develop' || 'production' }}",
+            "needs: [resolve, verify, e2e, survey-config-guard]",
+        )
+        expect(deployJob).toContain(
+            "environment: ${{ needs.resolve.outputs.target }}",
         )
         expect(job(code, "verify")).not.toContain("environment:")
         expect(job(code, "e2e")).not.toContain("environment:")
     })
 
     it("rejects shared config in an environment-free, permission-free guard", () => {
-        expect(guard).toContain(
-            "if: startsWith(github.ref, 'refs/heads/release/') || github.ref == 'refs/heads/develop'",
-        )
+        expect(guard).toContain("if: needs.resolve.outputs.target != ''")
         expect(guard).toContain("timeout-minutes: 5")
         expect(guard).toContain("permissions: {}")
         expect(guard).not.toContain("environment:")
