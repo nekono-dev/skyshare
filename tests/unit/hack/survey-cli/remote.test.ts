@@ -1,5 +1,5 @@
 /**
- * 結果保管先の R2 読み書きと固定された失敗分類を確認する。
+ * 環境別設定と R2 操作の呼び出し契約・失敗分類を確認する。
  */
 import {
     existsSync,
@@ -71,6 +71,220 @@ const lastTempDir = (calls: { args: string[] }[]): string => {
     const file = calls[0]!.args[calls[0]!.args.indexOf("--file") + 1]!
     return path.dirname(file)
 }
+
+describe("environment configuration operations", () => {
+    it.each([
+        ["不正な JSON", "{ BODY-SECRET"],
+        ["value 欠落", JSON.stringify({ name: "CONFIG-SECRET" })],
+        [
+            "文字列でない value",
+            JSON.stringify({ value: { secret: "CONFIG-SECRET" } }),
+        ],
+    ])(
+        "classifies a malformed configuration response (%s) as parse",
+        async (_label, stdout) => {
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: () => ({ status: 0, stdout, stderr: "" }),
+            })
+            const failure = await remote
+                .readConfigValue("develop")
+                .catch(error => error)
+            expect(failure).toMatchObject({ kind: "parse" })
+            expect(String(failure)).not.toMatch(/BODY-SECRET|CONFIG-SECRET/)
+        },
+    )
+
+    it.each([
+        [
+            "readConfigValue",
+            "read",
+            "HTTP 403: Forbidden STDERR-SECRET",
+            "auth",
+        ],
+        ["readConfigValue", "read", "not logged in STDERR-SECRET", "auth"],
+        ["readConfigValue", "read", "offline STDERR-SECRET", "unavailable"],
+        [
+            "deleteConfigValue",
+            "delete",
+            "HTTP 403: Forbidden STDERR-SECRET",
+            "auth",
+        ],
+        ["deleteConfigValue", "delete", "not logged in STDERR-SECRET", "auth"],
+        ["deleteConfigValue", "delete", "offline STDERR-SECRET", "unavailable"],
+    ] as const)(
+        "classifies %s failure (%s)",
+        async (operation, _label, stderr, kind) => {
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: () => ({
+                    status: 1,
+                    stdout: "CONFIG-SECRET OUTPUT-SECRET",
+                    stderr,
+                }),
+            })
+            const action =
+                operation === "readConfigValue"
+                    ? remote.readConfigValue("develop")
+                    : remote.deleteConfigValue("develop")
+            const failure = await action.catch(error => error)
+            expect(failure).toMatchObject({ kind })
+            expect(String(failure)).not.toMatch(/SECRET|offline|Forbidden/)
+            expect(String(failure)).not.toMatch(/CONFIG-SECRET|VALUE-SECRET/)
+        },
+    )
+
+    it.each(["production", "develop"] as const)(
+        "reads SURVEY_CONFIG only from the %s environment",
+        async env => {
+            const calls: { command: string; args: string[]; input?: string }[] =
+                []
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: (command, args, input) => {
+                    calls.push({ command, args, input })
+                    return {
+                        status: 0,
+                        stdout: JSON.stringify({ value: "CONFIG-SECRET" }),
+                        stderr: "",
+                    }
+                },
+            })
+
+            await expect(remote.readConfigValue(env)).resolves.toBe(
+                "CONFIG-SECRET",
+            )
+            expect(calls).toEqual([
+                {
+                    command: "gh",
+                    args: [
+                        "api",
+                        `repos/owner/repo/environments/${env}/variables/SURVEY_CONFIG`,
+                    ],
+                    input: undefined,
+                },
+            ])
+        },
+    )
+
+    it.each([
+        ["read", "readConfigValue", "undefined"],
+        ["write", "writeConfigValue", "no-environment"],
+        ["delete", "deleteConfigValue", "success"],
+    ] as const)(
+        "handles a missing environment on %s",
+        async (_label, operation, expected) => {
+            const calls: { command: string; args: string[]; input?: string }[] =
+                []
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: (command, args, input) => {
+                    calls.push({ command, args, input })
+                    return {
+                        status: 1,
+                        stdout: "OUTPUT-SECRET",
+                        stderr: "HTTP 404: Not Found STDERR-SECRET",
+                    }
+                },
+            })
+            const action =
+                operation === "readConfigValue"
+                    ? remote.readConfigValue("develop")
+                    : operation === "writeConfigValue"
+                      ? remote.writeConfigValue("develop", "VALUE-SECRET")
+                      : remote.deleteConfigValue("develop")
+            const error = await action.catch(value => value)
+            if (expected === "success") expect(error).toBeUndefined()
+            else if (expected === "undefined") expect(error).toBeUndefined()
+            else expect(error).toMatchObject({ kind: "no-environment" })
+            if (expected !== "success" && expected !== "undefined") {
+                expect(String(error)).not.toMatch(/SECRET|404/)
+            }
+            expect(calls).toHaveLength(1)
+        },
+    )
+
+    it.each([
+        ["HTTP 403: Forbidden AUTH-SECRET", "auth"],
+        ["not logged in AUTH-SECRET", "auth"],
+        ["offline STDERR-SECRET", "unavailable"],
+    ] as const)(
+        "classifies configuration failure %s without exposing output",
+        async (stderr, kind) => {
+            const calls: { command: string; args: string[]; input?: string }[] =
+                []
+            const remote = createSurveyRemote({
+                repo: "owner/repo",
+                run: (command, args, input) => {
+                    calls.push({ command, args, input })
+                    return { status: 1, stdout: "OUTPUT-SECRET", stderr }
+                },
+            })
+            const error = await remote
+                .writeConfigValue("develop", "VALUE-SECRET")
+                .catch(value => value)
+            expect(error).toMatchObject({ kind })
+            expect(String(error)).not.toMatch(/SECRET|offline|Forbidden/)
+            expect(calls[0]!.args).toEqual([
+                "variable",
+                "set",
+                "SURVEY_CONFIG",
+                "--env",
+                "develop",
+                "-R",
+                "owner/repo",
+            ])
+            expect(calls[0]!.input).toBe("VALUE-SECRET")
+        },
+    )
+
+    it("uses environment-scoped set and delete and never targets repository variables", async () => {
+        const calls: { command: string; args: string[]; input?: string }[] = []
+        const remote = createSurveyRemote({
+            repo: "owner/repo",
+            run: (command, args, input) => {
+                calls.push({ command, args, input })
+                return { status: 0, stdout: "", stderr: "" }
+            },
+        })
+        await remote.writeConfigValue("production", "VALUE-SECRET")
+        await remote.deleteConfigValue("develop")
+        expect(calls).toEqual([
+            {
+                command: "gh",
+                args: [
+                    "variable",
+                    "set",
+                    "SURVEY_CONFIG",
+                    "--env",
+                    "production",
+                    "-R",
+                    "owner/repo",
+                ],
+                input: "VALUE-SECRET",
+            },
+            {
+                command: "gh",
+                args: [
+                    "variable",
+                    "delete",
+                    "SURVEY_CONFIG",
+                    "--env",
+                    "develop",
+                    "-R",
+                    "owner/repo",
+                ],
+                input: undefined,
+            },
+        ])
+        expect(
+            calls.every(
+                call => !call.args.includes("actions/variables/SURVEY_CONFIG"),
+            ),
+        ).toBe(true)
+        expect(calls.every(call => call.args.includes("--env"))).toBe(true)
+    })
+})
 
 describe("R2 operations", () => {
     it.each([

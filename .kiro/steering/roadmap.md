@@ -339,4 +339,38 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Direct Implementation Candidates
 
-- [ ] survey-dialog-polish -- 上の 3 点の実装（`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、関連テスト）。Dependencies: 画面構成のモックの合意
+- [x] survey-dialog-polish（2026-11-19 確認: #135 で develop に取り込み済み） -- 上の 3 点の実装（`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、関連テスト）。Dependencies: 画面構成のモックの合意
+
+## Phase 11: アンケート設定の環境分離（2026-11-16 discovery）
+
+### Overview
+
+`SURVEY_CONFIG`（リポジトリ変数 1 つ）が本番と develop で共有されているため、develop だけで試験用のアンケートを使えない。GitHub Environments（`production`・`develop`）に分け、CLI の `add`・`prune`・`remove` も `--env` 必須にする。設定の JSON の作り方（`add --file`）は変えない。`survey-operations` を拡張する新しい spec 1 件（Path C）。
+
+### 決定（利用者との合意 2026-11-16）
+
+- **分け方**: GitHub Environments（変数を 2 つに分ける案は採らない）。
+- **CLI**: `add`・`prune`・`remove` も `--env` 必須。除去は自分の環境の目録だけで判断する（両環境の突き合わせをやめる。2026-11-13 の「prune・remove は `--env` を取らない」を改める）。
+- **spec の置き場**: 新しい小さな spec `survey-env-config`。
+- **試験**: develop に試験用のアンケートを作り、`survey-operations` 4.2 の実機の確認（`publish`・`unpublish`・配備の起動）に使う。現在作成済みのアンケートは退避済み（運用者の手元に JSON を保存）で、本番へ適用する前に作り直す。
+
+### Specs (dependency order)
+
+- [ ] survey-env-config -- 環境ごとのアンケート設定（GitHub Environments）、CLI の `add`・`prune`・`remove` の `--env` 必須化、ワークフローの環境の選択、手順書の更新。Dependencies: survey-operations, survey-results-aggregation
+
+### 現在の実装・移行状況（2026-11-18 追補）
+
+上記の 2026-11-16 の決定は discovery 時点の記録である。環境指定なし・共有設定を前提とした CLI の判断は `survey-env-config` により置き換えられ、6 コマンドすべてで `--env production` または `--env develop` を必須とし、設定と目録の判断は指定環境だけで行う。開発用の設定と本番用の設定は GitHub Environments に分離する。過去の決定は当時の記録として残す。
+
+2026-11-18 時点で、実装タスクの多くが完了している。取り込み前の検証（タスク 8）と取り込み後の移行・実機確認（タスク 9）が残る。移行では production 環境の作成・登録、develop 環境の作成、共有設定の削除、旧ワークフローによる develop の再配備と R2 の確認まで実施済みである。新しい実装の develop への取り込み、両環境の状態確認、退避ファイルの削除、develop のサンプル登録は未実施である。移行完了とは扱わない。
+
+### リリース時の積み残し（2026-11-18 追補）
+
+設計の「Open Questions / Risks」に記録された次の二件を、リリース時の確認事項として残す。
+
+1. **権限不足時の読み書き応答（403 か 404 か）**: 権限を絞った認証手段が必要なため、応答は未確認である。それまでは書き込み時の固定文で環境未作成または権限不足の可能性を案内し、`gh auth status` などで認証を確認する。読み取りの扱いも設計どおりとし、権限確認後に再実行する。
+2. **実際の `release/**` と環境のブランチ制限の一致**: 初回リリースで、`release/**` のブランチから手動起動の `dry_run` を行って確認する。一致しない場合は `release/*` を試す。制限を外す必要がある場合だけ、実施前に運用者へ確認する。
+
+環境の挙動、既存値の上書き、変数の上限、`dev/**` の一致は確認済みの事項として扱い、未確認事項には戻さない。
+
+（`survey-operations` の 4.2 は、本 spec の実装後に、develop の試験用のアンケートで進める。）

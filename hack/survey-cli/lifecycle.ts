@@ -2,7 +2,6 @@
  * アンケートの状態表示・除去・配備先の純粋な判定を行う。
  */
 import type { Survey, SurveyConfig } from "@/lib/survey/definition"
-import type { SurveyEnv } from "./args"
 
 /**
  * 状態表示に使う 6 段階。
@@ -61,33 +60,25 @@ export type StatusRow = {
 }
 
 /**
- * 自動除去を保留したアンケートと未集計環境。
+ * 自動除去で設定に残すアンケート。
  *
- * Input: 対象 ID と集計の足りない環境
- * Output: 環境は `production`、`develop` の順
- * 例: develop のみ未集計なら `pending: ["develop"]`
+ * Input: 終了済みで未集計の ID
+ * Output: 設定に残す ID
+ * 例: 終了済みで未集計ならその ID を含む
  */
-export type PruneKept = { id: string; pending: SurveyEnv[] }
+export type PruneKept = { id: string }
 
 /**
  * 運用者による除去の判定結果。
  *
  * Input: なし
- * Output: 除去、開催中の拒否、または未集計環境つきの拒否
+ * Output: 除去または理由つきの拒否
  * 例: 開催中なら `{ kind: "refused", reason: "active" }`
  */
 export type RemoveDecision =
     | { kind: "remove" }
     | { kind: "refused"; reason: "active" }
-    | {
-          kind: "refused"
-          reason: "not-aggregated"
-          pending: SurveyEnv[]
-      }
-
-type AggregatedByEnv = Readonly<Record<SurveyEnv, ReadonlySet<string>>>
-
-const environments: readonly SurveyEnv[] = ["production", "develop"]
+    | { kind: "refused"; reason: "not-aggregated" }
 
 /**
  * 指定期間と集計状態から段階を返す。
@@ -163,40 +154,37 @@ export const buildStatusRows = (
 }
 
 /**
- * 終了済みの設定から、両環境で集計済みのものを選ぶ。
+ * 指定環境の目録で集計済みの終了済み設定を選ぶ。
  *
- * Input: 設定、環境ごとの集計済み ID の集合、判定時刻
- * Output: 除去する ID と、未集計の環境つきで残す ID（環境は production、develop の順）
- * 例: 両環境に ID がある終了済みアンケートは `remove` に入る。開催中・開始前は対象外
+ * Input: 設定、指定環境の集計済み ID の集合、判定時刻
+ * Output: 除去する ID と設定に残す ID
+ * 例: 終了時刻ちょうどで目録に記録があれば `remove` に入る
  */
 export const decidePrune = (
     config: SurveyConfig,
-    aggregated: AggregatedByEnv,
+    aggregated: ReadonlySet<string>,
     now: Date,
 ): { remove: string[]; kept: PruneKept[] } => {
     const remove: string[] = []
     const kept: PruneKept[] = []
     for (const survey of config.surveys) {
         if (now.getTime() < Date.parse(survey.closesAt)) continue
-        const pending = environments.filter(
-            env => !aggregated[env].has(survey.id),
-        )
-        if (pending.length === 0) remove.push(survey.id)
-        else kept.push({ id: survey.id, pending: [...pending] })
+        if (aggregated.has(survey.id)) remove.push(survey.id)
+        else kept.push({ id: survey.id })
     }
     return { remove, kept }
 }
 
 /**
- * 運用者による除去が可能か、段階と両環境の集計状態から返す。
+ * 運用者による除去が可能か、段階と指定環境の集計状態から返す。
  *
- * Input: 対象アンケート、環境ごとの集計済み ID、判定時刻
- * Output: 除去または理由・不足環境つきの拒否
- * 例: 開始前は集計状況に関わらず `{ kind: "remove" }`
+ * Input: 対象アンケート、指定環境の集計済み ID、判定時刻
+ * Output: 除去または理由つきの拒否
+ * 例: 終了済みで目録に無ければ `not-aggregated` で拒否する
  */
 export const decideRemove = (
     survey: Survey,
-    aggregated: AggregatedByEnv,
+    aggregated: ReadonlySet<string>,
     now: Date,
 ): RemoveDecision => {
     const time = now.getTime()
@@ -204,10 +192,9 @@ export const decideRemove = (
     if (time < Date.parse(survey.closesAt)) {
         return { kind: "refused", reason: "active" }
     }
-    const pending = environments.filter(env => !aggregated[env].has(survey.id))
-    return pending.length === 0
+    return aggregated.has(survey.id)
         ? { kind: "remove" }
-        : { kind: "refused", reason: "not-aggregated", pending: [...pending] }
+        : { kind: "refused", reason: "not-aggregated" }
 }
 
 /**

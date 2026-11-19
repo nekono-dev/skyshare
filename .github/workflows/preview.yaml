@@ -10,6 +10,7 @@
 # 必要な Secrets / Variables は deploy.yaml と共通（docs/DEVELOP.md の「CI/CD（GitHub Actions）」を参照）。
 # 前提: develop の Worker が一度デプロイ済みであること（Preview は既存の Worker に作られる。wrangler 4.135.0 以上）。
 # D1・R2 は develop 用を共用する。マイグレーションは develop への配備（deploy.yaml）で適用する。
+# プレビューは develop 環境の設定を使い、共有設定が残っていれば環境なしの門番でビルドと配備を止める。
 name: preview
 
 on:
@@ -39,7 +40,20 @@ env:
   PUBLIC_GA_MEASUREMENT_ID: ${{ vars.PUBLIC_GA_MEASUREMENT_ID }}
 
 jobs:
+  survey-config-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Reject shared survey config
+        if: ${{ vars.SURVEY_CONFIG != '' }}
+        run: |
+          echo 'error: shared-config: リポジトリ（または組織）の変数 SURVEY_CONFIG が残っています。削除してください（DEVELOP.md 6.2.1）'
+          exit 1
+
   preview:
+    needs: [survey-config-guard]
+    environment: develop
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

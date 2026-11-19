@@ -8,12 +8,22 @@ import { parseArgs } from "../../../../hack/survey-cli/args"
 describe("parseArgs", () => {
     it.each([
         [
-            ["add", "--file", "draft.json"],
-            { name: "add", file: "draft.json", dryRun: false },
+            ["add", "--file", "draft.json", "--env", "production"],
+            {
+                name: "add",
+                file: "draft.json",
+                env: "production",
+                dryRun: false,
+            },
         ],
         [
-            ["add", "--file", "draft.json", "--dry-run"],
-            { name: "add", file: "draft.json", dryRun: true },
+            ["add", "--file", "draft.json", "--dry-run", "--env", "develop"],
+            {
+                name: "add",
+                file: "draft.json",
+                env: "develop",
+                dryRun: true,
+            },
         ],
         [
             ["status", "--env", "production"],
@@ -74,15 +84,31 @@ describe("parseArgs", () => {
                 dryRun: true,
             },
         ],
-        [["prune"], { name: "prune", dryRun: false }],
-        [["prune", "--dry-run"], { name: "prune", dryRun: true }],
         [
-            ["remove", "survey-1"],
-            { name: "remove", id: "survey-1", dryRun: false },
+            ["prune", "--env", "production"],
+            { name: "prune", env: "production", dryRun: false },
         ],
         [
-            ["remove", "survey-1", "--dry-run"],
-            { name: "remove", id: "survey-1", dryRun: true },
+            ["prune", "--dry-run", "--env", "develop"],
+            { name: "prune", env: "develop", dryRun: true },
+        ],
+        [
+            ["remove", "survey-1", "--env", "production"],
+            {
+                name: "remove",
+                id: "survey-1",
+                env: "production",
+                dryRun: false,
+            },
+        ],
+        [
+            ["remove", "survey-1", "--dry-run", "--env", "develop"],
+            {
+                name: "remove",
+                id: "survey-1",
+                env: "develop",
+                dryRun: true,
+            },
         ],
     ] as const)("accepts %j", (argv, command) => {
         expect(parseArgs(argv)).toEqual({ ok: true, command })
@@ -100,7 +126,7 @@ describe("parseArgs", () => {
 
     it.each([
         [["wat"], "unknown command"],
-        [["add"], "missing file"],
+        [["add", "--env", "develop"], "missing file"],
         [["status"], "missing environment"],
         [["publish", "--env", "develop"], "missing id"],
         [["prune", "extra"], "extra positional argument"],
@@ -124,12 +150,12 @@ describe("parseArgs", () => {
             ["publish", "survey-1", "--env", "develop", "--force"],
             "force is forbidden",
         ],
-        [
-            ["add", "--file", "a.json", "--env", "develop"],
-            "environment forbidden",
-        ],
-        [["prune", "--env", "develop"], "environment forbidden"],
-        [["remove", "survey-1", "--env", "develop"], "environment forbidden"],
+        [["add", "--file", "a.json"], "missing environment"],
+        [["prune"], "missing environment"],
+        [["remove", "survey-1"], "missing environment"],
+        [["add", "--file", "a.json", "--env", "bad"], "invalid environment"],
+        [["prune", "--env", "bad"], "invalid environment"],
+        [["remove", "survey-1", "--env", "bad"], "invalid environment"],
         [["status", "--env", "develop", "--dry-run"], "dry-run forbidden"],
         [
             [
@@ -142,14 +168,23 @@ describe("parseArgs", () => {
             ],
             "duplicate option",
         ],
-        [["add", "--file", "a.json", "--no-deploy"], "deploy option forbidden"],
-        [["prune", "--no-deploy"], "deploy option forbidden"],
-        [["remove", "survey-1", "--no-deploy"], "deploy option forbidden"],
+        [
+            ["add", "--file", "a.json", "--env", "develop", "--no-deploy"],
+            "deploy option forbidden",
+        ],
+        [
+            ["prune", "--env", "develop", "--no-deploy"],
+            "deploy option forbidden",
+        ],
+        [
+            ["remove", "survey-1", "--env", "develop", "--no-deploy"],
+            "deploy option forbidden",
+        ],
         [["publish", "survey-1", "--env", "bad"], "invalid environment"],
         [["unpublish", "survey-1", "--env", "bad"], "invalid environment"],
         [["status", "--env", "bad"], "invalid environment"],
         [["publish", "Bad_ID", "--env", "develop"], "invalid id"],
-        [["remove", "Bad_ID"], "invalid id"],
+        [["remove", "Bad_ID", "--env", "develop"], "invalid id"],
         [["publish", "survey-1"], "missing environment"],
         [["unpublish", "survey-1"], "missing environment"],
         [["add", "--file"], "missing option value"],

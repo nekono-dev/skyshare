@@ -97,6 +97,8 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 
 `.githooks/pre-commit` は、コミットの前にリポジトリ全体を prettier で整形し、ステージ済みのファイルを整形後の内容でステージし直す。ステージしていないファイルの整形結果は作業ツリーに残る。一部だけをステージしたファイル（`git add -p`）は、全体がステージされる。
 
+あわせて、ステージ済みの Markdown に書かれた mermaid の図を構文として解析し（`scripts/git/check-mermaid.mjs`）、直せないものがあればコミットを止める。ラベルに `()`・`/`・`**` などの記号があって失敗するものは、記号を含むラベルを二重引用符で囲んで自動で直し、直した結果が通るときだけ書き戻す。手元で全体を調べるのは `npm run test:mermaid`、直すのは `npm run fix:mermaid`（CI の `e2e` と `test:all` も同じ検査をする）。
+
 `.githooks/pre-push` は `npm run test:all`（全層のテスト。E2E を含む）だけを実行する。GitHub の Variables・Secrets への登録は push では行わない（登録は手動。「5.0 デプロイ前の準備」）。
 
 ## 3. 設定と生成物
@@ -118,7 +120,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 
 ### 3.2 アンケート（ログイン時）
 
-アンケートの質問・選択肢・文言・期間は、コードに持たず、変数 `SURVEY_CONFIG`（JSON 文字列）で渡す。設定の構造と規則は `.kiro/specs/surveys/` を参照する。
+アンケートの質問・選択肢・文言・期間は、コードに持たず、GitHub Environments の `production`・`develop` ごとの変数 `SURVEY_CONFIG`（JSON 文字列）で渡す。設定の構造と規則は `.kiro/specs/surveys/` を参照する。運用 CLI の `add`・`status`・`publish`・`unpublish`・`prune`・`remove` はすべて `--env production` または `--env develop` の指定が必要で、登録・除去は指定環境の目録だけで判断する。
 
 - `npm run survey:render` が `SURVEY_CONFIG` を検証して `public/surveys/index.json` を作る。未設定なら作らず、以前の生成物を消す。不正な値なら、不正な項目の位置だけを示して失敗する（値は表示しない）。
 - ビルドは、設定があるとき `PUBLIC_SURVEY_CONFIG_PRESENT` を `"true"` にして埋め込む（`astro.config.mjs`）。偽のときは設定を取得しない。
@@ -130,11 +132,11 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
   rm -rf public/surveys && npm run dev
   ```
 
-- 本番・develop・プレビューのビルドにだけ、リポジトリ変数 `SURVEY_CONFIG` を渡す（検証と E2E のジョブには渡さない）。
-- アンケートの登録・状態確認・公開切り替えは専用 CLI だけで行う: `npm run survey -- status --env production` または `npm run survey -- status --env develop`、`npm run survey -- add --file <一時ファイル> [--dry-run]`、`npm run survey -- publish <ID> --env <環境> [--no-deploy] [--dry-run]`、`npm run survey -- unpublish <ID> --env <環境> [--no-deploy] [--dry-run]`。状態確認は設定と指定環境の目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外は固定の 1 行を返す。
+- `release/**`・`develop`・`dev/**` のビルドには、それぞれ対象の GitHub Environment の `SURVEY_CONFIG` を渡す（検証と E2E のジョブには渡さない）。
+- アンケートの登録・状態確認・公開切り替え・除去は専用 CLI だけで行う。例: `npm run survey -- add --file <一時ファイル> --env develop [--dry-run]`、`npm run survey -- status --env production`、`npm run survey -- publish <ID> --env production [--no-deploy] [--dry-run]`、`npm run survey -- unpublish <ID> --env develop [--no-deploy] [--dry-run]`、`npm run survey -- prune --env production [--dry-run]`、`npm run survey -- remove <ID> --env develop [--dry-run]`。状態確認は指定環境の設定と目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外は固定の 1 行を返す。
 - 新規登録の識別子は UUID として CLI が自動発行するため、下書きに手入力しない。アンケート全体の題・説明はなく、質問の題・選択肢と締切日だけを登録する。締切日は実在する `YYYY-MM-DD` で指定し、日本時間 0 時を表す。
-- 次の新規登録は、設定にあるすべての ID が本番・develop 両方の目録に記録されるまで拒否する。開始前のアンケートも対象で、設定に残る集計済みの過去分は対象外。拒否時は `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。` の 1 行だけを返す。記録がない環境には現在の設定を配備して日次集計を待つ。目録の取得失敗は認証・接続・形式の問題を直して再実行する。
-- 既存アンケートは `status` に表示された ID を下書きに入れて更新する。開催中は締切を前倒しし、設定を両環境へ配備して日次集計を待つ。前倒しできない場合は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` を返す。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
+- 次の新規登録は、指定環境の設定にあるすべての ID が同じ環境の目録に記録されるまで拒否する。開始前のアンケートも対象で、設定に残る集計済みの過去分は対象外。拒否時は `error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。` の 1 行だけを返す。未集計の環境へ設定を配備し、日次集計を待ってから同じ環境の `status` で確認する。目録の取得失敗は認証・接続・形式の問題を直して再実行する。
+- 既存アンケートは `status --env <環境>` に表示された ID を下書きに入れて更新する。開催中は締切を前倒しし、指定環境へ設定を配備して日次集計を待つ。前倒しできない場合は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` を返す。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
 - 日次集計が繰り返し失敗した場合、develop 用 R2 バケット `skyshare-survey-results-develop` が先に作成済みであることを確認する。運用者は R2 の結果本体と目録を退避してから直接調査・修正する。本体の形式不正、目録との内容不一致、目録が `result` を示すのに本体が無い状態を確認する。修正後は共有スキーマ（`src/lib/survey/results/schema.ts`）で検証し、本体と目録が一致することを確かめてから集計を再実行する。最後に `status --env production` と `status --env develop` で復旧を確認する。強制して処理を進める CLI 指定はない。
 
 ## 4. 品質
@@ -217,19 +219,24 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 | `main`       | 配備しない                              | —                          | 公開の基準。直接の作業をしない         |
 
 - `release/**` と `develop` への push で `.github/workflows/deploy.yaml` が起動し、テスト・型検査・E2E を通った場合だけ配備する。手動実行（Actions → deploy → Run workflow）は既定で `dry_run`（ビルドと `wrangler deploy --dry-run` のみ）になる。
+- `release/**` の配備は `production`、`develop` ブランチの配備は `develop` の環境の設定を使う。
 - `publish`・`unpublish` は可視フラグを切り替えた後に画面へ反映するため、再配備を起動する。手動起動は `gh workflow run deploy.yaml --ref <ブランチ> -f dry_run=false`。本番は最新の `release/**` ブランチ、develop は `develop` を指定する。CLI は配備の完了を確認しないため、運用者が完了を確認する。
 - `dev/**` への push で `.github/workflows/preview.yaml` が develop 用の Worker の Preview を作る（`wrangler preview`。ブランチ名は 54 文字以内で、XXXX は 50 文字以内。develop が一度配備済みであること）。同じブランチへ再 push しても URL は変わらない。
+- `dev/**` のプレビューは `develop` の環境の設定を使う。
 - ブランチと配備先の Worker・ドメインの対応の正本は `.branch-release-workflow.json` の `deploy.targets` と `preview`（5.3）。この表はその写しで、変えるときは宣言を先に直す。
 - `release/**` はすべて同じ本番の Worker・D1・R2 に配備するため、配備は直列化している。古いリリースへの再 push で本番を巻き戻さないよう、新しい名前でリリースを切る。本番へのリリースは明示的な依頼に基づいて行う。
 - `wrangler preview` では Cron が動かない。予約の自動投稿は develop 環境（`https://develop.<SITE_HOST>`）で確認する。D1・R2 は本番と別なので、本番の予約には触れない。
 
 ### 5.2 CI の流れ（deploy.yaml）
 
-1. 宣言の `deploy.brwSource`（`nekono-dev/branch-release-workflow` の `main`）から BRW を取得する。
-2. `brw render-wrangler --target <配備先> --write` が、`config/wrangler.template.jsonc` から `wrangler.jsonc` を作る。BRW は宣言どおりに Worker 名（`skyshare` / `skyshare-develop`）・独自ドメイン（`<SITE_HOST>` / `develop.<SITE_HOST>`。develop はプレビュー用に `previews_enabled`）・`workers_dev` / `preview_urls` を書く。続けて renderHook の `scripts/config/render-deploy-config.mjs` が、GitHub の Variables から `config/production.json` と vars・develop 用の D1・R2（名前と ID）・`_legacy/frontend/.env.production` を加える。必須の値が無ければ異常終了する（誤配備の防止）。
-3. D1 のマイグレーション（`migrations/`）を、その D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。
-4. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。
-5. ビルドと配備。
+1. 先に配備先を決める `resolve`、テストと型検査の `verify`、E2E の `e2e`、共有設定を調べる `survey-config-guard` が動く。`resolve` は `release/**` を `production`、`develop` を `develop` とし、それ以外は配備先なしにする。門番は環境の設定を使わず、リポジトリまたは組織の変数に `SURVEY_CONFIG` が残っていれば失敗する。これらがすべて成功し、配備先がある場合だけ、同じ名前の GitHub Environment を使う `deploy` に進む。
+2. 宣言の `deploy.brwSource`（`nekono-dev/branch-release-workflow` の `main`）から BRW を取得する。
+3. `brw render-wrangler --target <配備先> --write` が、`config/wrangler.template.jsonc` から `wrangler.jsonc` を作る。BRW は宣言どおりに Worker 名（`skyshare` / `skyshare-develop`）・独自ドメイン（`<SITE_HOST>` / `develop.<SITE_HOST>`。develop はプレビュー用に `previews_enabled`）・`workers_dev` / `preview_urls` を書く。続けて renderHook の `scripts/config/render-deploy-config.mjs` が、GitHub の Variables から `config/production.json` と vars・develop 用の D1・R2（名前と ID）・`_legacy/frontend/.env.production` を加える。必須の値が無ければ異常終了する（誤配備の防止）。
+4. ビルドする。対象の GitHub Environment の `SURVEY_CONFIG` だけをビルドに渡す（`release/**` は `production`、`develop` は `develop`）。ビルドには設定生成と、結果ページ用に R2 から公開済みの統計を読む処理も含む。
+5. `npx wrangler deploy --dry-run` で Cloudflare への配備を検証する。手動実行で `dry_run` が `true` の場合は、ここまでで終了し、D1 マイグレーション・Worker の配備・シークレット登録は行わない。
+6. D1 のマイグレーション（`migrations/`）を、その D1 に適用する。プレビューは develop の D1 を使うため、スキーマを変えるブランチは develop へ取り込んでから確認する。手動実行では `dry_run` が `false` のときだけ適用する。
+7. Worker を配備する。push では実行し、手動実行では `dry_run` が `false` のときだけ実行する。
+8. `scripts/secrets/ensure-worker-secrets.mjs` が、未登録の Worker のシークレットだけを生成して登録する（6.4）。push と `dry_run` が `false` の手動実行で動き、登録済みの値は上書きしない。
 
 ローカルでマイグレーションを試すには `npx wrangler d1 migrations apply DB --local` を実行する（`.dev.vars` の鍵は `npm run setup:local` が作る）。マイグレーションは、`release/**` 以外のブランチ（develop・main・dev/*）では `migrations/0001_initial.sql` だけにする。develop と main は運用の追加を考慮せず、始めの状態から構築できるようにしておく。構造を変えるときは `0001` を直接編集し、develop の D1（とプレビューが使う同じ D1）を作り直す。`0002` 以降を積んでよいのは `release/**` だけで、develop・main へは持ち込まない（`scripts/git/check-migrations.mjs`、`npm run test:migrations` が、コミット前・`test:all`・CI の `e2e` で検査する）。本番の D1 は未作成で、初回の `release/*` は空の DB へ `0001` を適用する。過去の分割マイグレーションや編集前の `0001` を適用した DB は、新規 DB に作り直してから適用する。
 
@@ -247,11 +254,11 @@ gh variable list -R <owner>/<repo> # 登録できたか確認する
 
 ### 5.4 main への取り込み前のアンケート除去
 
-main へのマージまたは取り込み（PR の作成を含む）を依頼されたら、マージ前にローカルで `npm run survey -- prune --dry-run` を実行して対象を確認し、`npm run survey -- prune` で除去して結果の 1 行を報告する（手順は `.claude/skills/survey-run/SKILL.md`）。`prune` は、本番と develop の目録を読み直し、両方で集計済みの終了済みアンケートだけを設定から除く。片方に記録がない項目は保持する。`remove <ID>` は個別の除去で、開始前のアンケートは集計の有無に関わらず除去でき、開催中は拒否され、終了済みは両方で集計済みのときだけ除去できる。除去は、終了の翌日以降（日次の枠が 1 回以上動いた後）に行う。除去の前に、Worker の日次の記録（Cloudflare のログ）に、アンケートの回答の削除の失敗が出ていないことを確かめる。これは削除の失敗に早く気づくための補助で、除去の安全性の前提ではない（設定から外れた終了済みの識別子の残存回答は、翌日以降の日次の枠が片付ける）。除去後に設定が空なら `SURVEY_CONFIG` 変数そのものを削除する。
+main へのマージまたは取り込み（PR の作成を含む）を依頼されたら、本番の取り込み前に `npm run survey -- prune --env production --dry-run` で対象を確認し、`npm run survey -- prune --env production` で除去して結果の 1 行を報告する（手順は `.claude/skills/survey-run/SKILL.md`。Codex は `.agents/skills/survey-run/`）。`prune` は指定環境の目録に記録がある終了済みアンケートだけを、その環境の設定から除く。指定環境の目録に記録がない項目は残り、開始前・開催中のアンケートも除去しない。`remove <ID> --env <環境>` は個別の除去で、開始前は除去でき、開催中は拒否され、終了済みは指定環境の目録に記録があるときだけ除去できる。develop の設定の除去は本番の取り込みと独立している。
 
-開催中のアンケートを取り下げる場合は、同じ ID で締切を前倒しして更新し、更新後の設定を本番と develop の両方へ配備する。設定の更新だけでは受付は止まらない。日次集計を待ち、両環境の `status --env` で `empty`・`hidden`・`published` を確認してから `remove` または `prune` を行う。除去時にも両環境の目録を読み直す。
+除去は、終了の翌日以降（日次の枠が 1 回以上動いた後）に行う。除去の前に、Worker の日次の記録（Cloudflare のログ）に、アンケートの回答の削除の失敗が出ていないことを確かめる。これは削除の失敗に早く気づくための補助で、除去の安全性の前提ではない（設定から外れた終了済みの識別子の残存回答は、翌日以降の日次の枠が片付ける）。除去後に設定が空なら、指定した環境の `SURVEY_CONFIG` 変数を削除する。
 
-`develop` の目録に記録がなく `kept` または拒否になった場合は、記録された期間の違いではなく、develop で未集計である。`gh workflow run deploy.yaml --ref develop -f dry_run=false` で `develop` を再配備し、翌日の日次の枠を待つ。目録の取得失敗は認証・接続・形式を直して再実行する。本番のビルドは `SURVEY_CONFIG` を読むため、除去で変数が更新された場合は、その更新が本番の配備より先に反映されるようにする。除去には運営者のローカル認証済み CLI を使い、CI に変数の書き込み権限は与えない。除去に失敗したとき、または対象を確認できず保持したときは、その結果を利用者に伝える。
+未集計で `kept` または拒否になった場合は、未集計と表示された環境へその環境の設定を配備し、翌日の日次集計を待ってから同じ環境の `status --env <環境>` で確認する。目録の取得失敗は認証・接続・形式を直して再実行する。除去には運用者のローカル認証済み CLI を使い、CI に変数の書き込み権限は与えない。除去に失敗したとき、または対象を確認できず保持したときは、その結果を利用者に伝える。
 
 ### 5.5 本番の CPU 時間・エラーの確認
 
@@ -290,22 +297,52 @@ $EDITOR config/production.json
 - 登録されているが `config/production.json` に無い変数は警告だけ出し、削除しない。`SURVEY_CONFIG` は `npm run survey` が管理するため対象外。
 - 書き込み権限が無い人（コントリビュータ）は、登録をスキップする（エラーにはならない）。
 
-| 名前                             | 必須 | 内容                                                                             |
-| -------------------------------- | ---- | -------------------------------------------------------------------------------- |
-| `SITE_HOST`                      | 必須 | 公開するドメイン（例: `skyshare.example.com`）。develop は `develop.<SITE_HOST>` |
-| `PUBLIC_LEGACY_BACKEND_ENDPOINT` | 必須 | _legacy 版 backend のエンドポイント                                              |
-| `PUBLIC_DEFAULT_ATP_SERVICE`     | 必須 | ATP サービスの URL                                                               |
-| `PUBLIC_NODE_ENV`                | 必須 | `production`（Cookie に Secure 属性を付ける）                                    |
-| `PUBLIC_OGP_EXTRACTOR_API`       | 必須 | OGP Extractor の URL                                                             |
-| `PUBLIC_PLC_DIRECTORY_BASE_URL`  | 必須 | PLC ディレクトリサービスの URL                                                   |
-| `PUBLIC_OPERATOR_NAME`           | 必須 | 運営者の名称（個人なら活動名でよい）。プライバシーポリシーに載る                 |
-| `PUBLIC_OPERATOR_EMAIL`          | 必須 | 個人情報の問い合わせ窓口のメールアドレス                                         |
-| `PUBLIC_OPERATOR_BLUESKY_HANDLE` | 任意 | 窓口の Bluesky ハンドル（`@` なし）                                              |
-| `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | 最終改定日（`YYYY-MM-DD`）。本文を改定したら更新する                             |
-| `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さない             |
-| `SURVEY_CONFIG`                  | 任意 | 題・説明のないアンケートの JSON（3.2）。`npm run survey` が管理する              |
+| 名前                             | 必須 | 内容                                                                                    |
+| -------------------------------- | ---- | --------------------------------------------------------------------------------------- |
+| `SITE_HOST`                      | 必須 | 公開するドメイン（例: `skyshare.example.com`）。develop は `develop.<SITE_HOST>`        |
+| `PUBLIC_LEGACY_BACKEND_ENDPOINT` | 必須 | _legacy 版 backend のエンドポイント                                                     |
+| `PUBLIC_DEFAULT_ATP_SERVICE`     | 必須 | ATP サービスの URL                                                                      |
+| `PUBLIC_NODE_ENV`                | 必須 | `production`（Cookie に Secure 属性を付ける）                                           |
+| `PUBLIC_OGP_EXTRACTOR_API`       | 必須 | OGP Extractor の URL                                                                    |
+| `PUBLIC_PLC_DIRECTORY_BASE_URL`  | 必須 | PLC ディレクトリサービスの URL                                                          |
+| `PUBLIC_OPERATOR_NAME`           | 必須 | 運営者の名称（個人なら活動名でよい）。プライバシーポリシーに載る                        |
+| `PUBLIC_OPERATOR_EMAIL`          | 必須 | 個人情報の問い合わせ窓口のメールアドレス                                                |
+| `PUBLIC_OPERATOR_BLUESKY_HANDLE` | 任意 | 窓口の Bluesky ハンドル（`@` なし）                                                     |
+| `PUBLIC_PRIVACY_REVISED_AT`      | 必須 | 最終改定日（`YYYY-MM-DD`）。本文を改定したら更新する                                    |
+| `PUBLIC_GA_MEASUREMENT_ID`       | 任意 | Google アナリティクスの測定 ID（`G-XXXX`）。未登録ならタグを出さない                    |
+| `SURVEY_CONFIG`                  | 任意 | GitHub Environments の `production`・`develop` に個別に置き、専用 CLI で管理する（3.2） |
 
 Worker・D1・R2 の名前は固定（6.5）。D1 は `database_id` をリポジトリに書かず名前で解決する（develop の配備は、生成する設定に名前から引いた ID を入れる。D1 を作り直しても、古い ID を引き継がない）。プライバシーポリシーの本文（`src/lib/i18n/messages/*/privacy.ts`）は実装に合わせて書いてあるため、実装を変えたら本文も見直す。lexicon の NSID（`dev.nekono.skyshare.*`）は、運用者が違っても Entry を相互に読めるよう変えない。
+
+#### 6.2.1 アンケートの設定（環境ごとの変数）
+
+アンケートの設定 `SURVEY_CONFIG` は GitHub Environments の変数として環境ごとに管理する。`production` は `release/**`、`develop` は `develop` と `dev/**` の配備ブランチに制限する。`release/**` のビルドは `production`、`develop` と `dev/**` のプレビューは `develop` の設定を使う。環境作成と変数の登録は、運用者が手元で認証済みの `gh` を使って行う。
+
+登録・状態確認・公開状態の変更・除去には専用 CLI（`npm run survey -- ... --env <環境>`）を使う。設定や公開状態を CLI 以外で直接変更しない。例外は、この移行時の production への設定登録、develop の旧データ削除、共有設定の削除である。環境の設定値は秘密ではなく、通常のビルドログの `Run build` ステップの `env:` 見出しに表示される。門番は値を出力せず、共有設定がある場合は次の固定文だけを出してビルドと配備を止める。
+
+```text
+error: shared-config: リポジトリ（または組織）の変数 SURVEY_CONFIG が残っています。削除してください（DEVELOP.md 6.2.1）
+```
+
+共有設定は環境が無いジョブからも見え、対象環境の変数が無いときビルドへ渡る可能性がある。そのため新しい配備の仕組みはビルド前に門番で検出して停止する。共有設定を残さず、リポジトリ変数と参照できる組織の同名変数を削除する。
+
+共有設定からの移行は次の順に行う（2026-11-18 時点で(a)から旧ワークフローによる再配備・R2確認まで実施済み）。production への登録と一致確認、develop 環境の作成・ブランチ制限が共有設定削除の前提である。環境の設定がまだ無い状態では共有設定がどのジョブにも見えるため、削除より先に設定を production に置かなければ本番の設定を失うおそれがある。develop 環境も先に作成して制限し、取り込み後の最初のプレビューが誤った環境を自動作成しないようにする。
+
+1. **(a) 設定の退避（実施済み）**: 現在の設定を権限を絞ったリポジトリ外の一時ファイルへ退避する。本文を端末やコマンド出力に表示せず、退避後の確認にも本文を出さない。
+2. **(b) production 環境の作成（実施済み）**: 環境を作り、配備ブランチを `release/**` に制限する。
+3. **(c) production 登録と develop 環境の作成（実施済み）**: 退避した設定を production の `SURVEY_CONFIG` に登録し、削除前に旧リポジトリ変数との一致をハッシュで確認する。本文やハッシュの実値は記録しない。続けて develop 環境を作成し、配備ブランチを `develop`・`dev/**` に制限する。production の設定は最初のリリースから使う。本番にはアンケート機能をまだ配備していない。
+4. **(d) 共有設定の削除、develop の再配備と旧データ確認、新しい実装の develop への取り込み（取り込み前までは実施済み。取り込みは未実施）**: リポジトリの共有変数を削除し、このリポジトリから参照できる組織の同名変数も無いことを確かめる。続けて旧ワークフローで develop を手動再配備し、設定なしで成功することを確認する。再配備後、develop の環境設定が残っていれば削除し、`skyshare-survey-results-develop` の旧データを確認する。本番の設定と `skyshare-survey-results` には触れない。
+   - wrangler にオブジェクト一覧機能はない。R2 の目録と退避した設定の識別子の和集合から対象を導く。キーは目録が `index.json`、結果が `surveys/<id>.json`、可視フラグが `visibility/<id>.json`。目録が無い場合も退避設定の識別子を確認し、識別子と対象を照合してから目録を削除する。対象オブジェクトは `wrangler r2 object delete <bucket>/<key> --remote` で削除し、取りこぼしがないか Cloudflare ダッシュボードの画面でも確認する。今回の確認では目録がなく、設定の識別子に対応する結果・可視フラグもなかったため、削除対象はなかった。
+   - 上の再配備・旧データ確認までを、新しい門番付きワークフローと CLI の develop への取り込み前に行った（実施済み）。続けて、これらの実装を develop に取り込む（未実施）。共有設定の削除後から取り込みまでは develop にアンケート機能が載らないが、共有設定によってビルドが停止するのを避けられる。
+5. **(e) 取り込み後の状態確認と退避削除**: 新しい実装の取り込み後、`npm run survey -- status --env production` で移行したアンケートが表示され、`npm run survey -- status --env develop` で `no surveys` となることを確認する。その後に退避ファイルを削除する。結果が食い違う場合は環境の設定と develop の削除対象を調べる。本番の復旧が必要なら退避から production へ戻し、共有設定は復活させない。退避削除後、develop に `npm run survey -- add --file <下書きファイル> --env develop` でサンプルを登録し、`survey-operations` 4.2 の実機確認を行う。
+
+環境未作成時の書き込みは、何も変更せず次の固定文で失敗する。
+
+```text
+error: no-environment: GitHub の環境が未作成か、権限が足りません。DEVELOP.md 6.2.1 の手順で環境を作り、gh auth status で権限を確かめてください
+```
+
+環境が未作成なら GitHub で環境を作成し、上記の配備ブランチ制限を設定する。環境と制限を確認したうえで `gh auth status` を実行し、認証と権限を確かめて再実行する。リリース時に権限不足時の応答と実際の `release/**` との一致を確認する。
 
 ### 6.3 Secrets（CI が配備に使う）
 

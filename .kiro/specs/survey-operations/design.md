@@ -14,6 +14,8 @@
 - 出力の形式と「秘密を出さない」規則、手元の認証だけで動く性質を保つ。
 - `survey-results-aggregation` が廃止する保持期限の判定への依存を、この CLI から無くす。
 
+> 2026-11-18 追補: survey-env-config が置き換え。設定と判断はコマンドで指定した `production` または `develop` に限定し、両環境共有の設定を前提としない。
+
 ### Non-Goals
 
 - 統計ファイルの形式・集計・回答の削除（`survey-results-aggregation`）。
@@ -21,6 +23,8 @@
 - 設定の形式そのものの変更（`surveys`。この spec は変更後の形式に従う）。
 - 配備の完了・画面への反映の確認、反映待ちの表示（Decision 5）。
 - 移行の手順（アンケート機能は未公開のため作らない）。
+
+> 2026-11-18 追補: survey-env-config が置き換え。環境ごとの設定と移行手順は `.kiro/specs/survey-env-config/design.md` の要件 6・7 に従う。
 
 ## Boundary Commitments
 
@@ -40,6 +44,8 @@
 - 設定の形式（`SurveyConfigSchema`）と、`tests/fixtures/survey/` の固定データ・`SurveyDialog`・辞書の題・説明の廃止（`surveys`）。
 - `npm run survey:render`、CI の設定、結果の保管先の作成、`deploy.yaml` の変更。
 - 孤立した回答（設定から集計前に消えたアンケートの行）の探索と削除。
+
+> 2026-11-18 追補: survey-env-config が置き換え。環境ごとの設定管理・移行、CI の環境選択と共有設定の門番は survey-env-config の対象とし、この spec の対象外という境界を更新する。
 
 ### Allowed Dependencies
 
@@ -157,9 +163,13 @@ flowchart TD
   N -- はい --> P[設定を書く]
 ```
 
+> 2026-11-18 追補: survey-env-config が置き換え。現在の add は指定環境の設定と目録だけを読む。
+
 - 目録の取得と形式検証は dry-run でも省かない。キーが無いときは空の目録として扱うが、取得失敗・形式不正は登録を止める。設定が空の場合も両環境を読む。
 - 新規登録の可否は、設定内の全識別子が両方の目録に存在するかだけで決める。開始前のアンケートも対象。設定に残る集計済みの過去分は新規登録を妨げない。
 - 識別子の発行は新規登録の検証と可否確認を通過した後だけ行う。複数の `add` は運用者が直列に実行する。
+
+> 2026-11-18 追補: survey-env-config が置き換え。`add --env <環境>` は指定環境の設定・目録だけを使い、新規登録もその環境の全識別子が同じ環境の目録にある場合だけ認める。
 
 ### 公開の切り替え（publish / unpublish）
 
@@ -223,7 +233,11 @@ flowchart TD
   H --> I
 ```
 
+> 2026-11-18 追補: survey-env-config が置き換え。現在の prune・remove は指定環境の設定と目録だけを読み、同環境の設定だけを書き換える。
+
 - 目録が無い（`index.json` が存在しない）ことは「何も集計されていない」として扱い、読めない・検証に通らないこととは区別する。
+
+> 2026-11-18 追補: survey-env-config が置き換え。図の旧い環境横断の流れはそのまま残す。現在は `prune --env <環境>` と `remove <識別子> --env <環境>` が指定環境の設定と目録だけを読み、除去判断と書き込みを同じ環境で完結させる。
 
 ## Requirements Traceability
 
@@ -335,6 +349,8 @@ flowchart TD
 | 10.3        | 時刻・期間・目録だけで判定                       | lifecycle                    | `surveyStage`                                                   | 段階           |
 | 10.4        | 共有のスキーマと判定で検証                       | remote, cli                  | `parseSurveyIndex`, `resultMatchesIndexEntry`, `isVisible` ほか | -              |
 
+> 2026-11-18 追補: survey-env-config が置き換え。追跡表の共有設定・両環境を前提とする登録・除去の各行は、6 コマンドの `--env` 必須と指定環境だけの判断に読み替える。
+
 ## Components and Interfaces
 
 | Component | Domain/Layer | Intent                                     | Req Coverage                                                                                                                     | Key Dependencies (P0/P1)                        | Contracts |
@@ -384,6 +400,8 @@ export const parseArgs = (argv: readonly string[]): ParsedArgs
 - Postconditions: `id` は `idSchema` に通った値だけ（結果の行に出してよい）。`--repo` は `owner/repo` の形だけ。同じ指定の重複・未知の指定・余分な位置引数は `ok: false`。`status` の `--dry-run`、`add`・`prune`・`remove` の `--env`・`--no-deploy` は `ok: false`。`--force` は未知の指定として拒否する。
 - 使い方の文言は 1 行で、入力の値を含めない。
 
+> 2026-11-18 追補: survey-env-config が置き換え。6 コマンドすべてで `--env production|develop` を必須とし、欠落・不正値・重複は外部操作前に使い方の失敗とする。
+
 #### cli.ts
 
 | Field        | Detail                                                                               |
@@ -410,6 +428,7 @@ export const run: (
 ) => Promise<SurveyCliResult>
 ```
 
+<!-- prettier-ignore-start -->
 - 結果の行の形式（固定）:
   - `add: created|updated|unchanged <id> (surveys N, X/48 KB)`（現行のまま。`[dry-run] ` を先頭に付ける）
   - `status: env=<環境> surveys N, config X/48 KB` の次に、アンケートごとに 1 行 `  <id>  <段階>  closes <YYYY-MM-DD HH:mm> JST  <config|r2-only>`。可視フラグが不正な行の末尾には ` !invalid-visibility` を付ける（段階は `hidden`。要件 3.15）。アンケートが無いときは `status: env=<環境> no surveys`。
@@ -418,10 +437,17 @@ export const run: (
   - `remove: removed <id> (surveys A -> B)`。
   - `add` の新規登録拒否: `error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。`。この文面はテストで固定する。
   - 開催中の更新で締切を前倒しできない場合: `error: refused: 前倒しできません。自然な終了と集計を待ってください。`。指定締切の前倒し条件を満たさず、かつ開始日時より後で最も早い日本時間 0 時が現在の締切以後ならこの行を返す。この文面もテストで固定する。
+
   - 配備先を決められない場合（本番にリリースブランチが無い）: `error: no-release: 本番のリリースブランチがありません`（実装時の決定）。何も書かない。
   - 配備を省く dry-run: `[dry-run] publish: would publish <id> (<環境>); deploy skipped (--no-deploy)`（実装時の決定。`unpublish` も同じ形）。
   - 失敗: `error: usage|invalid|auth|unavailable|too-large|not-found|refused|no-release|deploy: <固定の文言>`。`refused` は `<id> is <段階>` と理由の固定語（`results would be lost`・`nothing to publish`・`not aggregated: <環境>`）または上記の `add` 専用の固定文言。`deploy` は「可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる」。
+<!-- prettier-ignore-end -->
+
 - Postconditions: 識別子・段階・環境・数値・日時以外の入力由来の値を行に含めない。設定の読み込みが不正なら `error: invalid`（位置と理由だけ。現行どおり）。
+
+> 2026-11-18 追補: survey-env-config が置き換え。設定の変数の大きさの上限は環境ごとに 48,000 バイト（1 KB = 1000 バイト、要件 3.7）とし、各環境の設定に個別に適用する。
+
+> 2026-11-18 追補: survey-env-config が置き換え。新規登録の拒否文は要件 4.4 の固定文 `error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。` とし、拒否判定は指定環境の設定と目録だけで行う。
 
 ### 変換と判定
 
@@ -509,6 +535,8 @@ export const latestReleaseBranch: (
 export const formatJst: (iso: string) => string
 ```
 
+> 2026-11-18 追補: survey-env-config が置き換え。`decidePrune`・`decideRemove` は指定環境から得た単一の集計済み識別子集合を受け取る。`PruneKept` と `RemoveDecision` に不足環境一覧を持たせず、終了済みは指定環境の目録に識別子が無ければ除去しない。
+
 - 規則: 時刻が開始より前は `upcoming`、開始以後・終了より前は `active`。終了以後は、`aggregation` が無ければ `closed`、`empty` なら `empty`、`result` なら `visibility` が `visible` のとき `published`、`hidden`・`invalid` のとき `hidden`（`invalid` の行には `invalidVisibility` を立てる）。終了時刻ちょうどは終了済み（`period.ts` の「終了時刻を含まない」と同じ）。
 - `decidePrune` は、終了済み（`now >= closesAt`）で、`production`・`develop` の両方に識別子があるものを `remove` に入れる。終了済みで足りない環境があるものは `kept`（`pending` に足りない環境を、`production`・`develop` の順で）。開始前・開催中は結果に現れない。
 - `decideRemove` は、`now < opensAt` なら `remove`、`opensAt <= now < closesAt` なら `refused: active`、終了済みは `decidePrune` と同じ条件で `remove` か `refused: not-aggregated`。
@@ -555,6 +583,8 @@ export type SurveyRemote = {
 }
 ```
 
+> 2026-11-18 追補: survey-env-config が置き換え。設定の `readConfigValue`・`writeConfigValue`・`deleteConfigValue` は環境を必須引数として受け、指定した GitHub Environment の `SURVEY_CONFIG` だけを読み書き・削除する。
+
 - `RemoteError` の種類は現行の `auth`・`unavailable`・`parse` のまま。バケット名は `config/wrangler.template.jsonc` の `SURVEY_RESULTS` の `bucket_name` から読み、`develop` は `-develop` を付ける（`scripts/config/render-wrangler.mjs` と同じ規則）。宣言が無ければ `parse`。
 - R2 の読み取り: `wrangler r2 object get <バケット>/<キー> --remote --file <一時ファイル>`。一時ディレクトリを作って読み、成功・失敗のどちらでも消す。「キーが無い」と判定できる標準エラーのときだけ `undefined`。ほかの失敗は `auth` または `unavailable`。
 - R2 の書き込み: 可視フラグの本体を `parseSurveyVisibility` で検証してから、`wrangler r2 object put <バケット>/visibility/<id>.json --remote --file <一時ファイル> --content-type application/json`。キーは `visibilityKey` で作り、ほかのキーを組み立てない。
@@ -592,6 +622,9 @@ export type SurveyRemote = {
 - **add/config**: UUID v4 が `idSchema` に通ること、ID なしの下書きは内容が同じでも既存を更新しないこと、不正な指定 ID と設定に無い指定 ID がそれぞれ `invalid`・`not-found` で拒否されることを確認する。開始前・開催中・終了済みの設定と、目録が両方・片方・どちらにも無い場合の可否を確認する。空の設定でも目録取得失敗・形式不正なら登録しない。dry-run でも同じ判定をする。日付の実在性、日本時間 0 時への変換、登録時刻以下・開始日時以下の締切拒否、当日開始と日をまたいだ開始での前倒し、1 日だけのアンケートや当日開始で前倒しできない場合の固定文、終了済み再開と集計済み締切変更の拒否を確認する。新規登録拒否の固定文も完全一致で確かめ、拒否時は固定の 1 行だけで下書き本文を出さない。
 - **args**: 6 コマンドの正しい指定が通る（1.1）、未知のコマンド・足りない・余分・重複・`--force` が使い方の失敗（1.2, 7.6）、`status`・`publish`・`unpublish` の `--env` の欠落と不正値（2.1, 2.2）、`add`・`prune`・`remove` の `--env`（2.4, 2.5）、`--repo` の形式（1.7）、`--dry-run`・`--no-deploy` の受理（1.6, 5.7）。
 - **lifecycle**: 段階の境界（開始ちょうど・終了ちょうど。3.3–3.8）、集計済みでも終了前は時刻が優先（段階の遷移の注記）、`buildStatusRows` で設定に無い目録の行・並び順・題を持たないこと（3.9, 3.10, 4.10）、`decidePrune` の組み合わせ（両方・片方・どちらも無い・開始前・開催中。6.1, 6.3, 6.4, 6.6）、`decideRemove` の 3 通り（7.1–7.4）、`latestReleaseBranch`（1 本・複数・同時刻・空。5.3）、`formatJst`（3.2）。
+
+> 2026-11-18 追補: survey-env-config が置き換え。両環境の除去組み合わせテストは指定環境の集計有無（あり・なし）を検査するケースに置き換える。6 コマンドを両環境それぞれで実行し、他方の環境へアクセスしないことも確認する。
+
 - **config**: 新しい下書きの登録・更新・開始日時の保持・変更なし・容量超過（8.1, 8.4–8.7）、旧形式の下書き（`legacy-title.json`）が `invalid`（8.3）、題・説明を含まない出力（8.2）。
 - **remote**: 偽の `RunCommand` で、`wrangler r2 object` と `gh workflow run`・`gh api` の引数の配列を確かめる（5.1, 4.1, 4.2, 5.3）。可視フラグを書くキーが `visibility/<id>.json` だけであること（4.9）。「キーが無い」と認証の失敗と利用不可の分類、標準エラーと本文が例外に載らないこと（1.5, 1.9）。`develop` のバケット名に `-develop` が付くこと。D1 の呼び出しが無いこと（6.2, 10.2）。形式が不正な目録が `parse` になること（3.13, 10.4）。可視フラグが無い・公開・非公開・不正の 4 通りが `hidden`・`visible`・`hidden`・`invalid` になること（3.7, 3.8, 3.15）。
 - **cli**（偽の `SurveyRemote`）: `status` の表と使用量・アンケートなし・目録の失敗・不正な可視フラグの行に `!invalid-visibility` が付いて段階が `hidden` であること（3.1, 3.11–3.15）、`publish`・`unpublish` の成功・拒否（`upcoming`・`active`・`closed`・`empty`）・識別子なし・結果の検証失敗・目録と一致しない結果での `publish` の `invalid`・壊れた結果での `unpublish`・不正な可視フラグでの `publish`・`unpublish` の上書き・既に望む状態で配備だけ・`--no-deploy`・`--dry-run`・本番のブランチが無いときに何も書かないこと・配備の失敗後の文言（4.1–4.11, 5.1–5.9）、`prune` の除去・残す・両環境・片方の目録の失敗で何も変えない・全除去で変数を削除・`nothing to remove`・`kept` の行の案内（6.1–6.9, 2.3）、`remove` の開始前・開催中・終了済み（集計済みと未集計）・設定に無い・目録の失敗（7.1–7.8）、すべての失敗の行に入力の本文や外部の文言が出ないこと（1.3–1.5, 8.8）。
@@ -646,11 +679,15 @@ export type SurveyRemote = {
 - 設定は両環境が読み、集計は環境ごとの Worker が設定を見て行う。一方だけ確かめて外すと、他方の回答が孤立して二度と集計されない。`--env` を取らなければ、取りこぼしが手順に残らない。R2 を書き換えるのは `publish`・`unpublish` だけで、そこでは `--env` を必須にしている。これは、ブリーフの「R2 を扱うコマンドに `--env` 必須」の `prune` の部分の調整であり、ユーザーが 2026-11-13 に確認して決定済みである（理由は上のとおり: 一方の環境だけ確かめると、他方の回答が孤立して二度と集計されないため）。
 - 片方の環境が使えないと、`prune`・`remove` は進まない。結果を失わないことを優先する。
 
+> 2026-11-18 追補: survey-env-config が置き換え。共有設定と `--env` なしの判断を廃止し、両コマンドは `--env` を必須として指定環境の設定・目録だけで判断する。
+
 ### Decision 7: 開催中は締切を前倒しして集計を待つ
 
 - `remove` は開催中の直接削除を拒否し、強制指定は持たない。開催中は同じ識別子の `add` で締切だけを前倒しする。指定締切は下書きの日付の日本時間 0 時で、現在の締切より前かつ元の開始日時より後なら受理する。「元の開始日時より後で最も早い日本時間 0 時」は skill が提案する目安であり、CLI の受理条件ではない。
 - 設定を更新しただけでは、既に配備された設定を使う受付は止まらない。更新した設定を本番と develop の両方へ配備し、日次集計後に両環境の `status --env` で `empty`・`hidden`・`published` を確認し、`remove` または `prune` する。除去コマンドはその時点でも両方の目録を読み直す。skill と DEVELOP.md に順序を書く。
 - 終了済みのアンケートの再開と、いずれかの目録に識別子があるアンケートの締切変更は拒否する。集計済みの判定は識別子の有無だけで、期間の一致を条件にしない。
+
+> 2026-11-18 追補: survey-env-config が置き換え。締切前倒し後の配備、日次集計、状態確認、除去は指定環境だけで行う。
 
 ### Decision 8: すべての書き換えのコマンドに `--dry-run` を持たせる
 

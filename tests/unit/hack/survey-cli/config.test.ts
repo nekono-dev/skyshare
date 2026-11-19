@@ -338,23 +338,119 @@ describe("addSurvey", () => {
         expect(result.status).toBe("invalid")
     })
 
-    it("reports serialized capacity and uses UTF-8 byte length", () => {
+    it("allows a UTF-8 serialized config at exactly 48,000 bytes", () => {
+        expect(VARIABLE_LIMIT_BYTES).toBe(48000)
+        const uuid = "123e4567-e89b-42d3-a456-426614174000"
+        const sizedDraft = (ja: string) => ({
+            ...newDraft,
+            questions: [
+                {
+                    ...newDraft.questions[0],
+                    title: { ja, en: "title" },
+                },
+            ],
+        })
+        const emptyTitleConfig = {
+            surveys: [
+                {
+                    ...newDraft,
+                    questions: sizedDraft("").questions,
+                    id: uuid,
+                    opensAt: registeredAt.toISOString(),
+                    closesAt: new Date(
+                        `${newDraft.closesAt}T00:00:00+09:00`,
+                    ).toISOString(),
+                },
+            ],
+        } as unknown as SurveyConfig
+        const paddingBytes =
+            48000 - byteLength(serializeConfig(emptyTitleConfig))
+        const multiByteCount = Math.floor(paddingBytes / 3)
+        const padding =
+            "あ".repeat(multiByteCount) + "a".repeat(paddingBytes % 3)
+        const draft = sizedDraft(padding)
+        const serialized = serializeConfig({
+            surveys: [
+                {
+                    ...draft,
+                    id: uuid,
+                    opensAt: registeredAt.toISOString(),
+                    closesAt: new Date(
+                        `${newDraft.closesAt}T00:00:00+09:00`,
+                    ).toISOString(),
+                },
+            ],
+        } as unknown as SurveyConfig)
         expect(byteLength("あ")).toBe(3)
-        expect(VARIABLE_LIMIT_BYTES).toBe(48 * 1024)
+        expect(byteLength(serialized)).toBe(48000)
+
         const result = addSurvey(
             { surveys: [] },
-            {
-                ...newDraft,
-                questions: [
-                    {
-                        ...newDraft.questions[0],
-                        title: { ja: "あ".repeat(50000), en: "long" },
-                    },
-                ],
-            },
+            draft,
             registeredAt,
+            () => uuid,
         )
+
+        expect(result.status).toBe("created")
+    })
+
+    it("rejects a UTF-8 serialized config at 48,001 bytes", () => {
+        const uuid = "123e4567-e89b-42d3-a456-426614174000"
+        const emptyTitleConfig = {
+            surveys: [
+                {
+                    ...newDraft,
+                    questions: [
+                        {
+                            ...newDraft.questions[0],
+                            title: { ja: "", en: "title" },
+                        },
+                    ],
+                    id: uuid,
+                    opensAt: registeredAt.toISOString(),
+                    closesAt: new Date(
+                        `${newDraft.closesAt}T00:00:00+09:00`,
+                    ).toISOString(),
+                },
+            ],
+        } as unknown as SurveyConfig
+        const baseBytes = byteLength(serializeConfig(emptyTitleConfig))
+        const paddingBytes = 48001 - baseBytes
+        const padding =
+            "あ".repeat(Math.floor(paddingBytes / 3)) +
+            "a".repeat(paddingBytes % 3)
+        const draft = {
+            ...newDraft,
+            questions: [
+                {
+                    ...newDraft.questions[0],
+                    title: { ja: padding, en: "title" },
+                },
+            ],
+        }
+        const serialized = serializeConfig({
+            surveys: [
+                {
+                    ...draft,
+                    id: uuid,
+                    opensAt: registeredAt.toISOString(),
+                    closesAt: new Date(
+                        `${newDraft.closesAt}T00:00:00+09:00`,
+                    ).toISOString(),
+                },
+            ],
+        } as unknown as SurveyConfig)
+        expect(byteLength(serialized)).toBe(48001)
+
+        const result = addSurvey(
+            { surveys: [] },
+            draft,
+            registeredAt,
+            () => uuid,
+        )
+
         expect(result.status).toBe("too-large")
+        if (result.status === "too-large") expect(result.bytes).toBe(48001)
     })
 
     it("serializes surveys in a stable canonical order", () => {

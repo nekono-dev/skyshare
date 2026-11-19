@@ -7,7 +7,10 @@ import { createValidSurveyConfig } from "../../../fixtures/survey/config"
 import newDraft from "../../../fixtures/survey-operation/without-id.json"
 import updateDraft from "../../../fixtures/survey-operation/with-id.json"
 import { run } from "../../../../hack/survey-cli/cli"
-import type { SurveyRemote } from "../../../../hack/survey-cli/remote"
+import {
+    RemoteError,
+    type SurveyRemote,
+} from "../../../../hack/survey-cli/remote"
 
 const id = "survey-2026-a"
 const generatedId = "123e4567-e89b-42d3-a456-426614174000"
@@ -47,14 +50,14 @@ const makeRemote = (
     overrides: Partial<SurveyRemote> = {},
     calls: string[] = [],
 ): SurveyRemote => ({
-    async readConfigValue() {
+    async readConfigValue(_env) {
         calls.push("config")
         return configValue
     },
-    async writeConfigValue() {
+    async writeConfigValue(_env, _value) {
         calls.push("write")
     },
-    async deleteConfigValue() {
+    async deleteConfigValue(_env) {
         calls.push("delete")
     },
     async readIndex(env) {
@@ -84,7 +87,7 @@ const deps = (remote: SurveyRemote, extra: Record<string, unknown> = {}) => ({
 })
 
 describe("survey CLI add", () => {
-    it("allows an empty config after reading both indexes and issues an id only after validation", async () => {
+    it("allows an empty config and reads only the selected index", async () => {
         const calls: string[] = []
         const remote = makeRemote(
             {
@@ -103,21 +106,20 @@ describe("survey CLI add", () => {
             calls,
         )
         const createId = vi.fn(() => generatedId)
-        const result = await run(["add", "--file", "draft.json"], {
-            ...deps(remote),
-            createId,
-        })
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(remote),
+                createId,
+            },
+        )
         expect(result.lines[0]).toMatch(/^add: created /)
-        expect(calls).toEqual([
-            "config",
-            "index:production",
-            "index:develop",
-            "write",
-        ])
+        expect(calls).toEqual(["config", "index:develop", "write"])
         expect(createId).toHaveBeenCalledOnce()
     })
 
-    it("allows registration when every configured id exists in both indexes", async () => {
+    it("allows registration when every configured id exists in the selected index", async () => {
+        const calls: string[] = []
         const remote = makeRemote({
             async readConfigValue() {
                 const past = createValidSurveyConfig()
@@ -125,18 +127,24 @@ describe("survey CLI add", () => {
                 past.surveys[0]!.closesAt = "2026-11-01T00:00:00+09:00"
                 return JSON.stringify(past)
             },
-            async readIndex() {
+            async readIndex(env) {
+                calls.push(env)
                 return index(id)
             },
         })
-        const result = await run(["add", "--file", "draft.json"], deps(remote))
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote),
+        )
         expect(result.code).toBe(0)
         expect(result.lines).toHaveLength(1)
+        expect(calls).toEqual(["develop"])
     })
 
-    it("refuses when any configured id is missing from one environment, including a before-start survey", async () => {
+    it("refuses when a before-start configured id is missing from the selected index", async () => {
         const beforeStart = JSON.parse(configValue)
-        beforeStart.surveys[0].opensAt = "2026-11-20T00:00:00+09:00"
+        beforeStart.surveys[0].opensAt = "2026-11-17T00:00:00+09:00"
+        beforeStart.surveys[0].closesAt = "2026-11-19T00:00:00+09:00"
         const remote = makeRemote({
             async readConfigValue() {
                 return JSON.stringify(beforeStart)
@@ -146,17 +154,22 @@ describe("survey CLI add", () => {
             },
         })
         const createId = vi.fn(() => generatedId)
-        const result = await run(["add", "--file", "draft.json"], {
-            ...deps(remote),
-            createId,
-        })
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(remote),
+                createId,
+                readFile: () =>
+                    JSON.stringify({ ...newDraft, closesAt: "2026-11-16" }),
+            },
+        )
         expect(result.lines).toEqual([
-            "error: refused: 未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして両環境へ配備し、集計を待ってください。",
+            "error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。",
         ])
         expect(createId).not.toHaveBeenCalled()
     })
 
-    it("does not block on aggregated past surveys left in config", async () => {
+    it("treats a zero-response record as aggregated", async () => {
         const remote = makeRemote({
             async readConfigValue() {
                 const past = createValidSurveyConfig()
@@ -166,29 +179,39 @@ describe("survey CLI add", () => {
             },
             async readIndex() {
                 return {
-                    ...index(id),
+                    schemaVersion: 1 as const,
                     surveys: [
-                        { ...index(id).surveys[0]!, id: "survey-2026-a" },
+                        {
+                            id,
+                            opensAt: "2026-10-01T00:00:00+09:00",
+                            closesAt: "2026-11-01T00:00:00+09:00",
+                            outcome: "empty" as const,
+                        },
                     ],
                 }
             },
         })
-        const result = await run(["add", "--file", "draft.json"], deps(remote))
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote),
+        )
         expect(result.code).toBe(0)
     })
 
     it.each(["auth", "unavailable", "parse"] as const)(
         "fails closed on %s index read errors without exposing secrets",
         async kind => {
+            const writeConfigValue = vi.fn()
             const remote = makeRemote({
                 async readIndex(env) {
                     if (env === "develop")
                         throw Object.assign(new Error("BODY-SECRET"), { kind })
                     return undefined
                 },
+                writeConfigValue,
             })
             const result = await run(
-                ["add", "--file", "draft.json"],
+                ["add", "--file", "draft.json", "--env", "develop"],
                 deps(remote),
             )
             expect(result.code).toBe(1)
@@ -196,10 +219,12 @@ describe("survey CLI add", () => {
             expect(result.lines[0]).toMatch(
                 /^error: (auth|unavailable|invalid):/,
             )
+            expect(writeConfigValue).not.toHaveBeenCalled()
         },
     )
 
     it("rejects a returned index that does not pass the shared schema", async () => {
+        const writeConfigValue = vi.fn()
         const remote = makeRemote({
             async readIndex() {
                 return {
@@ -208,13 +233,18 @@ describe("survey CLI add", () => {
                     secret: "BODY-SECRET",
                 } as never
             },
+            writeConfigValue,
         })
-        const result = await run(["add", "--file", "draft.json"], deps(remote))
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote),
+        )
         expect(result.lines[0]).toMatch(/^error: invalid:/)
         expect(result.lines.join(" ")).not.toContain("BODY-SECRET")
+        expect(writeConfigValue).not.toHaveBeenCalled()
     })
 
-    it("dry-run performs both index checks and does not write or issue an id", async () => {
+    it("dry-run reads only the selected index and does not write or issue an id", async () => {
         const calls: string[] = []
         const remote = makeRemote(
             {
@@ -233,12 +263,15 @@ describe("survey CLI add", () => {
             calls,
         )
         const createId = vi.fn(() => generatedId)
-        const result = await run(["add", "--file", "draft.json", "--dry-run"], {
-            ...deps(remote),
-            createId,
-        })
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop", "--dry-run"],
+            {
+                ...deps(remote),
+                createId,
+            },
+        )
         expect(result.lines[0]).toMatch(/^\[dry-run\] add: created /)
-        expect(calls).toEqual(["config", "index:production", "index:develop"])
+        expect(calls).toEqual(["config", "index:develop"])
         expect(createId).not.toHaveBeenCalled()
     })
 
@@ -258,10 +291,13 @@ describe("survey CLI add", () => {
         })
 
         const dryRun = await run(
-            ["add", "--file", "draft.json", "--dry-run"],
+            ["add", "--file", "draft.json", "--env", "develop", "--dry-run"],
             deps(remote),
         )
-        const real = await run(["add", "--file", "draft.json"], deps(remote))
+        const real = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote),
+        )
 
         expect(dryRun.code).toBe(0)
         expect(dryRun.lines[0]).toMatch(/^\[dry-run\] add: created /)
@@ -278,7 +314,10 @@ describe("survey CLI add", () => {
                 return undefined
             },
         })
-        const result = await run(["add", "--file", "draft.json"], deps(remote))
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote),
+        )
         expect(result.lines).toHaveLength(1)
         expect(result.code).toBe(0)
     })
@@ -289,11 +328,14 @@ describe("survey CLI add", () => {
                 return configValue
             },
         })
-        const result = await run(["add", "--file", "draft.json"], {
-            ...deps(remote),
-            readFile: () =>
-                JSON.stringify({ ...updateDraft, id: "survey-missing" }),
-        })
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(remote),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, id: "survey-missing" }),
+            },
+        )
         expect(result.lines[0]).toMatch(/^error: not-found:/)
     })
 
@@ -303,11 +345,14 @@ describe("survey CLI add", () => {
                 return configValue
             },
         })
-        const result = await run(["add", "--file", "draft.json"], {
-            ...deps(remote),
-            readFile: () =>
-                JSON.stringify({ ...updateDraft, closesAt: "2026-12-02" }),
-        })
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(remote),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, closesAt: "2026-12-02" }),
+            },
+        )
         expect(result.lines[0]).toContain("締切は現在の締切より前の日付")
     })
 
@@ -317,11 +362,14 @@ describe("survey CLI add", () => {
                 return configValue
             },
         })
-        const atOpening = await run(["add", "--file", "draft.json"], {
-            ...deps(remote),
-            readFile: () =>
-                JSON.stringify({ ...updateDraft, closesAt: "2026-11-01" }),
-        })
+        const atOpening = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(remote),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, closesAt: "2026-11-01" }),
+            },
+        )
         expect(atOpening.lines[0]).toMatch(/^error: invalid:/)
 
         const sameDayConfig = JSON.stringify({
@@ -333,59 +381,260 @@ describe("survey CLI add", () => {
                 },
             ],
         })
-        const noEarlier = await run(["add", "--file", "draft.json"], {
-            ...deps(
-                makeRemote({
-                    async readConfigValue() {
-                        return sameDayConfig
-                    },
-                }),
-            ),
-            now: () => new Date("2026-11-01T01:00:00+09:00"),
-            readFile: () =>
-                JSON.stringify({ ...updateDraft, closesAt: "2026-11-03" }),
-        })
+        const noEarlier = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(
+                    makeRemote({
+                        async readConfigValue() {
+                            return sameDayConfig
+                        },
+                    }),
+                ),
+                now: () => new Date("2026-11-01T01:00:00+09:00"),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, closesAt: "2026-11-03" }),
+            },
+        )
         expect(noEarlier.lines).toEqual([
             "error: refused: 前倒しできません。自然な終了と集計を待ってください。",
         ])
     })
 
-    it("refuses a deadline change when either index contains the id and refuses reopening a closed survey", async () => {
-        const aggregated = await run(["add", "--file", "draft.json"], {
-            ...deps(
-                makeRemote({
-                    async readConfigValue() {
-                        return configValue
-                    },
-                    async readIndex(env) {
-                        return env === "develop" ? index(id) : undefined
-                    },
-                }),
-            ),
-            readFile: () =>
-                JSON.stringify({ ...updateDraft, closesAt: "2026-11-30" }),
-        })
+    it("refuses a deadline change only when the selected index contains the id and refuses reopening a closed survey", async () => {
+        const aggregated = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(
+                    makeRemote({
+                        async readConfigValue() {
+                            return configValue
+                        },
+                        async readIndex(env) {
+                            return env === "develop" ? index(id) : undefined
+                        },
+                    }),
+                ),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, closesAt: "2026-11-30" }),
+            },
+        )
         expect(aggregated.lines[0]).toMatch(/^error: refused:/)
 
-        const closed = await run(["add", "--file", "draft.json"], {
-            ...deps(
-                makeRemote({
-                    async readConfigValue() {
-                        return configValue
-                    },
-                }),
-            ),
-            now: () => new Date("2026-12-02T00:00:00Z"),
-            readFile: () =>
-                JSON.stringify({ ...updateDraft, closesAt: "2026-12-31" }),
-        })
+        const closed = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(
+                    makeRemote({
+                        async readConfigValue() {
+                            return configValue
+                        },
+                    }),
+                ),
+                now: () => new Date("2026-12-02T00:00:00Z"),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, closesAt: "2026-12-31" }),
+            },
+        )
         expect(closed.lines[0]).toContain(
             "終了済みのアンケートは再開できません",
         )
+
+        const otherEnvironmentOnly = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(
+                    makeRemote({
+                        async readConfigValue() {
+                            return configValue
+                        },
+                        async readIndex(env) {
+                            return env === "production" ? index(id) : undefined
+                        },
+                    }),
+                ),
+                readFile: () =>
+                    JSON.stringify({ ...updateDraft, closesAt: "2026-11-30" }),
+            },
+        )
+        expect(otherEnvironmentOnly.code).toBe(0)
+        expect(otherEnvironmentOnly.lines[0]).toMatch(/^add: updated /)
+    })
+
+    it("refuses registration when the configured id is recorded only in the other environment", async () => {
+        const past = createValidSurveyConfig()
+        past.surveys[0]!.opensAt = "2026-10-01T00:00:00+09:00"
+        past.surveys[0]!.closesAt = "2026-11-01T00:00:00+09:00"
+        const selectedReads: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(past)
+            },
+            async readIndex(env) {
+                selectedReads.push(env)
+                return env === "production" ? undefined : index(id)
+            },
+        })
+
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "production"],
+            deps(remote),
+        )
+
+        expect(result.code).toBe(1)
+        expect(result.lines[0]).toBe(
+            "error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。",
+        )
+        expect(selectedReads).toEqual(["production"])
+    })
+
+    it("keeps identical drafts and issued identifiers independent across environments", async () => {
+        const configReads: string[] = []
+        const configs = new Map<string, string | undefined>([
+            ["production", undefined],
+            ["develop", undefined],
+        ])
+        const writes: Array<[string, string]> = []
+        const remote = makeRemote({
+            async readConfigValue(env) {
+                configReads.push(env)
+                return configs.get(env)
+            },
+            async readIndex() {
+                return undefined
+            },
+            async writeConfigValue(env, value) {
+                writes.push([env, value])
+                configs.set(env, value)
+            },
+        })
+        const issueIds = vi
+            .fn()
+            .mockReturnValueOnce("123e4567-e89b-42d3-a456-426614174001")
+            .mockReturnValueOnce("123e4567-e89b-42d3-a456-426614174002")
+        const args = ["add", "--file", "draft.json"]
+
+        const production = await run([...args, "--env", "production"], {
+            ...deps(remote),
+            createId: issueIds,
+        })
+        const develop = await run([...args, "--env", "develop"], {
+            ...deps(remote),
+            createId: issueIds,
+        })
+
+        expect(production.code).toBe(0)
+        expect(develop.code).toBe(0)
+        expect(configReads).toEqual(["production", "develop"])
+        expect(writes.map(([env]) => env)).toEqual(["production", "develop"])
+        expect(JSON.parse(configs.get("production")!).surveys[0].id).toBe(
+            "123e4567-e89b-42d3-a456-426614174001",
+        )
+        expect(JSON.parse(configs.get("develop")!).surveys[0].id).toBe(
+            "123e4567-e89b-42d3-a456-426614174002",
+        )
+    })
+
+    it("rejects a config that exceeds the environment variable byte limit", async () => {
+        const oversized = {
+            ...newDraft,
+            questions: newDraft.questions.map(question => ({
+                ...question,
+                title: { ja: "調査".repeat(9000), en: "Survey" },
+            })),
+        }
+        const remote = makeRemote({
+            async readConfigValue() {
+                return undefined
+            },
+            async readIndex() {
+                return undefined
+            },
+            async writeConfigValue() {
+                throw new Error("oversized config must not be written")
+            },
+        })
+
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote, { readFile: () => JSON.stringify(oversized) }),
+        )
+
+        expect(result.lines[0]).toMatch(/^error: too-large:/)
     })
 })
 
 describe("survey CLI status and output", () => {
+    it("reads only the selected environment config and formats its byte size in decimal KB", async () => {
+        const selected = createValidSurveyConfig()
+        selected.surveys[0]!.questions[0]!.title.ja = "調査".repeat(600)
+        const selectedValue = JSON.stringify(selected)
+        const configReads: string[] = []
+        const remote = makeRemote({
+            async readConfigValue(env) {
+                configReads.push(env)
+                return env === "develop" ? selectedValue : undefined
+            },
+            async readIndex() {
+                return undefined
+            },
+        })
+
+        const result = await run(["status", "--env", "develop"], deps(remote))
+
+        expect(configReads).toEqual(["develop"])
+        expect(result.lines[0]).toBe(
+            `status: env=develop surveys 1, config ${(Buffer.byteLength(selectedValue) / 1000).toFixed(1)}/48 KB`,
+        )
+    })
+
+    it("treats a missing selected environment config as empty", async () => {
+        const configReads: string[] = []
+        const remote = makeRemote({
+            async readConfigValue(env) {
+                configReads.push(env)
+                return undefined
+            },
+            async readIndex() {
+                return undefined
+            },
+        })
+
+        const result = await run(
+            ["status", "--env", "production"],
+            deps(remote),
+        )
+
+        expect(configReads).toEqual(["production"])
+        expect(result.lines).toEqual(["status: env=production no surveys"])
+    })
+
+    it("maps an uncreated environment write to the fixed failure line", async () => {
+        const remote = makeRemote({
+            async readConfigValue(_env) {
+                return JSON.stringify({ surveys: [] })
+            },
+            async readIndex() {
+                return undefined
+            },
+            async writeConfigValue(_env, _value) {
+                throw new RemoteError("no-environment")
+            },
+        })
+
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            deps(remote),
+        )
+
+        expect(result).toEqual({
+            code: 1,
+            lines: [
+                "error: no-environment: GitHub の環境が未作成か、権限が足りません。DEVELOP.md 6.2.1 の手順で環境を作り、gh auth status で権限を確かめてください",
+            ],
+        })
+    })
+
     it("returns the heading and rows for config-only, r2-only, and invalid visibility records", async () => {
         const withConfigOnly = createValidSurveyConfig()
         withConfigOnly.surveys.push({
@@ -450,14 +699,18 @@ describe("survey CLI status and output", () => {
             ...deps(
                 makeRemote({
                     async readIndex() {
-                        throw Object.assign(new Error("BODY-SECRET"), {
-                            kind: "parse",
-                        })
+                        return {
+                            schemaVersion: 99,
+                            surveys: [],
+                            secret: "BODY-SECRET",
+                        } as never
                     },
                 }),
             ),
         })
-        expect(invalid.lines[0]).toMatch(/^error: invalid:/)
+        expect(invalid.lines).toEqual([
+            "error: invalid: 目録の形式が正しくありません",
+        ])
         expect(invalid.lines.join(" ")).not.toContain("BODY-SECRET")
     })
 
@@ -470,10 +723,13 @@ describe("survey CLI status and output", () => {
                 return undefined
             },
         })
-        const result = await run(["add", "--file", "draft.json"], {
-            ...deps(remote),
-            readFile: () => "SECRET-DRAFT",
-        })
+        const result = await run(
+            ["add", "--file", "draft.json", "--env", "develop"],
+            {
+                ...deps(remote),
+                readFile: () => "SECRET-DRAFT",
+            },
+        )
         expect(result.lines).toHaveLength(1)
         expect(result.lines.join(" ")).not.toContain("SECRET-DRAFT")
     })
@@ -839,34 +1095,7 @@ describe("survey CLI status and output", () => {
         expect(calls).toEqual([])
     })
 
-    it("prunes only surveys recorded in both indexes and deletes an empty config", async () => {
-        const pastSurvey = createValidSurveyConfig()
-        pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
-        pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
-        const calls: string[] = []
-        const remote = makeRemote({
-            async readConfigValue() {
-                return JSON.stringify(pastSurvey)
-            },
-            async readIndex() {
-                return index(id)
-            },
-            async writeConfigValue() {
-                calls.push("write")
-            },
-            async deleteConfigValue() {
-                calls.push("delete")
-            },
-        })
-        const result = await run(["prune"], deps(remote))
-        expect(result).toEqual({
-            code: 0,
-            lines: ["prune: removed survey-2026-a (surveys 1 -> 0)"],
-        })
-        expect(calls).toEqual(["delete"])
-    })
-
-    it("keeps a survey missing from one index and adds the guidance suffix", async () => {
+    it("prunes a recorded closed survey using only the selected index and deletes its config", async () => {
         const pastSurvey = createValidSurveyConfig()
         pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
         pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
@@ -876,7 +1105,8 @@ describe("survey CLI status and output", () => {
                 return JSON.stringify(pastSurvey)
             },
             async readIndex(env) {
-                return env === "production" ? index(id) : undefined
+                calls.push(`index:${env}`)
+                return index(id)
             },
             async writeConfigValue() {
                 calls.push("write")
@@ -885,17 +1115,45 @@ describe("survey CLI status and output", () => {
                 calls.push("delete")
             },
         })
-        const result = await run(["prune"], deps(remote))
+        const result = await run(["prune", "--env", "develop"], deps(remote))
+        expect(result).toEqual({
+            code: 0,
+            lines: ["prune: removed survey-2026-a (surveys 1 -> 0)"],
+        })
+        expect(calls).toEqual(["index:develop", "delete"])
+    })
+
+    it("keeps an unaggregated closed survey with the selected environment and guidance", async () => {
+        const pastSurvey = createValidSurveyConfig()
+        pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+        pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(pastSurvey)
+            },
+            async readIndex(env) {
+                calls.push(`index:${env}`)
+                return undefined
+            },
+            async writeConfigValue() {
+                calls.push("write")
+            },
+            async deleteConfigValue() {
+                calls.push("delete")
+            },
+        })
+        const result = await run(["prune", "--env", "develop"], deps(remote))
         expect(result.lines[0]).toContain(
             "kept survey-2026-a(not-aggregated: develop)",
         )
         expect(result.lines[0]).toMatch(
             / ; see DEVELOP\.md 5\.4 \/ survey-run \(not-aggregated\)$/,
         )
-        expect(calls).toEqual([])
+        expect(calls).toEqual(["index:develop"])
     })
 
-    it("removes aggregated surveys, writes remaining config, and reports kept ids", async () => {
+    it("removes recorded closed surveys, keeps unrecorded closed surveys, and writes the selected config", async () => {
         const config = createValidSurveyConfig()
         config.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
         config.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
@@ -911,36 +1169,43 @@ describe("survey CLI status and output", () => {
                 return JSON.stringify(config)
             },
             async readIndex(env) {
-                return env === "production"
-                    ? index(id, "survey-2026-b")
-                    : index(id)
+                calls.push(`index:${env}`)
+                return index(id)
             },
-            async writeConfigValue(value) {
+            async writeConfigValue(env, value) {
                 calls.push(
-                    `write:${JSON.parse(value)
+                    `write:${env}:${JSON.parse(value)
                         .surveys.map((item: { id: string }) => item.id)
                         .join(",")}`,
                 )
             },
-            async deleteConfigValue() {
-                calls.push("delete")
+            async deleteConfigValue(env) {
+                calls.push(`delete:${env}`)
             },
         })
-        const result = await run(["prune"], deps(remote))
+        const result = await run(["prune", "--env", "develop"], deps(remote))
         expect(result.lines[0]).toBe(
             "prune: removed survey-2026-a (surveys 2 -> 1); kept survey-2026-b(not-aggregated: develop) ; see DEVELOP.md 5.4 / survey-run (not-aggregated)",
         )
-        expect(calls).toEqual(["write:survey-2026-b"])
+        expect(calls).toEqual(["index:develop", "write:develop:survey-2026-b"])
     })
 
-    it.each(["auth", "unavailable", "parse"] as const)(
-        "does not modify config when the %s index read fails for prune or remove",
-        async kind => {
+    it.each([
+        ["before-start", "2026-11-17T00:00:00Z", "2026-11-19T00:00:00Z"],
+        ["active", "2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z"],
+    ])(
+        "does not prune a %s survey even when its id is recorded",
+        async (_stage, opensAt, closesAt) => {
+            const config = createValidSurveyConfig()
+            config.surveys[0]!.opensAt = opensAt
+            config.surveys[0]!.closesAt = closesAt
             const calls: string[] = []
             const remote = makeRemote({
+                async readConfigValue() {
+                    return JSON.stringify(config)
+                },
                 async readIndex(env) {
-                    if (env === "develop")
-                        throw Object.assign(new Error("SECRET"), { kind })
+                    calls.push(`index:${env}`)
                     return index(id)
                 },
                 async writeConfigValue() {
@@ -950,12 +1215,40 @@ describe("survey CLI status and output", () => {
                     calls.push("delete")
                 },
             })
-            const prune = await run(["prune"], deps(remote))
-            const remove = await run(["remove", id], deps(remote))
+            const result = await run(
+                ["prune", "--env", "develop"],
+                deps(remote),
+            )
+            expect(result.lines).toEqual(["prune: nothing to remove"])
+            expect(calls).toEqual(["index:develop"])
+        },
+    )
+
+    it.each(["auth", "unavailable", "parse"] as const)(
+        "does not modify config when the %s index read fails for prune or remove",
+        async kind => {
+            const calls: string[] = []
+            const remote = makeRemote({
+                async readIndex(env) {
+                    calls.push(`index:${env}`)
+                    throw Object.assign(new Error("SECRET"), { kind })
+                },
+                async writeConfigValue() {
+                    calls.push("write")
+                },
+                async deleteConfigValue() {
+                    calls.push("delete")
+                },
+            })
+            const prune = await run(["prune", "--env", "develop"], deps(remote))
+            const remove = await run(
+                ["remove", id, "--env", "develop"],
+                deps(remote),
+            )
             expect(prune.code).toBe(1)
             expect(remove.code).toBe(1)
             expect(`${prune.lines} ${remove.lines}`).not.toContain("SECRET")
-            expect(calls).toEqual([])
+            expect(calls).toEqual(["index:develop", "index:develop"])
         },
     )
 
@@ -964,45 +1257,83 @@ describe("survey CLI status and output", () => {
         config.surveys[0]!.opensAt = "2026-11-20T00:00:00Z"
         const calls: string[] = []
         const remote = makeRemote({
+            async readIndex(env) {
+                calls.push(`index:${env}`)
+                return undefined
+            },
             async readConfigValue() {
                 return JSON.stringify(config)
             },
-            async writeConfigValue(value) {
-                calls.push(`write:${JSON.parse(value).surveys.length}`)
+            async writeConfigValue(env, value) {
+                calls.push(`write:${env}:${JSON.parse(value).surveys.length}`)
             },
-            async deleteConfigValue() {
-                calls.push("delete")
+            async deleteConfigValue(env) {
+                calls.push(`delete:${env}`)
             },
         })
-        const result = await run(["remove", id], deps(remote))
+        const result = await run(
+            ["remove", id, "--env", "develop"],
+            deps(remote),
+        )
         expect(result).toEqual({
             code: 0,
             lines: ["remove: removed survey-2026-a (surveys 1 -> 0)"],
         })
-        expect(calls).toEqual(["delete"])
+        expect(calls).toEqual(["index:develop", "delete:develop"])
     })
 
-    it("refuses active removal and refuses closed removal with the missing environment", async () => {
-        const active = await run(["remove", id], deps(makeRemote()))
+    it("refuses active removal with a result-loss message and leaves config unchanged", async () => {
+        const config = createValidSurveyConfig()
+        config.surveys[0]!.opensAt = "2026-11-01T00:00:00Z"
+        config.surveys[0]!.closesAt = "2026-12-01T00:00:00Z"
+        const writes = vi.fn()
+        const remote = makeRemote({
+            async readConfigValue() {
+                return JSON.stringify(config)
+            },
+            async readIndex() {
+                return index(id)
+            },
+            writeConfigValue: writes,
+            deleteConfigValue: writes,
+        })
+        const active = await run(
+            ["remove", id, "--env", "develop"],
+            deps(remote),
+        )
         expect(active.lines[0]).toContain(
             "error: refused: survey-2026-a is active",
         )
+        expect(active.lines[0]).toContain("results would be lost")
+        expect(writes).not.toHaveBeenCalled()
+    })
+
+    it("refuses unaggregated closed removal with a result-loss message and selected-environment guidance", async () => {
         const config = createValidSurveyConfig()
         config.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
         config.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+        const writes = vi.fn()
         const closedRemote = makeRemote({
             async readConfigValue() {
                 return JSON.stringify(config)
             },
-            async readIndex(env) {
-                return env === "production" ? index(id) : undefined
+            async readIndex() {
+                return undefined
             },
+            writeConfigValue: writes,
+            deleteConfigValue: writes,
         })
-        const closed = await run(["remove", id], deps(closedRemote))
-        expect(closed.lines[0]).toContain("not aggregated: develop")
+        const closed = await run(
+            ["remove", id, "--env", "develop"],
+            deps(closedRemote),
+        )
+        expect(closed.lines[0]).toContain(
+            "results would be lost; not aggregated: develop",
+        )
         expect(closed.lines[0]).toMatch(
             / ; see DEVELOP\.md 5\.4 \/ survey-run \(not-aggregated\)$/,
         )
+        expect(writes).not.toHaveBeenCalled()
     })
 
     it("removes a closed and aggregated survey through deleteConfigValue", async () => {
@@ -1014,8 +1345,33 @@ describe("survey CLI status and output", () => {
             async readConfigValue() {
                 return JSON.stringify(config)
             },
-            async readIndex() {
+            async readIndex(env) {
+                calls.push(`index:${env}`)
                 return index(id)
+            },
+            async writeConfigValue(env) {
+                calls.push(`write:${env}`)
+            },
+            async deleteConfigValue(env) {
+                calls.push(`delete:${env}`)
+            },
+        })
+        const result = await run(
+            ["remove", id, "--env", "develop"],
+            deps(remote),
+        )
+        expect(result.lines[0]).toBe(
+            "remove: removed survey-2026-a (surveys 1 -> 0)",
+        )
+        expect(calls).toEqual(["index:develop", "delete:develop"])
+    })
+
+    it("fails closed on a malformed selected index without touching either config", async () => {
+        const calls: string[] = []
+        const remote = makeRemote({
+            async readIndex(env) {
+                calls.push(`index:${env}`)
+                return { schemaVersion: 99, surveys: [] } as never
             },
             async writeConfigValue() {
                 calls.push("write")
@@ -1024,11 +1380,14 @@ describe("survey CLI status and output", () => {
                 calls.push("delete")
             },
         })
-        const result = await run(["remove", id], deps(remote))
-        expect(result.lines[0]).toBe(
-            "remove: removed survey-2026-a (surveys 1 -> 0)",
+        const prune = await run(["prune", "--env", "develop"], deps(remote))
+        const remove = await run(
+            ["remove", id, "--env", "develop"],
+            deps(remote),
         )
-        expect(calls).toEqual(["delete"])
+        expect(prune.lines[0]).toMatch(/^error: invalid:/)
+        expect(remove.lines[0]).toMatch(/^error: invalid:/)
+        expect(calls).toEqual(["index:develop", "index:develop"])
     })
 
     it("reports missing ids and supports dry-run without writing or deleting", async () => {
@@ -1044,12 +1403,13 @@ describe("survey CLI status and output", () => {
                 calls.push("delete")
             },
         })
-        expect((await run(["remove", id], deps(remote))).lines[0]).toMatch(
-            /^error: not-found:/,
-        )
-        expect((await run(["prune"], deps(remote))).lines).toEqual([
-            "prune: nothing to remove",
-        ])
+        expect(
+            (await run(["remove", id, "--env", "develop"], deps(remote)))
+                .lines[0],
+        ).toMatch(/^error: not-found:/)
+        expect(
+            (await run(["prune", "--env", "develop"], deps(remote))).lines,
+        ).toEqual(["prune: nothing to remove"])
         const pastSurvey = createValidSurveyConfig()
         pastSurvey.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
         pastSurvey.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
@@ -1068,17 +1428,233 @@ describe("survey CLI status and output", () => {
             },
         })
         const dryRemove = await run(
-            ["remove", id, "--dry-run"],
+            ["remove", id, "--env", "develop", "--dry-run"],
             deps(dryRemote),
         )
         expect(dryRemove.lines[0]).toContain(
             "[dry-run] remove: would remove survey-2026-a",
         )
-        const dryPrune = await run(["prune", "--dry-run"], deps(dryRemote))
+        const dryPrune = await run(
+            ["prune", "--env", "develop", "--dry-run"],
+            deps(dryRemote),
+        )
         expect(dryPrune.code).toBe(0)
         expect(dryPrune.lines[0]).toBe(
             "[dry-run] prune: would remove survey-2026-a (surveys 1 -> 0)",
         )
         expect(calls).toEqual([])
     })
+})
+
+describe("survey CLI environment boundary", () => {
+    it.each(["production", "develop"] as const)(
+        "records the complete operation scope for every command in %s",
+        async env => {
+            const past = createValidSurveyConfig()
+            past.surveys[0]!.opensAt = "2026-10-01T00:00:00Z"
+            past.surveys[0]!.closesAt = "2026-11-01T00:00:00Z"
+            const pastValue = JSON.stringify(past)
+            const calls: string[] = []
+            let activeCommand = ""
+            const remote = makeRemote({
+                async readConfigValue(selected) {
+                    calls.push(`config:read:${selected}`)
+                    return activeCommand === "add"
+                        ? JSON.stringify({ surveys: [] })
+                        : pastValue
+                },
+                async writeConfigValue(selected) {
+                    calls.push(`config:write:${selected}`)
+                },
+                async deleteConfigValue(selected) {
+                    calls.push(`config:delete:${selected}`)
+                },
+                async readIndex(selected) {
+                    calls.push(`index:read:${selected}`)
+                    return index(id)
+                },
+                async readVisibility(selected, surveyId) {
+                    calls.push(`visibility:read:${selected}:${surveyId}`)
+                    return activeCommand === "unpublish" ? "visible" : "hidden"
+                },
+                async readResult(selected, surveyId) {
+                    calls.push(`result:read:${selected}:${surveyId}`)
+                    return validResult(surveyId)
+                },
+                async writeVisibility(selected, surveyId, visible) {
+                    calls.push(
+                        `visibility:write:${selected}:${surveyId}:${visible}`,
+                    )
+                },
+                async listReleaseBranches() {
+                    calls.push("branches:read")
+                    return [
+                        {
+                            name: "release/current",
+                            committedAt: "2026-11-01T00:00:00Z",
+                        },
+                    ]
+                },
+                async startDeploy(ref) {
+                    calls.push(`deploy:${ref}`)
+                },
+            })
+            const commandCases = [
+                {
+                    name: "add",
+                    argv: ["add", "--file", "draft.json", "--env", env],
+                    file: JSON.stringify(newDraft),
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `config:write:${env}`,
+                    ],
+                },
+                {
+                    name: "status",
+                    argv: ["status", "--env", env, "--repo", "owner/repo"],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `visibility:read:${env}:${id}`,
+                    ],
+                },
+                {
+                    name: "publish",
+                    argv: ["publish", id, "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `visibility:read:${env}:${id}`,
+                        `result:read:${env}:${id}`,
+                        ...(env === "production" ? ["branches:read"] : []),
+                        `visibility:write:${env}:${id}:true`,
+                        env === "production"
+                            ? "deploy:release/current"
+                            : "deploy:develop",
+                    ],
+                },
+                {
+                    name: "unpublish",
+                    argv: ["unpublish", id, "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `visibility:read:${env}:${id}`,
+                        ...(env === "production" ? ["branches:read"] : []),
+                        `visibility:write:${env}:${id}:false`,
+                        env === "production"
+                            ? "deploy:release/current"
+                            : "deploy:develop",
+                    ],
+                },
+                {
+                    name: "prune",
+                    argv: ["prune", "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `config:delete:${env}`,
+                    ],
+                },
+                {
+                    name: "remove",
+                    argv: ["remove", id, "--env", env],
+                    expected: [
+                        `config:read:${env}`,
+                        `index:read:${env}`,
+                        `config:delete:${env}`,
+                    ],
+                },
+            ] as const
+
+            for (const command of commandCases) {
+                calls.length = 0
+                activeCommand = command.name
+                const result = await run(command.argv, {
+                    ...deps(remote),
+                    ...(command.name === "add"
+                        ? { readFile: () => command.file }
+                        : {}),
+                    now: () =>
+                        new Date(
+                            command.name === "add"
+                                ? current
+                                : "2027-01-01T00:00:00Z",
+                        ),
+                })
+
+                expect(result.code, `${command.name}: ${result.lines}`).toBe(0)
+                if (command.name === "status")
+                    expect(result.lines[0]).toMatch(
+                        /^status: env=(production|develop) surveys 1,/,
+                    )
+                else expect(result.lines, command.name).toHaveLength(1)
+                expect(calls, command.name).toEqual(command.expected)
+            }
+        },
+    )
+
+    it.each([
+        ["add", ["add", "--file", "draft.json"]],
+        ["status", ["status"]],
+        ["publish", ["publish", id]],
+        ["unpublish", ["unpublish", id]],
+        ["prune", ["prune"]],
+        ["remove", ["remove", id]],
+    ] as const)(
+        "rejects missing or invalid environment for %s before remote access",
+        async (_name, args) => {
+            for (const argv of [
+                args,
+                [...args, "--env", "staging"],
+                [...args, "--env", "production", "--env", "develop"],
+            ]) {
+                const calls: string[] = []
+                const remote = makeRemote({
+                    async readConfigValue(env) {
+                        calls.push(`config:read:${env}`)
+                        return "SECRET-CONFIG"
+                    },
+                    async writeConfigValue(env) {
+                        calls.push(`config:write:${env}`)
+                    },
+                    async deleteConfigValue(env) {
+                        calls.push(`config:delete:${env}`)
+                    },
+                    async readIndex(env) {
+                        calls.push(`index:read:${env}`)
+                        return undefined
+                    },
+                    async readVisibility(env, surveyId) {
+                        calls.push(`visibility:read:${env}:${surveyId}`)
+                        return "hidden"
+                    },
+                    async writeVisibility(env, surveyId, visible) {
+                        calls.push(
+                            `visibility:write:${env}:${surveyId}:${visible}`,
+                        )
+                    },
+                    async readResult(env, surveyId) {
+                        calls.push(`result:read:${env}:${surveyId}`)
+                        return undefined
+                    },
+                    async listReleaseBranches() {
+                        calls.push("branches:read")
+                        return []
+                    },
+                    async startDeploy(ref) {
+                        calls.push(`deploy:${ref}`)
+                    },
+                })
+                const result = await run(argv, deps(remote))
+
+                expect(result.code).toBe(1)
+                expect(result.lines).toHaveLength(1)
+                expect(result.lines[0]).toMatch(/^error: usage:/)
+                expect(result.lines.join(" ")).not.toContain("SECRET")
+                expect(calls).toEqual([])
+            }
+        },
+    )
 })

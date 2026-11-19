@@ -1,9 +1,7 @@
 /**
- * SurveyConfig と R2 の統計ファイルを手元の gh / wrangler で管理する。
+ * 環境ごとの SURVEY_CONFIG とアンケート結果を GitHub・R2 で管理する。
  *
- * - SURVEY_CONFIG と R2 の目録・結果・可視フラグを読み書きする。
- * - 目録・結果・可視フラグを共有スキーマで検証して読み、書くのは可視フラグだけにする。
- * - 設定値・外部コマンドのエラー文・認証情報・読んだ本文を、例外や要約に含めない。
+ * - 外部コマンドの出力や設定値は、例外に含めない。
  */
 import { spawnSync } from "node:child_process"
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
@@ -36,15 +34,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const VARIABLE_NAME = "SURVEY_CONFIG"
 const DATABASE_CONFIG = path.join(ROOT, "config", "wrangler.template.jsonc")
 const SURVEY_RESULTS_BINDING = "SURVEY_RESULTS"
-/** キー不存在判定に使う wrangler 標準エラー。実機の値はタスク 4.2 で確定する。 */
+/** R2 のキー不存在応答を判定する文言。 */
 const R2_KEY_MISSING_PHRASE = "The specified key does not exist"
 
-export type RemoteErrorKind = "auth" | "unavailable" | "parse"
+export type RemoteErrorKind =
+    "auth" | "unavailable" | "parse" | "no-environment"
 
 const ERROR_MESSAGES: Record<RemoteErrorKind, string> = {
     auth: "認証が必要です",
     unavailable: "外部サービスを利用できません",
     parse: "外部サービスの応答を読み取れません",
+    "no-environment":
+        "GitHub の環境が未作成か、権限が足りません。DEVELOP.md 6.2.1 の手順で環境を作り、gh auth status で権限を確かめてください",
 }
 
 export class RemoteError extends Error {
@@ -70,9 +71,9 @@ export type RunCommand = (
 ) => CommandResult
 
 export type SurveyRemote = {
-    readConfigValue(): Promise<string | undefined>
-    writeConfigValue(value: string): Promise<void>
-    deleteConfigValue(): Promise<void>
+    readConfigValue(env: SurveyEnv): Promise<string | undefined>
+    writeConfigValue(env: SurveyEnv, value: string): Promise<void>
+    deleteConfigValue(env: SurveyEnv): Promise<void>
     /** 目録。object が無ければ undefined。形式が不正なら RemoteError("parse") */
     readIndex(env: SurveyEnv): Promise<SurveyIndex | undefined>
     /** 可視フラグ。無ければ hidden、不正な形式なら invalid を返す。 */
@@ -264,18 +265,30 @@ export const createSurveyRemote = (
         })
     }
 
-    const gh = (action: "set" | "delete", input?: string): CommandResult =>
-        run(
-            "gh",
-            ["variable", action, VARIABLE_NAME, "-R", resolveRepo()],
-            input,
-        )
+    const variableArgs = (
+        action: "set" | "delete",
+        env: SurveyEnv,
+    ): string[] => [
+        "variable",
+        action,
+        VARIABLE_NAME,
+        "--env",
+        env,
+        "-R",
+        resolveRepo(),
+    ]
+
+    const gh = (
+        action: "set" | "delete",
+        env: SurveyEnv,
+        input?: string,
+    ): CommandResult => run("gh", variableArgs(action, env), input)
 
     const remote: SurveyRemote = {
-        async readConfigValue() {
+        async readConfigValue(env) {
             const result = run("gh", [
                 "api",
-                `repos/${resolveRepo()}/actions/variables/${VARIABLE_NAME}`,
+                `repos/${resolveRepo()}/environments/${env}/variables/${VARIABLE_NAME}`,
             ])
             if (result.status === 0) return parseVariableValue(result.stdout)
             if (/HTTP 404\b/.test(result.stderr)) {
@@ -284,13 +297,18 @@ export const createSurveyRemote = (
             throw remoteErrorFor(result)
         },
 
-        async writeConfigValue(value) {
-            const result = gh("set", value)
-            if (result.status !== 0) throw remoteErrorFor(result)
+        async writeConfigValue(env, value) {
+            const result = gh("set", env, value)
+            if (result.status !== 0) {
+                if (/HTTP 404\b/.test(result.stderr)) {
+                    throw new RemoteError("no-environment")
+                }
+                throw remoteErrorFor(result)
+            }
         },
 
-        async deleteConfigValue() {
-            const result = gh("delete")
+        async deleteConfigValue(env) {
+            const result = gh("delete", env)
             if (result.status !== 0) {
                 if (/HTTP 404\b/.test(result.stderr)) {
                     return

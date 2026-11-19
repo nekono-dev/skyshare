@@ -148,7 +148,7 @@ src/
         └── [...slug].astro               # /surveys/ の静的生成（0 件なら作らない）
 scripts/
 └── build/
-    └── checkSurveyResultsLinks.mjs       # ビルド後に、リンクとページの整合を検査する
+    └── check-survey-results-links.mjs # ビルド後に、リンクとページの整合を検査する
 ```
 
 ### Modified Files
@@ -430,7 +430,7 @@ export const findLinkMismatch: (input: {
 }) => "link-without-page" | "page-without-link" | undefined
 ```
 
-- Trigger: `build:v2` の `astro build` の後（`node scripts/build/checkSurveyResultsLinks.mjs`）。
+- Trigger: `build:v2` の `astro build` の後（`node scripts/build/check-survey-results-links.mjs`）。
 - Input: `dist/client/login/index.html` の本文（`href="/surveys/"` の有無）と、`dist/client/surveys/index.html` の有無。
 - Output: 不一致なら 1 行のエラーを出して終了コードを 1 にする。一致なら何も出さない。
 - Idempotency: 読むだけ。結果の本文を出さない。

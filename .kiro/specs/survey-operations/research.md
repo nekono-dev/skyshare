@@ -13,6 +13,7 @@
   - `gh workflow run <ファイル> --ref <ブランチ> -f dry_run=false -R <repo>` で `workflow_dispatch` を起動できる。`deploy.yaml` の入力は `dry_run`（真偽。既定は真）だけで、`release/**` と `develop` 以外の参照では `deploy` ジョブが動かない。同時実行の制御は環境ごと（`develop` と本番）で直列化され、`cancel-in-progress: false`。
   - リリースブランチの名前に決まった方式は無い（`release/XXX`。DEVELOP.md は「新しい名前でリリースを切る」とだけ書く）。ブランチ名の並べ替えでは最新を決められない。
   - 設定 `SURVEY_CONFIG` は 1 つで、本番・develop・プレビューのビルドがすべて読む（DEVELOP.md 3.2）。結果の保管先は環境ごとに別で、設定から外したアンケートは、集計前なら Worker に集計されず回答が D1 に孤立する（`survey-results-aggregation` の research.md に記録済み）。
+    > 2026-11-18 追補: survey-env-config が置き換え。現在の設定は GitHub Environments の `production`・`develop` の環境ごとの変数で、六つのコマンドすべてに `--env` が必須。共有設定（リポジトリ変数）は門番が拒否する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 
 ## Research Log
 
@@ -55,6 +56,7 @@
 
 - 新規登録は ID の無い下書きだけで、UUID v4 を自動発行する。ID のある下書きは設定済みのアンケートの更新だけに使い、未知の ID は `not-found` として追加しない。月ごとの連番、運用者が決める新規 ID、内容一致による既存 ID の探索は採用しない。
 - 同時に 1 件だけを実施する。新規登録の前に、設定内の各 ID が本番・develop 両方の目録にあることを確かめる。開始前のアンケートも登録を止める。設定に残る集計済みの過去分は止めない。D1 には問い合わせない。取得失敗・形式不正なら dry-run でも失敗し、存在しない目録キーだけは空として扱う。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在の新規登録可否は指定環境の設定と目録だけで判断する。六つのコマンドすべてに `--env` を必須とし、共有設定は門番が拒否する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 - 目録を使った ID 再利用の拒否、両環境の目録をまとめた使用済み ID 集合、自動採番、`entryMatchesSurvey` による ID・開始・終了日時の一致判定は廃止した。開始前に取り下げた ID は目録に残らないが、ID がランダムなので再利用の追跡は不要である。`survey-results-aggregation` にも ID 再利用に備える専用規則を求めない。
 - 締切は実在する日付だけを受け付け、日本時間 0 時に変換する。開催中に取り下げる場合、前倒し先は開始日時より後の最も早い日本時間 0 時。当日開始なら翌日 0 時まで待つ。
 
@@ -63,6 +65,7 @@
 - **Context**: ブリーフの決定は R2 を扱うコマンドに `--env` を必須とするが、除去は 1 つの設定の変数を触る。
 - **Findings**: 設定は両環境が読む。集計は環境ごとの Worker が設定を見て行うので、一方の環境で集計済みでも、もう一方で未集計のまま設定から外すと、その環境の回答は孤立し、二度と集計されない。`--env` を 1 つ取ると、もう一方の確認が運用者の手順に残り、取りこぼせる。
 - **Implications**: `prune`・`remove` は `--env` を取らず、常に両方の目録を読んで判断する。書き込みは設定の変数だけで、R2 は読むだけである。「本番を意図せず操作しない」というこの規則の目的は、R2 を書き換える `publish`・`unpublish` の `--env` 必須で守られる。ユーザーの決定（R2 を扱うコマンドは `--env` 必須）からの調整であり、理由を design.md の Decision 6 に書いた。この調整は 2026-11-13 にユーザーが確認し、決定済みである。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は六つのコマンドすべてで `--env` を必須とし、`prune`・`remove` の除去判断と設定更新は指定環境だけで完結する。環境指定なしで両環境を照合する決定は置き換わった。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
 
 ## Architecture Pattern Evaluation
 
@@ -88,4 +91,5 @@
 - 設定の形式の変更（`surveys`）より先に CLI の設定の変換を直すと型エラーになる — tasks で `surveys` の完了を前提に置く。段階の判定と R2 の部品は先に作れる（形式に依存しない）。
 - `survey-results-aggregation` の tasks 3.5 が、この CLI の `retentionExpired` の参照の除去を待つ — 段階の判定の作り直しを早い段階に置く。
 - 一方の環境の R2 が使えない状況（バケット未作成など）では、`prune`・`remove` が進まない — 使える環境がそろうまで進まないのは安全側の動作で、結果を失わないことを優先する。
+  > 2026-11-18 追補: survey-env-config が置き換え。現在は `prune`・`remove` が指定環境の目録だけを読むため、他方の環境の R2 の利用可否は除去を妨げない。指定環境の目録の取得失敗・形式不正では何も除去せず拒否または失敗する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`（2.3・5.x）に従う。
 - 本番の最新のリリースブランチの取り違え — 純粋関数でテストし、`--dry-run` で起動先のブランチを確認できる。
