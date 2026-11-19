@@ -21,9 +21,8 @@ const survey: Survey = {
                 { id: "a", label: { ja: "A", en: "A" } },
                 { id: "b", label: { ja: "B", en: "B" } },
                 {
-                    id: "decline",
-                    label: { ja: "回答しない", en: "Decline" },
-                    decline: true,
+                    id: "c",
+                    label: { ja: "C", en: "C" },
                 },
             ],
         },
@@ -57,7 +56,7 @@ describe("tallySurvey", () => {
         expect(parseSurveyResult(result)).toMatchObject({ ok: true })
         expect(
             result?.questions[0].options.map(option => option.percent),
-        ).toEqual([33.3, 66.7])
+        ).toEqual([33.3, 66.7, 0])
         expect(
             result?.questions[1].options.map(option => option.percent),
         ).toEqual([66.7, 66.7, 66.7, 0, 0])
@@ -69,17 +68,17 @@ describe("tallySurvey", () => {
         ).toBeGreaterThan(100)
     })
 
-    it("excludes invalid, mismatched, and declined rows from numerator and denominator", () => {
+    it("excludes invalid and mismatched rows from numerator and denominator", () => {
         const result = tallySurvey(survey, [
             row("a", ["x"]),
             "{invalid",
             JSON.stringify({ single: "unknown", multiple: ["x"] }),
-            row("decline", ["y"]),
+            row("unknown", ["y"]),
         ])
 
         expect(result?.questions[0].options[0].percent).toBe(100)
         expect(result?.questions[1].options[0].percent).toBe(100)
-        expect(result?.questions[0].options).toHaveLength(2)
+        expect(result?.questions[0].options).toHaveLength(3)
     })
 
     it("excludes rows whose JSON is not an object without throwing", () => {
@@ -98,7 +97,7 @@ describe("tallySurvey", () => {
     it("returns undefined when no valid respondents exist", () => {
         expect(tallySurvey(survey, [])).toBeUndefined()
         expect(
-            tallySurvey(survey, ["no json", row("decline", ["x"])]),
+            tallySurvey(survey, ["no json", row("unknown", ["x"])]),
         ).toBeUndefined()
     })
 

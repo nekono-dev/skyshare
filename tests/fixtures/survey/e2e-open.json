@@ -20,11 +20,6 @@
             {
               "id": "sometimes",
               "label": { "ja": "ときどき", "en": "Sometimes" }
-            },
-            {
-              "id": "decline",
-              "label": { "ja": "回答しない", "en": "Prefer not to answer" },
-              "decline": true
             }
           ]
         },
@@ -48,11 +43,6 @@
             {
               "id": "schedule",
               "label": { "ja": "予約投稿", "en": "Scheduling posts" }
-            },
-            {
-              "id": "decline",
-              "label": { "ja": "回答しない", "en": "Prefer not to answer" },
-              "decline": true
             }
           ]
         }

@@ -1,11 +1,7 @@
 /*
- * SurveyDialog のスタイル定義。
- *
- * 設計方針:
- * - カードの高さを画面内に収め、質問の並びだけを内側でスクロールさせる。
- *   取り消せない旨・案内・送信の操作は末尾に固定し、長い内容でも送信の操作に届くようにする。
- * - レイヤー外に書き、色・余白・文字サイズは src/styles/tokens.css のトークンのみを使う。
- * - カードの見た目（枠・背景・ボタン）は ui の共通クラスに委譲する。
+ * アンケートダイアログの配置と表示を定義する。
+ * - 色と余白は共有トークンを使う。
+ * - 操作領域をカード下部に固定する。
  */
 
 /* カードを画面の高さ以内に収める。内側のスクロール領域が縮められるよう縦積みにする。
@@ -56,7 +52,7 @@
   flex-shrink: 0;
 }
 
-/* 個人情報の取り扱い・案内・送信の操作の固定の領域。縮まないようにする。区切り線は置かない。 */
+/* 個人情報の取り扱いと操作の領域。縮まないようにする。 */
 .footer {
   display: flex;
   flex-direction: column;
@@ -65,18 +61,9 @@
   width: 100%;
 }
 
-/* 2 つの説明を同じ位置に重ねる領域。高さは高い方に合わせ、切り替えても動かない。 */
+/* 個人情報の案内。 */
 .notes {
-  display: grid;
-}
-
-.notes > * {
-  grid-area: 1 / 1;
-}
-
-/* 重ねた側の非表示。領域は確保したまま見えなくし、読み上げからも外す。 */
-.inactive {
-  visibility: hidden;
+  display: flex;
 }
 
 /* 操作の領域。共通の外側の余白は使わず、footer の gap で間隔をそろえる。 */
@@ -84,9 +71,8 @@
   margin: 0;
 }
 
-/* 個人情報の取り扱いの説明と「回答しない」の案内。同じ灰色の囲みで、重ねた領域いっぱいに広げる。 */
-.note,
-.hint {
+/* 個人情報の取り扱いの説明。 */
+.note {
   display: flex;
   align-items: center;
   margin: 0;
@@ -94,6 +80,23 @@
   background: var(--color-gray);
   padding: var(--space-3);
   font-size: var(--font-size-sm);
+}
+
+/* 辞退操作は共有の muted 色で中央に表示する。 */
+.decline {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.decline:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* 送信の失敗の文言。警告の色で示す。 */
