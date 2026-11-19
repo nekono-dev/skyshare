@@ -339,7 +339,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Direct Implementation Candidates
 
-- [ ] survey-dialog-polish -- 上の 3 点の実装（`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、関連テスト）。Dependencies: 画面構成のモックの合意
+- [x] survey-dialog-polish（2026-11-19 確認: #135 で develop に取り込み済み） -- 上の 3 点の実装（`src/components/timeline/Timeline/SurveyGate/SurveyDialog/`、`src/lib/i18n/messages/{ja,en}/survey.ts`、関連テスト）。Dependencies: 画面構成のモックの合意
 
 ## Phase 11: アンケート設定の環境分離（2026-11-16 discovery）
 
