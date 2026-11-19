@@ -11,7 +11,7 @@
     "renderHook": "node scripts/config/render-deploy-config.mjs",
     "brwSource": {
       "repository": "https://github.com/nekono-dev/branch-release-workflow.git",
-      "ref": "main"
+      "ref": "dev/deploy-targets"
     },
     "targets": {
       "production": {
