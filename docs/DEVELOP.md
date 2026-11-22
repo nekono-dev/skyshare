@@ -53,6 +53,7 @@ Skyshare v2 は Cloudflare Workers 上で動く。v1 の機能を使う場合だ
 4. エージェントの導入（Claude Code のクラウドセッションでは開始時に自動で行われる）
    - cc-sdd: SessionStart の `scripts/agent/install-cc-sdd.sh --claude` が、固定版（3.1.0）のスキルと設定の雛形を導入する（受け付ける引数は `--claude` だけ）。これらは MIT のため `.gitignore` の対象で、コミットしない。`CLAUDE.md` は導入で書き換えない（プロジェクトの文書として直接編集する）。
    - BRW（branch-release-workflow）: `.claude/settings.json` が、取得元（GitHub の `nekono-dev/claude-plugins`）とプラグインの有効化を宣言する。SessionStart の `node scripts/agent/ensure-brw-plugin.mjs` が、無いものだけを導入する。導入した直後のセッションではスキルが使えないため、セッションを開き直す。
+   - BRW の CLI（`brw`）は `npm run brw -- <サブコマンド>`（例: `npm run brw -- check`、`npm run brw -- create 名前`、`npm run brw -- url`）で使える。導入済みのプラグインの CLI を探して呼ぶ入口（`scripts/agent/brw.mjs`）で、見つからなければ導入の手順を示す。BRW の clone を使うときは環境変数 `BRW_DIR` にそのパスを指定する。
    - 導入に失敗すると、次の入力が止まり、理由に再試行の方法が出る。新しいセッションを開くか、Claude の外（通常のターミナル）で理由に出たコマンドを実行する。
    - Codex（任意。ローカルだけ）: `codex` を入れてあると、Claude Code が Codex を子エージェントとして呼ぶ（`.mcp.json` の MCP サーバー `codex`。設定は `.codex/config.toml`）。使うには、Codex の対話画面でこのリポジトリを一度信頼し、Claude Code で MCP サーバー `codex` を承認する（承認は追跡しない `.claude/settings.local.json` に入る）。`codex` を入れていて未信頼のあいだは、入力が止まり、理由に手順が出る。`codex` が無い環境（クラウドセッションなど）では、Claude Code だけで作業する。
 

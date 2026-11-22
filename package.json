@@ -10,6 +10,7 @@
     "codegen": "npm run apigen",
     "setup:local": "node scripts/secrets/prepare-local-env.mjs",
     "survey": "tsx ./hack/survey-cli/cli.ts",
+    "brw": "node scripts/agent/brw.mjs",
     "survey:render": "tsx ./scripts/survey/render-survey-config.ts",
     "build:prepare": "npm run codegen && npm run survey:render",
     "build:legacy": "cd _legacy/frontend && npm ci && npm run build",
