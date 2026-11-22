@@ -301,9 +301,9 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 ### Existing Spec Updates
 
 - [x] surveys(a)（2026-11-13 実装済み: `dev/survey-results-publishing`。回答ダイアログの見出しは入口と同じ固定の文言 `survey.entry` にした） 設定の形式の変更 -- アンケート全体の題（`title`）と説明（`description`）を設定の形式から廃止する（質問ごとの題だけにする。利用者の決定 2026-11-12）。影響: `definition.ts`・回答ダイアログ（`SurveyDialog`）・辞書・テストの設定の例（`tests/fixtures/survey/`）。アンケート機能は本番へ未公開のため破壊的変更を許し、既存の `SURVEY_CONFIG` と D1 は初期状態として扱う（移行は作らない。D1 の構造の変更は `migrations/0001_initial.sql` に直接反映してよい）。運用中の設定の作り直し（質問の題を「UIデザインはどちらが好みですか？」にする）は `survey-operations` のタスク 4.2（運用者の作業）が担当する。フェーズ 1 の brief のみで要件は未作成のため、要件の作成時にも記録する。Dependencies: none（`survey-operations` の 2.1 の前提。他の 2 つの spec と並行または先行してよい）
-- [ ] surveys(b) 保持期限の規則の記録 -- 保持期限の規則を「集計の保存の成功後の削除」に置き換え、アンケート機能が D1 と R2 を前提とすること（R2 が無ければ無効）を要件に記録する。Dependencies: survey-results-aggregation
-- [ ] help-privacy -- アンケート結果を公表すること・公表する範囲をプライバシーポリシーに書くかの判断と追記（`survey-results-public` の設計で判断する）。Dependencies: survey-results-public
-- [ ] develop-docs -- DEVELOP.md の 3.x・main への取り込み前の手順（5.x）・環境変数の表（6.x）を、新しい体系に合わせる（`survey-operations` の実装で行う）。`survey-results-public` も、CI の認証情報・R2・プレビューの更新・本番バケットの先行作成の節と、6.5 の `SURVEY_RESULTS` の行を編集する（節の見出しで分担し、競合を避ける）。Dependencies: survey-operations, survey-results-public
+- [x] surveys(b)（2026-11-22: `surveys` の brief に追補として記録。要件は未作成のため、要件の作成時に反映する） 保持期限の規則の記録 -- 保持期限の規則を「集計の保存の成功後の削除」に置き換え、アンケート機能が D1 と R2 を前提とすること（R2 が無ければ無効）を要件に記録する。Dependencies: survey-results-aggregation
+- [x] help-privacy（2026-11-22 確認: `survey-results-public` 2.5・5.1 でプライバシーポリシーに結果の公表と削除の契機を記載済み） -- アンケート結果を公表すること・公表する範囲をプライバシーポリシーに書くかの判断と追記（`survey-results-public` の設計で判断する）。Dependencies: survey-results-public
+- [x] develop-docs（2026-11-22 確認: DEVELOP.md の 3.2・5.x・6.2.1・6.5 が新しい体系で書かれている） -- DEVELOP.md の 3.x・main への取り込み前の手順（5.x）・環境変数の表（6.x）を、新しい体系に合わせる（`survey-operations` の実装で行う）。`survey-results-public` も、CI の認証情報・R2・プレビューの更新・本番バケットの先行作成の節と、6.5 の `SURVEY_RESULTS` の行を編集する（節の見出しで分担し、競合を避ける）。Dependencies: survey-operations, survey-results-public
 
 ### Direct Implementation Candidates
 
@@ -311,7 +311,7 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 
 ### Specs (dependency order)
 
-- [ ] survey-results-aggregation -- 統計ファイルの形式と検証スキーマ、日次の枠での集計と保存成功後の削除、保持期限の廃止、R2 必須（アンケート機能の無効化の判定）。Dependencies: surveys
+- [x] survey-results-aggregation（2026-11-22: 4.1 を完了。本番の保管先の作成を確認） -- 統計ファイルの形式と検証スキーマ、日次の枠での集計と保存成功後の削除、保持期限の廃止、R2 必須（アンケート機能の無効化の判定）。Dependencies: surveys
 - [ ] survey-results-public -- ビルド時の R2 の取得と検証、`/surveys` ページ（静的生成）と結果のコンポーネント、login のリンク、読み取りの情報が無いときのオプトアウト。Dependencies: survey-results-aggregation, platform-runtime, i18n, ui-primitives
 - [ ] survey-operations -- CLI のコマンド体系（add・status・publish・unpublish・prune・remove）、R2 の読み書き、`--env`、公開の切り替え後の再配備の起動（`gh workflow run`）、`survey-run` skill と DEVELOP.md の手順。Dependencies: survey-results-aggregation, surveys(a)
 
@@ -380,6 +380,8 @@ cc-sdd に Codex 対応を持たせる設計（`install-cc-sdd.sh --codex`・`.a
 （2026-11-19 追補 2: Phase 12 を #138 で取り込んだ後、9.4 を完了した（develop に試験用のアンケートを登録し、再配備した）。`survey-env-config` は全タスクが完了した。production の 1 件は、利用者の指示により環境の変数を直接修正し、「回答しない」の選択肢だけを外した（識別子・期間・質問の文言は変えていない）。`survey-operations` 4.2 は、試験用アンケートの締切（2026-11-21 0:00 JST）後の日次集計（18:00 UTC）で結果ができてから、`publish`・`unpublish` と再配備の起動を確かめる。結果を作るには、締切までに develop で 1 件以上の回答が要る。）
 
 （2026-11-21 追補: `survey-operations` 4.2 の develop での実機の確認（`publish`・`unpublish`、再配備の起動、結果ページとログイン画面のリンクの表示・非表示）が通った。4.2 に残るのは本番のリリースブランチの選択の確認だけで、初回のリリースで行う。）
+
+（2026-11-22 追補: 試験用アンケートを develop の設定から除去した（日次の枠で D1 の回答・回答済みの集合が 0 件になったことを確かめてから実施。集計の記録は `r2-only` として残る）。本番の保管先 `skyshare-survey-results` の作成を確かめ、`survey-results-aggregation` 4.1 を完了した。Phase 9 の `surveys(b)`・`help-privacy`・`develop-docs` も閉じた。アンケート関連で残るのは、初回のリリースで行う `survey-operations` 4.2 の本番のリリースブランチの選択の確認と、リリース時の積み残し（上の 2 件）だけである。）
 
 ## Phase 12: 「回答しない」をすべてのアンケートで選べるようにする（2026-11-19 discovery）
 

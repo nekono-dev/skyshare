@@ -148,8 +148,8 @@
   - _Boundary: daily.ts, store.ts_
   - _Requirements: 6.14_
 
-- [ ] 4. Validation: 層をまたぐ確認
-- [ ] 4.1 全層のテストを通し、未確認の項目を回収する
+- [x] 4. Validation: 層をまたぐ確認
+- [x] 4.1 全層のテストを通し、未確認の項目を回収する
   - ローカルの代用の保管先を宣言した状態で、既存のアンケートの E2E の流れを含む全層のテストが通ることを確かめる
   - 2.6 で確かめられなかった項目があれば、ここで再度確かめる。確かめられない場合は理由を記録し、完了にしない
   - 3.5 が待ち状態なら、この確認も完了にしない
@@ -163,3 +163,4 @@
 - 4.1 の確認結果（2026-11-13、完了にはしない）: `npm run test:all`（型検査・lexicon・import・unit・component・route・render・e2e）が最後まで通った。件数は unit 980、component 15、route 265（被覆率の閾値を満たす。`daily.ts` の分岐 86.6%、`results/store.ts` の分岐 93.8%）、render 2、e2e 10（アンケートの流れを含む）。保管先のバインディングは、ローカルの代用（miniflare）で宣言した状態で動いている。
 - 完了にしない理由: (1) 2.6 の実バケットでの条件付き書き込みの確認は、2026-11-16 に実施済み（`research.md` に記録。結果は workerd と同じ）。(2) 本番の `skyshare-survey-results` の作成（運用者の作業）の確認は、本番へのリリース前の確認に含める。3.5 は完了しており、これを待つ項目は無い。
 - 3.6 の D1 送信回数（最大 13 回、上限 16 回）は `tests/route/survey/dailyCallBudget.test.ts` で確認し、内訳を `research.md` に記録した。
+- 4.1 の完了（2026-11-22）: 本番の `skyshare-survey-results` が作成済みであることを `wrangler r2 bucket list` で確かめた（develop 用 `skyshare-survey-results-develop` も存在）。あわせて実機で、develop の試験用アンケートの締切後の日次の枠が結果を保存し（`status` が `hidden`、回答 2 件）、D1 の回答と回答済みの集合が 0 件になったことを確かめた。2.6 は 2026-11-16 に確認済みで、3.5 を待つ項目も無いため、完了とする。
