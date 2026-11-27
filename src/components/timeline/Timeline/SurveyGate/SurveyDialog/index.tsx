@@ -161,7 +161,6 @@ export const SurveyDialogBody: React.FC<SurveyDialogBodyProps> = ({
         tabIndex={-1}
       >
         <div className={styles["head"]}>
-          <span className={styles["beta"]}>{t("common.beta")}</span>
           <h2 id={titleId} className={styles["title"]}>
             {t("survey.title")}
           </h2>

@@ -133,7 +133,14 @@ export const Component = () => {
         items={[
           {
             key: "scheduledPost",
-            label: t("schedule.setting.label"),
+            // 試験提供の印をラベルの上に置く。アクセシブルネームは印を含めず機能名にする
+            label: (
+              <span className={styles["label-with-beta"]}>
+                <span className={styles.beta}>{t("common.beta")}</span>
+                {t("schedule.setting.label")}
+              </span>
+            ),
+            ariaLabel: t("schedule.setting.label"),
             description: renderSlots(raw("schedule.setting.description"), {
               image: (
                 <InlineIcon

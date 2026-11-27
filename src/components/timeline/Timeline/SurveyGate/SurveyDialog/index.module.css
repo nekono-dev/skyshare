@@ -23,18 +23,6 @@
   gap: var(--space-1);
 }
 
-/* 試験提供の印。タイトルの上に左寄せの青い枠線のピルで示す。 */
-.beta {
-  align-self: flex-start;
-  padding: 0 var(--space-2);
-  border: 1px solid var(--color-bluesky);
-  border-radius: 999px;
-  color: var(--color-bluesky);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  line-height: 1.6;
-}
-
 .title {
   margin: 0;
   font-size: var(--font-size-lg);

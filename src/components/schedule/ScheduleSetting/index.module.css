@@ -13,3 +13,21 @@
   vertical-align: -4px;
   border-radius: var(--radius-sm);
 }
+
+/* ラベルと試験提供の印を縦に並べる。 */
+.label-with-beta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 試験提供の印。青い枠線のピルで示す。 */
+.beta {
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-bluesky);
+  border-radius: 999px;
+  color: var(--color-bluesky);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.6;
+}
