@@ -18,10 +18,10 @@ import styles from "./index.module.css"
  * - 記事の件数分のヘルプカード
  */
 export const Help = () => {
-  const { t } = useT()
+  const { t, raw } = useT()
   return (
     <ComponentList
-      items={buildHelpEntries(t)}
+      items={buildHelpEntries(t, raw)}
       itemComponent={HelpItem}
       getItemKey={item => item.id}
       className={styles.groups}

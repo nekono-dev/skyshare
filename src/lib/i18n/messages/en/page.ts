@@ -16,6 +16,10 @@ export const page = {
         '"Permissions" → change "Photos and videos" (or "Files and media") to allowed',
     "page.help.androidMedia.outro":
         "If you have installed it as an app (PWA), change the setting of the browser you used to install it.",
+    "page.help.beta.title": 'What does the "beta" badge mean?',
+    "page.help.beta.description":
+        "It marks features we are offering on a trial basis before their official release. They may have bugs or be hard to use. If you notice anything, please let us know through {link}.",
+    "page.help.beta.feedbackLink": "feedback",
     "page.accounts.heading": "Switch account",
     "page.accounts.description":
         'Click a card to switch to that account. Use the "Log out" button on a card to log out of that account.',
