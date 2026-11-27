@@ -14,6 +14,10 @@ export const page = {
         "「権限」→「写真と動画」（または「ファイルとメディア」）を許可に変更",
     "page.help.androidMedia.outro":
         "アプリとしてインストール（PWA化）している場合も、アプリ化を行なったブラウザ上の設定を修正してください。",
+    "page.help.beta.title": "「beta」と表示されているのはなに？",
+    "page.help.beta.description":
+        "正式な提供の前に、試験的に公開している機能につけています。不具合や使いにくい点があるかもしれません。お気づきの点は、{link}からお知らせください。",
+    "page.help.beta.feedbackLink": "フィードバック",
     "page.accounts.heading": "アカウントを切り替え",
     "page.accounts.description":
         "カードをクリックするとそのアカウントに切り替わります。カード内の「ログアウト」ボタンでそのアカウントからログアウトできます。",

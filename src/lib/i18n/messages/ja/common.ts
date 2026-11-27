@@ -3,6 +3,7 @@
  * 値は `{name}` 形式のプレースホルダを持てる。複数形が必要な文言は `base_other` で定義する。
  */
 export const common = {
+    "common.beta": "beta",
     "common.cancel": "キャンセル",
     "common.close": "閉じる",
     "common.apply": "適用",

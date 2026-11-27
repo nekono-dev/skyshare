@@ -8,6 +8,7 @@
  *   コンポーネントをそのまま埋め込める形にしている。
  */
 import type { ReactNode } from "react"
+import { renderSlots } from "@/components/i18n/renderSlots"
 import type { Translator } from "@/lib/i18n/translate"
 import ui from "@/styles/ui.module.css"
 
@@ -32,6 +33,7 @@ export type HelpEntry = {
  *
  * Input:
  * - `t`: 表示言語の翻訳関数
+ * - `raw`: プレースホルダ未置換の文言を返す関数（文中にリンクを差し込む文言に使う）
  *
  * Output:
  * - 表示順に並んだ `HelpEntry` の配列
@@ -40,7 +42,10 @@ export type HelpEntry = {
  * - 入力: `createTranslator("en").t`
  * - 出力: 英語の文言を持つ記事の配列
  */
-export const buildHelpEntries = (t: Translator["t"]): HelpEntry[] => [
+export const buildHelpEntries = (
+  t: Translator["t"],
+  raw: Translator["raw"],
+): HelpEntry[] => [
   {
     id: "android-media-permission",
     title: t("page.help.androidMedia.title"),
@@ -62,5 +67,12 @@ export const buildHelpEntries = (t: Translator["t"]): HelpEntry[] => [
         {t("page.help.androidMedia.outro")}
       </div>
     ),
+  },
+  {
+    id: "beta-badge",
+    title: t("page.help.beta.title"),
+    description: renderSlots(raw("page.help.beta.description"), {
+      link: <a href="/feedback/">{t("page.help.beta.feedbackLink")}</a>,
+    }),
   },
 ]

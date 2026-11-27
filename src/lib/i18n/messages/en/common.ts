@@ -2,6 +2,7 @@
 import type { MessageEntries } from "../../messageEntries"
 
 export const common = {
+    "common.beta": "beta",
     "common.cancel": "Cancel",
     "common.close": "Close",
     "common.apply": "Apply",
