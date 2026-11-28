@@ -1,9 +1,9 @@
 {
   "feature_name": "survey-operations",
   "created_at": "2026-11-13T00:41:10Z",
-  "updated_at": "2026-11-28T11:01:17Z",
+  "updated_at": "2026-11-28T11:27:10Z",
   "language": "ja",
-  "phase": "design-generated",
+  "phase": "tasks-generated",
   "approvals": {
     "requirements": {
       "generated": true,
@@ -11,12 +11,12 @@
     },
     "design": {
       "generated": true,
-      "approved": false
+      "approved": true
     },
     "tasks": {
       "generated": true,
-      "approved": false
+      "approved": true
     }
   },
-  "ready_for_implementation": false
+  "ready_for_implementation": true
 }

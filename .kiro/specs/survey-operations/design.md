@@ -752,7 +752,9 @@ export type ResolvedAccount = {
 }
 
 export type SurveyAccountService = {
-  resolveAccount(): Promise<ResolvedAccount>
+  resolveAccount(options?: {
+    checkWritable?: boolean
+  }): Promise<ResolvedAccount>
   persistAccount(account: ResolvedAccount): Promise<void>
 }
 
@@ -807,6 +809,9 @@ export type PromptDependencies = {
   writeStderr: (text: string) => void
   readChoice: () => Promise<string | undefined>
 }
+
+/** 対話できるか（stdin と stdout が両方 TTY か）。非対話と中止を account が区別するために公開する */
+export const canPrompt: (dependencies?: PromptDependencies) => boolean
 
 export const chooseAccount: (
   accounts: readonly AccountChoice[],
