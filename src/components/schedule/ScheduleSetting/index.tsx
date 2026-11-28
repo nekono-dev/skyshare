@@ -133,7 +133,7 @@ export const Component = () => {
         items={[
           {
             key: "scheduledPost",
-            // 試験提供の印をラベルの上に置く。アクセシブルネームは印を含めず機能名にする
+            // 試験提供の印をラベルの左に置く。アクセシブルネームは印を含めず機能名にする
             label: (
               <span className={styles["label-with-beta"]}>
                 <span className={styles.beta}>{t("common.beta")}</span>
