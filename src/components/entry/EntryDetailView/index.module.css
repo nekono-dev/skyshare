@@ -26,10 +26,6 @@
   color: var(--color-text-muted);
 }
 
-.source-link {
-  margin: 0;
-}
-
 .body-text {
   margin: var(--space-3) 0 0;
   white-space: pre-wrap;
@@ -65,8 +61,24 @@
   background: var(--color-border);
 }
 
+/* カード全体を Bluesky 上の投稿へのリンクにする（a の入れ子を避けるため、重ねたリンクで実現する） */
 .post-card {
+  position: relative;
   padding: var(--space-2);
+}
+
+.post-link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+/* カード内のリンク・ボタン・動画は、重ねたリンクより前に出して、それぞれの操作を保つ */
+.post-card :global(a:not(.post-link)),
+.post-card :global(button),
+.post-card :global(video) {
+  position: relative;
+  z-index: 1;
 }
 
 .error-pane {

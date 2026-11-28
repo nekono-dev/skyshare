@@ -42,7 +42,7 @@ export const entry = {
     "entry.legacy.deleteFailed": "投稿の削除に失敗しました。",
     "entry.legacy.oauthUnsupported":
         "Bluesky でのログインでは、旧形式の投稿を削除できません。アプリパスワードでログインし直してから削除してください。",
-    "entry.detail.viewSource": "Bluesky上の元投稿を見る",
+    "entry.detail.openOnBluesky": "Bluesky上の投稿を開く",
     "entry.detail.postedAt": "投稿日時:{date}",
     "entry.detail.noDate": "no data",
     "entry.detail.sourceDeleted":

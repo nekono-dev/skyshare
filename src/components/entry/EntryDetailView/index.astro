@@ -45,8 +45,6 @@ interface Props {
     /** ISO文字列。表示整形は EntryPostedAt が行う（空なら日時なし） */
     createdAt: string
     sourcePostAvailable: boolean
-    /** 元投稿（Bluesky）のWeb URL。空なら元投稿リンクを非表示 */
-    sourceUrl?: string
     /** Entryのカード画像（View）のURL。無ければ非表示 */
     visualUrl?: string
     posts: EntryPostView[]
@@ -59,7 +57,6 @@ const {
     caption,
     createdAt,
     sourcePostAvailable,
-    sourceUrl = "",
     visualUrl = "",
     posts,
 } = Astro.props
@@ -81,14 +78,6 @@ const bodyKey =
 {
     statusCode === 200 ? (
         <article class={styles.container}>
-            {sourceUrl && sourcePostAvailable ? (
-                <p class={styles["source-link"]}>
-                    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="entry-source-link">
-                        <span data-i18n="entry.detail.viewSource">{t("entry.detail.viewSource")}</span>
-                    </a>
-                </p>
-            ) : null}
-
             {posts.length > 0 ? (
                 <ol class={styles["post-list"]}>
                     {posts.map(post => (
@@ -109,6 +98,16 @@ const bodyKey =
                                     quote={post.quote}
                                     engagement={post.engagement}
                                 />
+                                {post.webUrl ? (
+                                    <a
+                                        class={styles["post-link"]}
+                                        href={post.webUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={t("entry.detail.openOnBluesky")}
+                                        data-testid="entry-post-link"
+                                    />
+                                ) : null}
                             </div>
                         </li>
                     ))}
