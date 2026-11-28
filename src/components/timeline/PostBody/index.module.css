@@ -56,6 +56,11 @@
   line-height: 1.65;
 }
 
+.source-link {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+}
+
 .engagement {
   margin-top: var(--space-1);
 }

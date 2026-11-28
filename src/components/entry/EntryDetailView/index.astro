@@ -94,20 +94,11 @@ const bodyKey =
                                     unsupportedVideo={post.unsupportedVideo}
                                     unsupportedVideoLinkUrl={post.webUrl}
                                     postUrl={post.webUrl}
+                                    sourceLinkUrl={post.webUrl}
                                     linkCard={post.linkCard}
                                     quote={post.quote}
                                     engagement={post.engagement}
                                 />
-                                {post.webUrl ? (
-                                    <a
-                                        class={styles["post-link"]}
-                                        href={post.webUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        aria-label={t("entry.detail.openOnBluesky")}
-                                        data-testid="entry-post-link"
-                                    />
-                                ) : null}
                             </div>
                         </li>
                     ))}
