@@ -45,8 +45,6 @@ interface Props {
     /** ISO文字列。表示整形は EntryPostedAt が行う（空なら日時なし） */
     createdAt: string
     sourcePostAvailable: boolean
-    /** 元投稿（Bluesky）のWeb URL。空なら元投稿リンクを非表示 */
-    sourceUrl?: string
     /** Entryのカード画像（View）のURL。無ければ非表示 */
     visualUrl?: string
     posts: EntryPostView[]
@@ -59,7 +57,6 @@ const {
     caption,
     createdAt,
     sourcePostAvailable,
-    sourceUrl = "",
     visualUrl = "",
     posts,
 } = Astro.props
@@ -81,39 +78,6 @@ const bodyKey =
 {
     statusCode === 200 ? (
         <article class={styles.container}>
-            <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
-                {caption ? (
-                    <p class={styles["body-text"]}>
-                        <PostRichText text={caption} />
-                    </p>
-                ) : null}
-                {visualUrl ? (
-                    <img class={styles.visual} src={visualUrl} alt={heading || caption} data-testid="entry-visual" />
-                ) : null}
-                <dl class={styles["meta-list"]}>
-                    {sourceUrl && sourcePostAvailable ? (
-                        <div>
-                            <a
-                                href={sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                data-testid="entry-source-link"
-                            >
-                                <span data-i18n="entry.detail.viewSource">{t("entry.detail.viewSource")}</span>
-                            </a>
-                        </div>
-                    ) : null}
-                    <div>
-                        <EntryPostedAt client:load createdAt={createdAt} />
-                    </div>
-                </dl>
-                {!sourcePostAvailable ? (
-                    <p class={styles["empty-message"]} data-i18n="entry.detail.sourceDeleted">
-                        {t("entry.detail.sourceDeleted")}
-                    </p>
-                ) : null}
-            </section>
-
             {posts.length > 0 ? (
                 <ol class={styles["post-list"]}>
                     {posts.map(post => (
@@ -130,6 +94,7 @@ const bodyKey =
                                     unsupportedVideo={post.unsupportedVideo}
                                     unsupportedVideoLinkUrl={post.webUrl}
                                     postUrl={post.webUrl}
+                                    sourceLinkUrl={post.webUrl}
                                     linkCard={post.linkCard}
                                     quote={post.quote}
                                     engagement={post.engagement}
@@ -139,6 +104,30 @@ const bodyKey =
                     ))}
                 </ol>
             ) : null}
+
+            <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
+                <div class={styles["entry-meta"]}>
+                    <strong class={styles["entry-label"]} data-i18n="entry.detail.cardLabel">
+                        {t("entry.detail.cardLabel")}
+                    </strong>
+                    <p class={styles["posted-at"]}>
+                        <EntryPostedAt client:load createdAt={createdAt} />
+                    </p>
+                </div>
+                {caption ? (
+                    <p class={styles["body-text"]}>
+                        <PostRichText text={caption} />
+                    </p>
+                ) : null}
+                {visualUrl ? (
+                    <img class={styles.visual} src={visualUrl} alt={heading || caption} data-testid="entry-visual" />
+                ) : null}
+                {!sourcePostAvailable ? (
+                    <p class={styles["empty-message"]} data-i18n="entry.detail.sourceDeleted">
+                        {t("entry.detail.sourceDeleted")}
+                    </p>
+                ) : null}
+            </section>
         </article>
     ) : (
         <section class={styles["error-pane"]}>

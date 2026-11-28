@@ -19,21 +19,27 @@
   border-radius: var(--radius-md);
 }
 
-.meta-list {
-  margin: var(--space-3) 0 0;
+/* Bluesky 投稿の作者名の行（名前の下に日時）と同じ並びにする。Bluesky の投稿ではなく Entry のカードだと示す見出し */
+.entry-meta {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-0);
+}
+
+.entry-label {
+  overflow-wrap: anywhere;
+}
+
+/* Bluesky 投稿の日時表示（PostBody の created-at）と同じ見た目にする */
+.posted-at {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .body-text {
   margin: var(--space-3) 0 0;
   white-space: pre-wrap;
   line-height: var(--line-height-loose);
-}
-
-/* headingが無い場合、captionがカード先頭になるため上マージンを付けない */
-.body-text:first-child {
-  margin-top: 0;
 }
 
 .empty-message {

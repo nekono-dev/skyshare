@@ -2,7 +2,7 @@
  * Timeline と投稿詳細で共有する投稿本文・メディア・埋め込みの表示部。
  * カードの枠と背景は呼び出し側が担う。
  */
-import { useFormat } from "@/components/i18n/useTranslation"
+import { useFormat, useT } from "@/components/i18n/useTranslation"
 import Avatar from "@/components/common/media/Avatar"
 import ImageGallery from "@/components/image/ImageGallery"
 import PostEngagementStats from "@/components/timeline/PostBody/PostEngagementStats"
@@ -40,6 +40,8 @@ type Props = {
   imagesInteractive?: boolean
   /** 指定時は日時表示を Bluesky ページへのリンク（target=_blank）にする */
   postUrl?: string
+  /** 指定時のみ、メディア（画像・動画・リンクカード・引用）の下、リアクション数の上に「Bluesky上の元投稿を見る」リンクを表示する */
+  sourceLinkUrl?: string
   /** 外部リンクの埋め込み。指定時は画像・動画の下にリンクカードを表示する */
   linkCard?: PostLinkCardData
   /** 引用。指定時はリンクカードの下に引用の枠を表示する */
@@ -76,8 +78,10 @@ const PostBody = ({
   postUrl,
   linkCard,
   quote,
+  sourceLinkUrl,
   engagement,
 }: Props) => {
+  const { t } = useT()
   const { formatDateTime } = useFormat()
   const createdAtText = formatDateTime(createdAt, {
     dateStyle: "medium",
@@ -139,6 +143,14 @@ const PostBody = ({
       {linkCard ? <PostLinkCard card={linkCard} /> : null}
 
       {quote ? <PostQuote quote={quote} /> : null}
+
+      {sourceLinkUrl ? (
+        <p className={styles["source-link"]}>
+          <a href={sourceLinkUrl} target="_blank" rel="noopener noreferrer">
+            {t("entry.detail.viewSource")}
+          </a>
+        </p>
+      ) : null}
 
       {engagement ? (
         <div className={styles.engagement}>
