@@ -81,6 +81,32 @@ const bodyKey =
 {
     statusCode === 200 ? (
         <article class={styles.container}>
+            {posts.length > 0 ? (
+                <ol class={styles["post-list"]}>
+                    {posts.map(post => (
+                        <li class={styles["post-item"]}>
+                            <div class={`${ui["base-card"]} ${styles["post-card"]}`}>
+                                <PostBody
+                                    client:load
+                                    author={post.author}
+                                    createdAt={post.createdAt}
+                                    text={post.text}
+                                    facets={post.facets}
+                                    images={post.images}
+                                    video={post.video}
+                                    unsupportedVideo={post.unsupportedVideo}
+                                    unsupportedVideoLinkUrl={post.webUrl}
+                                    postUrl={post.webUrl}
+                                    linkCard={post.linkCard}
+                                    quote={post.quote}
+                                    engagement={post.engagement}
+                                />
+                            </div>
+                        </li>
+                    ))}
+                </ol>
+            ) : null}
+
             <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
                 {caption ? (
                     <p class={styles["body-text"]}>
@@ -113,32 +139,6 @@ const bodyKey =
                     </p>
                 ) : null}
             </section>
-
-            {posts.length > 0 ? (
-                <ol class={styles["post-list"]}>
-                    {posts.map(post => (
-                        <li class={styles["post-item"]}>
-                            <div class={`${ui["base-card"]} ${styles["post-card"]}`}>
-                                <PostBody
-                                    client:load
-                                    author={post.author}
-                                    createdAt={post.createdAt}
-                                    text={post.text}
-                                    facets={post.facets}
-                                    images={post.images}
-                                    video={post.video}
-                                    unsupportedVideo={post.unsupportedVideo}
-                                    unsupportedVideoLinkUrl={post.webUrl}
-                                    postUrl={post.webUrl}
-                                    linkCard={post.linkCard}
-                                    quote={post.quote}
-                                    engagement={post.engagement}
-                                />
-                            </div>
-                        </li>
-                    ))}
-                </ol>
-            ) : null}
         </article>
     ) : (
         <section class={styles["error-pane"]}>
