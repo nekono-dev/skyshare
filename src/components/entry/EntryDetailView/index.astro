@@ -81,6 +81,14 @@ const bodyKey =
 {
     statusCode === 200 ? (
         <article class={styles.container}>
+            {sourceUrl && sourcePostAvailable ? (
+                <p class={styles["source-link"]}>
+                    <a href={sourceUrl} target="_blank" rel="noopener noreferrer" data-testid="entry-source-link">
+                        <span data-i18n="entry.detail.viewSource">{t("entry.detail.viewSource")}</span>
+                    </a>
+                </p>
+            ) : null}
+
             {posts.length > 0 ? (
                 <ol class={styles["post-list"]}>
                     {posts.map(post => (
@@ -108,6 +116,9 @@ const bodyKey =
             ) : null}
 
             <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
+                <p class={styles["posted-at"]}>
+                    <EntryPostedAt client:load createdAt={createdAt} />
+                </p>
                 {caption ? (
                     <p class={styles["body-text"]}>
                         <PostRichText text={caption} />
@@ -116,23 +127,6 @@ const bodyKey =
                 {visualUrl ? (
                     <img class={styles.visual} src={visualUrl} alt={heading || caption} data-testid="entry-visual" />
                 ) : null}
-                <dl class={styles["meta-list"]}>
-                    {sourceUrl && sourcePostAvailable ? (
-                        <div>
-                            <a
-                                href={sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                data-testid="entry-source-link"
-                            >
-                                <span data-i18n="entry.detail.viewSource">{t("entry.detail.viewSource")}</span>
-                            </a>
-                        </div>
-                    ) : null}
-                    <div>
-                        <EntryPostedAt client:load createdAt={createdAt} />
-                    </div>
-                </dl>
                 {!sourcePostAvailable ? (
                     <p class={styles["empty-message"]} data-i18n="entry.detail.sourceDeleted">
                         {t("entry.detail.sourceDeleted")}
