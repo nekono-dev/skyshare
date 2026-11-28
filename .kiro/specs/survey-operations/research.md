@@ -93,3 +93,39 @@
 - 一方の環境の R2 が使えない状況（バケット未作成など）では、`prune`・`remove` が進まない — 使える環境がそろうまで進まないのは安全側の動作で、結果を失わないことを優先する。
   > 2026-11-18 追補: survey-env-config が置き換え。現在は `prune`・`remove` が指定環境の目録だけを読むため、他方の環境の R2 の利用可否は除去を妨げない。指定環境の目録の取得失敗・形式不正では何も除去せず拒否または失敗する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`（2.3・5.x）に従う。
 - 本番の最新のリリースブランチの取り違え — 純粋関数でテストし、`--dry-run` で起動先のブランチを確認できる。
+
+## 2026-11-28: トークンによる再配備とアカウントの決定
+
+### 参照した資料
+
+- `requirements.md` の 1.8・5.9・9.18・11.1–11.8・12.1–12.12、`brief.md` 末尾の discovery 追補、既存の `design.md`。
+- `hack/survey-cli/{cli,remote,args,lifecycle}.ts`、既存の単体テストの配置、`docs/DEVELOP.md`、`survey-run` skill、`.github/workflows/deploy.yaml`、構造・コメントの steering。
+- [GitHub workflow dispatch](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event): workflow ファイル名で POST でき、ref と inputs を渡す。必要な fine-grained 権限は Actions の書き込み。今回の契約は実行詳細を要求しない 204 の応答とする。
+- [GitHub matching refs](https://docs.github.com/en/rest/git/refs#list-matching-references) と [コミット取得](https://docs.github.com/en/rest/commits/commits#get-a-commit): 起動先取得に Contents の読み取りを使う。公開リソースの無認証取得が可能でも、その前提に依存しない。
+- [Wrangler whoami](https://developers.cloudflare.com/workers/wrangler/commands/general/#whoami): 一覧取得の手段として参照した。`wrangler whoami --json` が `{loggedIn, authType, accounts:[{id,name,...}]}` を返すことは、設計時に実機（wrangler 4.147.0、OAuth ログイン）で確認した。
+
+### ローカルで確認できたことと未検証のこと
+
+- `deploy.yaml` は GitHub Actions のビルドで結果を静的生成し、対象ブランチと `dry_run` によって配備を制御している。Cloudflare API だけに置き換えるとこのビルドを経由しない。
+- `remote.ts` の `RunCommand` は既に第 4 引数の `options.env` を持ち、`runLocal` はその環境で子プロセスを実行する。ID を含む環境全体を渡せば型の変更は不要である。
+- 現在の `RemoteErrorKind` には `no-environment` もある。既存設計の「3 種」だけに合わせて削除せず、HTTP は既存の auth・unavailable・parse を使う。
+- `cli.ts` の末尾は、成功の結果を stdout、失敗の結果を stderr に出す。この出力先は変えない。質問・一覧・記録通知は stderr に出し、結果の一行とは別にする（要件 12.10）。
+- 認証の固定文（`gh または wrangler の認証が必要`）を直接検査する既存テストは無い（`cli.test.ts` は `^error: (auth|unavailable|invalid):` の正規表現と kind の網羅だけ）ため、新しい固定文の完全一致のテストを追加する。一方、配備失敗の旧文言（`error: deploy: 可視フラグは保存済み。同じコマンドの再実行で配備だけを起動できる`）を完全一致で検査する既存テスト（`tests/unit/hack/survey-cli/cli.test.ts` の 1083 行付近）は、新しい文言に更新する。文言を変えるのは、認証・利用不能・応答不正を区別し、トークン経路でも成り立たせるための実装上の決定で、要件 1.9 の『固定の文言』の範囲内とする。
+- DEVELOP.md 1.1 は `.dev.vars` が新しい worktree・clone に含まれないことを示している。記録先は各作業ツリーに限定する。
+- docs と workflow から GitHub リポジトリの公開設定は確定できなかった。非公開でも動く権限を文書化する。
+- 今回の設計では実際の dispatch を実行していない。REST の対象リポジトリでの受理と、トークンの権限の十分性は実装後の実機確認（タスク 4.2 の延長）で確かめる。`.dev.vars` の中身と認証情報は読んでいない。
+
+### 決定と残るリスク
+
+- 専用変数は `SURVEY_DEPLOY_TOKEN`、HTTP は Node 22 の標準 fetch。gh が読む汎用変数との混同と、認証失敗後の暗黙の切り替えを防ぐ。
+- ブリーフ末尾の「選んだ ID を保存しない」という候補は、要件 12.7 と今回の利用者の決定により置き換える。対話で選んだ ID だけを操作成功後に記録する。
+- 指定 ID での読み取り成功は、その後の権限変更・通信障害・書き込み権限を保証しない。外部操作に失敗したらローカル記録は行わず、完了済みの変更がある場合は固定文で示す。
+- 外部操作とローカル記録は不可分ではない。記録だけが失敗した場合を専用の固定文で示す。同じ作業ツリーの操作・設定編集は直列実行を前提とする。
+- 参照取得後のブランチ変更、API の権限・版・応答、whoami の JSON、workflow の入力、設定ファイルの管理方法が変わった場合は設計を再確認する。自動テストは偽の run・fetch・prompt・TTY・ファイル操作だけを使う。
+
+### レビューでの決定
+
+- トークン経路の 404 は auth とする（fine-grained PAT は権限がない場合に 404 を返すため）。
+- トークンは `remote.ts` と `runLocal` の二重で子プロセス環境から除去する。
+- storage を read/write に分けた。
+- 配備失敗の旧文言を完全一致で検査する既存テストを新しい文言へ更新する。
