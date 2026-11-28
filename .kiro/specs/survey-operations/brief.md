@@ -84,3 +84,15 @@
 
 - `prune`・`remove` は `--env` を取らず、常に両方の環境の目録を確認する（`design.md` の Decision 6）。`status`・`publish`・`unpublish` は `--env` 必須のまま。新規識別子は UUID v4、同時開催は 1 件、締切は日付だけの日本時間 0 時指定とし、開催中は締切を前倒しして集計を待つ。
   > 2026-11-18 追補: survey-env-config が置き換え。現在は六つのコマンドすべてで `--env` を必須とし、指定環境の設定と目録だけで登録・除去を判断する。締切の規則は維持する。現在の規則は `.kiro/specs/survey-env-config/requirements.md`・`design.md` に従う。
+
+## 追補: CLI からの再デプロイと Cloudflare アカウントの選択（2026-11-28 discovery）
+
+Path A（`survey-operations` の拡張。新しい spec は作らない）。要件・設計・タスクは `/kiro-spec-requirements survey-operations` から更新する。
+
+- **きっかけ**: develop で `npm run survey -- status` が `error: unavailable` になった。原因は `wrangler` のログイン先に Cloudflare アカウントが複数あり、アカウントを選べないこと（手順書への追記は #146）。あわせて、`publish` の再配備を運用者が自分で起動できるようにしたい。
+- **決定（利用者、2026-11-28）**:
+  1. 再配備の起動は **GitHub API の POST**（`POST /repos/{repo}/actions/workflows/deploy.yaml/dispatches`）にする。ビルドは従来どおり GitHub Actions で行う（結果ページは Actions のビルド時に R2 から静的生成するため、Cloudflare 側の API だけでは再生成されない。Workers Builds への移行は大きな変更になるので採らない）。認証は `gh` のログインではなく、Actions の実行だけを許す権限の細かいトークンを環境変数で受ける形を設計で決める。
+  2. 起動先のブランチは現状のまま（develop は `develop`、本番は最新の `release/**`。release ブランチが無ければ起動しない）。
+  3. Cloudflare のアカウントは **対話で選ぶ**。環境変数 `CLOUDFLARE_ACCOUNT_ID` があればそれを使い、無いときだけ端末（TTY）の対話でアカウント一覧から選ばせる。非対話（CI・パイプ）では従来どおり固定の 1 行で失敗する。
+- **設計で決めること**: トークンの環境変数名と最小権限、トークン未設定時の扱い（`gh` へのフォールバックの要否）、アカウント一覧の取得方法（一覧は秘密ではないが、外部コマンドの標準エラーや本文を出さない原則を保つ）、選んだ ID を保存しないこと（ファイル・履歴に残さない）、「固定の 1 行だけ返す」規則と対話の質問の両立。
+- **範囲外**: Cloudflare の Workers Builds への移行、本番の起動先ブランチの変更、`deploy.yaml` の入力の変更。
