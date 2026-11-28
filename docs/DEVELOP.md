@@ -135,6 +135,7 @@ Git 管理外のファイル（`node_modules`・`src/client/`・`wrangler.jsonc`
 
 - `release/**`・`develop`・`dev/**` のビルドには、それぞれ対象の GitHub Environment の `SURVEY_CONFIG` を渡す（検証と E2E のジョブには渡さない）。
 - アンケートの登録・状態確認・公開切り替え・除去は専用 CLI だけで行う。例: `npm run survey -- add --file <一時ファイル> --env develop [--dry-run]`、`npm run survey -- status --env production`、`npm run survey -- publish <ID> --env production [--no-deploy] [--dry-run]`、`npm run survey -- unpublish <ID> --env develop [--no-deploy] [--dry-run]`、`npm run survey -- prune --env production [--dry-run]`、`npm run survey -- remove <ID> --env develop [--dry-run]`。状態確認は指定環境の設定と目録を合わせた表全体で、設定だけ・目録だけにある記録も表示する。それ以外は固定の 1 行を返す。
+- CLI は外部コマンドのエラー本文を出さない。`wrangler` のログイン先に Cloudflare アカウントが複数あると、アカウントを選べず `error: unavailable: 外部サービスを利用できません` になる。その場合は、シェルの環境変数 `CLOUDFLARE_ACCOUNT_ID`（Cloudflare ダッシュボードのアカウント ID。秘密ではないが、ファイルや履歴には残さない）に skyshare のアカウントを指定して実行する。例: `CLOUDFLARE_ACCOUNT_ID=<アカウントID> npm run survey -- status --env develop`。
 - 新規登録の識別子は UUID として CLI が自動発行するため、下書きに手入力しない。アンケート全体の題・説明はなく、質問の題・選択肢と締切日だけを登録する。締切日は実在する `YYYY-MM-DD` で指定し、日本時間 0 時を表す。
 - 次の新規登録は、指定環境の設定にあるすべての ID が同じ環境の目録に記録されるまで拒否する。開始前のアンケートも対象で、設定に残る集計済みの過去分は対象外。拒否時は `error: refused: この環境に未集計のアンケートがあります。集計を待つか、開始前なら remove、開催中なら締切を前倒しして配備し、集計を待ってください。` の 1 行だけを返す。未集計の環境へ設定を配備し、日次集計を待ってから同じ環境の `status` で確認する。目録の取得失敗は認証・接続・形式の問題を直して再実行する。
 - 既存アンケートは `status --env <環境>` に表示された ID を下書きに入れて更新する。開催中は締切を前倒しし、指定環境へ設定を配備して日次集計を待つ。前倒しできない場合は `error: refused: 前倒しできません。自然な終了と集計を待ってください。` を返す。手順は `.claude/skills/survey-run/SKILL.md`（Codex は `.agents/skills/survey-run/`）。
