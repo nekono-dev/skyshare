@@ -142,4 +142,4 @@ npm run survey -- remove <ID> --env develop
 
 ## コマンド出力と失敗時の扱い
 
-`status` は表全体、それ以外は成功・失敗を問わず固定の 1 行だけを利用者に伝える。設定本文、回答、認証情報、外部コマンドの標準エラーを調べたり貼り付けたりしない。`error: auth` はローカルの `gh` または `wrangler` の認証が必要、`error: invalid` は入力・既存設定・目録形式の確認が必要という意味である。`error: no-environment` は GitHub の環境作成または権限確認が必要なので、DEVELOP.md 6.2.1 を参照して `gh auth status` を確かめる。エラー時も一時ファイルを削除する。
+`status` は表全体、それ以外は成功・失敗を問わず固定の 1 行だけを利用者に伝える。設定本文、回答、認証情報、外部コマンドの標準エラーを調べたり貼り付けたりしない。`error: auth` はローカルの `gh` または `wrangler` の認証が必要、`error: invalid` は入力・既存設定・目録形式の確認が必要という意味である。`error: unavailable` は、`gh`・`wrangler` のログイン済みでも、`wrangler` のログイン先に Cloudflare アカウントが複数あるとアカウントを選べず起きる。その場合は利用者に、環境変数 `CLOUDFLARE_ACCOUNT_ID` に skyshare のアカウント ID を指定して同じコマンドを再実行するよう案内する（ID をファイルに残さない）。`error: no-environment` は GitHub の環境作成または権限確認が必要なので、DEVELOP.md 6.2.1 を参照して `gh auth status` を確かめる。エラー時も一時ファイルを削除する。
