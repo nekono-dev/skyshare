@@ -106,9 +106,14 @@ const bodyKey =
             ) : null}
 
             <section class={`${ui["base-card"]} ${styles["header-card"]}`}>
-                <p class={styles["posted-at"]}>
-                    <EntryPostedAt client:load createdAt={createdAt} />
-                </p>
+                <div class={styles["entry-meta"]}>
+                    <strong class={styles["entry-label"]} data-i18n="entry.detail.cardLabel">
+                        {t("entry.detail.cardLabel")}
+                    </strong>
+                    <p class={styles["posted-at"]}>
+                        <EntryPostedAt client:load createdAt={createdAt} />
+                    </p>
+                </div>
                 {caption ? (
                     <p class={styles["body-text"]}>
                         <PostRichText text={caption} />

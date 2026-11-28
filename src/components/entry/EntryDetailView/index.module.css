@@ -19,6 +19,16 @@
   border-radius: var(--radius-md);
 }
 
+/* Bluesky 投稿の作者名の行（名前の下に日時）と同じ並びにする。Bluesky の投稿ではなく Entry のカードだと示す見出し */
+.entry-meta {
+  display: grid;
+  gap: var(--space-0);
+}
+
+.entry-label {
+  overflow-wrap: anywhere;
+}
+
 /* Bluesky 投稿の日時表示（PostBody の created-at）と同じ見た目にする */
 .posted-at {
   margin: 0;
